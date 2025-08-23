@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import OrdersAndAttemptsTable from './OrdersAndAttemptsTable';
 import AttemptsTable from './AttemptsTable';
-import { CheckCircle, AlertTriangle, Clock, DollarSign, Calendar } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Clock, DollarSign, Calendar, Shield } from 'lucide-react';
 
 interface OrdersTabsProps {
   onViewOrderDetails: (orderId: string) => void;
@@ -58,6 +58,12 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
     (item.type === 'order' && ['cancelado', 'pendente'].includes(item.status))
   );
 
+  // Pedidos Bloqueados
+  const blockedPedidos = ordersAndAttempts.filter(item => 
+    item.type === 'order' && 
+    item.status === 'bloqueado'
+  );
+
   if (loading) {
     return (
       <Card>
@@ -73,7 +79,7 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
 
   return (
     <Tabs defaultValue="active" className="w-full">
-      <TabsList className="grid w-full grid-cols-4 mb-6">
+      <TabsList className="grid w-full grid-cols-5 mb-6">
         <TabsTrigger value="active" className="flex items-center gap-2">
           <CheckCircle className="h-4 w-4" />
           Ativos
@@ -100,6 +106,13 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
           Abandonados
           <Badge variant="destructive" className="ml-2">
             {abandonedAttempts.length}
+          </Badge>
+        </TabsTrigger>
+        <TabsTrigger value="blocked" className="flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          Bloqueados
+          <Badge variant="destructive" className="ml-2">
+            {blockedPedidos.length}
           </Badge>
         </TabsTrigger>
       </TabsList>
@@ -180,6 +193,26 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
           </CardHeader>
           <CardContent>
             <AttemptsTable attempts={abandonedAttempts} />
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="blocked">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <Shield className="h-5 w-5 text-red-600" />
+              Pedidos Bloqueados ({blockedPedidos.length})
+            </CardTitle>
+            <CardDescription className="text-gray-700">
+              Pedidos que foram bloqueados e precisam ser revisados para desbloqueio
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <OrdersAndAttemptsTable 
+              ordersAndAttempts={blockedPedidos} 
+              onViewOrderDetails={onViewOrderDetails}
+            />
           </CardContent>
         </Card>
       </TabsContent>
