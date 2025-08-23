@@ -1791,6 +1791,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      can_access_pedido_secure: {
+        Args: { p_pedido_id: string }
+        Returns: boolean
+      }
       cancel_expired_orders: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -1980,7 +1984,10 @@ export type Database = {
       get_buildings_for_public_store: {
         Args: Record<PropertyKey, never>
         Returns: {
+          amenities: string[]
           bairro: string
+          caracteristicas: string[]
+          endereco: string
           id: string
           imagem_principal: string
           latitude: number
