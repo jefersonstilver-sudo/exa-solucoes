@@ -202,7 +202,7 @@ const Index = () => {
               direction="ltr"
               pauseOnHover={true}
             />
-            <div className="text-center mt-4">
+            <div className="text-center mt-2">
               <h2 className="text-lg font-light text-white/40 font-inter tracking-wide">
                 Nossos clientes e parceiros
               </h2>
