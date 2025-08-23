@@ -17,11 +17,11 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
         "--sidebar-width-icon": "64px",
       } as React.CSSProperties}
     >
-      <div className="flex h-screen w-full bg-background">
+      <div className="flex h-screen w-full bg-background overflow-hidden">
         <ModernAdminSidebar />
-        <SidebarInset className="flex flex-col w-full">
+        <SidebarInset className="flex flex-col w-full overflow-x-hidden">
           {/* Header with hamburger menu - always visible */}
-          <header className="sticky top-0 z-50 h-16 flex items-center border-b border-border px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <header className="sticky top-0 z-10 h-16 flex items-center border-b border-border px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <SidebarTrigger className="mr-4 h-9 w-9 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" />
             <ModernAdminHeader />
           </header>
