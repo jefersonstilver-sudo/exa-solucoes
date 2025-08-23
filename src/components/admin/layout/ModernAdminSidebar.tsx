@@ -357,7 +357,7 @@ export function ModernAdminSidebar() {
           {!collapsed && <span>Sistema Seguro</span>}
         </div>
         {!collapsed && (
-          <div className="text-xs text-white/60 mt-1">
+          <div className="text-xs text-white/60 mt-0.5">
             INDEXA Admin v3.0
           </div>
         )}
