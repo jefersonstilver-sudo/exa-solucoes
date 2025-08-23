@@ -15,6 +15,7 @@ import {
   getPeriod, 
   getTypeBadge 
 } from '../utils/orderTableUtils';
+import ActiveVideosColumn from '../ActiveVideosColumn';
 
 interface OrdersTableRowProps {
   item: OrderOrAttempt & { daysRemaining?: number | null };
@@ -71,6 +72,17 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item, onViewDetails }) 
       </TableCell>
       <TableCell className="text-gray-700 font-medium">
         {getClientEmail(item)}
+      </TableCell>
+      <TableCell className="min-w-[200px]">
+        {item.type === 'order' ? (
+          <ActiveVideosColumn orderId={item.id} />
+        ) : (
+          <div className="text-center py-2">
+            <Badge variant="outline" className="border-gray-300 text-gray-500">
+              N/A
+            </Badge>
+          </div>
+        )}
       </TableCell>
       <TableCell>
         {item.type === 'order' ? (

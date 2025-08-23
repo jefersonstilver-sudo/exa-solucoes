@@ -25,3 +25,83 @@
 .card-shadow-lg {
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
+
+/* Custom scrollbar for admin sidebar */
+.admin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.6) transparent;
+}
+
+.admin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.6);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.8);
+}
+
+/* Elegant dark scrollbar for general use */
+.dark-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(55, 65, 81, 0.8) transparent;
+}
+
+.dark-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-track {
+  background: rgba(17, 24, 39, 0.3);
+  border-radius: 4px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(55, 65, 81, 0.8);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.9);
+}
+
+.dark-scrollbar::-webkit-scrollbar-corner {
+  background: rgba(17, 24, 39, 0.3);
+}
+
+/* Active video status animations */
+@keyframes pulse-green {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.video-status-active {
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+/* Security action buttons */
+.security-action-btn {
+  transition: all 0.2s ease;
+  transform: scale(1);
+}
+
+.security-action-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}

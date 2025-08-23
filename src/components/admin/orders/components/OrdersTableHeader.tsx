@@ -15,6 +15,7 @@ const OrdersTableHeader: React.FC = () => {
       <TableHead className="text-gray-900 font-semibold">Painéis</TableHead>
       <TableHead className="text-gray-900 font-semibold">Cliente</TableHead>
       <TableHead className="text-gray-900 font-semibold">Email</TableHead>
+      <TableHead className="text-gray-900 font-semibold min-w-[200px]">Vídeos Ativos</TableHead>
       <TableHead className="text-gray-900 font-semibold">Ações</TableHead>
     </>
   );
