@@ -8,12 +8,22 @@ import OrdersEmptyState from './components/OrdersEmptyState';
 interface OrdersAndAttemptsTableProps {
   ordersAndAttempts: (OrderOrAttempt & { daysRemaining?: number | null })[];
   onViewOrderDetails?: (orderId: string) => void;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (id: string, checked: boolean) => void;
+  onSelectAllChange?: (checked: boolean) => void;
+  showBulkActions?: boolean;
 }
 
 const OrdersAndAttemptsTable: React.FC<OrdersAndAttemptsTableProps> = ({ 
   ordersAndAttempts, 
-  onViewOrderDetails 
+  onViewOrderDetails,
+  selectedIds = new Set(),
+  onSelectionChange,
+  onSelectAllChange,
+  showBulkActions = false
 }) => {
+  const orderIds = ordersAndAttempts.filter(item => item.type === 'order').map(item => item.id);
+  const isAllSelected = orderIds.length > 0 && orderIds.every(id => selectedIds.has(id));
   if (ordersAndAttempts.length === 0) {
     return <OrdersEmptyState />;
   }
@@ -24,7 +34,11 @@ const OrdersAndAttemptsTable: React.FC<OrdersAndAttemptsTableProps> = ({
         <Table className="min-w-full">
           <TableHeader>
             <TableRow>
-              <OrdersTableHeader />
+              <OrdersTableHeader 
+                hasSelectableItems={showBulkActions && orderIds.length > 0}
+                isAllSelected={isAllSelected}
+                onSelectAllChange={onSelectAllChange}
+              />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -33,6 +47,9 @@ const OrdersAndAttemptsTable: React.FC<OrdersAndAttemptsTableProps> = ({
                 key={item.id} 
                 item={item} 
                 onViewDetails={onViewOrderDetails}
+                isSelected={selectedIds.has(item.id)}
+                onSelectionChange={onSelectionChange}
+                showCheckbox={showBulkActions && item.type === 'order'}
               />
             ))}
           </TableBody>

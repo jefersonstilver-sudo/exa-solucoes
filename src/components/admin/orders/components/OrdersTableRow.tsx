@@ -2,8 +2,10 @@ import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, Calendar } from 'lucide-react';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   getStatusBadge, 
   formatDate, 
@@ -20,9 +22,19 @@ import { ActiveVideosColumn } from '../ActiveVideosColumn';
 interface OrdersTableRowProps {
   item: OrderOrAttempt & { daysRemaining?: number | null };
   onViewDetails?: (orderId: string) => void;
+  isSelected?: boolean;
+  onSelectionChange?: (id: string, checked: boolean) => void;
+  showCheckbox?: boolean;
 }
 
-const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item, onViewDetails }) => {
+const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ 
+  item, 
+  onViewDetails, 
+  isSelected = false,
+  onSelectionChange,
+  showCheckbox = false
+}) => {
+  const { isSuperAdmin } = useAuth();
   const handleViewDetails = () => {
     if (item.type === 'order' && onViewDetails) {
       onViewDetails(item.id);
@@ -31,6 +43,17 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item, onViewDetails }) 
 
   return (
     <TableRow className="border-gray-200 hover:bg-gray-50">
+      {isSuperAdmin && showCheckbox && (
+        <TableCell className="w-12">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => 
+              onSelectionChange?.(item.id, checked as boolean)
+            }
+            aria-label={`Selecionar pedido ${item.id}`}
+          />
+        </TableCell>
+      )}
       <TableCell>
         {getTypeBadge(item)}
       </TableCell>

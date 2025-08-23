@@ -6,6 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import OrdersAndAttemptsTable from './OrdersAndAttemptsTable';
 import AttemptsTable from './AttemptsTable';
+import BulkActionsToolbar from './BulkActionsToolbar';
+import BulkDeleteModal from './BulkDeleteModal';
+import { useBulkSelection } from '@/hooks/useBulkSelection';
+import { bulkDeletePedidos } from '@/services/bulkDeleteService';
+import { useAuth } from '@/hooks/useAuth';
 import { CheckCircle, AlertTriangle, Clock, DollarSign, Calendar, Shield } from 'lucide-react';
 
 interface OrdersTabsProps {
@@ -13,7 +18,11 @@ interface OrdersTabsProps {
 }
 
 const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
-  const { ordersAndAttempts, stats, loading } = useOrdersWithAttemptsRefactored();
+  const { ordersAndAttempts, stats, loading, refetch } = useOrdersWithAttemptsRefactored();
+  const { isSuperAdmin } = useAuth();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [currentTabOrders, setCurrentTabOrders] = useState<(typeof ordersAndAttempts)>([]);
   
   // Função para calcular dias restantes
   const calculateDaysRemaining = (order: any) => {
@@ -63,6 +72,50 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
     item.type === 'order' && 
     item.status === 'bloqueado'
   );
+
+  // Bulk selection hooks for each tab
+  const activeSelection = useBulkSelection(activePedidos.filter(item => item.type === 'order').map(item => item.id));
+  const concludedSelection = useBulkSelection(concludedPedidos.filter(item => item.type === 'order').map(item => item.id));
+  const waitingSelection = useBulkSelection(waitingVideoPedidos.filter(item => item.type === 'order').map(item => item.id));
+  const blockedSelection = useBulkSelection(blockedPedidos.filter(item => item.type === 'order').map(item => item.id));
+
+  const handleBulkDelete = (orders: typeof ordersAndAttempts, selection: ReturnType<typeof useBulkSelection>) => {
+    setCurrentTabOrders(orders);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmBulkDelete = async (justification: string) => {
+    const selectedOrders = currentTabOrders.filter(order => 
+      order.type === 'order' && 
+      (activeSelection.selectedIds.has(order.id) || 
+       concludedSelection.selectedIds.has(order.id) || 
+       waitingSelection.selectedIds.has(order.id) || 
+       blockedSelection.selectedIds.has(order.id))
+    );
+
+    if (selectedOrders.length === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const result = await bulkDeletePedidos(
+        selectedOrders.map(order => order.id),
+        justification
+      );
+
+      if (result.success) {
+        // Clear all selections
+        activeSelection.clearSelection();
+        concludedSelection.clearSelection();
+        waitingSelection.clearSelection();
+        blockedSelection.clearSelection();
+        
+        // Refresh data
+        await refetch();
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -129,12 +182,24 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {isSuperAdmin && (
+              <BulkActionsToolbar
+                selectedCount={activeSelection.selectedCount}
+                onBulkDelete={() => handleBulkDelete(activePedidos, activeSelection)}
+                onClearSelection={activeSelection.clearSelection}
+                loading={isDeleting}
+              />
+            )}
             <OrdersAndAttemptsTable 
               ordersAndAttempts={activePedidos.map(order => ({
                 ...order,
                 daysRemaining: calculateDaysRemaining(order)
               }))}
               onViewOrderDetails={onViewOrderDetails}
+              selectedIds={activeSelection.selectedIds}
+              onSelectionChange={activeSelection.toggleSelectItem}
+              onSelectAllChange={activeSelection.toggleSelectAll}
+              showBulkActions={isSuperAdmin}
             />
           </CardContent>
         </Card>
@@ -152,9 +217,21 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {isSuperAdmin && (
+              <BulkActionsToolbar
+                selectedCount={concludedSelection.selectedCount}
+                onBulkDelete={() => handleBulkDelete(concludedPedidos, concludedSelection)}
+                onClearSelection={concludedSelection.clearSelection}
+                loading={isDeleting}
+              />
+            )}
             <OrdersAndAttemptsTable 
               ordersAndAttempts={concludedPedidos} 
               onViewOrderDetails={onViewOrderDetails}
+              selectedIds={concludedSelection.selectedIds}
+              onSelectionChange={concludedSelection.toggleSelectItem}
+              onSelectAllChange={concludedSelection.toggleSelectAll}
+              showBulkActions={isSuperAdmin}
             />
           </CardContent>
         </Card>
@@ -172,9 +249,21 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {isSuperAdmin && (
+              <BulkActionsToolbar
+                selectedCount={waitingSelection.selectedCount}
+                onBulkDelete={() => handleBulkDelete(waitingVideoPedidos, waitingSelection)}
+                onClearSelection={waitingSelection.clearSelection}
+                loading={isDeleting}
+              />
+            )}
             <OrdersAndAttemptsTable 
               ordersAndAttempts={waitingVideoPedidos} 
               onViewOrderDetails={onViewOrderDetails}
+              selectedIds={waitingSelection.selectedIds}
+              onSelectionChange={waitingSelection.toggleSelectItem}
+              onSelectAllChange={waitingSelection.toggleSelectAll}
+              showBulkActions={isSuperAdmin}
             />
           </CardContent>
         </Card>
@@ -209,13 +298,40 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {isSuperAdmin && (
+              <BulkActionsToolbar
+                selectedCount={blockedSelection.selectedCount}
+                onBulkDelete={() => handleBulkDelete(blockedPedidos, blockedSelection)}
+                onClearSelection={blockedSelection.clearSelection}
+                loading={isDeleting}
+              />
+            )}
             <OrdersAndAttemptsTable 
               ordersAndAttempts={blockedPedidos} 
               onViewOrderDetails={onViewOrderDetails}
+              selectedIds={blockedSelection.selectedIds}
+              onSelectionChange={blockedSelection.toggleSelectItem}
+              onSelectAllChange={blockedSelection.toggleSelectAll}
+              showBulkActions={isSuperAdmin}
             />
           </CardContent>
         </Card>
       </TabsContent>
+
+      {/* Bulk Delete Modal */}
+      <BulkDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmBulkDelete}
+        selectedOrders={currentTabOrders.filter(order => 
+          order.type === 'order' && 
+          (activeSelection.selectedIds.has(order.id) || 
+           concludedSelection.selectedIds.has(order.id) || 
+           waitingSelection.selectedIds.has(order.id) || 
+           blockedSelection.selectedIds.has(order.id))
+        )}
+        loading={isDeleting}
+      />
     </Tabs>
   );
 };

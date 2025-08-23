@@ -1852,6 +1852,15 @@ export type Database = {
         }
         Returns: Json
       }
+      bulk_delete_pedidos_secure: {
+        Args: {
+          p_ip_address?: string
+          p_justificativa: string
+          p_pedido_ids: string[]
+          p_user_agent?: string
+        }
+        Returns: Json
+      }
       can_access_building_contacts: {
         Args: Record<PropertyKey, never>
         Returns: boolean
