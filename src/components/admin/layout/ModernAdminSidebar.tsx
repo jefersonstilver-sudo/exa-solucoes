@@ -330,8 +330,10 @@ export function ModernAdminSidebar() {
                       <SidebarMenuButton asChild>
                         <NavLink
                           to={item.href}
-                          className={`flex items-center px-3 py-3 text-white rounded-xl hover:bg-white/20 hover:text-white transition-all duration-200 font-medium text-sm group ${
-                            isActive ? "bg-white text-[#1e1b4b] font-bold shadow-lg" : ""
+                          className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 font-medium text-sm group ${
+                            isActive 
+                              ? "bg-white !text-[#1e1b4b] font-bold shadow-lg" 
+                              : "text-white hover:bg-white/20 hover:text-white"
                           }`}
                         >
                           <div className="mr-3 transition-transform duration-200 group-hover:scale-110">
