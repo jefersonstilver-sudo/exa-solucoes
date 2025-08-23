@@ -19,23 +19,25 @@ const OrdersAndAttemptsTable: React.FC<OrdersAndAttemptsTableProps> = ({
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <OrdersTableHeader />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {ordersAndAttempts.map((item) => (
-            <OrdersTableRow 
-              key={item.id} 
-              item={item} 
-              onViewDetails={onViewOrderDetails}
-            />
-          ))}
-        </TableBody>
-      </Table>
+    <div className="rounded-md border overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table className="min-w-full">
+          <TableHeader>
+            <TableRow>
+              <OrdersTableHeader />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {ordersAndAttempts.map((item) => (
+              <OrdersTableRow 
+                key={item.id} 
+                item={item} 
+                onViewDetails={onViewOrderDetails}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

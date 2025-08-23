@@ -17,6 +17,7 @@ import {
 
 interface ActiveVideosColumnProps {
   orderId: string;
+  orderStatus?: string;
 }
 
 interface ConfirmationDialog {
@@ -34,9 +35,9 @@ interface BlockDialog {
   orderId: string;
 }
 
-export const ActiveVideosColumn = ({ orderId }: ActiveVideosColumnProps) => {
+export const ActiveVideosColumn = ({ orderId, orderStatus }: ActiveVideosColumnProps) => {
   const { activeVideos, loading, deleteVideo } = useActiveVideosForAllOrders();
-  const { blockOrder, isBlocking } = useOrderBlocking();
+  const { blockOrder, unblockOrder, isBlocking, isUnblocking } = useOrderBlocking();
 
   const [confirmDialog, setConfirmDialog] = useState<ConfirmationDialog>({
     isOpen: false,
@@ -55,6 +56,16 @@ export const ActiveVideosColumn = ({ orderId }: ActiveVideosColumnProps) => {
 
   // Filtrar vídeos para este pedido específico
   const orderVideos = activeVideos.filter(video => video.orderId === orderId);
+  const isOrderBlocked = orderStatus === 'bloqueado';
+
+  const handleUnblockClick = (video: any) => {
+    setBlockDialog({
+      isOpen: true,
+      videoName: video.videoName,
+      pedidoVideoId: video.pedidoVideoId,
+      orderId: video.orderId
+    });
+  };
 
   const handleBlockClick = (video: any) => {
     setBlockDialog({
@@ -105,7 +116,13 @@ export const ActiveVideosColumn = ({ orderId }: ActiveVideosColumnProps) => {
 
   const handleBlockConfirm = async (reason: string) => {
     try {
-      const result = await blockOrder(blockDialog.orderId, reason);
+      let result;
+      if (isOrderBlocked) {
+        result = await unblockOrder(blockDialog.orderId, reason);
+      } else {
+        result = await blockOrder(blockDialog.orderId, reason);
+      }
+      
       if (result.success) {
         setBlockDialog({
           isOpen: false,
@@ -115,7 +132,7 @@ export const ActiveVideosColumn = ({ orderId }: ActiveVideosColumnProps) => {
         });
       }
     } catch (error: any) {
-      console.error('Erro ao bloquear pedido:', error);
+      console.error('Erro ao bloquear/desbloquear pedido:', error);
     }
   };
 
@@ -148,9 +165,9 @@ export const ActiveVideosColumn = ({ orderId }: ActiveVideosColumnProps) => {
         <div key={video.videoId} className="border border-green-200 rounded-lg p-3 bg-green-50">
           {/* Header com Status */}
           <div className="flex items-center justify-between mb-2">
-            <Badge variant="default" className="bg-green-600 hover:bg-green-600">
+            <Badge variant="default" className={isOrderBlocked ? "bg-red-600 hover:bg-red-600" : "bg-green-600 hover:bg-green-600"}>
               <Eye className="h-3 w-3 mr-1" />
-              EM EXIBIÇÃO
+              {isOrderBlocked ? 'BLOQUEADO' : 'EM EXIBIÇÃO'}
             </Badge>
             {video.isScheduled && (
               <Badge variant="outline" className="border-blue-500 text-blue-700 text-xs">
@@ -167,16 +184,29 @@ export const ActiveVideosColumn = ({ orderId }: ActiveVideosColumnProps) => {
 
           {/* Botões de Ação */}
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => handleBlockClick(video)}
-              className="h-7 px-2 text-xs"
-              disabled={isBlocking}
-            >
-              <Shield className="h-3 w-3 mr-1" />
-              Block
-            </Button>
+            {isOrderBlocked ? (
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => handleUnblockClick(video)}
+                className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700"
+                disabled={isUnblocking}
+              >
+                <Shield className="h-3 w-3 mr-1" />
+                Desbloquear
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => handleBlockClick(video)}
+                className="h-7 px-2 text-xs"
+                disabled={isBlocking}
+              >
+                <Shield className="h-3 w-3 mr-1" />
+                Block
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -200,7 +230,7 @@ export const ActiveVideosColumn = ({ orderId }: ActiveVideosColumnProps) => {
           orderId: ''
         })}
         onConfirm={handleBlockConfirm}
-        isBlocking={isBlocking}
+        isBlocking={isOrderBlocked ? isUnblocking : isBlocking}
         videoName={blockDialog.videoName}
         orderId={blockDialog.orderId}
       />

@@ -58,7 +58,8 @@ export const RealOrderHeader: React.FC<RealOrderHeaderProps> = ({
       'pago': { className: 'bg-green-600 text-white', label: 'Pago' },
       'pendente': { className: 'bg-gray-600 text-white', label: 'Pendente' },
       'ativo': { className: 'bg-green-600 text-white', label: 'Ativo' },
-      'cancelado': { className: 'bg-red-600 text-white', label: 'Cancelado' }
+      'cancelado': { className: 'bg-red-600 text-white', label: 'Cancelado' },
+      'bloqueado': { className: 'bg-red-600 text-white', label: 'BLOQUEADO' }
     };
     
     return variants[status] || { className: 'bg-gray-600 text-white', label: status };

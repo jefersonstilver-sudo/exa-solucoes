@@ -21,11 +21,11 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
         <ModernAdminSidebar />
         <SidebarInset className="flex flex-col w-full">
           {/* Header with hamburger menu - always visible */}
-          <header className="sticky top-0 z-40 h-16 flex items-center border-b border-border px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <header className="sticky top-0 z-50 h-16 flex items-center border-b border-border px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <SidebarTrigger className="mr-4 h-9 w-9 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" />
             <ModernAdminHeader />
           </header>
-          <main className="flex-1 p-6 overflow-y-auto bg-background min-h-0">
+          <main className="flex-1 p-6 overflow-y-auto bg-background min-h-0 overflow-x-hidden">
             {children || <Outlet />}
           </main>
         </SidebarInset>

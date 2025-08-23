@@ -75,7 +75,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ item, onViewDetails }) 
       </TableCell>
       <TableCell className="min-w-[200px]">
         {item.type === 'order' ? (
-          <ActiveVideosColumn orderId={item.id} />
+          <ActiveVideosColumn orderId={item.id} orderStatus={item.status} />
         ) : (
           <div className="text-center py-2">
             <Badge variant="outline" className="border-gray-300 text-gray-500">
