@@ -8,8 +8,9 @@ import { SimpleCartProvider } from '@/contexts/SimpleCartContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import MinimalLoader from '@/components/ui/MinimalLoader';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
-import { MAINTENANCE_MODE } from '@/config/comingSoonConfig';
+import { hasLaunchTimePassed } from '@/config/comingSoonConfig';
 import ComingSoonPage from '@/pages/ComingSoonPage';
+import { useState, useEffect } from 'react';
 
 // Importações diretas para páginas críticas
 import Index from './pages/Index';
@@ -69,8 +70,27 @@ console.log('✅ QueryClient initialized');
 
 // Main App content wrapper with Coming Soon protection
 const AppContent = () => {
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(!hasLaunchTimePassed());
   const isDevSession = typeof window !== 'undefined' && sessionStorage.getItem('indexa_dev_session') === 'true';
-  if (MAINTENANCE_MODE && !isDevSession) {
+
+  useEffect(() => {
+    // Check every second if launch time has passed
+    const interval = setInterval(() => {
+      const launchPassed = hasLaunchTimePassed();
+      if (launchPassed && isMaintenanceMode) {
+        console.log('🎉 Launch time reached! Disabling maintenance mode...');
+        setIsMaintenanceMode(false);
+        // Force page reload to ensure all states are reset
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isMaintenanceMode]);
+
+  if (isMaintenanceMode && !isDevSession) {
     console.log('🚧 Maintenance mode ON - showing ComingSoonPage');
     return <ComingSoonPage />;
   }

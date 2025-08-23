@@ -1,18 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCountdown } from '@/hooks/useCountdown';
 import { useDeveloperAuth } from '@/hooks/useDeveloperAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
-import { Eye, EyeOff, Lock } from 'lucide-react';
-import { LAUNCH_DATE_ISO, SHOW_DEV_ACCESS } from '@/config/comingSoonConfig';
+import { Eye, EyeOff, Lock, CheckCircle } from 'lucide-react';
+import { LAUNCH_DATE_ISO, SHOW_DEV_ACCESS, hasLaunchTimePassed } from '@/config/comingSoonConfig';
 
 // Data de lançamento configurável
 const launchDate = new Date(LAUNCH_DATE_ISO || '2025-08-10T00:00:00');
-const formattedDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }).format(launchDate);
+const formattedDate = new Intl.DateTimeFormat('pt-BR', { 
+  weekday: 'long',
+  day: '2-digit', 
+  month: 'long', 
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+}).format(launchDate);
 
 const ComingSoonPage = () => {
   const timeLeft = useCountdown(launchDate);
+  const [launchCompleted, setLaunchCompleted] = useState(hasLaunchTimePassed());
   const { 
     password, 
     setPassword, 
@@ -24,6 +32,17 @@ const ComingSoonPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Check if launch time has passed every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (hasLaunchTimePassed() && !launchCompleted) {
+        setLaunchCompleted(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [launchCompleted]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,35 +115,65 @@ const ComingSoonPage = () => {
         </div>
 
         {/* Main content */}
-        <div className="animate-slide-in" style={{ animationDelay: '0.2s' }}>
-          <p className="text-xl md:text-2xl text-indexa-mint mb-4 font-exo-2">
-            Em breve
-          </p>
-          <p className="text-lg text-white/80 mb-12 max-w-2xl mx-auto">
-            Lançamento Oficial do nosso site <span className="text-indexa-mint font-semibold">{formattedDate}</span>
-          </p>
-        </div>
-
-        {/* Countdown Timer */}
-        <div className="mb-16 animate-slide-in" style={{ animationDelay: '0.4s' }}>
-          <div className="grid grid-cols-4 gap-4 md:gap-8 max-w-2xl mx-auto">
-            {[
-              { value: timeLeft.days, label: 'Dias' },
-              { value: timeLeft.hours, label: 'Horas' },
-              { value: timeLeft.minutes, label: 'Minutos' },
-              { value: timeLeft.seconds, label: 'Segundos' }
-            ].map((item, index) => (
-              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-lg p-4 md:p-6 border border-white/20">
-                <div className="text-3xl md:text-5xl font-bold text-white font-orbitron mb-2">
-                  {item.value.toString().padStart(2, '0')}
-                </div>
-                <div className="text-sm md:text-base text-indexa-mint uppercase tracking-wide">
-                  {item.label}
-                </div>
-              </div>
-            ))}
+        {!launchCompleted ? (
+          <div className="animate-slide-in" style={{ animationDelay: '0.2s' }}>
+            <p className="text-xl md:text-2xl text-indexa-mint mb-4 font-exo-2">
+              Em breve
+            </p>
+            <p className="text-lg text-white/80 mb-12 max-w-2xl mx-auto">
+              Lançamento Oficial do nosso site <span className="text-indexa-mint font-semibold">{formattedDate}</span>
+            </p>
           </div>
-        </div>
+        ) : (
+          <div className="animate-slide-in" style={{ animationDelay: '0.2s' }}>
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <CheckCircle className="w-8 h-8 text-indexa-mint" />
+              <p className="text-2xl md:text-4xl text-indexa-mint font-bold font-exo-2">
+                Lançamento Concluído!
+              </p>
+            </div>
+            <p className="text-lg text-white/80 mb-12 max-w-2xl mx-auto">
+              O site já está no ar! Redirecionando para a página principal...
+            </p>
+          </div>
+        )}
+
+        {/* Countdown Timer or Launch Message */}
+        {!launchCompleted ? (
+          <div className="mb-16 animate-slide-in" style={{ animationDelay: '0.4s' }}>
+            <div className="grid grid-cols-4 gap-4 md:gap-8 max-w-2xl mx-auto">
+              {[
+                { value: timeLeft.days, label: 'Dias' },
+                { value: timeLeft.hours, label: 'Horas' },
+                { value: timeLeft.minutes, label: 'Minutos' },
+                { value: timeLeft.seconds, label: 'Segundos' }
+              ].map((item, index) => (
+                <div key={index} className="bg-white/10 backdrop-blur-sm rounded-lg p-4 md:p-6 border border-white/20">
+                  <div className="text-3xl md:text-5xl font-bold text-white font-orbitron mb-2">
+                    {item.value.toString().padStart(2, '0')}
+                  </div>
+                  <div className="text-sm md:text-base text-indexa-mint uppercase tracking-wide">
+                    {item.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mb-16 animate-slide-in" style={{ animationDelay: '0.4s' }}>
+            <div className="bg-indexa-mint/20 backdrop-blur-sm rounded-lg p-8 border border-indexa-mint/30 max-w-2xl mx-auto">
+              <div className="text-6xl md:text-8xl font-bold text-indexa-mint font-orbitron mb-4">
+                00:00:00:00
+              </div>
+              <div className="text-lg text-white/90 mb-4">
+                🎉 Bem-vindos ao futuro da publicidade digital!
+              </div>
+              <div className="text-sm text-white/70">
+                Aguarde alguns segundos enquanto preparamos tudo para você...
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Developer Access (configurável) */}
         {SHOW_DEV_ACCESS && (
