@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 import {
   Sidebar,
@@ -53,12 +54,13 @@ import {
 } from "@/components/ui/sidebar";
 
 export function ModernAdminSidebar() {
-  const { state } = useSidebar();
+  const { state, open, setOpen } = useSidebar();
   const location = useLocation();
   const { userProfile, session, isSuperAdmin, logout } = useAuth();
   const { permissions, userInfo } = useUserPermissions();
   const { basePath, buildPath } = useAdminBasePath();
   const navigate = useNavigate();
+  const { isMobile, isTablet } = useResponsiveLayout();
 
   const handleSignOut = async () => {
     try {
@@ -233,10 +235,19 @@ export function ModernAdminSidebar() {
 
   const collapsed = state === "collapsed";
 
+  // Auto-close on mobile when navigating
+  React.useEffect(() => {
+    if (isMobile && open) {
+      const timer = setTimeout(() => setOpen(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname, isMobile, open, setOpen]);
+
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#1e1b4b] via-[#4c1d95] to-[#7c3aed] border-r border-white/20"
+      className="h-screen bg-gradient-to-b from-[#1e1b4b] via-[#4c1d95] to-[#7c3aed] border-r border-white/20 shadow-2xl"
       collapsible="icon"
+      variant={isMobile ? "floating" : "sidebar"}
     >
       <SidebarHeader className="p-6 border-b border-white/20">
         <div className="flex items-center justify-center mb-4">
@@ -299,7 +310,7 @@ export function ModernAdminSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-4 py-6 space-y-6 overflow-y-auto admin-scrollbar">
+      <SidebarContent className="px-4 py-6 space-y-6 overflow-y-auto admin-sidebar-scroll">
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && (

@@ -4,19 +4,28 @@ import { Outlet } from 'react-router-dom';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
+  const { isMobile, isTablet } = useResponsiveLayout();
+  
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider 
+      defaultOpen={!isMobile} 
+      style={{
+        "--sidebar-width": "320px",
+        "--sidebar-width-icon": "64px",
+      } as React.CSSProperties}
+    >
       <div className="flex h-screen w-full bg-background">
         <ModernAdminSidebar />
         <SidebarInset className="flex flex-col w-full">
-          {/* Header with hamburger menu */}
-          <header className="h-16 flex items-center border-b border-border px-4 bg-background">
-            <SidebarTrigger className="mr-4" />
+          {/* Header with hamburger menu - always visible */}
+          <header className="sticky top-0 z-40 h-16 flex items-center border-b border-border px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <SidebarTrigger className="mr-4 h-9 w-9 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" />
             <ModernAdminHeader />
           </header>
-          <main className="flex-1 p-6 overflow-y-auto bg-background">
+          <main className="flex-1 p-6 overflow-y-auto bg-background min-h-0">
             {children || <Outlet />}
           </main>
         </SidebarInset>

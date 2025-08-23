@@ -51,6 +51,34 @@
   background: rgba(139, 92, 246, 0.8);
 }
 
+/* New elegant dark scrollbar for admin sidebar */
+.admin-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(30, 27, 75, 0.8) transparent;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(30, 27, 75, 0.9) 0%, rgba(17, 24, 39, 0.8) 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(30, 27, 75, 1) 0%, rgba(17, 24, 39, 0.95) 100%);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scaleY(1.1);
+}
+
 /* Elegant dark scrollbar for general use */
 .dark-scrollbar {
   scrollbar-width: thin;
