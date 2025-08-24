@@ -52,13 +52,14 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ isVisible, benefits }
                       style={{ transitionDelay: `${index * 150}ms` }}
                     >
                       <GlowingEffect
-                        spread={60}
+                        spread={80}
                         glow={true}
                         disabled={false}
-                        proximity={80}
-                        inactiveZone={0.01}
-                        borderWidth={2}
+                        proximity={120}
+                        inactiveZone={0.3}
+                        borderWidth={3}
                         variant="purple"
+                        blur={2}
                       />
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-400/5 to-blue-400/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       

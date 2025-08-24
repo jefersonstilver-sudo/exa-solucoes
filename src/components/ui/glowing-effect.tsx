@@ -20,15 +20,15 @@ interface GlowingEffectProps {
 const GlowingEffect = memo(
   ({
     blur = 0,
-    inactiveZone = 0.7,
-    proximity = 0,
-    spread = 20,
+    inactiveZone = 0.3,
+    proximity = 120,
+    spread = 80,
     variant = "purple",
-    glow = false,
+    glow = true,
     className,
-    movementDuration = 2,
-    borderWidth = 1,
-    disabled = true,
+    movementDuration = 1.5,
+    borderWidth = 3,
+    disabled = false,
   }: GlowingEffectProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const lastPosition = useRef({ x: 0, y: 0 });
@@ -62,7 +62,7 @@ const GlowingEffect = memo(
           const inactiveRadius = 0.5 * Math.min(width, height) * inactiveZone;
 
           if (distanceFromCenter < inactiveRadius) {
-            element.style.setProperty("--active", "0");
+            element.style.setProperty("--active", "0.3");
             return;
           }
 
@@ -72,7 +72,7 @@ const GlowingEffect = memo(
             mouseY > top - proximity &&
             mouseY < top + height + proximity;
 
-          element.style.setProperty("--active", isActive ? "1" : "0");
+          element.style.setProperty("--active", isActive ? "1" : "0.2");
 
           if (!isActive) return;
 
@@ -118,14 +118,22 @@ const GlowingEffect = memo(
       };
     }, [handleMove, disabled]);
 
+    // Initialize with a subtle glow
+    useEffect(() => {
+      if (containerRef.current) {
+        containerRef.current.style.setProperty("--active", "0.3");
+        containerRef.current.style.setProperty("--start", "0");
+      }
+    }, []);
+
     return (
       <>
         <div
           className={cn(
-            "pointer-events-none absolute -inset-px hidden rounded-[inherit] border opacity-0 transition-opacity",
-            glow && "opacity-100",
-            variant === "purple" && "border-purple-400",
-            disabled && "!block"
+            "pointer-events-none absolute -inset-px rounded-[inherit] border opacity-30 transition-opacity duration-500",
+            glow && "opacity-60",
+            variant === "purple" && "border-purple-400/50",
+            disabled && "!hidden"
           )}
         />
         <div
@@ -135,49 +143,42 @@ const GlowingEffect = memo(
               "--blur": `${blur}px`,
               "--spread": spread,
               "--start": "0",
-              "--active": "0",
+              "--active": "0.3",
               "--glowingeffect-border-width": `${borderWidth}px`,
-              "--repeating-conic-gradient-times": "5",
-              "--gradient":
-                variant === "purple"
-                  ? `radial-gradient(circle, #a855f7 10%, #a855f700 20%),
-                radial-gradient(circle at 40% 40%, #3b82f6 5%, #3b82f600 15%),
-                radial-gradient(circle at 60% 60%, #8b5cf6 10%, #8b5cf600 20%),
-                 radial-gradient(circle at 40% 60%, #6366f1 10%, #6366f100 20%),
+              "--repeating-conic-gradient-times": "4",
+              "--gradient": `radial-gradient(circle, #a855f7 10%, #a855f700 25%),
+                radial-gradient(circle at 40% 40%, #3b82f6 8%, #3b82f600 20%),
+                radial-gradient(circle at 60% 60%, #8b5cf6 12%, #8b5cf600 25%),
+                radial-gradient(circle at 30% 70%, #6366f1 10%, #6366f100 20%),
                 repeating-conic-gradient(
-                  from 236.84deg at 50% 50%,
-                  #a855f7 0%,
-                  #3b82f6 calc(25% / var(--repeating-conic-gradient-times)),
-                  #8b5cf6 calc(50% / var(--repeating-conic-gradient-times)),
-                   #6366f1 calc(75% / var(--repeating-conic-gradient-times)),
-                  #a855f7 calc(100% / var(--repeating-conic-gradient-times))
-                )`
-                  : `repeating-conic-gradient(
-                  from 236.84deg at 50% 50%,
-                  var(--black),
-                  var(--black) calc(25% / var(--repeating-conic-gradient-times))
+                  from calc(var(--start) * 1deg) at 50% 50%,
+                  #a855f7 0deg,
+                  #3b82f6 calc(90deg / var(--repeating-conic-gradient-times)),
+                  #8b5cf6 calc(180deg / var(--repeating-conic-gradient-times)),
+                  #6366f1 calc(270deg / var(--repeating-conic-gradient-times)),
+                  #a855f7 calc(360deg / var(--repeating-conic-gradient-times))
                 )`,
             } as React.CSSProperties
           }
           className={cn(
-            "pointer-events-none absolute inset-0 rounded-[inherit] opacity-100 transition-opacity",
+            "pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-500",
             glow && "opacity-100",
-            blur > 0 && "blur-[var(--blur)] ",
+            blur > 0 && "blur-[var(--blur)]",
             className,
             disabled && "!hidden"
           )}
         >
           <div
             className={cn(
-              "glow",
+              "glow h-full w-full",
               "rounded-[inherit]",
               'after:content-[""] after:rounded-[inherit] after:absolute after:inset-[calc(-1*var(--glowingeffect-border-width))]',
               "after:[border:var(--glowingeffect-border-width)_solid_transparent]",
               "after:[background:var(--gradient)] after:[background-attachment:fixed]",
-              "after:opacity-[var(--active)] after:transition-opacity after:duration-300",
+              "after:opacity-[var(--active)] after:transition-opacity after:duration-500",
               "after:[mask-clip:padding-box,border-box]",
               "after:[mask-composite:intersect]",
-              "after:[mask-image:linear-gradient(#0000,#0000),conic-gradient(from_calc((var(--start)-var(--spread))*1deg),#00000000_0deg,#fff,#00000000_calc(var(--spread)*2deg))]"
+              "after:[mask-image:linear-gradient(#0000,#0000),conic-gradient(from_calc((var(--start)-var(--spread))*1deg),#00000000_0deg,#fff_calc(var(--spread)*1deg),#00000000_calc(var(--spread)*2deg))]"
             )}
           />
         </div>
