@@ -59,7 +59,7 @@ const PaymentSuccessAnimation: React.FC<PaymentSuccessAnimationProps> = ({
       scale: 1, 
       opacity: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 200,
         damping: 10,
         duration: 0.5
@@ -73,7 +73,7 @@ const PaymentSuccessAnimation: React.FC<PaymentSuccessAnimationProps> = ({
       y: 0, 
       opacity: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 100,
         damping: 10
       }

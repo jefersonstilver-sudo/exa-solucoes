@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { Benefit } from './types';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
 
 interface BenefitsSectionProps {
   isVisible: boolean;
@@ -45,11 +46,20 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ isVisible, benefits }
                 return (
                   <CarouselItem key={index}>
                     <div
-                      className={`group relative bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-purple-400/50 transition-all duration-700 hover:-translate-y-4 hover:shadow-2xl hover:shadow-purple-400/20 max-w-md mx-auto ${
+                      className={`group relative bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 transition-all duration-700 hover:-translate-y-4 hover:shadow-2xl hover:shadow-purple-400/20 max-w-md mx-auto ${
                         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                       }`}
                       style={{ transitionDelay: `${index * 150}ms` }}
                     >
+                      <GlowingEffect
+                        spread={60}
+                        glow={true}
+                        disabled={false}
+                        proximity={80}
+                        inactiveZone={0.01}
+                        borderWidth={2}
+                        variant="purple"
+                      />
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-400/5 to-blue-400/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       
                       <div className="relative mb-6 flex justify-center">
