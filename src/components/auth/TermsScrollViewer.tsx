@@ -14,18 +14,24 @@ const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
   const [scrollProgress, setScrollProgress] = useState(0);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const getViewportEl = () => {
+    return (
+      (scrollAreaRef.current?.querySelector(
+        '[data-radix-scroll-area-viewport]'
+      ) as HTMLDivElement | null) ?? null
+    );
+  };
+
   const handleScroll = () => {
-    if (!viewportRef.current) return;
+    const viewport = getViewportEl();
+    if (!viewport) return;
     
     // Marca que o usuário fez scroll ativo
     setUserHasScrolled(true);
     
-    const {
-      scrollTop,
-      scrollHeight,
-      clientHeight
-    } = viewportRef.current;
+    const { scrollTop, scrollHeight, clientHeight } = viewport;
     
     const totalScrollable = scrollHeight - clientHeight;
     
@@ -36,7 +42,7 @@ const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
       return;
     }
     
-    const progress = scrollTop / totalScrollable * 100;
+    const progress = (scrollTop / totalScrollable) * 100;
     setScrollProgress(Math.min(progress, 100));
 
     // CRÍTICO: Só considera como "lido completamente" se:
@@ -46,16 +52,37 @@ const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
     const hasReachedBottom = userHasScrolled && progress >= 95 && totalScrollable > 50;
     onScrollToBottom(hasReachedBottom);
   };
+
   useEffect(() => {
-    const viewport = viewportRef.current;
-    if (viewport) {
-      viewport.addEventListener('scroll', handleScroll);
-      
-      // CRÍTICO: Não chama handleScroll() inicial
-      // O usuário DEVE fazer scroll ativo para ler completamente
-      
-      return () => viewport.removeEventListener('scroll', handleScroll);
-    }
+    const viewport = getViewportEl();
+    if (!viewport) return;
+
+    viewport.addEventListener('scroll', handleScroll, { passive: true } as any);
+    
+    // Não chamar handleScroll() inicial — exigir scroll ativo
+    return () => {
+      viewport.removeEventListener('scroll', handleScroll as EventListener);
+    };
+  }, [userHasScrolled]);
+
+  useEffect(() => {
+    const viewport = getViewportEl();
+    const sentinel = bottomRef.current;
+    if (!viewport || !sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && userHasScrolled) {
+          onScrollToBottom(true);
+        }
+      },
+      { root: viewport, threshold: 0.99 }
+    );
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
   }, [userHasScrolled]);
   return <div className="h-full flex flex-col">
       {/* Header com indicador de progresso */}
@@ -92,7 +119,7 @@ const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
       {/* Área de scroll compacta com termos */}
       <div className="flex-1">
         <ScrollArea className="h-80 border rounded-lg bg-white shadow-sm" ref={scrollAreaRef}>
-          <div ref={viewportRef} className="p-4 space-y-4 text-xs leading-relaxed">
+          <div className="p-4 space-y-4 text-xs leading-relaxed">
             <div className="text-center border-b pb-3">
               <h2 className="text-sm font-bold text-gray-900 mb-1">
                 Termos de Uso – EXA Publicidade
@@ -269,8 +296,8 @@ const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
             <div className="border-t pt-6 mt-8 text-center text-xs text-gray-500">
               <p>Indexa Midia LTDA – 38.142.638/0001-30</p>
               <p>Todos os direitos reservados</p>
-              
             </div>
+            <div ref={bottomRef} className="h-1 w-full" />
           </div>
         </ScrollArea>
       </div>
