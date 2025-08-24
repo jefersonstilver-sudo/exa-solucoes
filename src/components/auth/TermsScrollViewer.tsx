@@ -7,42 +7,56 @@ interface TermsScrollViewerProps {
   onScrollToBottom: (reached: boolean) => void;
   hasScrolledToBottom: boolean;
 }
-export const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
+const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
   onScrollToBottom,
   hasScrolledToBottom
 }) => {
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [userHasScrolled, setUserHasScrolled] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const handleScroll = () => {
     if (!viewportRef.current) return;
+    
+    // Marca que o usuário fez scroll ativo
+    setUserHasScrolled(true);
+    
     const {
       scrollTop,
       scrollHeight,
       clientHeight
     } = viewportRef.current;
+    
     const totalScrollable = scrollHeight - clientHeight;
+    
     if (totalScrollable <= 0) {
-      setScrollProgress(100);
-      onScrollToBottom(true);
+      // Se não há conteúdo para fazer scroll, não considera como lido
+      setScrollProgress(0);
+      onScrollToBottom(false);
       return;
     }
+    
     const progress = scrollTop / totalScrollable * 100;
     setScrollProgress(Math.min(progress, 100));
 
-    // Considera como "lido completamente" quando chegou a 95% do scroll
-    const hasReachedBottom = progress >= 95;
+    // CRÍTICO: Só considera como "lido completamente" se:
+    // 1. O usuário fez scroll ativo E
+    // 2. Chegou a pelo menos 95% do scroll E  
+    // 3. O conteúdo realmente requer scroll
+    const hasReachedBottom = userHasScrolled && progress >= 95 && totalScrollable > 50;
     onScrollToBottom(hasReachedBottom);
   };
   useEffect(() => {
     const viewport = viewportRef.current;
     if (viewport) {
       viewport.addEventListener('scroll', handleScroll);
-      // Verifica scroll inicial
-      handleScroll();
+      
+      // CRÍTICO: Não chama handleScroll() inicial
+      // O usuário DEVE fazer scroll ativo para ler completamente
+      
       return () => viewport.removeEventListener('scroll', handleScroll);
     }
-  }, []);
+  }, [userHasScrolled]);
   return <div className="h-full flex flex-col">
       {/* Header com indicador de progresso */}
       <div className="mb-4 space-y-3">
@@ -65,7 +79,9 @@ export const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
             opacity: 1
           }} className="flex items-center text-orange-600">
                 <ArrowDown className="h-4 w-4 mr-1 animate-bounce" />
-                <span className="text-sm">Continue lendo...</span>
+                <span className="text-sm">
+                  {!userHasScrolled ? "Faça scroll para ler..." : "Continue lendo..."}
+                </span>
               </motion.div>}
           </AnimatePresence>
         </div>
@@ -260,3 +276,5 @@ export const TermsScrollViewer: React.FC<TermsScrollViewerProps> = ({
       </div>
     </div>;
 };
+
+export { TermsScrollViewer };
