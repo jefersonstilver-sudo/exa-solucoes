@@ -96,12 +96,22 @@ export const useOrderStatus = (order: any, onPixPayment?: (order: any) => void) 
             icon: Clock
           };
         }
+        // NOTA: Este caso não deve mais acontecer devido ao trigger automático
+        // que atualiza o status para 'video_aprovado' quando um vídeo é aprovado
         return {
-          label: 'Vídeo Aprovado',
-          description: 'Vídeo aprovado! Contrato iniciado automaticamente.',
+          label: 'EM EXIBIÇÃO',
+          description: 'Sua campanha está ativa e sendo exibida nos painéis',
           color: 'text-white',
           bgColor: 'bg-green-600 border-green-700',
-          icon: CheckCircle
+          icon: Monitor,
+          action: {
+            label: 'Ver Detalhes',
+            variant: 'outline',
+            onClick: () => {
+              const event = new CustomEvent('openVideoDisplay', { detail: { orderId: order.id } });
+              window.dispatchEvent(event);
+            }
+          }
         };
 
       case 'video_aprovado':
