@@ -13,7 +13,7 @@ interface RegistrationContainerProps {
   password: string;
   confirmPassword: string;
   document: string;
-  documentType: 'cpf' | 'cnpj';
+  documentType: 'cpf' | 'documento_estrangeiro';
   acceptedTerms: boolean;
   acceptedPrivacy: boolean;
   isLoading: boolean;
@@ -23,7 +23,7 @@ interface RegistrationContainerProps {
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onConfirmPasswordChange: (value: string) => void;
-  onDocumentTypeChange: (type: 'cpf' | 'cnpj') => void;
+  onDocumentTypeChange: (type: 'cpf' | 'documento_estrangeiro') => void;
   onDocumentChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onTermsChange: (checked: boolean) => void;
   onPrivacyChange: (checked: boolean) => void;

@@ -13,12 +13,12 @@ interface RegistrationFormProps {
   email: string;
   password: string;
   document: string;
-  documentType: 'cpf' | 'cnpj';
+  documentType: 'cpf' | 'documento_estrangeiro';
   isLoading: boolean;
   onNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
-  onDocumentTypeChange: (type: 'cpf' | 'cnpj') => void;
+  onDocumentTypeChange: (type: 'cpf' | 'documento_estrangeiro') => void;
   onDocumentChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
 }

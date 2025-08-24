@@ -28,8 +28,8 @@ export const useDocumentValidation = () => {
     if (documentType === 'cpf') {
       return digits.length === 11;
     } else {
-      // Para documento estrangeiro, apenas retorna os dígitos sem formatação
-      return digits;
+      // Para documento estrangeiro, apenas verifica se tem pelo menos 5 dígitos
+      return digits.length >= 5 && digits.length <= 20;
     }
   };
 
