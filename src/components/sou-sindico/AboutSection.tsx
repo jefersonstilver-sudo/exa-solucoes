@@ -8,7 +8,7 @@ interface AboutSectionProps {
 
 const AboutSection: React.FC<AboutSectionProps> = ({ isVisible }) => {
   return (
-    <section className={`bg-white py-20 px-4 relative transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
+    <section className={`bg-white py-20 px-4 relative transition-all duration-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
       <div className="max-w-6xl mx-auto text-center">
         <h2 className="text-4xl md:text-5xl font-bold mb-8">
           <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
