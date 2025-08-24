@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 export const useDocumentValidation = () => {
   // Format document input with mask
-  const formatDocument = (value: string, documentType: 'cpf' | 'cnpj'): string => {
+  const formatDocument = (value: string, documentType: 'cpf' | 'documento_estrangeiro'): string => {
     const digits = value.replace(/\D/g, '');
     
     if (documentType === 'cpf') {
@@ -22,13 +22,14 @@ export const useDocumentValidation = () => {
     }
   };
   
-  const validateDocument = (document: string, documentType: 'cpf' | 'cnpj'): boolean => {
+  const validateDocument = (document: string, documentType: 'cpf' | 'documento_estrangeiro'): boolean => {
     const digits = document.replace(/\D/g, '');
     
     if (documentType === 'cpf') {
       return digits.length === 11;
     } else {
-      return digits.length === 14;
+      // Para documento estrangeiro, apenas retorna os dígitos sem formatação
+      return digits;
     }
   };
 
