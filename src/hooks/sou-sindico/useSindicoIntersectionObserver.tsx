@@ -8,28 +8,44 @@ export const useSindicoIntersectionObserver = () => {
   const heroRef = useRef<HTMLElement>(null);
   const sectionsRef = useRef<Record<string, HTMLElement | null>>({});
 
-  // Optimized visibility update - no debouncing for better responsiveness
-  const handleIntersection = useCallback((entries: IntersectionObserverEntry[]) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const sectionId = entry.target.getAttribute('data-section');
-        if (sectionId) {
-          setVisibleSections(prev => ({ ...prev, [sectionId]: true }));
-        }
-        if (entry.target === heroRef.current) {
-          setIsVisible(true);
-        }
-      }
-    });
+  // Debounce function to reduce rapid updates
+  const debounce = useCallback((func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return function executedFunction(...args: any[]) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
   }, []);
 
+  // Debounced visibility update
+  const debouncedUpdateVisibility = useCallback(
+    debounce((entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const sectionId = entry.target.getAttribute('data-section');
+          if (sectionId) {
+            setVisibleSections(prev => ({ ...prev, [sectionId]: true }));
+          }
+          if (entry.target === heroRef.current) {
+            setIsVisible(true);
+          }
+        }
+      });
+    }, 150), // 150ms debounce
+    []
+  );
+
   useEffect(() => {
-    // Optimized observer with higher threshold for better performance
+    // Reduced threshold for less sensitivity and better performance
     const observer = new IntersectionObserver(
-      handleIntersection,
+      debouncedUpdateVisibility,
       { 
-        threshold: 0.15,
-        rootMargin: '100px 0px -100px 0px'
+        threshold: 0.1, // Reduced from 0.2 to 0.1
+        rootMargin: '50px 0px -50px 0px' // Added margin for better control
       }
     );
 
@@ -42,7 +58,7 @@ export const useSindicoIntersectionObserver = () => {
     });
 
     return () => observer.disconnect();
-  }, [handleIntersection]);
+  }, [debouncedUpdateVisibility]);
 
   return {
     isVisible,
