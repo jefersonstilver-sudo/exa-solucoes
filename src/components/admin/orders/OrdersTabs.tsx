@@ -5,12 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import OrdersAndAttemptsTable from './OrdersAndAttemptsTable';
-import AttemptsTable from './AttemptsTable';
 import BulkActionsToolbar from './BulkActionsToolbar';
 import BulkDeleteModal from './BulkDeleteModal';
 import { useBulkSelection } from '@/hooks/useBulkSelection';
 import { bulkDeletePedidos } from '@/services/bulkDeleteService';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { CheckCircle, AlertTriangle, Clock, DollarSign, Calendar, Shield } from 'lucide-react';
 
 interface OrdersTabsProps {
@@ -79,6 +80,7 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   const activeSelection = useBulkSelection(activePedidos.filter(item => item.type === 'order').map(item => item.id));
   const concludedSelection = useBulkSelection(concludedPedidos.filter(item => item.type === 'order').map(item => item.id));
   const waitingSelection = useBulkSelection(waitingVideoPedidos.filter(item => item.type === 'order').map(item => item.id));
+  const abandonedSelection = useBulkSelection(abandonedAttempts.map(item => item.id));
   const blockedSelection = useBulkSelection(blockedPedidos.filter(item => item.type === 'order').map(item => item.id));
 
   const handleBulkDelete = (orders: typeof ordersAndAttempts, selection: ReturnType<typeof useBulkSelection>) => {
@@ -92,28 +94,83 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
       (activeSelection.selectedIds.has(order.id) || 
        concludedSelection.selectedIds.has(order.id) || 
        waitingSelection.selectedIds.has(order.id) || 
+       abandonedSelection.selectedIds.has(order.id) ||
        blockedSelection.selectedIds.has(order.id))
     );
 
-    if (selectedOrders.length === 0) return;
+    const selectedAttempts = currentTabOrders.filter(item => 
+      item.type === 'attempt' && 
+      abandonedSelection.selectedIds.has(item.id)
+    );
+
+    if (selectedOrders.length === 0 && selectedAttempts.length === 0) return;
 
     setIsDeleting(true);
     try {
-      const result = await bulkDeletePedidos(
-        selectedOrders.map(order => order.id),
-        justification
-      );
+      // Delete pedidos if any are selected
+      if (selectedOrders.length > 0) {
+        const result = await bulkDeletePedidos(
+          selectedOrders.map(order => order.id),
+          justification
+        );
 
-      if (result.success) {
-        // Clear all selections
-        activeSelection.clearSelection();
-        concludedSelection.clearSelection();
-        waitingSelection.clearSelection();
-        blockedSelection.clearSelection();
-        
-        // Refresh data
-        await refetch();
+        if (!result.success) {
+          setIsDeleting(false);
+          return;
+        }
       }
+
+      // Delete tentativas if any are selected
+      if (selectedAttempts.length > 0) {
+        // Primeiro, verificar se há pedidos associados às tentativas e deletá-los
+        const tentativaIds = selectedAttempts.map(attempt => attempt.id);
+        
+        const { data: relatedPedidos, error: relatedPedidosError } = await supabase
+          .from('pedidos')
+          .select('id')
+          .in('source_tentativa_id', tentativaIds);
+
+        if (relatedPedidosError) {
+          console.error('Erro ao buscar pedidos relacionados:', relatedPedidosError);
+        }
+
+        // Deletar pedidos relacionados primeiro (se existirem)
+        if (relatedPedidos && relatedPedidos.length > 0) {
+          const relatedPedidoIds = relatedPedidos.map(p => p.id);
+          const bulkDeleteResult = await bulkDeletePedidos(relatedPedidoIds, `Deletion of orders related to abandoned attempts: ${justification}`);
+          
+          if (!bulkDeleteResult.success) {
+            toast.error('Erro ao deletar pedidos relacionados às tentativas');
+            return;
+          }
+        }
+
+        // Agora deletar as tentativas
+        const { error: attemptsError } = await supabase
+          .from('tentativas_compra')
+          .delete()
+          .in('id', tentativaIds);
+
+        if (attemptsError) {
+          console.error('Erro ao deletar tentativas:', attemptsError);
+          toast.error('Erro ao deletar algumas tentativas');
+        } else {
+          toast.success(`${selectedAttempts.length} tentativa(s) e ${relatedPedidos?.length || 0} pedido(s) relacionado(s) deletados com sucesso`);
+        }
+      }
+
+      // Clear all selections
+      activeSelection.clearSelection();
+      concludedSelection.clearSelection();
+      waitingSelection.clearSelection();
+      abandonedSelection.clearSelection();
+      blockedSelection.clearSelection();
+      
+      // Refresh data
+      await refetch();
+      
+      // Close modal
+      setIsDeleteModalOpen(false);
     } finally {
       setIsDeleting(false);
     }
@@ -283,7 +340,22 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <AttemptsTable attempts={abandonedAttempts} />
+            {isSuperAdmin && (
+              <BulkActionsToolbar
+                selectedCount={abandonedSelection.selectedCount}
+                onBulkDelete={() => handleBulkDelete(abandonedAttempts, abandonedSelection)}
+                onClearSelection={abandonedSelection.clearSelection}
+                loading={isDeleting}
+              />
+            )}
+            <OrdersAndAttemptsTable 
+              ordersAndAttempts={abandonedAttempts} 
+              onViewOrderDetails={onViewOrderDetails}
+              selectedIds={abandonedSelection.selectedIds}
+              onSelectionChange={abandonedSelection.toggleSelectItem}
+              onSelectAllChange={abandonedSelection.toggleSelectAll}
+              showBulkActions={isSuperAdmin}
+            />
           </CardContent>
         </Card>
       </TabsContent>
@@ -326,11 +398,13 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmBulkDelete}
         selectedOrders={currentTabOrders.filter(order => 
-          order.type === 'order' && 
-          (activeSelection.selectedIds.has(order.id) || 
-           concludedSelection.selectedIds.has(order.id) || 
-           waitingSelection.selectedIds.has(order.id) || 
-           blockedSelection.selectedIds.has(order.id))
+          (order.type === 'order' && 
+           (activeSelection.selectedIds.has(order.id) || 
+            concludedSelection.selectedIds.has(order.id) || 
+            waitingSelection.selectedIds.has(order.id) || 
+            abandonedSelection.selectedIds.has(order.id) ||
+            blockedSelection.selectedIds.has(order.id))) ||
+          (order.type === 'attempt' && abandonedSelection.selectedIds.has(order.id))
         )}
         loading={isDeleting}
       />

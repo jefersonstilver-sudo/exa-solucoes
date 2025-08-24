@@ -67,7 +67,7 @@ const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({
           </DialogTitle>
           <DialogDescription>
             {step === 'details' 
-              ? 'Você está prestes a excluir permanentemente os pedidos selecionados.'
+              ? 'Você está prestes a excluir permanentemente os pedidos e tentativas selecionadas.'
               : 'Confirmação final necessária para prosseguir com a exclusão.'
             }
           </DialogDescription>
@@ -77,7 +77,7 @@ const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <h4 className="font-semibold text-red-800 mb-2">
-                Pedidos que serão excluídos ({selectedOrders.length}):
+                Itens que serão excluídos ({selectedOrders.length}):
               </h4>
               <div className="max-h-32 overflow-y-auto space-y-1">
                 {selectedOrders.map((order) => (
@@ -123,7 +123,7 @@ const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({
             <div className="bg-red-100 border border-red-300 rounded-lg p-4">
               <h4 className="font-bold text-red-800 mb-2">CONFIRMAÇÃO FINAL</h4>
               <p className="text-red-700 mb-3">
-                Para prosseguir com a exclusão de <strong>{selectedOrders.length} pedidos</strong>, 
+                Para prosseguir com a exclusão de <strong>{selectedOrders.length} item(s)</strong>, 
                 digite <strong>CONFIRMAR</strong> no campo abaixo:
               </p>
               <Input
