@@ -25,6 +25,13 @@ export interface UserCompleteOrder {
   data_fim?: string;
   client_id: string;
   type: 'order';
+  videos?: {
+    id: string;
+    approval_status: string;
+    is_active: boolean;
+    selected_for_display: boolean;
+    video_data?: any;
+  }[];
 }
 
 export type UserOrderOrAttempt = UserOrderAttempt | UserCompleteOrder;
@@ -57,7 +64,51 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
 
       console.log('✅ Pedidos do usuário encontrados:', orders?.length || 0);
 
-      // Processar pedidos completos
+      // Buscar vídeos para cada pedido
+      const orderIds = (orders || []).map(order => order.id);
+      let videosData: any = {};
+      
+      if (orderIds.length > 0) {
+        try {
+          const { data: videos, error: videosError } = await supabase
+            .from('pedido_videos')
+            .select(`
+              id,
+              pedido_id,
+              approval_status,
+              is_active,
+              selected_for_display,
+              video_id,
+              videos(id, nome, url, duracao, orientacao, tem_audio)
+            `)
+            .in('pedido_id', orderIds);
+
+          if (videosError) {
+            console.warn('Erro ao buscar vídeos dos pedidos (não crítico):', videosError);
+          } else {
+            console.log('✅ Vídeos dos pedidos encontrados:', videos?.length || 0);
+            
+            // Organizar vídeos por pedido_id
+            videosData = (videos || []).reduce((acc, video) => {
+              if (!acc[video.pedido_id]) {
+                acc[video.pedido_id] = [];
+              }
+              acc[video.pedido_id].push({
+                id: video.id,
+                approval_status: video.approval_status,
+                is_active: video.is_active,
+                selected_for_display: video.selected_for_display,
+                video_data: video.videos
+              });
+              return acc;
+            }, {} as Record<string, any[]>);
+          }
+        } catch (error) {
+          console.warn('Erro não crítico ao buscar vídeos dos pedidos:', error);
+        }
+      }
+
+      // Processar pedidos completos com dados de vídeo
       const processedOrders: UserCompleteOrder[] = (orders || []).map(order => ({
         id: order.id,
         created_at: order.created_at,
@@ -68,7 +119,8 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         data_inicio: order.data_inicio,
         data_fim: order.data_fim,
         client_id: order.client_id,
-        type: 'order' as const
+        type: 'order' as const,
+        videos: videosData[order.id] || []
       }));
 
       // Buscar tentativas de compra do usuário (sem foreign key problemática)
@@ -161,7 +213,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
     fetchUserOrdersAndAttempts();
 
     if (userId) {
-      // Configurar escuta em tempo real apenas para pedidos (que funcionam)
+      // Configurar escuta em tempo real para pedidos e vídeos
       const channel = supabase
         .channel(`user-orders-${userId}`)
         .on('postgres_changes', 
@@ -174,6 +226,22 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
           (payload) => {
             console.log('🔄 Mudança detectada em pedidos do usuário:', payload);
             fetchUserOrdersAndAttempts();
+          }
+        )
+        .on('postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'pedido_videos'
+          },
+          (payload) => {
+            console.log('🔄 Mudança detectada em vídeos do usuário:', payload);
+            // Verificar se o vídeo pertence a um pedido do usuário antes de refetch
+            const videoData = payload.new || payload.old;
+            if (videoData && typeof videoData === 'object' && 'pedido_id' in videoData) {
+              // Refetch para garantir que temos dados atualizados
+              fetchUserOrdersAndAttempts();
+            }
           }
         )
         .subscribe();
