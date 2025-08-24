@@ -351,6 +351,10 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
             )}
             <AttemptsTable 
               attempts={abandonedAttempts} 
+              selectedIds={abandonedSelection.selectedIds}
+              onSelectionChange={abandonedSelection.toggleSelectItem}
+              onSelectAllChange={abandonedSelection.toggleSelectAll}
+              showBulkActions={isSuperAdmin}
             />
           </CardContent>
         </Card>

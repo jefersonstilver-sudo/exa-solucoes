@@ -2,14 +2,25 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Phone, Mail, Clock, MapPin, AlertTriangle, DollarSign } from 'lucide-react';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 
 interface AttemptsTableProps {
   attempts: OrderOrAttempt[];
+  selectedIds?: Set<string>;
+  onSelectionChange?: (id: string) => void;
+  onSelectAllChange?: (checked: boolean) => void;
+  showBulkActions?: boolean;
 }
 
-const AttemptsTable: React.FC<AttemptsTableProps> = ({ attempts }) => {
+const AttemptsTable: React.FC<AttemptsTableProps> = ({ 
+  attempts, 
+  selectedIds = new Set(), 
+  onSelectionChange, 
+  onSelectAllChange, 
+  showBulkActions = false 
+}) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -145,6 +156,15 @@ const AttemptsTable: React.FC<AttemptsTableProps> = ({ attempts }) => {
       <Table>
         <TableHeader>
           <TableRow className="border-gray-200">
+            {showBulkActions && (
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={attempts.length > 0 && attempts.every(attempt => selectedIds.has(attempt.id))}
+                  onCheckedChange={(checked) => onSelectAllChange?.(!!checked)}
+                  aria-label="Selecionar todos"
+                />
+              </TableHead>
+            )}
             <TableHead className="text-gray-900 font-semibold">Status & Urgência</TableHead>
             <TableHead className="text-gray-900 font-semibold">Cliente</TableHead>
             <TableHead className="text-gray-900 font-semibold">Contato</TableHead>
@@ -163,6 +183,15 @@ const AttemptsTable: React.FC<AttemptsTableProps> = ({ attempts }) => {
                 key={`${attempt.type}-${attempt.id}`} 
                 className={`border-gray-200 hover:bg-gray-50 ${getUrgencyColor(attempt.created_at)}`}
               >
+                {showBulkActions && (
+                  <TableCell className="w-12">
+                    <Checkbox
+                      checked={selectedIds.has(attempt.id)}
+                      onCheckedChange={() => onSelectionChange?.(attempt.id)}
+                      aria-label={`Selecionar ${getClientName(attempt)}`}
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   {getAttemptBadge(attempt)}
                 </TableCell>
