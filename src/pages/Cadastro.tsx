@@ -168,7 +168,7 @@ const Cadastro: React.FC = () => {
         transition={{ duration: 0.5 }}
       >
         <Card className="w-full max-w-4xl bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-6 lg:p-8 pt-16 sm:pt-20 lg:pt-24">
             <RegistrationHeader />
             
             {error && <ErrorDisplay error={error} />}
