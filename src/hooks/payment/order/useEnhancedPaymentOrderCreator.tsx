@@ -104,7 +104,7 @@ export const useEnhancedPaymentOrderCreator = () => {
       // ENHANCED: Tentar capturar tentativa primeiro e usar como source_tentativa_id
       let sourceTentativaId = null;
       try {
-        const { data: savedAttempt } = await saveCompletePurchaseAttempt(sessionUser.id, cartItems, totalPrice);
+        const savedAttempt = await saveCompletePurchaseAttempt(sessionUser.id, cartItems, totalPrice);
         if (savedAttempt?.id) {
           sourceTentativaId = savedAttempt.id;
           console.log('✅ [ENHANCED_ORDER_CREATOR] Tentativa de compra salva e vinculada:', sourceTentativaId);
