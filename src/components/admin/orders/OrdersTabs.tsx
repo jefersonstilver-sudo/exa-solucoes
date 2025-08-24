@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import OrdersAndAttemptsTable from './OrdersAndAttemptsTable';
+import AttemptsTable from './AttemptsTable';
 import BulkActionsToolbar from './BulkActionsToolbar';
 import BulkDeleteModal from './BulkDeleteModal';
 import { useBulkSelection } from '@/hooks/useBulkSelection';
@@ -348,13 +349,8 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
                 loading={isDeleting}
               />
             )}
-            <OrdersAndAttemptsTable 
-              ordersAndAttempts={abandonedAttempts} 
-              onViewOrderDetails={onViewOrderDetails}
-              selectedIds={abandonedSelection.selectedIds}
-              onSelectionChange={abandonedSelection.toggleSelectItem}
-              onSelectAllChange={abandonedSelection.toggleSelectAll}
-              showBulkActions={isSuperAdmin}
+            <AttemptsTable 
+              attempts={abandonedAttempts} 
             />
           </CardContent>
         </Card>
