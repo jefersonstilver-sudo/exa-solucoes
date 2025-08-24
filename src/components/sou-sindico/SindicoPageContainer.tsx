@@ -5,7 +5,7 @@ import { useSindicoForm } from '@/hooks/sou-sindico/useSindicoForm';
 import { benefits, howItWorksSteps } from './SindicoPageData';
 import HeroSection from './HeroSection';
 import AboutSection from './AboutSection';
-import BenefitsSection from './BenefitsSection';
+import { FeaturesSectionWithHoverEffects } from '@/components/ui/feature-section-with-hover-effects';
 import HowItWorksSection from './HowItWorksSection';
 
 
@@ -54,7 +54,7 @@ const SindicoPageContainer: React.FC = () => {
         ref={(el) => { sectionsRef.current['benefits'] = el; }}
         data-section="benefits"
       >
-        <BenefitsSection isVisible={visibleSections['benefits']} benefits={benefits} />
+        <FeaturesSectionWithHoverEffects isVisible={visibleSections['benefits']} />
       </section>
 
       <section 
