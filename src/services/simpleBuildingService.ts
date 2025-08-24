@@ -29,11 +29,11 @@ export interface SimpleBuildingStore {
 
 export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => {
   try {
-    console.log('🏢 [SIMPLE SERVICE] === SECURE AUTHENTICATED ACCESS ===');
+    console.log('🏢 [SIMPLE SERVICE] === PUBLIC STORE ACCESS ===');
     
-    // Use secure function that requires authentication
+    // Use public function for store (now returns ALL buildings regardless of coordinates)
     const { data: buildings, error } = await supabase
-      .rpc('get_buildings_for_authenticated_users');
+      .rpc('get_buildings_for_public_store');
 
     if (error) {
       console.error('❌ [SIMPLE SERVICE] Erro na query:', error);
@@ -64,29 +64,29 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
       }
     });
 
-    // Convert secure minimal data to SimpleBuildingStore (with restricted data for security)
+    // Convert public store data to SimpleBuildingStore (now with coordinates for map)
     const simpleBuildingStores: SimpleBuildingStore[] = buildings.map(building => ({
       id: building.id,
       nome: building.nome,
-      endereco: '', // Removed for security - no longer exposed
+      endereco: building.endereco || '', // Now available from public store
       cidade: '', // Not available
       estado: '', // Not available
       bairro: building.bairro,
       venue_type: building.venue_type,
       status: building.status,
-      latitude: 0, // Removed for security - no longer exposed
-      longitude: 0, // Removed for security - no longer exposed
-      publico_estimado: 0, // Removed for security - no longer exposed
-      visualizacoes_mes: 0, // Removed for security - no longer exposed
+      latitude: Number(building.latitude) || 0, // Now available for map functionality
+      longitude: Number(building.longitude) || 0, // Now available for map functionality
+      publico_estimado: 0, // Not exposed publicly for security
+      visualizacoes_mes: 0, // Not exposed publicly for security
       preco_base: building.preco_base || 280,
       imagem_principal: building.imagem_principal || '',
-      imagem_2: '', // Not available in minimal data
-      imagem_3: '', // Not available in minimal data
-      imagem_4: '', // Not available in minimal data
+      imagem_2: '', // Not available in public data
+      imagem_3: '', // Not available in public data
+      imagem_4: '', // Not available in public data
       imagens: [], // Not available
-      amenities: [], // Removed for security - no longer exposed
-      caracteristicas: [], // Removed for security - no longer exposed
-      padrao_publico: 'normal' as 'alto' | 'medio' | 'normal', // Default value since removed for security
+      amenities: building.amenities || [], // Now available from public store
+      caracteristicas: building.caracteristicas || [], // Now available from public store
+      padrao_publico: 'normal' as 'alto' | 'medio' | 'normal', // Default value for security
       quantidade_telas: building.quantidade_telas || 1
     }));
 
