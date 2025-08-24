@@ -54,14 +54,6 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error('Tentativa de pagamento duplicada detectada');
       }
 
-      // Salvar tentativa de compra ANTES de criar o pedido
-      try {
-        await saveCompletePurchaseAttempt(sessionUser.id, cartItems, totalPrice);
-        console.log('✅ [ENHANCED_ORDER_CREATOR] Tentativa de compra salva');
-      } catch (attemptError) {
-        console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Erro ao salvar tentativa (continuando):', attemptError);
-      }
-
       // CRITICAL: Validate payment uniqueness to prevent duplicates
       const validation = await validateUniquePayment(sessionUser.id, totalPrice, cartItems);
       
@@ -108,6 +100,18 @@ export const useEnhancedPaymentOrderCreator = () => {
 
       // Generate unique transaction ID to prevent duplicates
       const transactionId = generateUniqueTransactionId(sessionUser.id, Date.now());
+
+      // ENHANCED: Tentar capturar tentativa primeiro e usar como source_tentativa_id
+      let sourceTentativaId = null;
+      try {
+        const { data: savedAttempt } = await saveCompletePurchaseAttempt(sessionUser.id, cartItems, totalPrice);
+        if (savedAttempt?.id) {
+          sourceTentativaId = savedAttempt.id;
+          console.log('✅ [ENHANCED_ORDER_CREATOR] Tentativa de compra salva e vinculada:', sourceTentativaId);
+        }
+      } catch (attemptError) {
+        console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Erro ao salvar tentativa (continuando sem vincular):', attemptError);
+      }
 
       // ENHANCED: Extract panel and building IDs with detailed logging
       const panelIds = cartItems.map(item => {
@@ -159,14 +163,15 @@ export const useEnhancedPaymentOrderCreator = () => {
           totalPrice,
           selectedPlan,
           transactionId,
-          paymentKey
+          paymentKey,
+          sourceTentativaId
         }
       );
 
       // CRITICAL: Ensure correct total price (no division errors)
       const correctTotalPrice = Number(totalPrice.toFixed(2));
 
-      // Create the order record with COMPLETE data
+      // Create the order record with COMPLETE data including source_tentativa_id
       const orderData = {
         client_id: sessionUser.id,
         lista_paineis: panelIds,
@@ -178,7 +183,9 @@ export const useEnhancedPaymentOrderCreator = () => {
         data_fim: endDate.toISOString().split('T')[0],
         status: 'pendente',
         termos_aceitos: true,
-        duracao: 30,
+        source_tentativa_id: sourceTentativaId, // NOVO: Vinculação com tentativa
+        transaction_id: transactionId,
+        price_sync_verified: true,
         log_pagamento: {
           transaction_id: transactionId,
           payment_key: paymentKey,
@@ -191,13 +198,14 @@ export const useEnhancedPaymentOrderCreator = () => {
           panel_ids_saved: panelIds,
           building_ids_saved: buildingIds,
           enhanced_creation: true,
+          source_tentativa_id: sourceTentativaId,
           cart_items_debug: cartItems.map(item => ({
             panel_id: item.panel?.id,
             building_id: item.panel?.building_id,
             panel_name: item.panel?.buildings?.nome || 'Nome não disponível',
             building_name: item.panel?.buildings?.nome || 'Nome não disponível',
             duration: item.duration || 30,
-            price: item.duration ? (item.duration * 50) : 0 // Calculate price based on duration
+            price: item.duration ? (item.duration * 50) : 0
           }))
         }
       };
@@ -205,7 +213,8 @@ export const useEnhancedPaymentOrderCreator = () => {
       console.log('💾 [ENHANCED_ORDER_CREATOR] Dados do pedido preparados:', {
         lista_paineis: orderData.lista_paineis,
         lista_predios: orderData.lista_predios,
-        valor_total: orderData.valor_total
+        valor_total: orderData.valor_total,
+        source_tentativa_id: orderData.source_tentativa_id
       });
 
       const { data: pedidoData, error: pedidoError } = await supabase
@@ -241,7 +250,8 @@ export const useEnhancedPaymentOrderCreator = () => {
         lista_paineis: pedido.lista_paineis,
         lista_predios: pedido.lista_predios,
         valor_total: pedido.valor_total,
-        client_id: pedido.client_id
+        client_id: pedido.client_id,
+        source_tentativa_id: sourceTentativaId
       });
 
       // Coupon usage handling
@@ -277,6 +287,7 @@ export const useEnhancedPaymentOrderCreator = () => {
           savedBuildingIds: pedido.lista_predios,
           transactionId,
           paymentKey,
+          sourceTentativaId,
           enhanced: true
         }
       );

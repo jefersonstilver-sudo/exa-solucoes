@@ -1,454 +1,236 @@
-import React, { useState, useEffect } from 'react';
-import { CalendarClock, ShoppingBag, AlertCircle, Loader2, Filter, AlertTriangle } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { useUserSession } from '@/hooks/useUserSession';
+
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
-import Layout from '@/components/layout/Layout';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ManualPaymentVerifier } from '@/components/checkout/payment/ManualPaymentVerifier';
-import { AutoPaymentVerifier } from '@/components/admin/AutoPaymentVerifier';
-import { OrderVideoThumbnail } from '@/components/video-management/OrderVideoThumbnail';
+import { useUserSession } from '@/hooks/useUserSession';
 import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
+import { useOrderExistsForAttempt } from '@/hooks/useOrderExistsForAttempt';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Calendar, MapPin, Video, DollarSign, ExternalLink, ShoppingCart } from 'lucide-react';
+import { formatCurrency } from '@/utils/formatters';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
-const Pedidos: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
-  const [typeFilter, setTypeFilter] = useState('todos');
-  const [showVerifier, setShowVerifier] = useState<string | null>(null);
-  const { isLoggedIn, user, hasRole } = useUserSession();
-  const { userOrdersAndAttempts, loading, refetch } = useUserOrdersAndAttempts(user?.id);
+const getStatusColor = (status: string) => {
+  const statusMap: Record<string, string> = {
+    'pendente': 'bg-yellow-100 text-yellow-800',
+    'pago': 'bg-green-100 text-green-800',
+    'pago_pendente_video': 'bg-blue-100 text-blue-800',
+    'video_enviado': 'bg-purple-100 text-purple-800',
+    'video_aprovado': 'bg-green-100 text-green-800',
+    'ativo': 'bg-emerald-100 text-emerald-800',
+    'cancelado': 'bg-red-100 text-red-800',
+    'tentativa': 'bg-gray-100 text-gray-800'
+  };
+  return statusMap[status] || 'bg-gray-100 text-gray-800';
+};
+
+const getStatusText = (status: string) => {
+  const statusMap: Record<string, string> = {
+    'pendente': 'Pendente',
+    'pago': 'Pago',
+    'pago_pendente_video': 'Pago - Aguardando Vídeo',
+    'video_enviado': 'Vídeo Enviado',
+    'video_aprovado': 'Vídeo Aprovado',
+    'ativo': 'Ativo',
+    'cancelado': 'Cancelado',
+    'tentativa': 'Tentativa'
+  };
+  return statusMap[status] || status;
+};
+
+interface AttemptCardProps {
+  attempt: any;
+  onFinalize: (attemptId: string) => void;
+  isProcessing: boolean;
+}
+
+const AttemptCard = ({ attempt, onFinalize, isProcessing }: AttemptCardProps) => {
+  const orderCheck = useOrderExistsForAttempt(attempt.id);
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const { finalizeAttemptToOrder, isProcessing: isProcessingAttempt } = useAttemptFinalizer();
 
-  const isAdmin = hasRole('admin') || hasRole('super_admin');
-
-  // Handler para finalizar tentativa
-  const handleFinalizeAttempt = async (attemptId: string) => {
-    console.log('🎯 [Pedidos] Finalizando tentativa:', attemptId);
-    const result = await finalizeAttemptToOrder(attemptId);
-    if (result.success) {
-      toast.success('Tentativa convertida em pedido! Redirecionando para pagamento...');
+  const handleAction = () => {
+    if (orderCheck.exists && orderCheck.pedidoId) {
+      // Redirecionar para pagamento do pedido existente
+      navigate(`/payment?pedido=${orderCheck.pedidoId}&method=pix`);
+    } else {
+      // Finalizar tentativa criando novo pedido
+      onFinalize(attempt.id);
     }
   };
 
-  // LOGS DE DEBUG para diagnóstico
-  console.log('📋 Pedidos: Componente renderizado');
-  console.log('📋 Pedidos: Usuário logado:', isLoggedIn);
-  console.log('📋 Pedidos: Dados do usuário:', user);
-  console.log('📋 Pedidos: É admin:', isAdmin);
-  console.log('📋 Pedidos: Pedidos e tentativas carregados:', userOrdersAndAttempts.length);
-
-  // Filtrar pedidos e tentativas
-  const filteredItems = userOrdersAndAttempts.filter(item => {
-    const matchesSearch = 
-      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      String(item.valor_total).includes(searchTerm);
-    
-    const matchesStatus = 
-      statusFilter === 'todos' || 
-      (item.type === 'order' && item.status.toLowerCase() === statusFilter.toLowerCase()) ||
-      (item.type === 'attempt' && statusFilter === 'tentativa');
-    
-    const matchesType = 
-      typeFilter === 'todos' || 
-      item.type === typeFilter;
-
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
-  // Formatador de status para exibição
-  const formatStatus = (item: any) => {
-    if (item.type === 'attempt') {
-      return { 
-        label: 'Tentativa Abandonada', 
-        color: 'bg-orange-600 text-white text-xs px-2 py-1 font-semibold border-0' 
-      };
-    }
-
-    const status = item.status.toLowerCase();
-    switch (status) {
-      case 'pendente':
-        return { label: 'Pendente', color: 'bg-yellow-600 text-white text-xs px-2 py-1 font-semibold border-0' };
-      case 'pago':
-      case 'pago_pendente_video':
-        return { label: 'Pago', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
-      case 'video_aprovado':
-        return { label: 'Aprovado', color: 'bg-blue-600 text-white text-xs px-2 py-1 font-semibold border-0' };
-      case 'ativo':
-        return { label: 'Ativo', color: 'bg-green-600 text-white text-xs px-2 py-1 font-semibold border-0' };
-      case 'cancelado':
-        return { label: 'Cancelado', color: 'bg-red-600 text-white text-xs px-2 py-1 font-semibold border-0' };
-      default:
-        return { label: status || 'Desconhecido', color: 'bg-gray-700 text-white text-xs px-2 py-1 font-semibold border-0' };
-    }
+  const getButtonText = () => {
+    if (orderCheck.loading) return 'Verificando...';
+    if (orderCheck.exists) return 'Ir para Pagamento';
+    return 'Finalizar Compra';
   };
 
-  // Formatador de data
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('pt-BR');
+  const getButtonIcon = () => {
+    if (orderCheck.exists) return <ExternalLink className="w-4 h-4" />;
+    return <ShoppingCart className="w-4 h-4" />;
   };
-
-  // Renderização de card para visualização mobile com verificador
-  const renderMobileCard = (item: any) => {
-    const status = formatStatus(item);
-    const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
-    const isPendingPix = item.type === 'order' && item.status === 'pendente';
-
-    return (
-      <Card key={`${item.type}-${item.id}`} className="mb-4 p-4 bg-white border-gray-200">
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex flex-col space-y-2">
-            <div className="flex items-center space-x-2">
-              <Badge className={status.color}>{status.label}</Badge>
-              {item.type === 'attempt' && (
-                <Badge variant="outline" className="border-orange-500 text-orange-700">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Tentativa
-                </Badge>
-              )}
-            </div>
-            <h3 className="font-semibold text-gray-900">ID: {item.id.substring(0, 8)}...</h3>
-          </div>
-          <p className={`text-right font-bold text-lg ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
-            R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
-          </p>
-        </div>
-        
-        {/* Vídeo em exibição - apenas para pedidos */}
-        {item.type === 'order' && (
-          <div className="mt-3 mb-3">
-            <OrderVideoThumbnail 
-              orderId={item.id} 
-              orderStatus={item.status}
-              className="w-full"
-            />
-          </div>
-        )}
-        
-        <div className="grid grid-cols-2 gap-2 text-sm mt-3">
-          <div>
-            <p className="text-gray-700 font-medium">Data</p>
-            <p className="text-gray-900 font-semibold">{formatDate(item.created_at)}</p>
-          </div>
-          <div>
-            <p className="text-gray-700 font-medium">Duração</p>
-            <p className="text-gray-900 font-semibold">
-              {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-700 font-medium">Período</p>
-            <p className="flex items-center text-gray-900 font-semibold">
-              <CalendarClock className="h-3 w-3 mr-1 text-indexa-purple" />
-              <span>
-                {item.type === 'order' && item.data_inicio 
-                  ? `${formatDate(item.data_inicio)} - ${formatDate(item.data_fim)}`
-                  : 'Não definido'
-                }
-              </span>
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-700 font-medium">Qtd. Painéis</p>
-            <p className="text-gray-900 font-semibold">{paineisList.length}</p>
-          </div>
-        </div>
-        
-        {/* Verificador de pagamento para pedidos pendentes */}
-        {isPendingPix && (
-          <div className="mt-4">
-            <ManualPaymentVerifier
-              pedidoId={item.id}
-              currentStatus={item.status}
-              onStatusUpdated={() => {
-                refetch();
-                toast.success("Dados atualizados!");
-              }}
-            />
-          </div>
-        )}
-        
-        {item.type === 'order' ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/pedido-confirmado?id=${item.id}`)}
-            className="w-full mt-3 border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
-          >
-            Ver Detalhes
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleFinalizeAttempt(item.id)}
-            disabled={isProcessingAttempt}
-            className="w-full mt-3 border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white font-medium"
-          >
-            <AlertTriangle className="h-3 w-3 mr-1" />
-            {isProcessingAttempt ? 'Processando...' : 'Finalizar Compra'}
-          </Button>
-        )}
-      </Card>
-    );
-  };
-
-  if (loading) {
-    console.log('⏳ Pedidos: Exibindo tela de carregamento');
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-indexa-purple mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900">Carregando pedidos...</h2>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  console.log('🎨 Pedidos: Renderizando interface principal');
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-6 md:py-8">
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="mb-6"
-        >
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
-            <ShoppingBag className="mr-2 h-6 w-6 md:h-8 md:w-8 text-indexa-purple" />
-            Meus Pedidos e Tentativas
-          </h1>
-          <p className="text-gray-700 mt-1 font-medium">
-            Confira o histórico completo de pedidos finalizados e tentativas de compra
-          </p>
-        </motion.div>
-
-        {/* Sistema de Backup Automático - Apenas para Admins */}
-        {isAdmin && (
-          <div className="mb-6">
-            <AutoPaymentVerifier />
+    <Card key={attempt.id} className="mb-4">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg">Tentativa de Compra</CardTitle>
+            <CardDescription>
+              {format(new Date(attempt.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+            </CardDescription>
+          </div>
+          <Badge className={getStatusColor(attempt.status)}>
+            {getStatusText(attempt.status)}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-green-600" />
+          <span className="font-semibold">{formatCurrency(attempt.valor_total)}</span>
+        </div>
+        
+        {attempt.predios_selecionados && attempt.predios_selecionados.length > 0 && (
+          <div className="flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-blue-600 mt-0.5" />
+            <div>
+              <span className="text-sm text-gray-600">
+                {attempt.predios_selecionados.length} prédio(s) selecionado(s)
+              </span>
+            </div>
           </div>
         )}
 
-        {/* Filtros */}
-        <div className="mb-6 flex flex-col md:flex-row gap-3">
-          <Input
-            placeholder="Buscar por ID ou valor..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="md:max-w-xs bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
-          />
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-full md:w-[180px] bg-white border-gray-300 text-gray-900">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="order">Apenas Pedidos</SelectItem>
-              <SelectItem value="attempt">Apenas Tentativas</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[180px] bg-white border-gray-300 text-gray-900">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="tentativa">Tentativas</SelectItem>
-              <SelectItem value="pendente">Pendente</SelectItem>
-              <SelectItem value="pago">Pago</SelectItem>
-              <SelectItem value="ativo">Ativo</SelectItem>
-              <SelectItem value="cancelado">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex gap-2 pt-4">
+          <Button
+            onClick={handleAction}
+            disabled={isProcessing || orderCheck.loading}
+            className="flex-1"
+          >
+            {getButtonIcon()}
+            {getButtonText()}
+          </Button>
         </div>
 
-        {filteredItems.length === 0 ? (
-          <Card className="p-8 text-center bg-white border-gray-200">
-            <div className="mx-auto bg-gray-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
-              <AlertCircle className="h-8 w-8 text-gray-600" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2 text-gray-900">Nenhum pedido encontrado</h2>
-            <p className="text-gray-700 mb-6 font-medium">
-              {searchTerm || statusFilter !== 'todos' || typeFilter !== 'todos'
-                ? 'Nenhum pedido corresponde aos filtros aplicados.'
-                : 'Você ainda não realizou nenhum pedido em nossa plataforma.'}
-            </p>
-            <div className="flex justify-center">
-              <Button 
-                onClick={() => navigate('/paineis-digitais/loja')}
-                className="bg-indexa-purple hover:bg-indexa-purple/90 font-semibold"
-              >
-                Explorar Painéis
-              </Button>
-            </div>
-          </Card>
-        ) : (
-          <>
-            {/* Versão Mobile - Cards */}
-            {isMobile && filteredItems.map(renderMobileCard)}
-
-            {/* Versão Desktop - Tabela */}
-            {!isMobile && (
-              <Card className="overflow-hidden bg-white border-gray-200">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-gray-200">
-                        <TableHead className="text-gray-900 font-semibold">Tipo</TableHead>
-                        <TableHead className="text-gray-900 font-semibold">ID</TableHead>
-                        <TableHead className="text-gray-900 font-semibold">Data</TableHead>
-                        <TableHead className="text-gray-900 font-semibold">Status</TableHead>
-                        <TableHead className="text-gray-900 font-semibold">Valor</TableHead>
-                        <TableHead className="text-gray-900 font-semibold">Duração</TableHead>
-                        <TableHead className="text-gray-900 font-semibold">Período</TableHead>
-                        <TableHead className="text-gray-900 font-semibold">Qtd. Painéis</TableHead>
-                        <TableHead className="text-gray-900 font-semibold">Vídeo em Exibição</TableHead>
-                        <TableHead className="text-gray-900 font-semibold">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredItems.map((item) => {
-                        const status = formatStatus(item);
-                        const paineisList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
-                        const isPendingPix = item.type === 'order' && item.status === 'pendente';
-                        
-                        return (
-                          <React.Fragment key={`${item.type}-${item.id}`}>
-                            <TableRow className="border-gray-200 hover:bg-gray-50">
-                              <TableCell>
-                                {item.type === 'attempt' ? (
-                                  <Badge variant="outline" className="border-orange-500 text-orange-700">
-                                    <AlertTriangle className="h-3 w-3 mr-1" />
-                                    Tentativa
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="border-green-500 text-green-700">
-                                    Pedido
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="font-medium text-gray-900">
-                                {item.id.substring(0, 8)}...
-                              </TableCell>
-                              <TableCell className="text-gray-800 font-medium">
-                                {formatDate(item.created_at)}
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={status.color}>
-                                  {status.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className={`font-bold text-base ${item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'}`}>
-                                R$ {item.valor_total?.toFixed(2).replace('.', ',') || '0,00'}
-                              </TableCell>
-                              <TableCell className="text-gray-800 font-medium">
-                                {item.type === 'order' ? `${item.plano_meses} meses` : '1 mês (est.)'}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap">
-                                <div className="flex items-center text-gray-800 font-medium">
-                                  <CalendarClock className="h-4 w-4 mr-1 text-indexa-purple" />
-                                  <span>
-                                    {item.type === 'order' && item.data_inicio 
-                                      ? `${formatDate(item.data_inicio)} - ${formatDate(item.data_fim)}`
-                                      : 'Não definido'
-                                    }
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-gray-800 font-medium">
-                                {paineisList.length}
-                              </TableCell>
-                              <TableCell className="max-w-xs">
-                                {item.type === 'order' && (
-                                  <OrderVideoThumbnail 
-                                    orderId={item.id} 
-                                    orderStatus={item.status}
-                                    compact={true}
-                                  />
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col space-y-2">
-                                  {item.type === 'order' ? (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => navigate(`/pedido-confirmado?id=${item.id}`)}
-                                      className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
-                                    >
-                                      Detalhes
-                                    </Button>
-                                   ) : (
-                                     <Button
-                                       variant="outline"
-                                       size="sm"
-                                       onClick={() => handleFinalizeAttempt(item.id)}
-                                       disabled={isProcessingAttempt}
-                                       className="border-orange-500 text-orange-700 hover:bg-orange-500 hover:text-white font-medium"
-                                     >
-                                       <AlertTriangle className="h-3 w-3 mr-1" />
-                                       {isProcessingAttempt ? 'Processando...' : 'Finalizar'}
-                                     </Button>
-                                   )}
-                                  
-                                  {isPendingPix && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setShowVerifier(showVerifier === item.id ? null : item.id)}
-                                      className="border-blue-500 text-blue-700 hover:bg-blue-500 hover:text-white font-medium"
-                                    >
-                                      {showVerifier === item.id ? 'Ocultar' : 'Verificar Pag.'}
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                            
-                            {/* Linha expandida com verificador */}
-                            {isPendingPix && showVerifier === item.id && (
-                              <TableRow>
-                                <TableCell colSpan={9} className="p-4 bg-blue-50">
-                                  <ManualPaymentVerifier
-                                    pedidoId={item.id}
-                                    currentStatus={item.status}
-                                    onStatusUpdated={() => {
-                                      refetch();
-                                      setShowVerifier(null);
-                                      toast.success("Dados atualizados!");
-                                    }}
-                                  />
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </Card>
-            )}
-          </>
+        {orderCheck.exists && orderCheck.pedidoId && (
+          <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+            ℹ️ Já existe um pedido criado para esta tentativa (ID: {orderCheck.pedidoId.substring(0, 8)}...)
+          </div>
         )}
-      </div>
-    </Layout>
+      </CardContent>
+    </Card>
   );
 };
 
-export default Pedidos;
+export default function Pedidos() {
+  const { user } = useUserSession();
+  const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(user?.id);
+  const { finalizeAttemptToOrder, isProcessing } = useAttemptFinalizer();
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">Carregando seus pedidos...</div>
+      </div>
+    );
+  }
+
+  if (!userOrdersAndAttempts || userOrdersAndAttempts.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Meus Pedidos</h1>
+        <div className="text-center py-8 text-gray-500">
+          Você ainda não possui pedidos ou tentativas de compra.
+        </div>
+      </div>
+    );
+  }
+
+  const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
+  const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Meus Pedidos</h1>
+      
+      <div className="space-y-6">
+        {/* Pedidos Completos */}
+        {orders.map((order) => (
+          <Card key={order.id} className="mb-4">
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-lg">Pedido #{order.id.substring(0, 8)}</CardTitle>
+                  <CardDescription>
+                    {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                  </CardDescription>
+                </div>
+                <Badge className={getStatusColor(order.status)}>
+                  {getStatusText(order.status)}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-green-600" />
+                  <span className="font-semibold">{formatCurrency(order.valor_total)}</span>
+                </div>
+                
+                {order.plano_meses && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    <span>{order.plano_meses} meses</span>
+                  </div>
+                )}
+              </div>
+
+              {order.data_inicio && order.data_fim && (
+                <div className="text-sm text-gray-600">
+                  <strong>Período:</strong> {' '}
+                  {format(new Date(order.data_inicio), 'dd/MM/yyyy', { locale: ptBR })} até {' '}
+                  {format(new Date(order.data_fim), 'dd/MM/yyyy', { locale: ptBR })}
+                </div>
+              )}
+
+              {order.lista_paineis && order.lista_paineis.length > 0 && (
+                <div className="text-sm text-gray-600">
+                  <strong>Painéis:</strong> {order.lista_paineis.length} painel(is) selecionado(s)
+                </div>
+              )}
+
+              {order.videos && order.videos.length > 0 && (
+                <div>
+                  <Separator className="my-2" />
+                  <div className="flex items-center gap-2 text-sm">
+                    <Video className="w-4 h-4" />
+                    <span>{order.videos.length} vídeo(s) associado(s)</span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+
+        {/* Tentativas de Compra */}
+        {attempts.length > 0 && (
+          <>
+            <Separator className="my-6" />
+            <h2 className="text-xl font-semibold mb-4">Tentativas de Compra</h2>
+            {attempts.map((attempt) => (
+              <AttemptCard
+                key={attempt.id}
+                attempt={attempt}
+                onFinalize={finalizeAttemptToOrder}
+                isProcessing={isProcessing}
+              />
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

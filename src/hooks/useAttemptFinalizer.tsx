@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +10,8 @@ interface AttemptFinalizationResult {
   success: boolean;
   pedidoId?: string;
   error?: string;
+  existingPedidoId?: string;
+  redirectToExisting?: boolean;
 }
 
 export const useAttemptFinalizer = () => {
@@ -40,7 +43,67 @@ export const useAttemptFinalizer = () => {
 
       console.log('✅ [AttemptFinalizer] Tentativa encontrada:', tentativa);
 
-      // 2. Extrair dados do backup se disponível
+      // 2. NOVO: Verificar se já existe pedido para esta tentativa
+      const { data: existingOrderByAttempt, error: orderCheckError } = await supabase
+        .from('pedidos')
+        .select('id, status')
+        .eq('source_tentativa_id', attemptId)
+        .maybeSingle();
+
+      if (existingOrderByAttempt && !orderCheckError) {
+        console.log('🔄 [AttemptFinalizer] Pedido já existe para esta tentativa:', existingOrderByAttempt.id);
+        
+        logSystemEvent('ATTEMPT_REDIRECT_TO_EXISTING', {
+          attemptId,
+          existingPedidoId: existingOrderByAttempt.id,
+          userId: user.id
+        });
+
+        // Redirecionar para o pedido existente
+        navigate(`/payment?pedido=${existingOrderByAttempt.id}&method=pix`);
+        
+        return {
+          success: true,
+          existingPedidoId: existingOrderByAttempt.id,
+          redirectToExisting: true
+        };
+      }
+
+      // 3. NOVO: Verificar se já existe pedido pendente com mesmo valor e tempo próximo (fallback)
+      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      
+      const { data: existingPendingOrder, error: pendingCheckError } = await supabase
+        .from('pedidos')
+        .select('id, status, created_at')
+        .eq('client_id', user.id)
+        .eq('status', 'pendente')
+        .eq('valor_total', tentativa.valor_total)
+        .gte('created_at', fifteenMinutesAgo)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPendingOrder && !pendingCheckError) {
+        console.log('🔄 [AttemptFinalizer] Pedido pendente similar encontrado:', existingPendingOrder.id);
+        
+        logSystemEvent('ATTEMPT_REDIRECT_TO_PENDING', {
+          attemptId,
+          existingPedidoId: existingPendingOrder.id,
+          valorTotal: tentativa.valor_total,
+          userId: user.id
+        });
+
+        // Redirecionar para o pedido pendente existente
+        navigate(`/payment?pedido=${existingPendingOrder.id}&method=pix`);
+        
+        return {
+          success: true,
+          existingPedidoId: existingPendingOrder.id,
+          redirectToExisting: true
+        };
+      }
+
+      // 4. Extrair dados do backup se disponível
       let cartItemsBackup = [];
       let panelIds: string[] = [];
       let predioIds: string[] = [];
@@ -82,12 +145,12 @@ export const useAttemptFinalizer = () => {
         valorTotal: tentativa.valor_total
       });
 
-      // 3. Criar pedido pendente
+      // 5. Criar pedido pendente
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
         .insert({
           client_id: user.id,
-          source_tentativa_id: tentativa.id,
+          source_tentativa_id: tentativa.id, // CRÍTICO: Vincular à tentativa
           valor_total: tentativa.valor_total,
           plano_meses: planoMeses,
           lista_paineis: panelIds,
@@ -101,6 +164,27 @@ export const useAttemptFinalizer = () => {
         .single();
 
       if (pedidoError) {
+        // Se o erro for de duplicação, tentar buscar o pedido existente
+        if (pedidoError.code === '23505') { // Unique constraint violation
+          console.log('🔄 [AttemptFinalizer] Violação de constraint única, buscando pedido existente...');
+          
+          const { data: foundOrder } = await supabase
+            .from('pedidos')
+            .select('id')
+            .eq('source_tentativa_id', attemptId)
+            .single();
+
+          if (foundOrder) {
+            navigate(`/payment?pedido=${foundOrder.id}&method=pix`);
+            
+            return {
+              success: true,
+              existingPedidoId: foundOrder.id,
+              redirectToExisting: true
+            };
+          }
+        }
+        
         throw new Error(`Erro ao criar pedido: ${pedidoError.message}`);
       }
 
@@ -116,7 +200,7 @@ export const useAttemptFinalizer = () => {
         userId: user.id
       });
 
-      // 4. Redirecionar para pagamento
+      // 6. Redirecionar para pagamento
       navigate(`/payment?pedido=${pedido.id}&method=pix`);
 
       return {
