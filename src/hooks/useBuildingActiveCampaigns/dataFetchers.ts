@@ -18,7 +18,7 @@ export const fetchActivePedidos = async (buildingId: string) => {
       lista_predios
     `)
     .contains('lista_predios', [buildingId])
-    .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado'])
+    .in('status', ['video_aprovado', 'pago_pendente_video', 'video_enviado'])
     .gte('data_fim', new Date().toISOString().split('T')[0]);
 
   if (pedidosError) {

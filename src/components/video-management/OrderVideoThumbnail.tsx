@@ -19,7 +19,7 @@ export const OrderVideoThumbnail: React.FC<OrderVideoThumbnailProps> = ({
   const { videoData, loading, error } = useOrderCurrentVideoData(orderId);
 
   // Só mostrar para pedidos com vídeos aprovados ou ativos
-  const shouldShowVideo = ['video_aprovado', 'ativo'].includes(orderStatus.toLowerCase());
+  const shouldShowVideo = orderStatus.toLowerCase() === 'video_aprovado';
 
   if (!shouldShowVideo) {
     return null;

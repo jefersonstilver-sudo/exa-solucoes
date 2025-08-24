@@ -108,35 +108,8 @@ export const useOrderStatus = (order: any, onPixPayment?: (order: any) => void) 
         };
 
       case 'video_aprovado':
-        if (hasVideoInDisplay) {
-          return {
-            label: 'Ativo e em Exibição',
-            description: 'Sua campanha está ativa e sendo exibida nos painéis',
-            color: 'text-white',
-            bgColor: 'bg-green-600 border-green-700',
-            icon: Play,
-            action: {
-              label: 'Em Exibição',
-              variant: 'outline',
-              onClick: () => {
-                // Esta ação será interceptada pelo componente pai para abrir o popup
-                const event = new CustomEvent('openVideoDisplay', { detail: { orderId: order.id } });
-                window.dispatchEvent(event);
-              }
-            }
-          };
-        }
         return {
-          label: 'Contrato Iniciado',
-          description: 'Vídeo aprovado, contrato iniciado. Selecione para exibição.',
-          color: 'text-white',
-          bgColor: 'bg-green-600 border-green-700',
-          icon: CheckCircle
-        };
-
-      case 'ativo':
-        return {
-          label: 'Ativo e em Exibição',
+          label: 'EM EXIBIÇÃO',
           description: 'Sua campanha está ativa e sendo exibida nos painéis',
           color: 'text-white',
           bgColor: 'bg-green-600 border-green-700',

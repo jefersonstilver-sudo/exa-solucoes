@@ -117,7 +117,7 @@ export const useSupabaseData = () => {
 
       // Usar os mesmos status que as funções SQL corrigidas
       const paidOrders = orders.filter(order => 
-        ['pago', 'ativo', 'pago_pendente_video', 'video_aprovado'].includes(order.status)
+        ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status)
       );
       
       const monthlyRevenue = paidOrders.reduce((sum, order) => {
@@ -132,7 +132,7 @@ export const useSupabaseData = () => {
         totalOrders: orders.length,
         totalPanels: panels.length,
         monthlyRevenue,
-        activeOrders: orders.filter(o => ['ativo', 'video_aprovado'].includes(o.status)).length,
+        activeOrders: orders.filter(o => o.status === 'video_aprovado').length,
         pendingOrders: orders.filter(o => ['pendente', 'pago_pendente_video'].includes(o.status)).length,
         onlinePanels: panels.filter(p => p.status === 'online').length,
       };
@@ -161,7 +161,7 @@ export const useSupabaseData = () => {
 
       // Receita baseada em dados reais (incluindo status 'ativo')
       const paidOrders = orders.filter(o => 
-        ['pago', 'ativo', 'pago_pendente_video', 'video_aprovado'].includes(o.status)
+        ['pago', 'pago_pendente_video', 'video_aprovado'].includes(o.status)
       );
       
       const revenueData = paidOrders.length > 0 ? [
@@ -173,7 +173,7 @@ export const useSupabaseData = () => {
 
       // Status dos pedidos baseado em dados reais com status corretos
       const pendingCount = orders.filter(o => ['pendente', 'pago_pendente_video'].includes(o.status)).length;
-      const activeCount = orders.filter(o => ['ativo', 'video_aprovado'].includes(o.status)).length;
+      const activeCount = orders.filter(o => o.status === 'video_aprovado').length;
       const paidCount = orders.filter(o => o.status === 'pago').length;
       const canceledCount = orders.filter(o => o.status === 'cancelado').length;
       

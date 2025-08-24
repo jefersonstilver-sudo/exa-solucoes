@@ -90,11 +90,10 @@ export const useOrdersDataFixed = () => {
           client_name: 'Nome não disponível',
           video_status: order.status === 'pago_pendente_video' ? 'Aguardando Vídeo' :
                        order.status === 'video_enviado' ? 'Vídeo Enviado' :
-                       order.status === 'video_aprovado' ? 'Vídeo Aprovado' :
+                       order.status === 'video_aprovado' ? 'EM EXIBIÇÃO' :
                        order.status === 'video_rejeitado' ? 'Vídeo Rejeitado' :
                        order.status === 'pago' ? 'Pago' :
                        order.status === 'pendente' ? 'Pendente' :
-                       order.status === 'ativo' ? 'Ativo' :
                        order.status === 'cancelado' ? 'Cancelado' : 'Status Desconhecido'
         }));
         
@@ -119,10 +118,10 @@ export const useOrdersDataFixed = () => {
       const ordersList = data || [];
       const total = ordersList.length;
       const pending = ordersList.filter(o => o.status === 'pendente').length;
-      const completed = ordersList.filter(o => ['pago', 'video_aprovado', 'ativo'].includes(o.status)).length;
+      const completed = ordersList.filter(o => ['pago', 'video_aprovado'].includes(o.status)).length;
       const cancelled = ordersList.filter(o => o.status === 'cancelado').length;
       const revenue = ordersList
-        .filter(o => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(o.status))
+        .filter(o => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(o.status))
         .reduce((sum, order) => sum + (Number(order.valor_total) || 0), 0);
       
       // Estatísticas de vídeo

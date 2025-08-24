@@ -48,15 +48,15 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   // 1. Pedidos Ativos - usando correct_status da função SQL para classificação correta
   const activePedidos = ordersAndAttempts.filter(item => 
     item.type === 'order' && 
-    ((item as any).correct_status === 'ativo' || 
-     ['ativo', 'video_aprovado'].includes(item.status)) &&
+    ((item as any).correct_status === 'video_aprovado' || 
+     item.status === 'video_aprovado') &&
     isWithinActivePeriod(item)
   );
 
   const concludedPedidos = ordersAndAttempts.filter(item => 
     item.type === 'order' && 
     (item.status === 'expirado' || 
-     (['ativo', 'video_aprovado'].includes(item.status) && !isWithinActivePeriod(item)))
+     (item.status === 'video_aprovado' && !isWithinActivePeriod(item)))
   );
 
   // CORRIGIDO: Apenas pedidos que nunca tiveram vídeos ativos (usando correct_status da função SQL)

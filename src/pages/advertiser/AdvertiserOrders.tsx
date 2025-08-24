@@ -101,7 +101,7 @@ const AdvertiserOrders = () => {
   const stats = {
     // Pedidos ativos: pagos, com vídeo aprovado/ativo e dentro do período
     pedidosAtivos: orders.filter(order => 
-      ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) &&
+      ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) &&
       isWithinActivePeriod(order)
     ).length,
     
@@ -116,7 +116,7 @@ const AdvertiserOrders = () => {
     // Pedidos finalizados: expirados ou fora do período
     pedidosFinalizados: orders.filter(order => 
       order.status === 'expirado' || 
-      (['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) && !isWithinActivePeriod(order))
+      (['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) && !isWithinActivePeriod(order))
     ).length
   };
 

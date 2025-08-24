@@ -165,7 +165,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         // Verificar se existe pedido pago com mesmo valor e data próxima
         const hasMatchingOrder = processedOrders.some(order => {
           // Verificar se é um pedido pago
-          if (!['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(order.status)) {
+          if (!['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(order.status)) {
             return false;
           }
           

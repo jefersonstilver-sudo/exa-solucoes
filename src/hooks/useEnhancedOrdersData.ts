@@ -63,14 +63,14 @@ export const useEnhancedOrdersData = () => {
         // Calcular estatísticas detalhadas
         const total = data.length;
         const revenue = data
-          .filter(order => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(order.correct_status))
+          .filter(order => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(order.correct_status))
           .reduce((sum, order) => sum + (order.valor_total || 0), 0);
         
         const awaiting_video = data.filter(order => order.correct_status === 'pago_pendente_video').length;
         const video_sent = data.filter(order => order.status === 'video_enviado').length;
         const video_approved = data.filter(order => order.status === 'video_aprovado').length;
         const video_rejected = data.filter(order => order.status === 'video_rejeitado').length;
-        const active = data.filter(order => order.status === 'ativo').length;
+        const active = data.filter(order => order.status === 'video_aprovado').length;
         
         setStats({ 
           total, 

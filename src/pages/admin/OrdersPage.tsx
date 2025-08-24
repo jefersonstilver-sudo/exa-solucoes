@@ -18,7 +18,7 @@ const OrdersPage = () => {
   // Calcular pedidos ativos para os stats
   const activeOrdersCount = ordersAndAttempts.filter(item => {
     if (item.type !== 'order') return false;
-    if (!['ativo', 'video_aprovado'].includes(item.status)) return false;
+    if (item.status !== 'video_aprovado') return false;
     if (!item.data_inicio || !item.data_fim) return false;
     
     const today = new Date();

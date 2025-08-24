@@ -64,7 +64,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       `)
       .eq('selected_for_display', true)
       .eq('approval_status', 'approved')
-      .eq('pedidos.status', 'ativo')
+      .eq('pedidos.status', 'video_aprovado')
       .gte('pedidos.data_fim', new Date().toISOString().split('T')[0])
       .contains('pedidos.lista_paineis', [parsedPanelId]);
     

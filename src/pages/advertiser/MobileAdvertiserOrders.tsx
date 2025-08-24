@@ -131,7 +131,7 @@ const MobileAdvertiserOrders = () => {
 
   const calculateStats = (ordersList: Order[]) => {
     const pedidosAtivos = ordersList.filter(order => 
-      ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) &&
+      ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) &&
       isWithinActivePeriod(order)
     ).length;
     
@@ -143,7 +143,7 @@ const MobileAdvertiserOrders = () => {
     
     const pedidosFinalizados = ordersList.filter(order => 
       order.status === 'expirado' || 
-      (['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'].includes(order.status) && !isWithinActivePeriod(order))
+      (['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) && !isWithinActivePeriod(order))
     ).length;
 
     setStats({ pedidosAtivos, tentativas, aguardandoVideo, pedidosFinalizados });
@@ -172,9 +172,8 @@ const MobileAdvertiserOrders = () => {
           icon: Upload
         };
       case 'video_aprovado':
-      case 'ativo':
         return {
-          label: 'Ativo',
+          label: 'EM EXIBIÇÃO',
           color: 'bg-green-100 text-green-800 border-green-200',
           icon: CheckCircle
         };

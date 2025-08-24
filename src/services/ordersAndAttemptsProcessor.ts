@@ -35,7 +35,7 @@ export const formatAttemptsData = (tentativasComEmails: any[]): OrderOrAttempt[]
 export const filterOrphanedAttempts = (tentativas: OrderOrAttempt[], pedidos: OrderOrAttempt[]): OrderOrAttempt[] => {
   // Criar mapa mais robusto de pedidos pagos com múltiplos critérios
   const paidOrdersData = pedidos
-    .filter(p => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(p.status))
+    .filter(p => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(p.status))
     .map(pedido => ({
       client_id: pedido.client_id,
       valor_total: pedido.valor_total,
@@ -101,7 +101,7 @@ export const calculateStats = (pedidos: OrderOrAttempt[], tentativas: OrderOrAtt
   const totalOrders = pedidos.length;
   const totalAttempts = tentativas.length;
   const totalRevenue = pedidos
-    .filter(p => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(p.status))
+    .filter(p => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(p.status))
     .reduce((sum, p) => sum + p.valor_total, 0);
   const abandonedValue = tentativas.reduce((sum, t) => sum + t.valor_total, 0);
   

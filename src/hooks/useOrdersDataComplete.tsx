@@ -101,10 +101,10 @@ export const useOrdersDataComplete = () => {
       const ordersList = data || [];
       const total = ordersList.length;
       const pending = ordersList.filter(o => o.status === 'pendente').length;
-      const completed = ordersList.filter(o => ['pago', 'video_aprovado', 'ativo'].includes(o.status)).length;
+      const completed = ordersList.filter(o => ['pago', 'video_aprovado'].includes(o.status)).length;
       const cancelled = ordersList.filter(o => o.status === 'cancelado').length;
       const revenue = ordersList
-        .filter(o => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(o.correct_status))
+        .filter(o => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(o.correct_status))
         .reduce((sum, order) => sum + (Number(order.valor_total) || 0), 0);
       
       // Estatísticas de vídeo
