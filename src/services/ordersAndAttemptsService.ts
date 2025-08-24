@@ -42,21 +42,47 @@ export const enrichOrdersWithEmails = async (pedidos: any[]) => {
   
   const clientIds = [...new Set(pedidos.map(p => p.client_id))];
   
-  const { data: authUsers, error: authError } = await supabase
+  // Buscar dados completos dos usuários incluindo metadados
+  const { data: users, error: usersError } = await supabase
     .from('users')
     .select('id, email')
     .in('id', clientIds);
-    
-  const emailMap = new Map();
-  if (!authError && authUsers) {
-    authUsers.forEach(user => emailMap.set(user.id, user.email));
+
+  const userMap = new Map();
+  if (!usersError && users) {
+    // Para cada usuário, buscar também os dados do auth para obter metadados
+    for (const user of users) {
+      try {
+        const { data: authData } = await supabase.auth.admin.getUserById(user.id);
+        const userData = {
+          email: user.email,
+          name: authData.user?.user_metadata?.name || authData.user?.user_metadata?.full_name || user.email.split('@')[0],
+          phone: authData.user?.user_metadata?.telefone || authData.user?.user_metadata?.phone || null,
+          cpf: authData.user?.user_metadata?.cpf || null
+        };
+        userMap.set(user.id, userData);
+      } catch (error) {
+        // Fallback se não conseguir buscar metadados
+        userMap.set(user.id, {
+          email: user.email,
+          name: user.email.split('@')[0],
+          phone: null,
+          cpf: null
+        });
+      }
+    }
   }
   
-  return pedidos.map(pedido => ({
-    ...pedido,
-    client_email: emailMap.get(pedido.client_id) || 'Email não encontrado',
-    client_name: emailMap.get(pedido.client_id) || 'Nome não disponível'
-  }));
+  return pedidos.map(pedido => {
+    const userData = userMap.get(pedido.client_id) || {};
+    return {
+      ...pedido,
+      client_email: userData.email || 'Email não encontrado',
+      client_name: userData.name || 'Nome não disponível',
+      client_phone: userData.phone || null,
+      client_cpf: userData.cpf || null
+    };
+  });
 };
 
 export const enrichAttemptsWithEmails = async (tentativas: any[]) => {
@@ -64,18 +90,72 @@ export const enrichAttemptsWithEmails = async (tentativas: any[]) => {
   
   const userIds = [...new Set(tentativas.map(t => t.id_user))];
   
-  const { data: usuarios, error: usuariosError } = await supabase
+  // Buscar dados completos dos usuários incluindo metadados
+  const { data: users, error: usersError } = await supabase
     .from('users')
     .select('id, email')
     .in('id', userIds);
+
+  const userMap = new Map();
+  if (!usersError && users) {
+    // Para cada usuário, buscar também os dados do auth para obter metadados
+    for (const user of users) {
+      try {
+        const { data: authData } = await supabase.auth.admin.getUserById(user.id);
+        const userData = {
+          email: user.email,
+          name: authData.user?.user_metadata?.name || authData.user?.user_metadata?.full_name || user.email.split('@')[0],
+          phone: authData.user?.user_metadata?.telefone || authData.user?.user_metadata?.phone || null,
+          cpf: authData.user?.user_metadata?.cpf || null
+        };
+        userMap.set(user.id, userData);
+      } catch (error) {
+        // Fallback se não conseguir buscar metadados
+        userMap.set(user.id, {
+          email: user.email,
+          name: user.email.split('@')[0],
+          phone: null,
+          cpf: null
+        });
+      }
+    }
+  }
+
+  // Buscar nomes dos prédios selecionados
+  const allBuildingIds = [...new Set(tentativas.flatMap(t => t.predios_selecionados || []))];
+  let buildingsMap = new Map();
+  
+  if (allBuildingIds.length > 0) {
+    const { data: buildings } = await supabase
+      .from('buildings')
+      .select('id, nome, endereco, bairro')
+      .in('id', allBuildingIds);
     
-  const emailMap = new Map();
-  if (!usuariosError && usuarios) {
-    usuarios.forEach(user => emailMap.set(user.id, user.email));
+    if (buildings) {
+      buildings.forEach(building => {
+        buildingsMap.set(building.id, {
+          nome: building.nome,
+          endereco: building.endereco,
+          bairro: building.bairro
+        });
+      });
+    }
   }
   
-  return tentativas.map(tentativa => ({
-    ...tentativa,
-    user_email: emailMap.get(tentativa.id_user) || 'Email não encontrado'
-  }));
+  return tentativas.map(tentativa => {
+    const userData = userMap.get(tentativa.id_user) || {};
+    const selectedBuildings = (tentativa.predios_selecionados || []).map(buildingId => 
+      buildingsMap.get(buildingId) || { nome: 'Prédio não encontrado', endereco: '', bairro: '' }
+    );
+    
+    return {
+      ...tentativa,
+      client_email: userData.email || 'Email não encontrado',
+      client_name: userData.name || 'Nome não disponível',
+      client_phone: userData.phone || null,
+      client_cpf: userData.cpf || null,
+      selected_buildings: selectedBuildings,
+      user_email: userData.email || 'Email não encontrado' // Manter compatibilidade
+    };
+  });
 };

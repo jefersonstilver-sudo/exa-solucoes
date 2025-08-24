@@ -12,9 +12,16 @@ export interface OrderOrAttempt {
   client_id?: string;
   client_email?: string;
   client_name?: string;
+  client_phone?: string;
+  client_cpf?: string;
   video_status?: string;
   correct_status?: string;
   predios_selecionados?: number[];
+  selected_buildings?: Array<{
+    nome: string;
+    endereco: string;
+    bairro: string;
+  }>;
 }
 
 export interface OrdersStats {
