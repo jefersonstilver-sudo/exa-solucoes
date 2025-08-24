@@ -99,9 +99,9 @@ const AdvertiserOrders = () => {
   };
   
   const stats = {
-    // Pedidos ativos: pagos, com vídeo aprovado/ativo e dentro do período
+    // Pedidos ativos: pagos, com vídeo aprovado e dentro do período
     pedidosAtivos: orders.filter(order => 
-      ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) &&
+      order.status === 'video_aprovado' &&
       isWithinActivePeriod(order)
     ).length,
     
@@ -345,8 +345,7 @@ const AdvertiserOrders = () => {
                 <SelectItem value="todos">Todos os Status</SelectItem>
                 <SelectItem value="tentativa">Tentativas</SelectItem>
                 <SelectItem value="pago">Aguardando Vídeo</SelectItem>
-                <SelectItem value="video_aprovado">Aprovado</SelectItem>
-                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="video_aprovado">Em Exibição</SelectItem>
                 <SelectItem value="cancelado">Cancelado</SelectItem>
               </SelectContent>
             </Select>

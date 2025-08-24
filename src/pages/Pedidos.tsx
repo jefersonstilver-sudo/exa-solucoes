@@ -20,7 +20,7 @@ const getStatusColor = (status: string) => {
     'pago_pendente_video': 'bg-blue-100 text-blue-800',
     'video_enviado': 'bg-purple-100 text-purple-800',
     'video_aprovado': 'bg-green-100 text-green-800',
-    'ativo': 'bg-emerald-100 text-emerald-800',
+    'ativo': 'bg-emerald-100 text-emerald-800', // REMOVIDO - não usado mais
     'cancelado': 'bg-red-100 text-red-800',
     'tentativa': 'bg-gray-100 text-gray-800'
   };
@@ -33,8 +33,8 @@ const getStatusText = (status: string) => {
     'pago': 'Pago',
     'pago_pendente_video': 'Pago - Aguardando Vídeo',
     'video_enviado': 'Vídeo Enviado',
-    'video_aprovado': 'Vídeo Aprovado',
-    'ativo': 'Ativo',
+    'video_aprovado': 'EM EXIBIÇÃO',
+    'ativo': 'REMOVIDO - Usar video_aprovado', // REMOVIDO - não usado mais
     'cancelado': 'Cancelado',
     'tentativa': 'Tentativa'
   };

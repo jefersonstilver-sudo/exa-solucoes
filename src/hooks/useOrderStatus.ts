@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { 
   Clock, 
@@ -51,13 +50,11 @@ export const useOrderStatus = (order: any, onPixPayment?: (order: any) => void) 
     const status = order?.status;
     const hasVideos = order?.videos && order.videos.length > 0;
     const hasApprovedVideo = order?.videos?.some((v: any) => v.approval_status === 'approved');
-    const hasActiveVideo = order?.videos?.some((v: any) => v.is_active || v.selected_for_display);
-    const hasVideoInDisplay = order?.videos?.some((v: any) => v.selected_for_display && v.approval_status === 'approved');
 
     switch (status) {
       case 'pendente':
         return {
-          label: 'Aguardando Pagamento',
+          label: 'Pagamento não realizado',
           description: 'Efetue o pagamento para ativar sua campanha',
           color: 'text-white',
           bgColor: 'bg-orange-600 border-orange-700',
@@ -108,14 +105,16 @@ export const useOrderStatus = (order: any, onPixPayment?: (order: any) => void) 
         };
 
       case 'video_aprovado':
+        // NOVA LÓGICA: video_aprovado sempre significa "EM EXIBIÇÃO"
+        // Uma vez aprovado o vídeo, o contrato está ativo e em exibição
         return {
           label: 'EM EXIBIÇÃO',
           description: 'Sua campanha está ativa e sendo exibida nos painéis',
           color: 'text-white',
           bgColor: 'bg-green-600 border-green-700',
-          icon: Play,
+          icon: Monitor,
           action: {
-            label: 'Em Exibição',
+            label: 'Ver Detalhes',
             variant: 'outline',
             onClick: () => {
               // Esta ação será interceptada pelo componente pai para abrir o popup

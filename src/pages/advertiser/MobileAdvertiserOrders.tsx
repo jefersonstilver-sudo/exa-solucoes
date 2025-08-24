@@ -131,7 +131,7 @@ const MobileAdvertiserOrders = () => {
 
   const calculateStats = (ordersList: Order[]) => {
     const pedidosAtivos = ordersList.filter(order => 
-      ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) &&
+      order.status === 'video_aprovado' &&
       isWithinActivePeriod(order)
     ).length;
     
