@@ -11,13 +11,13 @@ const steps = [
 
 const LinkaeHowItWorks: React.FC = () => {
   return (
-    <section className="bg-background section-bg-soft-linkae">
+    <section className="bg-gradient-to-b from-gray-900 to-gray-800">
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-12 md:py-16">
         <header className="text-center mb-8 md:mb-12 animate-fade-in">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight gradient-text-linkae">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-sky-300 to-blue-200 bg-clip-text text-transparent">
             Como funciona
           </h2>
-          <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
+          <p className="text-gray-300 mt-3 max-w-2xl mx-auto">
             Sem fórmulas prontas. Cada projeto é pensado do zero, do jeito certo.
           </p>
         </header>
@@ -26,30 +26,30 @@ const LinkaeHowItWorks: React.FC = () => {
           {steps.map(({ icon: Icon, title, desc }, idx) => (
             <li 
               key={title} 
-              className="group relative flex items-start gap-4 p-6 rounded-2xl border bg-card/70 backdrop-blur-sm animate-fade-in transition-all duration-300 hover:shadow-card-hover hover:border-linkae-primary/40 hover:bg-card hover:scale-[1.02]"
+              className="group relative flex items-start gap-4 p-6 rounded-2xl border border-gray-700 bg-gray-800/70 backdrop-blur-sm animate-fade-in transition-all duration-300 hover:shadow-[0_10px_30px_rgba(56,189,248,0.3)] hover:border-sky-400/40 hover:bg-gray-800 hover:scale-[1.02]"
               style={{ animationDelay: `${idx * 0.15}s` }}
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linkae-accent/10 text-linkae-accent shrink-0 group-hover:bg-linkae-accent/20 group-hover:scale-110 transition-all duration-200">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-400/20 text-sky-300 shrink-0 group-hover:bg-sky-400/30 group-hover:scale-110 transition-all duration-200">
                 <Icon className="h-6 w-6 group-hover:animate-pulse" aria-hidden="true" />
               </div>
               <div className="flex-1">
-                <h3 className="text-base md:text-lg font-semibold text-foreground group-hover:text-linkae-primary transition-colors">
-                  <span className="text-linkae-accent font-bold">{idx + 1}.</span> {title}
+                <h3 className="text-base md:text-lg font-semibold text-white group-hover:text-sky-300 transition-colors">
+                  <span className="text-sky-400 font-bold">{idx + 1}.</span> {title}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-2 group-hover:text-foreground transition-colors">{desc}</p>
+                <p className="text-sm text-gray-300 mt-2 group-hover:text-white transition-colors">{desc}</p>
               </div>
               
               {/* Indicator line connecting steps */}
               {idx < steps.length - 1 && idx % 2 === 0 && (
-                <div className="hidden md:block absolute -right-3 top-1/2 w-6 h-0.5 bg-gradient-to-r from-linkae-primary/30 to-transparent"></div>
+                <div className="hidden md:block absolute -right-3 top-1/2 w-6 h-0.5 bg-gradient-to-r from-sky-400/30 to-transparent"></div>
               )}
             </li>
           ))}
         </ol>
 
-        <div className="mt-8 md:mt-10 flex items-center justify-center gap-3 text-sm text-muted-foreground bg-card/30 backdrop-blur-sm rounded-full px-6 py-3 border border-linkae-primary/20 animate-fade-in">
-          <Wand2 className="h-5 w-5 text-linkae-accent animate-pulse" aria-hidden="true" />
-          <span className="font-medium">Personalização total para o seu contexto</span>
+        <div className="mt-8 md:mt-10 flex items-center justify-center gap-3 text-sm text-gray-300 bg-gray-800/50 backdrop-blur-sm rounded-full px-6 py-3 border border-sky-400/20 animate-fade-in">
+          <Wand2 className="h-5 w-5 text-sky-400 animate-pulse" aria-hidden="true" />
+          <span className="font-medium text-white">Personalização total para o seu contexto</span>
         </div>
       </div>
     </section>
