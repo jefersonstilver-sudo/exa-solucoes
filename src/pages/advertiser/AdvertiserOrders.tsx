@@ -194,7 +194,15 @@ const AdvertiserOrders = () => {
               </Badge>
 
               <div className="flex space-x-2">
-                {statusInfo.action}
+                {statusInfo.action && (
+                  <Button 
+                    variant={statusInfo.action.variant} 
+                    size="sm"
+                    onClick={statusInfo.action.onClick}
+                  >
+                    {statusInfo.action.label}
+                  </Button>
+                )}
                 
                 {item.type === 'order' && <Button variant="outline" size="sm" onClick={() => navigate(`/anunciante/pedido/${item.id}`)}>
                     <Eye className="h-4 w-4 mr-1" />
