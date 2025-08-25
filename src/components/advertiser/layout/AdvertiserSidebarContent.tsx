@@ -63,7 +63,8 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       title: 'Meus Pedidos',
       href: '/anunciante/pedidos',
       icon: ShoppingBag,
-      section: 'main'
+      section: 'main',
+      disabled: true // Temporariamente desabilitado
     },
     
     // CONTEÚDO
@@ -219,26 +220,44 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
             )}
             <div className={cn(isCollapsed ? "space-y-1" : "space-y-1")}>
               {items.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  onClick={onItemClick}
-                  className={cn(
-                    'flex items-center rounded-xl text-sm font-medium transition-all duration-200 group',
-                    isCollapsed ? "p-2 justify-center" : "space-x-3 px-3 py-3",
-                    isActive(item.href, item.exact)
-                      ? 'bg-white text-[#1e40af] shadow-lg font-semibold'
-                      : 'text-white hover:text-white hover:bg-white/20 hover:translate-x-1'
-                  )}
-                  title={isCollapsed ? item.title : undefined}
-                >
-                  <item.icon className={cn(
-                    "transition-transform duration-200 group-hover:scale-110",
-                    isActive(item.href, item.exact) ? "text-[#1e40af]" : "text-white",
-                    isCollapsed ? "h-5 w-5" : "h-5 w-5"
-                  )} />
-                  {!isCollapsed && <span>{item.title}</span>}
-                </Link>
+                item.disabled ? (
+                  <div
+                    key={item.href}
+                    className={cn(
+                      'flex items-center rounded-xl text-sm font-medium transition-all duration-200 opacity-50 cursor-not-allowed',
+                      isCollapsed ? "p-2 justify-center" : "space-x-3 px-3 py-3",
+                      'text-white/50'
+                    )}
+                    title={isCollapsed ? `${item.title} (Desabilitado)` : undefined}
+                  >
+                    <item.icon className={cn(
+                      "text-white/50",
+                      isCollapsed ? "h-5 w-5" : "h-5 w-5"
+                    )} />
+                    {!isCollapsed && <span>{item.title}</span>}
+                  </div>
+                ) : (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={onItemClick}
+                    className={cn(
+                      'flex items-center rounded-xl text-sm font-medium transition-all duration-200 group',
+                      isCollapsed ? "p-2 justify-center" : "space-x-3 px-3 py-3",
+                      isActive(item.href, item.exact)
+                        ? 'bg-white text-[#1e40af] shadow-lg font-semibold'
+                        : 'text-white hover:text-white hover:bg-white/20 hover:translate-x-1'
+                    )}
+                    title={isCollapsed ? item.title : undefined}
+                  >
+                    <item.icon className={cn(
+                      "transition-transform duration-200 group-hover:scale-110",
+                      isActive(item.href, item.exact) ? "text-[#1e40af]" : "text-white",
+                      isCollapsed ? "h-5 w-5" : "h-5 w-5"
+                    )} />
+                    {!isCollapsed && <span>{item.title}</span>}
+                  </Link>
+                )
               ))}
             </div>
           </div>
