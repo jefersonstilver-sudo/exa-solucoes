@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from './useAuth';
 
 export interface PortfolioItem {
   id: string;
@@ -62,10 +63,38 @@ export const usePortfolioData = () => {
 };
 
 export const useLeadsProdutoraData = () => {
+  const { userProfile, isLoggedIn } = useAuth();
   const [leads, setLeads] = useState<LeadProdutora[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasPermission, setHasPermission] = useState(false);
+
+  // Check if user has admin permissions
+  useEffect(() => {
+    const checkPermissions = () => {
+      if (!isLoggedIn || !userProfile) {
+        setHasPermission(false);
+        return;
+      }
+      
+      const isAdmin = userProfile.role === 'admin' || userProfile.role === 'super_admin';
+      setHasPermission(isAdmin);
+      
+      if (!isAdmin) {
+        console.warn('🚫 Acesso negado: Usuário não possui permissões de admin para acessar leads');
+        toast.error('Acesso negado: Apenas administradores podem visualizar leads');
+      }
+    };
+    
+    checkPermissions();
+  }, [isLoggedIn, userProfile]);
 
   const fetchLeads = async () => {
+    // Security check: Only fetch if user has admin permissions
+    if (!hasPermission) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       console.log('📊 Leads Produtora: Buscando dados...');
@@ -77,7 +106,14 @@ export const useLeadsProdutoraData = () => {
 
       if (error) {
         console.error('❌ Erro ao buscar leads:', error);
-        toast.error('Erro ao carregar leads: ' + error.message);
+        
+        // Check if it's a permission error
+        if (error.code === 'PGRST116' || error.message.includes('permission')) {
+          toast.error('Acesso negado: Você não tem permissão para visualizar leads');
+        } else {
+          toast.error('Erro ao carregar leads: ' + error.message);
+        }
+        setLeads([]);
       } else {
         console.log('✅ Leads carregados:', data?.length || 0);
         setLeads(data || []);
@@ -85,12 +121,19 @@ export const useLeadsProdutoraData = () => {
     } catch (error) {
       console.error('❌ Erro ao buscar leads:', error);
       toast.error('Erro ao carregar leads');
+      setLeads([]);
     } finally {
       setLoading(false);
     }
   };
 
   const markAsContacted = async (leadId: string) => {
+    // Security check: Only allow if user has admin permissions
+    if (!hasPermission) {
+      toast.error('Acesso negado: Apenas administradores podem marcar leads como contatados');
+      return;
+    }
+
     try {
       console.log('🔄 Marcando lead como contatado:', leadId);
       
@@ -116,6 +159,11 @@ export const useLeadsProdutoraData = () => {
   useEffect(() => {
     fetchLeads();
 
+    // Only configure realtime if user has permissions
+    if (!hasPermission) {
+      return;
+    }
+
     // Configurar realtime para novos leads
     console.log('📡 Leads Produtora: Configurando realtime...');
     const channel = supabase
@@ -136,7 +184,13 @@ export const useLeadsProdutoraData = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [hasPermission]);
 
-  return { leads, loading, refetch: fetchLeads, markAsContacted };
+  return { 
+    leads, 
+    loading, 
+    hasPermission, 
+    refetch: fetchLeads, 
+    markAsContacted 
+  };
 };
