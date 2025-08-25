@@ -3,26 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { 
-  Eye, 
-  Building, 
-  DollarSign, 
-  Calendar, 
-  User, 
-  Mail, 
-  Phone, 
-  Shield, 
-  ShieldOff,
-  Clock,
-  MessageCircle,
-  AlertTriangle,
-  FileText
-} from 'lucide-react';
+import { Eye, Building, DollarSign, Calendar, User, Mail, Phone, Shield, ShieldOff, Clock, MessageCircle, AlertTriangle, FileText } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
-
 interface EnhancedOrderCardProps {
   item: OrderOrAttempt;
   isSelected: boolean;
@@ -33,7 +18,6 @@ interface EnhancedOrderCardProps {
   isBlocking?: boolean;
   isUnblocking?: boolean;
 }
-
 const getStatusColor = (status: string) => {
   const statusMap: Record<string, string> = {
     'pendente': 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -48,7 +32,6 @@ const getStatusColor = (status: string) => {
   };
   return statusMap[status] || 'bg-gray-100 text-gray-800 border-gray-300';
 };
-
 const getStatusText = (status: string) => {
   const statusMap: Record<string, string> = {
     'pendente': 'Aguardando Pagamento',
@@ -63,16 +46,13 @@ const getStatusText = (status: string) => {
   };
   return statusMap[status] || status;
 };
-
 const getTimeIndicator = (createdAt: string) => {
   const now = new Date();
   const created = new Date(createdAt);
   const hoursDiff = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60));
   const daysDiff = Math.floor(hoursDiff / 24);
-  
   let timeText = '';
   let urgencyClass = '';
-  
   if (hoursDiff < 24) {
     timeText = `há ${hoursDiff}h`;
     urgencyClass = 'text-green-600'; // Recente
@@ -86,27 +66,21 @@ const getTimeIndicator = (createdAt: string) => {
     timeText = `há ${daysDiff} dias`;
     urgencyClass = 'text-red-600'; // Muito antigo
   }
-  
-  return { timeText, urgencyClass, daysDiff };
+  return {
+    timeText,
+    urgencyClass,
+    daysDiff
+  };
 };
-
 const formatWhatsAppNumber = (phone: string) => {
   return phone?.replace(/\D/g, '') || '';
 };
-
 const generateWhatsAppMessage = (item: OrderOrAttempt) => {
   const clientName = item.client_name || 'Cliente';
   const orderType = item.type === 'order' ? 'pedido' : 'cotação';
   const value = formatCurrency(item.valor_total || 0);
-  
-  return encodeURIComponent(
-    `Olá ${clientName}! 👋\n\n` +
-    `Vi que você tem um ${orderType} no valor de ${value} que ainda não foi finalizado.\n\n` +
-    `Posso te ajudar a concluir sua compra? Temos algumas ofertas especiais disponíveis! 🎯\n\n` +
-    `Atenciosamente,\nEquipe Indexa`
-  );
+  return encodeURIComponent(`Olá ${clientName}! 👋\n\n` + `Vi que você tem um ${orderType} no valor de ${value} que ainda não foi finalizado.\n\n` + `Posso te ajudar a concluir sua compra? Temos algumas ofertas especiais disponíveis! 🎯\n\n` + `Atenciosamente,\nEquipe Indexa`);
 };
-
 export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
   item,
   isSelected,
@@ -117,19 +91,18 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
   isBlocking,
   isUnblocking
 }) => {
-  const { timeText, urgencyClass, daysDiff } = getTimeIndicator(item.created_at);
+  const {
+    timeText,
+    urgencyClass,
+    daysDiff
+  } = getTimeIndicator(item.created_at);
   const whatsappNumber = formatWhatsAppNumber(item.client_phone || '');
   const whatsappMessage = generateWhatsAppMessage(item);
-
-  return (
-    <Card className={`mb-4 transition-all duration-200 hover:shadow-md ${daysDiff > 7 ? 'border-red-200 bg-red-50' : ''}`}>
+  return <Card className={`mb-4 transition-all duration-200 hover:shadow-md ${daysDiff > 7 ? 'border-red-200 bg-red-50' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={(checked) => onSelectionChange(item.id, checked as boolean)}
-            />
+            <Checkbox checked={isSelected} onCheckedChange={checked => onSelectionChange(item.id, checked as boolean)} />
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <CardTitle className="text-sm">
@@ -142,83 +115,40 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                   <Clock className="w-3 h-3" />
                   <span className="font-medium">{timeText}</span>
                 </div>
-                {daysDiff > 7 && (
-                  <Badge variant="destructive" className="text-xs">
-                    <AlertTriangle className="w-3 h-3 mr-1" />
-                    ANTIGO
-                  </Badge>
-                )}
+                {daysDiff > 7}
               </div>
               <div className="text-xs text-gray-500">
-                Criado em {format(new Date(item.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                Criado em {format(new Date(item.created_at), 'dd/MM/yyyy HH:mm', {
+                locale: ptBR
+              })}
               </div>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
             {/* Botões de ação CRM */}
-            {item.type === 'order' || item.type === 'attempt' ? (
-              <div className="flex gap-1">
-                {whatsappNumber && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(`https://wa.me/55${whatsappNumber}?text=${whatsappMessage}`, '_blank')}
-                    className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
-                  >
+            {item.type === 'order' || item.type === 'attempt' ? <div className="flex gap-1">
+                {whatsappNumber && <Button variant="outline" size="sm" onClick={() => window.open(`https://wa.me/55${whatsappNumber}?text=${whatsappMessage}`, '_blank')} className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400">
                     <MessageCircle className="w-4 h-4" />
-                  </Button>
-                )}
+                  </Button>}
                 
-                {item.client_email && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(`mailto:${item.client_email}?subject=Seu pedido Indexa&body=Olá! Gostaria de conversar sobre seu pedido...`, '_blank')}
-                    className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
-                  >
+                {item.client_email && <Button variant="outline" size="sm" onClick={() => window.open(`mailto:${item.client_email}?subject=Seu pedido Indexa&body=Olá! Gostaria de conversar sobre seu pedido...`, '_blank')} className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400">
                     <Mail className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            ) : null}
+                  </Button>}
+              </div> : null}
 
-            {item.type === 'order' && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onViewOrderDetails?.(item.id)}
-                >
+            {item.type === 'order' && <>
+                <Button variant="outline" size="sm" onClick={() => onViewOrderDetails?.(item.id)}>
                   <Eye className="w-4 h-4" />
                 </Button>
                 
                 {/* Botões de Bloqueio/Desbloqueio */}
-                {item.status === 'bloqueado' ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onUnblockOrder?.(item.id)}
-                    disabled={isUnblocking}
-                    className="text-green-600 hover:text-green-700"
-                  >
+                {item.status === 'bloqueado' ? <Button variant="outline" size="sm" onClick={() => onUnblockOrder?.(item.id)} disabled={isUnblocking} className="text-green-600 hover:text-green-700">
                     <ShieldOff className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onBlockOrder?.(item.id)}
-                      disabled={isBlocking}
-                      className="text-red-600 hover:text-red-700"
-                    >
+                  </Button> : ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status) && <Button variant="outline" size="sm" onClick={() => onBlockOrder?.(item.id)} disabled={isBlocking} className="text-red-600 hover:text-red-700">
                       <Shield className="w-4 h-4" />
-                    </Button>
-                  )
-                )}
-              </>
-            )}
+                    </Button>}
+              </>}
           </div>
         </div>
       </CardHeader>
@@ -231,91 +161,68 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
             <span className="font-bold text-lg">{formatCurrency(item.valor_total || 0)}</span>
           </div>
           
-          {item.client_name && (
-            <div className="flex items-center gap-2">
+          {item.client_name && <div className="flex items-center gap-2">
               <User className="w-4 h-4 text-purple-600" />
               <span className="text-sm font-medium">{item.client_name}</span>
-            </div>
-          )}
+            </div>}
           
-          {item.client_email && (
-            <div className="flex items-center gap-2">
+          {item.client_email && <div className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-blue-600" />
               <span className="text-sm truncate">{item.client_email}</span>
-            </div>
-          )}
+            </div>}
           
-          {item.client_phone && (
-            <div className="flex items-center gap-2">
+          {item.client_phone && <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-orange-600" />
               <span className="text-sm">{item.client_phone}</span>
-            </div>
-          )}
+            </div>}
         </div>
 
         {/* Informações adicionais */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
-          {item.plano_meses && (
-            <div className="flex items-center gap-2">
+          {item.plano_meses && <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-orange-600" />
               <span>{item.plano_meses} meses</span>
-            </div>
-          )}
+            </div>}
           
-          {item.client_cpf && (
-            <div className="flex items-center gap-2">
+          {item.client_cpf && <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-gray-600" />
               <span>CPF: {item.client_cpf}</span>
-            </div>
-          )}
+            </div>}
         </div>
         
         {/* Informações específicas do tipo */}
-        {item.type === 'order' && item.lista_paineis && item.lista_paineis.length > 0 && (
-          <div className="pt-3 border-t">
+        {item.type === 'order' && item.lista_paineis && item.lista_paineis.length > 0 && <div className="pt-3 border-t">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Building className="w-4 h-4" />
               <span>{item.lista_paineis.length} painel(is) selecionado(s)</span>
             </div>
-          </div>
-        )}
+          </div>}
         
-        {item.type === 'attempt' && item.selected_buildings && item.selected_buildings.length > 0 && (
-          <div className="pt-3 border-t">
+        {item.type === 'attempt' && item.selected_buildings && item.selected_buildings.length > 0 && <div className="pt-3 border-t">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Building className="w-4 h-4" />
                 <span className="font-medium">{item.selected_buildings.length} prédio(s) cotado(s):</span>
               </div>
               <div className="ml-6 text-xs text-gray-500">
-                {item.selected_buildings.map((building, index) => (
-                  <div key={index}>
+                {item.selected_buildings.map((building, index) => <div key={index}>
                     {building.nome} - {building.bairro}
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Indicador de oportunidade */}
-        {(item.type === 'order' && item.status === 'pendente') || item.type === 'attempt' ? (
-          <div className="mt-3 pt-3 border-t">
+        {item.type === 'order' && item.status === 'pendente' || item.type === 'attempt' ? <div className="mt-3 pt-3 border-t">
             <div className="flex items-center gap-2">
-              {daysDiff <= 1 && (
-                <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
+              {daysDiff <= 1 && <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
                   🔥 Oportunidade Quente
-                </Badge>
-              )}
-              {daysDiff > 7 && (
-                <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                </Badge>}
+              {daysDiff > 7 && <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
                   ⚠️ Pedido Antigo
-                </Badge>
-              )}
+                </Badge>}
             </div>
-          </div>
-        ) : null}
+          </div> : null}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
