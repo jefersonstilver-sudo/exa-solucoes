@@ -54,30 +54,31 @@ const LinkaeDeliverables: React.FC = () => {
           </p>
         </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {items.map(({ icon: Icon, title, desc, highlight }) => (
+          {items.map(({ icon: Icon, title, desc, highlight }, index) => (
             <Card
               key={title}
-              className={`border-border/60 bg-card hover-scale animate-fade-in transition-shadow hover:shadow-card-hover hover:border-linkae-primary/30 ${
-                highlight ? "ring-1 ring-linkae-accent/30" : ""
+              className={`group border-border/60 bg-card/70 backdrop-blur-sm hover-scale animate-fade-in transition-all duration-300 hover:shadow-card-hover hover:border-linkae-primary/40 hover:bg-card hover:scale-[1.02] ${
+                highlight ? "ring-1 ring-linkae-accent/30 glow-linkae" : ""
               }`}
+              style={{ animationDelay: `${index * 0.1}s` }}
             >
               <CardHeader className="flex flex-row items-center gap-3">
-                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-md bg-linkae-primary/10 text-linkae-primary`}> 
-                  <Icon className="h-5 w-5" aria-hidden="true" />
+                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-md bg-linkae-primary/10 text-linkae-primary group-hover:bg-linkae-primary/20 group-hover:scale-110 transition-all duration-200`}> 
+                  <Icon className="h-5 w-5 group-hover:animate-pulse" aria-hidden="true" />
                 </div>
                 <div className="flex-1">
-                  <CardTitle className="text-base md:text-lg text-foreground">
+                  <CardTitle className="text-base md:text-lg text-foreground group-hover:text-linkae-primary transition-colors">
                     {title}
                   </CardTitle>
                   {highlight && (
-                    <span className="mt-1 inline-flex text-[10px] uppercase tracking-wide text-linkae-accent">
-                      Destaque
+                    <span className="mt-1 inline-flex text-[10px] uppercase tracking-wide text-linkae-accent animate-pulse">
+                      ✨ Destaque
                     </span>
                   )}
                 </div>
               </CardHeader>
               <CardContent className="pt-2">
-                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors">{desc}</p>
               </CardContent>
             </Card>
           ))}

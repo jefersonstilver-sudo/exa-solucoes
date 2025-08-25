@@ -6,6 +6,7 @@ import LinkaeDeliverables from '@/components/linkae/LinkaeDeliverables';
 import LinkaeHowItWorks from '@/components/linkae/LinkaeHowItWorks';
 import LinkaeWhy from '@/components/linkae/LinkaeWhy';
 import LinkaeFinalCTA from '@/components/linkae/LinkaeFinalCTA';
+import LogoTicker from '@/components/exa/LogoTicker';
 
 const Linkae = () => {
   console.log('📱 LINKAÊ: Inicializando página Social Media com tema claro');
@@ -46,6 +47,27 @@ const Linkae = () => {
           <LinkaeDeliverables />
           <LinkaeHowItWorks />
           <LinkaeWhy />
+          
+          {/* Seção de Logos - Credibilidade da Indexa */}
+          <section className="py-8 md:py-12 bg-gradient-to-b from-background to-background/50">
+            <div className="max-w-6xl mx-auto px-4">
+              <div className="text-center mb-8 animate-fade-in">
+                <h3 className="text-2xl md:text-3xl font-bold gradient-text-linkae mb-3">
+                  Clientes e parceiros da Indexa que confiam na Linkaê
+                </h3>
+                <p className="text-muted-foreground">
+                  Conecte-se ao mesmo nível de excelência
+                </p>
+              </div>
+              <LogoTicker 
+                speed={30}
+                direction="rtl"
+                pauseOnHover={true}
+                showPortals={true}
+              />
+            </div>
+          </section>
+          
           <LinkaeFinalCTA />
         </main>
       </div>

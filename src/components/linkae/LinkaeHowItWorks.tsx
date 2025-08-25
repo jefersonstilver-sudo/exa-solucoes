@@ -24,21 +24,32 @@ const LinkaeHowItWorks: React.FC = () => {
 
         <ol className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {steps.map(({ icon: Icon, title, desc }, idx) => (
-            <li key={title} className="relative flex items-start gap-4 p-5 rounded-lg border bg-card animate-fade-in transition-shadow hover:shadow-card-hover hover:border-linkae-primary/30">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-linkae-accent/10 text-linkae-accent shrink-0">
-                <Icon className="h-5 w-5" aria-hidden="true" />
+            <li 
+              key={title} 
+              className="group relative flex items-start gap-4 p-6 rounded-2xl border bg-card/70 backdrop-blur-sm animate-fade-in transition-all duration-300 hover:shadow-card-hover hover:border-linkae-primary/40 hover:bg-card hover:scale-[1.02]"
+              style={{ animationDelay: `${idx * 0.15}s` }}
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linkae-accent/10 text-linkae-accent shrink-0 group-hover:bg-linkae-accent/20 group-hover:scale-110 transition-all duration-200">
+                <Icon className="h-6 w-6 group-hover:animate-pulse" aria-hidden="true" />
               </div>
-              <div>
-                <h3 className="text-base md:text-lg font-semibold text-foreground">{idx + 1}. {title}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{desc}</p>
+              <div className="flex-1">
+                <h3 className="text-base md:text-lg font-semibold text-foreground group-hover:text-linkae-primary transition-colors">
+                  <span className="text-linkae-accent font-bold">{idx + 1}.</span> {title}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-2 group-hover:text-foreground transition-colors">{desc}</p>
               </div>
+              
+              {/* Indicator line connecting steps */}
+              {idx < steps.length - 1 && idx % 2 === 0 && (
+                <div className="hidden md:block absolute -right-3 top-1/2 w-6 h-0.5 bg-gradient-to-r from-linkae-primary/30 to-transparent"></div>
+              )}
             </li>
           ))}
         </ol>
 
-        <div className="mt-6 md:mt-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Wand2 className="h-4 w-4" aria-hidden="true" />
-          <span>Personalização total para o seu contexto.</span>
+        <div className="mt-8 md:mt-10 flex items-center justify-center gap-3 text-sm text-muted-foreground bg-card/30 backdrop-blur-sm rounded-full px-6 py-3 border border-linkae-primary/20 animate-fade-in">
+          <Wand2 className="h-5 w-5 text-linkae-accent animate-pulse" aria-hidden="true" />
+          <span className="font-medium">Personalização total para o seu contexto</span>
         </div>
       </div>
     </section>

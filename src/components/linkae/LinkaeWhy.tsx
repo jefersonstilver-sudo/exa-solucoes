@@ -23,10 +23,19 @@ const LinkaeWhy: React.FC = () => {
           </h2>
         </header>
 
-        <ul className="space-y-4">
-          {bullets.map((b) => (
-            <li key={b.title} className="p-5 rounded-lg border bg-card animate-fade-in transition-shadow hover:shadow-card-hover hover:border-linkae-primary/30">
-              <p className="text-base md:text-lg text-foreground">{b.title}</p>
+        <ul className="space-y-6">
+          {bullets.map((b, index) => (
+            <li 
+              key={b.title} 
+              className="group p-6 rounded-2xl border bg-card/70 backdrop-blur-sm animate-fade-in transition-all duration-300 hover:shadow-card-hover hover:border-linkae-primary/40 hover:bg-card hover:scale-[1.02] glow-linkae"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="flex items-start space-x-4">
+                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-linkae-primary to-linkae-accent mt-3 animate-pulse"></div>
+                <p className="text-base md:text-lg text-foreground group-hover:text-linkae-primary transition-colors">
+                  {b.title}
+                </p>
+              </div>
             </li>
           ))}
         </ul>
