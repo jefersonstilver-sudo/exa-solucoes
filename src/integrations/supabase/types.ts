@@ -732,6 +732,48 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_data_audit_logs: {
+        Row: {
+          access_granted: boolean
+          created_at: string
+          id: string
+          ip_address: string | null
+          operation: string
+          record_id: string | null
+          risk_level: string
+          sensitive_fields: string[]
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_granted?: boolean
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          operation: string
+          record_id?: string | null
+          risk_level?: string
+          sensitive_fields?: string[]
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_granted?: boolean
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          operation?: string
+          record_id?: string | null
+          risk_level?: string
+          sensitive_fields?: string[]
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       homepage_banners: {
         Row: {
           created_at: string
@@ -2369,12 +2411,12 @@ export type Database = {
       log_financial_access: {
         Args: {
           p_operation: string
-          p_record_id?: string
+          p_record_id: string
           p_risk_level?: string
-          p_sensitive_fields?: string[]
+          p_sensitive_fields: string[]
           p_table_name: string
         }
-        Returns: string
+        Returns: boolean
       }
       log_payment_processing_secure: {
         Args: {
