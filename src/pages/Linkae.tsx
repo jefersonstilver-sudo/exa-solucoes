@@ -54,7 +54,7 @@ const Linkae = () => {
               <div className="text-center mb-10 animate-fade-in">
                 <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
                   Clientes e parceiros da Indexa que confiam na 
-                  <span className="block bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                  <span className="block text-white">
                     Linkaê
                   </span>
                 </h3>
