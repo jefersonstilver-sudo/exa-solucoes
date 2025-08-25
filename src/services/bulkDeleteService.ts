@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -72,6 +73,70 @@ export const bulkDeletePedidos = async (
       success: false,
       deleted_count: 0,
       total_requested: pedidoIds.length,
+      error: 'Erro inesperado'
+    };
+  }
+};
+
+// Função para exclusão em massa de tentativas
+export const bulkDeleteTentativas = async (
+  tentativaIds: string[],
+  justificativa: string
+): Promise<BulkDeleteResult> => {
+  try {
+    let deleted_count = 0;
+    const errors: string[] = [];
+
+    // Deletar tentativas uma por uma
+    for (const id of tentativaIds) {
+      const { error } = await supabase
+        .from('tentativas_compra')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error(`Erro ao deletar tentativa ${id}:`, error);
+        errors.push(`Tentativa ${id.substring(0, 8)}: ${error.message}`);
+      } else {
+        deleted_count++;
+      }
+    }
+
+    // Log da ação para auditoria
+    await supabase
+      .from('log_eventos_sistema')
+      .insert({
+        tipo_evento: 'BULK_DELETE_TENTATIVAS',
+        descricao: `Admin deletou ${deleted_count}/${tentativaIds.length} tentativas. Justificativa: ${justificativa}`
+      });
+
+    if (errors.length > 0) {
+      toast.error(`${deleted_count} tentativas excluídas. ${errors.length} erros encontrados.`);
+      return {
+        success: deleted_count > 0,
+        deleted_count,
+        total_requested: tentativaIds.length,
+        error: errors.join('; ')
+      };
+    }
+
+    toast.success(
+      `${deleted_count} tentativa${deleted_count !== 1 ? 's' : ''} excluída${deleted_count !== 1 ? 's' : ''} com sucesso`
+    );
+
+    return {
+      success: true,
+      deleted_count,
+      total_requested: tentativaIds.length
+    };
+
+  } catch (error) {
+    console.error('Erro inesperado na exclusão de tentativas:', error);
+    toast.error('Erro inesperado ao excluir tentativas');
+    return {
+      success: false,
+      deleted_count: 0,
+      total_requested: tentativaIds.length,
       error: 'Erro inesperado'
     };
   }

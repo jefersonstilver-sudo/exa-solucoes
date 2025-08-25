@@ -3,411 +3,397 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
-import OrdersAndAttemptsTable from './OrdersAndAttemptsTable';
-import AttemptsTable from './AttemptsTable';
-import BulkActionsToolbar from './BulkActionsToolbar';
-import BulkDeleteModal from './BulkDeleteModal';
-import { useBulkSelection } from '@/hooks/useBulkSelection';
-import { bulkDeletePedidos } from '@/services/bulkDeleteService';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/utils/formatters';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Eye, Trash2, AlertTriangle, Building, DollarSign, Calendar, User, Mail } from 'lucide-react';
+import { bulkDeletePedidos, bulkDeleteTentativas } from '@/services/bulkDeleteService';
 import { toast } from 'sonner';
-import { CheckCircle, AlertTriangle, Clock, DollarSign, Calendar, Shield } from 'lucide-react';
 
 interface OrdersTabsProps {
   onViewOrderDetails: (orderId: string) => void;
 }
 
+const getStatusColor = (status: string) => {
+  const statusMap: Record<string, string> = {
+    'pendente': 'bg-yellow-100 text-yellow-800',
+    'pago': 'bg-green-100 text-green-800',
+    'pago_pendente_video': 'bg-blue-100 text-blue-800',
+    'video_enviado': 'bg-purple-100 text-purple-800',
+    'video_aprovado': 'bg-emerald-100 text-emerald-800',
+    'cancelado': 'bg-red-100 text-red-800',
+    'cancelado_automaticamente': 'bg-red-100 text-red-800',
+    'tentativa': 'bg-gray-100 text-gray-800',
+    'bloqueado': 'bg-red-200 text-red-900'
+  };
+  return statusMap[status] || 'bg-gray-100 text-gray-800';
+};
+
+const getStatusText = (status: string) => {
+  const statusMap: Record<string, string> = {
+    'pendente': 'Aguardando Pagamento',
+    'pago': 'Pago',
+    'pago_pendente_video': 'Pago - Aguardando Vídeo',
+    'video_enviado': 'Vídeo Enviado',
+    'video_aprovado': 'Em Exibição',
+    'cancelado': 'Cancelado',
+    'cancelado_automaticamente': 'Cancelado Automaticamente',
+    'tentativa': 'Tentativa Abandonada',
+    'bloqueado': 'Bloqueado'
+  };
+  return statusMap[status] || status;
+};
+
 const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
-  const { ordersAndAttempts, stats, loading, refetch } = useOrdersWithAttemptsRefactored();
-  const { isSuperAdmin } = useAuth();
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const { ordersAndAttempts, loading, refetch } = useOrdersWithAttemptsRefactored();
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [currentTabOrders, setCurrentTabOrders] = useState<(typeof ordersAndAttempts)>([]);
-  
-  // Função para calcular dias restantes
-  const calculateDaysRemaining = (order: any) => {
-    if (!order.data_fim) return null;
-    const today = new Date();
-    const endDate = new Date(order.data_fim);
-    const diffTime = endDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
+  const [deleteJustification, setDeleteJustification] = useState('');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Filtrar itens por categoria - CORREÇÃO: remover 'pendente' de abandonados
+  const pendingOrders = ordersAndAttempts.filter(item => 
+    item.type === 'order' && item.status === 'pendente'
+  );
+
+  const activeOrders = ordersAndAttempts.filter(item => 
+    item.type === 'order' && ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status)
+  );
+
+  // CORREÇÃO: Abandonados agora só inclui tentativas e pedidos cancelados (sem pendente)
+  const abandonedItems = ordersAndAttempts.filter(item => 
+    (item.type === 'attempt') || 
+    (item.type === 'order' && ['cancelado', 'cancelado_automaticamente'].includes(item.status))
+  );
+
+  const blockedOrders = ordersAndAttempts.filter(item => 
+    item.type === 'order' && item.status === 'bloqueado'
+  );
+
+  const handleSelectItem = (itemId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedItems(prev => [...prev, itemId]);
+    } else {
+      setSelectedItems(prev => prev.filter(id => id !== itemId));
+    }
   };
 
-  // Verificar se um pedido está dentro do período ativo
-  const isWithinActivePeriod = (order: any) => {
-    if (!order.data_inicio || !order.data_fim) return false;
-    const today = new Date();
-    const startDate = new Date(order.data_inicio);
-    const endDate = new Date(order.data_fim);
-    return today >= startDate && today <= endDate;
+  const handleSelectAll = (items: any[], checked: boolean) => {
+    const itemIds = items.map(item => item.id);
+    if (checked) {
+      setSelectedItems(prev => [...new Set([...prev, ...itemIds])]);
+    } else {
+      setSelectedItems(prev => prev.filter(id => !itemIds.includes(id)));
+    }
   };
 
-  // 1. Pedidos Ativos - usando correct_status da função SQL para classificação correta
-  const activePedidos = ordersAndAttempts.filter(item => 
-    item.type === 'order' && 
-    ((item as any).correct_status === 'video_aprovado' || 
-     item.status === 'video_aprovado') &&
-    isWithinActivePeriod(item)
-  );
+  const handleBulkDelete = async () => {
+    if (selectedItems.length === 0) {
+      toast.error('Selecione pelo menos um item para excluir');
+      return;
+    }
 
-  const concludedPedidos = ordersAndAttempts.filter(item => 
-    item.type === 'order' && 
-    (item.status === 'expirado' || 
-     (item.status === 'video_aprovado' && !isWithinActivePeriod(item)))
-  );
-
-  // CORRIGIDO: Apenas pedidos que nunca tiveram vídeos ativos (usando correct_status da função SQL)
-  const waitingVideoPedidos = ordersAndAttempts.filter(item => 
-    item.type === 'order' && 
-    (item as any).correct_status === 'pago_pendente_video'
-  );
-
-  // CORREÇÃO: Filtrar corretamente tentativas abandonadas E pedidos cancelados/pendentes
-  const abandonedAttempts = ordersAndAttempts.filter(item => 
-    item.type === 'attempt' || 
-    (item.type === 'order' && ['cancelado', 'pendente'].includes(item.status))
-  );
-
-  // Pedidos Bloqueados
-  const blockedPedidos = ordersAndAttempts.filter(item => 
-    item.type === 'order' && 
-    item.status === 'bloqueado'
-  );
-
-  // Bulk selection hooks for each tab
-  const activeSelection = useBulkSelection(activePedidos.filter(item => item.type === 'order').map(item => item.id));
-  const concludedSelection = useBulkSelection(concludedPedidos.filter(item => item.type === 'order').map(item => item.id));
-  const waitingSelection = useBulkSelection(waitingVideoPedidos.filter(item => item.type === 'order').map(item => item.id));
-  const abandonedSelection = useBulkSelection(abandonedAttempts.map(item => item.id));
-  const blockedSelection = useBulkSelection(blockedPedidos.filter(item => item.type === 'order').map(item => item.id));
-
-  const handleBulkDelete = (orders: typeof ordersAndAttempts, selection: ReturnType<typeof useBulkSelection>) => {
-    setCurrentTabOrders(orders);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleConfirmBulkDelete = async (justification: string) => {
-    const selectedOrders = currentTabOrders.filter(order => 
-      order.type === 'order' && 
-      (activeSelection.selectedIds.has(order.id) || 
-       concludedSelection.selectedIds.has(order.id) || 
-       waitingSelection.selectedIds.has(order.id) || 
-       abandonedSelection.selectedIds.has(order.id) ||
-       blockedSelection.selectedIds.has(order.id))
-    );
-
-    const selectedAttempts = currentTabOrders.filter(item => 
-      item.type === 'attempt' && 
-      abandonedSelection.selectedIds.has(item.id)
-    );
-
-    if (selectedOrders.length === 0 && selectedAttempts.length === 0) return;
+    if (!deleteJustification.trim()) {
+      toast.error('Justificativa é obrigatória');
+      return;
+    }
 
     setIsDeleting(true);
+
     try {
-      // Delete pedidos if any are selected
-      if (selectedOrders.length > 0) {
-        const result = await bulkDeletePedidos(
-          selectedOrders.map(order => order.id),
-          justification
-        );
-
-        if (!result.success) {
-          setIsDeleting(false);
-          return;
-        }
-      }
-
-      // Delete tentativas if any are selected
-      if (selectedAttempts.length > 0) {
-        // Primeiro, verificar se há pedidos associados às tentativas e deletá-los
-        const tentativaIds = selectedAttempts.map(attempt => attempt.id);
-        
-        const { data: relatedPedidos, error: relatedPedidosError } = await supabase
-          .from('pedidos')
-          .select('id')
-          .in('source_tentativa_id', tentativaIds);
-
-        if (relatedPedidosError) {
-          console.error('Erro ao buscar pedidos relacionados:', relatedPedidosError);
-        }
-
-        // Deletar pedidos relacionados primeiro (se existirem)
-        if (relatedPedidos && relatedPedidos.length > 0) {
-          const relatedPedidoIds = relatedPedidos.map(p => p.id);
-          const bulkDeleteResult = await bulkDeletePedidos(relatedPedidoIds, `Deletion of orders related to abandoned attempts: ${justification}`);
-          
-          if (!bulkDeleteResult.success) {
-            toast.error('Erro ao deletar pedidos relacionados às tentativas');
-            return;
-          }
-        }
-
-        // Agora deletar as tentativas
-        const { error: attemptsError } = await supabase
-          .from('tentativas_compra')
-          .delete()
-          .in('id', tentativaIds);
-
-        if (attemptsError) {
-          console.error('Erro ao deletar tentativas:', attemptsError);
-          toast.error('Erro ao deletar algumas tentativas');
-        } else {
-          toast.success(`${selectedAttempts.length} tentativa(s) e ${relatedPedidos?.length || 0} pedido(s) relacionado(s) deletados com sucesso`);
-        }
-      }
-
-      // Clear all selections
-      activeSelection.clearSelection();
-      concludedSelection.clearSelection();
-      waitingSelection.clearSelection();
-      abandonedSelection.clearSelection();
-      blockedSelection.clearSelection();
+      // Separar pedidos de tentativas
+      const selectedPedidos = selectedItems.filter(id => 
+        ordersAndAttempts.find(item => item.id === id && item.type === 'order')
+      );
       
-      // Refresh data
+      const selectedTentativas = selectedItems.filter(id => 
+        ordersAndAttempts.find(item => item.id === id && item.type === 'attempt')
+      );
+
+      let totalDeleted = 0;
+      const errors: string[] = [];
+
+      // Deletar pedidos usando a função segura
+      if (selectedPedidos.length > 0) {
+        const pedidosResult = await bulkDeletePedidos(selectedPedidos, deleteJustification);
+        totalDeleted += pedidosResult.deleted_count;
+        if (!pedidosResult.success && pedidosResult.error) {
+          errors.push(`Pedidos: ${pedidosResult.error}`);
+        }
+      }
+
+      // Deletar tentativas
+      if (selectedTentativas.length > 0) {
+        const tentativasResult = await bulkDeleteTentativas(selectedTentativas, deleteJustification);
+        totalDeleted += tentativasResult.deleted_count;
+        if (!tentativasResult.success && tentativasResult.error) {
+          errors.push(`Tentativas: ${tentativasResult.error}`);
+        }
+      }
+
+      // Feedback final
+      if (errors.length > 0) {
+        toast.error(`Exclusão parcial: ${totalDeleted} itens excluídos. Erros: ${errors.join('; ')}`);
+      } else {
+        toast.success(`${totalDeleted} item(s) excluído(s) com sucesso`);
+      }
+
+      // Limpar seleção e atualizar dados
+      setSelectedItems([]);
+      setDeleteJustification('');
+      setIsDeleteDialogOpen(false);
       await refetch();
-      
-      // Close modal
-      setIsDeleteModalOpen(false);
+
+    } catch (error) {
+      console.error('Erro na exclusão em massa:', error);
+      toast.error('Erro inesperado na exclusão');
     } finally {
       setIsDeleting(false);
     }
   };
 
+  const renderItemCard = (item: any) => (
+    <Card key={item.id} className="mb-4">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              checked={selectedItems.includes(item.id)}
+              onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <CardTitle className="text-sm">
+                  {item.type === 'order' ? `Pedido #${item.id.substring(0, 8)}` : `Tentativa #${item.id.substring(0, 8)}`}
+                </CardTitle>
+                <Badge className={getStatusColor(item.status)}>
+                  {getStatusText(item.status)}
+                </Badge>
+              </div>
+              <CardDescription className="text-xs">
+                {format(new Date(item.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+              </CardDescription>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {item.type === 'order' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onViewOrderDetails(item.id)}
+              >
+                <Eye className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="pt-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-green-600" />
+            <span className="font-medium">{formatCurrency(item.valor_total || 0)}</span>
+          </div>
+          
+          {item.client_email && (
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-blue-600" />
+              <span className="text-xs truncate">{item.client_email}</span>
+            </div>
+          )}
+          
+          {item.client_name && (
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-purple-600" />
+              <span className="text-xs truncate">{item.client_name}</span>
+            </div>
+          )}
+          
+          {item.plano_meses && (
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-orange-600" />
+              <span className="text-xs">{item.plano_meses} meses</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Informações específicas do tipo */}
+        {item.type === 'order' && item.lista_paineis && item.lista_paineis.length > 0 && (
+          <div className="mt-2 pt-2 border-t">
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <Building className="w-3 h-3" />
+              <span>{item.lista_paineis.length} painel(is) selecionado(s)</span>
+            </div>
+          </div>
+        )}
+        
+        {item.type === 'attempt' && item.selected_buildings && item.selected_buildings.length > 0 && (
+          <div className="mt-2 pt-2 border-t">
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <Building className="w-3 h-3" />
+              <span>{item.selected_buildings.length} prédio(s): {item.selected_buildings.map(b => b.nome).join(', ')}</span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const renderTab = (items: any[], title: string, description: string) => (
+    <div className="space-y-4">
+      {items.length > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={items.every(item => selectedItems.includes(item.id))}
+              onCheckedChange={(checked) => handleSelectAll(items, checked as boolean)}
+            />
+            <span className="text-sm font-medium">Selecionar todos ({items.length})</span>
+          </div>
+          
+          {selectedItems.length > 0 && (
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir Selecionados ({selectedItems.length})
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-red-500" />
+                    Confirmar Exclusão
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Esta ação não pode ser desfeita. {selectedItems.length} item(s) será(ão) permanentemente excluído(s).
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="space-y-2">
+                  <label htmlFor="justification" className="text-sm font-medium">
+                    Justificativa (obrigatória):
+                  </label>
+                  <Textarea
+                    id="justification"
+                    value={deleteJustification}
+                    onChange={(e) => setDeleteJustification(e.target.value)}
+                    placeholder="Descreva o motivo da exclusão..."
+                    className="min-h-[80px]"
+                  />
+                </div>
+                
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsDeleteDialogOpen(false)}
+                    disabled={isDeleting}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleBulkDelete}
+                    disabled={isDeleting || !deleteJustification.trim()}
+                  >
+                    {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      )}
+      
+      {items.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-gray-500">
+            <p>{description}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {items.map(renderItemCard)}
+        </div>
+      )}
+    </div>
+  );
+
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indexa-purple mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando dados...</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-b-2 border-indexa-purple mx-auto mb-2"></div>
+          <p>Carregando dados...</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Tabs defaultValue="active" className="w-full">
-      <TabsList className="grid w-full grid-cols-5 mb-6">
-        <TabsTrigger value="active" className="flex items-center gap-2">
-          <CheckCircle className="h-4 w-4" />
+    <Tabs defaultValue="pending" className="space-y-4">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="pending" className="relative">
+          Aguardando Pagamento
+          {pendingOrders.length > 0 && (
+            <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+              {pendingOrders.length}
+            </Badge>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="active" className="relative">
           Ativos
-          <Badge variant="secondary" className="ml-2">
-            {activePedidos.length}
-          </Badge>
+          {activeOrders.length > 0 && (
+            <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+              {activeOrders.length}
+            </Badge>
+          )}
         </TabsTrigger>
-        <TabsTrigger value="concluded" className="flex items-center gap-2">
-          <Calendar className="h-4 w-4" />
-          Concluídos
-          <Badge variant="secondary" className="ml-2">
-            {concludedPedidos.length}
-          </Badge>
-        </TabsTrigger>
-        <TabsTrigger value="waiting" className="flex items-center gap-2">
-          <Clock className="h-4 w-4" />
-          Aguardando Vídeo
-          <Badge variant="secondary" className="ml-2">
-            {waitingVideoPedidos.length}
-          </Badge>
-        </TabsTrigger>
-        <TabsTrigger value="abandoned" className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4" />
+        <TabsTrigger value="abandoned" className="relative">
           Abandonados
-          <Badge variant="destructive" className="ml-2">
-            {abandonedAttempts.length}
-          </Badge>
+          {abandonedItems.length > 0 && (
+            <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+              {abandonedItems.length}
+            </Badge>
+          )}
         </TabsTrigger>
-        <TabsTrigger value="blocked" className="flex items-center gap-2">
-          <Shield className="h-4 w-4" />
+        <TabsTrigger value="blocked" className="relative">
           Bloqueados
-          <Badge variant="destructive" className="ml-2">
-            {blockedPedidos.length}
-          </Badge>
+          {blockedOrders.length > 0 && (
+            <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+              {blockedOrders.length}
+            </Badge>
+          )}
         </TabsTrigger>
       </TabsList>
 
+      <TabsContent value="pending">
+        {renderTab(pendingOrders, 'Pedidos Aguardando Pagamento', 'Nenhum pedido aguardando pagamento encontrado.')}
+      </TabsContent>
+
       <TabsContent value="active">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Pedidos Ativos ({activePedidos.length})
-            </CardTitle>
-            <CardDescription className="text-gray-700">
-              Pedidos pagos com vídeo ativo e ainda dentro do período contratado
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isSuperAdmin && (
-              <BulkActionsToolbar
-                selectedCount={activeSelection.selectedCount}
-                onBulkDelete={() => handleBulkDelete(activePedidos, activeSelection)}
-                onClearSelection={activeSelection.clearSelection}
-                loading={isDeleting}
-              />
-            )}
-            <OrdersAndAttemptsTable 
-              ordersAndAttempts={activePedidos.map(order => ({
-                ...order,
-                daysRemaining: calculateDaysRemaining(order)
-              }))}
-              onViewOrderDetails={onViewOrderDetails}
-              selectedIds={activeSelection.selectedIds}
-              onSelectionChange={activeSelection.toggleSelectItem}
-              onSelectAllChange={activeSelection.toggleSelectAll}
-              showBulkActions={isSuperAdmin}
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="concluded">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              Pedidos Concluídos ({concludedPedidos.length})
-            </CardTitle>
-            <CardDescription className="text-gray-700">
-              Pedidos que foram pagos, exibiram vídeo e já finalizaram o período contratado
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isSuperAdmin && (
-              <BulkActionsToolbar
-                selectedCount={concludedSelection.selectedCount}
-                onBulkDelete={() => handleBulkDelete(concludedPedidos, concludedSelection)}
-                onClearSelection={concludedSelection.clearSelection}
-                loading={isDeleting}
-              />
-            )}
-            <OrdersAndAttemptsTable 
-              ordersAndAttempts={concludedPedidos} 
-              onViewOrderDetails={onViewOrderDetails}
-              selectedIds={concludedSelection.selectedIds}
-              onSelectionChange={concludedSelection.toggleSelectItem}
-              onSelectAllChange={concludedSelection.toggleSelectAll}
-              showBulkActions={isSuperAdmin}
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="waiting">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <Clock className="h-5 w-5 text-yellow-600" />
-              Pedidos Pagos Aguardando Vídeo ({waitingVideoPedidos.length})
-            </CardTitle>
-            <CardDescription className="text-gray-700">
-              Pedidos que foram pagos mas nunca tiveram vídeos ativos (aguardando primeiro envio)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isSuperAdmin && (
-              <BulkActionsToolbar
-                selectedCount={waitingSelection.selectedCount}
-                onBulkDelete={() => handleBulkDelete(waitingVideoPedidos, waitingSelection)}
-                onClearSelection={waitingSelection.clearSelection}
-                loading={isDeleting}
-              />
-            )}
-            <OrdersAndAttemptsTable 
-              ordersAndAttempts={waitingVideoPedidos} 
-              onViewOrderDetails={onViewOrderDetails}
-              selectedIds={waitingSelection.selectedIds}
-              onSelectionChange={waitingSelection.toggleSelectItem}
-              onSelectAllChange={waitingSelection.toggleSelectAll}
-              showBulkActions={isSuperAdmin}
-            />
-          </CardContent>
-        </Card>
+        {renderTab(activeOrders, 'Pedidos Ativos', 'Nenhum pedido ativo encontrado.')}
       </TabsContent>
 
       <TabsContent value="abandoned">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              Pedidos Abandonados e Cancelados ({abandonedAttempts.length})
-            </CardTitle>
-            <CardDescription className="text-gray-700">
-              Tentativas de compra não finalizadas e pedidos cancelados - Oportunidades de recuperação
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isSuperAdmin && (
-              <BulkActionsToolbar
-                selectedCount={abandonedSelection.selectedCount}
-                onBulkDelete={() => handleBulkDelete(abandonedAttempts, abandonedSelection)}
-                onClearSelection={abandonedSelection.clearSelection}
-                loading={isDeleting}
-              />
-            )}
-            <AttemptsTable 
-              attempts={abandonedAttempts} 
-              selectedIds={abandonedSelection.selectedIds}
-              onSelectionChange={abandonedSelection.toggleSelectItem}
-              onSelectAllChange={abandonedSelection.toggleSelectAll}
-              showBulkActions={isSuperAdmin}
-            />
-          </CardContent>
-        </Card>
+        {renderTab(abandonedItems, 'Itens Abandonados', 'Nenhum item abandonado encontrado.')}
       </TabsContent>
 
       <TabsContent value="blocked">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <Shield className="h-5 w-5 text-red-600" />
-              Pedidos Bloqueados ({blockedPedidos.length})
-            </CardTitle>
-            <CardDescription className="text-gray-700">
-              Pedidos que foram bloqueados e precisam ser revisados para desbloqueio
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isSuperAdmin && (
-              <BulkActionsToolbar
-                selectedCount={blockedSelection.selectedCount}
-                onBulkDelete={() => handleBulkDelete(blockedPedidos, blockedSelection)}
-                onClearSelection={blockedSelection.clearSelection}
-                loading={isDeleting}
-              />
-            )}
-            <OrdersAndAttemptsTable 
-              ordersAndAttempts={blockedPedidos} 
-              onViewOrderDetails={onViewOrderDetails}
-              selectedIds={blockedSelection.selectedIds}
-              onSelectionChange={blockedSelection.toggleSelectItem}
-              onSelectAllChange={blockedSelection.toggleSelectAll}
-              showBulkActions={isSuperAdmin}
-            />
-          </CardContent>
-        </Card>
+        {renderTab(blockedOrders, 'Pedidos Bloqueados', 'Nenhum pedido bloqueado encontrado.')}
       </TabsContent>
-
-      {/* Bulk Delete Modal */}
-      <BulkDeleteModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleConfirmBulkDelete}
-        selectedOrders={currentTabOrders.filter(order => 
-          (order.type === 'order' && 
-           (activeSelection.selectedIds.has(order.id) || 
-            concludedSelection.selectedIds.has(order.id) || 
-            waitingSelection.selectedIds.has(order.id) || 
-            abandonedSelection.selectedIds.has(order.id) ||
-            blockedSelection.selectedIds.has(order.id))) ||
-          (order.type === 'attempt' && abandonedSelection.selectedIds.has(order.id))
-        )}
-        loading={isDeleting}
-      />
     </Tabs>
   );
 };
