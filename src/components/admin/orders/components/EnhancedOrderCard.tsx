@@ -72,6 +72,28 @@ const getTimeIndicator = (createdAt: string) => {
     daysDiff
   };
 };
+
+const detectNationality = (phone: string, cpf: string) => {
+  if (!phone && !cpf) return null;
+  
+  // Se tem CPF brasileiro, é brasileiro
+  if (cpf && cpf.length >= 11) return 'Brasileiro';
+  
+  // Detectar por código do telefone
+  if (phone) {
+    const cleanPhone = phone.replace(/\D/g, '');
+    // Brasil: códigos 11-99
+    if (cleanPhone.startsWith('55') && cleanPhone.length >= 12) return 'Brasileiro';
+    // Paraguai: código 595
+    if (cleanPhone.startsWith('595')) return 'Paraguaio';
+    // Se começa com 11, 21, 47, etc (códigos brasileiros) e não tem código país
+    if (/^(11|12|13|14|15|16|17|18|19|21|22|24|27|28|31|32|33|34|35|37|38|41|42|43|44|45|46|47|48|49|51|53|54|55|61|62|63|64|65|66|67|68|69|71|73|74|75|77|79|81|82|83|84|85|86|87|88|89|91|92|93|94|95|96|97|98|99)/.test(cleanPhone.substring(0, 2))) {
+      return 'Brasileiro';
+    }
+  }
+  
+  return null;
+};
 const formatWhatsAppNumber = (phone: string) => {
   return phone?.replace(/\D/g, '') || '';
 };
@@ -98,6 +120,18 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
   } = getTimeIndicator(item.created_at);
   const whatsappNumber = formatWhatsAppNumber(item.client_phone || '');
   const whatsappMessage = generateWhatsAppMessage(item);
+  const nationality = detectNationality(item.client_phone || '', item.client_cpf || '');
+  
+  // Debug logging para entender os dados disponíveis
+  console.log('🔍 Item data:', {
+    id: item.id.substring(0, 8),
+    client_phone: item.client_phone,
+    client_name: item.client_name,
+    client_email: item.client_email,
+    client_cpf: item.client_cpf,
+    whatsappNumber,
+    nationality
+  });
   return <Card className={`mb-4 transition-all duration-200 hover:shadow-md ${daysDiff > 7 ? 'border-red-200 bg-red-50' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -187,6 +221,11 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
           {item.client_cpf && <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-gray-600" />
               <span>CPF: {item.client_cpf}</span>
+            </div>}
+          
+          {nationality && <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-blue-600" />
+              <span className="font-medium">{nationality}</span>
             </div>}
         </div>
         
