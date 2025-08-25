@@ -39,6 +39,7 @@ interface OrderDetails {
   log_pagamento?: any;
   blocked_reason?: string;
   blocked_at?: string;
+  cupom_id?: string;
 }
 
 const OrderDetails = () => {
@@ -104,12 +105,12 @@ const OrderDetails = () => {
     try {
       console.log('📊 [ORDER_DETAILS] Carregando pedido:', id);
       
-      const { data: userOrder, error: userError } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('id', id)
-        .eq('client_id', userProfile.id)
-        .single();
+        const { data: userOrder, error: userError } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', id)
+          .eq('client_id', userProfile.id)
+          .single();
 
       if (userError) throw userError;
 

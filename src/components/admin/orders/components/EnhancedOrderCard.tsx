@@ -145,7 +145,7 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                 {daysDiff > 7 && (
                   <Badge variant="destructive" className="text-xs">
                     <AlertTriangle className="w-3 h-3 mr-1" />
-                    URGENTE
+                    ANTIGO
                   </Badge>
                 )}
               </div>
@@ -309,7 +309,7 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
               )}
               {daysDiff > 7 && (
                 <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
-                  ⚠️ Requer Atenção Urgente
+                  ⚠️ Pedido Antigo
                 </Badge>
               )}
             </div>

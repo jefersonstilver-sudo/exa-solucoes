@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign, Percent, Receipt, CreditCard, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { CouponInfoDisplay } from '@/components/order/CouponInfoDisplay';
 
 interface RealOrderFinancialCardProps {
   order: {
@@ -24,11 +26,40 @@ export const RealOrderFinancialCard: React.FC<RealOrderFinancialCardProps> = ({ 
     }).format(value);
   };
 
-  // Calcular valores baseados no valor total e possível desconto
+  // NOVA LÓGICA: Buscar dados reais do cupom e calcular valores corretos
+  const [couponData, setCouponData] = useState<any>(null);
+  
+  useEffect(() => {
+    const fetchCouponData = async () => {
+      if (!order.cupom_id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('cupons')
+          .select('codigo, desconto_percentual, descricao, categoria')
+          .eq('id', order.cupom_id)
+          .single();
+          
+        if (!error && data) {
+          setCouponData(data);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do cupom:', error);
+      }
+    };
+    
+    fetchCouponData();
+  }, [order.cupom_id]);
+
+  // Calcular valores baseados no valor total e dados reais do cupom
   const valorBruto = order.valor_total;
-  const temDesconto = !!order.cupom_id;
-  const valorDesconto = temDesconto ? valorBruto * 0.1 : 0; // Assumindo 10% se há cupom
-  const subtotal = temDesconto ? valorBruto + valorDesconto : valorBruto;
+  const temDesconto = !!order.cupom_id && !!couponData;
+  const percentualDesconto = couponData?.desconto_percentual || 0;
+  
+  // O valor_total já está com desconto aplicado, então calculamos o valor original
+  const valorOriginal = temDesconto ? valorBruto / (1 - percentualDesconto / 100) : valorBruto;
+  const valorDesconto = temDesconto ? valorOriginal - valorBruto : 0;
+  const subtotal = valorOriginal;
   const taxas = 0; // Assumindo sem taxas extras
 
   const getPaymentStatus = () => {
@@ -135,6 +166,16 @@ export const RealOrderFinancialCard: React.FC<RealOrderFinancialCardProps> = ({ 
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6 space-y-4">
+        {temDesconto && couponData && (
+          <div className="mb-4">
+            <CouponInfoDisplay 
+              cupomId={order.cupom_id}
+              valorOriginal={valorOriginal}
+              showDetails={true}
+            />
+          </div>
+        )}
+        
         <div className="flex justify-between items-center">
           <p className="text-gray-600 font-medium">Subtotal</p>
           <p className="text-gray-900 font-semibold">{formatCurrency(subtotal)}</p>
@@ -144,7 +185,7 @@ export const RealOrderFinancialCard: React.FC<RealOrderFinancialCardProps> = ({ 
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-1">
               <Percent className="h-4 w-4 text-green-600" />
-              <p className="text-gray-600 font-medium">Desconto (Cupom)</p>
+              <p className="text-gray-600 font-medium">Desconto ({couponData?.codigo || 'Cupom'})</p>
             </div>
             <p className="text-green-600 font-semibold">-{formatCurrency(valorDesconto)}</p>
           </div>

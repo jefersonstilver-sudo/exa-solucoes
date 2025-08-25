@@ -13,6 +13,7 @@ import {
   Hash
 } from 'lucide-react';
 import { ClickableLocationsDisplay } from './ClickableLocationsDisplay';
+import { CouponInfoDisplay } from './CouponInfoDisplay';
 
 interface PurchaseInfoCardProps {
   orderDetails: {
@@ -25,6 +26,7 @@ interface PurchaseInfoCardProps {
     status: string;
     lista_paineis?: string[];
     lista_predios?: string[];
+    cupom_id?: string;
   };
 }
 
@@ -162,6 +164,18 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
         {/* Informações expandidas */}
         {isExpanded && (
           <div className="border-t pt-4 space-y-4">
+            {/* Seção de Cupom (se aplicável) */}
+            {orderDetails.cupom_id && (
+              <div className="mb-6">
+                <h4 className="font-semibold mb-3 text-green-800">Cupom Aplicado</h4>
+                <CouponInfoDisplay 
+                  cupomId={orderDetails.cupom_id}
+                  valorOriginal={orderDetails.valor_total}
+                  showDetails={true}
+                />
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h4 className="font-semibold mb-3">Detalhes do Pagamento</h4>
