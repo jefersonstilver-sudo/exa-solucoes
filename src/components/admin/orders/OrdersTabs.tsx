@@ -9,10 +9,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
+import { useOrderBlocking } from '@/hooks/useOrderBlocking';
+import { BlockOrderModal } from '@/components/admin/orders/BlockOrderModal';
 import { formatCurrency } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Eye, Trash2, AlertTriangle, Building, DollarSign, Calendar, User, Mail } from 'lucide-react';
+import { Eye, Trash2, AlertTriangle, Building, DollarSign, Calendar, User, Mail, Shield, ShieldOff } from 'lucide-react';
 import { bulkDeletePedidos, bulkDeleteTentativas } from '@/services/bulkDeleteService';
 import { toast } from 'sonner';
 
@@ -52,10 +54,14 @@ const getStatusText = (status: string) => {
 
 const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   const { ordersAndAttempts, loading, refetch } = useOrdersWithAttemptsRefactored();
+  const { blockOrder, unblockOrder, isBlocking, isUnblocking } = useOrderBlocking();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteJustification, setDeleteJustification] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [selectedOrderForBlocking, setSelectedOrderForBlocking] = useState<string | null>(null);
+  const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
 
   // Filtrar itens por categoria - CORREÇÃO: remover 'pendente' de abandonados
   const pendingOrders = ordersAndAttempts.filter(item => 
@@ -158,6 +164,41 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
     }
   };
 
+  const handleBlockOrder = (orderId: string) => {
+    setSelectedOrderForBlocking(orderId);
+    setBlockingMode('block');
+    setBlockModalOpen(true);
+  };
+
+  const handleUnblockOrder = (orderId: string) => {
+    setSelectedOrderForBlocking(orderId);
+    setBlockingMode('unblock');
+    setBlockModalOpen(true);
+  };
+
+  const handleBlockModalConfirm = async (reason: string) => {
+    if (!selectedOrderForBlocking) return;
+
+    try {
+      if (blockingMode === 'block') {
+        await blockOrder(selectedOrderForBlocking, reason);
+      } else {
+        await unblockOrder(selectedOrderForBlocking, reason);
+      }
+      await refetch();
+    } catch (error) {
+      console.error('Erro ao processar bloqueio:', error);
+    } finally {
+      setBlockModalOpen(false);
+      setSelectedOrderForBlocking(null);
+    }
+  };
+
+  const handleBlockModalClose = () => {
+    setBlockModalOpen(false);
+    setSelectedOrderForBlocking(null);
+  };
+
   const renderItemCard = (item: any) => (
     <Card key={item.id} className="mb-4">
       <CardHeader className="pb-2">
@@ -184,13 +225,40 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
           
           <div className="flex items-center gap-2">
             {item.type === 'order' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onViewOrderDetails(item.id)}
-              >
-                <Eye className="w-4 h-4" />
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onViewOrderDetails(item.id)}
+                >
+                  <Eye className="w-4 h-4" />
+                </Button>
+                
+                {/* Botões de Bloqueio/Desbloqueio */}
+                {item.status === 'bloqueado' ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUnblockOrder(item.id)}
+                    disabled={isUnblocking}
+                    className="text-green-600 hover:text-green-700"
+                  >
+                    <ShieldOff className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBlockOrder(item.id)}
+                      disabled={isBlocking}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Shield className="w-4 h-4" />
+                    </Button>
+                  )
+                )}
+              </>
             )}
           </div>
         </div>
@@ -394,6 +462,15 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
       <TabsContent value="blocked">
         {renderTab(blockedOrders, 'Pedidos Bloqueados', 'Nenhum pedido bloqueado encontrado.')}
       </TabsContent>
+
+      {/* Modal de Bloqueio */}
+      <BlockOrderModal
+        isOpen={blockModalOpen}
+        onClose={handleBlockModalClose}
+        onConfirm={handleBlockModalConfirm}
+        isBlocking={blockingMode === 'block' ? isBlocking : isUnblocking}
+        mode={blockingMode}
+      />
     </Tabs>
   );
 };
