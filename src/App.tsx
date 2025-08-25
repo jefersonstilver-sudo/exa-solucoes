@@ -170,11 +170,7 @@ const AppContent = () => {
             </Suspense>
           </ErrorBoundary>
         }>
-          <Route index element={
-            <Suspense fallback={<MinimalLoader />}>
-              <AdvertiserDashboard />
-            </Suspense>
-          } />
+          <Route index element={<Navigate to="pedidos" replace />} />
           <Route path="pedidos" element={
             <Suspense fallback={<MinimalLoader />}>
               <AdvertiserOrders />

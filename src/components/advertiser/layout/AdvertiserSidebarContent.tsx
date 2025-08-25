@@ -51,14 +51,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
   };
 
   const sidebarItems = [
-    // GESTÃO PRINCIPAL
-    {
-      title: 'Dashboard',
-      href: '/anunciante',
-      icon: LayoutDashboard,
-      exact: true,
-      section: 'main'
-    },
+    // GESTÃO PRINCIPAL - Dashboard desativado temporariamente
     {
       title: 'Meus Pedidos',
       href: '/anunciante/pedidos',
@@ -226,7 +219,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                   className={cn(
                     'flex items-center rounded-xl text-sm font-medium transition-all duration-200 group',
                     isCollapsed ? "p-2 justify-center" : "space-x-3 px-3 py-3",
-                    isActive(item.href, item.exact)
+                    isActive(item.href)
                       ? 'bg-white text-[#1e40af] shadow-lg font-semibold'
                       : 'text-white hover:text-white hover:bg-white/20 hover:translate-x-1'
                   )}
@@ -234,7 +227,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                 >
                   <item.icon className={cn(
                     "transition-transform duration-200 group-hover:scale-110",
-                    isActive(item.href, item.exact) ? "text-[#1e40af]" : "text-white",
+                    isActive(item.href) ? "text-[#1e40af]" : "text-white",
                     isCollapsed ? "h-5 w-5" : "h-5 w-5"
                   )} />
                   {!isCollapsed && <span>{item.title}</span>}
