@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Play, User, RefreshCw, Download, Eye, UserCheck, Shield, Calendar, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import PeriodSelector from './PeriodSelector';
 
 interface ApprovedVideo {
   pedido_video_id: string;
@@ -36,13 +37,46 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
   const [approvedVideos, setApprovedVideos] = useState<ApprovedVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  // Estados do filtro de período
+  const [selectedPeriod, setSelectedPeriod] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+  });
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
 
   const fetchApprovedVideos = async () => {
     try {
       setLoadingVideos(true);
       
-      // Usar função segura do banco para buscar dados completos
-      const { data, error } = await supabase.rpc('get_approved_videos_with_details');
+      let startDate: string | undefined;
+      let endDate: string | undefined;
+      
+      // Determinar período baseado na seleção
+      if (selectedPeriod === 'custom') {
+        if (customStartDate && customEndDate) {
+          startDate = customStartDate.toISOString().split('T')[0];
+          endDate = customEndDate.toISOString().split('T')[0];
+        } else {
+          toast.error('Por favor, selecione as datas de início e fim');
+          return;
+        }
+      } else {
+        // Período mensal selecionado (formato: YYYY-MM)
+        const [year, month] = selectedPeriod.split('-').map(Number);
+        const monthStart = new Date(year, month - 1, 1);
+        const monthEnd = new Date(year, month, 0); // Último dia do mês
+        
+        startDate = monthStart.toISOString().split('T')[0];
+        endDate = monthEnd.toISOString().split('T')[0];
+      }
+      
+      // Usar nova função com filtro de período
+      const { data, error } = await supabase.rpc('get_approved_videos_by_period', {
+        p_start_date: startDate,
+        p_end_date: endDate
+      });
 
       if (error) {
         console.error('Erro ao buscar vídeos aprovados:', error);
@@ -92,7 +126,7 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
 
   useEffect(() => {
     fetchApprovedVideos();
-  }, []);
+  }, [selectedPeriod, customStartDate, customEndDate]);
 
   const activateVideo = async (pedidoId: string, pedidoVideoId: string) => {
     try {
@@ -143,11 +177,11 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
 
   if (loadingVideos || loading) {
     return (
-      <Card className="bg-white border-gray-200">
+      <Card className="bg-background border">
         <CardContent className="p-8">
           <div className="flex items-center justify-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-gray-600" />
-            <span className="ml-3 text-gray-900">Carregando vídeos aprovados...</span>
+            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+            <span className="ml-3 text-foreground">Carregando vídeos aprovados...</span>
           </div>
         </CardContent>
       </Card>
@@ -156,38 +190,48 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
 
   return (
     <div className="space-y-6">
-      <Card className="bg-white border-gray-200">
-        <CardHeader className="border-b border-gray-200">
-          <CardTitle className="flex items-center text-gray-900">
+      {/* Seletor de Período */}
+      <PeriodSelector
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomStartDateChange={setCustomStartDate}
+        onCustomEndDateChange={setCustomEndDate}
+      />
+      
+      <Card className="bg-background border">
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center text-foreground">
             <Shield className="h-5 w-5 mr-2 text-green-600" />
-            Vídeos Aprovados Recentemente ({approvedVideos.length})
-            <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
+            Vídeos Aprovados no Período ({approvedVideos.length})
+            <Badge variant="outline" className="ml-2">
               Auditoria Segura
             </Badge>
           </CardTitle>
-          <CardDescription className="text-gray-600">
-            Lista dos últimos vídeos aprovados com trilha de auditoria completa
+          <CardDescription>
+            Lista de vídeos aprovados no período selecionado com trilha de auditoria completa
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6">
           {approvedVideos.length === 0 ? (
             <div className="text-center py-12">
-              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Nenhum vídeo aprovado recentemente
+              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                Nenhum vídeo aprovado no período selecionado
               </h3>
-              <p className="text-gray-600">
-                Vídeos aprovados aparecerão aqui
+              <p className="text-muted-foreground">
+                Selecione um período diferente ou aguarde novos vídeos aprovados
               </p>
             </div>
           ) : (
             <div className="grid gap-6">
               {approvedVideos.map((video) => (
-                <Card key={video.pedido_video_id} className="bg-white border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <Card key={video.pedido_video_id} className="bg-background border hover:shadow-md transition-shadow duration-200">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
+                        <CardTitle className="text-lg text-foreground flex items-center gap-2">
                           <Play className="h-5 w-5 text-blue-600" />
                           {video.video_name}
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
