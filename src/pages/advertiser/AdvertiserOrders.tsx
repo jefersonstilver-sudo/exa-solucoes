@@ -8,16 +8,7 @@ import { useOrderPixPayment } from '@/hooks/useOrderPixPayment';
 import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
-import { 
-  Loader2, 
-  ShoppingBag, 
-  Calendar, 
-  Search,
-  Eye,
-  AlertTriangle,
-  CheckCircle,
-  Upload
-} from 'lucide-react';
+import { Loader2, ShoppingBag, Calendar, Search, Eye, AlertTriangle, CheckCircle, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,40 +17,55 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-
 const AdvertiserOrders = () => {
-  const { userProfile } = useAuth();
+  const {
+    userProfile
+  } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(userProfile?.id);
+  const {
+    userOrdersAndAttempts,
+    loading
+  } = useUserOrdersAndAttempts(userProfile?.id);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
-  const [videoDisplayPopup, setVideoDisplayPopup] = useState<{ isOpen: boolean; orderId: string | null }>({
+  const [videoDisplayPopup, setVideoDisplayPopup] = useState<{
+    isOpen: boolean;
+    orderId: string | null;
+  }>({
     isOpen: false,
     orderId: null
   });
-  const [pixPaymentModal, setPixPaymentModal] = useState<{ 
-    isOpen: boolean; 
-    pixData: any; 
-    orderId: string | null; 
+  const [pixPaymentModal, setPixPaymentModal] = useState<{
+    isOpen: boolean;
+    pixData: any;
+    orderId: string | null;
   }>({
     isOpen: false,
     pixData: null,
     orderId: null
   });
-  
-  const { generatePixForOrder, isProcessing } = useOrderPixPayment();
-  const { finalizeAttemptToOrder, isProcessing: isProcessingAttempt } = useAttemptFinalizer();
+  const {
+    generatePixForOrder,
+    isProcessing
+  } = useOrderPixPayment();
+  const {
+    finalizeAttemptToOrder,
+    isProcessing: isProcessingAttempt
+  } = useAttemptFinalizer();
 
   // Listen for video display popup events
   useEffect(() => {
     const handleOpenVideoDisplay = (event: CustomEvent) => {
-      const { orderId } = event.detail;
-      setVideoDisplayPopup({ isOpen: true, orderId });
+      const {
+        orderId
+      } = event.detail;
+      setVideoDisplayPopup({
+        isOpen: true,
+        orderId
+      });
     };
-
     window.addEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
-    
     return () => {
       window.removeEventListener('openVideoDisplay', handleOpenVideoDisplay as EventListener);
     };
@@ -68,9 +74,7 @@ const AdvertiserOrders = () => {
   // Função para lidar com pagamento PIX de pedidos específicos
   const handlePixPayment = async (order: any) => {
     console.log('[AdvertiserOrders] Iniciando pagamento PIX para pedido:', order.id);
-    
     const result = await generatePixForOrder(order);
-    
     if (result.success && result.pixData) {
       setPixPaymentModal({
         isOpen: true,
@@ -88,7 +92,7 @@ const AdvertiserOrders = () => {
   // Calcular estatísticas CORRIGIDAS
   const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
   const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
-  
+
   // Verificar se um pedido está dentro do período ativo
   const isWithinActivePeriod = (order: any) => {
     if (!order.data_inicio || !order.data_fim) return false;
@@ -97,83 +101,54 @@ const AdvertiserOrders = () => {
     const endDate = new Date(order.data_fim);
     return today >= startDate && today <= endDate;
   };
-  
   const stats = {
     // Pedidos ativos: pagos, com vídeo aprovado e dentro do período
-    pedidosAtivos: orders.filter(order => 
-      order.status === 'video_aprovado' &&
-      isWithinActivePeriod(order)
-    ).length,
-    
+    pedidosAtivos: orders.filter(order => order.status === 'video_aprovado' && isWithinActivePeriod(order)).length,
     // Tentativas: compras não finalizadas
     tentativas: attempts.length,
-    
     // Aguardando Vídeo: pedidos pagos mas aguardando envio de vídeo
-    aguardandoVideo: orders.filter(order => 
-      ['pago', 'pago_pendente_video'].includes(order.status)
-    ).length,
-    
+    aguardandoVideo: orders.filter(order => ['pago', 'pago_pendente_video'].includes(order.status)).length,
     // Pedidos finalizados: expirados ou fora do período
-    pedidosFinalizados: orders.filter(order => 
-      order.status === 'expirado' || 
-      (['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) && !isWithinActivePeriod(order))
-    ).length
+    pedidosFinalizados: orders.filter(order => order.status === 'expirado' || ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) && !isWithinActivePeriod(order)).length
   };
 
   // Filtrar itens
   const filteredItems = userOrdersAndAttempts.filter(item => {
-    const matchesSearch = 
-      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.valor_total.toString().includes(searchTerm);
-    
-    const matchesStatus = 
-      statusFilter === 'todos' || 
-      (item.type === 'order' && item.status === statusFilter) ||
-      (item.type === 'attempt' && statusFilter === 'tentativa');
-
+    const matchesSearch = item.id.toLowerCase().includes(searchTerm.toLowerCase()) || item.valor_total.toString().includes(searchTerm);
+    const matchesStatus = statusFilter === 'todos' || item.type === 'order' && item.status === statusFilter || item.type === 'attempt' && statusFilter === 'tentativa';
     return matchesSearch && matchesStatus;
   });
-
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
   };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
-
-  const OrderCard = ({ item }: { item: any }) => {
+  const OrderCard = ({
+    item
+  }: {
+    item: any;
+  }) => {
     const statusInfo = useOrderStatus(item, handlePixPayment);
     const StatusIcon = statusInfo.icon;
-    const painelsList = item.type === 'order' ? (item.lista_paineis || []) : (item.predios_selecionados || []);
-    
+    const painelsList = item.type === 'order' ? item.lista_paineis || [] : item.predios_selecionados || [];
+
     // Handle "Finalizar Compra" for attempts
     const handleFinalizarCompra = async () => {
       if (item.type === 'attempt') {
         await finalizeAttemptToOrder(item.id);
       }
     };
-
-    return (
-      <Card className={cn(
-        'hover:shadow-lg transition-all duration-200 border-l-4',
-        item.type === 'attempt' ? 'border-l-orange-500' : 'border-l-indexa-purple'
-      )}>
+    return <Card className={cn('hover:shadow-lg transition-all duration-200 border-l-4', item.type === 'attempt' ? 'border-l-orange-500' : 'border-l-indexa-purple')}>
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
             <div className="flex-1 space-y-3">
               <div className="flex items-center space-x-3">
-                <div className={cn(
-                  'w-10 h-10 rounded-lg flex items-center justify-center',
-                  item.type === 'attempt' ? 'bg-orange-500/10' : 'bg-indexa-purple/10'
-                )}>
-                  <StatusIcon className={cn(
-                    'h-5 w-5',
-                    item.type === 'attempt' ? 'text-orange-500' : statusInfo.color.replace('text-', '')
-                  )} />
+                <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', item.type === 'attempt' ? 'bg-orange-500/10' : 'bg-indexa-purple/10')}>
+                  <StatusIcon className={cn('h-5 w-5', item.type === 'attempt' ? 'text-orange-500' : statusInfo.color.replace('text-', ''))} />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">
@@ -188,10 +163,7 @@ const AdvertiserOrders = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500">Valor Total</p>
-                  <p className={cn(
-                    'font-semibold text-lg',
-                    item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900'
-                  )}>
+                  <p className={cn('font-semibold text-lg', item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900')}>
                     {formatCurrency(item.valor_total || 0)}
                   </p>
                 </div>
@@ -222,47 +194,25 @@ const AdvertiserOrders = () => {
               </Badge>
 
               <div className="flex space-x-2">
-                {statusInfo.action && (
-                  <Button
-                    variant={statusInfo.action.variant}
-                    size="sm"
-                    onClick={item.type === 'attempt' ? handleFinalizarCompra : statusInfo.action.onClick}
-                    disabled={item.type === 'attempt' && isProcessingAttempt}
-                    className="mr-2"
-                  >
-                    {item.type === 'attempt' && isProcessingAttempt ? 'Processando...' : statusInfo.action.label}
-                  </Button>
-                )}
+                {statusInfo.action}
                 
-                {item.type === 'order' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/anunciante/pedido/${item.id}`)}
-                  >
+                {item.type === 'order' && <Button variant="outline" size="sm" onClick={() => navigate(`/anunciante/pedido/${item.id}`)}>
                     <Eye className="h-4 w-4 mr-1" />
                     Detalhes
-                  </Button>
-                )}
+                  </Button>}
               </div>
             </div>
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+    return <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
         <p className="ml-2 text-lg">Carregando seus pedidos...</p>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
@@ -329,12 +279,7 @@ const AdvertiserOrders = () => {
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar por ID do pedido ou valor..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                <Input placeholder="Buscar por ID do pedido ou valor..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -354,62 +299,37 @@ const AdvertiserOrders = () => {
       </Card>
 
       {/* Orders List */}
-      {filteredItems.length === 0 ? (
-        <Card>
+      {filteredItems.length === 0 ? <Card>
           <CardContent className="p-12 text-center">
             <div className="mx-auto bg-gray-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
               <ShoppingBag className="h-8 w-8 text-gray-500" />
             </div>
             <h3 className="text-xl font-medium mb-2">
-              {searchTerm || statusFilter !== 'todos'
-                ? 'Nenhum pedido encontrado' 
-                : 'Você ainda não fez nenhum pedido'
-              }
+              {searchTerm || statusFilter !== 'todos' ? 'Nenhum pedido encontrado' : 'Você ainda não fez nenhum pedido'}
             </h3>
             <p className="text-gray-500 mb-6">
-              {searchTerm || statusFilter !== 'todos'
-                ? 'Tente ajustar os filtros para encontrar seus pedidos.'
-                : 'Comece criando sua primeira campanha publicitária.'
-              }
+              {searchTerm || statusFilter !== 'todos' ? 'Tente ajustar os filtros para encontrar seus pedidos.' : 'Comece criando sua primeira campanha publicitária.'}
             </p>
             <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-indexa-purple hover:bg-indexa-purple/90">
               Explorar Painéis
             </Button>
           </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-6">
-          {filteredItems.map((item) => (
-            <OrderCard key={`${item.type}-${item.id}`} item={item} />
-          ))}
-        </div>
-      )}
+        </Card> : <div className="grid gap-6">
+          {filteredItems.map(item => <OrderCard key={`${item.type}-${item.id}`} item={item} />)}
+        </div>}
 
       {/* Video Display Popup */}
-      {videoDisplayPopup.orderId && (
-        <VideoDisplayPopup
-          orderId={videoDisplayPopup.orderId}
-          isOpen={videoDisplayPopup.isOpen}
-          onClose={() => setVideoDisplayPopup({ isOpen: false, orderId: null })}
-        />
-      )}
+      {videoDisplayPopup.orderId && <VideoDisplayPopup orderId={videoDisplayPopup.orderId} isOpen={videoDisplayPopup.isOpen} onClose={() => setVideoDisplayPopup({
+      isOpen: false,
+      orderId: null
+    })} />}
 
       {/* PIX Payment Modal */}
-      {pixPaymentModal.isOpen && pixPaymentModal.pixData && (
-        <PixQrCodeDialog
-          isOpen={pixPaymentModal.isOpen}
-          onClose={() => setPixPaymentModal({ isOpen: false, pixData: null, orderId: null })}
-          qrCodeBase64={pixPaymentModal.pixData.qrCodeBase64}
-          qrCodeText={pixPaymentModal.pixData.qrCodeText}
-          pix_base64={pixPaymentModal.pixData.pix_base64}
-          pix_url={pixPaymentModal.pixData.pix_url}
-          paymentLink={pixPaymentModal.pixData.paymentLink}
-          userId={userProfile?.id}
-          pedidoId={pixPaymentModal.orderId}
-        />
-      )}
-    </div>
-  );
+      {pixPaymentModal.isOpen && pixPaymentModal.pixData && <PixQrCodeDialog isOpen={pixPaymentModal.isOpen} onClose={() => setPixPaymentModal({
+      isOpen: false,
+      pixData: null,
+      orderId: null
+    })} qrCodeBase64={pixPaymentModal.pixData.qrCodeBase64} qrCodeText={pixPaymentModal.pixData.qrCodeText} pix_base64={pixPaymentModal.pixData.pix_base64} pix_url={pixPaymentModal.pixData.pix_url} paymentLink={pixPaymentModal.pixData.paymentLink} userId={userProfile?.id} pedidoId={pixPaymentModal.orderId} />}
+    </div>;
 };
-
 export default AdvertiserOrders;
