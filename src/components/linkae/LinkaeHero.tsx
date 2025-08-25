@@ -35,7 +35,7 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
           
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6 animate-fade-in leading-tight">
             Conecte Sua Marca com 
-            <span className="block bg-gradient-to-r from-sky-300 to-blue-200 bg-clip-text text-transparent animate-linkae-float">
+            <span className="block bg-gradient-to-r from-linkae-cyan to-linkae-secondary bg-clip-text text-transparent animate-linkae-float">
               Estratégias que Inspiram
             </span>
           </h1>
@@ -48,7 +48,7 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
         <div className="animate-fade-in" style={{ animationDelay: '0.6s' }}>
           <button
             onClick={onScrollToForm}
-            className="group bg-gradient-to-r from-sky-400 to-blue-500 text-white font-bold px-10 py-5 rounded-2xl text-lg md:text-xl transition-all duration-500 hover:shadow-[0_0_40px_rgba(56,189,248,0.5)] hover:scale-110 flex items-center mx-auto space-x-3 hover:from-blue-500 hover:to-sky-400"
+            className="group bg-gradient-to-r from-linkae-secondary to-linkae-accent text-white font-bold px-10 py-5 rounded-2xl text-lg md:text-xl transition-all duration-500 hover:shadow-[0_0_40px_hsl(var(--linkae-accent)/0.5)] hover:scale-110 flex items-center mx-auto space-x-3 hover:from-linkae-accent hover:to-linkae-secondary"
           >
             <Coffee className="w-6 h-6 group-hover:animate-bounce" />
             <span>Agende Sua Reunião Gratuita</span>

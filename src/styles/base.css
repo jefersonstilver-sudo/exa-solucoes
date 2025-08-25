@@ -54,12 +54,12 @@
     --indexa-mint: 160 72% 59%;
     --indexa-purple-dark: 261 83% 15%;
     
-    /* Variáveis LINKAÊ - Corrigidas para HSL */
-    --linkae-primary: 236 82% 23%;     /* #1a1b5c - Convertido para HSL */
-    --linkae-secondary: 233 52% 38%;   /* #2c3094 - Convertido para HSL */
-    --linkae-accent: 213 100% 65%;     /* #4da6ff - Convertido para HSL */
-    --linkae-cyan: 192 77% 64%;        /* #5bc0eb - Convertido para HSL */
-    --linkae-white: 0 0% 100%;         /* #ffffff - Convertido para HSL */
+    /* Variáveis LINKAÊ - Cores originais rosa/magenta e laranja */
+    --linkae-primary: 340 81% 44%;     /* #C2185B - Rosa escuro */
+    --linkae-secondary: 340 83% 52%;   /* #E91E63 - Rosa médio */
+    --linkae-accent: 17 100% 60%;      /* #FF6B35 - Laranja */
+    --linkae-cyan: 340 77% 76%;        /* #F48FB1 - Rosa claro */
+    --linkae-white: 0 0% 100%;         /* #ffffff - Branco */
   }
 
   .dark {
