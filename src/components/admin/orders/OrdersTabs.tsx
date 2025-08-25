@@ -15,6 +15,7 @@ import { formatCurrency } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Eye, Trash2, AlertTriangle, Building, DollarSign, Calendar, User, Mail, Shield, ShieldOff } from 'lucide-react';
+import { EnhancedOrderCard } from './components/EnhancedOrderCard';
 import { bulkDeletePedidos, bulkDeleteTentativas } from '@/services/bulkDeleteService';
 import { toast } from 'sonner';
 
@@ -63,19 +64,19 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   const [selectedOrderForBlocking, setSelectedOrderForBlocking] = useState<string | null>(null);
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
 
-  // Filtrar itens por categoria - CORREÇÃO: remover 'pendente' de abandonados
+  // NOVA LÓGICA: Consolidar "Aguardando Pagamento" (pendentes + tentativas)
   const pendingOrders = ordersAndAttempts.filter(item => 
-    item.type === 'order' && item.status === 'pendente'
+    (item.type === 'order' && item.status === 'pendente') || 
+    (item.type === 'attempt')
   );
 
   const activeOrders = ordersAndAttempts.filter(item => 
     item.type === 'order' && ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status)
   );
 
-  // CORREÇÃO: Abandonados agora só inclui tentativas e pedidos cancelados (sem pendente)
+  // Abandonados agora só inclui pedidos cancelados 
   const abandonedItems = ordersAndAttempts.filter(item => 
-    (item.type === 'attempt') || 
-    (item.type === 'order' && ['cancelado', 'cancelado_automaticamente'].includes(item.status))
+    item.type === 'order' && ['cancelado', 'cancelado_automaticamente'].includes(item.status)
   );
 
   const blockedOrders = ordersAndAttempts.filter(item => 
@@ -200,119 +201,17 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   };
 
   const renderItemCard = (item: any) => (
-    <Card key={item.id} className="mb-4">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <Checkbox
-              checked={selectedItems.includes(item.id)}
-              onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
-            />
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <CardTitle className="text-sm">
-                  {item.type === 'order' ? `Pedido #${item.id.substring(0, 8)}` : `Tentativa #${item.id.substring(0, 8)}`}
-                </CardTitle>
-                <Badge className={getStatusColor(item.status)}>
-                  {getStatusText(item.status)}
-                </Badge>
-              </div>
-              <CardDescription className="text-xs">
-                {format(new Date(item.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-              </CardDescription>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {item.type === 'order' && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onViewOrderDetails(item.id)}
-                >
-                  <Eye className="w-4 h-4" />
-                </Button>
-                
-                {/* Botões de Bloqueio/Desbloqueio */}
-                {item.status === 'bloqueado' ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleUnblockOrder(item.id)}
-                    disabled={isUnblocking}
-                    className="text-green-600 hover:text-green-700"
-                  >
-                    <ShieldOff className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleBlockOrder(item.id)}
-                      disabled={isBlocking}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Shield className="w-4 h-4" />
-                    </Button>
-                  )
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pt-2">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-green-600" />
-            <span className="font-medium">{formatCurrency(item.valor_total || 0)}</span>
-          </div>
-          
-          {item.client_email && (
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-blue-600" />
-              <span className="text-xs truncate">{item.client_email}</span>
-            </div>
-          )}
-          
-          {item.client_name && (
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-purple-600" />
-              <span className="text-xs truncate">{item.client_name}</span>
-            </div>
-          )}
-          
-          {item.plano_meses && (
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-orange-600" />
-              <span className="text-xs">{item.plano_meses} meses</span>
-            </div>
-          )}
-        </div>
-        
-        {/* Informações específicas do tipo */}
-        {item.type === 'order' && item.lista_paineis && item.lista_paineis.length > 0 && (
-          <div className="mt-2 pt-2 border-t">
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <Building className="w-3 h-3" />
-              <span>{item.lista_paineis.length} painel(is) selecionado(s)</span>
-            </div>
-          </div>
-        )}
-        
-        {item.type === 'attempt' && item.selected_buildings && item.selected_buildings.length > 0 && (
-          <div className="mt-2 pt-2 border-t">
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <Building className="w-3 h-3" />
-              <span>{item.selected_buildings.length} prédio(s): {item.selected_buildings.map(b => b.nome).join(', ')}</span>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <EnhancedOrderCard
+      key={item.id}
+      item={item}
+      isSelected={selectedItems.includes(item.id)}
+      onSelectionChange={handleSelectItem}
+      onViewOrderDetails={onViewOrderDetails}
+      onBlockOrder={handleBlockOrder}
+      onUnblockOrder={handleUnblockOrder}
+      isBlocking={isBlocking}
+      isUnblocking={isUnblocking}
+    />
   );
 
   const renderTab = (items: any[], title: string, description: string) => (
@@ -411,8 +310,16 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   }
 
   return (
-    <Tabs defaultValue="pending" className="space-y-4">
+    <Tabs defaultValue="active" className="space-y-4">
       <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="active" className="relative">
+          Pedidos Ativos
+          {activeOrders.length > 0 && (
+            <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+              {activeOrders.length}
+            </Badge>
+          )}
+        </TabsTrigger>
         <TabsTrigger value="pending" className="relative">
           Aguardando Pagamento
           {pendingOrders.length > 0 && (
@@ -421,16 +328,8 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
             </Badge>
           )}
         </TabsTrigger>
-        <TabsTrigger value="active" className="relative">
-          Ativos
-          {activeOrders.length > 0 && (
-            <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-              {activeOrders.length}
-            </Badge>
-          )}
-        </TabsTrigger>
         <TabsTrigger value="abandoned" className="relative">
-          Abandonados
+          Cancelados
           {abandonedItems.length > 0 && (
             <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
               {abandonedItems.length}
@@ -447,16 +346,16 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="pending">
-        {renderTab(pendingOrders, 'Pedidos Aguardando Pagamento', 'Nenhum pedido aguardando pagamento encontrado.')}
-      </TabsContent>
-
       <TabsContent value="active">
         {renderTab(activeOrders, 'Pedidos Ativos', 'Nenhum pedido ativo encontrado.')}
       </TabsContent>
 
+      <TabsContent value="pending">
+        {renderTab(pendingOrders, 'Aguardando Pagamento (Pedidos + Cotações)', 'Nenhum item aguardando pagamento encontrado.')}
+      </TabsContent>
+
       <TabsContent value="abandoned">
-        {renderTab(abandonedItems, 'Itens Abandonados', 'Nenhum item abandonado encontrado.')}
+        {renderTab(abandonedItems, 'Pedidos Cancelados', 'Nenhum pedido cancelado encontrado.')}
       </TabsContent>
 
       <TabsContent value="blocked">

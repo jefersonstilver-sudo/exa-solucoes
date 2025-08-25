@@ -1,0 +1,321 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  Eye, 
+  Building, 
+  DollarSign, 
+  Calendar, 
+  User, 
+  Mail, 
+  Phone, 
+  Shield, 
+  ShieldOff,
+  Clock,
+  MessageCircle,
+  AlertTriangle,
+  FileText
+} from 'lucide-react';
+import { formatCurrency } from '@/utils/formatters';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { OrderOrAttempt } from '@/types/ordersAndAttempts';
+
+interface EnhancedOrderCardProps {
+  item: OrderOrAttempt;
+  isSelected: boolean;
+  onSelectionChange: (id: string, checked: boolean) => void;
+  onViewOrderDetails?: (orderId: string) => void;
+  onBlockOrder?: (orderId: string) => void;
+  onUnblockOrder?: (orderId: string) => void;
+  isBlocking?: boolean;
+  isUnblocking?: boolean;
+}
+
+const getStatusColor = (status: string) => {
+  const statusMap: Record<string, string> = {
+    'pendente': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+    'pago': 'bg-green-100 text-green-800 border-green-300',
+    'pago_pendente_video': 'bg-blue-100 text-blue-800 border-blue-300',
+    'video_enviado': 'bg-purple-100 text-purple-800 border-purple-300',
+    'video_aprovado': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    'cancelado': 'bg-red-100 text-red-800 border-red-300',
+    'cancelado_automaticamente': 'bg-red-100 text-red-800 border-red-300',
+    'tentativa': 'bg-orange-100 text-orange-800 border-orange-300',
+    'bloqueado': 'bg-red-200 text-red-900 border-red-400'
+  };
+  return statusMap[status] || 'bg-gray-100 text-gray-800 border-gray-300';
+};
+
+const getStatusText = (status: string) => {
+  const statusMap: Record<string, string> = {
+    'pendente': 'Aguardando Pagamento',
+    'pago': 'Pago',
+    'pago_pendente_video': 'Pago - Aguardando Vídeo',
+    'video_enviado': 'Vídeo Enviado',
+    'video_aprovado': 'Em Exibição',
+    'cancelado': 'Cancelado',
+    'cancelado_automaticamente': 'Cancelado Automaticamente',
+    'tentativa': 'Tentativa Abandonada',
+    'bloqueado': 'Bloqueado'
+  };
+  return statusMap[status] || status;
+};
+
+const getTimeIndicator = (createdAt: string) => {
+  const now = new Date();
+  const created = new Date(createdAt);
+  const hoursDiff = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60));
+  const daysDiff = Math.floor(hoursDiff / 24);
+  
+  let timeText = '';
+  let urgencyClass = '';
+  
+  if (hoursDiff < 24) {
+    timeText = `há ${hoursDiff}h`;
+    urgencyClass = 'text-green-600'; // Recente
+  } else if (daysDiff <= 3) {
+    timeText = `há ${daysDiff} dia${daysDiff > 1 ? 's' : ''}`;
+    urgencyClass = 'text-yellow-600'; // Moderado
+  } else if (daysDiff <= 7) {
+    timeText = `há ${daysDiff} dias`;
+    urgencyClass = 'text-orange-600'; // Antigo
+  } else {
+    timeText = `há ${daysDiff} dias`;
+    urgencyClass = 'text-red-600'; // Muito antigo
+  }
+  
+  return { timeText, urgencyClass, daysDiff };
+};
+
+const formatWhatsAppNumber = (phone: string) => {
+  return phone?.replace(/\D/g, '') || '';
+};
+
+const generateWhatsAppMessage = (item: OrderOrAttempt) => {
+  const clientName = item.client_name || 'Cliente';
+  const orderType = item.type === 'order' ? 'pedido' : 'cotação';
+  const value = formatCurrency(item.valor_total || 0);
+  
+  return encodeURIComponent(
+    `Olá ${clientName}! 👋\n\n` +
+    `Vi que você tem um ${orderType} no valor de ${value} que ainda não foi finalizado.\n\n` +
+    `Posso te ajudar a concluir sua compra? Temos algumas ofertas especiais disponíveis! 🎯\n\n` +
+    `Atenciosamente,\nEquipe Indexa`
+  );
+};
+
+export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
+  item,
+  isSelected,
+  onSelectionChange,
+  onViewOrderDetails,
+  onBlockOrder,
+  onUnblockOrder,
+  isBlocking,
+  isUnblocking
+}) => {
+  const { timeText, urgencyClass, daysDiff } = getTimeIndicator(item.created_at);
+  const whatsappNumber = formatWhatsAppNumber(item.client_phone || '');
+  const whatsappMessage = generateWhatsAppMessage(item);
+
+  return (
+    <Card className={`mb-4 transition-all duration-200 hover:shadow-md ${daysDiff > 7 ? 'border-red-200 bg-red-50' : ''}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelectionChange(item.id, checked as boolean)}
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <CardTitle className="text-sm">
+                  {item.type === 'order' ? `Pedido #${item.id.substring(0, 8)}` : `Cotação #${item.id.substring(0, 8)}`}
+                </CardTitle>
+                <Badge className={getStatusColor(item.status)}>
+                  {getStatusText(item.status)}
+                </Badge>
+                <div className={`flex items-center gap-1 text-xs ${urgencyClass}`}>
+                  <Clock className="w-3 h-3" />
+                  <span className="font-medium">{timeText}</span>
+                </div>
+                {daysDiff > 7 && (
+                  <Badge variant="destructive" className="text-xs">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    URGENTE
+                  </Badge>
+                )}
+              </div>
+              <div className="text-xs text-gray-500">
+                Criado em {format(new Date(item.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Botões de ação CRM */}
+            {item.type === 'order' || item.type === 'attempt' ? (
+              <div className="flex gap-1">
+                {whatsappNumber && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`https://wa.me/55${whatsappNumber}?text=${whatsappMessage}`, '_blank')}
+                    className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </Button>
+                )}
+                
+                {item.client_email && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`mailto:${item.client_email}?subject=Seu pedido Indexa&body=Olá! Gostaria de conversar sobre seu pedido...`, '_blank')}
+                    className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
+                  >
+                    <Mail className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            ) : null}
+
+            {item.type === 'order' && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onViewOrderDetails?.(item.id)}
+                >
+                  <Eye className="w-4 h-4" />
+                </Button>
+                
+                {/* Botões de Bloqueio/Desbloqueio */}
+                {item.status === 'bloqueado' ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onUnblockOrder?.(item.id)}
+                    disabled={isUnblocking}
+                    className="text-green-600 hover:text-green-700"
+                  >
+                    <ShieldOff className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onBlockOrder?.(item.id)}
+                      disabled={isBlocking}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Shield className="w-4 h-4" />
+                    </Button>
+                  )
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="pt-0">
+        {/* Informações principais */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-green-600" />
+            <span className="font-bold text-lg">{formatCurrency(item.valor_total || 0)}</span>
+          </div>
+          
+          {item.client_name && (
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-purple-600" />
+              <span className="text-sm font-medium">{item.client_name}</span>
+            </div>
+          )}
+          
+          {item.client_email && (
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-blue-600" />
+              <span className="text-sm truncate">{item.client_email}</span>
+            </div>
+          )}
+          
+          {item.client_phone && (
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4 text-orange-600" />
+              <span className="text-sm">{item.client_phone}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Informações adicionais */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
+          {item.plano_meses && (
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-orange-600" />
+              <span>{item.plano_meses} meses</span>
+            </div>
+          )}
+          
+          {item.client_cpf && (
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-gray-600" />
+              <span>CPF: {item.client_cpf}</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Informações específicas do tipo */}
+        {item.type === 'order' && item.lista_paineis && item.lista_paineis.length > 0 && (
+          <div className="pt-3 border-t">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Building className="w-4 h-4" />
+              <span>{item.lista_paineis.length} painel(is) selecionado(s)</span>
+            </div>
+          </div>
+        )}
+        
+        {item.type === 'attempt' && item.selected_buildings && item.selected_buildings.length > 0 && (
+          <div className="pt-3 border-t">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Building className="w-4 h-4" />
+                <span className="font-medium">{item.selected_buildings.length} prédio(s) cotado(s):</span>
+              </div>
+              <div className="ml-6 text-xs text-gray-500">
+                {item.selected_buildings.map((building, index) => (
+                  <div key={index}>
+                    {building.nome} - {building.bairro}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Indicador de oportunidade */}
+        {(item.type === 'order' && item.status === 'pendente') || item.type === 'attempt' ? (
+          <div className="mt-3 pt-3 border-t">
+            <div className="flex items-center gap-2">
+              {daysDiff <= 1 && (
+                <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
+                  🔥 Oportunidade Quente
+                </Badge>
+              )}
+              {daysDiff > 7 && (
+                <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                  ⚠️ Requer Atenção Urgente
+                </Badge>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+};

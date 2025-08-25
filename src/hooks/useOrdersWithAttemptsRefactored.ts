@@ -45,8 +45,11 @@ export const useOrdersWithAttemptsRefactored = () => {
       // Enriquecer tentativas com emails
       const tentativasComEmails = await enrichAttemptsWithEmails(tentativas);
       
-      // Formatar dados - pedidos já vêm formatados da função SQL
-      const pedidosFormatados = pedidosComStatus?.map((pedido: any) => ({
+      // IMPORTANTE: Enriquecer pedidos também com informações completas do cliente
+      const pedidosEnriquecidos = await enrichOrdersWithEmails(pedidosComStatus || []);
+      
+      // Formatar dados - pedidos já vêm formatados da função SQL, mas vamos usar os enriquecidos
+      const pedidosFormatados = pedidosEnriquecidos?.map((pedido: any) => ({
         id: pedido.id,
         type: 'order' as const,
         created_at: pedido.created_at,
@@ -58,8 +61,10 @@ export const useOrdersWithAttemptsRefactored = () => {
         data_inicio: pedido.data_inicio,
         data_fim: pedido.data_fim,
         client_id: pedido.client_id,
-        client_email: pedido.client_email,
-        client_name: pedido.client_name,
+        client_email: pedido.client_email, // Agora enriquecido
+        client_name: pedido.client_name, // Agora enriquecido
+        client_phone: pedido.client_phone, // Novo
+        client_cpf: pedido.client_cpf, // Novo
         video_status: pedido.video_status
       })) || [];
       
