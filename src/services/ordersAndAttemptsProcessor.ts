@@ -27,10 +27,7 @@ export const formatAttemptsData = (tentativasComEmails: any[]): OrderOrAttempt[]
     status: 'tentativa',
     valor_total: tentativa.valor_total || 0,
     predios_selecionados: tentativa.predios_selecionados || [],
-    client_email: tentativa.user_email || tentativa.client_email,
-    client_phone: tentativa.client_phone,
-    client_cpf: tentativa.client_cpf,
-    client_name: tentativa.client_name,
+    client_email: tentativa.user_email,
     client_id: tentativa.id_user
   }));
 };

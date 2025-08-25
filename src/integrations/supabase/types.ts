@@ -1710,7 +1710,6 @@ export type Database = {
           id: string
           privacy_accepted_at: string | null
           role: string
-          telefone: string | null
           terms_accepted_at: string | null
           tipo_documento: string | null
         }
@@ -1726,7 +1725,6 @@ export type Database = {
           id: string
           privacy_accepted_at?: string | null
           role: string
-          telefone?: string | null
           terms_accepted_at?: string | null
           tipo_documento?: string | null
         }
@@ -1742,7 +1740,6 @@ export type Database = {
           id?: string
           privacy_accepted_at?: string | null
           role?: string
-          telefone?: string | null
           terms_accepted_at?: string | null
           tipo_documento?: string | null
         }

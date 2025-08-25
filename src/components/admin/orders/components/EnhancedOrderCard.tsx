@@ -95,17 +95,7 @@ const detectNationality = (phone: string, cpf: string) => {
   return null;
 };
 const formatWhatsAppNumber = (phone: string) => {
-  if (!phone) return '';
-  
-  const cleanPhone = phone.replace(/\D/g, '');
-  
-  // Se já tem código do país (55 para Brasil, 595 para Paraguai), usar como está
-  if (cleanPhone.startsWith('55') || cleanPhone.startsWith('595')) {
-    return cleanPhone;
-  }
-  
-  // Se não tem código do país, assumir Brasil (55)
-  return `55${cleanPhone}`;
+  return phone?.replace(/\D/g, '') || '';
 };
 const generateWhatsAppMessage = (item: OrderOrAttempt) => {
   const clientName = item.client_name || 'Cliente';
@@ -131,6 +121,17 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
   const whatsappNumber = formatWhatsAppNumber(item.client_phone || '');
   const whatsappMessage = generateWhatsAppMessage(item);
   const nationality = detectNationality(item.client_phone || '', item.client_cpf || '');
+  
+  // Debug logging para entender os dados disponíveis
+  console.log('🔍 Item data:', {
+    id: item.id.substring(0, 8),
+    client_phone: item.client_phone,
+    client_name: item.client_name,
+    client_email: item.client_email,
+    client_cpf: item.client_cpf,
+    whatsappNumber,
+    nationality
+  });
   return <Card className={`mb-4 transition-all duration-200 hover:shadow-md ${daysDiff > 7 ? 'border-red-200 bg-red-50' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">

@@ -42,23 +42,35 @@ export const enrichOrdersWithEmails = async (pedidos: any[]) => {
   
   const clientIds = [...new Set(pedidos.map(p => p.client_id))];
   
-  // Buscar dados completos dos usuários incluindo telefone e CPF
+  // Buscar dados completos dos usuários incluindo metadados
   const { data: users, error: usersError } = await supabase
     .from('users')
-    .select('id, email, cpf, telefone')
+    .select('id, email')
     .in('id', clientIds);
 
   const userMap = new Map();
   if (!usersError && users) {
-    users.forEach(user => {
-      const userData = {
-        email: user.email,
-        name: user.email?.split('@')[0] || 'Nome não disponível',
-        phone: user.telefone || null,
-        cpf: user.cpf || null
-      };
-      userMap.set(user.id, userData);
-    });
+    // Para cada usuário, buscar também os dados do auth para obter metadados
+    for (const user of users) {
+      try {
+        const { data: authData } = await supabase.auth.admin.getUserById(user.id);
+        const userData = {
+          email: user.email,
+          name: authData.user?.user_metadata?.name || authData.user?.user_metadata?.full_name || user.email.split('@')[0],
+          phone: authData.user?.user_metadata?.telefone || authData.user?.user_metadata?.phone || null,
+          cpf: authData.user?.user_metadata?.cpf || null
+        };
+        userMap.set(user.id, userData);
+      } catch (error) {
+        // Fallback se não conseguir buscar metadados
+        userMap.set(user.id, {
+          email: user.email,
+          name: user.email.split('@')[0],
+          phone: null,
+          cpf: null
+        });
+      }
+    }
   }
   
   return pedidos.map(pedido => {
@@ -78,23 +90,35 @@ export const enrichAttemptsWithEmails = async (tentativas: any[]) => {
   
   const userIds = [...new Set(tentativas.map(t => t.id_user))];
   
-  // Buscar dados completos dos usuários incluindo telefone e CPF
+  // Buscar dados completos dos usuários incluindo metadados
   const { data: users, error: usersError } = await supabase
     .from('users')
-    .select('id, email, cpf, telefone')
+    .select('id, email')
     .in('id', userIds);
 
   const userMap = new Map();
   if (!usersError && users) {
-    users.forEach(user => {
-      const userData = {
-        email: user.email,
-        name: user.email?.split('@')[0] || 'Nome não disponível',
-        phone: user.telefone || null,
-        cpf: user.cpf || null
-      };
-      userMap.set(user.id, userData);
-    });
+    // Para cada usuário, buscar também os dados do auth para obter metadados
+    for (const user of users) {
+      try {
+        const { data: authData } = await supabase.auth.admin.getUserById(user.id);
+        const userData = {
+          email: user.email,
+          name: authData.user?.user_metadata?.name || authData.user?.user_metadata?.full_name || user.email.split('@')[0],
+          phone: authData.user?.user_metadata?.telefone || authData.user?.user_metadata?.phone || null,
+          cpf: authData.user?.user_metadata?.cpf || null
+        };
+        userMap.set(user.id, userData);
+      } catch (error) {
+        // Fallback se não conseguir buscar metadados
+        userMap.set(user.id, {
+          email: user.email,
+          name: user.email.split('@')[0],
+          phone: null,
+          cpf: null
+        });
+      }
+    }
   }
 
   // Buscar nomes dos prédios selecionados
