@@ -2509,6 +2509,16 @@ export type Database = {
         Args: { p_email: string; p_password?: string; p_role: string }
         Returns: Json
       }
+      safe_log_financial_access: {
+        Args: {
+          p_operation: string
+          p_record_id: string
+          p_risk_level?: string
+          p_sensitive_fields: string[]
+          p_table_name: string
+        }
+        Returns: boolean
+      }
       select_video_for_display: {
         Args: { p_pedido_video_id: string }
         Returns: boolean
