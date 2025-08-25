@@ -49,13 +49,16 @@ const Linkae = () => {
           <LinkaeWhy />
           
           {/* Seção de Logos - Credibilidade da Indexa */}
-          <section className="py-8 md:py-12 bg-gradient-to-b from-background to-background/50">
+          <section className="py-12 md:py-16 bg-gradient-to-b from-gray-900 to-gray-800">
             <div className="max-w-6xl mx-auto px-4">
-              <div className="text-center mb-8 animate-fade-in">
-                <h3 className="text-2xl md:text-3xl font-bold gradient-text-linkae mb-3">
-                  Clientes e parceiros da Indexa que confiam na Linkaê
+              <div className="text-center mb-10 animate-fade-in">
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                  Clientes e parceiros da Indexa que confiam na 
+                  <span className="block bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                    Linkaê
+                  </span>
                 </h3>
-                <p className="text-muted-foreground">
+                <p className="text-gray-300">
                   Conecte-se ao mesmo nível de excelência
                 </p>
               </div>

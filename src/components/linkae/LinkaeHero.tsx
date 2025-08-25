@@ -23,17 +23,17 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
       <div className="absolute inset-0 bg-gradient-to-br from-linkae-primary/40 via-transparent to-linkae-accent/30"></div>
       
       {/* Content */}
-      <div className="relative z-10 text-center text-white px-6 py-8 md:py-0 max-w-6xl mx-auto">
-        <div className="flex flex-col items-center mb-6 md:mb-8">
+      <div className="relative z-10 text-center text-white px-6 py-12 md:py-16 max-w-6xl mx-auto">
+        <div className="flex flex-col items-center mb-8 md:mb-10">
           <img 
             src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/logo-linkae-branco.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL2xvZ28tbGlua2FlLWJyYW5jby5wbmciLCJpYXQiOjE3NTM4MTQ3OTksImV4cCI6OTYzNjE4MTQ3OTl9.ERz9rbEWAs_6Ep6BXI5ErN9ixotyUMb3szh2klNK4Us"
             alt="LINKAÊ - Social Media que Inspira"
-            className="w-40 sm:w-48 md:w-72 lg:w-96 h-auto mb-4 md:mb-6 animate-fade-in hover:scale-110 transition-all duration-700 drop-shadow-2xl cursor-pointer animate-linkae-glow"
+            className="w-40 sm:w-48 md:w-72 lg:w-96 h-auto mb-6 md:mb-8 animate-fade-in hover:scale-110 transition-all duration-700 drop-shadow-2xl cursor-pointer animate-linkae-glow"
           />
           
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6 animate-fade-in leading-tight">
             Conecte Sua Marca com 
-            <span className="block bg-gradient-to-r from-linkae-cyan to-linkae-white bg-clip-text text-transparent animate-linkae-float">
+            <span className="block bg-gradient-to-r from-sky-300 to-blue-200 bg-clip-text text-transparent animate-linkae-float">
               Estratégias que Inspiram
             </span>
           </h1>
@@ -46,7 +46,7 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
         <div className="animate-fade-in" style={{ animationDelay: '0.6s' }}>
           <button
             onClick={onScrollToForm}
-            className="group bg-gradient-to-r from-linkae-cyan to-linkae-accent text-white font-bold px-10 py-5 rounded-2xl text-lg md:text-xl transition-all duration-500 hover:shadow-[0_0_40px_rgba(77,166,255,0.5)] hover:scale-110 flex items-center mx-auto space-x-3 hover:from-linkae-accent hover:to-linkae-cyan animate-linkae-glow"
+            className="group bg-gradient-to-r from-sky-400 to-blue-500 text-white font-bold px-10 py-5 rounded-2xl text-lg md:text-xl transition-all duration-500 hover:shadow-[0_0_40px_rgba(56,189,248,0.5)] hover:scale-110 flex items-center mx-auto space-x-3 hover:from-blue-500 hover:to-sky-400 animate-linkae-glow"
           >
             <Coffee className="w-6 h-6 group-hover:animate-bounce" />
             <span>Agende Sua Reunião Gratuita</span>
