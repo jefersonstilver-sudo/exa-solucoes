@@ -1879,6 +1879,10 @@ export type Database = {
         Args: { p_pedido_id: string; p_pedido_video_id: string }
         Returns: boolean
       }
+      admin_block_video: {
+        Args: { p_block: boolean; p_pedido_video_id: string; p_reason?: string }
+        Returns: Json
+      }
       admin_check_user_exists: {
         Args: { user_email: string }
         Returns: boolean
@@ -1890,6 +1894,10 @@ export type Database = {
       admin_insert_user: {
         Args: { user_email: string; user_id: string; user_role: string }
         Returns: string
+      }
+      admin_unapprove_video: {
+        Args: { p_pedido_video_id: string; p_reason: string }
+        Returns: Json
       }
       admin_update_user_role_secure: {
         Args: { p_admin_id?: string; p_new_role: string; p_user_id: string }
@@ -2395,6 +2403,10 @@ export type Database = {
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_video_current_status: {
+        Args: { p_video_id: string }
+        Returns: Json
       }
       investigate_missing_transaction: {
         Args: { p_amount: number; p_email: string }

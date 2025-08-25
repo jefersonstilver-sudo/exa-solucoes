@@ -6,6 +6,8 @@ import { CheckCircle, Play, User, RefreshCw, Download, Eye, UserCheck, Shield, C
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PeriodSelector from './PeriodSelector';
+import VideoStatusIndicator from './VideoStatusIndicator';
+import VideoAdminActions from './VideoAdminActions';
 
 interface ApprovedVideo {
   pedido_video_id: string;
@@ -26,6 +28,18 @@ interface ApprovedVideo {
   approver_email: string;
   approver_name: string;
   created_at: string;
+  status?: {
+    video_id: string;
+    pedido_video_id: string;
+    pedido_id: string;
+    is_displaying: boolean;
+    is_base_video: boolean;
+    is_scheduled: boolean;
+    schedule_active_now: boolean;
+    is_blocked: boolean;
+    is_active: boolean;
+    primary_status: string;
+  };
 }
 
 interface RealApprovedVideosSectionProps {
@@ -36,7 +50,7 @@ interface RealApprovedVideosSectionProps {
 const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ loading, onRefresh }) => {
   const [approvedVideos, setApprovedVideos] = useState<ApprovedVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
   
   // Estados do filtro de período
   const [selectedPeriod, setSelectedPeriod] = useState(() => {
@@ -116,6 +130,9 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
       }));
 
       setApprovedVideos(mappedVideos);
+      
+      // Buscar status de cada vídeo
+      await fetchVideoStatuses(mappedVideos);
     } catch (error) {
       console.error('Erro geral ao buscar vídeos aprovados:', error);
       toast.error('Erro ao carregar vídeos aprovados');
@@ -124,38 +141,66 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
     }
   };
 
+  const fetchVideoStatuses = async (videos: ApprovedVideo[]) => {
+    try {
+      setStatusLoading(true);
+      
+      // Buscar status de todos os vídeos em paralelo
+      const statusPromises = videos.map(async (video) => {
+        const { data, error } = await supabase.rpc('get_video_current_status', {
+          p_video_id: video.video_id
+        });
+        
+        if (error) {
+          console.error(`Erro ao buscar status do vídeo ${video.video_id}:`, error);
+          return null;
+        }
+        
+        return {
+          video_id: video.video_id,
+          status: data
+        };
+      });
+      
+      const statuses = await Promise.all(statusPromises);
+      
+      // Atualizar vídeos com status
+      const videosWithStatus = videos.map(video => {
+        const statusData = statuses.find(s => s?.video_id === video.video_id);
+        const status = statusData?.status;
+        
+        return {
+          ...video,
+          status: status && typeof status === 'object' && !Array.isArray(status) ? {
+            video_id: String(status.video_id || ''),
+            pedido_video_id: String(status.pedido_video_id || ''),
+            pedido_id: String(status.pedido_id || ''),
+            is_displaying: Boolean(status.is_displaying),
+            is_base_video: Boolean(status.is_base_video),
+            is_scheduled: Boolean(status.is_scheduled),
+            schedule_active_now: Boolean(status.schedule_active_now),
+            is_blocked: Boolean(status.is_blocked),
+            is_active: Boolean(status.is_active),
+            primary_status: String(status.primary_status || 'standby')
+          } : undefined
+        };
+      });
+      
+      setApprovedVideos(videosWithStatus);
+    } catch (error) {
+      console.error('Erro ao buscar status dos vídeos:', error);
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchApprovedVideos();
   }, [selectedPeriod, customStartDate, customEndDate]);
 
-  const activateVideo = async (pedidoId: string, pedidoVideoId: string) => {
-    try {
-      setActionLoading(pedidoVideoId);
-      
-      const { data, error } = await supabase.rpc('activate_video', {
-        p_pedido_id: pedidoId,
-        p_pedido_video_id: pedidoVideoId
-      });
-
-      if (error) {
-        console.error('Erro ao ativar vídeo:', error);
-        toast.error('Erro ao ativar vídeo');
-        return;
-      }
-
-      if (data) {
-        toast.success('Vídeo ativado com sucesso!');
-        fetchApprovedVideos(); // Recarregar dados
-        onRefresh(); // Atualizar estatísticas
-      } else {
-        toast.error('Falha ao ativar vídeo');
-      }
-    } catch (error) {
-      console.error('Erro ao ativar vídeo:', error);
-      toast.error('Erro ao ativar vídeo');
-    } finally {
-      setActionLoading(null);
-    }
+  const handleActionComplete = () => {
+    fetchApprovedVideos();
+    onRefresh();
   };
 
   const formatDate = (dateString: string) => {
@@ -181,7 +226,9 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
         <CardContent className="p-8">
           <div className="flex items-center justify-center">
             <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-3 text-foreground">Carregando vídeos aprovados...</span>
+            <span className="ml-3 text-foreground">
+              {statusLoading ? 'Carregando status dos vídeos...' : 'Carregando vídeos aprovados...'}
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -291,55 +338,73 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
                         )}
                       </div>
                       
-                      <div className="flex flex-col gap-2 ml-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                          onClick={() => {
-                            window.open(`/admin/video-preview/${video.video_id}`, '_blank');
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Visualizar
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = `/admin/download-video/${video.video_id}`;
-                            link.download = `${video.video_name}.mp4`;
-                            link.click();
-                          }}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          className="bg-blue-600 text-white hover:bg-blue-700"
-                          disabled={actionLoading === video.pedido_video_id}
-                          onClick={() => activateVideo(video.pedido_id, video.pedido_video_id)}
-                        >
-                          {actionLoading === video.pedido_video_id ? (
-                            <div className="flex items-center">
-                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Ativando...
-                            </div>
+                      <div className="flex flex-col gap-4 ml-4">
+                        {/* Status do Vídeo */}
+                        <div className="flex flex-col gap-2">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Status Atual
+                          </span>
+                          {video.status ? (
+                            <VideoStatusIndicator status={video.status} />
                           ) : (
-                            <>
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Ativar Vídeo
-                            </>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                              Carregando status...
+                            </div>
                           )}
-                        </Button>
+                        </div>
+
+                        {/* Ações de Visualização */}
+                        <div className="flex flex-col gap-2">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Visualização
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-background text-foreground border hover:bg-accent"
+                            onClick={() => {
+                              window.open(`/admin/video-preview/${video.video_id}`, '_blank');
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Visualizar
+                          </Button>
+                          
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-background text-foreground border hover:bg-accent"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = `/admin/download-video/${video.video_id}`;
+                              link.download = `${video.video_name}.mp4`;
+                              link.click();
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+
+                        {/* Ações Administrativas */}
+                        <div className="flex flex-col gap-2">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Ações Admin
+                          </span>
+                          {video.status && (
+                            <VideoAdminActions
+                              video={{
+                                pedido_video_id: video.pedido_video_id,
+                                video_id: video.video_id,
+                                video_name: video.video_name,
+                                pedido_id: video.pedido_id
+                              }}
+                              status={video.status}
+                              onActionComplete={handleActionComplete}
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
