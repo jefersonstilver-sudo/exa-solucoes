@@ -20,7 +20,7 @@ const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:50px_50px] opacity-20"></div>
       
       {/* Overlay with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-linkae-primary/40 via-transparent to-linkae-accent/30"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-linkae-primary/15 via-transparent to-linkae-accent/10"></div>
       
       {/* Content */}
       <div className="relative z-10 text-center text-white px-6 py-16 md:py-20 max-w-6xl mx-auto">
