@@ -690,6 +690,48 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_audit_logs: {
+        Row: {
+          access_timestamp: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          operation: string
+          record_id: string | null
+          risk_level: string | null
+          sensitive_fields_accessed: string[] | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_timestamp?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          operation: string
+          record_id?: string | null
+          risk_level?: string | null
+          sensitive_fields_accessed?: string[] | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_timestamp?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          operation?: string
+          record_id?: string | null
+          risk_level?: string | null
+          sensitive_fields_accessed?: string[] | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       homepage_banners: {
         Row: {
           created_at: string
@@ -2263,6 +2305,21 @@ export type Database = {
           video_url: string
         }[]
       }
+      get_secure_pedido_data: {
+        Args: { p_pedido_id: string }
+        Returns: {
+          client_id: string
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          id: string
+          mercadopago_transaction_id: string
+          plano_meses: number
+          status: string
+          transaction_id: string
+          valor_total: number
+        }[]
+      }
       get_unread_notifications_count: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -2306,6 +2363,16 @@ export type Database = {
           p_description: string
           p_new_values?: Json
           p_old_values?: Json
+        }
+        Returns: string
+      }
+      log_financial_access: {
+        Args: {
+          p_operation: string
+          p_record_id?: string
+          p_risk_level?: string
+          p_sensitive_fields?: string[]
+          p_table_name: string
         }
         Returns: string
       }
