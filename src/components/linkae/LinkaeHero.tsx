@@ -8,19 +8,19 @@ interface LinkaeHeroProps {
 
 const LinkaeHero: React.FC<LinkaeHeroProps> = ({ onScrollToForm }) => {
   return (
-    <section className="relative min-h-[80vh] md:min-h-[85vh] flex items-center justify-center bg-gradient-to-br from-linkae-primary via-linkae-secondary to-linkae-accent overflow-hidden">
+    <section className="relative min-h-[80vh] md:min-h-[85vh] flex items-center justify-center bg-gradient-to-br from-linkae-primary/20 via-linkae-secondary/15 to-linkae-accent/25 overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-linkae-cyan/20 rounded-full blur-3xl animate-linkae-float"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-linkae-accent/20 rounded-full blur-3xl animate-linkae-float" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-linkae-primary/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-linkae-cyan/10 rounded-full blur-3xl animate-linkae-float"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-linkae-accent/15 rounded-full blur-3xl animate-linkae-float" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-linkae-primary/5 rounded-full blur-3xl animate-pulse"></div>
       </div>
       
       {/* Dynamic Grid Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:50px_50px] opacity-20"></div>
       
       {/* Overlay with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-linkae-primary/15 via-transparent to-linkae-accent/10"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-linkae-primary/8 via-transparent to-linkae-accent/5"></div>
       
       {/* Content */}
       <div className="relative z-10 text-center text-white px-6 py-16 md:py-20 max-w-6xl mx-auto">
