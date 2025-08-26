@@ -7,6 +7,7 @@ import {
   WifiOff,
   Settings
 } from 'lucide-react';
+import DataIntegrityBadge from '../DataIntegrityBadge';
 
 interface PanelsStatsCardsProps {
   stats: {
@@ -17,9 +18,22 @@ interface PanelsStatsCardsProps {
   };
 }
 
+
 const PanelsStatsCards: React.FC<PanelsStatsCardsProps> = ({ stats }) => {
+  const hasRealData = stats.total > 0;
+  
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Estatísticas dos Painéis</h2>
+        <DataIntegrityBadge 
+          isRealData={hasRealData}
+          dataSource="Supabase - Tabela painels"
+          recordCount={stats.total}
+        />
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       <Card className="border-indexa-purple/20">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg font-medium text-gray-700">Total de Painéis</CardTitle>
@@ -63,7 +77,8 @@ const PanelsStatsCards: React.FC<PanelsStatsCardsProps> = ({ stats }) => {
             </div>
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };

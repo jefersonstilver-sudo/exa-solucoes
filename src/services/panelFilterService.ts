@@ -1,11 +1,58 @@
-
 import { Panel } from '@/types/panel';
 import { FilterOptions } from '@/types/filter';
-import { 
-  filterPanelsByLocation, 
-  filterPanelsByStatus, 
-  filterPanelsByNeighborhood 
-} from '@/services/mockPanelService';
+
+/**
+ * Filter panels by location using Haversine formula
+ */
+export const filterPanelsByLocation = (
+  panels: Panel[], 
+  selectedLocation: {lat: number, lng: number} | null,
+  radius: number
+): Panel[] => {
+  if (!selectedLocation) return panels;
+  
+  return panels.map(panel => {
+    if (panel.buildings?.latitude && panel.buildings?.longitude) {
+      const R = 6371e3; // metres
+      const φ1 = selectedLocation.lat * Math.PI/180;
+      const φ2 = panel.buildings.latitude * Math.PI/180;
+      const Δφ = (panel.buildings.latitude - selectedLocation.lat) * Math.PI/180;
+      const Δλ = (panel.buildings.longitude - selectedLocation.lng) * Math.PI/180;
+
+      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+      const distance = R * c; // in metres
+      
+      return { ...panel, distance };
+    }
+    return panel;
+  }).filter(panel => (panel as any).distance <= radius);
+};
+
+/**
+ * Filter panels by status
+ */
+export const filterPanelsByStatus = (panels: Panel[], statusFilters: string[]): Panel[] => {
+  if (!statusFilters.length) return panels;
+  
+  return panels.filter(panel => 
+    statusFilters.includes(panel.status === 'installing' ? 'installing' : 'online')
+  );
+};
+
+/**
+ * Filter panels by neighborhood
+ */
+export const filterPanelsByNeighborhood = (panels: Panel[], neighborhood: string): Panel[] => {
+  if (!neighborhood || neighborhood === 'all') return panels;
+  
+  return panels.filter(panel => 
+    panel.buildings?.bairro === neighborhood
+  );
+};
 
 /**
  * Apply all filters to a collection of panels
@@ -41,33 +88,7 @@ export const applyAllFilters = (
   
   // Filter by location/distance if we have a selected location
   if (selectedLocation && typeof filters.radius === 'number') {
-    filteredPanels = filterPanelsByLocation(filteredPanels, selectedLocation, filters.radius)
-      .map(panel => {
-        // Calculate distance using Haversine formula
-        if (panel.buildings && panel.buildings.latitude && panel.buildings.longitude) {
-          const lat1 = selectedLocation.lat;
-          const lon1 = selectedLocation.lng;
-          const lat2 = panel.buildings.latitude;
-          const lon2 = panel.buildings.longitude;
-          
-          // Haversine formula to calculate distance between two points
-          const R = 6371e3; // metres
-          const φ1 = lat1 * Math.PI/180;
-          const φ2 = lat2 * Math.PI/180;
-          const Δφ = (lat2-lat1) * Math.PI/180;
-          const Δλ = (lon2-lon1) * Math.PI/180;
-
-          const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                    Math.cos(φ1) * Math.cos(φ2) *
-                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-          const distance = R * c; // in metres
-          
-          return { ...panel, distance };
-        }
-        return panel;
-      });
+    filteredPanels = filterPanelsByLocation(filteredPanels, selectedLocation, filters.radius);
   }
   
   return filteredPanels;

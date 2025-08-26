@@ -90,17 +90,19 @@ const PanelList: React.FC<PanelListProps> = ({
     if (sortOption === 'distance' && a.distance && b.distance) {
       return a.distance - b.distance;
     } else if (sortOption === 'price-asc') {
-      // Mock price calculation - could be moved to a utility function
-      const priceA = 280 + (parseInt(a.id.slice(-2), 16) % 40);
-      const priceB = 280 + (parseInt(b.id.slice(-2), 16) % 40);
+      // Real price calculation from building data with proper type handling
+      const priceA = (a.buildings as any)?.preco_base || 0;
+      const priceB = (b.buildings as any)?.preco_base || 0;
       return priceA - priceB;
     } else if (sortOption === 'price-desc') {
-      const priceA = 280 + (parseInt(a.id.slice(-2), 16) % 40);
-      const priceB = 280 + (parseInt(b.id.slice(-2), 16) % 40);
+      const priceA = (a.buildings as any)?.preco_base || 0;
+      const priceB = (b.buildings as any)?.preco_base || 0;
       return priceB - priceA;
     } else if (sortOption === 'views-desc') {
-      // Mock view count sorting
-      return Math.random() - 0.5; // Random for mock data
+      // Real view count sorting from building data with proper type handling
+      const viewsA = (a.buildings as any)?.visualizacoes_mes || 0;
+      const viewsB = (b.buildings as any)?.visualizacoes_mes || 0;
+      return viewsB - viewsA;
     }
     return 0;
   });

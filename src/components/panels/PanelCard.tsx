@@ -37,16 +37,16 @@ export const PanelCard: React.FC<PanelCardProps> = ({ panel, onAddToCart }) => {
   // Use UNIFIED price calculation from checkoutUtils
   const price = getPanelPrice(panel, 30); // 30 days default
   
-  // Generate mock data for panel display
-  const monthlyViews = Math.floor(Math.random() * 50000) + 10000;
-  const estimatedResidents = Math.floor(Math.random() * 800) + 200;
-  const screenCount = Math.floor(Math.random() * 2) + 1;
+  // Use REAL building data from database with proper type handling
+  const monthlyViews = (panel.buildings as any)?.visualizacoes_mes || 0;
+  const estimatedResidents = (panel.buildings as any)?.publico_estimado || 0;
+  const screenCount = (panel.buildings as any)?.quantidade_telas || 1;
   
-  // Building details
-  const towers = Math.floor(Math.random() * 3) + 1;
-  const apartments = Math.floor(Math.random() * 150) + 50;
+  // Building details from real data with proper type handling
+  const towers = (panel.buildings as any)?.numero_blocos || 1;
+  const apartments = (panel.buildings as any)?.numero_unidades || 0;
   
-  // Distance display (mock data for now)
+  // Distance display (real calculated distance)
   const displayDistance = panel.distance ? `${(panel.distance / 1000).toFixed(1)}km` : null;
   
   // Check if condominiumProfile is string or object and extract profile type

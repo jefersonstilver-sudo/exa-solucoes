@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCw } from 'lucide-react';
 import { useEnhancedFinancialIntegrityData } from '@/hooks/admin/useEnhancedFinancialIntegrityData';
 import DashboardHeader from './financial-integrity/DashboardHeader';
@@ -8,6 +9,7 @@ import AnomaliesCard from './financial-integrity/AnomaliesCard';
 import MissingWebhooksAlert from './financial-integrity/MissingWebhooksAlert';
 import TransactionRecoveryCard from './financial-integrity/TransactionRecoveryCard';
 import LostTransactionsAlert from './financial-integrity/LostTransactionsAlert';
+import DataIntegrityMonitor from './DataIntegrityMonitor';
 
 const FinancialIntegrityDashboard: React.FC = () => {
   const {
@@ -69,6 +71,9 @@ const FinancialIntegrityDashboard: React.FC = () => {
         onRunAudit={runEmergencyAudit} 
         loading={loading} 
       />
+
+      {/* Data Integrity Monitor */}
+      <DataIntegrityMonitor />
     </div>
   );
 };

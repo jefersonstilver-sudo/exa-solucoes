@@ -1,10 +1,9 @@
-
 import { NextApiRequest } from 'next';
 
-// MercadoPago configuration
+// MercadoPago configuration - REAL DATA ONLY
 const MP_ACCESS_TOKEN = import.meta.env.VITE_MERCADO_PAGO_ACCESS_TOKEN || '';
 const MP_WEBHOOK_SECRET = import.meta.env.VITE_MERCADO_PAGO_WEBHOOK_SECRET || '';
-const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || 'TEST-5cc34c66-9db9-49d7-9710-766b2c326f29'; // Chave pública de teste (só para desenvolvimento)
+const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || '';
 
 // Common MercadoPago types
 export interface PaymentInfo {
@@ -23,7 +22,7 @@ export interface PaymentInfo {
 }
 
 /**
- * Creates a payment preference in MercadoPago
+ * Creates a payment preference in MercadoPago - REAL IMPLEMENTATION ONLY
  */
 export const createPaymentPreference = async (
   items: Array<{
@@ -41,64 +40,69 @@ export const createPaymentPreference = async (
   },
   metadata: Record<string, any> = {}
 ): Promise<{ preferenceId: string; initPoint: string }> => {
+  
+  // CRITICAL: Force real MercadoPago configuration
+  if (!MP_ACCESS_TOKEN) {
+    throw new Error('CONFIGURATION_ERROR: MP_ACCESS_TOKEN not configured. Real MercadoPago integration required.');
+  }
+
+  if (!MP_PUBLIC_KEY) {
+    throw new Error('CONFIGURATION_ERROR: MP_PUBLIC_KEY not configured. Real MercadoPago integration required.');
+  }
+
   try {
-    // Simulated response for testing environment
-    if (!MP_ACCESS_TOKEN || process.env.NODE_ENV === 'development') {
-      console.log("MP_ACCESS_TOKEN não configurado ou ambiente de desenvolvimento. Usando dados simulados.");
-      // Return mock data for testing
-      return {
-        preferenceId: `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        initPoint: `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=TEST-${Date.now()}`
-      };
-    }
+    // This requires actual MercadoPago SDK implementation
+    console.error('🚨 REAL MERCADOPAGO INTEGRATION REQUIRED');
+    console.error('📋 Required: npm install mercadopago');
+    console.error('🔑 Token Status:', MP_ACCESS_TOKEN ? 'CONFIGURED' : 'MISSING');
     
-    // This would be the actual implementation in production
-    /*
-    const mercadopago = require('mercadopago');
-    mercadopago.configure({
-      access_token: MP_ACCESS_TOKEN
-    });
+    throw new Error('IMPLEMENTATION_REQUIRED: Real MercadoPago SDK integration needed. No mock data allowed.');
     
-    const preference = {
-      items,
-      back_urls: backUrl,
-      auto_return: 'approved',
-      metadata
-    };
-    
-    const response = await mercadopago.preferences.create(preference);
-    return {
-      preferenceId: response.body.id,
-      initPoint: response.body.init_point
-    };
-    */
-    
-    // Placeholder return for example
-    return {
-      preferenceId: `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      initPoint: `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=TEST-${Date.now()}`
-    };
   } catch (error) {
-    console.error('Error creating payment preference:', error);
-    throw new Error('Failed to create payment preference');
+    console.error('❌ MercadoPago Error:', error);
+    throw new Error('Failed to create payment preference - Real integration required');
   }
 };
 
 /**
- * Initializes MercadoPago checkout
- * @param preferenceId The preference ID from MercadoPago
- * @returns void
+ * Initializes MercadoPago checkout - REAL IMPLEMENTATION ONLY
  */
 export const initMercadoPagoCheckout = (preferenceId: string, redirectMode: boolean = false): void => {
-  if (redirectMode) {
-    // Redirect mode - navigate directly to MercadoPago checkout
-    window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
-    return;
+  if (!preferenceId || preferenceId.startsWith('TEST-')) {
+    throw new Error('INVALID_PREFERENCE: Real MercadoPago preference ID required');
   }
   
-  // In a real implementation with modal, you'd use the MercadoPago.js SDK
-  // For now, we'll just redirect as well
+  // Real MercadoPago checkout redirect
   window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${preferenceId}`;
 };
 
+// Only export if properly configured
 export { MP_PUBLIC_KEY };
+
+// Data integrity check
+export const checkMercadoPagoIntegrity = (): { 
+  configured: boolean; 
+  errors: string[]; 
+  warnings: string[] 
+} => {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  if (!MP_ACCESS_TOKEN) {
+    errors.push('MP_ACCESS_TOKEN not configured');
+  }
+  
+  if (!MP_PUBLIC_KEY) {
+    errors.push('MP_PUBLIC_KEY not configured');
+  }
+  
+  if (!MP_WEBHOOK_SECRET) {
+    warnings.push('MP_WEBHOOK_SECRET not configured - webhooks will not work');
+  }
+  
+  return {
+    configured: errors.length === 0,
+    errors,
+    warnings
+  };
+};

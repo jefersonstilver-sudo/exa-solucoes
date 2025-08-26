@@ -27,13 +27,13 @@ const PanelCardVertical: React.FC<PanelCardVerticalProps> = ({ panel, inCart, on
     return basePrice + priceVariation;
   };
   
-  // Generate data for panel display
+  // Use REAL building data from database with proper type handling
   const price = calculatePrice();
-  const monthlyViews = Math.floor(Math.random() * 50000) + 10000;
-  const estimatedResidents = Math.floor(Math.random() * 800) + 200;
-  const screenCount = Math.floor(Math.random() * 2) + 1;
+  const monthlyViews = (panel.buildings as any)?.visualizacoes_mes || 0;
+  const estimatedResidents = (panel.buildings as any)?.publico_estimado || 0;
+  const screenCount = (panel.buildings as any)?.quantidade_telas || 1;
   
-  // Distance display (mock data for now)
+  // Distance display (real calculated distance)
   const displayDistance = panel.distance ? `${(panel.distance / 1000).toFixed(1)}km` : null;
   
   // Check if condominiumProfile is string or object and extract profile type

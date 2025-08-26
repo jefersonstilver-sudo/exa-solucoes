@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, ShoppingCart, MonitorPlay, DollarSign } from 'lucide-react';
 import GrowthIndicator from './GrowthIndicator';
 import { MonthlyDashboardStats } from '@/hooks/useMonthlyDashboardData';
+import DataIntegrityBadge from '../DataIntegrityBadge';
 
 interface DashboardStatsCardsProps {
   stats: MonthlyDashboardStats;
@@ -22,6 +23,8 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
       currency: 'BRL'
     }).format(value);
   };
+
+  const hasRealData = stats.total_users > 0 || stats.total_orders > 0;
 
   const statsCards = [
     {
@@ -63,7 +66,17 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Estatísticas Gerais</h2>
+        <DataIntegrityBadge 
+          isRealData={hasRealData}
+          dataSource="Supabase - Dados Reais"
+          recordCount={stats.total_users + stats.total_orders}
+        />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {statsCards.map((stat, index) => (
         <Card key={index} className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -89,7 +102,8 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
             </div>
           </CardContent>
         </Card>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
