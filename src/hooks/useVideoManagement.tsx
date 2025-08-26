@@ -7,6 +7,7 @@ import { validateVideoUploadPermission } from '@/services/videoUploadSecuritySer
 import { VideoSlot } from '@/types/videoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
 import { setBaseVideo } from '@/services/videoBaseService';
+import { normalizeTitle, toggleForBuildings } from '@/services/videoToggleWebhookService';
 
 interface UseVideoManagementProps {
   orderId: string;
@@ -115,6 +116,26 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
   // Selecionar para exibição
   const handleSelectForDisplay = async (slotId: string) => {
     try {
+      // Buscar vídeo atualmente selecionado e dados do pedido
+      const [currentSelectedResult, pedidoResult, newVideoResult] = await Promise.all([
+        supabase
+          .from('pedido_videos')
+          .select('video_data:videos(nome)')
+          .eq('pedido_id', orderId)
+          .eq('selected_for_display', true)
+          .single(),
+        supabase
+          .from('pedidos')
+          .select('lista_predios')
+          .eq('id', orderId)
+          .single(),
+        supabase
+          .from('pedido_videos')
+          .select('video_data:videos(nome)')
+          .eq('id', slotId)
+          .single()
+      ]);
+
       // Primeiro, desmarcar todos os outros
       await supabase
         .from('pedido_videos')
@@ -128,6 +149,40 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         .eq('id', slotId);
 
       if (error) throw error;
+
+      // Enviar webhooks após sucesso no Supabase
+      if (pedidoResult.data?.lista_predios) {
+        const buildingIds = pedidoResult.data.lista_predios as string[];
+        const oldVideoName = currentSelectedResult.data?.video_data?.nome;
+        const newVideoName = newVideoResult.data?.video_data?.nome;
+        
+        const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
+        const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
+        
+        console.log('🚀 [WEBHOOK] Enviando webhooks para seleção:', { buildingIdsCount: buildingIds.length, oldTitle, newTitle });
+        
+        // Sempre confirmar ativação do novo vídeo
+        if (newTitle) {
+          toggleForBuildings({
+            buildingIds,
+            toActivateTitle: newTitle
+          }).catch(error => {
+            console.error('❌ [WEBHOOK] Erro ao enviar webhook de ativação:', error);
+          });
+        }
+
+        // Enviar desativação apenas se for título diferente e existir um antigo
+        if (oldTitle && newTitle && oldTitle !== newTitle) {
+          toggleForBuildings({
+            buildingIds,
+            toDeactivateTitle: oldTitle
+          }).catch(error => {
+            console.error('❌ [WEBHOOK] Erro ao enviar webhook de desativação:', error);
+          });
+        }
+      } else {
+        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada');
+      }
 
       toast.success('Vídeo selecionado para exibição!');
       const slots = await loadVideoSlots(orderId);
