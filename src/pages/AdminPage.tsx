@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { AlertTriangle } from 'lucide-react';
-import AdminLayout from '@/components/admin/layout/AdminLayout';
+import ModernAdminLayout from '@/components/admin/layout/ModernAdminLayout';
 import AdminRoutes from '@/routes/AdminRoutes';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
@@ -68,9 +68,9 @@ const AdminPage = () => {
   }
 
   return (
-    <AdminLayout>
+    <ModernAdminLayout>
       <AdminRoutes />
-    </AdminLayout>
+    </ModernAdminLayout>
   );
 };
 

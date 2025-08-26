@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Bell, Check, CheckCheck, X, Eye, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -13,11 +12,13 @@ import {
 import { Card } from '@/components/ui/card';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useNavigate } from 'react-router-dom';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 
 const NotificationCenter = () => {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+  const { basePath } = useAdminBasePath();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -51,7 +52,7 @@ const NotificationCenter = () => {
 
     // Se for notificação de venda, redirecionar para pedidos
     if (notification.type === 'sale' && notification.metadata?.pedido_id) {
-      navigate(`/super_admin/pedidos/${notification.metadata.pedido_id}`);
+      navigate(`${basePath}/pedidos/${notification.metadata.pedido_id}`);
       setIsOpen(false);
     }
   };
@@ -64,13 +65,13 @@ const NotificationCenter = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          className="relative p-2 text-white hover:bg-white/20 hover:text-white bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-200 rounded-lg"
+          className="relative p-2 hover:bg-accent hover:text-accent-foreground transition-colors rounded-md"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600 border-2 border-white"
+              className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
@@ -80,7 +81,7 @@ const NotificationCenter = () => {
       
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold text-gray-900">Notificações</h3>
+          <h3 className="font-semibold">Notificações</h3>
           <div className="flex items-center space-x-2">
             {unreadCount > 0 && (
               <Button
@@ -98,20 +99,20 @@ const NotificationCenter = () => {
 
         <div className="max-h-80 overflow-y-auto">
           {loading ? (
-            <div className="p-4 text-center text-gray-500">
+            <div className="p-4 text-center text-muted-foreground">
               Carregando notificações...
             </div>
           ) : recentNotifications.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+            <div className="p-4 text-center text-muted-foreground">
+              <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p>Nenhuma notificação</p>
             </div>
           ) : (
             recentNotifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
-                  !notification.is_read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                className={`p-3 border-b hover:bg-accent cursor-pointer transition-colors ${
+                  !notification.is_read ? 'bg-accent/50 border-l-4 border-l-primary' : ''
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
@@ -123,16 +124,16 @@ const NotificationCenter = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h4 className={`text-sm font-medium ${
-                        !notification.is_read ? 'text-gray-900' : 'text-gray-700'
+                        !notification.is_read ? 'text-foreground' : 'text-muted-foreground'
                       }`}>
                         {notification.title}
                       </h4>
-                      <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                      <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
                         {formatDate(notification.created_at)}
                       </span>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                       {notification.message}
                     </p>
 
@@ -158,13 +159,13 @@ const NotificationCenter = () => {
         </div>
 
         {notifications.length > 5 && (
-          <div className="p-3 border-t bg-gray-50">
+          <div className="p-3 border-t bg-muted/50">
             <Button
               variant="ghost"
               size="sm"
               className="w-full"
               onClick={() => {
-                navigate('/super_admin/notifications');
+                navigate(`${basePath}/notificacoes`);
                 setIsOpen(false);
               }}
             >
