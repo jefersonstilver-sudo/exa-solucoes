@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { deleteVideoFromStorage } from '@/services/videoStorageService';
 import { VideoSlot } from '@/types/videoManagement';
-import { toggleForBuildings, getBuildingIdsForOrder } from '@/services/videoToggleApiService';
 
 export const selectVideoForDisplay = async (
   slotId: string, 
@@ -15,7 +14,7 @@ export const selectVideoForDisplay = async (
     // NOVA VALIDAÇÃO: Verificar se o vídeo está aprovado antes de selecionar
     const { data: videoData, error: checkError } = await supabase
       .from('pedido_videos')
-      .select('approval_status, pedido_id, videos(nome)')
+      .select('approval_status, pedido_id')
       .eq('id', slotId)
       .single();
 
@@ -49,14 +48,6 @@ export const selectVideoForDisplay = async (
       return false;
     }
 
-    // Get current selected video BEFORE making the change
-    const { data: currentSelected } = await supabase
-      .from('pedido_videos')
-      .select('id, videos(nome)')
-      .eq('pedido_id', videoData.pedido_id)
-      .eq('selected_for_display', true)
-      .maybeSingle();
-
     console.log('✅ [VIDEO_ACTION] Vídeo aprovado, usando função corrigida para seleção');
     
     // Usar a função RPC corrigida que permite troca de seleção
@@ -72,32 +63,18 @@ export const selectVideoForDisplay = async (
     if (data) {
       console.log('✅ [VIDEO_ACTION] Vídeo selecionado com sucesso (troca permitida)');
       
-      // Send webhook notifications after successful selection
-      try {
-        const buildingIds = await getBuildingIdsForOrder(videoData.pedido_id);
-        
-        if (buildingIds.length > 0) {
-          // Deactivate previous video if it's different from the new one
-          if (currentSelected && currentSelected.id !== slotId && currentSelected.videos?.nome) {
-            console.log('📡 [VIDEO_ACTION] Deactivating previous video:', currentSelected.videos.nome);
-            await toggleForBuildings(currentSelected.videos.nome, false, buildingIds);
-          }
-          
-          // Activate new video
-          if (videoData.videos?.nome) {
-            console.log('📡 [VIDEO_ACTION] Activating new video:', videoData.videos.nome);
-            await toggleForBuildings(videoData.videos.nome, true, buildingIds);
-          }
-        }
-      } catch (webhookError) {
-        // Don't block the UI if webhook fails
-        console.error('⚠️ [VIDEO_ACTION] Webhook error (non-blocking):', webhookError);
-        toast.warning('Vídeo selecionado, mas houve um problema na sincronização com os prédios');
-      }
+      // Buscar nome do vídeo para o popup
+      const { data: videoInfo } = await supabase
+        .from('pedido_videos')
+        .select('videos(nome)')
+        .eq('id', slotId)
+        .single();
+
+      const videoName = videoInfo?.videos?.nome;
       
       // Chamar callback de sucesso se fornecido
       if (onSuccess) {
-        onSuccess(videoData.videos?.nome);
+        onSuccess(videoName);
       }
       
       toast.success('✅ Vídeo selecionado para exibição!');

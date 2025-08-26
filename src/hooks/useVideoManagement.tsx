@@ -7,7 +7,6 @@ import { validateVideoUploadPermission } from '@/services/videoUploadSecuritySer
 import { VideoSlot } from '@/types/videoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
 import { setBaseVideo } from '@/services/videoBaseService';
-import { toggleForBuildings, getBuildingIdsForOrder } from '@/services/videoToggleApiService';
 
 interface UseVideoManagementProps {
   orderId: string;
@@ -116,24 +115,6 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
   // Selecionar para exibição
   const handleSelectForDisplay = async (slotId: string) => {
     try {
-      // Get current selected video and new video info BEFORE making changes
-      const [currentSelectedResult, newVideoResult] = await Promise.all([
-        supabase
-          .from('pedido_videos')
-          .select('id, videos(nome)')
-          .eq('pedido_id', orderId)
-          .eq('selected_for_display', true)
-          .maybeSingle(),
-        supabase
-          .from('pedido_videos')
-          .select('videos(nome)')
-          .eq('id', slotId)
-          .single()
-      ]);
-
-      const currentSelected = currentSelectedResult.data;
-      const newVideo = newVideoResult.data;
-
       // Primeiro, desmarcar todos os outros
       await supabase
         .from('pedido_videos')
@@ -147,29 +128,6 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         .eq('id', slotId);
 
       if (error) throw error;
-
-      // Send webhook notifications after successful selection
-      try {
-        const buildingIds = await getBuildingIdsForOrder(orderId);
-        
-        if (buildingIds.length > 0) {
-          // Deactivate previous video if it's different from the new one
-          if (currentSelected && currentSelected.id !== slotId && currentSelected.videos?.nome) {
-            console.log('📡 [VIDEO_HOOK] Deactivating previous video:', currentSelected.videos.nome);
-            await toggleForBuildings(currentSelected.videos.nome, false, buildingIds);
-          }
-          
-          // Activate new video
-          if (newVideo?.videos?.nome) {
-            console.log('📡 [VIDEO_HOOK] Activating new video:', newVideo.videos.nome);
-            await toggleForBuildings(newVideo.videos.nome, true, buildingIds);
-          }
-        }
-      } catch (webhookError) {
-        // Don't block the UI if webhook fails
-        console.error('⚠️ [VIDEO_HOOK] Webhook error (non-blocking):', webhookError);
-        toast.warning('Vídeo selecionado, mas houve um problema na sincronização com os prédios');
-      }
 
       toast.success('Vídeo selecionado para exibição!');
       const slots = await loadVideoSlots(orderId);
