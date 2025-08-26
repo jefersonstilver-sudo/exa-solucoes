@@ -45,3 +45,6 @@ verify_jwt = false
 
 [functions.financial-security]
 verify_jwt = true
+
+[functions.toggle-video-active]
+verify_jwt = true
