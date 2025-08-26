@@ -45,8 +45,8 @@ const formatScheduleRules = (rules: ScheduleRule[]): Record<string, any[]> => {
         schedule[day] = [];
       }
       schedule[day].push({
-        inicio: rule.start_time.substring(0, 5), // Remove seconds
-        fim: rule.end_time.substring(0, 5) // Remove seconds
+        inicio: '00:00',
+        fim: '23:59'
       });
     });
   });

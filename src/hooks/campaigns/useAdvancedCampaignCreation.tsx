@@ -68,8 +68,8 @@ const formatScheduleRules = (rules: ScheduleRule[]) => {
           programacao[day] = [];
         }
         programacao[day].push({
-          inicio: formatTime(rule.startTime),
-          fim: formatTime(rule.endTime)
+          inicio: '00:00',
+          fim: '23:59'
         });
       });
     }
