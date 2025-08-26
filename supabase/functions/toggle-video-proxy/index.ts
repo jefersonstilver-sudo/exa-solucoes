@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const N8N_WEBHOOK_BASE = "https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR";
+const N8N_WEBHOOK_BASE = Deno.env.get("N8N_WEBHOOK_URL") || "https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR";
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -24,7 +24,16 @@ serve(async (req) => {
 
     const { buildingId, titulo, ativo } = await req.json();
 
+    console.log("[toggle-video-proxy] 📥 RECEBIDO:", { 
+      method: req.method, 
+      buildingId, 
+      titulo, 
+      ativo,
+      headers: Object.fromEntries(req.headers.entries())
+    });
+
     if (!buildingId || typeof titulo !== "string" || typeof ativo !== "boolean") {
+      console.error("[toggle-video-proxy] ❌ PAYLOAD INVÁLIDO:", { buildingId, titulo, ativo });
       return new Response(
         JSON.stringify({ success: false, error: "Invalid payload. Expecting { buildingId, titulo, ativo }" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -32,9 +41,14 @@ serve(async (req) => {
     }
 
     const url = `${N8N_WEBHOOK_BASE}?building_id=${encodeURIComponent(buildingId)}`;
-    const payload = { titulo, ativo };
+    const payload = { building_id: buildingId, titulo, ativo };
 
-    console.log("[toggle-video-proxy] Forwarding PATCH to n8n:", { url, payload });
+    console.log("[toggle-video-proxy] 🚀 ENVIANDO PATCH para n8n:", { 
+      url, 
+      payload,
+      webhook_base: N8N_WEBHOOK_BASE,
+      method: "PATCH"
+    });
 
     const upstream = await fetch(url, {
       method: "PATCH",
@@ -51,12 +65,26 @@ serve(async (req) => {
     }
 
     if (!upstream.ok) {
-      console.warn("[toggle-video-proxy] Upstream returned non-OK", upstream.status, parsed);
+      console.error("[toggle-video-proxy] ❌ N8N RETORNOU ERRO:", { 
+        status: upstream.status, 
+        statusText: upstream.statusText,
+        response: parsed,
+        url,
+        payload 
+      });
       return new Response(
         JSON.stringify({ success: false, status: upstream.status, response: parsed }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("[toggle-video-proxy] ✅ N8N SUCESSO:", { 
+      status: upstream.status, 
+      response: parsed,
+      buildingId,
+      titulo,
+      ativo 
+    });
 
     return new Response(
       JSON.stringify({ success: true, status: upstream.status, response: parsed }),

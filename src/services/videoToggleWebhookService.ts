@@ -24,13 +24,25 @@ const patchToggle = async (buildingId: string, titulo: string, ativo: boolean): 
     });
 
     if (error) {
-      console.warn(`⚠️ [WEBHOOK] Edge Function error para prédio ${buildingId}:`, error);
+      console.error(`❌ [WEBHOOK] Edge Function ERROR para prédio ${buildingId}:`, {
+        error,
+        errorMessage: error.message,
+        errorCode: error.code,
+        titulo,
+        ativo
+      });
       return false;
     }
 
     const ok = data?.success === true;
     if (!ok) {
-      console.warn(`⚠️ [WEBHOOK] Resposta não OK do proxy para prédio ${buildingId}:`, data);
+      console.error(`❌ [WEBHOOK] Resposta NÃO-OK do proxy para prédio ${buildingId}:`, {
+        data,
+        responseStatus: data?.status,
+        responseBody: data?.response,
+        titulo,
+        ativo
+      });
       return false;
     }
 
