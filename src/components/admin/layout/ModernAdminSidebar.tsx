@@ -105,12 +105,6 @@ export function ModernAdminSidebar() {
           href: buildPath('predios'),
           icon: Building2,
           permission: 'canManageBuildings'
-        },
-        {
-          title: 'Painéis',
-          href: buildPath('paineis'),
-          icon: MonitorPlay,
-          permission: 'canManagePanels'
         }
       ]
     },
