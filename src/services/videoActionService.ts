@@ -94,17 +94,27 @@ export const selectVideoForDisplay = async (
         const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
         const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
         
-        // Evitar enviar webhooks redundantes para o mesmo vídeo
-        if (oldTitle !== newTitle) {
+        // Sempre confirmar ativação do vídeo selecionado (mesmo se for o mesmo)
+        const buildingIds = pedidoData.lista_predios as string[];
+        console.log('🚀 [WEBHOOK] Preparando envio:', { buildingIdsCount: buildingIds.length, oldTitle, newTitle });
+        
+        if (newTitle) {
           toggleForBuildings({
-            buildingIds: pedidoData.lista_predios,
-            toDeactivateTitle: oldTitle,
+            buildingIds,
             toActivateTitle: newTitle
           }).catch(error => {
-            console.error('❌ [WEBHOOK] Erro ao enviar webhooks:', error);
+            console.error('❌ [WEBHOOK] Erro ao enviar webhook de ativação:', error);
           });
-        } else {
-          console.log('ℹ️ [WEBHOOK] Mesmo vídeo selecionado, não enviando webhooks');
+        }
+
+        // Enviar desativação apenas se for título diferente e existir um antigo
+        if (oldTitle && newTitle && oldTitle !== newTitle) {
+          toggleForBuildings({
+            buildingIds,
+            toDeactivateTitle: oldTitle
+          }).catch(error => {
+            console.error('❌ [WEBHOOK] Erro ao enviar webhook de desativação:', error);
+          });
         }
       } else {
         console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada ou vazia');
