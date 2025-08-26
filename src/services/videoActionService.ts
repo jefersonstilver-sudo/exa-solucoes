@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { deleteVideoFromStorage } from '@/services/videoStorageService';
 import { VideoSlot } from '@/types/videoManagement';
+import { normalizeTitle, toggleForBuildings } from '@/services/videoToggleWebhookService';
 
 export const selectVideoForDisplay = async (
   slotId: string, 
@@ -48,6 +49,21 @@ export const selectVideoForDisplay = async (
       return false;
     }
 
+    // Buscar vídeo atualmente selecionado do mesmo pedido para webhook
+    const { data: currentSelectedVideo } = await supabase
+      .from('pedido_videos')
+      .select('videos(nome)')
+      .eq('pedido_id', videoData.pedido_id)
+      .eq('selected_for_display', true)
+      .single();
+
+    // Buscar lista de prédios do pedido para webhook
+    const { data: pedidoData } = await supabase
+      .from('pedidos')
+      .select('lista_predios')
+      .eq('id', videoData.pedido_id)
+      .single();
+
     console.log('✅ [VIDEO_ACTION] Vídeo aprovado, usando função corrigida para seleção');
     
     // Usar a função RPC corrigida que permite troca de seleção
@@ -63,18 +79,40 @@ export const selectVideoForDisplay = async (
     if (data) {
       console.log('✅ [VIDEO_ACTION] Vídeo selecionado com sucesso (troca permitida)');
       
-      // Buscar nome do vídeo para o popup
-      const { data: videoInfo } = await supabase
+      // Buscar nome do novo vídeo selecionado
+      const { data: newVideoInfo } = await supabase
         .from('pedido_videos')
         .select('videos(nome)')
         .eq('id', slotId)
         .single();
 
-      const videoName = videoInfo?.videos?.nome;
+      const newVideoName = newVideoInfo?.videos?.nome;
+      const oldVideoName = currentSelectedVideo?.videos?.nome;
+      
+      // Enviar webhooks se temos lista de prédios
+      if (pedidoData?.lista_predios && Array.isArray(pedidoData.lista_predios) && pedidoData.lista_predios.length > 0) {
+        const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
+        const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
+        
+        // Evitar enviar webhooks redundantes para o mesmo vídeo
+        if (oldTitle !== newTitle) {
+          toggleForBuildings({
+            buildingIds: pedidoData.lista_predios,
+            toDeactivateTitle: oldTitle,
+            toActivateTitle: newTitle
+          }).catch(error => {
+            console.error('❌ [WEBHOOK] Erro ao enviar webhooks:', error);
+          });
+        } else {
+          console.log('ℹ️ [WEBHOOK] Mesmo vídeo selecionado, não enviando webhooks');
+        }
+      } else {
+        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada ou vazia');
+      }
       
       // Chamar callback de sucesso se fornecido
       if (onSuccess) {
-        onSuccess(videoName);
+        onSuccess(newVideoName);
       }
       
       toast.success('✅ Vídeo selecionado para exibição!');
