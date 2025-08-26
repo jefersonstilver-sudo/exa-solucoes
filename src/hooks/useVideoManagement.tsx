@@ -116,7 +116,17 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
   // Selecionar para exibição
   const handleSelectForDisplay = async (slotId: string) => {
     try {
-      // Buscar vídeo atualmente selecionado e dados do pedido
+      // Derivar títulos a partir do estado atual (fallback para DB)
+      const currentSelectedInState = videoSlots.find(s => s.selected_for_display);
+      const newSelectedInState = videoSlots.find(s => s.id === slotId);
+      const oldTitleFromState = currentSelectedInState?.video_data?.nome
+        ? normalizeTitle(currentSelectedInState.video_data.nome)
+        : undefined;
+      const newTitleFromState = newSelectedInState?.video_data?.nome
+        ? normalizeTitle(newSelectedInState.video_data.nome)
+        : undefined;
+
+      // Buscar dados do pedido e nomes via DB como fallback
       const [currentSelectedResult, pedidoResult, newVideoResult] = await Promise.all([
         supabase
           .from('pedido_videos')
@@ -150,59 +160,63 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
 
       if (error) throw error;
 
+      // Determinar buildingIds e títulos com melhor esforço
+      const buildingIds = Array.isArray(pedidoResult.data?.lista_predios)
+        ? (pedidoResult.data!.lista_predios as string[])
+        : [];
+      const oldTitleDb = currentSelectedResult.data?.video_data?.nome
+        ? normalizeTitle(currentSelectedResult.data.video_data.nome)
+        : undefined;
+      const newTitleDb = newVideoResult.data?.video_data?.nome
+        ? normalizeTitle(newVideoResult.data.video_data.nome)
+        : undefined;
+
+      const oldTitle = oldTitleFromState ?? oldTitleDb;
+      const newTitle = newTitleFromState ?? newTitleDb;
+
       // Enviar webhooks após sucesso no Supabase
-      console.log('🔍 [WEBHOOK] Verificando dados para webhooks:', {
-        pedidoData: pedidoResult.data,
-        currentSelected: currentSelectedResult.data,
-        newVideo: newVideoResult.data
+      console.log('🔍 [WEBHOOK] Dados para webhooks (pós-update):', {
+        buildingIds,
+        oldFromState: oldTitleFromState,
+        newFromState: newTitleFromState,
+        oldFromDb: oldTitleDb,
+        newFromDb: newTitleDb,
+        finalOldTitle: oldTitle,
+        finalNewTitle: newTitle
       });
 
-      if (pedidoResult.data?.lista_predios) {
-        const buildingIds = pedidoResult.data.lista_predios as string[];
-        const oldVideoName = currentSelectedResult.data?.video_data?.nome;
-        const newVideoName = newVideoResult.data?.video_data?.nome;
-        
-        const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
-        const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
-        
-        console.log('🚀 [WEBHOOK] Enviando webhooks para seleção:', { 
-          buildingIdsCount: buildingIds.length, 
-          buildingIds,
-          oldVideoName,
-          newVideoName,
-          oldTitle, 
-          newTitle 
-        });
-        
+      if (buildingIds.length > 0) {
         // Sempre confirmar ativação do novo vídeo
         if (newTitle) {
-          console.log('📤 [WEBHOOK] Enviando ativação para:', { newTitle, buildingIds });
+          console.log('📤 [WEBHOOK] Enviando ativação via proxy para:', { newTitle, buildingIds });
           toggleForBuildings({
             buildingIds,
             toActivateTitle: newTitle
-          }).catch(error => {
-            console.error('❌ [WEBHOOK] Erro ao enviar webhook de ativação:', error);
+          }).catch(err => {
+            console.error('❌ [WEBHOOK] Erro no webhook de ativação:', err);
           });
+        } else {
+          console.warn('⚠️ [WEBHOOK] Título do novo vídeo não encontrado, pulando ativação');
         }
 
         // Enviar desativação apenas se for título diferente e existir um antigo
         if (oldTitle && newTitle && oldTitle !== newTitle) {
-          console.log('📤 [WEBHOOK] Enviando desativação para:', { oldTitle, buildingIds });
+          console.log('📤 [WEBHOOK] Enviando desativação via proxy para:', { oldTitle, buildingIds });
           toggleForBuildings({
             buildingIds,
             toDeactivateTitle: oldTitle
-          }).catch(error => {
-            console.error('❌ [WEBHOOK] Erro ao enviar webhook de desativação:', error);
+          }).catch(err => {
+            console.error('❌ [WEBHOOK] Erro no webhook de desativação:', err);
           });
         } else {
-          console.log('ℹ️ [WEBHOOK] Não enviando desativação:', { 
+          console.log('ℹ️ [WEBHOOK] Não enviando desativação:', {
             hasOldTitle: !!oldTitle,
             hasNewTitle: !!newTitle,
             sameTitle: oldTitle === newTitle
           });
         }
       } else {
-        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada:', {
+        console.warn('⚠️ [WEBHOOK] Lista de prédios vazia ou não encontrada. Webhooks não enviados.', {
           pedidoExists: !!pedidoResult.data,
           prediosField: pedidoResult.data?.lista_predios
         });
