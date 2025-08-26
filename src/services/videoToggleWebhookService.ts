@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
+import { supabase } from "@/integrations/supabase/client";
 
-const WEBHOOK_BASE_URL = 'https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR';
 
 /**
  * Normaliza o título do vídeo removendo extensões
@@ -17,31 +17,27 @@ export const normalizeTitle = (fileName: string): string => {
  */
 const patchToggle = async (buildingId: string, titulo: string, ativo: boolean): Promise<boolean> => {
   try {
-    const url = `${WEBHOOK_BASE_URL}?building_id=${encodeURIComponent(buildingId)}`;
-    const body = {
-      titulo,
-      ativo
-    };
+    console.log(`🔄 [WEBHOOK] Proxy via Edge Function para prédio ${buildingId}:`, { titulo, ativo });
 
-    console.log(`🔄 [WEBHOOK] Enviando PATCH para prédio ${buildingId}:`, body);
-
-    const response = await fetch(url, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body)
+    const { data, error } = await supabase.functions.invoke('toggle-video-proxy', {
+      body: { buildingId, titulo, ativo }
     });
 
-    if (!response.ok) {
-      console.warn(`⚠️ [WEBHOOK] Falha na requisição para prédio ${buildingId}:`, response.status, response.statusText);
+    if (error) {
+      console.warn(`⚠️ [WEBHOOK] Edge Function error para prédio ${buildingId}:`, error);
       return false;
     }
 
-    console.log(`✅ [WEBHOOK] Sucesso para prédio ${buildingId}`);
+    const ok = data?.success === true;
+    if (!ok) {
+      console.warn(`⚠️ [WEBHOOK] Resposta não OK do proxy para prédio ${buildingId}:`, data);
+      return false;
+    }
+
+    console.log(`✅ [WEBHOOK] Sucesso via proxy para prédio ${buildingId}`);
     return true;
   } catch (error) {
-    console.error(`❌ [WEBHOOK] Erro para prédio ${buildingId}:`, error);
+    console.error(`❌ [WEBHOOK] Erro no proxy para prédio ${buildingId}:`, error);
     return false;
   }
 };
