@@ -151,6 +151,12 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
       if (error) throw error;
 
       // Enviar webhooks após sucesso no Supabase
+      console.log('🔍 [WEBHOOK] Verificando dados para webhooks:', {
+        pedidoData: pedidoResult.data,
+        currentSelected: currentSelectedResult.data,
+        newVideo: newVideoResult.data
+      });
+
       if (pedidoResult.data?.lista_predios) {
         const buildingIds = pedidoResult.data.lista_predios as string[];
         const oldVideoName = currentSelectedResult.data?.video_data?.nome;
@@ -159,10 +165,18 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
         const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
         
-        console.log('🚀 [WEBHOOK] Enviando webhooks para seleção:', { buildingIdsCount: buildingIds.length, oldTitle, newTitle });
+        console.log('🚀 [WEBHOOK] Enviando webhooks para seleção:', { 
+          buildingIdsCount: buildingIds.length, 
+          buildingIds,
+          oldVideoName,
+          newVideoName,
+          oldTitle, 
+          newTitle 
+        });
         
         // Sempre confirmar ativação do novo vídeo
         if (newTitle) {
+          console.log('📤 [WEBHOOK] Enviando ativação para:', { newTitle, buildingIds });
           toggleForBuildings({
             buildingIds,
             toActivateTitle: newTitle
@@ -173,15 +187,25 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
 
         // Enviar desativação apenas se for título diferente e existir um antigo
         if (oldTitle && newTitle && oldTitle !== newTitle) {
+          console.log('📤 [WEBHOOK] Enviando desativação para:', { oldTitle, buildingIds });
           toggleForBuildings({
             buildingIds,
             toDeactivateTitle: oldTitle
           }).catch(error => {
             console.error('❌ [WEBHOOK] Erro ao enviar webhook de desativação:', error);
           });
+        } else {
+          console.log('ℹ️ [WEBHOOK] Não enviando desativação:', { 
+            hasOldTitle: !!oldTitle,
+            hasNewTitle: !!newTitle,
+            sameTitle: oldTitle === newTitle
+          });
         }
       } else {
-        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada');
+        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada:', {
+          pedidoExists: !!pedidoResult.data,
+          prediosField: pedidoResult.data?.lista_predios
+        });
       }
 
       toast.success('Vídeo selecionado para exibição!');
