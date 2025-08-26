@@ -6,6 +6,7 @@ import { useRealApprovalsData } from '@/hooks/useRealApprovalsData';
 import RealPaidOrdersSection from '@/components/admin/approvals/RealPaidOrdersSection';
 import RealPendingVideosSection from '@/components/admin/approvals/RealPendingVideosSection';
 import RealApprovedVideosSection from '@/components/admin/approvals/RealApprovedVideosSection';
+import RealRejectedVideosSection from '@/components/admin/approvals/RealRejectedVideosSection';
 
 const ApprovalsPage = () => {
   const [activeTab, setActiveTab] = useState('pending-orders');
@@ -91,7 +92,7 @@ const ApprovalsPage = () => {
 
       {/* Tabs para Separação */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-100 border border-gray-200">
           <TabsTrigger 
             value="pending-orders" 
             className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-black text-gray-600"
@@ -113,6 +114,13 @@ const ApprovalsPage = () => {
             <CheckCircle className="h-4 w-4" />
             <span>Aprovados ({stats.approved})</span>
           </TabsTrigger>
+          <TabsTrigger 
+            value="rejected-videos" 
+            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-black text-gray-600"
+          >
+            <XCircle className="h-4 w-4" />
+            <span>Rejeitados ({stats.rejected})</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending-orders" className="mt-6">
@@ -125,6 +133,10 @@ const ApprovalsPage = () => {
 
         <TabsContent value="approved-videos" className="mt-6">
           <RealApprovedVideosSection loading={loading} onRefresh={refetch} />
+        </TabsContent>
+
+        <TabsContent value="rejected-videos" className="mt-6">
+          <RealRejectedVideosSection loading={loading} onRefresh={refetch} />
         </TabsContent>
       </Tabs>
     </div>
