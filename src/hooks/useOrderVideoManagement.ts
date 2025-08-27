@@ -70,6 +70,7 @@ export const useOrderVideoManagement = (orderId: string) => {
   // Envia webhooks assim que o usuário clica em "Vídeo Principal"
   const sendVideoWebhooks = async (slotId: string) => {
     try {
+      // 1) Buscar prédios do pedido
       const { data: pedidoResult, error: pedidoError } = await supabase
         .from('pedidos')
         .select('lista_predios')
@@ -83,18 +84,60 @@ export const useOrderVideoManagement = (orderId: string) => {
         return;
       }
 
-      const oldVideoName = videoSlots.find(s => s.selected_for_display)?.video_data?.nome;
-      const newVideoName = videoSlots.find(s => s.id === slotId)?.video_data?.nome;
+      // 2) Buscar vídeo atualmente em exibição via RPC (fonte de verdade no servidor)
+      const { data: currentData, error: currentError } = await supabase
+        .rpc('get_current_display_video', { p_pedido_id: orderId });
+      if (currentError) {
+        console.warn('⚠️ [WEBHOOK] Falha ao buscar vídeo atual via RPC:', currentError);
+      }
+      const currentVideoId: string | undefined =
+        Array.isArray(currentData) && currentData[0]?.video_id
+          ? (currentData[0].video_id as string)
+          : undefined;
+
+      // 3) Resolver o novo vídeo a partir do slot clicado
+      const localSlot = videoSlots.find(s => s.id === slotId);
+      let newVideoId: string | undefined = localSlot?.video_data?.id || localSlot?.video_id;
+      if (!newVideoId) {
+        const { data: pvRow } = await supabase
+          .from('pedido_videos')
+          .select('video_id')
+          .eq('id', slotId)
+          .single();
+        newVideoId = pvRow?.video_id as string | undefined;
+      }
+
+      // 4) Helper para obter o nome do vídeo
+      const fetchVideoName = async (videoId?: string) => {
+        if (!videoId) return undefined;
+        const { data, error } = await supabase
+          .from('videos')
+          .select('nome')
+          .eq('id', videoId)
+          .single();
+        if (error) {
+          console.warn('⚠️ [WEBHOOK] Falha ao obter nome do vídeo:', { videoId, error });
+          return undefined;
+        }
+        return data?.nome as string | undefined;
+      };
+
+      const [oldVideoName, newVideoName] = await Promise.all([
+        currentVideoId && currentVideoId !== newVideoId ? fetchVideoName(currentVideoId) : Promise.resolve(undefined),
+        fetchVideoName(newVideoId)
+      ]);
 
       const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
       const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
 
-      console.log('🚀 [WEBHOOK] Enviando webhooks para set_base_video:', {
+      console.log('🚀 [WEBHOOK] Enviando webhooks para set_base_video (fonte: RPC):', {
         buildingIdsCount: buildingIds.length,
         oldTitle,
         newTitle,
         orderId,
         slotId,
+        currentVideoId,
+        newVideoId
       });
 
       await toggleForBuildings({

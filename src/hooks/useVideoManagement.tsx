@@ -218,54 +218,78 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
   // Função auxiliar para enviar webhooks
   const sendVideoWebhooks = async (slotId: string, actionType: string) => {
     try {
-      // Buscar vídeo atualmente selecionado e dados do pedido
-      const [currentSelectedResult, pedidoResult, newVideoResult] = await Promise.all([
-        supabase
-          .from('pedido_videos')
-          .select('video_data:videos(nome)')
-          .eq('pedido_id', orderId)
-          .eq('selected_for_display', true)
-          .single(),
-        supabase
-          .from('pedidos')
-          .select('lista_predios')
-          .eq('id', orderId)
-          .single(),
-        supabase
-          .from('pedido_videos')
-          .select('video_data:videos(nome)')
-          .eq('id', slotId)
-          .single()
+      // 1) Buscar prédios do pedido
+      const { data: pedidoResult, error: pedidoError } = await supabase
+        .from('pedidos')
+        .select('lista_predios')
+        .eq('id', orderId)
+        .single();
+
+      if (pedidoError) throw pedidoError;
+
+      const buildingIds = (pedidoResult?.lista_predios || []) as string[];
+      if (!buildingIds.length) {
+        console.warn(`⚠️ [WEBHOOK] Lista de prédios não encontrada para ${actionType}`);
+        return;
+      }
+
+      // 2) Buscar vídeo atualmente em exibição via RPC
+      const { data: currentData, error: currentError } = await supabase
+        .rpc('get_current_display_video', { p_pedido_id: orderId });
+      if (currentError) {
+        console.warn('⚠️ [WEBHOOK] Falha ao buscar vídeo atual via RPC:', currentError);
+      }
+      const currentVideoId: string | undefined =
+        Array.isArray(currentData) && currentData[0]?.video_id
+          ? (currentData[0].video_id as string)
+          : undefined;
+
+      // 3) Obter o vídeo do slot informado
+      const { data: pvRow } = await supabase
+        .from('pedido_videos')
+        .select('video_id')
+        .eq('id', slotId)
+        .single();
+      const newVideoId: string | undefined = pvRow?.video_id as string | undefined;
+
+      // 4) Helper para buscar nomes
+      const fetchVideoName = async (videoId?: string) => {
+        if (!videoId) return undefined;
+        const { data, error } = await supabase
+          .from('videos')
+          .select('nome')
+          .eq('id', videoId)
+          .single();
+        if (error) {
+          console.warn('⚠️ [WEBHOOK] Falha ao obter nome do vídeo:', { videoId, error });
+          return undefined;
+        }
+        return data?.nome as string | undefined;
+      };
+
+      const [oldVideoName, newVideoName] = await Promise.all([
+        currentVideoId && currentVideoId !== newVideoId ? fetchVideoName(currentVideoId) : Promise.resolve(undefined),
+        fetchVideoName(newVideoId)
       ]);
 
-      // Enviar webhooks se há lista de prédios
-      if (pedidoResult.data?.lista_predios) {
-        const buildingIds = pedidoResult.data.lista_predios as string[];
-        const oldVideoName = currentSelectedResult.data?.video_data?.nome;
-        const newVideoName = newVideoResult.data?.video_data?.nome;
-        
-        const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
-        const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
-        
-        console.log(`🚀 [WEBHOOK] Enviando webhooks para ${actionType}:`, { 
-          buildingIdsCount: buildingIds.length, 
-          oldTitle, 
-          newTitle,
-          orderId,
-          slotId 
-        });
-        
-        // Enviar webhooks para troca de vídeo
-        toggleForBuildings({
-          buildingIds,
-          toDeactivateTitle: oldTitle,
-          toActivateTitle: newTitle
-        }).catch(error => {
-          console.error(`❌ [WEBHOOK] Erro ao enviar webhooks de ${actionType}:`, error);
-        });
-      } else {
-        console.warn(`⚠️ [WEBHOOK] Lista de prédios não encontrada para ${actionType}`);
-      }
+      const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
+      const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
+
+      console.log(`🚀 [WEBHOOK] Enviando webhooks para ${actionType} (fonte: RPC):`, {
+        buildingIdsCount: buildingIds.length,
+        oldTitle,
+        newTitle,
+        orderId,
+        slotId,
+        currentVideoId,
+        newVideoId
+      });
+
+      await toggleForBuildings({
+        buildingIds,
+        toDeactivateTitle: oldTitle,
+        toActivateTitle: newTitle
+      });
     } catch (error) {
       console.error(`❌ [WEBHOOK] Erro ao processar webhooks de ${actionType}:`, error);
     }
