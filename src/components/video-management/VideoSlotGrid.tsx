@@ -54,6 +54,19 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
 }) => {
   const { currentVideo } = useCurrentVideoDisplay({ orderId, enabled: true });
 
+  // Log para debug do re-render
+  console.log('🔄 [GRID] VideoSlotGrid renderizando:', {
+    orderId,
+    totalSlots: videoSlots.length,
+    slotsWithSelection: videoSlots.map(slot => ({
+      position: slot.slot_position,
+      hasVideo: !!slot.video_data,
+      videoName: slot.video_data?.nome,
+      selectedForDisplay: slot.selected_for_display,
+      slotId: slot.id
+    }))
+  });
+
   // Contar vídeos aprovados
   const totalApprovedVideos = videoSlots.filter(slot => 
     slot.approval_status === 'approved'

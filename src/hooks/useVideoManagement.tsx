@@ -115,6 +115,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
 
   // Selecionar para exibição
   const handleSelectForDisplay = async (slotId: string) => {
+    console.log('🔄 [HOOK] handleSelectForDisplay iniciado:', { slotId, orderId });
+    
     try {
       // Buscar vídeo atualmente selecionado e dados do pedido
       const [currentSelectedResult, pedidoResult, newVideoResult] = await Promise.all([
@@ -185,8 +187,24 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
       }
 
       toast.success('Vídeo selecionado para exibição!');
+      
+      // Recarregar slots e verificar se a atualização funcionou
+      console.log('🔄 [HOOK] Recarregando slots após seleção...');
       const slots = await loadVideoSlots(orderId);
+      
+      console.log('📊 [HOOK] Slots carregados após seleção:', {
+        totalSlots: slots.length,
+        slotsData: slots.map(slot => ({
+          position: slot.slot_position,
+          hasVideo: !!slot.video_data,
+          videoName: slot.video_data?.nome,
+          selectedForDisplay: slot.selected_for_display,
+          slotId: slot.id
+        }))
+      });
+      
       setVideoSlots(slots);
+      console.log('✅ [HOOK] Estado atualizado com novos slots');
     } catch (error) {
       console.error('Erro ao selecionar vídeo:', error);
       toast.error('Erro ao selecionar vídeo');
