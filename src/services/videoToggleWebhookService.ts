@@ -158,3 +158,40 @@ export const toggleForBuildings = async ({
     console.error('❌ [WEBHOOK][POST] Erro inesperado ao enviar POST(s):', postError);
   }
 };
+
+// Função utilitária exportada para enviar apenas POSTs quando não houver prédios (fallback)
+export const postToggleTitles = async ({
+  toActivateTitle,
+  toDeactivateTitle
+}: {
+  toActivateTitle?: string;
+  toDeactivateTitle?: string;
+}): Promise<void> => {
+  try {
+    const postPromises: Promise<boolean>[] = [];
+    if (toActivateTitle) {
+      postPromises.push(postToggle(toActivateTitle, true));
+    }
+    if (toDeactivateTitle && toDeactivateTitle !== toActivateTitle) {
+      postPromises.push(postToggle(toDeactivateTitle, false));
+    }
+
+    if (postPromises.length === 0) {
+      console.log('ℹ️ [WEBHOOK][POST] Fallback sem títulos para enviar');
+      return;
+    }
+
+    console.log(`📬 [WEBHOOK][POST][FALLBACK] Enviando ${postPromises.length} POST(s) sem prédios`);
+    const postResults = await Promise.allSettled(postPromises);
+    const postSuccessCount = postResults.filter(r => r.status === 'fulfilled' && r.value === true).length;
+    const postFailureCount = postResults.length - postSuccessCount;
+
+    if (postFailureCount > 0) {
+      console.warn(`⚠️ [WEBHOOK][POST][FALLBACK] ${postFailureCount}/${postResults.length} POST(s) falharam`);
+    } else {
+      console.log(`✅ [WEBHOOK][POST][FALLBACK] Todos os POST(s) enviados com sucesso`);
+    }
+  } catch (error) {
+    console.error('❌ [WEBHOOK][POST][FALLBACK] Erro inesperado ao enviar POST(s):', error);
+  }
+}

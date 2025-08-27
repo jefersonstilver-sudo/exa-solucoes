@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { deleteVideoFromStorage } from '@/services/videoStorageService';
 import { VideoSlot } from '@/types/videoManagement';
-import { normalizeTitle, toggleForBuildings } from '@/services/videoToggleWebhookService';
+import { normalizeTitle, toggleForBuildings, postToggleTitles } from '@/services/videoToggleWebhookService';
 
 export const selectVideoForDisplay = async (
   slotId: string, 
@@ -117,7 +117,17 @@ export const selectVideoForDisplay = async (
           });
         }
       } else {
-        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada ou vazia');
+        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada ou vazia - utilizando POST fallback');
+        const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
+        const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
+        try {
+          await postToggleTitles({
+            toActivateTitle: newTitle,
+            toDeactivateTitle: oldTitle && newTitle && oldTitle !== newTitle ? oldTitle : undefined
+          });
+        } catch (err) {
+          console.error('❌ [WEBHOOK][POST][FALLBACK] Erro ao enviar POST(s):', err);
+        }
       }
       
       // Chamar callback de sucesso se fornecido
