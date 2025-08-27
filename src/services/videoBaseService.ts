@@ -5,15 +5,39 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
   try {
     console.log('⭐ [VIDEO_BASE] Definindo vídeo base (RPC):', slotId);
 
-    // Usar função segura no banco que garante consistência e unicidade
     const { data, error } = await supabase.rpc('set_base_video_enhanced', {
       p_pedido_video_id: slotId
     });
 
     if (error) {
-      console.error('❌ [VIDEO_BASE] RPC erro:', error);
-      toast.error('❌ Erro ao definir vídeo principal');
-      return false;
+      console.error('❌ [VIDEO_BASE] RPC erro (enhanced):', error);
+
+      // Fallback: tentar função antiga (compatibilidade) em caso de erro (ex: read-only)
+      const isReadOnly = (error as any)?.message && /read[- ]?only/i.test((error as any).message);
+      try {
+        const { data: legacyData, error: legacyError } = await supabase.rpc('set_base_video', {
+          p_pedido_video_id: slotId
+        });
+
+        if (legacyError) {
+          console.error('❌ [VIDEO_BASE] RPC erro (legacy):', legacyError);
+          toast.error('❌ Erro ao definir vídeo principal');
+          return false;
+        }
+
+        if (legacyData === true) {
+          console.warn('⚠️ [VIDEO_BASE] Usando fallback set_base_video devido a falha na enhanced', { isReadOnly });
+          toast.success('✅ Vídeo definido como principal!');
+          return true;
+        }
+
+        toast.error('❌ Erro ao definir vídeo principal');
+        return false;
+      } catch (fallbackErr) {
+        console.error('💥 [VIDEO_BASE] Fallback falhou:', fallbackErr);
+        toast.error('❌ Erro ao definir vídeo principal');
+        return false;
+      }
     }
 
     const result = data as any;

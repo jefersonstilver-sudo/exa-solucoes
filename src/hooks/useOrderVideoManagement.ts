@@ -365,17 +365,19 @@ export const useOrderVideoManagement = (orderId: string) => {
   const setBaseVideo = async (slotId: string) => {
     try {
       console.log('🔄 [ORDER_VIDEO] Definindo vídeo como principal:', { slotId, orderId });
-      // Dispara os webhooks imediatamente ao clique
-      await sendVideoWebhooks(slotId);
 
-      const { setBaseVideo } = await import('@/services/videoBaseService');
-      const success = await setBaseVideo(slotId);
+      const { setBaseVideo: setBaseVideoService } = await import('@/services/videoBaseService');
+      const success = await setBaseVideoService(slotId);
       if (success) {
-        console.log('✅ [ORDER_VIDEO] Vídeo principal definido. Recarregando slots...');
+        console.log('✅ [ORDER_VIDEO] Vídeo principal definido. Enviando webhooks e recarregando slots...');
+        await sendVideoWebhooks(slotId);
         refreshSlots();
+      } else {
+        toast.error('❌ Não foi possível definir o vídeo como principal');
       }
     } catch (error) {
       console.error('Erro ao definir vídeo base:', error);
+      toast.error('❌ Erro ao definir vídeo principal');
     }
   };
   return {

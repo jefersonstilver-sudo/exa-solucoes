@@ -300,11 +300,12 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
     console.log('🔄 [HOOK] handleSetBaseVideo iniciado:', { slotId, orderId });
     
     try {
-      // Enviar webhooks ANTES de alterar o banco
-      await sendVideoWebhooks(slotId, 'set_base_video');
-      
+      // Primeiro altera no banco
       const success = await setBaseVideo(slotId);
       if (success) {
+        // Em seguida, envia webhooks
+        await sendVideoWebhooks(slotId, 'set_base_video');
+
         toast.success('Vídeo definido como principal e selecionado para exibição!');
         
         // Recarregar slots para refletir mudanças
