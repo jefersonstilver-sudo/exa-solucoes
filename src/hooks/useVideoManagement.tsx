@@ -161,25 +161,20 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
         const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
         
-        console.log('🚀 [WEBHOOK] Enviando webhooks para seleção:', { 
+        console.log('🚀 [WEBHOOK] Enviando webhook para seleção (apenas ativação):', { 
           buildingIdsCount: buildingIds.length, 
-          oldTitle, 
           newTitle,
           orderId,
-          slotId 
+          slotId,
+          note: 'Edge Function duplicará para ambos webhooks automaticamente'
         });
         
-        // CRÍTICO: Sempre enviar webhooks para DESATIVAR o antigo E ATIVAR o novo
-        // Isso garante que o sistema externo sempre saiba sobre as trocas
-        console.log('📤 [WEBHOOK] Preparando envio - ativação:', newTitle, 'desativação:', oldTitle);
-        
-        // Enviar ambos os webhooks sempre que há troca de vídeo
+        // Enviar apenas o vídeo a ser ativado - o Edge Function fará a duplicação
         toggleForBuildings({
           buildingIds,
-          toDeactivateTitle: oldTitle, // Pode ser undefined se não há vídeo anterior
-          toActivateTitle: newTitle     // Sempre deve haver novo título
+          toActivateTitle: newTitle
         }).catch(error => {
-          console.error('❌ [WEBHOOK] Erro ao enviar webhooks de troca:', error);
+          console.error('❌ [WEBHOOK] Erro ao enviar webhook de ativação:', error);
         });
       } else {
         console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada');

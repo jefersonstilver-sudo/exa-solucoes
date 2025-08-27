@@ -38,21 +38,41 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Execute all POSTs in parallel to the appropriate webhook per action
+    // Execute all POSTs in parallel with new dual webhook logic
     const results = await Promise.allSettled(
-      actions.map((a: any, idx: number) => {
+      actions.flatMap((a: any, idx: number) => {
         const payload = {
           titulo: a?.titulo ?? '',
           ativo: Boolean(a?.ativo),
           predio_id: a?.predio_id ?? a?.predioId ?? a?.building_id ?? null,
         };
-        const url = payload.ativo ? WEBHOOK_URL_TRUE : WEBHOOK_URL_FALSE;
-        console.log(`📤 [WEBHOOK][${idx + 1}/${actions.length}] Sending to ${url}:`, payload);
-        return fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+        
+        if (payload.ativo) {
+          // Para ativo=true, enviar para AMBOS os webhooks
+          console.log(`📤 [WEBHOOK][${idx + 1}] Sending ativo=true to BOTH webhooks:`, payload);
+          return [
+            fetch(WEBHOOK_URL_TRUE, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            }),
+            fetch(WEBHOOK_URL_FALSE, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+          ];
+        } else {
+          // Para ativo=false, enviar apenas para FALSE webhook
+          console.log(`📤 [WEBHOOK][${idx + 1}] Sending ativo=false to FALSE webhook only:`, payload);
+          return [
+            fetch(WEBHOOK_URL_FALSE, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+          ];
+        }
       })
     );
 

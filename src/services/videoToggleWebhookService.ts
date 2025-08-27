@@ -110,13 +110,15 @@ export const toggleForBuildings = async ({
 
   const actions: Array<{ predioId: string; titulo: string; ativo: boolean }> = [];
 
-  // Para cada prédio, primeiro desativar (se houver título anterior) e depois ativar (se houver novo)
+  // Nova lógica: apenas processar ativações, Edge Function duplicará automaticamente
   for (const predioId of buildingIds) {
-    if (toDeactivateTitle) {
-      actions.push({ predioId, titulo: toDeactivateTitle, ativo: false });
-    }
+    // REMOVIDO: lógica de desativação - Edge Function agora cuida disso
     if (toActivateTitle) {
       actions.push({ predioId, titulo: toActivateTitle, ativo: true });
+    }
+    // Manter desativação apenas para casos específicos (ex: remoção de vídeos)
+    if (toDeactivateTitle && !toActivateTitle) {
+      actions.push({ predioId, titulo: toDeactivateTitle, ativo: false });
     }
   }
 
