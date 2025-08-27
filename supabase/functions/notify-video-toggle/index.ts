@@ -1,0 +1,73 @@
+// deno-lint-ignore-file no-explicit-any
+// notify-video-toggle edge function
+// Forwards video toggle actions to the external n8n webhook with proper CORS
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Hardcoded webhook URL as requested
+const WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR';
+
+Deno.serve(async (req: Request) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        { status: 405, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const actions = Array.isArray(body?.actions) ? body.actions : [];
+
+    if (!actions.length) {
+      return new Response(
+        JSON.stringify({ ok: false, message: 'No actions provided' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Execute all POSTs in parallel to the webhook
+    const results = await Promise.allSettled(
+      actions.map((a: any) => {
+        const payload = {
+          titulo: a?.titulo ?? '',
+          ativo: Boolean(a?.ativo),
+          predio_id: a?.predio_id ?? a?.predioId ?? a?.building_id ?? null,
+        };
+        return fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      })
+    );
+
+    const summarized = results.map((r, idx) => {
+      if (r.status === 'fulfilled') {
+        return { index: idx, ok: r.value.ok, status: r.value.status };
+      }
+      return { index: idx, ok: false, error: String(r.reason) };
+    });
+
+    const successCount = summarized.filter((r) => r.ok).length;
+    const failureCount = summarized.length - successCount;
+
+    return new Response(
+      JSON.stringify({ ok: true, successCount, failureCount, results: summarized }),
+      { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+    );
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ ok: false, error: err?.message ?? String(err) }),
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+    );
+  }
+});

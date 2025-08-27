@@ -1,3 +1,4 @@
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const WEBHOOK_BASE_URL = 'https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR';
@@ -122,7 +123,27 @@ export const toggleForBuildings = async ({
     return;
   }
 
-  console.log(`🏢 [WEBHOOK][POST][BUILDING] Enviando ${actions.length} POST(s) para ${buildingIds.length} prédios`);
+console.log(`🏢 [WEBHOOK] Preparando envio via Edge Function: ${actions.length} ação(ões)`);
+
+  try {
+    const payload = {
+      actions: actions.map(({ predioId, titulo, ativo }) => ({
+        predio_id: predioId,
+        titulo,
+        ativo
+      }))
+    };
+
+    const { data, error } = await supabase.functions.invoke('notify-video-toggle', {
+      body: payload
+    });
+
+    if (error) throw error;
+    console.log('✅ [WEBHOOK][EDGE] Envio concluído:', data);
+    return;
+  } catch (edgeErr) {
+    console.warn('⚠️ [WEBHOOK][EDGE] Falha no envio via Edge. Usando fallback direto...', edgeErr);
+  }
 
   try {
     const postPromises = actions.map(({ predioId, titulo, ativo }) =>
