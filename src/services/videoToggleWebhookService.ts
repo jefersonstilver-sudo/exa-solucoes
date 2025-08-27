@@ -46,6 +46,27 @@ const patchToggle = async (buildingId: string, titulo: string, ativo: boolean): 
   }
 };
 
+// Envio adicional em modo POST para n8n, conforme solicitado
+const postToggle = async (titulo: string, ativo: boolean): Promise<boolean> => {
+  try {
+    console.log('🔔 [WEBHOOK][POST] Enviando POST:', { titulo, ativo });
+    const response = await fetch(WEBHOOK_BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, ativo })
+    });
+    if (!response.ok) {
+      console.warn('⚠️ [WEBHOOK][POST] Falha na requisição:', response.status, response.statusText);
+      return false;
+    }
+    console.log('✅ [WEBHOOK][POST] Sucesso');
+    return true;
+  } catch (error) {
+    console.error('❌ [WEBHOOK][POST] Erro:', error);
+    return false;
+  }
+};
+
 /**
  * Envia webhooks para múltiplos prédios com ações de ativar/desativar
  */
@@ -108,5 +129,32 @@ export const toggleForBuildings = async ({
   } catch (error) {
     console.error('❌ [WEBHOOK] Erro inesperado ao enviar webhooks:', error);
     toast.warning('Erro ao notificar sistemas externos. Vídeo selecionado com sucesso.');
+  }
+
+  // Enviar POSTs adicionais solicitados (não altera a lógica existente de PATCH)
+  try {
+    const postPromises: Promise<boolean>[] = [];
+    if (toActivateTitle) {
+      postPromises.push(postToggle(toActivateTitle, true));
+    }
+    if (toDeactivateTitle && toDeactivateTitle !== toActivateTitle) {
+      postPromises.push(postToggle(toDeactivateTitle, false));
+    }
+
+    if (postPromises.length > 0) {
+      console.log(`📬 [WEBHOOK][POST] Enviando ${postPromises.length} POST(s) adicionais`);
+      const postResults = await Promise.allSettled(postPromises);
+      const postSuccessCount = postResults.filter(r => r.status === 'fulfilled' && r.value === true).length;
+      const postFailureCount = postResults.length - postSuccessCount;
+      if (postFailureCount > 0) {
+        console.warn(`⚠️ [WEBHOOK][POST] ${postFailureCount}/${postResults.length} POST(s) falharam`);
+      } else {
+        console.log(`✅ [WEBHOOK][POST] Todos os POST(s) enviados com sucesso`);
+      }
+    } else {
+      console.log('ℹ️ [WEBHOOK][POST] Nenhum POST a enviar');
+    }
+  } catch (postError) {
+    console.error('❌ [WEBHOOK][POST] Erro inesperado ao enviar POST(s):', postError);
   }
 };
