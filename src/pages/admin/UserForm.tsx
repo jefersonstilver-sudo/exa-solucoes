@@ -72,6 +72,7 @@ const UserForm = () => {
     const roleMap: Record<string, any> = {
       super_admin: Crown,
       admin: Shield,
+      admin_marketing: Shield,
       client: User,
       painel: User
     };
@@ -82,6 +83,7 @@ const UserForm = () => {
     const labelMap: Record<string, string> = {
       super_admin: 'Super Administrador',
       admin: 'Administrador',
+      admin_marketing: 'Administrador Marketing',
       client: 'Cliente',
       painel: 'Painel'
     };
@@ -181,6 +183,18 @@ const UserForm = () => {
                           <span>Administrador</span>
                         </div>
                       </SelectItem>
+                      <SelectItem value="admin_marketing" className="text-slate-300">
+                        <div className="flex items-center space-x-2">
+                          <Shield className="h-4 w-4 text-purple-400" />
+                          <span>Administrador Marketing</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="super_admin" className="text-slate-300">
+                        <div className="flex items-center space-x-2">
+                          <Crown className="h-4 w-4 text-amber-400" />
+                          <span>Super Administrador</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value="painel" className="text-slate-300">
                         <div className="flex items-center space-x-2">
                           <User className="h-4 w-4" />
@@ -275,7 +289,14 @@ const UserForm = () => {
                   <Shield className="h-4 w-4 text-blue-400" />
                   <div>
                     <p className="text-white font-medium">Administrador</p>
-                    <p className="text-slate-400 text-xs">Gerencia usuários e campanhas</p>
+                    <p className="text-slate-400 text-xs">Gerencia prédios, painéis e conteúdo</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4 text-purple-400" />
+                  <div>
+                    <p className="text-white font-medium">Admin Marketing</p>
+                    <p className="text-slate-400 text-xs">Homepage, vídeos, portfólio e logos</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">

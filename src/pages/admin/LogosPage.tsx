@@ -1,9 +1,15 @@
 import React from 'react';
-import { useSuperAdminProtection } from '@/hooks/useSuperAdminProtection';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { Navigate } from 'react-router-dom';
 import LogosAdmin from '@/components/admin/LogosAdmin';
 
 const LogosPage = () => {
-  useSuperAdminProtection();
+  const { canManageHomepageConfig } = useUserPermissions();
+  
+  // Redirects unauthorized users
+  if (!canManageHomepageConfig) {
+    return <Navigate to="/login" replace />;
+  }
   
   return (
     <div className="container mx-auto px-6 py-8">

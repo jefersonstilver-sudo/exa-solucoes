@@ -91,7 +91,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
   admin_marketing: {
     canViewDashboard: true,
     canViewOrders: false, // Não tem acesso a pedidos financeiros
-    canViewApprovals: true, // Apenas aprovações de conteúdo
+    canViewApprovals: true, // Aprovação de conteúdo e vídeos
     canManageBuildings: false, // Sem acesso a gestão de prédios
     canManagePanels: false, // Sem acesso a gestão de painéis
     canViewLeads: true,
@@ -102,8 +102,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageCoupons: false,
     canManageHomepageConfig: true, // Acesso específico para marketing
     canManageSystemSettings: false,
-    canManageVideos: false, // Apenas aprovação, não gestão
-    canManagePortfolio: false,
+    canManageVideos: true, // CORRIGIDO: Pode aprovar vídeos
+    canManagePortfolio: true, // CORRIGIDO: Pode gerenciar portfólio da produtora
     canManageNotifications: true,
   },
   client: {
