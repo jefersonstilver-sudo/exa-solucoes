@@ -367,16 +367,32 @@ export const useOrderVideoManagement = (orderId: string) => {
       console.log('🔄 [ORDER_VIDEO] Definindo vídeo como principal:', { slotId, orderId });
 
       const { setBaseVideo: setBaseVideoService } = await import('@/services/videoBaseService');
+      
+      console.log('⏳ [ORDER_VIDEO] Chamando setBaseVideoService...');
       const success = await setBaseVideoService(slotId);
+      
+      console.log('📊 [ORDER_VIDEO] Resultado do setBaseVideoService:', success);
+      
       if (success) {
-        console.log('✅ [ORDER_VIDEO] Vídeo principal definido. Enviando webhooks e recarregando slots...');
-        await sendVideoWebhooks(slotId);
+        console.log('✅ [ORDER_VIDEO] Vídeo principal definido com sucesso! Enviando webhooks...');
+        
+        try {
+          await sendVideoWebhooks(slotId);
+          console.log('✅ [ORDER_VIDEO] Webhooks enviados com sucesso!');
+        } catch (webhookError) {
+          console.error('❌ [ORDER_VIDEO] Erro nos webhooks (mas vídeo foi definido):', webhookError);
+        }
+        
+        console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
         refreshSlots();
+        
+        toast.success('✅ Vídeo definido como principal!');
       } else {
+        console.error('❌ [ORDER_VIDEO] setBaseVideoService retornou false');
         toast.error('❌ Não foi possível definir o vídeo como principal');
       }
     } catch (error) {
-      console.error('Erro ao definir vídeo base:', error);
+      console.error('💥 [ORDER_VIDEO] Erro ao definir vídeo base:', error);
       toast.error('❌ Erro ao definir vídeo principal');
     }
   };
