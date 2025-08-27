@@ -238,6 +238,82 @@ serve(async (req) => {
 
         resultados.trocas_realizadas++;
         console.log(`✅ [VIDEO_SYNC] Successfully switched video for pedido ${pedidoId}`);
+        
+        // Enviar POSTs para o webhook n8n após troca automática bem-sucedida
+        try {
+          // Buscar lista de prédios do pedido
+          const { data: pedidoData, error: pedidoError } = await supabase
+            .from('pedidos')
+            .select('lista_predios')
+            .eq('id', pedidoId)
+            .single();
+          
+          if (pedidoError) {
+            console.warn(`⚠️ [VIDEO_SYNC][POST] Erro ao buscar prédios do pedido ${pedidoId}:`, pedidoError);
+          } else if (pedidoData?.lista_predios && Array.isArray(pedidoData.lista_predios)) {
+            const buildingIds = pedidoData.lista_predios;
+            console.log(`🏢 [VIDEO_SYNC][POST] Enviando POSTs para ${buildingIds.length} prédios do pedido ${pedidoId}`);
+            
+            // Buscar títulos dos vídeos para os POSTs
+            const oldVideoTitle = videoAtualmenteExibindo?.title || null;
+            const newVideoData = pedidoVideos?.find(v => v.video_id === videoParaExibir);
+            const newVideoTitle = newVideoData?.title || null;
+            
+            // Enviar POSTs para cada prédio
+            const postPromises: Promise<Response>[] = [];
+            
+            // POST de desativação para vídeo anterior (se houver)
+            if (oldVideoTitle) {
+              buildingIds.forEach((buildingId: string) => {
+                postPromises.push(
+                  fetch('https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      titulo: oldVideoTitle,
+                      ativo: false,
+                      predio_id: buildingId
+                    })
+                  })
+                );
+              });
+            }
+            
+            // POST de ativação para novo vídeo
+            if (newVideoTitle) {
+              buildingIds.forEach((buildingId: string) => {
+                postPromises.push(
+                  fetch('https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      titulo: newVideoTitle,
+                      ativo: true,
+                      predio_id: buildingId
+                    })
+                  })
+                );
+              });
+            }
+            
+            // Executar todos os POSTs
+            if (postPromises.length > 0) {
+              const postResults = await Promise.allSettled(postPromises);
+              const successCount = postResults.filter(r => r.status === 'fulfilled' && r.value.ok).length;
+              const failureCount = postResults.length - successCount;
+              
+              if (failureCount > 0) {
+                console.warn(`⚠️ [VIDEO_SYNC][POST] ${failureCount}/${postResults.length} POSTs falharam para pedido ${pedidoId}`);
+              } else {
+                console.log(`✅ [VIDEO_SYNC][POST] Todos os ${postResults.length} POSTs enviados com sucesso para pedido ${pedidoId}`);
+              }
+            }
+          } else {
+            console.log(`ℹ️ [VIDEO_SYNC][POST] Pedido ${pedidoId} sem lista de prédios - não enviando POSTs`);
+          }
+        } catch (postError) {
+          console.error(`❌ [VIDEO_SYNC][POST] Erro ao enviar POSTs para pedido ${pedidoId}:`, postError);
+        }
 
       } catch (error) {
         console.error(`❌ [VIDEO_SYNC] Error processing pedido ${pedidoId}:`, error);
