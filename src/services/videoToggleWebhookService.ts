@@ -1,7 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const WEBHOOK_BASE_URL = 'https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR';
+const WEBHOOK_URL_TRUE = 'https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR';
+const WEBHOOK_URL_FALSE = 'https://stilver.app.n8n.cloud/webhook/DESATIVANDO_VIDEO_FALSE';
+const getWebhookUrl = (ativo: boolean) => (ativo ? WEBHOOK_URL_TRUE : WEBHOOK_URL_FALSE);
 
 /**
  * Normaliza o título do vídeo removendo extensões
@@ -18,7 +20,7 @@ export const normalizeTitle = (fileName: string): string => {
  */
 const patchToggle = async (buildingId: string, titulo: string, ativo: boolean): Promise<boolean> => {
   try {
-    const url = `${WEBHOOK_BASE_URL}?building_id=${encodeURIComponent(buildingId)}`;
+    const url = `${getWebhookUrl(ativo)}?building_id=${encodeURIComponent(buildingId)}`;
     const body = {
       titulo,
       ativo
@@ -51,7 +53,7 @@ const patchToggle = async (buildingId: string, titulo: string, ativo: boolean): 
 const postToggle = async (titulo: string, ativo: boolean): Promise<boolean> => {
   try {
     console.log('🔔 [WEBHOOK][POST] Enviando POST:', { titulo, ativo });
-    const response = await fetch(WEBHOOK_BASE_URL, {
+    const response = await fetch(getWebhookUrl(ativo), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ titulo, ativo })
@@ -72,7 +74,7 @@ const postToggle = async (titulo: string, ativo: boolean): Promise<boolean> => {
 const postToggleForBuilding = async (titulo: string, ativo: boolean, predioId: string): Promise<boolean> => {
   try {
     console.log('🏢 [WEBHOOK][POST][BUILDING] Enviando POST para prédio:', { titulo, ativo, predio_id: predioId });
-    const response = await fetch(WEBHOOK_BASE_URL, {
+    const response = await fetch(getWebhookUrl(ativo), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ titulo, ativo, predio_id: predioId })

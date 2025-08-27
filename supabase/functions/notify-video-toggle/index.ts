@@ -8,9 +8,9 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Hardcoded webhook URL as requested
-const WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR';
-
+// Webhook URLs based on "ativo"
+const WEBHOOK_URL_TRUE = 'https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR';
+const WEBHOOK_URL_FALSE = 'https://stilver.app.n8n.cloud/webhook/DESATIVANDO_VIDEO_FALSE';
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Execute all POSTs in parallel to the webhook
+    // Execute all POSTs in parallel to the appropriate webhook per action
     const results = await Promise.allSettled(
       actions.map((a: any, idx: number) => {
         const payload = {
@@ -46,8 +46,9 @@ Deno.serve(async (req: Request) => {
           ativo: Boolean(a?.ativo),
           predio_id: a?.predio_id ?? a?.predioId ?? a?.building_id ?? null,
         };
-        console.log(`📤 [WEBHOOK][${idx + 1}/${actions.length}] Sending:`, payload);
-        return fetch(WEBHOOK_URL, {
+        const url = payload.ativo ? WEBHOOK_URL_TRUE : WEBHOOK_URL_FALSE;
+        console.log(`📤 [WEBHOOK][${idx + 1}/${actions.length}] Sending to ${url}:`, payload);
+        return fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
