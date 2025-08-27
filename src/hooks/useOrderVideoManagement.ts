@@ -10,6 +10,8 @@ import { uploadVideo as uploadVideoAction } from '@/services/videoUploadService'
 import { toast } from 'sonner';
 import { useSuccessPopup } from './useSuccessPopup';
 import { useConflictModal } from './useConflictModal';
+import { supabase } from '@/integrations/supabase/client';
+import { toggleForBuildings, normalizeTitle } from '@/services/videoToggleWebhookService';
 
 export const useOrderVideoManagement = (orderId: string) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
@@ -62,6 +64,46 @@ export const useOrderVideoManagement = (orderId: string) => {
       })));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Envia webhooks assim que o usuário clica em "Vídeo Principal"
+  const sendVideoWebhooks = async (slotId: string) => {
+    try {
+      const { data: pedidoResult, error: pedidoError } = await supabase
+        .from('pedidos')
+        .select('lista_predios')
+        .eq('id', orderId)
+        .single();
+      if (pedidoError) throw pedidoError;
+
+      const buildingIds = (pedidoResult?.lista_predios || []) as string[];
+      if (!buildingIds.length) {
+        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada para set_base_video');
+        return;
+      }
+
+      const oldVideoName = videoSlots.find(s => s.selected_for_display)?.video_data?.nome;
+      const newVideoName = videoSlots.find(s => s.id === slotId)?.video_data?.nome;
+
+      const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
+      const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
+
+      console.log('🚀 [WEBHOOK] Enviando webhooks para set_base_video:', {
+        buildingIdsCount: buildingIds.length,
+        oldTitle,
+        newTitle,
+        orderId,
+        slotId,
+      });
+
+      await toggleForBuildings({
+        buildingIds,
+        toDeactivateTitle: oldTitle,
+        toActivateTitle: newTitle,
+      });
+    } catch (error) {
+      console.error('❌ [WEBHOOK] Erro ao enviar webhooks set_base_video:', error);
     }
   };
 
@@ -279,16 +321,20 @@ export const useOrderVideoManagement = (orderId: string) => {
 
   const setBaseVideo = async (slotId: string) => {
     try {
+      console.log('🔄 [ORDER_VIDEO] Definindo vídeo como principal:', { slotId, orderId });
+      // Dispara os webhooks imediatamente ao clique
+      await sendVideoWebhooks(slotId);
+
       const { setBaseVideo } = await import('@/services/videoBaseService');
       const success = await setBaseVideo(slotId);
       if (success) {
+        console.log('✅ [ORDER_VIDEO] Vídeo principal definido. Recarregando slots...');
         refreshSlots();
       }
     } catch (error) {
       console.error('Erro ao definir vídeo base:', error);
     }
   };
-
   return {
     videoSlots,
     loading,
