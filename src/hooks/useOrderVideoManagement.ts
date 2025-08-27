@@ -130,19 +130,20 @@ export const useOrderVideoManagement = (orderId: string) => {
       const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
       const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
 
-      console.log('🚀 [WEBHOOK] Enviando webhook para set_base_video (apenas ativação):', {
+      console.log('🚀 [WEBHOOK] Enviando webhooks para set_base_video:', {
         buildingIdsCount: buildingIds.length,
+        oldTitle,
         newTitle,
         orderId,
         slotId,
-        newVideoId,
-        note: 'Edge Function duplicará para ambos webhooks automaticamente'
+        newVideoId
       });
 
-      // Enviar apenas o vídeo a ser ativado - o Edge Function fará a duplicação
+      // Enviar desativação do antigo (se houver) e ativação do novo
       await toggleForBuildings({
         buildingIds,
         toActivateTitle: newTitle,
+        toDeactivateTitle: oldTitle && oldTitle !== newTitle ? oldTitle : undefined,
       });
     } catch (error) {
       console.error('❌ [WEBHOOK] Erro ao enviar webhooks set_base_video:', error);

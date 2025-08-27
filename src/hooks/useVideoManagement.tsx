@@ -161,20 +161,21 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
         const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
         
-        console.log('🚀 [WEBHOOK] Enviando webhook para seleção (apenas ativação):', { 
+        console.log('🚀 [WEBHOOK] Enviando webhooks de seleção:', { 
           buildingIdsCount: buildingIds.length, 
+          oldTitle,
           newTitle,
           orderId,
-          slotId,
-          note: 'Edge Function duplicará para ambos webhooks automaticamente'
+          slotId
         });
         
-        // Enviar apenas o vídeo a ser ativado - o Edge Function fará a duplicação
+        // Enviar desativação do antigo (se houver) e ativação do novo
         toggleForBuildings({
           buildingIds,
-          toActivateTitle: newTitle
+          toActivateTitle: newTitle,
+          toDeactivateTitle: oldTitle && oldTitle !== newTitle ? oldTitle : undefined
         }).catch(error => {
-          console.error('❌ [WEBHOOK] Erro ao enviar webhook de ativação:', error);
+          console.error('❌ [WEBHOOK] Erro ao enviar webhooks de seleção:', error);
         });
       } else {
         console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada');

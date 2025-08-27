@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Execute all POSTs in parallel with new dual webhook logic
+    // Execute all POSTs in parallel with single-target routing per status
     const results = await Promise.allSettled(
       actions.flatMap((a: any, idx: number) => {
         const payload = {
@@ -48,23 +48,18 @@ Deno.serve(async (req: Request) => {
         };
         
         if (payload.ativo) {
-          // Para ativo=true, enviar para AMBOS os webhooks
-          console.log(`📤 [WEBHOOK][${idx + 1}] Sending ativo=true to BOTH webhooks:`, payload);
+          // ativo=true → enviar SOMENTE para ATIVAR/DESATIVAR
+          console.log(`📤 [WEBHOOK][${idx + 1}] ativo=true → ATIVAR/DESATIVAR:`, payload);
           return [
             fetch(WEBHOOK_URL_TRUE, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-            }),
-            fetch(WEBHOOK_URL_FALSE, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
             })
           ];
         } else {
-          // Para ativo=false, enviar apenas para FALSE webhook
-          console.log(`📤 [WEBHOOK][${idx + 1}] Sending ativo=false to FALSE webhook only:`, payload);
+          // ativo=false → enviar SOMENTE para DESATIVANDO_VIDEO_FALSE
+          console.log(`📤 [WEBHOOK][${idx + 1}] ativo=false → DESATIVANDO_VIDEO_FALSE:`, payload);
           return [
             fetch(WEBHOOK_URL_FALSE, {
               method: 'POST',
