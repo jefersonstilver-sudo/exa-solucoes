@@ -215,14 +215,78 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
     window.open(videoUrl, '_blank');
   };
 
+  // Função auxiliar para enviar webhooks
+  const sendVideoWebhooks = async (slotId: string, actionType: string) => {
+    try {
+      // Buscar vídeo atualmente selecionado e dados do pedido
+      const [currentSelectedResult, pedidoResult, newVideoResult] = await Promise.all([
+        supabase
+          .from('pedido_videos')
+          .select('video_data:videos(nome)')
+          .eq('pedido_id', orderId)
+          .eq('selected_for_display', true)
+          .single(),
+        supabase
+          .from('pedidos')
+          .select('lista_predios')
+          .eq('id', orderId)
+          .single(),
+        supabase
+          .from('pedido_videos')
+          .select('video_data:videos(nome)')
+          .eq('id', slotId)
+          .single()
+      ]);
+
+      // Enviar webhooks se há lista de prédios
+      if (pedidoResult.data?.lista_predios) {
+        const buildingIds = pedidoResult.data.lista_predios as string[];
+        const oldVideoName = currentSelectedResult.data?.video_data?.nome;
+        const newVideoName = newVideoResult.data?.video_data?.nome;
+        
+        const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
+        const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
+        
+        console.log(`🚀 [WEBHOOK] Enviando webhooks para ${actionType}:`, { 
+          buildingIdsCount: buildingIds.length, 
+          oldTitle, 
+          newTitle,
+          orderId,
+          slotId 
+        });
+        
+        // Enviar webhooks para troca de vídeo
+        toggleForBuildings({
+          buildingIds,
+          toDeactivateTitle: oldTitle,
+          toActivateTitle: newTitle
+        }).catch(error => {
+          console.error(`❌ [WEBHOOK] Erro ao enviar webhooks de ${actionType}:`, error);
+        });
+      } else {
+        console.warn(`⚠️ [WEBHOOK] Lista de prédios não encontrada para ${actionType}`);
+      }
+    } catch (error) {
+      console.error(`❌ [WEBHOOK] Erro ao processar webhooks de ${actionType}:`, error);
+    }
+  };
+
   // Definir vídeo base
   const handleSetBaseVideo = async (slotId: string) => {
+    console.log('🔄 [HOOK] handleSetBaseVideo iniciado:', { slotId, orderId });
+    
     try {
+      // Enviar webhooks ANTES de alterar o banco
+      await sendVideoWebhooks(slotId, 'set_base_video');
+      
       const success = await setBaseVideo(slotId);
       if (success) {
+        toast.success('Vídeo definido como principal e selecionado para exibição!');
+        
         // Recarregar slots para refletir mudanças
         const slots = await loadVideoSlots(orderId);
         setVideoSlots(slots);
+        console.log('✅ [HOOK] Vídeo base definido com sucesso');
       }
     } catch (error) {
       console.error('Erro ao definir vídeo base:', error);
