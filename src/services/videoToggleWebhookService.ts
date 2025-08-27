@@ -105,20 +105,16 @@ export const toggleForBuildings = async ({
     return;
   }
 
-  const actions: Array<{ buildingId: string; titulo: string; ativo: boolean }> = [];
+  const actions: Array<{ predioId: string; titulo: string; ativo: boolean }> = [];
 
-  // Preparar ações de desativação
-  if (toDeactivateTitle) {
-    buildingIds.forEach(buildingId => {
-      actions.push({ buildingId, titulo: toDeactivateTitle, ativo: false });
-    });
-  }
-
-  // Preparar ações de ativação
-  if (toActivateTitle) {
-    buildingIds.forEach(buildingId => {
-      actions.push({ buildingId, titulo: toActivateTitle, ativo: true });
-    });
+  // Para cada prédio, primeiro desativar (se houver título anterior) e depois ativar (se houver novo)
+  for (const predioId of buildingIds) {
+    if (toDeactivateTitle) {
+      actions.push({ predioId, titulo: toDeactivateTitle, ativo: false });
+    }
+    if (toActivateTitle) {
+      actions.push({ predioId, titulo: toActivateTitle, ativo: true });
+    }
   }
 
   if (actions.length === 0) {
@@ -126,88 +122,26 @@ export const toggleForBuildings = async ({
     return;
   }
 
-  console.log(`🚀 [WEBHOOK] Enviando ${actions.length} webhooks para ${buildingIds.length} prédios`);
-
-  // Executar todas as requisições em paralelo
-  const promises = actions.map(action => 
-    patchToggle(action.buildingId, action.titulo, action.ativo)
-  );
+  console.log(`🏢 [WEBHOOK][POST][BUILDING] Enviando ${actions.length} POST(s) para ${buildingIds.length} prédios`);
 
   try {
-    const results = await Promise.allSettled(promises);
-    const successCount = results.filter(result => 
-      result.status === 'fulfilled' && result.value === true
-    ).length;
-    
+    const postPromises = actions.map(({ predioId, titulo, ativo }) =>
+      postToggleForBuilding(titulo, ativo, predioId)
+    );
+
+    const results = await Promise.allSettled(postPromises);
+    const successCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
     const failureCount = results.length - successCount;
 
     if (failureCount > 0) {
-      console.warn(`⚠️ [WEBHOOK] ${failureCount}/${results.length} webhooks falharam`);
-      toast.warning(`Alguns webhooks falharam (${failureCount}/${results.length}). Vídeo selecionado com sucesso.`);
+      console.warn(`⚠️ [WEBHOOK][POST][BUILDING] ${failureCount}/${results.length} POST(s) falharam`);
+      toast.warning(`Alguns webhooks falharam (${failureCount}/${results.length}).`);
     } else {
-      console.log(`✅ [WEBHOOK] Todos os ${results.length} webhooks enviados com sucesso`);
+      console.log(`✅ [WEBHOOK][POST][BUILDING] Todos os POST(s) enviados com sucesso`);
     }
   } catch (error) {
-    console.error('❌ [WEBHOOK] Erro inesperado ao enviar webhooks:', error);
-    toast.warning('Erro ao notificar sistemas externos. Vídeo selecionado com sucesso.');
-  }
-
-  // Enviar POSTs individuais para cada prédio (nova funcionalidade)
-  try {
-    const postPromises: Promise<boolean>[] = [];
-    
-    // Para cada prédio, enviar POSTs de ativação/desativação
-    buildingIds.forEach(buildingId => {
-      if (toActivateTitle) {
-        postPromises.push(postToggleForBuilding(toActivateTitle, true, buildingId));
-      }
-      if (toDeactivateTitle && toDeactivateTitle !== toActivateTitle) {
-        postPromises.push(postToggleForBuilding(toDeactivateTitle, false, buildingId));
-      }
-    });
-
-    if (postPromises.length > 0) {
-      console.log(`🏢 [WEBHOOK][POST][BUILDING] Enviando ${postPromises.length} POST(s) individuais para prédios`);
-      const postResults = await Promise.allSettled(postPromises);
-      const postSuccessCount = postResults.filter(r => r.status === 'fulfilled' && r.value === true).length;
-      const postFailureCount = postResults.length - postSuccessCount;
-      if (postFailureCount > 0) {
-        console.warn(`⚠️ [WEBHOOK][POST][BUILDING] ${postFailureCount}/${postResults.length} POST(s) falharam`);
-      } else {
-        console.log(`✅ [WEBHOOK][POST][BUILDING] Todos os POST(s) enviados com sucesso`);
-      }
-    } else {
-      console.log('ℹ️ [WEBHOOK][POST][BUILDING] Nenhum POST individual a enviar');
-    }
-  } catch (postError) {
-    console.error('❌ [WEBHOOK][POST][BUILDING] Erro inesperado ao enviar POST(s) individuais:', postError);
-  }
-
-  // Enviar POSTs agregados adicionais (mantém comportamento atual)
-  try {
-    const postPromises: Promise<boolean>[] = [];
-    if (toActivateTitle) {
-      postPromises.push(postToggle(toActivateTitle, true));
-    }
-    if (toDeactivateTitle && toDeactivateTitle !== toActivateTitle) {
-      postPromises.push(postToggle(toDeactivateTitle, false));
-    }
-
-    if (postPromises.length > 0) {
-      console.log(`📬 [WEBHOOK][POST] Enviando ${postPromises.length} POST(s) agregados adicionais`);
-      const postResults = await Promise.allSettled(postPromises);
-      const postSuccessCount = postResults.filter(r => r.status === 'fulfilled' && r.value === true).length;
-      const postFailureCount = postResults.length - postSuccessCount;
-      if (postFailureCount > 0) {
-        console.warn(`⚠️ [WEBHOOK][POST] ${postFailureCount}/${postResults.length} POST(s) agregados falharam`);
-      } else {
-        console.log(`✅ [WEBHOOK][POST] Todos os POST(s) agregados enviados com sucesso`);
-      }
-    } else {
-      console.log('ℹ️ [WEBHOOK][POST] Nenhum POST agregado a enviar');
-    }
-  } catch (postError) {
-    console.error('❌ [WEBHOOK][POST] Erro inesperado ao enviar POST(s) agregados:', postError);
+    console.error('❌ [WEBHOOK][POST][BUILDING] Erro inesperado ao enviar POST(s):', error);
+    toast.warning('Erro ao notificar sistemas externos.');
   }
 };
 

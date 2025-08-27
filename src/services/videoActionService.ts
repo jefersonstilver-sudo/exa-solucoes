@@ -52,7 +52,7 @@ export const selectVideoForDisplay = async (
     // Buscar vídeo atualmente selecionado do mesmo pedido para webhook
     const { data: currentSelectedVideo } = await supabase
       .from('pedido_videos')
-      .select('videos(nome)')
+      .select('video_data:videos(nome)')
       .eq('pedido_id', videoData.pedido_id)
       .eq('selected_for_display', true)
       .single();
@@ -82,12 +82,12 @@ export const selectVideoForDisplay = async (
       // Buscar nome do novo vídeo selecionado
       const { data: newVideoInfo } = await supabase
         .from('pedido_videos')
-        .select('videos(nome)')
+        .select('video_data:videos(nome)')
         .eq('id', slotId)
         .single();
 
-      const newVideoName = newVideoInfo?.videos?.nome;
-      const oldVideoName = currentSelectedVideo?.videos?.nome;
+      const newVideoName = newVideoInfo?.video_data?.nome;
+      const oldVideoName = currentSelectedVideo?.video_data?.nome;
       
       // Enviar webhooks se temos lista de prédios
       if (pedidoData?.lista_predios && Array.isArray(pedidoData.lista_predios) && pedidoData.lista_predios.length > 0) {
@@ -98,22 +98,13 @@ export const selectVideoForDisplay = async (
         const buildingIds = pedidoData.lista_predios as string[];
         console.log('🚀 [WEBHOOK] Preparando envio:', { buildingIdsCount: buildingIds.length, oldTitle, newTitle });
         
-        if (newTitle) {
+        if (newTitle || oldTitle) {
           toggleForBuildings({
             buildingIds,
-            toActivateTitle: newTitle
+            toActivateTitle: newTitle,
+            toDeactivateTitle: oldTitle && newTitle && oldTitle !== newTitle ? oldTitle : undefined,
           }).catch(error => {
-            console.error('❌ [WEBHOOK] Erro ao enviar webhook de ativação:', error);
-          });
-        }
-
-        // Enviar desativação apenas se for título diferente e existir um antigo
-        if (oldTitle && newTitle && oldTitle !== newTitle) {
-          toggleForBuildings({
-            buildingIds,
-            toDeactivateTitle: oldTitle
-          }).catch(error => {
-            console.error('❌ [WEBHOOK] Erro ao enviar webhook de desativação:', error);
+            console.error('❌ [WEBHOOK] Erro ao enviar webhooks (ativação/desativação):', error);
           });
         }
       } else {
