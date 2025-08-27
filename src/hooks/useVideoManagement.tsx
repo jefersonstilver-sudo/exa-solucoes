@@ -141,13 +141,13 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
       // Primeiro, desmarcar todos os outros
       await supabase
         .from('pedido_videos')
-        .update({ selected_for_display: false })
+        .update({ selected_for_display: false, is_base_video: false })
         .eq('pedido_id', orderId);
 
       // Depois marcar o selecionado
       const { error } = await supabase
         .from('pedido_videos')
-        .update({ selected_for_display: true })
+        .update({ selected_for_display: true, is_base_video: true })
         .eq('id', slotId);
 
       if (error) throw error;
