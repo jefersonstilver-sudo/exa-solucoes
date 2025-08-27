@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 export const setBaseVideo = async (slotId: string): Promise<boolean> => {
   try {
@@ -18,13 +17,11 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
 
       if (pvErr || !pv) {
         console.error('❌ [VIDEO_BASE] Fallback: erro ao buscar slot:', pvErr);
-        toast.error('❌ Erro ao validar informações do vídeo');
         return false;
       }
 
       if (pv.approval_status !== 'approved') {
         console.error('❌ [VIDEO_BASE] Fallback: vídeo não aprovado:', pv.approval_status);
-        toast.error('❌ Apenas vídeos aprovados podem ser principais');
         return false;
       }
 
@@ -37,7 +34,6 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
 
       if (clearErr) {
         console.error('❌ [VIDEO_BASE] Fallback: erro ao desmarcar outros vídeos:', clearErr);
-        toast.error('❌ Erro ao atualizar vídeos do pedido');
         return false;
       }
 
@@ -49,7 +45,6 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
 
       if (upErr) {
         console.error('❌ [VIDEO_BASE] Fallback: erro ao marcar vídeo como base:', upErr);
-        toast.error('❌ Erro ao definir vídeo principal');
         return false;
       }
 
@@ -74,7 +69,6 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       }
 
       console.log('✅ [VIDEO_BASE] Fallback direto concluído com sucesso');
-      toast.success('✅ Vídeo definido como principal!');
       return true;
     };
 
@@ -100,7 +94,6 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
 
         if (legacyData === true) {
           console.warn('⚠️ [VIDEO_BASE] Usando fallback set_base_video devido a falha na enhanced', { isReadOnly });
-          toast.success('✅ Vídeo definido como principal!');
           return true;
         }
 
@@ -120,23 +113,14 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       // Tentar fallback direto para garantir troca
       const ok = await fallbackDirectUpdate();
       if (ok) return true;
-      toast.error(`❌ ${result?.error || 'Não foi possível definir o vídeo como principal'}`);
       return false;
     }
 
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
 
-    const slot = result?.new_base_slot ? `Slot ${result.new_base_slot}` : 'Vídeo';
-    if (result?.schedules_deactivated) {
-      toast.success(`✅ ${slot} definido como principal! Agendamentos desativados automaticamente.`);
-    } else {
-      toast.success(`✅ ${slot} definido como principal!`);
-    }
-
     return true;
   } catch (error) {
     console.error('💥 [VIDEO_BASE] Erro geral:', error);
-    toast.error('❌ Erro ao definir vídeo principal');
     return false;
   }
 };
