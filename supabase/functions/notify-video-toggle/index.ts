@@ -5,6 +5,7 @@
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 // Hardcoded webhook URL as requested
@@ -27,7 +28,10 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const actions = Array.isArray(body?.actions) ? body.actions : [];
 
+    console.log(`🔔 [WEBHOOK] Received ${actions.length} actions:`, actions);
+
     if (!actions.length) {
+      console.log('❌ [WEBHOOK] No actions provided');
       return new Response(
         JSON.stringify({ ok: false, message: 'No actions provided' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -36,12 +40,13 @@ Deno.serve(async (req: Request) => {
 
     // Execute all POSTs in parallel to the webhook
     const results = await Promise.allSettled(
-      actions.map((a: any) => {
+      actions.map((a: any, idx: number) => {
         const payload = {
           titulo: a?.titulo ?? '',
           ativo: Boolean(a?.ativo),
           predio_id: a?.predio_id ?? a?.predioId ?? a?.building_id ?? null,
         };
+        console.log(`📤 [WEBHOOK][${idx + 1}/${actions.length}] Sending:`, payload);
         return fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -59,6 +64,8 @@ Deno.serve(async (req: Request) => {
 
     const successCount = summarized.filter((r) => r.ok).length;
     const failureCount = summarized.length - successCount;
+
+    console.log(`✅ [WEBHOOK] Completed: ${successCount} success, ${failureCount} failed`);
 
     return new Response(
       JSON.stringify({ ok: true, successCount, failureCount, results: summarized }),

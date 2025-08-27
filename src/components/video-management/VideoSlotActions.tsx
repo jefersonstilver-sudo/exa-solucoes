@@ -140,6 +140,23 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           <Download className="h-4 w-4" />
         </Button>
 
+        {/* Exibir nos Painéis - apenas para vídeos aprovados */}
+        {isApproved && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSelectForDisplay}
+            className={`${
+              slot.selected_for_display 
+                ? 'border-green-600 text-green-600 bg-green-50 hover:bg-green-100' 
+                : 'border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white'
+            } p-2`}
+            title={slot.selected_for_display ? "Vídeo em exibição" : "Exibir nos painéis"}
+          >
+            {slot.selected_for_display ? <Check className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+          </Button>
+        )}
+
         {/* Agendar Vídeo - apenas para vídeos aprovados e quando há 2+ vídeos */}
         {isApproved && totalApprovedVideos >= 2 && (
           <Button
