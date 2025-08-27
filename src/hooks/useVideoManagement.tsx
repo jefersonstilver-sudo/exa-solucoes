@@ -161,27 +161,26 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
         const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
         
-        console.log('🚀 [WEBHOOK] Enviando webhooks para seleção:', { buildingIdsCount: buildingIds.length, oldTitle, newTitle });
+        console.log('🚀 [WEBHOOK] Enviando webhooks para seleção:', { 
+          buildingIdsCount: buildingIds.length, 
+          oldTitle, 
+          newTitle,
+          orderId,
+          slotId 
+        });
         
-        // Sempre confirmar ativação do novo vídeo
-        if (newTitle) {
-          toggleForBuildings({
-            buildingIds,
-            toActivateTitle: newTitle
-          }).catch(error => {
-            console.error('❌ [WEBHOOK] Erro ao enviar webhook de ativação:', error);
-          });
-        }
-
-        // Enviar desativação apenas se for título diferente e existir um antigo
-        if (oldTitle && newTitle && oldTitle !== newTitle) {
-          toggleForBuildings({
-            buildingIds,
-            toDeactivateTitle: oldTitle
-          }).catch(error => {
-            console.error('❌ [WEBHOOK] Erro ao enviar webhook de desativação:', error);
-          });
-        }
+        // CRÍTICO: Sempre enviar webhooks para DESATIVAR o antigo E ATIVAR o novo
+        // Isso garante que o sistema externo sempre saiba sobre as trocas
+        console.log('📤 [WEBHOOK] Preparando envio - ativação:', newTitle, 'desativação:', oldTitle);
+        
+        // Enviar ambos os webhooks sempre que há troca de vídeo
+        toggleForBuildings({
+          buildingIds,
+          toDeactivateTitle: oldTitle, // Pode ser undefined se não há vídeo anterior
+          toActivateTitle: newTitle     // Sempre deve haver novo título
+        }).catch(error => {
+          console.error('❌ [WEBHOOK] Erro ao enviar webhooks de troca:', error);
+        });
       } else {
         console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada');
       }
