@@ -9,7 +9,7 @@ import ResponsiveAdvertiserSidebar from './ResponsiveAdvertiserSidebar';
 const CompleteResponsiveLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const { isMobile, isTablet } = useMobileBreakpoints();
+  const { isMobile, isTablet, isDesktop, isXl } = useMobileBreakpoints();
 
   const handleSidebarClose = () => {
     setSidebarOpen(false);
@@ -44,16 +44,16 @@ const CompleteResponsiveLayout = () => {
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
-              ) : (
+              ) : (isDesktop || isXl) ? (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={toggleSidebarCollapse}
-                  className="bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  className="hover:bg-gray-100 transition-colors"
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
-              )}
+              ) : null}
               <h1 className="text-2xl font-bold text-gray-900">Portal do Anunciante</h1>
             </div>
             <Outlet />
