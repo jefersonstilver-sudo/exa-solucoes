@@ -364,28 +364,111 @@ export const useOrderVideoManagement = (orderId: string) => {
 
   const setBaseVideo = async (slotId: string) => {
     try {
-      console.log('🔄 [ORDER_VIDEO] Definindo vídeo como principal:', { slotId, orderId });
+      console.log('🔄 [ORDER_VIDEO] Definindo vídeo como principal (com slots):', { slotId, orderId });
 
+      // 1) Capturar estado ANTES da mudança: vídeo base atual (com slot)
+      const { data: currentBase, error: currentBaseErr } = await supabase
+        .from('pedido_videos')
+        .select('video_id, slot_position')
+        .eq('pedido_id', orderId)
+        .eq('is_base_video', true)
+        .single();
+
+      const oldVideoId: string | undefined = currentBase?.video_id as string | undefined;
+      const oldSlot: number | undefined = currentBase?.slot_position as number | undefined;
+
+      if (currentBaseErr) {
+        console.warn('⚠️ [WEBHOOK] Não foi possível obter o vídeo base atual:', currentBaseErr);
+      } else {
+        console.log('✅ [WEBHOOK] Vídeo base atual:', { oldVideoId, oldSlot });
+      }
+
+      // 2) Capturar dados do NOVO vídeo (slot clicado)
+      const { data: newPv, error: newPvErr } = await supabase
+        .from('pedido_videos')
+        .select('video_id, slot_position')
+        .eq('id', slotId)
+        .single();
+
+      if (newPvErr) throw newPvErr;
+      const newVideoId: string | undefined = newPv?.video_id as string | undefined;
+      const newSlot: number | undefined = newPv?.slot_position as number | undefined;
+
+      // 3) Buscar prédios do pedido
+      const { data: pedidoData, error: pedidoErr } = await supabase
+        .from('pedidos')
+        .select('lista_predios')
+        .eq('id', orderId)
+        .single();
+      if (pedidoErr) throw pedidoErr;
+      const buildingIds = (pedidoData?.lista_predios || []) as string[];
+
+      console.log('📊 [WEBHOOK] Contexto capturado antes da mudança:', {
+        buildingIdsCount: buildingIds.length,
+        oldVideoId,
+        oldSlot,
+        newVideoId,
+        newSlot,
+      });
+
+      // 4) Resolver nomes para montar títulos (em paralelo)
+      const fetchVideoName = async (videoId?: string) => {
+        if (!videoId) return undefined;
+        const { data, error } = await supabase
+          .from('videos')
+          .select('nome')
+          .eq('id', videoId)
+          .single();
+        if (error) {
+          console.warn('⚠️ [WEBHOOK] Falha ao obter nome do vídeo:', { videoId, error });
+          return undefined;
+        }
+        return data?.nome as string | undefined;
+      };
+
+      const [oldVideoName, newVideoName] = await Promise.all([
+        fetchVideoName(oldVideoId),
+        fetchVideoName(newVideoId),
+      ]);
+
+      const toDeactivateTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
+      const toActivateTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
+
+      console.log('📝 [WEBHOOK] Títulos normalizados:', {
+        toDeactivateTitle,
+        toActivateTitle,
+      });
+
+      // 5) Executar a mudança no banco
       const { setBaseVideo: setBaseVideoService } = await import('@/services/videoBaseService');
-      
       console.log('⏳ [ORDER_VIDEO] Chamando setBaseVideoService...');
       const success = await setBaseVideoService(slotId);
-      
       console.log('📊 [ORDER_VIDEO] Resultado do setBaseVideoService:', success);
-      
+
       if (success) {
-        console.log('✅ [ORDER_VIDEO] Vídeo principal definido com sucesso! Enviando webhooks...');
-        
-        try {
-          await sendVideoWebhooks(slotId);
-          console.log('✅ [ORDER_VIDEO] Webhooks enviados com sucesso!');
-        } catch (webhookError) {
-          console.error('❌ [ORDER_VIDEO] Erro nos webhooks (mas vídeo foi definido):', webhookError);
+        // 6) Enviar webhooks SEMPRE com desativação do antigo (se existir) e ativação do novo, incluindo slot
+        if (buildingIds.length) {
+          console.log('🚀 [WEBHOOK] Enviando webhooks (com slots):', {
+            buildingIdsCount: buildingIds.length,
+            toDeactivateTitle,
+            toActivateTitle,
+            oldSlot,
+            newSlot,
+          });
+
+          await toggleForBuildings({
+            buildingIds,
+            toDeactivateTitle,
+            toActivateTitle,
+            toDeactivateSlot: oldSlot,
+            toActivateSlot: newSlot,
+          });
+        } else {
+          console.warn('⚠️ [WEBHOOK] Lista de prédios vazia, pulando envio de webhooks');
         }
-        
+
         console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
         refreshSlots();
-        
         toast.success('✅ Vídeo definido como principal!');
       } else {
         console.error('❌ [ORDER_VIDEO] setBaseVideoService retornou false');
