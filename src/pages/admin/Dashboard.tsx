@@ -9,7 +9,6 @@ import DashboardQuickActions from '@/components/admin/dashboard/DashboardQuickAc
 import DashboardFinancialSummary from '@/components/admin/dashboard/DashboardFinancialSummary';
 import DashboardErrorState from '@/components/admin/dashboard/DashboardErrorState';
 import DashboardLoadingState from '@/components/admin/dashboard/DashboardLoadingState';
-import ActivityTestPanel from '@/components/admin/dashboard/ActivityTestPanel';
 
 const Dashboard = () => {
   const { 
@@ -54,9 +53,6 @@ const Dashboard = () => {
         <DashboardActivities stats={stats} />
         <DashboardQuickActions stats={stats} />
       </div>
-
-      {/* Painel de Testes - Sistema de Monitoramento */}
-      <ActivityTestPanel />
 
       <DashboardFinancialSummary 
         stats={stats}
