@@ -9,7 +9,7 @@ import ResponsiveAdvertiserSidebar from './ResponsiveAdvertiserSidebar';
 const CompleteResponsiveLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const { isMobile } = useMobileBreakpoints();
+  const { isMobile, isTablet } = useMobileBreakpoints();
 
   const handleSidebarClose = () => {
     setSidebarOpen(false);
@@ -26,15 +26,25 @@ const CompleteResponsiveLayout = () => {
         isOpen={sidebarOpen}
         onClose={handleSidebarClose}
         isMobile={isMobile}
+        isTablet={isTablet}
         isCollapsed={sidebarCollapsed}
       />
 
       {/* Main Content Area - sem header separado */}
-      <main className={`flex-1 overflow-hidden ${!isMobile ? (sidebarCollapsed ? 'ml-16' : 'ml-80') : ''}`}>
+      <main className={`flex-1 overflow-hidden ${!(isMobile || isTablet) ? (sidebarCollapsed ? 'ml-16' : 'ml-80') : ''}`}>
         <div className="h-full overflow-y-auto">
           <div className="p-6">
             <div className="mb-6 flex items-center space-x-4">
-              {!isMobile && (
+              {isMobile || isTablet ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSidebarOpen(true)}
+                  className="bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              ) : (
                 <Button
                   variant="ghost"
                   size="icon"
