@@ -8,6 +8,7 @@ interface ResponsiveAdvertiserSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isMobile: boolean;
+  isTablet?: boolean;
   isCollapsed?: boolean;
 }
 
@@ -15,10 +16,11 @@ const ResponsiveAdvertiserSidebar = ({
   isOpen, 
   onClose, 
   isMobile,
+  isTablet = false,
   isCollapsed = false
 }: ResponsiveAdvertiserSidebarProps) => {
-  if (isMobile) {
-    // Mobile: Drawer overlay
+  if (isMobile || isTablet) {
+    // Mobile/Tablet: Drawer overlay
     return (
       <AnimatePresence>
         {isOpen && (
@@ -32,7 +34,7 @@ const ResponsiveAdvertiserSidebar = ({
               onClick={onClose}
             />
 
-            {/* Mobile Sidebar */}
+            {/* Mobile/Tablet Sidebar */}
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
