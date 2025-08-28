@@ -306,18 +306,16 @@ const OrderDetails = () => {
               orderId={id || ''}
             />
             
-            {/* Video Schedule Manager - Only show if contract is active */}
-            {contractStatus.isActive && (
-              <VideoScheduleManager
-                videoSlots={videoSlots}
-                onScheduleUpdate={async (videoId: string, scheduleRules: any[]) => {
-                  console.log('📅 Atualizando programação:', { videoId, scheduleRules });
-                  // TODO: Implementar lógica de atualização de programação
-                }}
-                disabled={contractStatus.isExpired}
-                orderId={id || ''}
-              />
-            )}
+            {/* Video Schedule Manager - Always show, just disable editing when needed */}
+            <VideoScheduleManager
+              videoSlots={videoSlots}
+              onScheduleUpdate={async (videoId: string, scheduleRules: any[]) => {
+                console.log('📅 Atualizando programação:', { videoId, scheduleRules });
+                // TODO: Implementar lógica de atualização de programação
+              }}
+              disabled={!contractStatus.isActive || contractStatus.isExpired}
+              orderId={id || ''}
+            />
           </>
         )}
       </div>

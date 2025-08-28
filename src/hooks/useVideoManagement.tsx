@@ -427,14 +427,19 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         return;
       }
 
-      // Determinar quais títulos enviar - SEMPRE desativar o antigo se existir
-      const toDeactivateTitle = (oldVideoId && oldVideoId !== newVideoId && oldTitle) ? oldTitle : undefined;
+      // SEMPRE desativar o antigo se existir, independente se é o mesmo título
+      const toDeactivateTitle = oldVideoId && oldTitle ? oldTitle : undefined;
       const toActivateTitle = newTitle;
 
-      console.log('📤 [WEBHOOK] Enviando webhooks:', {
+      console.log('📤 [WEBHOOK] Enviando webhooks (FORÇANDO DESATIVAÇÃO):', {
         buildingIdsCount: buildingIds.length,
         toDeactivateTitle,
         toActivateTitle,
+        oldVideoId,
+        newVideoId,
+        oldTitle,
+        newTitle,
+        forceDeactivate: !!toDeactivateTitle,
         expectedActions: (toDeactivateTitle ? 1 : 0) + (toActivateTitle ? 1 : 0)
       });
 
