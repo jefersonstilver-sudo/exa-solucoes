@@ -8,6 +8,7 @@ interface ResponsiveAdvertiserSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isMobile: boolean;
+  isTablet?: boolean;
   isCollapsed?: boolean;
 }
 
@@ -15,6 +16,7 @@ const ResponsiveAdvertiserSidebar = ({
   isOpen, 
   onClose, 
   isMobile,
+  isTablet = false,
   isCollapsed = false
 }: ResponsiveAdvertiserSidebarProps) => {
   if (isMobile) {
@@ -56,14 +58,14 @@ const ResponsiveAdvertiserSidebar = ({
     );
   }
 
-  // Desktop: Fixed sidebar with collapse support
+  // Desktop and Tablet: Fixed sidebar with collapse support
   return (
     <motion.div
-      animate={{ width: isCollapsed ? 64 : 320 }}
+      animate={{ width: isTablet ? 320 : (isCollapsed ? 64 : 320) }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="hidden lg:flex fixed inset-y-0 z-30"
+      className="hidden md:flex fixed inset-y-0 z-30"
     >
-      <AdvertiserSidebarContent isCollapsed={isCollapsed} />
+      <AdvertiserSidebarContent isCollapsed={isTablet ? false : isCollapsed} />
     </motion.div>
   );
 };
