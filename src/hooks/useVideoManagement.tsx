@@ -118,14 +118,27 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
     console.log('🔄 [HOOK] handleSelectForDisplay iniciado:', { slotId, orderId });
     
     try {
-      // Buscar vídeo atualmente selecionado e dados do pedido
-      const [currentSelectedResult, pedidoResult, newVideoResult] = await Promise.all([
-        supabase
-          .from('pedido_videos')
-          .select('video_data:videos(nome)')
-          .eq('pedido_id', orderId)
-          .eq('selected_for_display', true)
-          .single(),
+      // 1) BUSCAR VÍDEO ATUALMENTE SELECIONADO ANTES DA MUDANÇA
+      console.log('🔍 [WEBHOOK] Buscando vídeo selecionado atual...');
+      
+      const { data: currentSelectedVideo, error: currentSelectedError } = await supabase
+        .from('pedido_videos')
+        .select('video_id')
+        .eq('pedido_id', orderId)
+        .eq('selected_for_display', true)
+        .single();
+      
+      let oldVideoId: string | undefined = undefined;
+      
+      if (!currentSelectedError && currentSelectedVideo) {
+        oldVideoId = currentSelectedVideo.video_id as string;
+        console.log('✅ [WEBHOOK] Vídeo selecionado atual encontrado:', { oldVideoId });
+      } else {
+        console.warn('⚠️ [WEBHOOK] Nenhum vídeo selecionado atual encontrado:', currentSelectedError);
+      }
+
+      // 2) BUSCAR DADOS DO PEDIDO EM PARALELO
+      const [pedidoResult, newVideoResult] = await Promise.all([
         supabase
           .from('pedidos')
           .select('lista_predios')
@@ -133,22 +146,49 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
           .single(),
         supabase
           .from('pedido_videos')
-          .select('video_data:videos(nome)')
+          .select('video_id')
           .eq('id', slotId)
           .single()
       ]);
 
-      // Executar via função transacional para garantir consistência
+      // 3) EXECUTAR A MUDANÇA
       const success = await setBaseVideo(slotId);
       if (!success) {
         throw new Error('Falha ao definir vídeo como base');
       }
 
-      // Enviar webhooks após sucesso no Supabase
+      // 4) ENVIAR WEBHOOKS APÓS SUCESSO
       if (pedidoResult.data?.lista_predios) {
         const buildingIds = pedidoResult.data.lista_predios as string[];
-        const oldVideoName = currentSelectedResult.data?.video_data?.nome;
-        const newVideoName = newVideoResult.data?.video_data?.nome;
+        const newVideoId = newVideoResult.data?.video_id as string | undefined;
+        
+        console.log('📊 [WEBHOOK] Dados coletados para seleção:', { 
+          buildingIdsCount: buildingIds.length, 
+          oldVideoId, 
+          newVideoId,
+          willDeactivate: !!oldVideoId && oldVideoId !== newVideoId,
+          willActivate: !!newVideoId
+        });
+
+        // 5) BUSCAR NOMES DOS VÍDEOS
+        const fetchVideoName = async (videoId?: string) => {
+          if (!videoId) return undefined;
+          const { data, error } = await supabase
+            .from('videos')
+            .select('nome')
+            .eq('id', videoId)
+            .single();
+          if (error) {
+            console.warn('⚠️ [WEBHOOK] Falha ao obter nome do vídeo:', { videoId, error });
+            return undefined;
+          }
+          return data?.nome as string | undefined;
+        };
+
+        const [oldVideoName, newVideoName] = await Promise.all([
+          oldVideoId ? fetchVideoName(oldVideoId) : Promise.resolve(undefined),
+          newVideoId ? fetchVideoName(newVideoId) : Promise.resolve(undefined)
+        ]);
         
         const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
         const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
@@ -161,11 +201,11 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
           slotId
         });
         
-        // Enviar desativação do antigo (se houver) e ativação do novo
+        // Enviar desativação do antigo (se existir e diferente) e ativação do novo
         toggleForBuildings({
           buildingIds,
           toActivateTitle: newTitle,
-          toDeactivateTitle: oldTitle && oldTitle !== newTitle ? oldTitle : undefined
+          toDeactivateTitle: (oldVideoId && oldVideoId !== newVideoId && oldTitle) ? oldTitle : undefined
         }).catch(error => {
           console.error('❌ [WEBHOOK] Erro ao enviar webhooks de seleção:', error);
         });
@@ -175,7 +215,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
 
       toast.success('Vídeo selecionado para exibição!');
       
-      // Recarregar slots e verificar se a atualização funcionou
+      // 6) RECARREGAR SLOTS
       console.log('🔄 [HOOK] Recarregando slots após seleção...');
       const slots = await loadVideoSlots(orderId);
       
@@ -288,35 +328,23 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
     console.log('🔄 [HOOK] handleSetBaseVideo iniciado:', { slotId, orderId });
     
     try {
-      // 1) BUSCAR O VÍDEO BASE ATUAL ANTES DA MUDANÇA (COM FALLBACK)
-      console.log('🔍 [WEBHOOK] Buscando vídeo base atual via RPC...');
-      const { data: currentVideoData, error: currentVideoError } = await supabase
-        .rpc('get_current_display_video', { p_pedido_id: orderId });
+      // 1) BUSCAR O VÍDEO BASE ATUAL ANTES DA MUDANÇA (DIRETO NA TABELA)
+      console.log('🔍 [WEBHOOK] Buscando vídeo base atual diretamente...');
+      
+      const { data: currentBaseVideo, error: currentBaseError } = await supabase
+        .from('pedido_videos')
+        .select('video_id')
+        .eq('pedido_id', orderId)
+        .eq('is_base_video', true)
+        .single();
       
       let oldVideoId: string | undefined = undefined;
       
-      if (currentVideoError || !currentVideoData || currentVideoData.length === 0) {
-        console.warn('⚠️ [WEBHOOK] RPC falhou, usando fallback direto na tabela:', currentVideoError);
-        
-        // FALLBACK: Buscar diretamente na tabela pedido_videos
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('pedido_videos')
-          .select('video_id')
-          .eq('pedido_id', orderId)
-          .eq('is_base_video', true)
-          .single();
-          
-        if (!fallbackError && fallbackData) {
-          oldVideoId = fallbackData.video_id as string;
-          console.log('✅ [WEBHOOK] Vídeo base atual encontrado via fallback:', { oldVideoId });
-        } else {
-          console.warn('⚠️ [WEBHOOK] Nenhum vídeo base atual encontrado');
-        }
+      if (!currentBaseError && currentBaseVideo) {
+        oldVideoId = currentBaseVideo.video_id as string;
+        console.log('✅ [WEBHOOK] Vídeo base atual encontrado:', { oldVideoId });
       } else {
-        oldVideoId = Array.isArray(currentVideoData) && currentVideoData[0]?.video_id
-          ? (currentVideoData[0].video_id as string)
-          : undefined;
-        console.log('✅ [WEBHOOK] Vídeo base atual encontrado via RPC:', { oldVideoId });
+        console.warn('⚠️ [WEBHOOK] Nenhum vídeo base atual encontrado:', currentBaseError);
       }
 
       // 2) EXECUTAR A MUDANÇA NO BANCO
@@ -399,7 +427,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         return;
       }
 
-      // Determinar quais títulos enviar
+      // Determinar quais títulos enviar - SEMPRE desativar o antigo se existir
       const toDeactivateTitle = (oldVideoId && oldVideoId !== newVideoId && oldTitle) ? oldTitle : undefined;
       const toActivateTitle = newTitle;
 
