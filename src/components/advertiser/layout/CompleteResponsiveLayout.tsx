@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import ResponsiveAdvertiserSidebar from './ResponsiveAdvertiserSidebar';
 
 const CompleteResponsiveLayout = () => {
-  const { isMobile, isTablet } = useMobileBreakpoints();
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { isMobile } = useMobileBreakpoints();
 
   const handleSidebarClose = () => {
     setSidebarOpen(false);
@@ -26,7 +26,6 @@ const CompleteResponsiveLayout = () => {
         isOpen={sidebarOpen}
         onClose={handleSidebarClose}
         isMobile={isMobile}
-        isTablet={isTablet}
         isCollapsed={sidebarCollapsed}
       />
 
@@ -35,7 +34,7 @@ const CompleteResponsiveLayout = () => {
         <div className="h-full overflow-y-auto">
           <div className="p-6">
             <div className="mb-6 flex items-center space-x-4">
-              {!isMobile && !isTablet && (
+              {!isMobile && (
                 <Button
                   variant="ghost"
                   size="icon"
