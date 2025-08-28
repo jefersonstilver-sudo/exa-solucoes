@@ -79,7 +79,7 @@ export const useContractStatus = (orderDetails: {
 
       // Verificar se o contrato já iniciou (tem datas definidas E vídeo aprovado OU status ativo)
       const hasVideoApproved = approvedVideosCount > 0;
-      const hasActiveStatus = status === 'video_aprovado';
+      const hasActiveStatus = status === 'video_aprovado' || status === 'ativo';
       const hasStarted = !!(data_inicio && data_fim && (hasVideoApproved || hasActiveStatus));
       newContractData.hasStarted = hasStarted;
 
@@ -117,7 +117,7 @@ export const useContractStatus = (orderDetails: {
         newContractData.isActive = false;
         console.log('❌ [CONTRACT STATUS] Contrato expirado');
       } else {
-        newContractData.isActive = status === 'video_aprovado';
+        newContractData.isActive = status === 'video_aprovado' || status === 'ativo';
         
         // Verificar se está próximo da expiração (7 dias)
         if (daysRemaining <= 7 && daysRemaining > 0) {
