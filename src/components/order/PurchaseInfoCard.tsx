@@ -71,7 +71,7 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
     }
     
     // Status que indicam pagamento confirmado
-    const paidStatuses = ['pago', 'pago_pendente_video', 'video_aprovado'];
+    const paidStatuses = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'];
     
     if (paidStatuses.includes(orderDetails.status) || orderDetails.status.includes('pago')) {
       return { label: 'Pagamento Confirmado', color: 'text-green-600' };
