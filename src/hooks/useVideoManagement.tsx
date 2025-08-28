@@ -328,21 +328,23 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
     console.log('🔄 [HOOK] handleSetBaseVideo iniciado:', { slotId, orderId });
     
     try {
-      // 1) BUSCAR O VÍDEO BASE ATUAL ANTES DA MUDANÇA (DIRETO NA TABELA)
+      // 1) BUSCAR O VÍDEO BASE ATUAL ANTES DA MUDANÇA (DIRETO NA TABELA) COM SLOT
       console.log('🔍 [WEBHOOK] Buscando vídeo base atual diretamente...');
       
       const { data: currentBaseVideo, error: currentBaseError } = await supabase
         .from('pedido_videos')
-        .select('video_id')
+        .select('video_id, slot_position')
         .eq('pedido_id', orderId)
         .eq('is_base_video', true)
         .single();
       
       let oldVideoId: string | undefined = undefined;
+      let oldSlot: number | undefined = undefined;
       
       if (!currentBaseError && currentBaseVideo) {
         oldVideoId = currentBaseVideo.video_id as string;
-        console.log('✅ [WEBHOOK] Vídeo base atual encontrado:', { oldVideoId });
+        oldSlot = currentBaseVideo.slot_position as number;
+        console.log('✅ [WEBHOOK] Vídeo base atual encontrado:', { oldVideoId, oldSlot });
       } else {
         console.warn('⚠️ [WEBHOOK] Nenhum vídeo base atual encontrado:', currentBaseError);
       }
@@ -354,7 +356,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         throw new Error('Falha ao definir vídeo como base');
       }
 
-      // 3) BUSCAR DADOS PARA OS WEBHOOKS APÓS A MUDANÇA
+      // 3) BUSCAR DADOS PARA OS WEBHOOKS APÓS A MUDANÇA COM SLOT
       console.log('🔄 [WEBHOOK] Buscando dados para webhook...');
       const [pedidoResult, newVideoResult] = await Promise.all([
         supabase
@@ -364,7 +366,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
           .single(),
         supabase
           .from('pedido_videos')
-          .select('video_id')
+          .select('video_id, slot_position')
           .eq('id', slotId)
           .single()
       ]);
@@ -374,11 +376,14 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
 
       const buildingIds = (pedidoResult.data?.lista_predios || []) as string[];
       const newVideoId = newVideoResult.data?.video_id as string | undefined;
+      const newSlot = newVideoResult.data?.slot_position as number | undefined;
 
       console.log('📊 [WEBHOOK] Dados coletados:', { 
         buildingIdsCount: buildingIds.length, 
         oldVideoId, 
+        oldSlot,
         newVideoId,
+        newSlot,
         willDeactivate: !!oldVideoId && oldVideoId !== newVideoId,
         willActivate: !!newVideoId
       });
@@ -436,18 +441,22 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         toDeactivateTitle,
         toActivateTitle,
         oldVideoId,
+        oldSlot,
         newVideoId,
+        newSlot,
         oldTitle,
         newTitle,
         forceDeactivate: !!toDeactivateTitle,
         expectedActions: (toDeactivateTitle ? 1 : 0) + (toActivateTitle ? 1 : 0)
       });
 
-      // Enviar webhooks
+      // Enviar webhooks com informação de slot
       toggleForBuildings({
         buildingIds,
         toDeactivateTitle,
-        toActivateTitle
+        toActivateTitle,
+        toDeactivateSlot: oldSlot,
+        toActivateSlot: newSlot
       }).catch(error => {
         console.error('❌ [WEBHOOK] Erro ao enviar webhooks de troca:', error);
       });

@@ -97,26 +97,30 @@ const postToggleForBuilding = async (titulo: string, ativo: boolean, predioId: s
 export const toggleForBuildings = async ({
   buildingIds,
   toDeactivateTitle,
-  toActivateTitle
+  toActivateTitle,
+  toDeactivateSlot,
+  toActivateSlot
 }: {
   buildingIds: string[];
   toDeactivateTitle?: string;
   toActivateTitle?: string;
+  toDeactivateSlot?: number;
+  toActivateSlot?: number;
 }): Promise<void> => {
   if (!buildingIds || buildingIds.length === 0) {
     console.warn('⚠️ [WEBHOOK] Nenhum prédio encontrado para enviar webhooks');
     return;
   }
 
-  const actions: Array<{ predioId: string; titulo: string; ativo: boolean }> = [];
+  const actions: Array<{ predioId: string; titulo: string; ativo: boolean; slot?: number }> = [];
 
   // Montar ações explícitas: desativar o anterior (se existir) e ativar o novo (se existir)
   for (const predioId of buildingIds) {
     if (toDeactivateTitle) {
-      actions.push({ predioId, titulo: toDeactivateTitle, ativo: false });
+      actions.push({ predioId, titulo: toDeactivateTitle, ativo: false, slot: toDeactivateSlot });
     }
     if (toActivateTitle) {
-      actions.push({ predioId, titulo: toActivateTitle, ativo: true });
+      actions.push({ predioId, titulo: toActivateTitle, ativo: true, slot: toActivateSlot });
     }
   }
 
@@ -129,10 +133,11 @@ console.log(`🏢 [WEBHOOK] Preparando envio via Edge Function: ${actions.length
 
   try {
     const payload = {
-      actions: actions.map(({ predioId, titulo, ativo }) => ({
+      actions: actions.map(({ predioId, titulo, ativo, slot }) => ({
         predio_id: predioId,
         titulo,
-        ativo
+        ativo,
+        slot
       }))
     };
 

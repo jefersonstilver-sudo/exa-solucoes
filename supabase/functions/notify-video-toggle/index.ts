@@ -45,6 +45,7 @@ Deno.serve(async (req: Request) => {
           titulo: a?.titulo ?? '',
           ativo: Boolean(a?.ativo),
           predio_id: a?.predio_id ?? a?.predioId ?? a?.building_id ?? null,
+          slot: a?.slot ?? null,
         };
         
         if (payload.ativo) {
