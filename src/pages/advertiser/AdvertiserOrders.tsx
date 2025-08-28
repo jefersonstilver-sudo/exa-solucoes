@@ -102,8 +102,8 @@ const AdvertiserOrders = () => {
     return today >= startDate && today <= endDate;
   };
   const stats = {
-    // Pedidos ativos: pagos, com vídeo aprovado e dentro do período
-    pedidosAtivos: orders.filter(order => order.status === 'video_aprovado' && isWithinActivePeriod(order)).length,
+    // Pedidos ativos: pagos, com vídeo aprovado ou ativo e dentro do período
+    pedidosAtivos: orders.filter(order => (order.status === 'video_aprovado' || order.status === 'ativo') && isWithinActivePeriod(order)).length,
     // Tentativas: compras não finalizadas
     tentativas: attempts.length,
     // Aguardando Vídeo: pedidos pagos mas aguardando envio de vídeo
