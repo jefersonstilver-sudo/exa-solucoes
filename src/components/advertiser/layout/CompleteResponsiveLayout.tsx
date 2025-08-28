@@ -9,7 +9,7 @@ import ResponsiveAdvertiserSidebar from './ResponsiveAdvertiserSidebar';
 const CompleteResponsiveLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const { isMobile, isTablet } = useMobileBreakpoints();
+  const { isMobile, isTablet, isDesktop } = useMobileBreakpoints();
 
   const handleSidebarClose = () => {
     setSidebarOpen(false);
@@ -49,7 +49,7 @@ const CompleteResponsiveLayout = () => {
                   <Menu className="h-5 w-5" />
                 </Button>
               )}
-              {!isMobile && !isTablet && (
+              {isDesktop && (
                 <Button
                   variant="ghost"
                   size="icon"
