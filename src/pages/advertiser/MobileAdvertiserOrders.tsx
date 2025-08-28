@@ -131,7 +131,7 @@ const MobileAdvertiserOrders = () => {
 
   const calculateStats = (ordersList: Order[]) => {
     const pedidosAtivos = ordersList.filter(order => 
-      (order.status === 'video_aprovado' || order.status === 'ativo') &&
+      order.status === 'video_aprovado' &&
       isWithinActivePeriod(order)
     ).length;
     
@@ -172,7 +172,6 @@ const MobileAdvertiserOrders = () => {
           icon: Upload
         };
       case 'video_aprovado':
-      case 'ativo':
         return {
           label: 'EM EXIBIÇÃO',
           color: 'bg-green-100 text-green-800 border-green-200',
