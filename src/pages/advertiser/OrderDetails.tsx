@@ -24,6 +24,7 @@ import { VideoScheduleManager } from '@/components/video-management/VideoSchedul
 import { MigrationFixButton } from '@/components/order/MigrationFixButton';
 import { useVideoScheduleMonitor } from '@/hooks/useVideoScheduleMonitor';
 import { BlockedOrderAlert } from '@/components/order/BlockedOrderAlert';
+import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 
 interface OrderDetails {
   id: string;
@@ -48,6 +49,7 @@ const OrderDetails = () => {
   const { userProfile } = useAuth();
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isMobile, isTablet, isDesktop } = useMobileBreakpoints();
 
   // Hook para verificar status do contrato - usando orderDetails como parâmetro
   const contractStatus = useContractStatus(orderDetails || {
@@ -210,7 +212,9 @@ const OrderDetails = () => {
   if (orderDetails.status === 'bloqueado') {
     return (
       <>
-        <div className="space-y-6">
+        <div className={`container mx-auto px-4 ${
+          isTablet ? 'max-w-4xl' : 'max-w-7xl'
+        } space-y-4 md:space-y-6`}>
           {/* Header */}
           <OrderHeader orderId={orderDetails.id} />
 
@@ -226,7 +230,9 @@ const OrderDetails = () => {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className={`container mx-auto px-4 ${
+        isTablet ? 'max-w-4xl' : 'max-w-7xl'
+      } space-y-4 md:space-y-6`}>
         {/* Header */}
         <OrderHeader orderId={orderDetails.id} />
 
@@ -251,7 +257,6 @@ const OrderDetails = () => {
           hasStarted={contractStatus.hasStarted}
         />
 
-
         {/* Locais Selecionados - Show only if we have building data */}
         {hasLocationData && displayBuildingIds.length > 0 && (
           <SelectedBuildingsSection 
@@ -259,8 +264,24 @@ const OrderDetails = () => {
           />
         )}
 
-        {/* Informações de Compra */}
-        <PurchaseInfoCard orderDetails={orderDetails} />
+        {/* Grid responsivo para informações principais */}
+        <div className={`grid gap-4 md:gap-6 ${
+          isTablet ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-3'
+        }`}>
+          {/* Informações de Compra */}
+          <div className={isTablet ? 'lg:col-span-1' : 'lg:col-span-2'}>
+            <PurchaseInfoCard orderDetails={orderDetails} />
+          </div>
+
+          {/* Resumo do Pedido */}
+          <div className={isTablet ? 'lg:col-span-1' : 'lg:col-span-1'}>
+            <OrderSummaryCard
+              orderDetails={orderDetails}
+              displayPanels={displayPanels}
+              isRecovered={enhancedData?.isRecovered}
+            />
+          </div>
+        </div>
 
         {/* Alertas de Status */}
         <OrderStatusAlerts
@@ -269,16 +290,9 @@ const OrderDetails = () => {
           videosLoadError={videosLoadError}
         />
 
-        {/* Resumo do Pedido */}
-        <OrderSummaryCard
-          orderDetails={orderDetails}
-          displayPanels={displayPanels}
-          isRecovered={enhancedData?.isRecovered}
-        />
-
         {/* Gestão de Vídeos */}
         {contractStatus.isExpired ? (
-          <div className="bg-gray-100 p-6 rounded-lg border-2 border-gray-300">
+          <div className="bg-gray-100 p-4 md:p-6 rounded-lg border-2 border-gray-300">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-500" />
               <h3 className="text-lg font-medium text-gray-700 mb-2">
