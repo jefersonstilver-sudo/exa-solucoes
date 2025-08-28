@@ -1,5 +1,5 @@
 import React from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import MobileAdvertiserOrders from './MobileAdvertiserOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
@@ -22,7 +22,7 @@ const AdvertiserOrders = () => {
     userProfile
   } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
+  const { isMobile } = useMobileBreakpoints();
   const {
     userOrdersAndAttempts,
     loading
