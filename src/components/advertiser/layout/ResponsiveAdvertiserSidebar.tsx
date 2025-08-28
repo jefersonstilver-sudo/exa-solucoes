@@ -8,7 +8,6 @@ interface ResponsiveAdvertiserSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isMobile: boolean;
-  isTablet?: boolean;
   isCollapsed?: boolean;
 }
 
@@ -16,11 +15,10 @@ const ResponsiveAdvertiserSidebar = ({
   isOpen, 
   onClose, 
   isMobile,
-  isTablet = false,
   isCollapsed = false
 }: ResponsiveAdvertiserSidebarProps) => {
-  if (isMobile || isTablet) {
-    // Mobile/Tablet: Drawer overlay
+  if (isMobile) {
+    // Mobile: Drawer overlay
     return (
       <AnimatePresence>
         {isOpen && (
@@ -34,7 +32,7 @@ const ResponsiveAdvertiserSidebar = ({
               onClick={onClose}
             />
 
-            {/* Mobile/Tablet Sidebar */}
+            {/* Mobile Sidebar */}
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
@@ -58,21 +56,16 @@ const ResponsiveAdvertiserSidebar = ({
     );
   }
 
-  // Desktop: Fixed sidebar with collapse support (align with margin logic)
-  if (!isMobile && !isTablet) {
-    return (
-      <motion.div
-        animate={{ width: isCollapsed ? 64 : 320 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="fixed inset-y-0 z-30"
-      >
-        <AdvertiserSidebarContent isCollapsed={isCollapsed} />
-      </motion.div>
-    );
-  }
-
-  // Return null for tablet/mobile when drawer is closed
-  return null;
+  // Desktop: Fixed sidebar with collapse support
+  return (
+    <motion.div
+      animate={{ width: isCollapsed ? 64 : 320 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      className="hidden lg:flex fixed inset-y-0 z-30"
+    >
+      <AdvertiserSidebarContent isCollapsed={isCollapsed} />
+    </motion.div>
+  );
 };
 
 export default ResponsiveAdvertiserSidebar;
