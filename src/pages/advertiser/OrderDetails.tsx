@@ -212,8 +212,8 @@ const OrderDetails = () => {
   if (orderDetails.status === 'bloqueado') {
     return (
       <>
-        <div className={`container mx-auto px-4 ${
-          isTablet ? 'max-w-4xl' : 'max-w-7xl'
+        <div className={`container mx-auto ${
+          isTablet ? 'max-w-2xl px-6' : 'max-w-7xl px-4'
         } space-y-4 md:space-y-6`}>
           {/* Header */}
           <OrderHeader orderId={orderDetails.id} />
@@ -230,8 +230,8 @@ const OrderDetails = () => {
 
   return (
     <>
-      <div className={`container mx-auto px-4 ${
-        isTablet ? 'max-w-4xl' : 'max-w-7xl'
+      <div className={`container mx-auto ${
+        isTablet ? 'max-w-2xl px-6' : 'max-w-7xl px-4'
       } space-y-4 md:space-y-6`}>
         {/* Header */}
         <OrderHeader orderId={orderDetails.id} />
@@ -264,17 +264,15 @@ const OrderDetails = () => {
           />
         )}
 
-        {/* Grid responsivo para informações principais */}
-        <div className={`grid gap-4 md:gap-6 ${
-          isTablet ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-3'
-        }`}>
+        {/* Layout responsivo para informações principais */}
+        <div className={isTablet ? 'space-y-4' : 'grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-3'}>
           {/* Informações de Compra */}
-          <div className={isTablet ? 'lg:col-span-1' : 'lg:col-span-2'}>
+          <div className={isTablet ? 'w-full' : 'lg:col-span-2'}>
             <PurchaseInfoCard orderDetails={orderDetails} />
           </div>
 
           {/* Resumo do Pedido */}
-          <div className={isTablet ? 'lg:col-span-1' : 'lg:col-span-1'}>
+          <div className={isTablet ? 'w-full' : 'lg:col-span-1'}>
             <OrderSummaryCard
               orderDetails={orderDetails}
               displayPanels={displayPanels}
