@@ -200,7 +200,7 @@ const AdvertiserOrders = () => {
                     size="sm"
                     onClick={statusInfo.action.onClick}
                   >
-                    {statusInfo.action.label}
+                    Video em Exibição
                   </Button>
                 )}
                 
