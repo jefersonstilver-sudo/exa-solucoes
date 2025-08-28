@@ -22,7 +22,7 @@ const AdvertiserOrders = () => {
     userProfile
   } = useAuth();
   const navigate = useNavigate();
-  const { isMobile } = useMobileBreakpoints();
+  const { isMobile, isTablet } = useMobileBreakpoints();
   const {
     userOrdersAndAttempts,
     loading
@@ -144,7 +144,7 @@ const AdvertiserOrders = () => {
     };
     return <Card className={cn('hover:shadow-lg transition-all duration-200 border-l-4', item.type === 'attempt' ? 'border-l-orange-500' : 'border-l-indexa-purple')}>
         <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="flex-1 space-y-3">
               <div className="flex items-center space-x-3">
                 <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', item.type === 'attempt' ? 'bg-orange-500/10' : 'bg-indexa-purple/10')}>
@@ -160,7 +160,7 @@ const AdvertiserOrders = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500">Valor Total</p>
                   <p className={cn('font-semibold text-lg', item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900')}>
@@ -187,7 +187,7 @@ const AdvertiserOrders = () => {
               </div>
             </div>
 
-            <div className="flex flex-col lg:items-end space-y-3">
+            <div className="flex flex-col md:items-end space-y-3">
               <Badge className={cn('border flex items-center space-x-1', statusInfo.bgColor)}>
                 <StatusIcon className="h-3 w-3" />
                 <span>{statusInfo.label}</span>
@@ -283,7 +283,7 @@ const AdvertiserOrders = () => {
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -291,7 +291,7 @@ const AdvertiserOrders = () => {
               </div>
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
               <SelectContent>
