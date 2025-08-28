@@ -8,7 +8,6 @@ interface ResponsiveAdvertiserSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isMobile: boolean;
-  isTablet: boolean;
   isCollapsed?: boolean;
 }
 
@@ -16,7 +15,6 @@ const ResponsiveAdvertiserSidebar = ({
   isOpen, 
   onClose, 
   isMobile,
-  isTablet,
   isCollapsed = false
 }: ResponsiveAdvertiserSidebarProps) => {
   if (isMobile) {
@@ -55,15 +53,6 @@ const ResponsiveAdvertiserSidebar = ({
           </>
         )}
       </AnimatePresence>
-    );
-  }
-
-  if (isTablet) {
-    // Tablet: Fixed sidebar always expanded
-    return (
-      <div className="hidden md:flex lg:hidden fixed inset-y-0 z-30 w-80">
-        <AdvertiserSidebarContent />
-      </div>
     );
   }
 
