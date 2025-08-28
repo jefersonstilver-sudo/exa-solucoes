@@ -58,12 +58,12 @@ const ResponsiveAdvertiserSidebar = ({
     );
   }
 
-  // Desktop: Static sidebar with collapse support (always visible)
+  // Desktop: Fixed sidebar with collapse support
   return (
     <motion.div
       animate={{ width: isCollapsed ? 64 : 320 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="hidden lg:flex min-h-screen"
+      className="hidden lg:flex fixed inset-y-0 z-30"
     >
       <AdvertiserSidebarContent isCollapsed={isCollapsed} />
     </motion.div>
