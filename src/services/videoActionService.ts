@@ -66,18 +66,19 @@ export const selectVideoForDisplay = async (
 
     console.log('✅ [VIDEO_ACTION] Vídeo aprovado, usando função corrigida para seleção');
     
-    // Usar a função RPC corrigida que permite troca de seleção
-    const { data, error } = await supabase.rpc('select_video_for_display', {
+    // Usar a função RPC transacional que faz a troca com lock e consistência
+    const { data, error } = await supabase.rpc('set_base_video_enhanced', {
       p_pedido_video_id: slotId
     });
 
     if (error) {
-      console.error('❌ [VIDEO_ACTION] Erro na função RPC:', error);
+      console.error('❌ [VIDEO_ACTION] Erro na função RPC set_base_video_enhanced:', error);
       throw error;
     }
 
-    if (data) {
-      console.log('✅ [VIDEO_ACTION] Vídeo selecionado com sucesso (troca permitida)');
+    const rpcResult = data as any;
+    if (rpcResult?.success === true) {
+      console.log('✅ [VIDEO_ACTION] Vídeo selecionado com sucesso (via set_base_video_enhanced)');
       
       // Buscar nome do novo vídeo selecionado
       const { data: newVideoInfo } = await supabase
@@ -129,7 +130,7 @@ export const selectVideoForDisplay = async (
       toast.success('✅ Vídeo selecionado para exibição!');
       return true;
     } else {
-      console.error('❌ [VIDEO_ACTION] Função RPC retornou falso');
+      console.error('❌ [VIDEO_ACTION] Função RPC retornou falha:', rpcResult);
       toast.error('❌ Erro ao selecionar vídeo');
       return false;
     }

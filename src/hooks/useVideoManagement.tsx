@@ -138,19 +138,11 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
           .single()
       ]);
 
-      // Primeiro, desmarcar todos os outros
-      await supabase
-        .from('pedido_videos')
-        .update({ selected_for_display: false, is_base_video: false })
-        .eq('pedido_id', orderId);
-
-      // Depois marcar o selecionado
-      const { error } = await supabase
-        .from('pedido_videos')
-        .update({ selected_for_display: true, is_base_video: true })
-        .eq('id', slotId);
-
-      if (error) throw error;
+      // Executar via função transacional para garantir consistência
+      const success = await setBaseVideo(slotId);
+      if (!success) {
+        throw new Error('Falha ao definir vídeo como base');
+      }
 
       // Enviar webhooks após sucesso no Supabase
       if (pedidoResult.data?.lista_predios) {
