@@ -288,19 +288,105 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
     console.log('🔄 [HOOK] handleSetBaseVideo iniciado:', { slotId, orderId });
     
     try {
-      // Primeiro altera no banco
-      const success = await setBaseVideo(slotId);
-      if (success) {
-        // Em seguida, envia webhooks
-        await sendVideoWebhooks(slotId, 'set_base_video');
-
-        toast.success('Vídeo definido como principal e selecionado para exibição!');
-        
-        // Recarregar slots para refletir mudanças
-        const slots = await loadVideoSlots(orderId);
-        setVideoSlots(slots);
-        console.log('✅ [HOOK] Vídeo base definido com sucesso');
+      // 1) BUSCAR O VÍDEO ATUAL ANTES DA MUDANÇA
+      const { data: currentVideoData, error: currentVideoError } = await supabase
+        .rpc('get_current_display_video', { p_pedido_id: orderId });
+      
+      if (currentVideoError) {
+        console.warn('⚠️ [WEBHOOK] Falha ao buscar vídeo atual antes da mudança:', currentVideoError);
       }
+      
+      const oldVideoId: string | undefined =
+        Array.isArray(currentVideoData) && currentVideoData[0]?.video_id
+          ? (currentVideoData[0].video_id as string)
+          : undefined;
+
+      console.log('📺 [HOOK] Vídeo atual antes da mudança:', { oldVideoId });
+
+      // 2) EXECUTAR A MUDANÇA NO BANCO
+      const success = await setBaseVideo(slotId);
+      if (!success) {
+        throw new Error('Falha ao definir vídeo como base');
+      }
+
+      // 3) BUSCAR DADOS PARA OS WEBHOOKS APÓS A MUDANÇA
+      const [pedidoResult, newVideoResult] = await Promise.all([
+        supabase
+          .from('pedidos')
+          .select('lista_predios')
+          .eq('id', orderId)
+          .single(),
+        supabase
+          .from('pedido_videos')
+          .select('video_id')
+          .eq('id', slotId)
+          .single()
+      ]);
+
+      if (pedidoResult.error) throw pedidoResult.error;
+      if (newVideoResult.error) throw newVideoResult.error;
+
+      const buildingIds = (pedidoResult.data?.lista_predios || []) as string[];
+      const newVideoId = newVideoResult.data?.video_id as string | undefined;
+
+      console.log('🔄 [HOOK] Dados para webhook:', { 
+        buildingIdsCount: buildingIds.length, 
+        oldVideoId, 
+        newVideoId 
+      });
+
+      // 4) BUSCAR NOMES DOS VÍDEOS EM PARALELO
+      const fetchVideoName = async (videoId?: string) => {
+        if (!videoId) return undefined;
+        const { data, error } = await supabase
+          .from('videos')
+          .select('nome')
+          .eq('id', videoId)
+          .single();
+        if (error) {
+          console.warn('⚠️ [WEBHOOK] Falha ao obter nome do vídeo:', { videoId, error });
+          return undefined;
+        }
+        return data?.nome as string | undefined;
+      };
+
+      const [oldVideoName, newVideoName] = await Promise.all([
+        oldVideoId && oldVideoId !== newVideoId ? fetchVideoName(oldVideoId) : Promise.resolve(undefined),
+        fetchVideoName(newVideoId)
+      ]);
+
+      // 5) NORMALIZAR TÍTULOS E ENVIAR WEBHOOKS EM PARALELO
+      const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
+      const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
+
+      console.log('🚀 [WEBHOOK] Enviando webhooks de troca de vídeo base:', {
+        buildingIdsCount: buildingIds.length,
+        toDeactivateTitle: oldTitle,
+        toActivateTitle: newTitle,
+        orderId,
+        slotId
+      });
+
+      if (buildingIds.length > 0) {
+        // Enviar webhooks: desativar o antigo (se houver e for diferente) + ativar o novo
+        toggleForBuildings({
+          buildingIds,
+          toDeactivateTitle: oldTitle && oldTitle !== newTitle ? oldTitle : undefined,
+          toActivateTitle: newTitle
+        }).catch(error => {
+          console.error('❌ [WEBHOOK] Erro ao enviar webhooks de troca:', error);
+        });
+      } else {
+        console.warn('⚠️ [WEBHOOK] Lista de prédios vazia, pulando webhooks');
+      }
+
+      toast.success('Vídeo definido como principal e selecionado para exibição!');
+      
+      // 6) RECARREGAR SLOTS PARA REFLETIR MUDANÇAS
+      const slots = await loadVideoSlots(orderId);
+      setVideoSlots(slots);
+      console.log('✅ [HOOK] Vídeo base definido com sucesso');
+
     } catch (error) {
       console.error('Erro ao definir vídeo base:', error);
       toast.error('Erro ao definir vídeo base');
