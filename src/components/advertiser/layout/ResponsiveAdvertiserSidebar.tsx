@@ -58,16 +58,21 @@ const ResponsiveAdvertiserSidebar = ({
     );
   }
 
-  // Desktop: Fixed sidebar with collapse support
-  return (
-    <motion.div
-      animate={{ width: isCollapsed ? 64 : 320 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="hidden lg:flex fixed inset-y-0 z-30"
-    >
-      <AdvertiserSidebarContent isCollapsed={isCollapsed} />
-    </motion.div>
-  );
+  // Desktop: Fixed sidebar with collapse support (align with margin logic)
+  if (!isMobile && !isTablet) {
+    return (
+      <motion.div
+        animate={{ width: isCollapsed ? 64 : 320 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="fixed inset-y-0 z-30"
+      >
+        <AdvertiserSidebarContent isCollapsed={isCollapsed} />
+      </motion.div>
+    );
+  }
+
+  // Return null for tablet/mobile when drawer is closed
+  return null;
 };
 
 export default ResponsiveAdvertiserSidebar;
