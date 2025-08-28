@@ -39,16 +39,14 @@ const CompleteResponsiveLayout = () => {
         <div className="h-full overflow-y-auto">
           <div className="p-6">
             <div className="mb-6 flex items-center space-x-4">
-              {(isMobile || isTablet || !isMobile) && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleMenuClick}
-                  className="bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleMenuClick}
+                className="bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
               <h1 className="text-2xl font-bold text-gray-900">Portal do Anunciante</h1>
             </div>
             <Outlet />
