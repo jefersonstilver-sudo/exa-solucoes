@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
+import { useIsMobile } from '@/hooks/use-mobile';
 import MobileAdvertiserOrders from './MobileAdvertiserOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
@@ -22,7 +22,7 @@ const AdvertiserOrders = () => {
     userProfile
   } = useAuth();
   const navigate = useNavigate();
-  const { isMobile, isTablet } = useMobileBreakpoints();
+  const isMobile = useIsMobile();
   const {
     userOrdersAndAttempts,
     loading
@@ -160,7 +160,7 @@ const AdvertiserOrders = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500">Valor Total</p>
                   <p className={cn('font-semibold text-lg', item.type === 'attempt' ? 'text-orange-600' : 'text-gray-900')}>
@@ -220,7 +220,7 @@ const AdvertiserOrders = () => {
         <p className="ml-2 text-lg">Carregando seus pedidos...</p>
       </div>;
   }
-  return <div className={`mx-auto ${isTablet ? 'max-w-5xl px-6' : 'max-w-none px-0'} space-y-6`}>
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
