@@ -1613,6 +1613,48 @@ export type Database = {
         }
         Relationships: []
       }
+      system_activity_feed: {
+        Row: {
+          action: string
+          activity_type: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: string | null
+          severity: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          activity_type: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          activity_type?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       tentativas_compra: {
         Row: {
           created_at: string | null
@@ -2365,6 +2407,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_recent_activities: {
+        Args: { p_limit?: number }
+        Returns: {
+          action: string
+          activity_type: string
+          created_at: string
+          details: Json
+          entity_id: string
+          entity_type: string
+          id: string
+          severity: string
+          user_email: string
+          user_id: string
+          user_name: string
+        }[]
+      }
       get_recently_approved_videos: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -2474,6 +2532,20 @@ export type Database = {
           p_pedido_id: string
           p_status_anterior: string
           p_status_novo: string
+        }
+        Returns: string
+      }
+      log_system_activity: {
+        Args: {
+          p_action?: string
+          p_activity_type?: string
+          p_details?: Json
+          p_entity_id?: string
+          p_entity_type?: string
+          p_ip_address?: string
+          p_severity?: string
+          p_user_agent?: string
+          p_user_id?: string
         }
         Returns: string
       }
