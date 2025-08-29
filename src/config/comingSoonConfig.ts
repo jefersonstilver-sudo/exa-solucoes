@@ -32,8 +32,8 @@ export const hasLaunchTimePassed = () => {
 };
 
 // When true, the app shows the ComingSoonPage for all routes
-// Automatically becomes false after launch time
-export const MAINTENANCE_MODE = !hasLaunchTimePassed();
+// Disabled manually to open the site
+export const MAINTENANCE_MODE = false;
 
 // Controls visibility of the developer access section on ComingSoonPage
 export const SHOW_DEV_ACCESS = true;
