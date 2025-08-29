@@ -8,7 +8,7 @@ import { SimpleCartProvider } from '@/contexts/SimpleCartContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import MinimalLoader from '@/components/ui/MinimalLoader';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
-import { hasLaunchTimePassed } from '@/config/comingSoonConfig';
+import { hasLaunchTimePassed, MAINTENANCE_MODE } from '@/config/comingSoonConfig';
 import ComingSoonPage from '@/pages/ComingSoonPage';
 import { useState, useEffect } from 'react';
 
@@ -70,10 +70,15 @@ console.log('✅ QueryClient initialized');
 
 // Main App content wrapper with Coming Soon protection
 const AppContent = () => {
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(!hasLaunchTimePassed());
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(MAINTENANCE_MODE && !hasLaunchTimePassed());
   const isDevSession = typeof window !== 'undefined' && sessionStorage.getItem('indexa_dev_session') === 'true';
 
   useEffect(() => {
+    // Only run the timer if MAINTENANCE_MODE is enabled
+    if (!MAINTENANCE_MODE) {
+      return;
+    }
+
     // Check every second if launch time has passed
     const interval = setInterval(() => {
       const launchPassed = hasLaunchTimePassed();
