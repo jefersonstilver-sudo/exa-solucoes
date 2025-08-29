@@ -28,7 +28,8 @@ export const LAUNCH_DATE_ISO = LAUNCH_DATE.toISOString();
 
 // Function to check if launch time has passed
 export const hasLaunchTimePassed = () => {
-  return new Date() >= LAUNCH_DATE;
+  // Force launch time to be passed for immediate access
+  return true;
 };
 
 // When true, the app shows the ComingSoonPage for all routes
