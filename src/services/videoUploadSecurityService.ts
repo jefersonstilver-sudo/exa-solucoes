@@ -27,7 +27,7 @@ export const validateVideoUploadPermission = async (orderId: string): Promise<Se
       };
     }
 
-    const allowedStatuses = ['pago', 'pago_pendente_video', 'video_aprovado'];
+    const allowedStatuses = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'];
     const canUpload = allowedStatuses.includes(order.status);
 
     console.log('🔍 [VideoSecurity] Resultado da validação:', {
