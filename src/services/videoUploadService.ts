@@ -42,11 +42,19 @@ export const uploadVideo = async (
       console.log('🔍 [VideoUpload] Validando permissões (cache miss)...');
       securityValidation = await validateVideoUploadPermission(orderId);
       
-      // Cache por 5 minutos se aprovado, 1 minuto se negado
-      const cacheTtl = securityValidation?.canUpload ? 5 * 60 * 1000 : 60 * 1000;
+      // Cache por 5 minutos se aprovado, 10 segundos se negado (evitar negações persistentes)
+      const cacheTtl = securityValidation?.canUpload ? 5 * 60 * 1000 : 10 * 1000;
       uploadCache.set(securityCacheKey, securityValidation, cacheTtl);
     } else {
       console.log('⚡ [VideoUpload] Validação de segurança (cache hit)');
+      // Revalida imediatamente se o cache for uma negação para evitar falsos negativos
+      if (securityValidation && securityValidation.canUpload === false) {
+        console.log('♻️ [VideoUpload] Cache negativo detectado - revalidando permissão...');
+        const freshValidation = await validateVideoUploadPermission(orderId);
+        const cacheTtl = freshValidation?.canUpload ? 5 * 60 * 1000 : 10 * 1000;
+        uploadCache.set(securityCacheKey, freshValidation, cacheTtl);
+        securityValidation = freshValidation;
+      }
     }
     
     if (!securityValidation?.canUpload) {
@@ -404,6 +412,13 @@ export const uploadVideo = async (
     uploadSession.complete();
     console.log('🎉 Upload completo com sucesso!');
     toast.success(`Vídeo "${finalVideoName}" ${scheduleRules?.length ? 'e agendamento' : ''} enviado com sucesso!`);
+    // Invalida caches relacionados ao pedido para evitar decisões antigas
+    try {
+      uploadCache.invalidateOrder(orderId);
+      console.log('🧠 [Cache] Cache de segurança invalidado para o pedido:', orderId);
+    } catch (e) {
+      console.warn('⚠️ [Cache] Falha ao invalidar cache pós-upload:', e);
+    }
     return true;
 
   } catch (error) {
