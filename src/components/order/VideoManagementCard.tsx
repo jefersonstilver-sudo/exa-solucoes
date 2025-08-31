@@ -76,8 +76,13 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
               Gestão de Vídeos
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="h-8 px-3 text-xs font-medium bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 hover:bg-primary/10 text-primary" onClick={() => setShowTutorial(true)}>
-                <GraduationCap className="h-3.5 w-3.5 mr-1.5" />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-9 px-4 text-sm font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 text-blue-700 hover:text-blue-800 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105" 
+                onClick={() => setShowTutorial(true)}
+              >
+                <GraduationCap className="h-4 w-4 mr-2" />
                 Tutorial
               </Button>
               <Collapsible open={showHelp} onOpenChange={setShowHelp}>
