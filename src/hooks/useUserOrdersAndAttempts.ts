@@ -54,7 +54,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
       // Buscar pedidos completos do usuário primeiro (prioridade)
       const { data: orders, error: ordersError } = await supabase
         .from('pedidos')
-        .select('*')
+        .select('*, nome_pedido')
         .eq('client_id', userId)
         .order('created_at', { ascending: false });
 
@@ -120,7 +120,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         data_inicio: order.data_inicio,
         data_fim: order.data_fim,
         client_id: order.client_id,
-        nome_pedido: (order as any).nome_pedido,
+        nome_pedido: order.nome_pedido,
         type: 'order' as const,
         videos: videosData[order.id] || []
       }));

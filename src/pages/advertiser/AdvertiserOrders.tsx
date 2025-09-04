@@ -114,7 +114,7 @@ const AdvertiserOrders = () => {
 
   // Filtrar itens
   const filteredItems = userOrdersAndAttempts.filter(item => {
-    const matchesSearch = (item.type === 'order' && (item as any).nome_pedido && (item as any).nome_pedido.toLowerCase().includes(searchTerm.toLowerCase())) || 
+    const matchesSearch = (item.type === 'order' && item.nome_pedido && item.nome_pedido.toLowerCase().includes(searchTerm.toLowerCase())) || 
                          item.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          item.valor_total.toString().includes(searchTerm);
     const matchesStatus = statusFilter === 'todos' || item.type === 'order' && item.status === statusFilter || item.type === 'attempt' && statusFilter === 'tentativa';
@@ -154,14 +154,14 @@ const AdvertiserOrders = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">
-                    {item.type === 'order' && (item as any).nome_pedido 
-                      ? (item as any).nome_pedido
+                    {item.type === 'order' && item.nome_pedido 
+                      ? `${item.nome_pedido} • #${item.id.substring(0, 8)}`
                       : `${item.type === 'attempt' ? 'Tentativa' : 'Pedido'} #${item.id.substring(0, 8)}`
                     }
                   </h3>
                   <p className="text-sm text-gray-500">
                     Criado em {formatDate(item.created_at)}
-                    {item.type === 'order' && (item as any).nome_pedido && (
+                    {item.type === 'order' && item.nome_pedido && (
                       <span className="ml-2 text-xs text-indexa-purple">• Nome personalizado</span>
                     )}
                   </p>

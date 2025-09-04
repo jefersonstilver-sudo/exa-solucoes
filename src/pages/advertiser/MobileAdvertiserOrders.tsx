@@ -105,7 +105,7 @@ const MobileAdvertiserOrders = () => {
 
       const { data, error } = await supabase
         .from('pedidos')
-        .select('*')
+        .select('*, nome_pedido')
         .eq('client_id', userProfile.id)
         .order('created_at', { ascending: false });
 
@@ -156,7 +156,8 @@ const MobileAdvertiserOrders = () => {
     if (searchTerm) {
       filtered = filtered.filter(order =>
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.valor_total.toString().includes(searchTerm)
+        order.valor_total.toString().includes(searchTerm) ||
+        (order.nome_pedido && order.nome_pedido.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -370,9 +371,9 @@ const MobileAdvertiserOrders = () => {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <h3 className="font-semibold text-gray-900 text-base mb-1">
-                                {(order as any).nome_pedido || `Pedido #${order.id.substring(0, 8)}`}
+                                {order.nome_pedido ? `${order.nome_pedido} • #${order.id.substring(0, 8)}` : `Pedido #${order.id.substring(0, 8)}`}
                               </h3>
-                              {(order as any).nome_pedido && (
+                              {order.nome_pedido && (
                                 <p className="text-xs text-indexa-purple mb-1">Nome personalizado</p>
                               )}
                               <Badge className={`${statusConfig.color} border flex items-center space-x-1 w-fit`}>
