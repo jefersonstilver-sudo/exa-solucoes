@@ -27,15 +27,7 @@ const BuildingCardMetrics: React.FC<BuildingCardMetricsProps> = ({
         </p>
       </div>
       
-      <div className="bg-green-50 p-3 rounded-lg">
-        <div className="flex items-center mb-1">
-          <Eye className="h-4 w-4 text-green-600 mr-1" />
-          <span className="text-xs text-green-600 font-medium">Views/mês</span>
-        </div>
-        <p className="text-lg font-bold text-green-900">
-          {formatNumber(building.visualizacoes_mes)}
-        </p>
-      </div>
+      
 
       
     </div>;
