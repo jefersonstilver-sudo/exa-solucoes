@@ -24,6 +24,7 @@ import { VideoScheduleManager } from '@/components/video-management/VideoSchedul
 import { MigrationFixButton } from '@/components/order/MigrationFixButton';
 import { useVideoScheduleMonitor } from '@/hooks/useVideoScheduleMonitor';
 import { BlockedOrderAlert } from '@/components/order/BlockedOrderAlert';
+import { OrderNameEdit } from '@/components/order/OrderNameEdit';
 
 interface OrderDetails {
   id: string;
@@ -40,6 +41,7 @@ interface OrderDetails {
   blocked_reason?: string;
   blocked_at?: string;
   cupom_id?: string;
+  nome_pedido?: string;
 }
 
 const OrderDetails = () => {
@@ -229,6 +231,15 @@ const OrderDetails = () => {
       <div className="space-y-6">
         {/* Header */}
         <OrderHeader orderId={orderDetails.id} />
+
+        {/* Nome Personalizado do Pedido */}
+        <OrderNameEdit 
+          orderId={orderDetails.id}
+          currentName={orderDetails.nome_pedido}
+          onNameUpdate={(newName) => {
+            setOrderDetails(prev => prev ? { ...prev, nome_pedido: newName } : null);
+          }}
+        />
 
         {/* Migration Fix Button - Show if no location data */}
         {!hasLocationData && (

@@ -152,10 +152,16 @@ const AdvertiserOrders = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">
-                    {item.type === 'attempt' ? 'Tentativa' : 'Pedido'} #{item.id.substring(0, 8)}
+                    {item.type === 'order' && item.nome_pedido 
+                      ? item.nome_pedido
+                      : `${item.type === 'attempt' ? 'Tentativa' : 'Pedido'} #${item.id.substring(0, 8)}`
+                    }
                   </h3>
                   <p className="text-sm text-gray-500">
                     Criado em {formatDate(item.created_at)}
+                    {item.type === 'order' && item.nome_pedido && (
+                      <span className="ml-2 text-xs text-indexa-purple">• Nome personalizado</span>
+                    )}
                   </p>
                 </div>
               </div>

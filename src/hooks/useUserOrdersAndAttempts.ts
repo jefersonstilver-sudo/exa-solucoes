@@ -24,6 +24,7 @@ export interface UserCompleteOrder {
   data_inicio?: string;
   data_fim?: string;
   client_id: string;
+  nome_pedido?: string;
   type: 'order';
   videos?: {
     id: string;
@@ -119,6 +120,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         data_inicio: order.data_inicio,
         data_fim: order.data_fim,
         client_id: order.client_id,
+        nome_pedido: (order as any).nome_pedido,
         type: 'order' as const,
         videos: videosData[order.id] || []
       }));
