@@ -2653,8 +2653,8 @@ export type Database = {
       set_pedido_nome: {
         Args: { p_nome: string; p_pedido_id: string }
         Returns: {
-          id: string
           nome_pedido: string
+          pedido_id: string
         }[]
       }
       submit_lead_produtora: {
