@@ -30,21 +30,41 @@ export const OrderNameEdit: React.FC<OrderNameEditProps> = ({
       setLoading(true);
       const trimmed = name.trim();
 
+      console.log('Salvando nome do pedido:', { orderId, trimmed });
+
       // Usar função segura no banco para atualizar apenas o nome do pedido
       const { data, error } = await supabase.rpc('set_pedido_nome', {
         p_pedido_id: orderId,
         p_nome: trimmed,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro da função set_pedido_nome:', error);
+        throw error;
+      }
+
+      console.log('Resposta da função:', data);
 
       const updatedName = Array.isArray(data) && data.length > 0 ? (data[0]?.nome_pedido ?? null) : trimmed || null;
       toast.success('Nome do pedido atualizado com sucesso!');
       onNameUpdate?.(updatedName || '');
       setIsEditing(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao atualizar nome do pedido:', error);
-      toast.error('Erro ao salvar nome do pedido');
+      
+      // Mostrar erro mais específico
+      let errorMessage = 'Erro ao salvar nome do pedido';
+      if (error?.message) {
+        if (error.message.includes('NOT_AUTHENTICATED')) {
+          errorMessage = 'Usuário não autenticado';
+        } else if (error.message.includes('ACCESS_DENIED')) {
+          errorMessage = 'Acesso negado a este pedido';
+        } else {
+          errorMessage = `Erro: ${error.message}`;
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
