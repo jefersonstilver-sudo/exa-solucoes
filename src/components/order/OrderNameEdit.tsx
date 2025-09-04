@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,19 +21,26 @@ export const OrderNameEdit: React.FC<OrderNameEditProps> = ({
   const [name, setName] = useState(currentName || '');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    setName(currentName || '');
+  }, [currentName]);
+
   const handleSave = async () => {
     try {
       setLoading(true);
-      
-      const { error } = await supabase
-        .from('pedidos')
-        .update({ nome_pedido: name.trim() || null } as any)
-        .eq('id', orderId);
+      const trimmed = name.trim();
+
+      // Usar função segura no banco para atualizar apenas o nome do pedido
+      const { data, error } = await supabase.rpc('set_pedido_nome', {
+        p_pedido_id: orderId,
+        p_nome: trimmed,
+      });
 
       if (error) throw error;
 
+      const updatedName = Array.isArray(data) && data.length > 0 ? (data[0]?.nome_pedido ?? null) : trimmed || null;
       toast.success('Nome do pedido atualizado com sucesso!');
-      onNameUpdate?.(name.trim());
+      onNameUpdate?.(updatedName || '');
       setIsEditing(false);
     } catch (error) {
       console.error('Erro ao atualizar nome do pedido:', error);

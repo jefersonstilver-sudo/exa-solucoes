@@ -1421,15 +1421,18 @@ export type Database = {
           client_id: string
           compliance_data: Json | null
           created_at: string | null
+          created_by_admin: string | null
           cupom_id: string | null
           data_fim: string | null
           data_inicio: string | null
           email: string | null
           id: string
+          is_test_order: boolean | null
           lista_paineis: string[] | null
           lista_predios: string[] | null
           log_pagamento: Json | null
           mercadopago_transaction_id: string | null
+          nome_pedido: string | null
           plano_meses: number
           price_sync_verified: boolean | null
           source_tentativa_id: string | null
@@ -1445,15 +1448,18 @@ export type Database = {
           client_id: string
           compliance_data?: Json | null
           created_at?: string | null
+          created_by_admin?: string | null
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
           email?: string | null
           id?: string
+          is_test_order?: boolean | null
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
           mercadopago_transaction_id?: string | null
+          nome_pedido?: string | null
           plano_meses?: number
           price_sync_verified?: boolean | null
           source_tentativa_id?: string | null
@@ -1469,15 +1475,18 @@ export type Database = {
           client_id?: string
           compliance_data?: Json | null
           created_at?: string | null
+          created_by_admin?: string | null
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
           email?: string | null
           id?: string
+          is_test_order?: boolean | null
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
           mercadopago_transaction_id?: string | null
+          nome_pedido?: string | null
           plano_meses?: number
           price_sync_verified?: boolean | null
           source_tentativa_id?: string | null
@@ -2640,6 +2649,13 @@ export type Database = {
       set_base_video_enhanced: {
         Args: { p_pedido_video_id: string }
         Returns: Json
+      }
+      set_pedido_nome: {
+        Args: { p_nome: string; p_pedido_id: string }
+        Returns: {
+          id: string
+          nome_pedido: string
+        }[]
       }
       submit_lead_produtora: {
         Args: {
