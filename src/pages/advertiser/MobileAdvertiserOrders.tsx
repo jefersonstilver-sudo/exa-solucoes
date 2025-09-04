@@ -370,9 +370,9 @@ const MobileAdvertiserOrders = () => {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <h3 className="font-semibold text-gray-900 text-base mb-1">
-                                {order.nome_pedido || `Pedido #${order.id.substring(0, 8)}`}
+                                {(order as any).nome_pedido || `Pedido #${order.id.substring(0, 8)}`}
                               </h3>
-                              {order.nome_pedido && (
+                              {(order as any).nome_pedido && (
                                 <p className="text-xs text-indexa-purple mb-1">Nome personalizado</p>
                               )}
                               <Badge className={`${statusConfig.color} border flex items-center space-x-1 w-fit`}>
