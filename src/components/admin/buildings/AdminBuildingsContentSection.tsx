@@ -13,6 +13,7 @@ interface AdminBuildingsContentSectionProps {
   onEdit: (building: any) => void;
   onImageManager: (building: any) => void;
   onDelete: (building: any) => void;
+  onViewPlaylist?: (building: any) => void;
 }
 
 const AdminBuildingsContentSection: React.FC<AdminBuildingsContentSectionProps> = ({
@@ -22,7 +23,8 @@ const AdminBuildingsContentSection: React.FC<AdminBuildingsContentSectionProps> 
   onView,
   onEdit,
   onImageManager,
-  onDelete
+  onDelete,
+  onViewPlaylist
 }) => {
   const filteredBuildings = buildings.filter(building =>
     building.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -63,6 +65,7 @@ const AdminBuildingsContentSection: React.FC<AdminBuildingsContentSectionProps> 
                 onEdit={onEdit}
                 onImageManager={onImageManager}
                 onDelete={onDelete}
+                onViewPlaylist={onViewPlaylist}
                 videoCount={videoCounts[building.id] ?? 0}
               />
             ))

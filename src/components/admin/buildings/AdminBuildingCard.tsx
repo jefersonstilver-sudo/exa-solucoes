@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video } from 'lucide-react';
+import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 interface AdminBuildingCardProps {
   building: any;
@@ -11,6 +11,7 @@ interface AdminBuildingCardProps {
   onImageManager: (building: any) => void;
   onDelete: (building: any) => void;
   onViewCampaigns?: (building: any) => void;
+  onViewPlaylist?: (building: any) => void;
   videoCount?: number;
 }
 const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
@@ -20,6 +21,7 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
   onImageManager,
   onDelete,
   onViewCampaigns,
+  onViewPlaylist,
   videoCount
 }) => {
   console.log('🏢 [ADMIN BUILDING CARD] Renderizando prédio:', building.nome, 'Status:', building.status);
@@ -86,10 +88,23 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                   <Image className="h-8 w-8" />
                 </div>}
             </div>
-            {typeof videoCount === 'number' && <div className="mt-2 flex items-center text-sm text-gray-700">
-                <Video className="h-4 w-4 mr-1 text-green-600" />
-                <span>Em exibição: {videoCount}</span>
-              </div>}
+            {typeof videoCount === 'number' && (
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center text-sm text-gray-700">
+                  <Video className="h-4 w-4 mr-1 text-green-600" />
+                  <span>Em exibição: {videoCount}</span>
+                </div>
+                {videoCount > 0 && onViewPlaylist && (
+                  <button
+                    onClick={() => onViewPlaylist(building)}
+                    className="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs bg-green-50 hover:bg-green-100 text-green-700 rounded border border-green-200 transition-colors"
+                  >
+                    <Play className="h-3 w-3" />
+                    Ver Playlist
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           
           {/* Info Section */}

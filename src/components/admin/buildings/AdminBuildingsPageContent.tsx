@@ -23,6 +23,7 @@ interface AdminBuildingsPageContentProps {
   onEdit: (building: any) => void;
   onImageManager: (building: any) => void;
   onDelete: (building: any) => void;
+  onViewPlaylist?: (building: any) => void;
 }
 
 const AdminBuildingsPageContent: React.FC<AdminBuildingsPageContentProps> = ({
@@ -39,7 +40,8 @@ const AdminBuildingsPageContent: React.FC<AdminBuildingsPageContentProps> = ({
   onView,
   onEdit,
   onImageManager,
-  onDelete
+  onDelete,
+  onViewPlaylist
 }) => {
   const { userProfile } = useAuth();
 
@@ -75,6 +77,7 @@ const AdminBuildingsPageContent: React.FC<AdminBuildingsPageContentProps> = ({
         onEdit={onEdit}
         onImageManager={onImageManager}
         onDelete={onDelete}
+        onViewPlaylist={onViewPlaylist}
       />
 
       <BuildingFormDialog
