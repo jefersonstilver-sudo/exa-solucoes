@@ -110,6 +110,9 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       
       console.log('✅ [BUILDING STORE] Estado atualizado com sucesso');
       
+      // Reaplicar filtros/ordenação (inclui distância)
+      get().applyFilters();
+      
     } catch (error: any) {
       console.error('❌ [BUILDING STORE] Erro ao buscar prédios:', error);
       set({ 

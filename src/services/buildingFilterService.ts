@@ -1,5 +1,6 @@
 import { BuildingStore } from '@/services/buildingStoreService';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
+import { calculateDistance, getEffectiveBuildingCoords } from '@/services/distanceCalculation';
 
 export const filterBuildings = (buildings: BuildingStore[], filters: BuildingFilters): BuildingStore[] => {
   console.log('🔍 [FILTER] === INICIANDO FILTROS ===');
@@ -123,10 +124,15 @@ export const sortBuildings = (
   return [...buildings].sort((a, b) => {
     switch (sortOption) {
       case 'distance':
-        if (selectedLocation && 'distance' in a && 'distance' in b) {
-          return (a as any).distance - (b as any).distance;
-        }
-        return 0;
+        if (!selectedLocation) return 0;
+        const coordsA = getEffectiveBuildingCoords(a as any);
+        const coordsB = getEffectiveBuildingCoords(b as any);
+        if (!coordsA && !coordsB) return 0;
+        if (!coordsA) return 1;
+        if (!coordsB) return -1;
+        const distA = calculateDistance(selectedLocation, coordsA);
+        const distB = calculateDistance(selectedLocation, coordsB);
+        return distA - distB;
       
       case 'price-asc':
         const priceA = a.preco_base || 280;

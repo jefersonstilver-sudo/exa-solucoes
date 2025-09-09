@@ -1,6 +1,7 @@
 
 import { filterBuildings, sortBuildings } from '@/services/buildingFilterService';
 import { defaultFilters } from './defaultFilters';
+import { calculateDistance, getEffectiveBuildingCoords } from '@/services/distanceCalculation';
 
 export const createFilterActions = (set: any, get: any) => ({
   applyFilters: () => {
@@ -22,25 +23,14 @@ export const createFilterActions = (set: any, get: any) => ({
 
     // Aplicar filtro de distância quando houver localização selecionada
     if (selectedLocation && typeof selectedLocation.lat === 'number' && typeof selectedLocation.lng === 'number') {
-      const deg2rad = (deg: number) => deg * (Math.PI / 180);
-      const distanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371; // km
-        const dLat = deg2rad(lat2 - lat1);
-        const dLon = deg2rad(lon2 - lon1);
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-          Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-      };
-
-      const radiusKm = (filters.radius || 20000) / 1000;
+      const radiusMeters = (filters.radius || 20000);
       result = result.filter((building: any) => {
-        if (typeof building.latitude !== 'number' || typeof building.longitude !== 'number') return false;
-        const d = distanceKm(selectedLocation.lat, selectedLocation.lng, building.latitude, building.longitude);
-        return d <= radiusKm;
+        const coords = getEffectiveBuildingCoords(building);
+        if (!coords) return false;
+        const d = calculateDistance(selectedLocation, coords);
+        return d <= radiusMeters;
       });
-      console.log('📏 [BUILDING STORE] Após filtro de distância (<=', radiusKm, 'km):', result.length);
+      console.log('📏 [BUILDING STORE] Após filtro de distância (<=', radiusMeters, 'm):', result.length);
     } else {
       console.log('ℹ️ [BUILDING STORE] Sem localização selecionada - filtro de distância não aplicado');
     }

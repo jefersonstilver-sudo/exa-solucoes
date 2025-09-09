@@ -41,29 +41,51 @@ export function formatDistance(distanceInMeters: number): string {
 }
 
 /**
- * Calculate distance from business location to a building
- * @param businessLocation Business coordinates
- * @param building Building object with latitude/longitude
- * @returns Formatted distance string or null if coordinates missing
+ * Safely pick and validate effective building coordinates
+ */
+export function getEffectiveBuildingCoords(
+  building: { latitude?: number; longitude?: number; manual_latitude?: number; manual_longitude?: number }
+): Coordinates | null {
+  const pick = (v: unknown) => (typeof v === 'number' ? v : undefined);
+  const lat = pick(building.manual_latitude) ?? pick(building.latitude);
+  const lng = pick(building.manual_longitude) ?? pick(building.longitude);
+
+  if (!Number.isFinite(lat as number) || !Number.isFinite(lng as number)) return null;
+  const latNum = lat as number;
+  const lngNum = lng as number;
+
+  // Valid geographic ranges and avoid (0,0) placeholder
+  if (latNum < -90 || latNum > 90) return null;
+  if (lngNum < -180 || lngNum > 180) return null;
+  if (latNum === 0 && lngNum === 0) return null;
+
+  return { lat: latNum, lng: lngNum };
+}
+
+/**
+ * Calculate distance from business location to a building and format it
  */
 export function calculateDistanceToBuilding(
   businessLocation: Coordinates,
   building: { latitude?: number; longitude?: number; manual_latitude?: number; manual_longitude?: number }
 ): string | null {
-  // Priority: manual coordinates > automatic coordinates
-  const buildingLat = building.manual_latitude || building.latitude;
-  const buildingLng = building.manual_longitude || building.longitude;
-  
-  if (!buildingLat || !buildingLng) {
-    return null;
-  }
+  const coords = getEffectiveBuildingCoords(building);
+  if (!coords) return null;
 
-  const distance = calculateDistance(
-    businessLocation,
-    { lat: buildingLat, lng: buildingLng }
-  );
-
+  const distance = calculateDistance(businessLocation, coords);
   return formatDistance(distance);
+}
+
+/**
+ * Get numeric distance in meters from business location to a building
+ */
+export function getNumericDistanceToBuilding(
+  businessLocation: Coordinates,
+  building: { latitude?: number; longitude?: number; manual_latitude?: number; manual_longitude?: number }
+): number | null {
+  const coords = getEffectiveBuildingCoords(building);
+  if (!coords) return null;
+  return calculateDistance(businessLocation, coords);
 }
 
 /**
@@ -96,15 +118,7 @@ function getDistanceValue(
   building: { latitude?: number; longitude?: number; manual_latitude?: number; manual_longitude?: number },
   businessLocation: Coordinates
 ): number | null {
-  const buildingLat = building.manual_latitude || building.latitude;
-  const buildingLng = building.manual_longitude || building.longitude;
-  
-  if (!buildingLat || !buildingLng) {
-    return null;
-  }
-
-  return calculateDistance(
-    businessLocation,
-    { lat: buildingLat, lng: buildingLng }
-  );
+  const coords = getEffectiveBuildingCoords(building);
+  if (!coords) return null;
+  return calculateDistance(businessLocation, coords);
 }
