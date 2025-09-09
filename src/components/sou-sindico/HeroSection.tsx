@@ -74,7 +74,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
         </div>
 
         <div className={`flex justify-center lg:justify-end transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-          <div className="relative max-w-xs mx-auto transform -translate-y-8 mb-16">
+          <div className="relative max-w-xs mx-auto transform -translate-y-4 mb-16">
             <div className="relative bg-gray-800 rounded-[2.8rem] p-3 shadow-2xl">
               <div className="bg-black rounded-[2.3rem] overflow-hidden aspect-[9/19.5] relative">
                 <div className="h-8 bg-black relative flex items-center justify-center">
