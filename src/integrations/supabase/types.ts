@@ -2245,6 +2245,7 @@ export type Database = {
           longitude: number
           nome: string
           preco_base: number
+          publico_estimado: number
           quantidade_telas: number
           status: string
           venue_type: string

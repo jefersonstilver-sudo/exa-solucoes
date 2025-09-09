@@ -15,7 +15,7 @@ const BuildingCardHeader: React.FC<BuildingCardHeaderProps> = ({ building }) => 
       </h3>
       <div className="flex items-center text-gray-600 mb-2">
         <MapPin className="h-4 w-4 mr-1" />
-        <span className="text-sm">{building.bairro}</span>
+        <span className="text-sm">{building.bairro || 'Bairro não informado'}</span>
       </div>
       <p className="text-gray-600 text-xs">
         {building.endereco}

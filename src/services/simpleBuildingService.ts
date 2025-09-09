@@ -76,7 +76,7 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
       status: building.status,
       latitude: Number(building.latitude) || 0, // Now available for map functionality
       longitude: Number(building.longitude) || 0, // Now available for map functionality
-      publico_estimado: 0, // Not exposed publicly for security
+      publico_estimado: building.publico_estimado || 0, // Now available from database
       visualizacoes_mes: 0, // Not exposed publicly for security
       preco_base: building.preco_base || 280,
       imagem_principal: building.imagem_principal || '',

@@ -78,7 +78,7 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
     const buildingStores: BuildingStore[] = buildings.map(building => ({
       id: building.id,
       nome: building.nome,
-      endereco: '', // Removed for security - no longer exposed
+      endereco: building.endereco || '', // Now available from public store
       cidade: '', // Not available
       estado: '', // Not available  
       bairro: building.bairro,
@@ -89,7 +89,7 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       manual_latitude: undefined,
       manual_longitude: undefined,
       position_validated: undefined,
-      publico_estimado: 0, // not exposed publicly
+      publico_estimado: building.publico_estimado || 0, // Now available from database
       visualizacoes_mes: 0, // not exposed publicly
       preco_base: Number(building.preco_base) || 280,
       imagem_principal: building.imagem_principal || '',
