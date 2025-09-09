@@ -51,9 +51,6 @@ const BuildingStoreResultsHeader: React.FC<BuildingStoreResultsHeaderProps> = ({
             )}
             <SelectItem value="price-asc">Ordenar por: Menor Preço</SelectItem>
             <SelectItem value="price-desc">Ordenar por: Maior Preço</SelectItem>
-            <SelectItem value="audience-desc">Ordenar por: Maior Público</SelectItem>
-            <SelectItem value="views-desc">Ordenar por: Mais Visualizações</SelectItem>
-            <SelectItem value="panels-desc">Ordenar por: Mais Telas</SelectItem>
             {!hasLocationSearch && (
               <SelectItem value="relevance">Ordenar por: Relevância</SelectItem>
             )}

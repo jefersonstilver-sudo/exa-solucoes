@@ -99,7 +99,6 @@ const PanelCardList: React.FC<PanelCardListProps> = ({
             <SelectItem value="distance">Mais próximos</SelectItem>
             <SelectItem value="price-asc">Preço: menor para maior</SelectItem>
             <SelectItem value="price-desc">Preço: maior para menor</SelectItem>
-            <SelectItem value="views-desc">Mais visualizações</SelectItem>
           </SelectContent>
         </Select>
       </div>

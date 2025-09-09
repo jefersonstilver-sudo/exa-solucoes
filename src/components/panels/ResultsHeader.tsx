@@ -41,7 +41,6 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
             <SelectItem value="relevance">Ordenar por: Relevância</SelectItem>
             <SelectItem value="price_high">Ordenar por: Maior Preço</SelectItem>
             <SelectItem value="price_low">Ordenar por: Menor Preço</SelectItem>
-            <SelectItem value="views">Ordenar por: Mais visualizações</SelectItem>
           </SelectContent>
         </Select>
       </div>
