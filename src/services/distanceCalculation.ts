@@ -46,19 +46,42 @@ export function formatDistance(distanceInMeters: number): string {
 export function getEffectiveBuildingCoords(
   building: { latitude?: number; longitude?: number; manual_latitude?: number; manual_longitude?: number }
 ): Coordinates | null {
+  console.log('🔍 [COORDS] Validando coordenadas para:', { 
+    manual_lat: building.manual_latitude, 
+    manual_lng: building.manual_longitude,
+    lat: building.latitude, 
+    lng: building.longitude 
+  });
+
   const pick = (v: unknown) => (typeof v === 'number' ? v : undefined);
   const lat = pick(building.manual_latitude) ?? pick(building.latitude);
   const lng = pick(building.manual_longitude) ?? pick(building.longitude);
 
-  if (!Number.isFinite(lat as number) || !Number.isFinite(lng as number)) return null;
+  console.log('🔍 [COORDS] Coordenadas escolhidas:', { lat, lng });
+
+  if (!Number.isFinite(lat as number) || !Number.isFinite(lng as number)) {
+    console.log('❌ [COORDS] REJEITADO - Coordenadas não são números finitos');
+    return null;
+  }
+  
   const latNum = lat as number;
   const lngNum = lng as number;
 
   // Valid geographic ranges and avoid (0,0) placeholder
-  if (latNum < -90 || latNum > 90) return null;
-  if (lngNum < -180 || lngNum > 180) return null;
-  if (latNum === 0 && lngNum === 0) return null;
+  if (latNum < -90 || latNum > 90) {
+    console.log('❌ [COORDS] REJEITADO - Latitude fora do range:', latNum);
+    return null;
+  }
+  if (lngNum < -180 || lngNum > 180) {
+    console.log('❌ [COORDS] REJEITADO - Longitude fora do range:', lngNum);
+    return null;
+  }
+  if (latNum === 0 && lngNum === 0) {
+    console.log('❌ [COORDS] REJEITADO - Coordenadas (0,0)');
+    return null;
+  }
 
+  console.log('✅ [COORDS] APROVADO - Coordenadas válidas:', { lat: latNum, lng: lngNum });
   return { lat: latNum, lng: lngNum };
 }
 

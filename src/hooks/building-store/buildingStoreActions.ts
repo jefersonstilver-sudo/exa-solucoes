@@ -100,7 +100,13 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       
       // CORREÇÃO CRÍTICA: Garantir que o estado seja atualizado corretamente
       const activeBuildings = buildings.filter(building => ['ativo', 'instalação', 'instalacao'].includes(building.status));
+      console.log('🔄 [BUILDING STORE] === ANÁLISE DE PRÉDIOS ===');
+      console.log('🔄 [BUILDING STORE] Total de prédios recebidos:', buildings.length);
       console.log('🔄 [BUILDING STORE] Prédios ativos encontrados:', activeBuildings.length);
+      
+      activeBuildings.forEach((building, index) => {
+        console.log(`🏢 [BUILDING STORE] Prédio ativo ${index + 1}: ${building.nome} (Lat: ${building.latitude}, Lng: ${building.longitude})`);
+      });
       
       set({ 
         allBuildings: buildings as BuildingStore[],
