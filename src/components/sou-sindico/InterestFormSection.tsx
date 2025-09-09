@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ interface InterestFormSectionProps {
   isSubmitting: boolean;
 }
 
-const InterestFormSection: React.FC<InterestFormSectionProps> = ({ 
+const InterestFormSection = memo<InterestFormSectionProps>(({ 
   isVisible, 
   formData, 
   setFormData, 
@@ -24,7 +24,7 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
   return (
     <section 
       id="formulario" 
-      className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+      className={`py-20 px-4 motion-safe:transition-all motion-safe:duration-500 will-change-transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
     >
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -128,6 +128,8 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
       </div>
     </section>
   );
-};
+});
+
+InterestFormSection.displayName = 'InterestFormSection';
 
 export default InterestFormSection;

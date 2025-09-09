@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, memo } from 'react';
 import { ArrowRight, Volume, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -6,7 +6,7 @@ interface HeroSectionProps {
   isVisible: boolean;
 }
 
-const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
+const HeroSection: React.FC<HeroSectionProps> = memo(({ isVisible }) => {
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const backgroundVideoRef = useRef<HTMLVideoElement>(null);
@@ -35,6 +35,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
         muted
         loop
         playsInline
+        preload="metadata"
+        poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Crect width='100%25' height='100%25' fill='%23111827'/%3E%3C/svg%3E"
       >
         <source src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20sindico%20site/F5D2914A-D793-496A-93DE-E5DB8F60E800.MOV?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzA1MTFkMDA5LWFkMDAtNGVlYi1hMjdiLWRhNGVhYTBjMmFmZCJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3Mgc2luZGljbyBzaXRlL0Y1RDI5MTRBLUQ3OTMtNDk2QS05M0RFLUU1REI4RjYwRTgwMC5NT1YiLCJpYXQiOjE3NDg3MDA3NzYsImV4cCI6MTc4MDIzNjc3Nn0.8TYDnwI7JHfKTgUaiAhHoWz9aCtfTcIRlrj6vUqLJSQ" type="video/mp4" />
       </video>
@@ -46,7 +48,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-gray-900/20 to-blue-900/30" />
       
       <div className="relative z-10 max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-        <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
+        <div className={`motion-safe:transform motion-safe:transition-all motion-safe:duration-500 will-change-transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
             <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
               Substitua avisos de papel
@@ -73,7 +75,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
           </Button>
         </div>
 
-        <div className={`flex justify-center lg:justify-end transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
+        <div className={`flex justify-center lg:justify-end motion-safe:transform motion-safe:transition-all motion-safe:duration-500 motion-safe:delay-150 will-change-transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
           <div className="relative max-w-xs mx-auto transform -translate-y-4 mb-16">
             <div className="relative bg-gray-800 rounded-[2.8rem] p-3 shadow-2xl">
               <div className="bg-black rounded-[2.3rem] overflow-hidden aspect-[9/19.5] relative">
@@ -88,6 +90,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
                   muted={isMuted}
                   loop
                   playsInline
+                  preload="metadata"
+                  poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 600'%3E%3Crect width='100%25' height='100%25' fill='%23000000'/%3E%3C/svg%3E"
                   style={{ 
                     width: '100%', 
                     height: 'calc(100% - 32px)',
@@ -125,6 +129,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
       </div>
     </section>
   );
-};
+});
+
+HeroSection.displayName = 'HeroSection';
 
 export default HeroSection;
