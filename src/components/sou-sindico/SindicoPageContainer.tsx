@@ -1,17 +1,14 @@
 
 import React from 'react';
-import { useSindicoIntersectionObserver } from '@/hooks/sou-sindico/useSindicoIntersectionObserver';
+import { useFastIntersectionObserver } from '@/hooks/sou-sindico/useFastIntersectionObserver';
 import { useSindicoForm } from '@/hooks/sou-sindico/useSindicoForm';
 import { benefits, howItWorksSteps } from './SindicoPageData';
-import HeroSection from './HeroSection';
-import AboutSection from './AboutSection';
+import FastHeroSection from './optimized/FastHeroSection';
+import ProgressiveAboutSection from './optimized/ProgressiveAboutSection';
 import { FeaturesSectionWithHoverEffects } from '@/components/ui/feature-section-with-hover-effects';
-import HowItWorksSection from './HowItWorksSection';
-
-
-
-import InterestFormSection from './InterestFormSection';
-import ChecklistSection from './ChecklistSection';
+import OptimizedHowItWorksSection from './optimized/OptimizedHowItWorksSection';
+import ResponsiveFormSection from './optimized/ResponsiveFormSection';
+import QuickChecklistSection from './optimized/QuickChecklistSection';
 
 const SindicoPageContainer: React.FC = () => {
   const {
@@ -19,7 +16,7 @@ const SindicoPageContainer: React.FC = () => {
     visibleSections,
     heroRef,
     sectionsRef
-  } = useSindicoIntersectionObserver();
+  } = useFastIntersectionObserver();
 
   const {
     formData,
@@ -40,46 +37,43 @@ const SindicoPageContainer: React.FC = () => {
 
       {/* Sections */}
       <section ref={heroRef}>
-        <HeroSection isVisible={isVisible} />
+        <FastHeroSection isVisible={isVisible} />
       </section>
 
       <section 
         ref={(el) => { sectionsRef.current['about'] = el; }}
         data-section="about"
       >
-        <AboutSection isVisible={visibleSections['about']} />
+        <ProgressiveAboutSection isVisible={visibleSections['about'] || true} />
       </section>
 
       <section 
         ref={(el) => { sectionsRef.current['benefits'] = el; }}
         data-section="benefits"
       >
-        <FeaturesSectionWithHoverEffects isVisible={visibleSections['benefits']} />
+        <FeaturesSectionWithHoverEffects isVisible={visibleSections['benefits'] || true} />
       </section>
 
       <section 
         ref={(el) => { sectionsRef.current['how-it-works'] = el; }}
         data-section="how-it-works"
       >
-        <HowItWorksSection isVisible={visibleSections['how-it-works']} steps={howItWorksSteps} />
+        <OptimizedHowItWorksSection isVisible={visibleSections['how-it-works'] || true} steps={howItWorksSteps} />
       </section>
-
-
-
 
       <section 
         ref={(el) => { sectionsRef.current['checklist'] = el; }}
         data-section="checklist"
       >
-        <ChecklistSection isVisible={visibleSections['checklist']} />
+        <QuickChecklistSection isVisible={visibleSections['checklist'] || true} />
       </section>
 
       <section 
         ref={(el) => { sectionsRef.current['form'] = el; }}
         data-section="form"
       >
-        <InterestFormSection 
-          isVisible={visibleSections['form']} 
+        <ResponsiveFormSection 
+          isVisible={visibleSections['form'] || true} 
           formData={formData}
           setFormData={setFormData}
           handleSubmit={handleSubmit}
