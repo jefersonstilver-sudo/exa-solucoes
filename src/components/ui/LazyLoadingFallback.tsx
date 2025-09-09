@@ -1,22 +1,15 @@
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 
 interface LazyLoadingFallbackProps {
   message?: string;
 }
 
 const LazyLoadingFallback: React.FC<LazyLoadingFallbackProps> = ({ 
-  message = "Carregando..." 
+  message = "Carregando componente..." 
 }) => {
-  return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#3C1361] mx-auto mb-2" />
-        <p className="text-gray-600 text-sm">{message}</p>
-      </div>
-    </div>
-  );
+  return <GlobalLoadingPage message={message} />;
 };
 
 export default LazyLoadingFallback;

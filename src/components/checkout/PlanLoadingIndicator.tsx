@@ -1,7 +1,7 @@
 
 import React from 'react';
 import Layout from '@/components/layout/Layout';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EnhancedLoadingSpinner from '@/components/loading/EnhancedLoadingSpinner';
 
 interface PlanLoadingIndicatorProps {
   message?: string;
@@ -12,9 +12,13 @@ const PlanLoadingIndicator: React.FC<PlanLoadingIndicatorProps> = ({
 }) => {
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12 flex items-center justify-center">
-        <LoadingSpinner />
-        <span className="ml-3">{message}</span>
+      <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[50vh]">
+        <EnhancedLoadingSpinner 
+          size="lg" 
+          showText={true} 
+          text={message}
+          variant="primary"
+        />
       </div>
     </Layout>
   );
