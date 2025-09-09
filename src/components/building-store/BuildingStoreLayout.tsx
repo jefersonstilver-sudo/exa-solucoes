@@ -16,6 +16,8 @@ interface BuildingStoreLayoutProps {
   handleFilterChange: (newFilters: Partial<BuildingFilters>) => void;
   handleSearch: (location: string) => Promise<void>;
   handleClearLocation: () => void;
+  sortOption: string;
+  setSortOption: (option: string) => void;
 }
 
 const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
@@ -28,7 +30,9 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   filters,
   handleFilterChange,
   handleSearch,
-  handleClearLocation
+  handleClearLocation,
+  sortOption,
+  setSortOption
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -49,6 +53,8 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
           handleSearch={handleSearch}
           handleClearLocation={handleClearLocation}
           buildings={buildings}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
         />
       </div>
       
@@ -63,6 +69,8 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
           handleFilterChange={handleFilterChange}
           sidebarCollapsed={sidebarCollapsed}
           onSidebarToggle={handleSidebarToggle}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
         />
       </div>
     </div>

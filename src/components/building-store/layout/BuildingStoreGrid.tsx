@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import BuildingFilterSidebar from '../BuildingFilterSidebar';
 import BuildingStoreGrid from '../BuildingStoreGrid';
 import MobileBuildingFilters from '../MobileBuildingFilters';
+import BuildingStoreResultsHeader from '../BuildingStoreResultsHeader';
 
 interface BuildingStoreGridLayoutProps {
   buildings: BuildingStore[] | undefined;
@@ -16,6 +17,8 @@ interface BuildingStoreGridLayoutProps {
   handleFilterChange: (newFilters: Partial<BuildingFilters>) => void;
   sidebarCollapsed?: boolean;
   onSidebarToggle?: () => void;
+  sortOption: string;
+  setSortOption: (option: string) => void;
 }
 
 const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
@@ -26,7 +29,9 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
   filters,
   handleFilterChange,
   sidebarCollapsed = false,
-  onSidebarToggle
+  onSidebarToggle,
+  sortOption,
+  setSortOption
 }) => {
   const isMobile = useIsMobile();
 
@@ -47,6 +52,14 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
         
         {/* Grid de prédios mobile - layout melhorado */}
         <div className="w-full px-1">
+          <BuildingStoreResultsHeader 
+            isLoading={isLoading}
+            isSearching={isSearching}
+            buildingsCount={buildings?.length || 0}
+            onSortChange={(value) => { setSortOption(value); }}
+            sortOption={sortOption}
+            hasLocationSearch={!!selectedLocation}
+          />
           <BuildingStoreGrid 
             buildings={buildings}
             isLoading={isLoading}
@@ -81,6 +94,14 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
       
       {/* Main content with building grid - RESPONSIVO E INTELIGENTE */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:col-span-11' : 'lg:col-span-9'}`}>
+        <BuildingStoreResultsHeader 
+          isLoading={isLoading}
+          isSearching={isSearching}
+          buildingsCount={buildings?.length || 0}
+          onSortChange={(value) => { setSortOption(value); }}
+          sortOption={sortOption}
+          hasLocationSearch={!!selectedLocation}
+        />
         <div className={`w-full ${
           sidebarCollapsed 
             ? shouldUseWideCards 

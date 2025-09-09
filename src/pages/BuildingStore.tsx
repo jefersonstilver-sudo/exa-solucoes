@@ -20,6 +20,8 @@ const BuildingStore = () => {
   const handleSearch = useBuildingStore(state => state.handleSearch);
   const handleClearLocation = useBuildingStore(state => state.handleClearLocation);
   const initializeStore = useBuildingStore(state => state.initializeStore);
+  const sortOption = useBuildingStore(state => state.sortOption);
+  const setSortOption = useBuildingStore(state => state.setSortOption);
 
   // Initialize store on mount
   React.useEffect(() => {
@@ -63,18 +65,20 @@ const BuildingStore = () => {
       {/* Container principal com padding para evitar sobreposição do header */}
       <div className="min-h-screen w-full pt-20">
         <div className="w-full container mx-auto px-4 md:px-6 py-6">
-          <BuildingStoreLayout
-            buildings={buildings}
-            isLoading={isLoading}
-            isSearching={isSearching}
-            searchLocation={searchLocation}
-            setSearchLocation={setSearchLocation}
-            selectedLocation={selectedLocation}
-            filters={filters}
-            handleFilterChange={handleFilterChange}
-            handleSearch={handleSearch}
-            handleClearLocation={handleClearLocation}
-          />
+        <BuildingStoreLayout
+          buildings={buildings}
+          isLoading={isLoading}
+          isSearching={isSearching}
+          searchLocation={searchLocation}
+          setSearchLocation={setSearchLocation}
+          selectedLocation={selectedLocation}
+          filters={filters}
+          handleFilterChange={handleFilterChange}
+          handleSearch={handleSearch}
+          handleClearLocation={handleClearLocation}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
+        />
         </div>
       </div>
     </Layout>

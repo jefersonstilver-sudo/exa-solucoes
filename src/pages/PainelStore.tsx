@@ -22,6 +22,8 @@ export default function PainelStore() {
   const handleSearch = useBuildingStore(state => state.handleSearch);
   const handleClearLocation = useBuildingStore(state => state.handleClearLocation);
   const initializeStore = useBuildingStore(state => state.initializeStore);
+  const sortOption = useBuildingStore(state => state.sortOption);
+  const setSortOption = useBuildingStore(state => state.setSortOption);
 
   // Initialize store on mount
   useEffect(() => {
@@ -93,6 +95,8 @@ export default function PainelStore() {
           handleFilterChange={handleFilterChange}
           handleSearch={handleSearch}
           handleClearLocation={handleClearLocation}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
         />
       </motion.div>
     </Layout>

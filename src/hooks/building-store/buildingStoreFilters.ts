@@ -1,10 +1,10 @@
 
-import { filterBuildings } from '@/services/buildingFilterService';
+import { filterBuildings, sortBuildings } from '@/services/buildingFilterService';
 import { defaultFilters } from './defaultFilters';
 
 export const createFilterActions = (set: any, get: any) => ({
   applyFilters: () => {
-    const { allBuildings, filters, disableFilters, selectedLocation } = get();
+    const { allBuildings, filters, disableFilters, selectedLocation, sortOption } = get();
     
     console.log('🔍 [BUILDING STORE] === APLICANDO FILTROS ===');
     console.log('🔍 [BUILDING STORE] Total de prédios disponíveis:', allBuildings.length);
@@ -51,6 +51,13 @@ export const createFilterActions = (set: any, get: any) => ({
     }
 
     console.log('✅ [BUILDING STORE] Prédios após aplicar filtros finais:', result.length);
+    
+    // Aplicar ordenação
+    if (sortOption && sortOption !== 'relevance') {
+      result = sortBuildings(result, sortOption, selectedLocation);
+      console.log('📊 [BUILDING STORE] Prédios ordenados por:', sortOption);
+    }
+    
     set({ buildings: result });
   },
 

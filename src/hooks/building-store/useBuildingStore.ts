@@ -18,6 +18,7 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   businessAddress: '',
   filters: { ...defaultFilters },
   disableFilters: false,
+  sortOption: 'relevance',
   initialized: false,
 
   // Sincronização Card ↔ Mapa
@@ -25,6 +26,13 @@ export const useBuildingStore = create<BuildingStoreState>((set, get) => ({
   selectedBuildingId: null,
   setHoveredBuilding: (id) => set(state => state.hoveredBuildingId === id ? state : { hoveredBuildingId: id }),
   setSelectedBuildingId: (id) => set({ selectedBuildingId: id }),
+  
+  // Sorting action
+  setSortOption: (option: string) => {
+    set({ sortOption: option });
+    // Automatically reapply filters when sort option changes
+    setTimeout(() => get().applyFilters(), 0);
+  },
   
   // Combine all actions
   ...createBuildingStoreActions(set, get),

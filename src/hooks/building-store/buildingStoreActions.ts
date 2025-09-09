@@ -181,7 +181,8 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       
       set({ 
         selectedLocation: { lat: coordinates.lat, lng: coordinates.lng },
-        searchLocation: location
+        searchLocation: location,
+        sortOption: 'distance' // Automaticamente ordenar por distância quando buscar por endereço
       });
       
       // Definir como localização da empresa
@@ -210,7 +211,8 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       selectedLocation: null,
       searchLocation: '',
       businessLocation: null,
-      businessAddress: ''
+      businessAddress: '',
+      sortOption: 'relevance' // Voltar para relevância quando limpar localização
     });
     get().fetchBuildings();
     

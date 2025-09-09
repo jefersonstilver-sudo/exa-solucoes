@@ -14,6 +14,8 @@ interface BuildingStoreSearchSectionProps {
   handleSearch: (location: string) => Promise<void>;
   handleClearLocation: () => void;
   buildings: BuildingStore[] | undefined;
+  sortOption: string;
+  setSortOption: (option: string) => void;
 }
 
 const BuildingStoreSearchSection: React.FC<BuildingStoreSearchSectionProps> = React.memo(({
@@ -25,7 +27,9 @@ const BuildingStoreSearchSection: React.FC<BuildingStoreSearchSectionProps> = Re
   handleFilterChange,
   handleSearch,
   handleClearLocation,
-  buildings
+  buildings,
+  sortOption,
+  setSortOption
 }) => {
   const memoizedHandleSearch = React.useCallback(handleSearch, [handleSearch]);
   const memoizedHandleClearLocation = React.useCallback(handleClearLocation, [handleClearLocation]);

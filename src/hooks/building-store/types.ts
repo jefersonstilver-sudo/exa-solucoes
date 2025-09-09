@@ -32,6 +32,10 @@ export interface BuildingStoreState {
   filters: BuildingFilters;
   disableFilters: boolean;
   
+  // Ordenação
+  sortOption: string;
+  setSortOption: (option: string) => void;
+  
   // Estado de inicialização
   initialized: boolean;
   forceRefresh?: boolean; // NOVO: Para forçar refresh
