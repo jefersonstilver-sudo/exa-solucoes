@@ -30,14 +30,43 @@ export interface SimpleBuildingStore {
 // Helper to extract bairro do endereço quando estiver ausente
 const extractNeighborhoodFromEndereco = (endereco?: string): string => {
   if (!endereco) return '';
-  const match = endereco.match(/-\s*([^,]+)\s*,/);
-  if (match?.[1]) return match[1].trim();
-  const parts = endereco.split(' - ');
+  
+  console.log('🔍 [SIMPLE EXTRACTION] Processando endereço:', endereco);
+  
+  // Normalizar diferentes tipos de travessão para hífen padrão
+  const normalized = endereco.replace(/[–—−]/g, '-');
+  
+  // Padrão: "Rua/Avenida Nome, Número - Bairro, Cidade"
+  // Buscar padrão: qualquer coisa, vírgula, espaços, número, espaços, hífen, espaços, bairro
+  const pattern1 = /,\s*\d+[a-zA-Z]?\s*[-–—−]\s*([^,]+)\s*,/;
+  const match1 = normalized.match(pattern1);
+  if (match1?.[1]) {
+    const extracted = match1[1].trim();
+    console.log('✅ [SIMPLE EXTRACTION] Padrão 1 - Bairro extraído:', extracted);
+    return extracted;
+  }
+  
+  // Padrão alternativo: "Nome - Bairro, Cidade"
+  const pattern2 = /[-–—−]\s*([^,]+)\s*,/;
+  const match2 = normalized.match(pattern2);
+  if (match2?.[1]) {
+    const extracted = match2[1].trim();
+    console.log('✅ [SIMPLE EXTRACTION] Padrão 2 - Bairro extraído:', extracted);
+    return extracted;
+  }
+  
+  // Fallback: dividir por hífen e pegar a primeira parte após o último hífen
+  const parts = normalized.split(/-/);
   if (parts.length > 1) {
     const afterDash = parts[parts.length - 1];
     const candidate = afterDash.split(',')[0]?.trim();
-    if (candidate) return candidate;
+    if (candidate) {
+      console.log('✅ [SIMPLE EXTRACTION] Fallback - Bairro extraído:', candidate);
+      return candidate;
+    }
   }
+  
+  console.log('❌ [SIMPLE EXTRACTION] Nenhum bairro encontrado');
   return '';
 };
 
