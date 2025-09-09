@@ -135,12 +135,10 @@ export const createBuildingStoreActions = (set: any, get: any) => ({
       businessAddress: address
     });
     
-    // Reordenar prédios por distância se temos localização da empresa
+    // Apply filters which will handle sorting consistently
     if (location) {
-      const state = get();
-      const sortedBuildings = sortBuildingsByDistance(state.buildings, location);
-      set({ buildings: sortedBuildings });
-      console.log('📍 [BUILDING STORE] Prédios reordenados por distância');
+      console.log('📍 [BUILDING STORE] Applying filters after setBusinessLocation (no pre-sorting)');
+      get().applyFilters();
       
       toast.success('Localização da empresa definida!', {
         description: `Prédios ordenados por proximidade a ${address || 'sua localização'}`

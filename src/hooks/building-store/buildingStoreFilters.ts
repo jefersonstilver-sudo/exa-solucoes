@@ -15,7 +15,8 @@ export const createFilterActions = (set: any, get: any) => ({
     console.log('🔍 [BUILDING STORE] Configuração dos filtros:', filters);
     
     if (disableFilters || allBuildings.length === 0) {
-      const activeBuildings = allBuildings.filter((building: any) => building.status === 'ativo');
+      const activeStatuses = ['ativo', 'instalação', 'instalacao'];
+      const activeBuildings = allBuildings.filter((building: any) => activeStatuses.includes(building.status));
       console.log('✅ [BUILDING STORE] Filtros desabilitados ou sem prédios - Mostrando todos os prédios ativos:', activeBuildings.length);
       activeBuildings.forEach((building: any, index: number) => {
         console.log(`🏢 [BUILDING STORE] Prédio sem filtro ${index + 1}: ${building.nome}`);
@@ -24,8 +25,14 @@ export const createFilterActions = (set: any, get: any) => ({
       return;
     }
 
-    // Base: apenas prédios ativos
-    let result = allBuildings.filter((building: any) => building.status === 'ativo');
+    // Base: all active statuses (including instalação variants)
+    const activeStatuses = ['ativo', 'instalação', 'instalacao'];
+    let result = allBuildings.filter((building: any) => activeStatuses.includes(building.status));
+    console.log('🏢 [BUILDING STORE] Status filter applied - Active buildings:', result.length, 
+      'Status counts:', allBuildings.reduce((acc: Record<string, number>, b: any) => { 
+        acc[b.status] = (acc[b.status] || 0) + 1; 
+        return acc; 
+      }, {}));
 
     // Aplicar filtro de distância quando houver localização selecionada
     if (selectedLocation && typeof selectedLocation.lat === 'number' && typeof selectedLocation.lng === 'number') {
@@ -33,22 +40,30 @@ export const createFilterActions = (set: any, get: any) => ({
       console.log('📏 [BUILDING STORE] Aplicando filtro de distância com raio:', radiusMeters, 'm');
       
       const beforeFilter = result.length;
+      let withCoords = 0, withoutCoords = 0, withinRadius = 0;
+      
       result = result.filter((building: any) => {
         console.log('📏 [BUILDING STORE] Analisando prédio para filtro de distância:', building.nome);
         const coords = getEffectiveBuildingCoords(building);
         if (!coords) {
-          console.log('❌ [BUILDING STORE] Prédio rejeitado - sem coordenadas válidas:', building.nome);
-          return false;
+          withoutCoords++;
+          console.log('🏢 [BUILDING STORE] Prédio sem coordenadas, MANTENDO:', building.nome);
+          return true; // Keep buildings without coordinates - don't exclude them
         }
+        
+        withCoords++;
         const d = calculateDistance(selectedLocation, coords);
-        const withinRadius = d <= radiusMeters;
-        console.log(`📏 [BUILDING STORE] Prédio ${building.nome}: distância ${d}m, dentro do raio: ${withinRadius}`);
-        return withinRadius;
+        const isWithin = d <= radiusMeters;
+        if (isWithin) withinRadius++;
+        console.log(`📏 [BUILDING STORE] Prédio ${building.nome}: distância ${d}m, dentro do raio: ${isWithin}`);
+        return isWithin;
       });
       
       console.log('📏 [BUILDING STORE] Filtro de distância aplicado:');
       console.log(`📏 [BUILDING STORE] - Antes: ${beforeFilter} prédios`);
-      console.log(`📏 [BUILDING STORE] - Depois: ${result.length} prédios`);
+      console.log(`📏 [BUILDING STORE] - Depois: ${result.length} prédios`);  
+      console.log(`📏 [BUILDING STORE] - Com coords: ${withCoords} (${withinRadius} dentro do raio)`);
+      console.log(`📏 [BUILDING STORE] - Sem coords: ${withoutCoords} (mantidos)`);
       console.log(`📏 [BUILDING STORE] - Raio: ${radiusMeters}m`);
     } else {
       console.log('ℹ️ [BUILDING STORE] Sem localização selecionada - filtro de distância não aplicado');
