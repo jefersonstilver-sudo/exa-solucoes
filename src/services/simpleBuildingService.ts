@@ -27,6 +27,20 @@ export interface SimpleBuildingStore {
   quantidade_telas: number;
 }
 
+// Helper to extract bairro do endereço quando estiver ausente
+const extractNeighborhoodFromEndereco = (endereco?: string): string => {
+  if (!endereco) return '';
+  const match = endereco.match(/-\s*([^,]+)\s*,/);
+  if (match?.[1]) return match[1].trim();
+  const parts = endereco.split(' - ');
+  if (parts.length > 1) {
+    const afterDash = parts[parts.length - 1];
+    const candidate = afterDash.split(',')[0]?.trim();
+    if (candidate) return candidate;
+  }
+  return '';
+};
+
 export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => {
   try {
     console.log('🏢 [SIMPLE SERVICE] === PUBLIC STORE ACCESS ===');
@@ -71,7 +85,7 @@ export const fetchActiveBuildings = async (): Promise<SimpleBuildingStore[]> => 
       endereco: building.endereco || '', // Now available from public store
       cidade: '', // Not available
       estado: '', // Not available
-      bairro: building.bairro,
+      bairro: building.bairro || extractNeighborhoodFromEndereco(building.endereco) || 'Bairro não definido',
       venue_type: building.venue_type,
       status: building.status,
       latitude: Number(building.latitude) || 0, // Now available for map functionality
