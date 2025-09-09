@@ -7,7 +7,7 @@ interface LazyLoadingFallbackProps {
 }
 
 const LazyLoadingFallback: React.FC<LazyLoadingFallbackProps> = ({ 
-  message = "Carregando componente..." 
+  message = "" 
 }) => {
   return <GlobalLoadingPage message={message} />;
 };
