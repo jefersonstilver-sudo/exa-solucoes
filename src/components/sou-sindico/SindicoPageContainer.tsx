@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useFastIntersectionObserver } from '@/hooks/sou-sindico/useFastIntersectionObserver';
+import { useSindicoIntersectionObserver } from '@/hooks/sou-sindico/useSindicoIntersectionObserver';
 import { useSindicoForm } from '@/hooks/sou-sindico/useSindicoForm';
 import { benefits, howItWorksSteps } from './SindicoPageData';
 import HeroSection from './HeroSection';
@@ -15,11 +15,11 @@ import ChecklistSection from './ChecklistSection';
 
 const SindicoPageContainer: React.FC = () => {
   const {
+    isVisible,
     visibleSections,
-    getSectionRef,
-    getHeroRef,
-    isMobile
-  } = useFastIntersectionObserver();
+    heroRef,
+    sectionsRef
+  } = useSindicoIntersectionObserver();
 
   const {
     formData,
@@ -39,47 +39,47 @@ const SindicoPageContainer: React.FC = () => {
       </div>
 
       {/* Sections */}
-      <section ref={getHeroRef()} data-section="hero">
-        <HeroSection isVisible={visibleSections['hero'] || isMobile} />
+      <section ref={heroRef}>
+        <HeroSection isVisible={isVisible} />
       </section>
 
       <section 
-        ref={getSectionRef('about')}
+        ref={(el) => { sectionsRef.current['about'] = el; }}
         data-section="about"
       >
-        <AboutSection isVisible={visibleSections['about'] || isMobile} />
+        <AboutSection isVisible={visibleSections['about']} />
       </section>
 
       <section 
-        ref={getSectionRef('benefits')}
+        ref={(el) => { sectionsRef.current['benefits'] = el; }}
         data-section="benefits"
       >
-        <FeaturesSectionWithHoverEffects isVisible={visibleSections['benefits'] || isMobile} />
+        <FeaturesSectionWithHoverEffects isVisible={visibleSections['benefits']} />
       </section>
 
       <section 
-        ref={getSectionRef('how-it-works')}
+        ref={(el) => { sectionsRef.current['how-it-works'] = el; }}
         data-section="how-it-works"
       >
-        <HowItWorksSection isVisible={visibleSections['how-it-works'] || isMobile} steps={howItWorksSteps} />
+        <HowItWorksSection isVisible={visibleSections['how-it-works']} steps={howItWorksSteps} />
       </section>
 
 
 
 
       <section 
-        ref={getSectionRef('checklist')}
+        ref={(el) => { sectionsRef.current['checklist'] = el; }}
         data-section="checklist"
       >
-        <ChecklistSection isVisible={visibleSections['checklist'] || isMobile} />
+        <ChecklistSection isVisible={visibleSections['checklist']} />
       </section>
 
       <section 
-        ref={getSectionRef('form')}
+        ref={(el) => { sectionsRef.current['form'] = el; }}
         data-section="form"
       >
         <InterestFormSection 
-          isVisible={visibleSections['form'] || isMobile} 
+          isVisible={visibleSections['form']} 
           formData={formData}
           setFormData={setFormData}
           handleSubmit={handleSubmit}

@@ -1,9 +1,9 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { CheckCircle } from 'lucide-react';
 interface ChecklistSectionProps {
   isVisible: boolean;
 }
-const ChecklistSection = memo<ChecklistSectionProps>(({
+const ChecklistSection: React.FC<ChecklistSectionProps> = ({
   isVisible
 }) => {
   const requirements = [{
@@ -23,7 +23,7 @@ const ChecklistSection = memo<ChecklistSectionProps>(({
     text: "Localizado em Foz do Iguaçu",
     description: "Área de atuação inicial do projeto"
   }];
-  return <section className={`min-h-[60vh] py-20 px-4 bg-gray-800/50 motion-safe:transition-all motion-safe:duration-500 will-change-transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+  return <section className={`min-h-[60vh] py-20 px-4 bg-gray-800/50 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
       <div className="max-w-4xl mx-auto text-center">
         <h2 className="text-4xl md:text-5xl font-bold mb-8">
           <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -36,7 +36,7 @@ const ChecklistSection = memo<ChecklistSectionProps>(({
         </p>
         
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {requirements.map((requirement, index) => <div key={requirement.id} className={`bg-gray-900/50 backdrop-blur-sm p-8 rounded-2xl border border-green-500/30 transform motion-safe:transition-all motion-safe:duration-300 hover:scale-105 hover:border-green-400/50`} style={{ animationDelay: `${index * 50}ms` }}>
+          {requirements.map((requirement, index) => <div key={requirement.id} className={`bg-gray-900/50 backdrop-blur-sm p-8 rounded-2xl border border-green-500/30 transform transition-all duration-500 delay-${index * 100} hover:scale-105 hover:border-green-400/50`}>
               <div className="flex items-start space-x-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                   <CheckCircle className="w-6 h-6 text-white" />
@@ -61,7 +61,5 @@ const ChecklistSection = memo<ChecklistSectionProps>(({
         </div>
       </div>
     </section>;
-});
-
-ChecklistSection.displayName = 'ChecklistSection';
+};
 export default ChecklistSection;

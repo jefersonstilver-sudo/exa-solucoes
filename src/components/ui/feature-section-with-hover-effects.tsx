@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import React, { memo } from "react";
 import {
   MessageSquare,
   Zap,
@@ -21,7 +20,7 @@ interface FeaturesSectionWithHoverEffectsProps {
   isVisible?: boolean;
 }
 
-export const FeaturesSectionWithHoverEffects = memo<FeaturesSectionWithHoverEffectsProps>(({ isVisible }) => {
+export function FeaturesSectionWithHoverEffects({ isVisible }: FeaturesSectionWithHoverEffectsProps) {
   const features: Feature[] = [
     {
       title: "Comunicação via WhatsApp",
@@ -66,7 +65,7 @@ export const FeaturesSectionWithHoverEffects = memo<FeaturesSectionWithHoverEffe
   ];
 
   return (
-    <section className={`py-20 px-4 motion-safe:transition-all motion-safe:duration-500 will-change-transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+    <section className={`py-20 px-4 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
       <div className="max-w-4xl mx-auto text-center mb-16">
         <h2 className="text-3xl md:text-4xl font-bold mb-8">
           <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -85,9 +84,7 @@ export const FeaturesSectionWithHoverEffects = memo<FeaturesSectionWithHoverEffe
       </div>
     </section>
   );
-});
-
-FeaturesSectionWithHoverEffects.displayName = 'FeaturesSectionWithHoverEffects';
+}
 
 const Feature = ({
   title,
