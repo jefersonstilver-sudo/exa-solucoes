@@ -63,10 +63,33 @@ export const useLeadsLinkae = () => {
     fetchLeads();
   }, []);
 
+  const createLead = async (leadData: Omit<LeadLinkae, 'id' | 'created_at' | 'updated_at' | 'contato_realizado' | 'status'>) => {
+    try {
+      console.log('🔄 Criando novo lead Linkae:', leadData);
+      
+      const { error } = await supabase.functions.invoke('submit-linkae-lead', {
+        body: leadData
+      });
+
+      if (error) {
+        console.error('❌ Erro ao criar lead Linkae:', error);
+        toast.error('Erro ao enviar formulário: ' + error.message);
+        throw error;
+      } else {
+        toast.success('Formulário enviado com sucesso! Entraremos em contato em breve.');
+        fetchLeads();
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar lead Linkae:', error);
+      throw error;
+    }
+  };
+
   return {
     leads,
     loading,
     fetchLeads,
-    markAsContacted
+    markAsContacted,
+    createLead
   };
 };

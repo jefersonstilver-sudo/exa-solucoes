@@ -63,10 +63,39 @@ export const useLeadsProdutora = () => {
     fetchLeads();
   }, []);
 
+  const createLead = async (leadData: Omit<LeadProdutora, 'id' | 'created_at' | 'contato_realizado'>) => {
+    try {
+      console.log('🔄 Criando novo lead Produtora:', leadData);
+      
+      const { error } = await supabase.rpc('submit_lead_produtora', {
+        p_nome: leadData.nome,
+        p_email: leadData.email,
+        p_whatsapp: leadData.whatsapp,
+        p_empresa: leadData.empresa,
+        p_tipo_video: leadData.tipo_video,
+        p_objetivo: leadData.objetivo,
+        p_agendar_cafe: leadData.agendar_cafe
+      });
+
+      if (error) {
+        console.error('❌ Erro ao criar lead Produtora:', error);
+        toast.error('Erro ao enviar formulário: ' + error.message);
+        throw error;
+      } else {
+        toast.success('Formulário enviado com sucesso! Entraremos em contato em breve.');
+        fetchLeads();
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar lead Produtora:', error);
+      throw error;
+    }
+  };
+
   return {
     leads,
     loading,
     fetchLeads,
-    markAsContacted
+    markAsContacted,
+    createLead
   };
 };

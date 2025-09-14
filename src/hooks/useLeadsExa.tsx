@@ -4,11 +4,12 @@ import { toast } from 'sonner';
 
 export interface LeadExa {
   id: string;
-  nome: string;
-  email: string;
+  nome_completo: string;
+  nome_empresa: string;
+  cargo: string;
   whatsapp: string;
-  empresa: string;
-  objetivo: string;
+  objetivo?: string;
+  status: string;
   contato_realizado: boolean;
   created_at: string;
   updated_at: string;
@@ -62,10 +63,33 @@ export const useLeadsExa = () => {
     fetchLeads();
   }, []);
 
+  const createLead = async (leadData: Omit<LeadExa, 'id' | 'created_at' | 'updated_at' | 'contato_realizado' | 'status'>) => {
+    try {
+      console.log('🔄 Criando novo lead EXA:', leadData);
+      
+      const { error } = await supabase.functions.invoke('submit-exa-lead', {
+        body: leadData
+      });
+
+      if (error) {
+        console.error('❌ Erro ao criar lead EXA:', error);
+        toast.error('Erro ao enviar formulário: ' + error.message);
+        throw error;
+      } else {
+        toast.success('Formulário enviado com sucesso! Entraremos em contato em breve.');
+        fetchLeads();
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar lead EXA:', error);
+      throw error;
+    }
+  };
+
   return {
     leads,
     loading,
     fetchLeads,
-    markAsContacted
+    markAsContacted,
+    createLead
   };
 };
