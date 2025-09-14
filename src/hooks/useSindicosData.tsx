@@ -10,10 +10,7 @@ export const useSindicosData = () => {
 
   const fetchSindicos = async () => {
     try {
-      const { data, error } = await supabase
-        .from('sindicos_interessados')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('get_sindicos_interessados_secure');
 
       if (error) {
         console.error('Erro ao buscar síndicos:', error);
@@ -31,20 +28,19 @@ export const useSindicosData = () => {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('sindicos_interessados')
-        .update({ 
-          status: newStatus,
-          data_contato: newStatus === 'contatado' ? new Date().toISOString().split('T')[0] : null
-        })
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('update_sindico_status_secure', {
+        p_sindico_id: id,
+        p_new_status: newStatus
+      });
 
       if (error) {
         console.error('Erro ao atualizar status:', error);
         toast.error('Erro ao atualizar status');
-      } else {
+      } else if ((data as any)?.success) {
         toast.success('Status atualizado com sucesso');
         fetchSindicos();
+      } else {
+        toast.error((data as any)?.error || 'Erro ao atualizar status');
       }
     } catch (error) {
       console.error('Erro:', error);

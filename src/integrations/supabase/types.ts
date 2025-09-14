@@ -846,6 +846,39 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_data_access_logs: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string | null
+          operation: string
+          record_count: number
+          table_name: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          operation: string
+          record_count?: number
+          table_name: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          operation?: string
+          record_count?: number
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads_exa: {
         Row: {
           cargo: string
@@ -2291,6 +2324,50 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_leads_exa_secure: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          contato_realizado: boolean
+          created_at: string
+          email: string
+          empresa: string
+          id: string
+          nome: string
+          objetivo: string
+          updated_at: string
+          whatsapp: string
+        }[]
+      }
+      get_leads_linkae_secure: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cargo: string
+          contato_realizado: boolean
+          created_at: string
+          id: string
+          nome_completo: string
+          nome_empresa: string
+          objetivo: string
+          status: string
+          updated_at: string
+          whatsapp: string
+        }[]
+      }
+      get_leads_produtora_secure: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          agendar_cafe: boolean
+          contato_realizado: boolean
+          created_at: string
+          email: string
+          empresa: string
+          id: string
+          nome: string
+          objetivo: string
+          tipo_video: string
+          whatsapp: string
+        }[]
+      }
       get_monthly_comparison: {
         Args: { p_month: number; p_year: number }
         Returns: Json
@@ -2464,6 +2541,25 @@ export type Database = {
           valor_total: number
         }[]
       }
+      get_sindicos_interessados_secure: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          celular: string
+          created_at: string
+          data_contato: string
+          email: string
+          endereco: string
+          id: string
+          nome_completo: string
+          nome_predio: string
+          numero_andares: number
+          numero_unidades: number
+          observacoes: string
+          responsavel_contato: string
+          status: string
+          updated_at: string
+        }[]
+      }
       get_unread_notifications_count: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -2559,9 +2655,21 @@ export type Database = {
         }
         Returns: string
       }
+      mark_exa_lead_contacted_secure: {
+        Args: { p_lead_id: string }
+        Returns: Json
+      }
+      mark_linkae_lead_contacted_secure: {
+        Args: { p_lead_id: string }
+        Returns: Json
+      }
       mark_notification_read: {
         Args: { notification_id: string }
         Returns: boolean
+      }
+      mark_produtora_lead_contacted_secure: {
+        Args: { p_lead_id: string }
+        Returns: Json
       }
       mercadopago_reconciliation_check: {
         Args: Record<PropertyKey, never>
@@ -2688,6 +2796,10 @@ export type Database = {
       }
       update_panel_secure: {
         Args: { p_panel_id: string; p_updates: Json }
+        Returns: Json
+      }
+      update_sindico_status_secure: {
+        Args: { p_new_status: string; p_sindico_id: string }
         Returns: Json
       }
       update_user_profile_secure: {
