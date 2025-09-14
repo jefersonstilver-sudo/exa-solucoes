@@ -4,12 +4,11 @@ import { toast } from 'sonner';
 
 export interface LeadExa {
   id: string;
-  nome_completo: string;
-  nome_empresa: string;
-  cargo: string;
+  nome: string;
+  empresa: string;
+  email: string;
   whatsapp: string;
   objetivo?: string;
-  status: string;
   contato_realizado: boolean;
   created_at: string;
   updated_at: string;

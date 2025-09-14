@@ -39,12 +39,11 @@ const LeadsExa = () => {
     }
 
     const headers = [
-      'Nome Completo',
+      'Nome',
       'Empresa',
-      'Cargo',
+      'Email',
       'WhatsApp',
       'Objetivo',
-      'Status',
       'Contatado',
       'Data de Criação'
     ];
@@ -52,12 +51,11 @@ const LeadsExa = () => {
     const csvContent = [
       headers.join(','),
       ...leads.map(lead => [
-        `"${lead.nome_completo}"`,
-        `"${lead.nome_empresa}"`,
-        `"${lead.cargo}"`,
+        `"${lead.nome}"`,
+        `"${lead.empresa}"`,
+        `"${lead.email}"`,
         `"${lead.whatsapp}"`,
         `"${lead.objetivo || ''}"`,
-        `"${lead.status}"`,
         lead.contato_realizado ? 'Sim' : 'Não',
         `"${format(new Date(lead.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}"`
       ].join(','))
@@ -201,7 +199,7 @@ const LeadsExa = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold text-gray-900">
-                    {lead.nome_completo}
+                    {lead.nome}
                   </CardTitle>
                   <Badge
                     variant={lead.contato_realizado ? 'default' : 'secondary'}
@@ -216,12 +214,19 @@ const LeadsExa = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="flex items-center space-x-3">
                     <Building className="h-4 w-4 text-gray-500" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{lead.nome_empresa}</p>
-                      <p className="text-sm text-gray-600">{lead.cargo}</p>
+                      <p className="text-sm font-medium text-gray-900">{lead.empresa}</p>
+                      <p className="text-sm text-gray-600">Empresa</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Mail className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{lead.email}</p>
+                      <p className="text-sm text-gray-600">Email</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
