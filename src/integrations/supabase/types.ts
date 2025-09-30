@@ -2111,6 +2111,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      detect_suspicious_financial_access: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          access_count: number
+          failed_attempts: number
+          last_access: string
+          risk_score: number
+          user_id: string
+        }[]
+      }
       diagnose_user_system: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -2530,10 +2540,14 @@ export type Database = {
         Args: { p_pedido_id: string }
         Returns: {
           client_id: string
+          compliance_data: Json
           created_at: string
+          cupom_id: string
           data_fim: string
           data_inicio: string
           id: string
+          lista_predios: string[]
+          log_pagamento: Json
           mercadopago_transaction_id: string
           plano_meses: number
           status: string
