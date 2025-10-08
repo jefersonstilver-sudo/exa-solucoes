@@ -73,8 +73,8 @@ const MobileOptimizedFooter = () => {
               <h3 className="text-lg font-semibold mb-4">Links Rápidos</h3>
               <ul className="space-y-2">
                 <li><Link to="/" className="text-white/80 text-base hover:text-white transition-colors">Home</Link></li>
-                <li><Link to="/linkae" className="text-white/80 text-base hover:text-white transition-colors">LINKAÊ</Link></li>
-                <li><Link to="/produtora" className="text-white/80 text-base hover:text-white transition-colors">Produtora</Link></li>
+                
+                
                 <li><Link to="/exa" className="text-white/80 text-base hover:text-white transition-colors">EXA</Link></li>
                 <li><Link to="/sou-sindico" className="text-white/80 text-base hover:text-white transition-colors">Sou Síndico</Link></li>
               </ul>
