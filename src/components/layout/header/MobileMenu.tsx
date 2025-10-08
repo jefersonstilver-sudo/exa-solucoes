@@ -26,21 +26,7 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
             className="block text-white hover:text-indexa-mint transition-colors duration-200 font-medium py-2"
             onClick={onClose}
           >
-            Home
-          </Link>
-          <Link 
-            to="/linkae" 
-            className="block text-white hover:text-indexa-mint transition-colors duration-200 font-medium py-2"
-            onClick={onClose}
-          >
-            LINKAÊ
-          </Link>
-          <Link 
-            to="/produtora" 
-            className="block text-white hover:text-indexa-mint transition-colors duration-200 font-medium py-2"
-            onClick={onClose}
-          >
-            Produtora
+            EXA
           </Link>
           <Link 
             to="/loja" 
@@ -48,13 +34,6 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
             onClick={onClose}
           >
             Loja Online
-          </Link>
-          <Link 
-            to="/exa" 
-            className="block text-white hover:text-indexa-mint transition-colors duration-200 font-medium py-2"
-            onClick={onClose}
-          >
-            EXA
           </Link>
           <Link 
             to="/sou-sindico" 

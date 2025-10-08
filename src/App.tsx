@@ -15,7 +15,6 @@ import { usePageTransition } from '@/hooks/usePageTransition';
 import { useLoadingState } from '@/hooks/useLoadingState';
 
 // Importações diretas para páginas críticas
-import Index from './pages/Index';
 import BuildingStore from './pages/BuildingStore';
 import PlanSelection from './pages/PlanSelection';
 import CheckoutCoupon from './pages/CheckoutCoupon';
@@ -33,9 +32,6 @@ import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 
 // Importações diretas para páginas principais (performance otimizada)
-import Marketing from './pages/Marketing';
-import Linkae from './pages/Linkae';
-import Produtora from './pages/Produtora';
 import PaineisPublicitarios from './pages/PaineisPublicitarios';
 import Exa from './pages/Exa';
 
@@ -130,7 +126,7 @@ const AppContent = () => {
       <div className="min-h-screen bg-background">
         <Routes>
           {/* Rotas principais */}
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Exa />} />
           <Route path="/coming-soon" element={<ComingSoonPage />} />
           
           {/* CORREÇÃO: Rotas da loja unificadas */}
@@ -162,13 +158,10 @@ const AppContent = () => {
 
           {/* Rotas com lazy loading */}
           {/* REDIRECTS 301 para novas URLs */}
-          <Route path="/marketing" element={<Navigate to="/linkae" replace />} />
-          <Route path="/paineis-publicitarios" element={<Navigate to="/exa" replace />} />
+          <Route path="/paineis-publicitarios" element={<Navigate to="/" replace />} />
+          <Route path="/exa" element={<Navigate to="/" replace />} />
           
           {/* PÁGINAS PRINCIPAIS - SEM LAZY LOADING PARA PERFORMANCE */}
-          <Route path="/linkae" element={<Linkae />} />
-          <Route path="/exa" element={<Exa />} />
-          <Route path="/produtora" element={<Produtora />} />
           <Route path="/sou-sindico" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando Sou Síndico..." />}>
               <SouSindico />
