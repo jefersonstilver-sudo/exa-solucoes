@@ -39,10 +39,8 @@ const Header: React.FC<HeaderProps> = ({
             <Link to="/" className="text-white hover:text-[#00FFAB] transition-colors font-medium">
               Home
             </Link>
-            <Link to="/linkae" className="text-white hover:text-[#00FFAB] transition-colors font-medium">Marketing</Link>
-            <Link to="/produtora" className="text-white hover:text-[#00FFAB] transition-colors font-medium">
-              Produtora
-            </Link>
+            
+            
             <Link to="/exa" className="text-white hover:text-[#00FFAB] transition-colors font-medium">
               EXA
             </Link>
