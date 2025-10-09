@@ -513,6 +513,33 @@ export type Database = {
         }
         Relationships: []
       }
+      configuracoes_sindico: {
+        Row: {
+          condominio_ticker_names: string[] | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          video_principal_url: string | null
+          video_secundario_url: string | null
+        }
+        Insert: {
+          condominio_ticker_names?: string[] | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          video_principal_url?: string | null
+          video_secundario_url?: string | null
+        }
+        Update: {
+          condominio_ticker_names?: string[] | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          video_principal_url?: string | null
+          video_secundario_url?: string | null
+        }
+        Relationships: []
+      }
       configuracoes_sistema: {
         Row: {
           created_at: string | null
