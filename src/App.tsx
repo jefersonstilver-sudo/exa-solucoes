@@ -37,6 +37,7 @@ import Exa from './pages/Exa';
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
+const Contato = lazy(() => import('./pages/Contato'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 const EmailSent = lazy(() => import('./pages/EmailSent'));
@@ -165,6 +166,11 @@ const AppContent = () => {
           <Route path="/sou-sindico" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando Sou Síndico..." />}>
               <SouSindico />
+            </Suspense>
+          } />
+          <Route path="/contato" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando contato..." />}>
+              <Contato />
             </Suspense>
           } />
           <Route path="/panel-store" element={

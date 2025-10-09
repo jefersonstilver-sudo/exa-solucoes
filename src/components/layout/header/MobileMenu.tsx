@@ -23,24 +23,31 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
         <nav className="px-4 space-y-4">
           <Link 
             to="/" 
-            className="block text-white hover:text-indexa-mint transition-colors duration-200 font-medium py-2"
+            className="block text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat py-2"
             onClick={onClose}
           >
             EXA
           </Link>
           <Link 
             to="/loja" 
-            className="block text-white hover:text-indexa-mint transition-colors duration-200 font-medium py-2"
+            className="block text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat py-2"
             onClick={onClose}
           >
             Loja Online
           </Link>
           <Link 
             to="/sou-sindico" 
-            className="block text-white hover:text-indexa-mint transition-colors duration-200 font-medium py-2"
+            className="block text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat py-2"
             onClick={onClose}
           >
             Sou Síndico
+          </Link>
+          <Link 
+            to="/contato" 
+            className="block text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat py-2"
+            onClick={onClose}
+          >
+            Contato
           </Link>
         </nav>
       </div>

@@ -1,16 +1,20 @@
 import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import ExaHeroSection from '@/components/exa/ExaHeroSection';
-import AboutExaSection from '@/components/exa/AboutExaSection';
-import ExaWhatIsSection from '@/components/exa/ExaWhatIsSection';
-import ExaStrategicDifferentialsSection from '@/components/exa/ExaStrategicDifferentialsSection';
-import ExaRealTimeAttractionsSection from '@/components/exa/ExaRealTimeAttractionsSection';
-import ExaScaleExpansionSection from '@/components/exa/ExaScaleExpansionSection';
-import ExaFinalPurchaseSection from '@/components/exa/ExaFinalPurchaseSection';
+import HeroSection from '@/components/exa/home/HeroSection';
+import OQueESection from '@/components/exa/home/OQueESection';
+import SolucoesSection from '@/components/exa/home/SolucoesSection';
+import PorQueFuncionaSection from '@/components/exa/home/PorQueFuncionaSection';
+import NumerosSection from '@/components/exa/home/NumerosSection';
+import DesignExperienciaSection from '@/components/exa/home/DesignExperienciaSection';
+import ProgramacaoSection from '@/components/exa/home/ProgramacaoSection';
+import ParceriasSection from '@/components/exa/home/ParceriasSection';
+import ExpansaoSection from '@/components/exa/home/ExpansaoSection';
 import LogoTicker from '@/components/exa/LogoTicker';
+import CTAFinalSection from '@/components/exa/home/CTAFinalSection';
+import FloatingCTA from '@/components/exa/FloatingCTA';
 
 const Exa = () => {
-  console.log('🚀 EXA: Renderizando página Publicidade Inteligente');
+  console.log('🚀 EXA: Renderizando nova página revitalizada');
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = 'smooth';
@@ -25,16 +29,20 @@ const Exa = () => {
   }, []);
 
   return (
-    <Layout className="bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
+    <Layout className="bg-white">
       <div className="relative overflow-x-hidden w-full">
-        <ExaHeroSection />
-        <AboutExaSection />
-        <ExaWhatIsSection />
-        <ExaStrategicDifferentialsSection />
-        <ExaRealTimeAttractionsSection />
-        <ExaScaleExpansionSection />
+        <HeroSection />
+        <OQueESection />
+        <SolucoesSection />
+        <PorQueFuncionaSection />
+        <NumerosSection />
+        <DesignExperienciaSection />
+        <ProgramacaoSection />
+        <ParceriasSection />
+        <ExpansaoSection />
         <LogoTicker />
-        <ExaFinalPurchaseSection />
+        <CTAFinalSection />
+        <FloatingCTA />
       </div>
     </Layout>
   );
