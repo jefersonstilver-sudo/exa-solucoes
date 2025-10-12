@@ -15,10 +15,12 @@ export const useVideoConfig = () => {
       const { data, error } = await supabase
         .from('configuracoes_sindico')
         .select('*')
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (error) throw error;
-      return data as VideoConfig;
+      return data as VideoConfig | null;
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
