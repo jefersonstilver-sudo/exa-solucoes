@@ -178,8 +178,8 @@ export function ModernAdminSidebar() {
           permission: 'canManageVideos'
         },
         {
-          title: 'Portfólio Produtora',
-          href: buildPath('portfolio-produtora'),
+          title: 'Vídeos do Site',
+          href: buildPath('videos-site'),
           icon: Film,
           permission: 'canManagePortfolio'
         },

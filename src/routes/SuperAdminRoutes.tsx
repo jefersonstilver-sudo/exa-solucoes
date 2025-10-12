@@ -13,7 +13,7 @@ import HomepageImagesPage from '@/pages/admin/HomepageImagesPage';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import VideoManagement from '@/pages/admin/VideoManagement';
-import PortfolioProdutoraPage from '@/pages/admin/PortfolioProdutoraPage';
+import VideosSitePage from '@/pages/admin/VideosSitePage';
 import LeadsProdutora from '@/pages/admin/LeadsProdutora';
 import LeadsLinkae from '@/pages/admin/LeadsLinkae';
 import LeadsExa from '@/pages/admin/LeadsExa';
@@ -46,7 +46,7 @@ const SuperAdminRoutes = () => {
       
       {/* CONTEÚDO */}
       <Route path="videos" element={<VideoManagement />} />
-      <Route path="portfolio-produtora" element={<PortfolioProdutoraPage />} />
+      <Route path="videos-site" element={<VideosSitePage />} />
       <Route path="logos" element={<LogosPage />} />
       <Route path="notificacoes" element={<NotificationsPage />} />
     </Routes>
