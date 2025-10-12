@@ -11,6 +11,7 @@ import PainelInteligenteSection from '@/components/exa/sindico/PainelInteligente
 import CredibilidadeSection from '@/components/exa/sindico/CredibilidadeSection';
 import ExpansaoImpactoSection from '@/components/exa/sindico/ExpansaoImpactoSection';
 import CTAFinalSindicoSection from '@/components/exa/sindico/CTAFinalSindicoSection';
+import LogoTicker from '@/components/exa/LogoTicker';
 
 const SouSindico = () => {
   return (
@@ -25,6 +26,7 @@ const SouSindico = () => {
       <PainelInteligenteSection />
       <CredibilidadeSection />
       <ExpansaoImpactoSection />
+      <LogoTicker />
       <CTAFinalSindicoSection />
     </Layout>
   );
