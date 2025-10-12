@@ -161,7 +161,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       <section 
         id="home-logo-ticker" 
         aria-label="Marcas parceiras"
-        className="relative container mx-auto px-4 lg:px-8"
+        className="relative w-full"
       >
         <div 
           ref={containerRef}
