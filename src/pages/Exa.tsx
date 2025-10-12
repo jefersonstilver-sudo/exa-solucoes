@@ -39,7 +39,7 @@ const Exa = () => {
             <h2 className="font-montserrat font-bold text-3xl lg:text-4xl text-center text-white mb-8">
               Empresas que <span className="text-transparent bg-clip-text bg-gradient-to-r from-exa-purple to-exa-blue">confiam na EXA</span>
             </h2>
-            <LogoTicker speed={60} pauseOnHover={true} />
+            <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
           </div>
         </section>
         
