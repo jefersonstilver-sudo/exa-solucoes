@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { Upload, Video, Loader2, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +18,9 @@ const VideosSitePage = () => {
   const [uploadingHome, setUploadingHome] = useState(false);
   const [uploadingMain, setUploadingMain] = useState(false);
   const [uploadingSecondary, setUploadingSecondary] = useState(false);
+  const [uploadProgressHome, setUploadProgressHome] = useState(0);
+  const [uploadProgressMain, setUploadProgressMain] = useState(0);
+  const [uploadProgressSecondary, setUploadProgressSecondary] = useState(0);
 
   // Carregar configurações existentes
   useEffect(() => {
@@ -52,6 +56,7 @@ const VideosSitePage = () => {
     bucket: string, 
     folder: string,
     setUploading: (value: boolean) => void,
+    setProgress: (value: number) => void,
     onSuccess: (url: string) => void
   ) => {
     if (!file) return;
@@ -71,21 +76,52 @@ const VideosSitePage = () => {
 
     try {
       setUploading(true);
+      setProgress(0);
       
       // Gerar nome único para o arquivo
       const timestamp = Date.now();
       const fileExt = file.name.split('.').pop();
       const fileName = `${folder}/${timestamp}.${fileExt}`;
 
-      // Upload para o Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // Obter signed URL para upload
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from(bucket)
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
+        .createSignedUploadUrl(fileName);
+
+      if (signedUrlError) throw signedUrlError;
+
+      // Upload com tracking de progresso usando XMLHttpRequest
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        // Tracking de progresso do upload
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            setProgress(percentComplete);
+          }
         });
 
-      if (uploadError) throw uploadError;
+        xhr.addEventListener('load', () => {
+          if (xhr.status === 200) {
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          reject(new Error('Upload failed'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload aborted'));
+        });
+
+        xhr.open('PUT', signedUrlData.signedUrl);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
+      });
 
       // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
@@ -94,11 +130,16 @@ const VideosSitePage = () => {
 
       onSuccess(publicUrl);
       toast.success('Vídeo enviado com sucesso!');
+      setProgress(100);
     } catch (error: any) {
       console.error('Erro no upload:', error);
       toast.error(`Erro ao fazer upload: ${error.message}`);
+      setProgress(0);
     } finally {
-      setUploading(false);
+      setTimeout(() => {
+        setUploading(false);
+        setProgress(0);
+      }, 1000);
     }
   };
 
@@ -197,7 +238,7 @@ const VideosSitePage = () => {
 
           <div className="space-y-2">
             <Label htmlFor="home-upload">Fazer Upload de Novo Vídeo</Label>
-            <div className="flex items-center gap-2">
+            <div className="space-y-3">
               <Input
                 id="home-upload"
                 type="file"
@@ -211,13 +252,20 @@ const VideosSitePage = () => {
                       'videos',
                       'homepage',
                       setUploadingHome,
+                      setUploadProgressHome,
                       setHomeVideoUrl
                     );
                   }
                 }}
               />
               {uploadingHome && (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Enviando vídeo...</span>
+                    <span className="font-medium">{uploadProgressHome}%</span>
+                  </div>
+                  <Progress value={uploadProgressHome} className="h-2" />
+                </div>
               )}
             </div>
           </div>
@@ -266,7 +314,7 @@ const VideosSitePage = () => {
 
             <div className="space-y-2">
               <Label htmlFor="sindico-main-upload">Fazer Upload</Label>
-              <div className="flex items-center gap-2">
+              <div className="space-y-3">
                 <Input
                   id="sindico-main-upload"
                   type="file"
@@ -280,13 +328,20 @@ const VideosSitePage = () => {
                         'videos',
                         'sou-sindico/principal',
                         setUploadingMain,
+                        setUploadProgressMain,
                         setSouSindicoMainUrl
                       );
                     }
                   }}
                 />
                 {uploadingMain && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Enviando vídeo...</span>
+                      <span className="font-medium">{uploadProgressMain}%</span>
+                    </div>
+                    <Progress value={uploadProgressMain} className="h-2" />
+                  </div>
                 )}
               </div>
             </div>
@@ -322,7 +377,7 @@ const VideosSitePage = () => {
 
             <div className="space-y-2">
               <Label htmlFor="sindico-secondary-upload">Fazer Upload</Label>
-              <div className="flex items-center gap-2">
+              <div className="space-y-3">
                 <Input
                   id="sindico-secondary-upload"
                   type="file"
@@ -336,13 +391,20 @@ const VideosSitePage = () => {
                         'videos',
                         'sou-sindico/secundario',
                         setUploadingSecondary,
+                        setUploadProgressSecondary,
                         setSouSindicoSecondaryUrl
                       );
                     }
                   }}
                 />
                 {uploadingSecondary && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Enviando vídeo...</span>
+                      <span className="font-medium">{uploadProgressSecondary}%</span>
+                    </div>
+                    <Progress value={uploadProgressSecondary} className="h-2" />
+                  </div>
                 )}
               </div>
             </div>
