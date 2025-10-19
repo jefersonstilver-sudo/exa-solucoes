@@ -53,12 +53,13 @@ const VideosSitePage = () => {
   };
 
   const handleFileUpload = async (
-    file: File, 
-    bucket: string, 
+    file: File,
+    bucket: string,
     folder: string,
     setUploading: (value: boolean) => void,
     setProgress: (value: number) => void,
-    onSuccess: (url: string) => void
+    onSuccess: (url: string) => void,
+    videoType: 'home' | 'main' | 'secondary'
   ) => {
     if (!file) return;
 
@@ -130,7 +131,36 @@ const VideosSitePage = () => {
         .getPublicUrl(fileName);
 
       onSuccess(publicUrl);
-      toast.success('Vídeo enviado com sucesso!');
+
+      // Salvar automaticamente no banco de dados
+      const { data: existing } = await supabase
+        .from('configuracoes_sindico')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const columnName = videoType === 'home' ? 'video_homepage_url' : 
+                        videoType === 'main' ? 'video_principal_url' : 
+                        'video_secundario_url';
+
+      if (existing) {
+        await supabase
+          .from('configuracoes_sindico')
+          .update({ 
+            [columnName]: publicUrl,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('configuracoes_sindico')
+          .insert({
+            [columnName]: publicUrl
+          });
+      }
+
+      toast.success('Vídeo salvo com sucesso!');
       setProgress(100);
     } catch (error: any) {
       console.error('Erro no upload:', error);
@@ -256,7 +286,8 @@ const VideosSitePage = () => {
                       'homepage',
                       setUploadingHome,
                       setUploadProgressHome,
-                      setHomeVideoUrl
+                      setHomeVideoUrl,
+                      'home'
                     );
                   }
                 }}
@@ -332,7 +363,8 @@ const VideosSitePage = () => {
                         'sou-sindico/principal',
                         setUploadingMain,
                         setUploadProgressMain,
-                        setSouSindicoMainUrl
+                        setSouSindicoMainUrl,
+                        'main'
                       );
                     }
                   }}
@@ -395,7 +427,8 @@ const VideosSitePage = () => {
                         'sou-sindico/secundario',
                         setUploadingSecondary,
                         setUploadProgressSecondary,
-                        setSouSindicoSecondaryUrl
+                        setSouSindicoSecondaryUrl,
+                        'secondary'
                       );
                     }
                   }}

@@ -11,6 +11,8 @@ export const useHomepageVideo = () => {
         const { data, error } = await supabase
           .from('configuracoes_sindico')
           .select('video_homepage_url')
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
         if (error && error.code !== 'PGRST116') {
