@@ -33,13 +33,14 @@ const VideosSitePage = () => {
       const { data, error } = await supabase
         .from('configuracoes_sindico')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
       if (data) {
+        setHomeVideoUrl(data.video_homepage_url || '');
         setSouSindicoMainUrl(data.video_principal_url || '');
         setSouSindicoSecondaryUrl(data.video_secundario_url || '');
       }
@@ -151,13 +152,14 @@ const VideosSitePage = () => {
       const { data: existing } = await supabase
         .from('configuracoes_sindico')
         .select('id')
-        .single();
+        .maybeSingle();
 
       if (existing) {
         // Atualizar
         const { error } = await supabase
           .from('configuracoes_sindico')
           .update({
+            video_homepage_url: homeVideoUrl,
             video_principal_url: souSindicoMainUrl,
             video_secundario_url: souSindicoSecondaryUrl,
             updated_at: new Date().toISOString()
@@ -170,6 +172,7 @@ const VideosSitePage = () => {
         const { error } = await supabase
           .from('configuracoes_sindico')
           .insert({
+            video_homepage_url: homeVideoUrl,
             video_principal_url: souSindicoMainUrl,
             video_secundario_url: souSindicoSecondaryUrl
           });

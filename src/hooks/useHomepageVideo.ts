@@ -1,0 +1,35 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+export const useHomepageVideo = () => {
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVideoUrl = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('configuracoes_sindico')
+          .select('video_homepage_url')
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Erro ao buscar vídeo da homepage:', error);
+          return;
+        }
+
+        if (data?.video_homepage_url) {
+          setVideoUrl(data.video_homepage_url);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar vídeo:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideoUrl();
+  }, []);
+
+  return { videoUrl, loading };
+};

@@ -2,9 +2,15 @@ import React from 'react';
 import ExaSection from '../base/ExaSection';
 import ExaCTA from '../base/ExaCTA';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+import { useHomepageVideo } from '@/hooks/useHomepageVideo';
 
 const HeroSection = () => {
   const { ref, isVisible } = useScrollReveal();
+  const { videoUrl, loading } = useHomepageVideo();
+  
+  // Fallback video URL
+  const defaultVideoUrl = 'https://indexa.net.br/wp-content/uploads/2025/01/indexa_exa.mp4';
+  const displayVideoUrl = videoUrl || defaultVideoUrl;
 
   return (
     <ExaSection background="dark" className="min-h-screen flex items-center relative overflow-hidden">
@@ -45,17 +51,25 @@ const HeroSection = () => {
 
         {/* Right side - Visual element */}
         <div className="relative group">
-          <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-4 lg:p-6 rounded-3xl shadow-2xl border border-gray-700 max-w-[400px] mx-auto hover:scale-105 transition-transform duration-300">
+          <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-4 lg:p-6 rounded-3xl shadow-2xl border border-gray-700 max-w-[320px] mx-auto hover:scale-105 transition-transform duration-300">
             <div className="bg-black rounded-2xl overflow-hidden shadow-inner aspect-[9/16]">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-              >
-                <source src="https://indexa.net.br/wp-content/uploads/2025/01/indexa_exa.mp4" type="video/mp4" />
-              </video>
+              {!loading && (
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                  key={displayVideoUrl}
+                >
+                  <source src={displayVideoUrl} type="video/mp4" />
+                </video>
+              )}
+              {loading && (
+                <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-exa-yellow"></div>
+                </div>
+              )}
             </div>
           </div>
         </div>

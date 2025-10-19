@@ -519,6 +519,7 @@ export type Database = {
           created_at: string | null
           id: string
           updated_at: string | null
+          video_homepage_url: string | null
           video_principal_url: string | null
           video_secundario_url: string | null
         }
@@ -527,6 +528,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           updated_at?: string | null
+          video_homepage_url?: string | null
           video_principal_url?: string | null
           video_secundario_url?: string | null
         }
@@ -535,6 +537,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           updated_at?: string | null
+          video_homepage_url?: string | null
           video_principal_url?: string | null
           video_secundario_url?: string | null
         }
