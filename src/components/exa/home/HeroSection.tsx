@@ -59,6 +59,7 @@ const HeroSection = () => {
                   loop
                   muted
                   playsInline
+                  controls
                   className="w-full h-full object-cover"
                   key={displayVideoUrl}
                 >
