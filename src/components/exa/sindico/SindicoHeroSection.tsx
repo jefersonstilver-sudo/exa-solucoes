@@ -26,7 +26,7 @@ const SindicoHeroSection = () => {
       
       {/* Conteúdo */}
       <div 
-        className={`relative z-10 container mx-auto px-[10%] max-w-[1440px] text-center transition-all duration-1000 ${
+        className={`relative z-[50] container mx-auto px-[10%] max-w-[1440px] text-center transition-all duration-1000 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
@@ -50,7 +50,7 @@ const SindicoHeroSection = () => {
       </div>
       
       {/* Ticker de condomínios */}
-      <div className="absolute bottom-0 left-0 right-0 z-10">
+      <div className="absolute bottom-0 left-0 right-0 z-[50]">
         <CondominiosTicker />
       </div>
     </section>
