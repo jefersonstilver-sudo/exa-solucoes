@@ -154,12 +154,6 @@ export function ModernAdminSidebar() {
           permission: 'canManageCoupons'
         },
         {
-          title: 'Homepage Config',
-          href: buildPath('homepage-config'),
-          icon: Images,
-          permission: 'canManageHomepageConfig'
-        },
-        {
           title: 'Configurações',
           href: buildPath('configuracoes'),
           icon: Settings,
