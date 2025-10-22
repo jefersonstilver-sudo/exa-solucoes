@@ -6,7 +6,7 @@ const DesignValorizaSection = () => {
   const { ref, isVisible } = useScrollReveal();
 
   return (
-    <ExaSection background="transparent" className="py-24">
+    <ExaSection background="light" className="py-24">
       <div 
         ref={ref}
         className={`transition-all duration-1000 ${
