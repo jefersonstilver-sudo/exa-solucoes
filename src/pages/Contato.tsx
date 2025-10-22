@@ -152,10 +152,10 @@ const Contato = () => {
                   <div>
                     <p className="font-montserrat font-semibold text-exa-black">Telefone</p>
                     <a 
-                      href="tel:+5545999999999" 
+                      href="tel:+5545991415856" 
                       className="font-poppins text-gray-600 hover:text-exa-purple transition-colors"
                     >
-                      (45) 99999-9999
+                      +55 45 9141-5856
                     </a>
                   </div>
                 </div>
