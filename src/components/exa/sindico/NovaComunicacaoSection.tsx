@@ -16,8 +16,8 @@ const NovaComunicacaoSection = () => {
   // Video player state
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true); // Inicia em autoplay
+  const [isMuted, setIsMuted] = useState(true); // Inicia mudo
   const [volume, setVolume] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -155,6 +155,10 @@ const NovaComunicacaoSection = () => {
                   <video
                     ref={videoRef}
                     src={config.video_principal_url}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
                     className="w-full h-full object-cover"
                     poster="/placeholder.svg"
                     onClick={togglePlay}
