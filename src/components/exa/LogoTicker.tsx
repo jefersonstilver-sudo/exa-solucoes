@@ -165,7 +165,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       >
         <div 
           ref={containerRef}
-          className="ticker h-32 md:h-28 sm:h-24 relative overflow-hidden bg-exa-purple"
+          className="ticker h-20 md:h-20 sm:h-16 relative overflow-hidden bg-exa-purple"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onTouchStart={handleTouchStart}

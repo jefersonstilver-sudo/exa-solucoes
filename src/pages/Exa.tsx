@@ -34,7 +34,9 @@ const Exa = () => {
         <HeroSection />
         
         {/* Logo Ticker - Full Width */}
-        <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
+        <div className="-mt-16">
+          <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
+        </div>
         
         <OQueESection />
         <SolucoesSection />
