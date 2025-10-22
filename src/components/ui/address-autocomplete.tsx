@@ -194,10 +194,10 @@ export function AddressAutocomplete({
       </div>
 
       {showDropdown && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg">
+        <div className="absolute top-full left-0 right-0 z-[100] mt-1 bg-white dark:bg-gray-800 border border-border rounded-md shadow-lg">
           <ul
             ref={listRef}
-            className="max-h-60 overflow-auto py-1"
+            className="max-h-[400px] overflow-auto py-1"
             role="listbox"
           >
             {isLoading && suggestions.length === 0 && (
@@ -211,21 +211,21 @@ export function AddressAutocomplete({
               <li
                 key={place.placeId}
                 className={cn(
-                  "px-3 py-2 cursor-pointer text-sm border-b border-border/20 last:border-b-0 hover:bg-muted/50 transition-colors",
+                  "px-4 py-3 cursor-pointer text-sm border-b border-border/20 last:border-b-0 hover:bg-muted/50 transition-colors min-h-[60px]",
                   selectedIndex === index && "bg-muted"
                 )}
                 onClick={() => handlePlaceSelect(place)}
                 role="option"
                 aria-selected={selectedIndex === index}
               >
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-3">
                   {getPlaceIcon(place.types)}
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-foreground truncate">
+                    <div className="font-medium text-foreground">
                       {place.mainText}
                     </div>
                     {place.secondaryText && (
-                      <div className="text-muted-foreground text-xs truncate">
+                      <div className="text-muted-foreground text-xs mt-1">
                         {place.secondaryText}
                       </div>
                     )}
