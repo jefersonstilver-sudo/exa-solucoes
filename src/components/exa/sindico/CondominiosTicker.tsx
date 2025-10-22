@@ -1,14 +1,20 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { useActiveBuildingNames } from '@/hooks/useActiveBuildingNames';
 
 interface CondominiösTickerProps {
-  condominios: string[];
   className?: string;
 }
 
-const CondominiosTicker: React.FC<CondominiösTickerProps> = ({ condominios, className }) => {
+const CondominiosTicker: React.FC<CondominiösTickerProps> = ({ className }) => {
+  const { buildingNames, loading } = useActiveBuildingNames();
+
+  if (loading || buildingNames.length === 0) {
+    return null;
+  }
+
   // Duplicar array para ticker infinito
-  const duplicatedCondominios = [...condominios, ...condominios];
+  const duplicatedCondominios = [...buildingNames, ...buildingNames];
 
   return (
     <div className={cn('relative overflow-hidden bg-exa-purple/20 backdrop-blur-md py-6 border-t border-exa-purple/30', className)}>

@@ -51,9 +51,7 @@ const SindicoHeroSection = () => {
       
       {/* Ticker de condomínios */}
       <div className="absolute bottom-0 left-0 right-0 z-10">
-        <CondominiosTicker 
-          condominios={config?.condominio_ticker_names || defaultCondominios}
-        />
+        <CondominiosTicker />
       </div>
     </section>
   );
