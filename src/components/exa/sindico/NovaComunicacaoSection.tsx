@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import ExaSection from '@/components/exa/base/ExaSection';
 import ExaCard from '@/components/exa/base/ExaCard';
 import ExaPanel from '@/components/exa/sindico/ExaPanel';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useVideoConfig } from '@/hooks/useVideoConfig';
+import { VideoPlayerControls } from '@/components/video-management/VideoPlayerControls';
 import { Clock, Cloud, Gem, Film } from 'lucide-react';
 const NovaComunicacaoSection = () => {
   const {
@@ -11,6 +12,120 @@ const NovaComunicacaoSection = () => {
     isVisible
   } = useScrollReveal();
   const { data: config, isLoading } = useVideoConfig();
+  
+  // Video player state
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [volume, setVolume] = useState(1);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [showControls, setShowControls] = useState(true);
+
+  // Video control functions
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    if (isPlaying) {
+      video.pause();
+      setIsPlaying(false);
+    } else {
+      video.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    video.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    const newVolume = value[0];
+    video.volume = newVolume;
+    setVolume(newVolume);
+    
+    if (newVolume === 0) {
+      setIsMuted(true);
+      video.muted = true;
+    } else if (isMuted) {
+      setIsMuted(false);
+      video.muted = false;
+    }
+  };
+
+  const handleProgressChange = (value: number[]) => {
+    const video = videoRef.current;
+    if (!video || !duration) return;
+    
+    const newTime = (value[0] / 100) * duration;
+    video.currentTime = newTime;
+    setProgress(value[0]);
+  };
+
+  const toggleFullscreen = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    if (video.requestFullscreen) {
+      video.requestFullscreen();
+    }
+  };
+
+  const restart = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    video.currentTime = 0;
+    setProgress(0);
+    setCurrentTime(0);
+  };
+
+  const formatTime = (time: number) => {
+    if (!time || isNaN(time)) return '0:00';
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Update time and progress
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(video.currentTime);
+      setProgress((video.currentTime / video.duration) * 100);
+    };
+
+    const handleLoadedMetadata = () => {
+      setDuration(video.duration);
+    };
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+    };
+  }, []);
   const benefits = [{
     icon: Clock,
     title: 'Publicação Instantânea',
@@ -31,17 +146,40 @@ const NovaComunicacaoSection = () => {
           <div className="order-2 lg:order-1">
             <ExaPanel>
               {config?.video_principal_url ? (
-                <video
-                  src={config.video_principal_url}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  className="w-full h-full object-cover"
-                  poster="/placeholder.svg"
+                <div 
+                  ref={containerRef}
+                  className="relative w-full h-full group"
+                  onMouseEnter={() => setShowControls(true)}
+                  onMouseLeave={() => setShowControls(false)}
                 >
-                  Seu navegador não suporta vídeos.
-                </video>
+                  <video
+                    ref={videoRef}
+                    src={config.video_principal_url}
+                    className="w-full h-full object-cover"
+                    poster="/placeholder.svg"
+                    onClick={togglePlay}
+                  >
+                    Seu navegador não suporta vídeos.
+                  </video>
+                  {showControls && (
+                    <VideoPlayerControls
+                      toggleFullscreen={toggleFullscreen}
+                      isPlaying={isPlaying}
+                      togglePlay={togglePlay}
+                      currentTime={currentTime}
+                      formatTime={formatTime}
+                      progress={progress}
+                      handleProgressChange={handleProgressChange}
+                      duration={duration}
+                      restart={restart}
+                      isMuted={isMuted}
+                      volume={volume}
+                      toggleMute={toggleMute}
+                      handleVolumeChange={handleVolumeChange}
+                      showCenterButton={true}
+                    />
+                  )}
+                </div>
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-black">
                   <Film className="w-16 h-16 text-gray-600 mb-4" />

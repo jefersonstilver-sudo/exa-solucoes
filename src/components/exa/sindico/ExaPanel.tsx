@@ -16,9 +16,9 @@ const ExaPanel: React.FC<ExaPanelProps> = ({ children, className = '' }) => {
         {/* Container do Painel */}
         <div className="relative bg-zinc-900 rounded-xl overflow-hidden shadow-inner">
           {/* Header com Logo EXA Luminoso */}
-          <div className="bg-black py-6 px-6 flex items-center justify-center border-b-2 border-zinc-800">
+          <div className="bg-black py-3 px-4 flex items-center justify-center border-b-2 border-zinc-800">
             <span 
-              className="text-4xl font-bold text-white tracking-wider"
+              className="text-3xl font-bold text-white tracking-wider"
               style={{
                 textShadow: `
                   0 0 10px rgba(255, 255, 255, 0.9),
