@@ -14,13 +14,10 @@ const VideosSitePage = () => {
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [homeVideoUrl, setHomeVideoUrl] = useState('');
   const [souSindicoMainUrl, setSouSindicoMainUrl] = useState('');
-  const [souSindicoSecondaryUrl, setSouSindicoSecondaryUrl] = useState('');
   const [uploadingHome, setUploadingHome] = useState(false);
   const [uploadingMain, setUploadingMain] = useState(false);
-  const [uploadingSecondary, setUploadingSecondary] = useState(false);
   const [uploadProgressHome, setUploadProgressHome] = useState(0);
   const [uploadProgressMain, setUploadProgressMain] = useState(0);
-  const [uploadProgressSecondary, setUploadProgressSecondary] = useState(0);
 
   // Carregar configurações existentes
   useEffect(() => {
@@ -30,19 +27,26 @@ const VideosSitePage = () => {
   const loadConfig = async () => {
     try {
       setLoadingConfig(true);
+      console.log('[VideosSitePage] Carregando configurações...');
+      
       const { data, error } = await supabase
         .from('configuracoes_sindico')
         .select('*')
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
       if (data) {
+        console.log('[VideosSitePage] Config carregada:', data.id);
         setHomeVideoUrl(data.video_homepage_url || '');
         setSouSindicoMainUrl(data.video_principal_url || '');
-        setSouSindicoSecondaryUrl(data.video_secundario_url || '');
+        toast.success('Configurações carregadas');
+      } else {
+        console.log('[VideosSitePage] Nenhuma configuração encontrada');
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -58,8 +62,7 @@ const VideosSitePage = () => {
     folder: string,
     setUploading: (value: boolean) => void,
     setProgress: (value: number) => void,
-    onSuccess: (url: string) => void,
-    videoType: 'home' | 'main' | 'secondary'
+    onSuccess: (url: string) => void
   ) => {
     if (!file) return;
 
@@ -131,36 +134,7 @@ const VideosSitePage = () => {
         .getPublicUrl(fileName);
 
       onSuccess(publicUrl);
-
-      // Salvar automaticamente no banco de dados
-      const { data: existing } = await supabase
-        .from('configuracoes_sindico')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const columnName = videoType === 'home' ? 'video_homepage_url' : 
-                        videoType === 'main' ? 'video_principal_url' : 
-                        'video_secundario_url';
-
-      if (existing) {
-        await supabase
-          .from('configuracoes_sindico')
-          .update({ 
-            [columnName]: publicUrl,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existing.id);
-      } else {
-        await supabase
-          .from('configuracoes_sindico')
-          .insert({
-            [columnName]: publicUrl
-          });
-      }
-
-      toast.success('Vídeo salvo com sucesso!');
+      toast.success('Upload concluído! Clique em "Salvar Configurações" para aplicar.');
       setProgress(100);
     } catch (error: any) {
       console.error('Erro no upload:', error);
@@ -177,42 +151,51 @@ const VideosSitePage = () => {
   const handleSaveConfig = async () => {
     try {
       setLoading(true);
+      console.log('[VideosSitePage] Salvando configurações...');
 
-      // Verificar se já existe configuração
-      const { data: existing } = await supabase
+      // Buscar o registro único
+      const { data: existing, error: fetchError } = await supabase
         .from('configuracoes_sindico')
         .select('id')
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
+      }
 
       if (existing) {
-        // Atualizar
+        console.log('[VideosSitePage] Atualizando registro:', existing.id);
         const { error } = await supabase
           .from('configuracoes_sindico')
           .update({
             video_homepage_url: homeVideoUrl,
             video_principal_url: souSindicoMainUrl,
-            video_secundario_url: souSindicoSecondaryUrl,
             updated_at: new Date().toISOString()
           })
           .eq('id', existing.id);
 
         if (error) throw error;
       } else {
-        // Criar
+        console.log('[VideosSitePage] Criando novo registro');
         const { error } = await supabase
           .from('configuracoes_sindico')
           .insert({
             video_homepage_url: homeVideoUrl,
-            video_principal_url: souSindicoMainUrl,
-            video_secundario_url: souSindicoSecondaryUrl
+            video_principal_url: souSindicoMainUrl
           });
 
         if (error) throw error;
       }
 
       toast.success('Configurações salvas com sucesso!');
+      
+      // Recarregar dados do banco
+      await loadConfig();
+      
     } catch (error: any) {
-      console.error('Erro ao salvar:', error);
+      console.error('[VideosSitePage] Erro ao salvar:', error);
       toast.error(`Erro ao salvar: ${error.message}`);
     } finally {
       setLoading(false);
@@ -286,8 +269,7 @@ const VideosSitePage = () => {
                       'homepage',
                       setUploadingHome,
                       setUploadProgressHome,
-                      setHomeVideoUrl,
-                      'home'
+                      setHomeVideoUrl
                     );
                   }
                 }}
@@ -363,8 +345,7 @@ const VideosSitePage = () => {
                         'sou-sindico/principal',
                         setUploadingMain,
                         setUploadProgressMain,
-                        setSouSindicoMainUrl,
-                        'main'
+                        setSouSindicoMainUrl
                       );
                     }
                   }}
@@ -392,69 +373,6 @@ const VideosSitePage = () => {
             )}
           </div>
 
-          {/* Vídeo Secundário */}
-          <div className="space-y-4 pt-6 border-t">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-blue-500" />
-              <h3 className="font-semibold">Vídeo Secundário</h3>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="sindico-secondary">URL do Vídeo</Label>
-              <Input
-                id="sindico-secondary"
-                placeholder="https://..."
-                value={souSindicoSecondaryUrl}
-                onChange={(e) => setSouSindicoSecondaryUrl(e.target.value)}
-                disabled={uploadingSecondary}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sindico-secondary-upload">Fazer Upload</Label>
-              <div className="space-y-3">
-                <Input
-                  id="sindico-secondary-upload"
-                  type="file"
-                  accept="video/*"
-                  disabled={uploadingSecondary}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleFileUpload(
-                        file,
-                        'videos',
-                        'sou-sindico/secundario',
-                        setUploadingSecondary,
-                        setUploadProgressSecondary,
-                        setSouSindicoSecondaryUrl,
-                        'secondary'
-                      );
-                    }
-                  }}
-                />
-                {uploadingSecondary && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Enviando vídeo...</span>
-                      <span className="font-medium">{uploadProgressSecondary}%</span>
-                    </div>
-                    <Progress value={uploadProgressSecondary} className="h-2" />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {souSindicoSecondaryUrl && (
-              <div className="rounded-lg overflow-hidden bg-black">
-                <video
-                  src={souSindicoSecondaryUrl}
-                  controls
-                  className="w-full max-h-64 object-contain"
-                />
-              </div>
-            )}
-          </div>
         </CardContent>
       </Card>
 
@@ -462,7 +380,7 @@ const VideosSitePage = () => {
       <div className="flex justify-end">
         <Button
           onClick={handleSaveConfig}
-          disabled={loading || uploadingHome || uploadingMain || uploadingSecondary}
+          disabled={loading || uploadingHome || uploadingMain}
           size="lg"
         >
           {loading ? (

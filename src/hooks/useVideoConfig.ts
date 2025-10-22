@@ -17,11 +17,12 @@ export const useVideoConfig = () => {
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
-        .maybeSingle();
+        .single();
 
-      if (error) throw error;
+      if (error && error.code !== 'PGRST116') throw error;
       return data as VideoConfig | null;
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
+    refetchOnMount: true, // Sempre buscar dados atualizados ao montar
   });
 };

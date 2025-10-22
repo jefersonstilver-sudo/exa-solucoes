@@ -725,7 +725,7 @@ export type Database = {
           access_timestamp: string | null
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           operation: string
           record_id: string | null
           risk_level: string | null
@@ -738,7 +738,7 @@ export type Database = {
           access_timestamp?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           operation: string
           record_id?: string | null
           risk_level?: string | null
@@ -751,7 +751,7 @@ export type Database = {
           access_timestamp?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           operation?: string
           record_id?: string | null
           risk_level?: string | null
@@ -2001,10 +2001,7 @@ export type Database = {
         Args: { user_email: string }
         Returns: boolean
       }
-      admin_get_all_user_ids: {
-        Args: Record<PropertyKey, never>
-        Returns: string[]
-      }
+      admin_get_all_user_ids: { Args: never; Returns: string[] }
       admin_insert_user: {
         Args: { user_email: string; user_id: string; user_role: string }
         Returns: string
@@ -2036,22 +2033,10 @@ export type Database = {
         Args: { p_approved_by: string; p_pedido_video_id: string }
         Returns: boolean
       }
-      audit_unauthorized_uploads: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      auto_cleanup_paid_attempts: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      auto_fix_lost_transactions: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      auto_recovery_system: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      audit_unauthorized_uploads: { Args: never; Returns: Json }
+      auto_cleanup_paid_attempts: { Args: never; Returns: Json }
+      auto_fix_lost_transactions: { Args: never; Returns: Json }
+      auto_recovery_system: { Args: never; Returns: Json }
       block_order_secure: {
         Args: {
           p_ip_address?: string
@@ -2070,26 +2055,14 @@ export type Database = {
         }
         Returns: Json
       }
-      can_access_building_contacts: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      can_access_order: {
-        Args: { p_pedido_id: string }
-        Returns: boolean
-      }
-      can_access_panel_credentials: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      can_access_building_contacts: { Args: never; Returns: boolean }
+      can_access_order: { Args: { p_pedido_id: string }; Returns: boolean }
+      can_access_panel_credentials: { Args: never; Returns: boolean }
       can_access_pedido_secure: {
         Args: { p_pedido_id: string }
         Returns: boolean
       }
-      cancel_expired_orders: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      cancel_expired_orders: { Args: never; Returns: Json }
       check_panel_availability: {
         Args: { p_end_date: string; p_panel_id: string; p_start_date: string }
         Returns: boolean
@@ -2099,7 +2072,7 @@ export type Database = {
         Returns: boolean
       }
       check_user_data_integrity: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           email: string
           is_consistent: boolean
@@ -2112,20 +2085,11 @@ export type Database = {
         Args: { p_video1_id: string; p_video2_id: string }
         Returns: boolean
       }
-      cleanup_orphaned_users: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      cleanup_unauthorized_uploads: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      daily_financial_reconciliation: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      cleanup_orphaned_users: { Args: never; Returns: Json }
+      cleanup_unauthorized_uploads: { Args: never; Returns: Json }
+      daily_financial_reconciliation: { Args: never; Returns: Json }
       detect_duplicate_payments: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           client_id: string
           created_at: string
@@ -2137,12 +2101,9 @@ export type Database = {
           valor_total: number
         }[]
       }
-      detect_financial_anomalies: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      detect_financial_anomalies: { Args: never; Returns: Json }
       detect_suspicious_financial_access: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           access_count: number
           failed_attempts: number
@@ -2151,36 +2112,15 @@ export type Database = {
           user_id: string
         }[]
       }
-      diagnose_user_system: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      emergency_financial_audit_and_fix: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      ensure_video_consistency: {
-        Args: { p_pedido_id: string }
-        Returns: Json
-      }
-      extract_compliance_data: {
-        Args: { payment_data: Json }
-        Returns: Json
-      }
-      generate_coupon_code: {
-        Args: { prefix?: string }
-        Returns: string
-      }
-      generate_developer_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_secure_temp_password: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      diagnose_user_system: { Args: never; Returns: Json }
+      emergency_financial_audit_and_fix: { Args: never; Returns: Json }
+      ensure_video_consistency: { Args: { p_pedido_id: string }; Returns: Json }
+      extract_compliance_data: { Args: { payment_data: Json }; Returns: Json }
+      generate_coupon_code: { Args: { prefix?: string }; Returns: string }
+      generate_developer_token: { Args: never; Returns: string }
+      generate_secure_temp_password: { Args: never; Returns: string }
       get_admin_buildings_safe: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           amenities: string[]
           bairro: string
@@ -2212,7 +2152,7 @@ export type Database = {
         }[]
       }
       get_approvals_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           pago_pendente_video: number
           video_aprovado: number
@@ -2244,7 +2184,7 @@ export type Database = {
         }[]
       }
       get_approved_videos_with_details: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           approved_at: string
           approved_by: string
@@ -2293,7 +2233,7 @@ export type Database = {
         }[]
       }
       get_buildings_for_authenticated_users: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           bairro: string
           id: string
@@ -2306,7 +2246,7 @@ export type Database = {
         }[]
       }
       get_buildings_for_public_store: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           amenities: string[]
           bairro: string
@@ -2325,7 +2265,7 @@ export type Database = {
         }[]
       }
       get_coupon_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           cupons_ativos: number
           cupons_expirados: number
@@ -2352,20 +2292,14 @@ export type Database = {
           video_id: string
         }[]
       }
-      get_dashboard_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      get_dashboard_stats: { Args: never; Returns: Json }
       get_dashboard_stats_by_month: {
         Args: { p_month: number; p_year: number }
         Returns: Json
       }
-      get_last_12_months_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      get_last_12_months_stats: { Args: never; Returns: Json }
       get_leads_exa_secure: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           contato_realizado: boolean
           created_at: string
@@ -2379,7 +2313,7 @@ export type Database = {
         }[]
       }
       get_leads_linkae_secure: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           cargo: string
           contato_realizado: boolean
@@ -2394,7 +2328,7 @@ export type Database = {
         }[]
       }
       get_leads_produtora_secure: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           agendar_cafe: boolean
           contato_realizado: boolean
@@ -2413,7 +2347,7 @@ export type Database = {
         Returns: Json
       }
       get_paid_orders_without_video: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           client_email: string
           client_id: string
@@ -2438,7 +2372,7 @@ export type Database = {
         }[]
       }
       get_panels_basic: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           building_id: string
           code: string
@@ -2469,7 +2403,7 @@ export type Database = {
         }[]
       }
       get_pedidos_com_clientes: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           client_email: string
           client_id: string
@@ -2486,7 +2420,7 @@ export type Database = {
         }[]
       }
       get_pedidos_com_status_correto: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           client_email: string
           client_id: string
@@ -2505,7 +2439,7 @@ export type Database = {
         }[]
       }
       get_pending_approval_videos: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           client_email: string
           client_name: string
@@ -2522,7 +2456,7 @@ export type Database = {
         }[]
       }
       get_real_approval_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           approved: number
           paid_without_video: number
@@ -2530,10 +2464,7 @@ export type Database = {
           rejected: number
         }[]
       }
-      get_real_revenue: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      get_real_revenue: { Args: never; Returns: number }
       get_recent_activities: {
         Args: { p_limit?: number }
         Returns: {
@@ -2551,7 +2482,7 @@ export type Database = {
         }[]
       }
       get_recently_approved_videos: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           approved_at: string
           client_email: string
@@ -2586,7 +2517,7 @@ export type Database = {
         }[]
       }
       get_sindicos_interessados_secure: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           celular: string
           created_at: string
@@ -2604,46 +2535,19 @@ export type Database = {
           updated_at: string
         }[]
       }
-      get_unread_notifications_count: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      get_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_video_current_status: {
-        Args: { p_video_id: string }
-        Returns: Json
-      }
+      get_unread_notifications_count: { Args: never; Returns: number }
+      get_user_role: { Args: never; Returns: string }
+      get_video_current_status: { Args: { p_video_id: string }; Returns: Json }
       investigate_missing_transaction: {
         Args: { p_amount: number; p_email: string }
         Returns: Json
       }
-      is_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_emergency_mode: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_super_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_super_admin_secure: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_super_admin_simple: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_super_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin_user: { Args: never; Returns: boolean }
+      is_emergency_mode: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
+      is_super_admin_secure: { Args: never; Returns: boolean }
+      is_super_admin_simple: { Args: never; Returns: boolean }
+      is_super_admin_user: { Args: never; Returns: boolean }
       log_building_action: {
         Args: {
           p_action_type: string
@@ -2715,26 +2619,11 @@ export type Database = {
         Args: { p_lead_id: string }
         Returns: Json
       }
-      mercadopago_reconciliation_check: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      migrate_orphaned_payments: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      monitor_coupon_security: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      monitor_system_health: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      notify_contracts_expiring_soon: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      mercadopago_reconciliation_check: { Args: never; Returns: Json }
+      migrate_orphaned_payments: { Args: never; Returns: Json }
+      monitor_coupon_security: { Args: never; Returns: Json }
+      monitor_system_health: { Args: never; Returns: Json }
+      notify_contracts_expiring_soon: { Args: never; Returns: Json }
       process_mercadopago_webhook: {
         Args: { webhook_data: Json }
         Returns: Json
@@ -2747,10 +2636,7 @@ export type Database = {
         Args: { p_payment_data: Json }
         Returns: Json
       }
-      recover_lost_transactions: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      recover_lost_transactions: { Args: never; Returns: Json }
       register_payment_processing: {
         Args: {
           p_amount?: number
@@ -2769,10 +2655,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      resolve_email_conflicts: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      resolve_email_conflicts: { Args: never; Returns: Json }
       revert_suspicious_payment: {
         Args: { p_pedido_id: string; p_reason?: string }
         Returns: Json
@@ -2795,10 +2678,7 @@ export type Database = {
         Args: { p_pedido_video_id: string }
         Returns: boolean
       }
-      set_base_video: {
-        Args: { p_pedido_video_id: string }
-        Returns: boolean
-      }
+      set_base_video: { Args: { p_pedido_video_id: string }; Returns: boolean }
       set_base_video_enhanced: {
         Args: { p_pedido_video_id: string }
         Returns: Json
@@ -2830,14 +2710,8 @@ export type Database = {
         Args: { p_pedido_id: string; p_reason?: string }
         Returns: Json
       }
-      update_expired_contracts: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      update_expired_contracts_daily: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      update_expired_contracts: { Args: never; Returns: Json }
+      update_expired_contracts_daily: { Args: never; Returns: Json }
       update_panel_secure: {
         Args: { p_panel_id: string; p_updates: Json }
         Returns: Json
@@ -2869,10 +2743,7 @@ export type Database = {
           valid: boolean
         }[]
       }
-      validate_developer_token: {
-        Args: { p_token: string }
-        Returns: boolean
-      }
+      validate_developer_token: { Args: { p_token: string }; Returns: boolean }
       validate_price_integrity: {
         Args: { p_expected_price: number; p_transaction_id: string }
         Returns: boolean
