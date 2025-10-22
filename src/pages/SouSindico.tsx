@@ -1,7 +1,7 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import SindicoHeroSection from '@/components/exa/sindico/SindicoHeroSection';
-import VideoPrincipalSection from '@/components/exa/sindico/VideoPrincipalSection';
+
 import NovaComunicacaoSection from '@/components/exa/sindico/NovaComunicacaoSection';
 import ComoFuncionaSection from '@/components/exa/sindico/ComoFuncionaSection';
 import BeneficiosCondominioSection from '@/components/exa/sindico/BeneficiosCondominioSection';
@@ -18,7 +18,6 @@ const SouSindico = () => {
     <Layout>
       <AnimatedBackground>
         <SindicoHeroSection />
-        <VideoPrincipalSection />
         <NovaComunicacaoSection />
         <ComoFuncionaSection />
         <BeneficiosCondominioSection />

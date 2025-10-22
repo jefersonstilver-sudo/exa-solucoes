@@ -7,7 +7,7 @@ interface ExaPanelProps {
 
 const ExaPanel: React.FC<ExaPanelProps> = ({ children, className = '' }) => {
   return (
-    <div className={`max-w-md mx-auto ${className}`}>
+    <div className={`max-w-xs mx-auto ${className}`}>
       {/* Moldura Externa Preta - Simula hardware do painel */}
       <div className="bg-black rounded-2xl shadow-2xl p-4 relative overflow-hidden">
         {/* Efeito de profundidade 3D */}
