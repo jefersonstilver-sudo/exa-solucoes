@@ -1,13 +1,16 @@
 import React from 'react';
 import ExaSection from '@/components/exa/base/ExaSection';
 import ExaCard from '@/components/exa/base/ExaCard';
+import ExaPanel from '@/components/exa/sindico/ExaPanel';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-import { Clock, Cloud, Gem } from 'lucide-react';
+import { useVideoConfig } from '@/hooks/useVideoConfig';
+import { Clock, Cloud, Gem, Film } from 'lucide-react';
 const NovaComunicacaoSection = () => {
   const {
     ref,
     isVisible
   } = useScrollReveal();
+  const { data: config, isLoading } = useVideoConfig();
   const benefits = [{
     icon: Clock,
     title: 'Publicação Instantânea',
@@ -24,9 +27,28 @@ const NovaComunicacaoSection = () => {
   return <ExaSection background="light" className="py-24">
       <div ref={ref} className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Imagem */}
+          {/* Painel com Vídeo */}
           <div className="order-2 lg:order-1">
-            
+            <ExaPanel>
+              {config?.video_principal_url ? (
+                <video
+                  src={config.video_principal_url}
+                  controls
+                  className="w-full h-full object-cover"
+                  poster="/placeholder.svg"
+                >
+                  Seu navegador não suporta vídeos.
+                </video>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-black">
+                  <Film className="w-16 h-16 text-gray-600 mb-4" />
+                  <p className="font-poppins text-gray-500 text-center px-4 text-sm">
+                    🎥 Vídeo Institucional<br />
+                    <span className="text-xs">editável no painel administrativo</span>
+                  </p>
+                </div>
+              )}
+            </ExaPanel>
           </div>
           
           {/* Conteúdo */}
