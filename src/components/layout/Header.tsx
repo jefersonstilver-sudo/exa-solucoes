@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({
   console.log('🏢 Header: Renderizando header');
   console.log('🏢 Header: cartItemsCount:', cartItemsCount);
   console.log('🏢 Header: onToggleCart function:', !!onToggleCart);
-  return <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#3C1361] to-[#2A0D47] shadow-lg">
+  return <header className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-[#3C1361] to-[#2A0D47] shadow-lg">
       <div className="container mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo com mais espaço */}
