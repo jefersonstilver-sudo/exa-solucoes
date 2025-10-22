@@ -11,8 +11,8 @@ const ComoFuncionaSection = () => {
     {
       number: 1,
       icon: Clipboard,
-      title: 'Cadastro do Condomínio',
-      description: 'O síndico preenche um formulário e a equipe EXA agenda a instalação.'
+      title: 'Candidatura do Condomínio',
+      description: 'Cadastre seu condomínio com mínimo de 24 unidades em um único bloco. Após análise, nossa equipe aprova e agenda a instalação.'
     },
     {
       number: 2,
