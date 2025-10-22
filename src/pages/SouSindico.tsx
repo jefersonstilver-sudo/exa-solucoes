@@ -18,10 +18,10 @@ const SouSindico = () => {
     <Layout>
       <AnimatedBackground>
         <SindicoHeroSection />
+        <VideoPrincipalSection />
         <NovaComunicacaoSection />
         <ComoFuncionaSection />
         <BeneficiosCondominioSection />
-        <VideoPrincipalSection />
         <DesignValorizaSection />
         <PainelInteligenteSection />
         <CredibilidadeSection />
