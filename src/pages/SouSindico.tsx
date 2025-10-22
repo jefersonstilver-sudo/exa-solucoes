@@ -3,7 +3,6 @@ import Layout from '@/components/layout/Layout';
 import SindicoHeroSection from '@/components/exa/sindico/SindicoHeroSection';
 import VideoPrincipalSection from '@/components/exa/sindico/VideoPrincipalSection';
 import NovaComunicacaoSection from '@/components/exa/sindico/NovaComunicacaoSection';
-import VideoSecundarioSection from '@/components/exa/sindico/VideoSecundarioSection';
 import ComoFuncionaSection from '@/components/exa/sindico/ComoFuncionaSection';
 import BeneficiosCondominioSection from '@/components/exa/sindico/BeneficiosCondominioSection';
 import DesignValorizaSection from '@/components/exa/sindico/DesignValorizaSection';
@@ -21,7 +20,6 @@ const SouSindico = () => {
         <SindicoHeroSection />
         <VideoPrincipalSection />
         <NovaComunicacaoSection />
-        <VideoSecundarioSection />
         <ComoFuncionaSection />
         <BeneficiosCondominioSection />
         <DesignValorizaSection />
