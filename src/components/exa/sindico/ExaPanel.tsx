@@ -10,9 +10,6 @@ const ExaPanel: React.FC<ExaPanelProps> = ({ children, className = '' }) => {
     <div className={`max-w-md mx-auto ${className}`}>
       {/* Moldura Externa Preta - Simula hardware do painel */}
       <div className="bg-black rounded-2xl shadow-2xl p-4 relative overflow-hidden">
-        {/* Efeito de profundidade 3D */}
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-black to-zinc-900 opacity-50" />
-        
         {/* Container do Painel */}
         <div className="relative bg-zinc-900 rounded-xl overflow-hidden shadow-inner">
           {/* Header com Logo EXA Luminoso */}
