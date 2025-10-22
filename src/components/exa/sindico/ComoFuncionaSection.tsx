@@ -24,7 +24,7 @@ const ComoFuncionaSection = () => {
       number: 3,
       icon: Monitor,
       title: 'Acesso ao Painel',
-      description: 'O síndico ganha acesso à plataforma EXA para publicar comunicados.'
+      description: 'Disponibilizamos um número de WhatsApp com IA para o síndico gerar e alterar avisos facilmente.'
     },
     {
       number: 4,
