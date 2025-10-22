@@ -21,7 +21,7 @@ const BeneficiosCondominioSection = () => {
     {
       icon: Lock,
       title: 'Segurança e Controle',
-      description: 'Tudo é gerenciado pelo painel oficial da EXA.'
+      description: 'Tudo é gerenciado pelo WhatsApp sem precisar baixar app.'
     },
     {
       icon: Zap,
