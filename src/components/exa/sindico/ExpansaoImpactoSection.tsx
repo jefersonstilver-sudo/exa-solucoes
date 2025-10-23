@@ -22,8 +22,8 @@ const ExpansaoImpactoSection = () => {
     year: '2025'
   }, {
     icon: MapPin,
-    value: '3',
-    label: 'países alcançados',
+    value: '∞',
+    label: 'prédios comerciais',
     year: '2026'
   }];
   
