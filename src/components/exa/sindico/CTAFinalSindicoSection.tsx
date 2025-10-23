@@ -16,7 +16,7 @@ const CTAFinalSindicoSection = () => {
         {/* Content */}
         <div className="relative z-10 max-w-3xl mx-auto space-y-8">
           <h2 className="font-montserrat font-bold text-4xl lg:text-5xl text-white">
-            Transforme o elevador do seu prédio.
+            Cadastre seu prédio na lista de intenção hoje mesmo!!
           </h2>
           
           <p className="font-poppins text-xl text-white/90 leading-relaxed">
