@@ -35,11 +35,11 @@ const PainelInteligenteSection = () => {
         }`}
       >
         {/* Título e descrição */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="font-montserrat font-bold text-4xl lg:text-5xl text-exa-purple mb-6">
+        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+          <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-exa-purple mb-4 md:mb-6">
             O cérebro da comunicação do condomínio.
           </h2>
-          <p className="font-poppins text-lg text-gray-700 leading-relaxed">
+          <p className="font-poppins text-base md:text-lg text-gray-700 leading-relaxed">
             Com o painel administrativo da EXA, o síndico gerencia tudo de forma simples: envia avisos importantes, monitora o desempenho dos comunicados e acessa relatórios atualizados a qualquer momento.
           </p>
         </div>

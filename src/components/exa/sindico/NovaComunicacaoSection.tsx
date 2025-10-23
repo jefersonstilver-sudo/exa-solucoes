@@ -197,9 +197,9 @@ const NovaComunicacaoSection = () => {
           </div>
           
           {/* Conteúdo */}
-          <div className="order-1 lg:order-2 space-y-8">
+          <div className="order-1 lg:order-2 space-y-6 md:space-y-8">
             <div>
-              <h2 className="font-montserrat font-bold text-4xl lg:text-5xl text-exa-purple mb-4">
+              <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-exa-purple mb-4">
                 Mais que um painel.<br />
                 Um novo canal de convivência.
               </h2>

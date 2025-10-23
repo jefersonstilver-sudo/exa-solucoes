@@ -35,11 +35,11 @@ const ExpansaoImpactoSection = () => {
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        <div className="text-center mb-16">
-          <h2 className="font-montserrat font-bold text-4xl lg:text-5xl text-white mb-4">
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-white mb-4">
             Nossa expansão
           </h2>
-          <p className="font-poppins text-lg text-gray-300 max-w-2xl mx-auto">
+          <p className="font-poppins text-base md:text-lg text-gray-300 max-w-2xl mx-auto">
             Crescimento planejado para transformar a comunicação em condomínios
           </p>
         </div>
@@ -55,10 +55,10 @@ const ExpansaoImpactoSection = () => {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-exa-purple/20 rounded-full mb-6">
                   <Icon className="w-8 h-8 text-exa-purple" />
                 </div>
-                <div className="text-5xl font-bold text-white mb-2">
+                <div className="text-4xl md:text-5xl font-bold text-white mb-2">
                   {typeof milestone.value === 'number' ? milestone.value : milestone.value}
                 </div>
-                <div className="text-lg text-gray-300 mb-2">
+                <div className="text-base md:text-lg text-gray-300 mb-2">
                   {milestone.label}
                 </div>
                 <div className="text-sm text-exa-purple font-semibold">

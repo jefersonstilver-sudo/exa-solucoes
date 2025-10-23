@@ -22,7 +22,7 @@ const CredibilidadeSection = () => {
   return (
     <ExaSection background="transparent" className="py-16">
       <div ref={ref} className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        <h2 className="font-montserrat font-bold text-3xl lg:text-4xl text-center mb-12 text-white">
+        <h2 className="font-montserrat font-bold text-2xl md:text-3xl lg:text-4xl text-center mb-12 text-white">
           Credibilidade e Confiança
         </h2>
         

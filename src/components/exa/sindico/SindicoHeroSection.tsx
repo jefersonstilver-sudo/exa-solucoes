@@ -19,30 +19,30 @@ const SindicoHeroSection = () => {
   return (
     <section 
       ref={ref}
-      className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden bg-gradient-to-br from-exa-black via-exa-purple/20 to-exa-black"
+      className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden bg-gradient-to-br from-exa-black via-exa-purple/20 to-exa-black pt-24 md:pt-8 pb-24 md:pb-16"
     >
       {/* Background overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-exa-black/50 to-exa-black z-0" />
       
       {/* Conteúdo */}
       <div 
-        className={`relative z-[50] container mx-auto px-[10%] max-w-[1440px] text-center transition-all duration-1000 ${
+        className={`relative z-[50] container mx-auto px-4 md:px-[10%] max-w-[1440px] text-center transition-all duration-1000 mb-16 md:mb-20 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        <h1 className="font-montserrat font-extrabold text-5xl lg:text-7xl text-white mb-6">
+        <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-7xl text-white mb-6">
           Transforme a comunicação<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-exa-purple to-exa-blue">
             do seu prédio
           </span>
         </h1>
         
-        <p className="font-poppins text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto mb-12">
+        <p className="font-poppins text-lg md:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto mb-8 md:mb-12">
           A EXA leva informação, estética e tecnologia para dentro do elevador — 
           o espaço onde todos passam, todos os dias.
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <ExaCTA variant="primary" size="lg" to="/contato">
             Quero ter a EXA no meu prédio
           </ExaCTA>

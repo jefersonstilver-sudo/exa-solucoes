@@ -20,15 +20,15 @@ const DesignValorizaSection = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Conteúdo */}
           <div className="space-y-6">
-            <h2 className="font-montserrat font-bold text-4xl lg:text-5xl text-exa-purple">
+            <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-exa-purple">
               Elegância e integração visual.
             </h2>
-            <p className="font-poppins text-lg text-gray-700 leading-relaxed">
+            <p className="font-poppins text-base md:text-lg text-gray-700 leading-relaxed">
               As telas EXA são projetadas para se integrar de forma harmônica ao elevador.
               O brilho é calibrado, os contrastes são equilibrados e o design se adapta à 
               estética de cada prédio.
             </p>
-            <p className="font-poppins text-lg text-gray-700 leading-relaxed">
+            <p className="font-poppins text-base md:text-lg text-gray-700 leading-relaxed">
               Cada instalação é pensada para valorizar o ambiente, transformando o elevador 
               em um espaço moderno e sofisticado que impressiona moradores e visitantes.
             </p>

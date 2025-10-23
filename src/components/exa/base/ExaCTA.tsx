@@ -30,9 +30,9 @@ const ExaCTA = ({
   };
 
   const sizeClasses = {
-    sm: 'px-6 py-2 text-sm',
-    md: 'px-8 py-3 text-base',
-    lg: 'px-10 py-4 text-lg',
+    sm: 'px-4 md:px-6 py-2 text-sm',
+    md: 'px-6 md:px-8 py-2.5 md:py-3 text-sm md:text-base',
+    lg: 'px-8 md:px-10 py-3 md:py-4 text-base md:text-lg',
   };
 
   const classes = cn(baseClasses, variantClasses[variant], sizeClasses[size], className);
