@@ -14,7 +14,7 @@ const ExpansaoImpactoSection = () => {
     icon: Building,
     value: count50,
     label: 'prédios conectados',
-    year: 'Hoje'
+    year: 'primeira fase de implementação sendo concluída'
   }, {
     icon: TrendingUp,
     value: count100,
