@@ -32,11 +32,11 @@ const DesignValorizaSection = () => {
           </div>
           
           {/* Imagem */}
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl">
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
             <img 
               src={molduraExa} 
               alt="Moldura do painel EXA para elevadores"
-              className="w-full h-full object-contain aspect-[4/3]"
+              className="w-full h-auto max-h-[700px] object-contain"
             />
           </div>
         </div>
