@@ -2,18 +2,13 @@ import React from 'react';
 import ExaSection from '@/components/exa/base/ExaSection';
 import ExaCTA from '@/components/exa/base/ExaCTA';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-
 const CTAFinalSindicoSection = () => {
-  const { ref, isVisible } = useScrollReveal();
-
-  return (
-    <ExaSection background="transparent" className="py-24">
-      <div 
-        ref={ref}
-        className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-exa-purple via-exa-purple/90 to-exa-black p-12 lg:p-20 text-center transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}
-      >
+  const {
+    ref,
+    isVisible
+  } = useScrollReveal();
+  return <ExaSection background="transparent" className="py-24">
+      <div ref={ref} className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-exa-purple via-exa-purple/90 to-exa-black p-12 lg:p-20 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-exa-blue/20 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-exa-yellow/20 rounded-full blur-3xl" />
@@ -32,18 +27,10 @@ const CTAFinalSindicoSection = () => {
             <ExaCTA variant="secondary" size="lg" to="/contato">
               Quero ter a EXA no meu prédio
             </ExaCTA>
-            <ExaCTA 
-              variant="outline" 
-              size="lg" 
-              href="https://wa.me/5545999999999?text=Olá! Gostaria de agendar uma visita técnica para conhecer a EXA."
-            >
-              Agendar visita técnica
-            </ExaCTA>
+            
           </div>
         </div>
       </div>
-    </ExaSection>
-  );
+    </ExaSection>;
 };
-
 export default CTAFinalSindicoSection;
