@@ -177,8 +177,7 @@ const Contato = () => {
                 Horário de Atendimento
               </h3>
               <p className="font-poppins">
-                Segunda a Sexta: 9h às 18h<br />
-                Sábado: 9h às 12h
+                Segunda a Sexta: 8h às 17h
               </p>
             </div>
           </div>
