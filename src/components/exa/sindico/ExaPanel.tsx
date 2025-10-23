@@ -3,40 +3,107 @@ import React from 'react';
 interface ExaPanelProps {
   children: React.ReactNode;
   className?: string;
+  videoUrl?: string;
 }
 
-const ExaPanel: React.FC<ExaPanelProps> = ({ children, className = '' }) => {
+const ExaPanel: React.FC<ExaPanelProps> = ({ children, className = '', videoUrl }) => {
   return (
-    <div className={`max-w-xs mx-auto ${className}`}>
-      {/* Moldura Externa Preta - Simula hardware do painel */}
-      <div className="bg-black rounded-2xl shadow-2xl p-4 relative overflow-hidden">
-        {/* Efeito de profundidade 3D */}
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-black to-zinc-900 opacity-50" />
+    <div 
+      className={`max-w-sm mx-auto ${className}`}
+      style={{
+        perspective: '1000px',
+        transformStyle: 'preserve-3d'
+      }}
+    >
+      {/* Moldura Externa com Efeito 3D Profundo */}
+      <div 
+        className="relative"
+        style={{
+          transform: 'rotateY(-2deg) rotateX(2deg)',
+          transformStyle: 'preserve-3d',
+          transition: 'transform 0.3s ease'
+        }}
+      >
+        {/* Sombra 3D */}
+        <div 
+          className="absolute inset-0 bg-black rounded-3xl blur-2xl opacity-60"
+          style={{
+            transform: 'translateZ(-50px)',
+            filter: 'blur(40px)'
+          }}
+        />
         
-        {/* Container do Painel */}
-        <div className="relative bg-zinc-900 rounded-xl overflow-hidden shadow-inner">
-          {/* Header com Logo EXA Luminoso */}
-          <div className="bg-black py-3 px-4 flex items-center justify-center border-b-2 border-zinc-800">
-            <span 
-              className="text-3xl font-bold text-white tracking-wider"
-              style={{
-                textShadow: `
-                  0 0 10px rgba(255, 255, 255, 0.9),
-                  0 0 20px rgba(255, 255, 255, 0.7),
-                  0 0 30px rgba(255, 255, 255, 0.5),
-                  0 0 40px rgba(147, 51, 234, 0.4)
-                `,
-                filter: 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.8))',
-                fontFamily: 'Montserrat, sans-serif'
-              }}
-            >
-              exa
-            </span>
-          </div>
+        {/* Moldura Principal */}
+        <div 
+          className="relative bg-gradient-to-br from-zinc-800 via-black to-zinc-900 rounded-3xl p-6 shadow-2xl"
+          style={{
+            transform: 'translateZ(0)',
+            boxShadow: `
+              0 25px 50px -12px rgba(0, 0, 0, 0.8),
+              0 0 0 1px rgba(255, 255, 255, 0.05),
+              inset 0 2px 4px rgba(255, 255, 255, 0.05)
+            `
+          }}
+        >
+          {/* Borda Interna Iluminada */}
+          <div 
+            className="absolute inset-4 rounded-2xl pointer-events-none"
+            style={{
+              boxShadow: 'inset 0 0 20px rgba(147, 51, 234, 0.1)'
+            }}
+          />
           
-          {/* Área da Tela (Vídeo) */}
-          <div className="aspect-[9/16] bg-black relative">
-            {children}
+          {/* Container do Display */}
+          <div 
+            className="relative bg-black rounded-2xl overflow-hidden"
+            style={{
+              boxShadow: 'inset 0 4px 20px rgba(0, 0, 0, 0.8)'
+            }}
+          >
+            {/* Header com Logo EXA Luminoso */}
+            <div className="bg-gradient-to-b from-zinc-900 to-black py-4 px-6 flex items-center justify-center border-b border-zinc-800/50">
+              <span 
+                className="text-4xl font-bold text-white tracking-wider"
+                style={{
+                  textShadow: `
+                    0 0 10px rgba(255, 255, 255, 0.95),
+                    0 0 20px rgba(255, 255, 255, 0.8),
+                    0 0 30px rgba(255, 255, 255, 0.6),
+                    0 0 40px rgba(147, 51, 234, 0.5),
+                    0 0 60px rgba(147, 51, 234, 0.3)
+                  `,
+                  filter: 'drop-shadow(0 0 25px rgba(255, 255, 255, 0.9))',
+                  fontFamily: 'Montserrat, sans-serif'
+                }}
+              >
+                exa
+              </span>
+            </div>
+            
+            {/* Área da Tela (Vídeo) */}
+            <div className="aspect-[9/16] bg-black relative overflow-hidden">
+              {/* Brilho sutil de tela */}
+              <div 
+                className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent pointer-events-none"
+                style={{
+                  mixBlendMode: 'screen'
+                }}
+              />
+              
+              {/* Conteúdo dinâmico (vídeo ou children) */}
+              {videoUrl ? (
+                <video
+                  src={videoUrl}
+                  className="w-full h-full object-cover"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              ) : (
+                children
+              )}
+            </div>
           </div>
         </div>
       </div>
