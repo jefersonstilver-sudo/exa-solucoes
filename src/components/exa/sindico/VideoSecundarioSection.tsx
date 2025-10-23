@@ -21,9 +21,11 @@ const VideoSecundarioSection = () => {
           {config?.video_secundario_url ? (
             <video
               src={config.video_secundario_url}
-              controls
+              autoPlay
+              loop
+              muted
+              playsInline
               className="w-full h-full object-cover"
-              poster="/placeholder.svg"
             >
               Seu navegador não suporta vídeos.
             </video>
