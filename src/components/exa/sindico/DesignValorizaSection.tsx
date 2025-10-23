@@ -1,6 +1,7 @@
 import React from 'react';
 import ExaSection from '@/components/exa/base/ExaSection';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+import molduraExa from '@/assets/moldura-exa.png';
 
 const DesignValorizaSection = () => {
   const { ref, isVisible } = useScrollReveal();
@@ -33,9 +34,9 @@ const DesignValorizaSection = () => {
           {/* Imagem */}
           <div className="relative rounded-3xl overflow-hidden shadow-2xl">
             <img 
-              src="/placeholder.svg" 
-              alt="Render de cabine de elevador com tela EXA"
-              className="w-full h-full object-cover aspect-[4/3]"
+              src={molduraExa} 
+              alt="Moldura do painel EXA para elevadores"
+              className="w-full h-full object-contain aspect-[4/3]"
             />
           </div>
         </div>
