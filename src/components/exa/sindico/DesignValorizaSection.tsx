@@ -2,9 +2,12 @@ import React from 'react';
 import ExaSection from '@/components/exa/base/ExaSection';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import ExaPanel from '@/components/exa/sindico/ExaPanel';
+import { useVideoConfig } from '@/hooks/useVideoConfig';
+import { Film } from 'lucide-react';
 
 const DesignValorizaSection = () => {
   const { ref, isVisible } = useScrollReveal();
+  const { data: config } = useVideoConfig();
 
   return (
     <ExaSection background="light" className="py-24">
@@ -34,17 +37,28 @@ const DesignValorizaSection = () => {
           {/* Painel EXA 3D - Vídeo editável pelo painel administrativo */}
           <div className="flex items-center justify-center">
             <ExaPanel>
-              {/* Placeholder para vídeo - será gerenciado pelo painel administrativo */}
-              <div className="w-full h-full bg-gradient-to-br from-exa-purple/20 via-black to-black flex items-center justify-center">
-                <div className="text-center space-y-4 p-8">
-                  <div className="text-white/40 text-sm font-poppins">
-                    Vídeo de demonstração
-                  </div>
-                  <div className="text-white/20 text-xs">
-                    Gerenciável pelo painel administrativo
+              {config?.video_secundario_url ? (
+                <video
+                  src={config.video_secundario_url}
+                  controls
+                  className="w-full h-full object-cover"
+                  poster="/placeholder.svg"
+                >
+                  Seu navegador não suporta vídeos.
+                </video>
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-exa-purple/20 via-black to-black flex items-center justify-center">
+                  <div className="text-center space-y-4 p-8">
+                    <Film className="w-16 h-16 text-white/40 mb-4" />
+                    <div className="text-white/40 text-sm font-poppins">
+                      Vídeo de demonstração
+                    </div>
+                    <div className="text-white/20 text-xs">
+                      Gerenciável pelo painel administrativo
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </ExaPanel>
           </div>
         </div>
