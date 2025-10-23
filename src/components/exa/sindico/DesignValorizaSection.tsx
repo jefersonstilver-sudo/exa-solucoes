@@ -1,7 +1,7 @@
 import React from 'react';
 import ExaSection from '@/components/exa/base/ExaSection';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-import molduraExa from '@/assets/moldura-exa.png';
+import ExaPanel from '@/components/exa/sindico/ExaPanel';
 
 const DesignValorizaSection = () => {
   const { ref, isVisible } = useScrollReveal();
@@ -31,13 +31,21 @@ const DesignValorizaSection = () => {
             </p>
           </div>
           
-          {/* Imagem */}
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-            <img 
-              src={molduraExa} 
-              alt="Moldura do painel EXA para elevadores"
-              className="w-full h-auto max-h-[700px] object-contain"
-            />
+          {/* Painel EXA 3D - Vídeo editável pelo painel administrativo */}
+          <div className="flex items-center justify-center">
+            <ExaPanel>
+              {/* Placeholder para vídeo - será gerenciado pelo painel administrativo */}
+              <div className="w-full h-full bg-gradient-to-br from-exa-purple/20 via-black to-black flex items-center justify-center">
+                <div className="text-center space-y-4 p-8">
+                  <div className="text-white/40 text-sm font-poppins">
+                    Vídeo de demonstração
+                  </div>
+                  <div className="text-white/20 text-xs">
+                    Gerenciável pelo painel administrativo
+                  </div>
+                </div>
+              </div>
+            </ExaPanel>
           </div>
         </div>
       </div>
