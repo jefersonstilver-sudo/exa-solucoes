@@ -40,9 +40,7 @@ const PainelInteligenteSection = () => {
             O cérebro da comunicação do condomínio.
           </h2>
           <p className="font-poppins text-lg text-gray-700 leading-relaxed">
-            O painel administrativo da EXA é simples, rápido e intuitivo.
-            O síndico pode enviar comunicados, acompanhar métricas e visualizar 
-            relatórios de exibição em tempo real.
+            Com o painel administrativo da EXA, o síndico gerencia tudo de forma simples: envia avisos importantes, monitora o desempenho dos comunicados e acessa relatórios atualizados a qualquer momento.
           </p>
         </div>
         
