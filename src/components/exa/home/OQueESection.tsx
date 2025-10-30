@@ -1,18 +1,13 @@
 import React from 'react';
 import ExaSection from '../base/ExaSection';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-
 const OQueESection = () => {
-  const { ref, isVisible } = useScrollReveal();
-
-  return (
-    <ExaSection background="gradient" id="o-que-e">
-      <div 
-        ref={ref}
-        className={`max-w-4xl mx-auto space-y-8 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}
-      >
+  const {
+    ref,
+    isVisible
+  } = useScrollReveal();
+  return <ExaSection background="gradient" id="o-que-e">
+      <div ref={ref} className={`max-w-4xl mx-auto space-y-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="text-center space-y-4">
           <h2 className="font-montserrat font-extrabold text-3xl md:text-4xl lg:text-5xl text-exa-purple">
             O que é a EXA?
@@ -35,18 +30,9 @@ const OQueESection = () => {
 
         {/* Imagem ilustrativa com alt text otimizado */}
         <div className="mt-8 flex justify-center">
-          <img 
-            src="/lovable-uploads/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png"
-            alt="Painel digital LED 21 polegadas da EXA instalado em elevador de prédio premium em Foz do Iguaçu mostrando publicidade inteligente com 95% de taxa de visualização e design elegante"
-            className="max-w-sm w-full h-auto rounded-2xl shadow-2xl border-4 border-white/30"
-            loading="lazy"
-            width="400"
-            height="300"
-          />
+          
         </div>
       </div>
-    </ExaSection>
-  );
+    </ExaSection>;
 };
-
 export default OQueESection;
