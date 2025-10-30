@@ -1,11 +1,17 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
+import SEO from '@/components/seo/SEO';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Database, Lock, Eye, UserCheck, Mail } from 'lucide-react';
 
 const PoliticaPrivacidade = () => {
   return (
     <Layout>
+      <SEO
+        title="Política de Privacidade - EXA Publicidade | LGPD e Proteção de Dados"
+        description="Política de privacidade da EXA conforme LGPD. Seus dados são protegidos com criptografia e segurança. Transparência total no tratamento de informações."
+        keywords="política privacidade exa, lgpd, proteção dados pessoais, segurança dados"
+      />
       <div className="min-h-screen bg-gray-50 py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <Card className="shadow-lg">

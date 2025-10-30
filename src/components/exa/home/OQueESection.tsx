@@ -9,26 +9,40 @@ const OQueESection = () => {
     <ExaSection background="gradient" id="o-que-e">
       <div 
         ref={ref}
-        className={`max-w-4xl mx-auto text-center space-y-4 md:space-y-6 transition-all duration-1000 ${
+        className={`max-w-4xl mx-auto space-y-8 transition-all duration-1000 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        <h2 className="font-montserrat font-extrabold text-3xl md:text-4xl lg:text-5xl text-exa-purple">
-          O que é a EXA?
-        </h2>
-        
-        <div className="space-y-4 font-poppins text-base md:text-lg text-gray-700 leading-relaxed">
-          <p>
-            A EXA é uma empresa de publicidade inteligente que conecta marcas e pessoas dentro dos espaços onde a vida acontece.
-          </p>
+        <div className="text-center space-y-4">
+          <h2 className="font-montserrat font-extrabold text-3xl md:text-4xl lg:text-5xl text-exa-purple">
+            O que é a EXA?
+          </h2>
           
-          <p className="text-lg md:text-xl font-semibold text-exa-purple">
-            Publicidade que não interrompe — convive.
-          </p>
-          
-          <p>
-            As telas EXA estão dentro dos elevadores dos prédios premium de Foz do Iguaçu, exibindo anúncios, informações e conteúdos úteis em harmonia com o ambiente. Cada exibição é uma experiência visual discreta, elegante e estrategicamente pensada para gerar atenção genuína e resultados mensuráveis.
-          </p>
+          <div className="space-y-4 font-poppins text-base md:text-lg text-gray-700 leading-relaxed">
+            <p>
+              A EXA é uma empresa de publicidade inteligente que conecta marcas e pessoas dentro dos espaços onde a vida acontece.
+            </p>
+            
+            <p className="text-lg md:text-xl font-semibold text-exa-purple">
+              Publicidade que não interrompe — convive.
+            </p>
+            
+            <p>
+              As telas EXA estão dentro dos elevadores dos prédios premium de Foz do Iguaçu, exibindo anúncios, informações e conteúdos úteis em harmonia com o ambiente. Cada exibição é uma experiência visual discreta, elegante e estrategicamente pensada para gerar atenção genuína e resultados mensuráveis.
+            </p>
+          </div>
+        </div>
+
+        {/* Imagem ilustrativa com alt text otimizado */}
+        <div className="mt-8 flex justify-center">
+          <img 
+            src="/lovable-uploads/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png"
+            alt="Painel digital LED 21 polegadas da EXA instalado em elevador de prédio premium em Foz do Iguaçu mostrando publicidade inteligente com 95% de taxa de visualização e design elegante"
+            className="max-w-sm w-full h-auto rounded-2xl shadow-2xl border-4 border-white/30"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
       </div>
     </ExaSection>

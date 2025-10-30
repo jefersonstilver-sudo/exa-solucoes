@@ -1,11 +1,17 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
+import SEO from '@/components/seo/SEO';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText } from 'lucide-react';
 
 const TermosUso = () => {
   return (
     <Layout>
+      <SEO
+        title="Termos de Uso - EXA Publicidade Inteligente em Elevadores"
+        description="Termos e condições de uso da plataforma EXA. Regras de conteúdo CONAR, LGPD, direitos autorais e política de veiculação em painéis digitais."
+        keywords="termos uso exa, condições plataforma, conar publicidade, política veiculação"
+      />
       <div className="min-h-screen bg-gray-50 py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <Card className="shadow-lg">
