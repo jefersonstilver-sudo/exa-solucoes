@@ -1,6 +1,7 @@
-
 import React from 'react';
 import Layout from '@/components/layout/Layout';
+import SEO from '@/components/seo/SEO';
+import { organizationSchema, createFAQSchema, createBreadcrumbSchema, lojaFAQs } from '@/components/seo/schemas';
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
 import BuildingStoreHeader from '@/components/building-store/BuildingStoreHeader';
 import useBuildingStore from '@/hooks/useBuildingStore';
@@ -62,6 +63,21 @@ const BuildingStore = () => {
 
   return (
     <Layout>
+      <SEO
+        title="Anuncie em Painéis Digitais de Elevadores | A partir de R$297/mês - EXA"
+        description="Alcance 10.000+ pessoas em prédios premium de Foz do Iguaçu. Anúncios em painéis digitais 21&quot; HD nos elevadores. Segmentação por perfil, rastreamento em tempo real. Planos a partir de R$297."
+        keywords="anunciar painel digital, preço publicidade elevador, quanto custa anúncio prédio, contratar mídia indoor, publicidade elevador preço, anúncio prédio residencial, mídia indoor foz iguaçu"
+        canonical="https://exa.com.br/loja"
+        ogImage="https://exa.com.br/og-loja.jpg"
+        structuredData={[
+          organizationSchema,
+          createBreadcrumbSchema([
+            { name: 'Início', url: 'https://exa.com.br/' },
+            { name: 'Loja', url: 'https://exa.com.br/loja' }
+          ]),
+          createFAQSchema(lojaFAQs)
+        ]}
+      />
       {/* Container principal com padding para evitar sobreposição do header */}
       <div className="min-h-screen w-full pt-20">
         <div className="w-full container mx-auto px-4 md:px-6 py-6">

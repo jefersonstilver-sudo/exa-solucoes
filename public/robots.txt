@@ -1,8 +1,17 @@
+# EXA Publicidade Inteligente - Robots.txt
+# Última atualização: 2025-01-20
+
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 0
+
+User-agent: Googlebot-Image
+Allow: /
+Disallow: /admin/
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +19,55 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+# Crawlers de ferramentas SEO (limitar carga)
+User-agent: SemrushBot
+Crawl-delay: 10
+
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: MJ12bot
+Crawl-delay: 10
+
+# Bloquear crawlers ruins
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+# Regras para todos os outros bots
 User-agent: *
 Allow: /
+Allow: /loja
+Allow: /sou-sindico
+Allow: /contato
+Allow: /plano
+
+# Bloquear áreas administrativas
+Disallow: /admin/
+Disallow: /super_admin/
+Disallow: /57303905503127900/
+Disallow: /painel-debug/
+
+# Bloquear checkout e áreas privadas
+Disallow: /checkout/
+Disallow: /payment
+Disallow: /pix-payment
+Disallow: /anunciante/
+Disallow: /pedido-confirmado
+Disallow: /confirmacao
+
+# Bloquear parâmetros de rastreamento
+Disallow: /*?utm_*
+Disallow: /*?ref=*
+Disallow: /*?fbclid=*
+Disallow: /*?gclid=*
+
+# Bloquear recursos técnicos
+Disallow: /api/
+Disallow: /*.json$
+Disallow: /src/
+
+# Sitemaps
+Sitemap: https://exa.com.br/sitemap.xml

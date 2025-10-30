@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
+import SEO from '@/components/seo/SEO';
+import { organizationSchema, webSiteSchema, createFAQSchema, homeFAQs, serviceSchema } from '@/components/seo/schemas';
 import HeroSection from '@/components/exa/home/HeroSection';
 import OQueESection from '@/components/exa/home/OQueESection';
 import SolucoesSection from '@/components/exa/home/SolucoesSection';
@@ -30,6 +32,19 @@ const Exa = () => {
 
   return (
     <Layout className="bg-white">
+      <SEO
+        title="EXA | Publicidade Inteligente em Elevadores - Painéis Digitais Foz do Iguaçu"
+        description="Transforme elevadores em mídia premium. Painéis digitais 21&quot; em prédios de alto padrão em Foz do Iguaçu. Teste GRÁTIS por 30 dias. Alcance 10.000+ moradores diariamente."
+        keywords="painel digital elevador, publicidade elevador foz iguaçu, mídia indoor condomínio, digital signage elevador, tela publicidade prédio, screen elevador, display digital, publicidade condomínio, anúncio prédio residencial, mídia OOH indoor"
+        canonical="https://exa.com.br/"
+        ogImage="https://exa.com.br/og-home.jpg"
+        structuredData={[
+          organizationSchema,
+          webSiteSchema,
+          serviceSchema,
+          createFAQSchema(homeFAQs)
+        ]}
+      />
       <div className="relative overflow-x-hidden w-full">
         <HeroSection />
         

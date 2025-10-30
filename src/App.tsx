@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/hooks/useAuth';
@@ -70,7 +71,7 @@ console.log('✅ QueryClient initialized');
 // Main App content wrapper with Coming Soon protection
 const AppContent = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(MAINTENANCE_MODE && !hasLaunchTimePassed());
-  const isDevSession = typeof window !== 'undefined' && sessionStorage.getItem('indexa_dev_session') === 'true';
+  const isDevSession = typeof window !== 'undefined' && sessionStorage.getItem('exa_dev_session') === 'true';
   
   // Page transition hook
   const { isLoading: isTransitioning, loadingMessage } = usePageTransition({
@@ -253,19 +254,21 @@ function App() {
   console.log('🎯 App component rendering...');
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <Router>
-            <SimpleCartProvider>
-              <ErrorBoundary>
-                <AppContent />
-              </ErrorBoundary>
-            </SimpleCartProvider>
-          </Router>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
+            <Router>
+              <SimpleCartProvider>
+                <ErrorBoundary>
+                  <AppContent />
+                </ErrorBoundary>
+              </SimpleCartProvider>
+            </Router>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 

@@ -70,10 +70,10 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Cores específicas do Indexa - usando HSL
-				'indexa-purple': 'hsl(var(--indexa-purple))',
-				'indexa-mint': 'hsl(var(--indexa-mint))',
-				'indexa-purple-dark': 'hsl(var(--indexa-purple-dark))',
+				// Cores específicas do EXA - usando HSL
+				'exa-purple': 'hsl(var(--exa-purple))',
+				'exa-mint': 'hsl(var(--exa-mint))',
+				'exa-purple-dark': 'hsl(var(--exa-purple-dark))',
 				// Novas cores LINKAÊ usando as variáveis HSL
 				linkae: {
 					primary: 'hsl(var(--linkae-primary))',
