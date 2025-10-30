@@ -44,6 +44,10 @@ const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
 // Blog pages
 const BlogIndex = lazy(() => import('./pages/blog/Index'));
 const PublicidadeElevadoresROI = lazy(() => import('./pages/blog/PublicidadeElevadoresROI'));
+const CalcularROIElevadores = lazy(() => import('./pages/blog/CalcularROIElevadores'));
+const MidiaIndoorVsOutdoor = lazy(() => import('./pages/blog/MidiaIndoorVsOutdoor'));
+const ErrosAnunciarCondominios = lazy(() => import('./pages/blog/ErrosAnunciarCondominios'));
+const CaseSucessoAcademia = lazy(() => import('./pages/blog/CaseSucessoAcademia'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 const EmailSent = lazy(() => import('./pages/EmailSent'));
@@ -194,6 +198,26 @@ const AppContent = () => {
           <Route path="/blog/publicidade-elevadores-roi" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando artigo..." />}>
               <PublicidadeElevadoresROI />
+            </Suspense>
+          } />
+          <Route path="/blog/calcular-roi-elevadores" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando artigo..." />}>
+              <CalcularROIElevadores />
+            </Suspense>
+          } />
+          <Route path="/blog/midia-indoor-vs-outdoor" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando artigo..." />}>
+              <MidiaIndoorVsOutdoor />
+            </Suspense>
+          } />
+          <Route path="/blog/erros-anunciar-condominios" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando artigo..." />}>
+              <ErrosAnunciarCondominios />
+            </Suspense>
+          } />
+          <Route path="/blog/case-sucesso-academia" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando artigo..." />}>
+              <CaseSucessoAcademia />
             </Suspense>
           } />
           <Route path="/panel-store" element={

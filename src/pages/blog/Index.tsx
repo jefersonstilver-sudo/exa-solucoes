@@ -17,44 +17,44 @@ interface BlogPost {
 
 const blogPosts: BlogPost[] = [
   {
-    slug: 'publicidade-elevadores-roi',
-    title: '5 Motivos Para Anunciar em Elevadores: O Guia Completo de ROI',
-    excerpt: 'Descubra por que a publicidade em elevadores oferece o melhor retorno sobre investimento em mídia indoor, com dados reais e cases de sucesso.',
-    date: '2025-01-20',
-    category: 'ROI & Performance',
-    readTime: '8 min'
+    slug: 'case-sucesso-academia',
+    title: 'Case: Como Academia Local Cresceu 300% com Painéis em Elevadores',
+    excerpt: 'História real de uma academia que investiu R$ 800 e conquistou 64 novos alunos em 60 dias. ROI de 4.700%. Estratégias replicáveis.',
+    date: '2025-01-24',
+    category: 'Case de Sucesso',
+    readTime: '14 min'
   },
   {
-    slug: 'como-escolher-predio-ideal',
-    title: 'Como Escolher o Prédio Ideal Para Sua Campanha',
-    excerpt: 'Guia completo sobre segmentação de público, análise demográfica e seleção estratégica de locais para maximizar o impacto dos seus anúncios.',
-    date: '2025-01-18',
+    slug: 'erros-anunciar-condominios',
+    title: '10 Erros Fatais ao Anunciar em Condomínios',
+    excerpt: 'Descubra os 10 erros que destroem campanhas em elevadores e como evitá-los. Multiplique seu ROI em 300-500%.',
+    date: '2025-01-23',
     category: 'Estratégia',
-    readTime: '10 min'
+    readTime: '18 min'
   },
   {
-    slug: 'midia-indoor-vs-outdoor',
-    title: 'Mídia Indoor vs Outdoor: Qual É Melhor Para Seu Negócio?',
-    excerpt: 'Comparação detalhada entre publicidade indoor e outdoor, com análise de custos, alcance, conversão e casos de uso ideais para cada formato.',
-    date: '2025-01-15',
-    category: 'Comparativos',
+    slug: 'calcular-roi-elevadores',
+    title: 'Como Calcular ROI de Publicidade em Elevadores',
+    excerpt: 'Aprenda fórmulas práticas, benchmarks reais e estratégias para maximizar retorno. Calculadora interativa incluída.',
+    date: '2025-01-22',
+    category: 'ROI & Performance',
     readTime: '12 min'
   },
   {
-    slug: 'tendencias-publicidade-digital-2025',
-    title: 'Tendências de Publicidade Digital em 2025',
-    excerpt: 'As principais tendências em mídia programática, DOOH e marketing de proximidade que estão transformando a publicidade em 2025.',
-    date: '2025-01-12',
-    category: 'Tendências',
-    readTime: '7 min'
+    slug: 'midia-indoor-vs-outdoor',
+    title: 'Mídia Indoor vs Outdoor: Guia Completo Para Escolher',
+    excerpt: 'Comparação detalhada: custos, ROI, casos de uso. Tabela comparativa completa + estratégia híbrida recomendada.',
+    date: '2025-01-21',
+    category: 'Comparativos',
+    readTime: '15 min'
   },
   {
-    slug: 'criar-campanha-sucesso',
-    title: 'Como Criar Uma Campanha de Sucesso em 7 Passos',
-    excerpt: 'Metodologia completa para planejar, executar e otimizar campanhas em painéis digitais, desde a criação de conteúdo até a análise de resultados.',
-    date: '2025-01-10',
-    category: 'Tutorial',
-    readTime: '15 min'
+    slug: 'publicidade-elevadores-roi',
+    title: '5 Motivos Para Anunciar em Elevadores: ROI Comprovado',
+    excerpt: 'Descubra por que anúncios em elevadores geram até 500% de ROI. Dados reais e estratégias comprovadas.',
+    date: '2025-01-20',
+    category: 'ROI & Performance',
+    readTime: '8 min'
   }
 ];
 
