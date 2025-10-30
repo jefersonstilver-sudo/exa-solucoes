@@ -355,7 +355,7 @@ const CaseSucessoAcademia = () => {
 
             <div className="space-y-4">
               <div className="bg-blue-50 p-5 rounded-lg border-l-4 border-blue-500">
-                <p className="font-bold text-gray-900 mb-2">📍 1. Geografia > Quantidade</p>
+                <p className="font-bold text-gray-900 mb-2">📍 1. Geografia {'>'} Quantidade</p>
                 <p className="text-gray-700 text-sm">
                   Melhor anunciar em 5 prédios próximos que em 50 prédios espalhados pela cidade.
                 </p>
