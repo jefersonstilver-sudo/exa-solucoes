@@ -90,7 +90,7 @@ const Home: React.FC = () => {
               </h1>
               
               <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-                Conectando marcas e audiências com tecnologia e performance
+                Conectando marcas e audiências com tecnologia e performance. <a href="/comparativo-outdoor" className="text-[#3C1361] hover:underline font-semibold">Veja por que somos 5x mais eficientes que outdoors tradicionais</a>.
               </p>
               
               <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-16">
@@ -123,7 +123,7 @@ const Home: React.FC = () => {
                     <span className="text-white text-2xl font-bold">🎯</span>
                   </div>
                   <h3 className="text-xl font-semibold mb-4 text-gray-900">Alto Impacto</h3>
-                  <p className="text-gray-600">Painéis estrategicamente posicionados para máxima visibilidade</p>
+                  <p className="text-gray-600">Painéis estrategicamente posicionados para máxima visibilidade. <a href="/loja" className="text-[#3C1361] hover:underline">Veja os prédios disponíveis</a>.</p>
                 </motion.div>
 
                 <motion.div 
@@ -136,7 +136,7 @@ const Home: React.FC = () => {
                     <span className="text-white text-2xl font-bold">📊</span>
                   </div>
                   <h3 className="text-xl font-semibold mb-4 text-gray-900">Performance</h3>
-                  <p className="text-gray-600">Métricas em tempo real para otimizar suas campanhas</p>
+                  <p className="text-gray-600">Métricas em tempo real para otimizar suas campanhas. <a href="/sou-sindico" className="text-[#3C1361] hover:underline">Síndicos, saiba mais sobre como funciona</a>.</p>
                 </motion.div>
 
                 <motion.div 

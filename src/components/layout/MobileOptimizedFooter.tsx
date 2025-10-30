@@ -91,7 +91,7 @@ const MobileOptimizedFooter = () => {
                 </li>
                 <li className="flex items-center">
                   <Mail className="h-4 w-4 mr-2 text-white/80" />
-                  <span className="text-base text-white/80">comercial@indexamidia.com.br</span>
+                  <span className="text-base text-white/80">comercial@examidia.com.br</span>
                 </li>
                 <li className="flex items-start">
                   <MapPin className="h-4 w-4 mr-2 mt-1 text-white/80" />
@@ -137,11 +137,11 @@ const MobileOptimizedFooter = () => {
                   <span className="text-white/90">(45) 9107-1566</span>
                 </a>
                 
-                <a href="mailto:comercial@indexamidia.com.br" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors">
+                <a href="mailto:comercial@examidia.com.br" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors">
                   <div className="w-8 h-8 bg-exa-mint/20 rounded-full flex items-center justify-center">
                     <Mail className="h-4 w-4 text-exa-mint" />
                   </div>
-                  <span className="text-white/90 text-sm">comercial@indexamidia.com.br</span>
+                  <span className="text-white/90 text-sm">comercial@examidia.com.br</span>
                 </a>
                 
                 <div className="flex items-start space-x-3 p-3 rounded-lg">
@@ -161,7 +161,7 @@ const MobileOptimizedFooter = () => {
         <div className="border-t border-white/20 pt-6 pb-6">
           <div className="text-center text-white/80">
             <p className="text-sm">
-              © 2025 Indexa Mídia. Todos os direitos reservados.
+              © 2025 EXA Mídia. Todos os direitos reservados.
             </p>
           </div>
         </div>

@@ -20,7 +20,7 @@ const HeaderLogo: React.FC = () => {
       className="w-32 h-auto py-2"
       showSubtitle={true}
       logoUrl={(isStoreRoute || isExaRoute) ? EXA_LOGO_URL : undefined}
-      altText={(isStoreRoute || isExaRoute) ? 'EXA Logo' : undefined}
+      altText={(isStoreRoute || isExaRoute) ? 'EXA - Publicidade Inteligente em Painéis Digitais' : 'EXA Publicidade Inteligente - Painéis Digitais para Elevadores em Foz do Iguaçu'}
     />
   );
 };

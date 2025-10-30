@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
+import SEO from '@/components/seo/SEO';
+import { organizationSchema, createBreadcrumbSchema, createFAQSchema, lojaFAQs, serviceSchema } from '@/components/seo/schemas';
 import { usePanelStore } from '@/hooks/usePanelStore';
 import { useSimpleBuildingStore } from '@/hooks/useSimpleBuildingStore';
 import { useCartManager } from '@/hooks/useCartManager';
@@ -129,7 +131,32 @@ export default function PanelStore() {
 
   return (
     <Layout>
-      <motion.div 
+      <SEO
+        title="Loja Online de Painéis Digitais para Elevadores | EXA Foz do Iguaçu"
+        description="Compre publicidade em painéis digitais 21&quot; HD instalados em elevadores de prédios premium em Foz do Iguaçu. Planos a partir de R$297/mês. Escolha seu prédio, crie seu anúncio e comece a impactar milhares de pessoas hoje."
+        keywords="comprar espaço publicitário elevador, anunciar em prédio, painel digital loja online, publicidade condomínio preço, quanto custa anunciar elevador foz iguaçu"
+        canonical="https://exa.com.br/loja"
+        ogImage="https://exa.com.br/og-loja.jpg"
+        structuredData={[
+          organizationSchema,
+          serviceSchema,
+          createBreadcrumbSchema([
+            { name: 'Início', url: 'https://exa.com.br/' },
+            { name: 'Loja Online', url: 'https://exa.com.br/loja' }
+          ]),
+          createFAQSchema(lojaFAQs),
+          {
+            "@context": "https://schema.org",
+            "@type": "Store",
+            "name": "EXA Loja de Painéis Digitais",
+            "description": "Loja online de espaços publicitários em painéis digitais para elevadores",
+            "priceRange": "R$297 - R$2500",
+            "paymentAccepted": ["PIX", "Cartão de Crédito"],
+            "currenciesAccepted": "BRL"
+          }
+        ]}
+      />
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}

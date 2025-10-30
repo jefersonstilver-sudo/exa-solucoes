@@ -326,7 +326,7 @@ const ComparativoOutdoor = () => {
           </h2>
           <p className="font-poppins text-xl text-gray-700">
             Teste EXA por 30 dias GRÁTIS e compare você mesmo os resultados.
-            Sem compromisso, sem taxa de setup.
+            Sem compromisso, sem taxa de setup. Veja também <a href="/sou-sindico" className="text-exa-purple hover:underline font-semibold">como síndicos podem instalar painéis gratuitamente</a>.
           </p>
           <Button
             onClick={() => navigate('/loja')}
