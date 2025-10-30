@@ -1,8 +1,9 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/layout/Layout';
+import SEO from '@/components/seo/SEO';
+import { organizationSchema, webSiteSchema, createBreadcrumbSchema, createFAQSchema, homeFAQs } from '@/components/seo/schemas';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import AdminAccessButton from '@/components/admin/AdminAccessButton';
@@ -56,6 +57,21 @@ const Home: React.FC = () => {
 
   return (
     <Layout>
+      <SEO
+        title="Painéis Digitais para Elevadores em Foz do Iguaçu | EXA Publicidade Inteligente"
+        description="Anuncie em painéis digitais HD de 21&quot; nos elevadores de Foz do Iguaçu. Alcance milhares de pessoas diariamente com mídia indoor de alto impacto. Planos a partir de R$297/mês. Instalação gratuita para síndicos."
+        keywords="painel digital elevador foz iguaçu, publicidade elevador, mídia indoor, anúncio prédio residencial, outdoor digital, marketing condomínio, painéis publicitários digitais"
+        canonical="https://exa.com.br/"
+        ogImage="https://exa.com.br/og-home.jpg"
+        structuredData={[
+          organizationSchema,
+          webSiteSchema,
+          createBreadcrumbSchema([
+            { name: 'Início', url: 'https://exa.com.br/' }
+          ]),
+          createFAQSchema(homeFAQs)
+        ]}
+      />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
         {/* Hero Section */}
         <section className="relative pt-20 pb-32 lg:pt-32 lg:pb-40">

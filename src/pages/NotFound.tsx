@@ -1,7 +1,7 @@
-
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/seo/SEO";
 import { motion } from "framer-motion";
 import { ArrowLeft, Home, Search } from "lucide-react";
 
@@ -16,12 +16,19 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <motion.div 
-      className="min-h-screen flex items-center justify-center bg-gray-100"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }}
-    >
+    <>
+      <SEO
+        title="Página Não Encontrada - EXA"
+        description="A página que você procura não foi encontrada."
+        noindex={true}
+        nofollow={true}
+      />
+      <motion.div 
+        className="min-h-screen flex items-center justify-center bg-gray-100"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+      >
       <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-xl">
         <motion.div
           initial={{ scale: 0.8 }}
@@ -73,6 +80,7 @@ const NotFound = () => {
         </div>
       </div>
     </motion.div>
+    </>
   );
 };
 

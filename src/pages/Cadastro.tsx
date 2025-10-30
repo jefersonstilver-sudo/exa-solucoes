@@ -3,6 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/layout/Layout';
+import SEO from '@/components/seo/SEO';
+import { organizationSchema, createBreadcrumbSchema } from '@/components/seo/schemas';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,7 +163,21 @@ const Cadastro: React.FC = () => {
 
   return (
     <Layout>
-      <motion.div 
+      <SEO
+        title="Criar Conta - EXA Publicidade Inteligente"
+        description="Crie sua conta gratuita na EXA e comece a anunciar em painéis digitais de elevadores em Foz do Iguaçu. Cadastro rápido e seguro."
+        keywords="criar conta exa, cadastro anunciante, criar anúncio elevador, cadastro mídia indoor"
+        canonical="https://exa.com.br/cadastro"
+        noindex={true}
+        structuredData={[
+          organizationSchema,
+          createBreadcrumbSchema([
+            { name: 'Início', url: 'https://exa.com.br/' },
+            { name: 'Cadastro', url: 'https://exa.com.br/cadastro' }
+          ])
+        ]}
+      />
+      <motion.div
         className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

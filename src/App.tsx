@@ -40,6 +40,10 @@ import Exa from './pages/Exa';
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const Contato = lazy(() => import('./pages/Contato'));
 const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
+
+// Blog pages
+const BlogIndex = lazy(() => import('./pages/blog/Index'));
+const PublicidadeElevadoresROI = lazy(() => import('./pages/blog/PublicidadeElevadoresROI'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 const EmailSent = lazy(() => import('./pages/EmailSent'));
@@ -178,6 +182,18 @@ const AppContent = () => {
           <Route path="/comparativo-outdoor" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando comparativo..." />}>
               <ComparativoOutdoor />
+            </Suspense>
+          } />
+          
+          {/* BLOG ROUTES */}
+          <Route path="/blog" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando blog..." />}>
+              <BlogIndex />
+            </Suspense>
+          } />
+          <Route path="/blog/publicidade-elevadores-roi" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando artigo..." />}>
+              <PublicidadeElevadoresROI />
             </Suspense>
           } />
           <Route path="/panel-store" element={
