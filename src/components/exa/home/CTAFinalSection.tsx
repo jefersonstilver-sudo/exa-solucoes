@@ -41,7 +41,7 @@ const CTAFinalSection = () => {
 
         <div className="pt-8 border-t border-gray-300 mt-12">
           <p className="font-poppins text-gray-600">
-            Dúvidas? Entre em contato: <a href="mailto:contato@exa.com.br" className="text-exa-purple font-semibold hover:underline">contato@exa.com.br</a>
+            Dúvidas? Entre em contato: <a href="mailto:comercial@examidia.com.br" className="text-exa-purple font-semibold hover:underline">comercial@examidia.com.br</a>
           </p>
         </div>
       </div>
