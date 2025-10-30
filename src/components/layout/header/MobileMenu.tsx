@@ -49,13 +49,6 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
           >
             Contato
           </Link>
-          <Link 
-            to="/blog" 
-            className="block text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat py-2"
-            onClick={onClose}
-          >
-            Blog
-          </Link>
         </nav>
       </div>
     </div>

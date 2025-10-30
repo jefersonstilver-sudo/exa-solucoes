@@ -75,7 +75,6 @@ const MobileOptimizedFooter = () => {
                 <li><Link to="/" className="text-white/80 text-base hover:text-white transition-colors">Home</Link></li>
                 <li><Link to="/loja" className="text-white/80 text-base hover:text-white transition-colors">Loja Online</Link></li>
                 <li><Link to="/sou-sindico" className="text-white/80 text-base hover:text-white transition-colors">Sou Síndico</Link></li>
-                <li><Link to="/blog" className="text-white/80 text-base hover:text-white transition-colors">Blog</Link></li>
                 <li><Link to="/contato" className="text-white/80 text-base hover:text-white transition-colors">Contato</Link></li>
               </ul>
             </div>
@@ -125,7 +124,6 @@ const MobileOptimizedFooter = () => {
                 <li><Link to="/" className="block text-white/80 hover:text-exa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Home</Link></li>
                 <li><Link to="/loja" className="block text-white/80 hover:text-exa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Loja Online</Link></li>
                 <li><Link to="/sou-sindico" className="block text-white/80 hover:text-exa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Sou Síndico</Link></li>
-                <li><Link to="/blog" className="block text-white/80 hover:text-exa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Blog</Link></li>
                 <li><Link to="/contato" className="block text-white/80 hover:text-exa-mint transition-colors py-2 px-3 rounded-lg hover:bg-white/5">Contato</Link></li>
               </ul>
             </AccordionSection>

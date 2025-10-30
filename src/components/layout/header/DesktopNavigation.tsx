@@ -28,12 +28,6 @@ const DesktopNavigation = () => {
       >
         Contato
       </Link>
-      <Link 
-        to="/blog" 
-        className="text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat"
-      >
-        Blog
-      </Link>
     </nav>
   );
 };
