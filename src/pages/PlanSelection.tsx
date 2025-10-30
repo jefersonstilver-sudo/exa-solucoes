@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
+import SEO from '@/components/seo/SEO';
 import PlanLoginNotification from '@/components/checkout/PlanLoginNotification';
 import PlanSelectionContent from '@/components/checkout/PlanSelectionContent';
 import PlanLoadingIndicator from '@/components/checkout/PlanLoadingIndicator';
@@ -12,6 +13,7 @@ import { useCartVerification } from '@/hooks/checkout/useCartVerification';
 import { logPriceCalculation } from '@/utils/auditLogger';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { planoEssencialSchema, planoExpansaoSchema, planoPremiumSchema, planoDominioSchema } from '@/components/seo/productSchemas';
 
 const PlanSelection = () => {
   const { user, isLoggedIn, isLoading: isSessionLoading } = useUserSession();
@@ -133,6 +135,12 @@ const PlanSelection = () => {
   
   return (
     <Layout>
+      <SEO
+        title="Planos de Publicidade em Elevadores | A partir de R$297/mês - EXA Foz do Iguaçu"
+        description="Escolha seu plano: 1, 3, 6 ou 12 prédios premium. Sem taxa de setup, cancele quando quiser. Alcance milhares de moradores classe A/B. Calcule seu ROI agora."
+        keywords="preço publicidade elevador, planos anúncio prédio, quanto custa painel digital, valor publicidade indoor"
+        structuredData={[planoEssencialSchema, planoExpansaoSchema, planoPremiumSchema, planoDominioSchema]}
+      />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
           {/* Unified Progress Header */}

@@ -1,5 +1,6 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
+import SEO from '@/components/seo/SEO';
 import ExaSection from '@/components/exa/base/ExaSection';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -38,6 +39,11 @@ const Contato = () => {
 
   return (
     <Layout className="bg-gradient-to-br from-gray-50 to-gray-100">
+      <SEO
+        title="Contato EXA | Anuncie em Painéis Digitais de Elevadores - Foz do Iguaçu"
+        description="Fale com a EXA Publicidade. WhatsApp (45) 9141-5856. Resposta em até 2 horas. Teste GRÁTIS por 30 dias. Atendimento: Seg-Sex 8h às 17h."
+        keywords="contato exa foz iguaçu, telefone publicidade elevador, whatsapp anúncio prédio, email exa publicidade"
+      />
       <ExaSection background="light" className="min-h-screen py-24">
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           {/* Left side - Form */}

@@ -7,18 +7,16 @@ export const organizationSchema = {
   "name": "EXA Publicidade Inteligente",
   "legalName": "EXA Mídia Digital LTDA",
   "alternateName": ["EXA", "EXA Publicidade", "EXA Digital"],
-  "description": "Líder em publicidade inteligente em elevadores de Foz do Iguaçu",
+  "description": "Líder em publicidade inteligente em elevadores de Foz do Iguaçu. Painéis digitais 21\" em prédios premium. Alcance 10.000+ moradores por mês com 95% de taxa de visualização.",
   "url": "https://exa.com.br",
-  "logo": "https://exa.com.br/logo.png",
+  "logo": "https://exa.com.br/lovable-uploads/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png",
   "image": [
-    "https://exa.com.br/painel-elevador.jpg",
-    "https://exa.com.br/instalacao-predio.jpg"
+    "https://exa.com.br/lovable-uploads/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png"
   ],
-  "telephone": "+55 45 3027-1234",
+  "telephone": "+55 45 9141-5856",
   "email": "contato@exa.com.br",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "Av. Brasil, 1234",
     "addressLocality": "Foz do Iguaçu",
     "addressRegion": "PR",
     "postalCode": "85851-000",
@@ -38,7 +36,7 @@ export const organizationSchema = {
     },
     "geoRadius": "50000"
   },
-  "priceRange": "R$297 - R$1997",
+  "priceRange": "R$ 297 - R$ 3.997",
   "openingHoursSpecification": {
     "@type": "OpeningHoursSpecification",
     "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
@@ -49,7 +47,15 @@ export const organizationSchema = {
     "https://instagram.com/exapublicidade",
     "https://facebook.com/exapublicidade",
     "https://linkedin.com/company/exa"
-  ]
+  ],
+  "slogan": "Publicidade que convive, não interrompe",
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.9",
+    "reviewCount": "87",
+    "bestRating": "5",
+    "worstRating": "1"
+  }
 };
 
 export const webSiteSchema = {

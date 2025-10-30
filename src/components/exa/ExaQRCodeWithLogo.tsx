@@ -62,10 +62,11 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
         >
           <img 
             src="/lovable-uploads/be41c92b-ba0c-4778-9a8a-905f6843f3f1.png"
-            alt="INDEXA Logo"
+            alt="EXA Publicidade Inteligente - Painéis Digitais para Elevadores em Foz do Iguaçu"
             className="w-full h-full object-contain"
+            loading="lazy"
             onLoad={() => {
-              console.log('✅ Logo INDEXA carregada com sucesso no QR code');
+              console.log('✅ Logo EXA carregada com sucesso no QR code');
             }}
             onError={(e) => {
               console.error('❌ Erro ao carregar logo, usando fallback texto');
@@ -75,7 +76,7 @@ const ExaQRCodeWithLogo: React.FC<ExaQRCodeWithLogoProps> = ({
               if (parent) {
                 const fallbackDiv = document.createElement('div');
                 fallbackDiv.className = 'flex items-center justify-center w-full h-full text-purple-600 font-bold text-sm';
-                fallbackDiv.textContent = 'INDEXA';
+                fallbackDiv.textContent = 'EXA';
                 parent.appendChild(fallbackDiv);
               }
             }}
