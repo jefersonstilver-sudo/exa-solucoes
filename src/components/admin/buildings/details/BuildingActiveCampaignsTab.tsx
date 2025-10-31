@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Video, Play, User, Calendar, DollarSign, Eye, ExternalLink } from 'lucide-react';
 import { useBuildingActiveCampaigns } from '@/hooks/useBuildingActiveCampaigns';
+import ModernSkeleton from '@/components/ui/ModernSkeleton';
 
 interface BuildingActiveCampaignsTabProps {
   buildingId: string;
@@ -23,7 +24,8 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
     loading
   });
 
-  const getStatusBadge = (status: string) => {
+  // ⚡ OTIMIZAÇÃO: Memoizar funções auxiliares
+  const getStatusBadge = useCallback((status: string) => {
     const statusMap = {
       'ativo': { color: 'bg-green-500', label: '✅ Ativo' },
       'video_aprovado': { color: 'bg-blue-500', label: '👍 Vídeo Aprovado' },
@@ -38,9 +40,9 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
         {config.label}
       </Badge>
     );
-  };
+  }, []);
 
-  const getVideoStatusBadge = (video: any) => {
+  const getVideoStatusBadge = useCallback((video: any) => {
     if (video.selected_for_display && video.is_active) {
       return <Badge className="bg-green-500 text-white">🎥 Em Exibição</Badge>;
     } else if (video.approval_status === 'approved' && video.is_active) {
@@ -52,27 +54,60 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
     } else {
       return <Badge variant="outline">📴 Inativo</Badge>;
     }
-  };
+  }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     if (!dateString) return 'Data não definida';
     return new Date(dateString).toLocaleDateString('pt-BR');
-  };
+  }, []);
 
-  const getDaysRemaining = (endDate: string) => {
+  const getDaysRemaining = useCallback((endDate: string) => {
     if (!endDate) return null;
     const today = new Date();
     const end = new Date(endDate);
     const diffTime = end.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
-  };
+  }, []);
 
+  // ⚡ OTIMIZAÇÃO: Skeleton Loading para melhor UX
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">Carregando programação...</span>
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <ModernSkeleton variant="text" className="h-6 w-64" />
+            <ModernSkeleton variant="text" className="h-4 w-96" />
+          </div>
+          <ModernSkeleton variant="button" />
+        </div>
+
+        <div className="grid gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="border-l-4 border-l-blue-500">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2 flex-1">
+                    <ModernSkeleton variant="text" className="h-5 w-48" />
+                    <ModernSkeleton variant="text" className="h-4 w-64" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <ModernSkeleton variant="button" className="w-32" />
+                    <ModernSkeleton variant="button" className="w-28" />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted rounded-lg mb-4">
+                  <ModernSkeleton variant="text" className="h-12" />
+                  <ModernSkeleton variant="text" className="h-12" />
+                  <ModernSkeleton variant="text" className="h-12" />
+                </div>
+                <ModernSkeleton variant="card" className="h-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -108,6 +143,18 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
     );
   }
 
+  // ⚡ OTIMIZAÇÃO: Memoizar dados processados
+  const processedCampaigns = useMemo(() => {
+    return campaigns.map((campaign) => ({
+      ...campaign,
+      daysRemaining: getDaysRemaining(campaign.data_fim),
+      totalVideos: campaign.videos.length,
+      activeVideos: campaign.videos.filter(v => v.is_active).length,
+      displayingVideos: campaign.videos.filter(v => v.selected_for_display && v.is_active).length,
+      videosToShow: campaign.videos.filter(v => v.selected_for_display && v.is_active)
+    }));
+  }, [campaigns, getDaysRemaining]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -125,11 +172,8 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
       </div>
 
       <div className="grid gap-4">
-        {campaigns.map((campaign) => {
-          const daysRemaining = getDaysRemaining(campaign.data_fim);
-          const totalVideos = campaign.videos.length;
-          const activeVideos = campaign.videos.filter(v => v.is_active).length;
-          const displayingVideos = campaign.videos.filter(v => v.selected_for_display && v.is_active).length;
+        {processedCampaigns.map((campaign) => {
+          const { daysRemaining, totalVideos, displayingVideos, videosToShow } = campaign;
 
           return (
             <Card key={campaign.id} className="border-l-4 border-l-blue-500">
@@ -186,13 +230,10 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
                 </div>
 
                 {/* Lista de Vídeos */}
-                {campaign.videos.length > 0 && (() => {
-                  const videosToShow = campaign.videos.filter(v => v.selected_for_display && v.is_active);
-                  if (videosToShow.length === 0) return null;
-                  return (
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-900">Vídeo em Exibição:</h4>
-                      {videosToShow.map((video) => (
+                {videosToShow.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900">Vídeo em Exibição:</h4>
+                    {videosToShow.map((video) => (
                         <div key={video.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="flex items-center gap-3">
                             <div className="p-2 bg-blue-100 rounded-lg">
@@ -217,10 +258,9 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
                             )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  );
-                })()}
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           );

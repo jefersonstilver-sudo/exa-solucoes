@@ -19,11 +19,34 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [recalcKey, setRecalcKey] = useState(0);
   const [validLogosCount, setValidLogosCount] = useState(0);
+  const [isVisible, setIsVisible] = useState(true); // ⚡ OTIMIZAÇÃO: Track visibility
   const trackRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Detectar preferência de movimento reduzido
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ⚡ OTIMIZAÇÃO: Intersection Observer para pausar quando fora da tela
+  useEffect(() => {
+    if (!containerRef.current || prefersReducedMotion) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsVisible(entry.isIntersecting);
+        });
+      },
+      { threshold: 0.1 } // Trigger when 10% visible
+    );
+
+    observer.observe(containerRef.current);
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, [prefersReducedMotion]);
 
   // Controle da animação
   useEffect(() => {
@@ -40,22 +63,24 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
     
     // Set animation and control with animationPlayState
     track.style.animation = `logoTicker ${duration}s linear infinite ${animationDirection}`;
-    track.style.animationPlayState = isPaused ? 'paused' : 'running';
+    // ⚡ OTIMIZAÇÃO: Pausar quando não visível OU hover
+    track.style.animationPlayState = (isPaused || !isVisible) ? 'paused' : 'running';
 
     return () => {
       if (track) {
         track.style.animation = 'none';
       }
     };
-  }, [logos, speed, direction, loading, prefersReducedMotion, recalcKey]);
+  }, [logos, speed, direction, loading, prefersReducedMotion, recalcKey, isVisible]);
 
   // Control animation play state separately for smooth pause/resume
   useEffect(() => {
     const track = trackRef.current;
     if (track && track.style.animation !== 'none') {
-      track.style.animationPlayState = isPaused ? 'paused' : 'running';
+      // ⚡ OTIMIZAÇÃO: Pausar quando não visível OU hover
+      track.style.animationPlayState = (isPaused || !isVisible) ? 'paused' : 'running';
     }
-  }, [isPaused]);
+  }, [isPaused, isVisible]);
 
   // Handlers de hover
   const handleMouseEnter = () => {
