@@ -32,7 +32,7 @@ const SindicoHeroSection = () => {
       >
         <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-7xl text-white mb-6">
           Transforme a comunicação<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9C1E1E] to-[#180A0A]">
+          <span className="text-[#D72638]">
             do seu prédio
           </span>
         </h1>
