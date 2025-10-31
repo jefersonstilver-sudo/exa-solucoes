@@ -1,0 +1,23 @@
+{
+  "name": "EXA Publicidade Inteligente",
+  "short_name": "EXA",
+  "description": "Publicidade inteligente em elevadores - Painéis digitais em Foz do Iguaçu",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#FF4430",
+  "background_color": "#FF4430",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
+}
