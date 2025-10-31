@@ -17,14 +17,20 @@ const CondominiosTicker: React.FC<CondominiösTickerProps> = ({ className }) => 
   const duplicatedCondominios = [...buildingNames, ...buildingNames];
 
   return (
-    <div className={cn('relative overflow-hidden bg-[#9C1E1E]/20 backdrop-blur-md py-6 border-t border-[#9C1E1E]/30', className)}>
-      <div className="flex animate-scroll-left whitespace-nowrap">
+    <div className={cn('relative overflow-hidden bg-[#9C1E1E] py-6', className)}>
+      {/* Faixa de destaque com gradiente */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#9C1E1E] via-[#D72638] to-[#9C1E1E] opacity-90" />
+      
+      {/* Brilho superior */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+      
+      <div className="relative flex animate-scroll-left whitespace-nowrap">
         {duplicatedCondominios.map((condominio, index) => (
           <div
             key={index}
-            className="inline-flex items-center mx-12 font-poppins text-white font-medium text-base"
+            className="inline-flex items-center mx-12 font-poppins text-white font-semibold text-base drop-shadow-lg"
           >
-            <span className="text-exa-yellow mr-3 text-lg">●</span>
+            <span className="text-white mr-3 text-lg drop-shadow-md">●</span>
             {condominio}
           </div>
         ))}

@@ -33,23 +33,28 @@ const ExaPanel: React.FC<ExaPanelProps> = ({ children, className = '', videoUrl 
           }}
         />
         
-        {/* Moldura Principal */}
+        {/* Moldura Principal - Clara, 3D e Fina */}
         <div 
-          className="relative bg-gradient-to-br from-zinc-800 via-black to-zinc-900 rounded-3xl p-6 shadow-2xl"
+          className="relative bg-gradient-to-br from-zinc-300 via-zinc-200 to-zinc-100 rounded-3xl p-3 shadow-2xl"
           style={{
             transform: 'translateZ(0)',
             boxShadow: `
-              0 25px 50px -12px rgba(0, 0, 0, 0.8),
-              0 0 0 1px rgba(255, 255, 255, 0.05),
-              inset 0 2px 4px rgba(255, 255, 255, 0.05)
+              0 20px 40px -12px rgba(0, 0, 0, 0.3),
+              0 8px 16px -4px rgba(0, 0, 0, 0.2),
+              0 0 0 1px rgba(255, 255, 255, 0.8),
+              inset 0 2px 4px rgba(255, 255, 255, 0.9),
+              inset 0 -2px 4px rgba(0, 0, 0, 0.1)
             `
           }}
         >
-          {/* Borda Interna Iluminada */}
+          {/* Borda Interna com Efeito 3D EXA Red */}
           <div 
-            className="absolute inset-4 rounded-2xl pointer-events-none"
+            className="absolute inset-2 rounded-2xl pointer-events-none"
             style={{
-              boxShadow: 'inset 0 0 20px rgba(147, 51, 234, 0.1)'
+              boxShadow: `
+                inset 0 2px 8px rgba(156, 30, 30, 0.15),
+                inset 0 -2px 8px rgba(215, 38, 56, 0.1)
+              `
             }}
           />
           
@@ -69,8 +74,8 @@ const ExaPanel: React.FC<ExaPanelProps> = ({ children, className = '', videoUrl 
                     0 0 10px rgba(255, 255, 255, 0.95),
                     0 0 20px rgba(255, 255, 255, 0.8),
                     0 0 30px rgba(255, 255, 255, 0.6),
-                    0 0 40px rgba(147, 51, 234, 0.5),
-                    0 0 60px rgba(147, 51, 234, 0.3)
+                    0 0 40px rgba(156, 30, 30, 0.5),
+                    0 0 60px rgba(215, 38, 56, 0.3)
                   `,
                   filter: 'drop-shadow(0 0 25px rgba(255, 255, 255, 0.9))',
                   fontFamily: 'Montserrat, sans-serif'
