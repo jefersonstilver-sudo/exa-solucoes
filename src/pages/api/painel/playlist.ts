@@ -70,48 +70,37 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const queryTime = Date.now() - startTime;
     console.log(`⚡ [PLAYLIST API] Query concluída em ${queryTime}ms`);
     
-    // Se há pedidos ativos, buscar vídeo atual
-    if (pedidos && pedidos.length > 0) {
-      const pedido = pedidos[0];
+    // ⚡ OTIMIZAÇÃO 8 (FASE 1): Usar RPC otimizada para buscar vídeo ativo
+    const { data: activeVideosRaw, error: videosError } = await supabase
+      .rpc('get_active_videos_for_panel', { 
+        p_panel_id: parsedPanelId 
+      });
+
+    if (videosError) {
+      console.error('❌ [PLAYLIST API] Erro ao buscar vídeos:', videosError);
+    }
+
+    const activeVideos = activeVideosRaw?.map((v: any) => ({
+      url: v.video_url,
+      nome: v.video_nome,
+      duracao: v.video_duracao
+    })) || [];
+
+    console.log(`✅ [PLAYLIST API] ${activeVideos.length} vídeos retornados via RPC otimizada (FASE 1)`);
+
+    if (activeVideos.length > 0) {
+      await supabase
+        .from('painel_logs')
+        .insert({
+          painel_id: parsedPanelId,
+          status_sincronizacao: 'ativo_com_contrato',
+          timestamp: new Date().toISOString()
+        });
       
-      const { data: currentVideo, error: videoError } = await supabase
-        .rpc('get_current_display_video', { p_pedido_id: pedido.id });
-      
-      if (videoError) {
-        console.error('Erro ao buscar vídeo atual:', videoError);
-      }
-      
-      // RPC retorna um array, pegar o primeiro item
-      const videoInfo = Array.isArray(currentVideo) && currentVideo.length > 0 ? currentVideo[0] : null;
-      
-      if (videoInfo && (videoInfo as any).video_id) {
-        const { data: videoData } = await supabase
-          .from('videos')
-          .select('url, nome, duracao')
-          .eq('id', (videoInfo as any).video_id)
-          .single();
-        
-        if (videoData) {
-          await supabase
-            .from('painel_logs')
-            .insert({
-              painel_id: parsedPanelId,
-              status_sincronizacao: 'ativo_com_contrato',
-              timestamp: new Date().toISOString()
-            });
-          
-          return res.status(200).json({
-            active_contract: true,
-            videos: [
-              {
-                url: videoData.url,
-                nome: videoData.nome,
-                duracao: videoData.duracao
-              }
-            ]
-          });
-        }
-      }
+      return res.status(200).json({
+        active_contract: true,
+        videos: activeVideos
+      });
     }
     
     // Fallback para contratos expirados - vídeo institucional

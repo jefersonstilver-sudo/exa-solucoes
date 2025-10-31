@@ -64,37 +64,26 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         return;
       }
 
-      // ⚡ OTIMIZAÇÃO: Buscar vídeos atuais em paralelo (reduz N+1 queries)
+      // ⚡ OTIMIZAÇÃO 3 (FASE 1): Buscar vídeos com RPC batch (1 query ao invés de N)
       const pedidoIds = pedidos.map(p => p.id);
       
-      console.log('⚡ [BUILDING ACTIVE VIDEOS] Buscando vídeos para', pedidoIds.length, 'pedidos');
+      console.log('⚡ [BUILDING ACTIVE VIDEOS] Buscando vídeos para', pedidoIds.length, 'pedidos via RPC batch');
       const startTime = performance.now();
 
-      // 2. Buscar vídeos atuais para cada pedido
-      const currentVideosPromises = pedidoIds.map(async (pedidoId) => {
-        const { data, error } = await supabase
-          .rpc('get_current_display_video', { p_pedido_id: pedidoId });
-        
-        if (error) {
-          console.error(`❌ Erro ao buscar vídeo atual para pedido ${pedidoId}:`, error);
-          return null;
-        }
-        
-        // RPC retorna um array, pegar o primeiro item
-        const videoData = Array.isArray(data) && data.length > 0 ? data[0] : null;
-        return videoData ? { ...videoData, pedido_id: pedidoId } : null;
-      });
+      // 2. Buscar vídeos atuais para TODOS os pedidos em uma única query
+      const { data: currentVideosData, error: batchError } = await supabase
+        .rpc('get_current_display_videos_batch', { 
+          p_pedido_ids: pedidoIds 
+        });
 
-      const currentVideosResults = await Promise.all(currentVideosPromises);
-      const currentVideosData = currentVideosResults.filter(v => v !== null) as Array<{
-        video_id: string;
-        is_scheduled: boolean;
-        priority_type: string;
-        pedido_id: string;
-      }>;
+      if (batchError) {
+        console.error('❌ [BUILDING ACTIVE VIDEOS] Erro ao buscar vídeos (batch):', batchError);
+        setVideos([]);
+        return;
+      }
 
       const batchTime = performance.now();
-      console.log(`✅ [BUILDING ACTIVE VIDEOS] Vídeos atuais carregados em ${(batchTime - startTime).toFixed(0)}ms`);
+      console.log(`✅ [BUILDING ACTIVE VIDEOS] ${currentVideosData?.length || 0} vídeos carregados via RPC batch em ${(batchTime - startTime).toFixed(0)}ms (OTIMIZADO)`);
 
       if (!currentVideosData || currentVideosData.length === 0) {
         console.log('📭 [BUILDING ACTIVE VIDEOS] Nenhum vídeo em exibição encontrado');

@@ -2119,6 +2119,14 @@ export type Database = {
       generate_coupon_code: { Args: { prefix?: string }; Returns: string }
       generate_developer_token: { Args: never; Returns: string }
       generate_secure_temp_password: { Args: never; Returns: string }
+      get_active_videos_for_panel: {
+        Args: { p_panel_id: string }
+        Returns: {
+          video_duracao: number
+          video_nome: string
+          video_url: string
+        }[]
+      }
       get_admin_buildings_safe: {
         Args: never
         Returns: {
@@ -2288,6 +2296,15 @@ export type Database = {
         Args: { p_pedido_id: string }
         Returns: {
           is_scheduled: boolean
+          priority_type: string
+          video_id: string
+        }[]
+      }
+      get_current_display_videos_batch: {
+        Args: { p_pedido_ids: string[] }
+        Returns: {
+          is_scheduled: boolean
+          pedido_id: string
           priority_type: string
           video_id: string
         }[]
