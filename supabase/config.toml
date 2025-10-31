@@ -48,3 +48,9 @@ verify_jwt = true
 
 [functions.notify-video-toggle]
 verify_jwt = false
+
+[functions.video-schedule-sync]
+verify_jwt = false
+
+[functions.campaign-scheduler]
+verify_jwt = false
