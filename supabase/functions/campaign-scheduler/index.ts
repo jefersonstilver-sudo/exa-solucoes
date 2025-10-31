@@ -212,18 +212,6 @@ Deno.serve(async (req) => {
               break
             }
           } else {
-              // Horário que cruza meia-noite
-              isInTimeRange = currentMinutes >= startMinutes || currentMinutes <= endMinutes
-              console.log(`[SCHEDULER]     🌙 Cross-midnight range: ${isInTimeRange ? 'ATIVO' : 'FORA'} do intervalo ${rule.start_time}-${rule.end_time}`)
-            }
-            
-            if (isInTimeRange) {
-              shouldBeActive = true
-              activationReason = `Ativo no horário: ${rule.start_time}-${rule.end_time}`
-              console.log(`[SCHEDULER]     ✅ ATIVO - ${activationReason}`)
-              break
-            }
-          } else {
             // Verificar se há dias futuros programados
             const futureDays = rule.days_of_week.filter(day => day > currentDay || (day < currentDay && day >= 0))
             if (futureDays.length > 0) {

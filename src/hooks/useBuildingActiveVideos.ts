@@ -64,23 +64,37 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         return;
       }
 
-      // ⚡ OTIMIZAÇÃO 3: Usar RPC batch (elimina N+1 queries - 95% redução)
+      // ⚡ OTIMIZAÇÃO: Buscar vídeos atuais em paralelo (reduz N+1 queries)
       const pedidoIds = pedidos.map(p => p.id);
       
-      console.log('⚡ [BUILDING ACTIVE VIDEOS] Usando RPC batch para', pedidoIds.length, 'pedidos');
+      console.log('⚡ [BUILDING ACTIVE VIDEOS] Buscando vídeos para', pedidoIds.length, 'pedidos');
       const startTime = performance.now();
 
-      // 2. Buscar vídeos atuais de TODOS os pedidos em UMA ÚNICA CHAMADA
-      const { data: currentVideosData, error: batchError } = await supabase
-        .rpc('get_current_display_videos_batch', { p_pedido_ids: pedidoIds });
+      // 2. Buscar vídeos atuais para cada pedido
+      const currentVideosPromises = pedidoIds.map(async (pedidoId) => {
+        const { data, error } = await supabase
+          .rpc('get_current_display_video', { p_pedido_id: pedidoId });
+        
+        if (error) {
+          console.error(`❌ Erro ao buscar vídeo atual para pedido ${pedidoId}:`, error);
+          return null;
+        }
+        
+        // RPC retorna um array, pegar o primeiro item
+        const videoData = Array.isArray(data) && data.length > 0 ? data[0] : null;
+        return videoData ? { ...videoData, pedido_id: pedidoId } : null;
+      });
 
-      if (batchError) {
-        console.error('❌ Erro na RPC batch:', batchError);
-        throw batchError;
-      }
+      const currentVideosResults = await Promise.all(currentVideosPromises);
+      const currentVideosData = currentVideosResults.filter(v => v !== null) as Array<{
+        video_id: string;
+        is_scheduled: boolean;
+        priority_type: string;
+        pedido_id: string;
+      }>;
 
       const batchTime = performance.now();
-      console.log(`✅ [BUILDING ACTIVE VIDEOS] RPC batch concluída em ${(batchTime - startTime).toFixed(0)}ms`);
+      console.log(`✅ [BUILDING ACTIVE VIDEOS] Vídeos atuais carregados em ${(batchTime - startTime).toFixed(0)}ms`);
 
       if (!currentVideosData || currentVideosData.length === 0) {
         console.log('📭 [BUILDING ACTIVE VIDEOS] Nenhum vídeo em exibição encontrado');
@@ -89,7 +103,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       }
 
       // 3. Extrair todos os IDs necessários
-      const videoIds = [...new Set(currentVideosData.map((v: any) => v.video_id).filter(Boolean))];
+      const videoIds = [...new Set(currentVideosData.map(v => v.video_id).filter(Boolean))];
       const clientIds = [...new Set(pedidos.map(p => p.client_id))];
 
       // 4. Buscar dados de vídeos e clientes em PARALELO

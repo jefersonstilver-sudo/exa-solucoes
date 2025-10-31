@@ -53,41 +53,65 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       });
     }
     
-    // ⚡ OTIMIZAÇÃO 8: Usar RPC otimizada (82% mais rápido)
+    // Buscar pedidos ativos para este painel
     const startTime = Date.now();
     
-    const { data: activeVideos, error: videosError } = await supabase
-      .rpc('get_active_videos_for_panel', { p_panel_id: parsedPanelId });
+    const { data: pedidos, error: pedidosError } = await supabase
+      .from('pedidos')
+      .select('id, client_id, valor_total, status, data_fim')
+      .contains('lista_paineis', [parsedPanelId])
+      .in('status', ['video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
+      .gte('data_fim', new Date().toISOString().split('T')[0]);
     
-    const queryTime = Date.now() - startTime;
-    console.log(`⚡ [PLAYLIST API] Query otimizada concluída em ${queryTime}ms`);
-    
-    if (videosError) {
-      console.error('Erro ao buscar vídeos ativos:', videosError);
+    if (pedidosError) {
+      console.error('Erro ao buscar pedidos:', pedidosError);
     }
     
-    // Se há vídeos de contratos ativos, usar eles
-    if (activeVideos && Array.isArray(activeVideos) && activeVideos.length > 0) {
-      const videoData = activeVideos[0];
+    const queryTime = Date.now() - startTime;
+    console.log(`⚡ [PLAYLIST API] Query concluída em ${queryTime}ms`);
+    
+    // Se há pedidos ativos, buscar vídeo atual
+    if (pedidos && pedidos.length > 0) {
+      const pedido = pedidos[0];
       
-      await supabase
-        .from('painel_logs')
-        .insert({
-          painel_id: parsedPanelId,
-          status_sincronizacao: 'ativo_com_contrato',
-          timestamp: new Date().toISOString()
-        });
+      const { data: currentVideo, error: videoError } = await supabase
+        .rpc('get_current_display_video', { p_pedido_id: pedido.id });
       
-      return res.status(200).json({
-        active_contract: true,
-        videos: [
-          {
-            url: videoData.video_url,
-            nome: videoData.video_nome,
-            duracao: videoData.video_duracao
-          }
-        ]
-      });
+      if (videoError) {
+        console.error('Erro ao buscar vídeo atual:', videoError);
+      }
+      
+      // RPC retorna um array, pegar o primeiro item
+      const videoInfo = Array.isArray(currentVideo) && currentVideo.length > 0 ? currentVideo[0] : null;
+      
+      if (videoInfo && (videoInfo as any).video_id) {
+        const { data: videoData } = await supabase
+          .from('videos')
+          .select('url, nome, duracao')
+          .eq('id', (videoInfo as any).video_id)
+          .single();
+        
+        if (videoData) {
+          await supabase
+            .from('painel_logs')
+            .insert({
+              painel_id: parsedPanelId,
+              status_sincronizacao: 'ativo_com_contrato',
+              timestamp: new Date().toISOString()
+            });
+          
+          return res.status(200).json({
+            active_contract: true,
+            videos: [
+              {
+                url: videoData.url,
+                nome: videoData.nome,
+                duracao: videoData.duracao
+              }
+            ]
+          });
+        }
+      }
     }
     
     // Fallback para contratos expirados - vídeo institucional
