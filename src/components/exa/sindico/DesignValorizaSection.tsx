@@ -20,7 +20,7 @@ const DesignValorizaSection = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Conteúdo */}
           <div className="space-y-6">
-            <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-exa-purple">
+            <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-[#9C1E1E]">
               Elegância e integração visual.
             </h2>
             <p className="font-poppins text-base md:text-lg text-gray-700 leading-relaxed">
@@ -49,7 +49,7 @@ const DesignValorizaSection = () => {
                   Seu navegador não suporta vídeos.
                 </video>
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-exa-purple/20 via-black to-black flex items-center justify-center">
+                <div className="w-full h-full bg-gradient-to-br from-[#9C1E1E]/20 via-black to-black flex items-center justify-center">
                   <div className="text-center space-y-4 p-8">
                     <Film className="w-16 h-16 text-white/40 mb-4" />
                     <div className="text-white/40 text-sm font-poppins">

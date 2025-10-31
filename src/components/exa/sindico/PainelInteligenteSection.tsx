@@ -36,7 +36,7 @@ const PainelInteligenteSection = () => {
       >
         {/* Título e descrição */}
         <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-          <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-exa-purple mb-4 md:mb-6">
+          <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-[#9C1E1E] mb-4 md:mb-6">
             O cérebro da comunicação do condomínio.
           </h2>
           <p className="font-poppins text-base md:text-lg text-gray-700 leading-relaxed">
@@ -53,7 +53,7 @@ const PainelInteligenteSection = () => {
               className="hover:shadow-xl transition-shadow duration-300"
             >
               <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-exa-purple to-exa-blue rounded-2xl flex items-center justify-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] rounded-2xl flex items-center justify-center">
                   <feature.icon className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="font-montserrat font-semibold text-lg text-exa-black">

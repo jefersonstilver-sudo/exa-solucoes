@@ -20,7 +20,7 @@ const FloatingCTA = () => {
   return (
     <Link
       to="/loja"
-      className="fixed bottom-8 right-8 z-50 bg-gradient-to-r from-exa-purple to-exa-purple/90 text-white px-6 py-4 rounded-full shadow-2xl hover:scale-110 transition-all duration-300 flex items-center space-x-2 group animate-fade-in"
+      className="fixed bottom-8 right-8 z-50 bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] text-white px-6 py-4 rounded-full shadow-2xl hover:scale-110 transition-all duration-300 flex items-center space-x-2 group animate-fade-in"
     >
       <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
       <span className="font-montserrat font-semibold hidden sm:inline">

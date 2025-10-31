@@ -10,9 +10,9 @@ const CTAFinalSection = () => {
   return (
     <ExaSection background="gradient" className="relative overflow-hidden">
       {/* Background decorative elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-exa-purple/20 via-transparent to-exa-blue/20" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#9C1E1E]/20 via-transparent to-[#180A0A]/20" />
       <div className="absolute top-10 left-10 w-64 h-64 bg-exa-yellow/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-10 right-10 w-64 h-64 bg-exa-purple/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-10 right-10 w-64 h-64 bg-[#9C1E1E]/10 rounded-full blur-3xl" />
 
       <div 
         ref={ref}
@@ -20,9 +20,9 @@ const CTAFinalSection = () => {
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        <Sparkles className="w-16 h-16 text-exa-purple mx-auto" />
+        <Sparkles className="w-16 h-16 text-[#9C1E1E] mx-auto" />
         
-        <h2 className="font-montserrat font-extrabold text-4xl lg:text-6xl text-exa-purple">
+        <h2 className="font-montserrat font-extrabold text-4xl lg:text-6xl text-[#9C1E1E]">
           Transforme visibilidade<br />em resultados
         </h2>
         
@@ -41,7 +41,7 @@ const CTAFinalSection = () => {
 
         <div className="pt-8 border-t border-gray-300 mt-12">
           <p className="font-poppins text-gray-600">
-            Dúvidas? Entre em contato: <a href="mailto:comercial@examidia.com.br" className="text-exa-purple font-semibold hover:underline">comercial@examidia.com.br</a>
+            Dúvidas? Entre em contato: <a href="mailto:comercial@examidia.com.br" className="text-[#9C1E1E] font-semibold hover:underline">comercial@examidia.com.br</a>
           </p>
         </div>
       </div>

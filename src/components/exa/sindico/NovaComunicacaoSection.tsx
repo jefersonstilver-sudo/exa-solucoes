@@ -199,7 +199,7 @@ const NovaComunicacaoSection = () => {
           {/* Conteúdo */}
           <div className="order-1 lg:order-2 space-y-6 md:space-y-8">
             <div>
-              <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-exa-purple mb-4">
+              <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-[#9C1E1E] mb-4">
                 Mais que um painel.<br />
                 Um novo canal de convivência.
               </h2>
@@ -217,7 +217,7 @@ const NovaComunicacaoSection = () => {
             <div className="space-y-4">
               {benefits.map((benefit, index) => <ExaCard key={index} variant="light" className="p-6 hover:shadow-xl transition-shadow duration-300">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-exa-purple to-exa-blue rounded-lg flex items-center justify-center">
+                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] rounded-lg flex items-center justify-center">
                       <benefit.icon className="w-6 h-6 text-white" />
                     </div>
                     <div>

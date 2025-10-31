@@ -17,7 +17,7 @@ const CondominiosTicker: React.FC<CondominiösTickerProps> = ({ className }) => 
   const duplicatedCondominios = [...buildingNames, ...buildingNames];
 
   return (
-    <div className={cn('relative overflow-hidden bg-exa-purple/20 backdrop-blur-md py-6 border-t border-exa-purple/30', className)}>
+    <div className={cn('relative overflow-hidden bg-[#9C1E1E]/20 backdrop-blur-md py-6 border-t border-[#9C1E1E]/30', className)}>
       <div className="flex animate-scroll-left whitespace-nowrap">
         {duplicatedCondominios.map((condominio, index) => (
           <div

@@ -12,7 +12,7 @@ const ExaCard = ({ children, className, variant = 'light', hoverable = true }: E
   const variantClasses = {
     light: 'bg-white text-exa-black border border-gray-200',
     dark: 'bg-exa-black text-white border border-gray-800',
-    gradient: 'bg-gradient-to-br from-exa-purple to-exa-purple/80 text-white border-none',
+    gradient: 'bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] text-white border-none',
   };
 
   return (

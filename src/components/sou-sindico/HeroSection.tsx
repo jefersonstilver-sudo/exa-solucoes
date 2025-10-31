@@ -43,12 +43,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
       <div className="absolute inset-0 bg-black/75" />
       
       {/* Additional Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-gray-900/20 to-blue-900/30" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#9C1E1E]/30 via-gray-900/20 to-[#180A0A]/30" />
       
       <div className="relative z-10 max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
         <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#D72638] to-[#9C1E1E] bg-clip-text text-transparent">
               Substitua avisos de papel
             </span>
             <span className="block text-white">
@@ -65,7 +65,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
           </p>
           
           <Button 
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg px-8 py-6 rounded-full shadow-2xl transform transition-all duration-300 hover:scale-105"
+            className="bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] hover:from-[#D72638] hover:to-[#9C1E1E] text-white text-lg px-8 py-6 rounded-full shadow-2xl transform transition-all duration-300 hover:scale-105"
             onClick={() => document.getElementById('formulario')?.scrollIntoView({ behavior: 'smooth' })}
           >
             Quero modernizar meu prédio
@@ -103,7 +103,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
             <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2">
               <Button
                 onClick={toggleMute}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0 shadow-lg px-4 py-2 rounded-full transform transition-all duration-300 hover:scale-105"
+                className="bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] hover:from-[#D72638] hover:to-[#9C1E1E] text-white border-0 shadow-lg px-4 py-2 rounded-full transform transition-all duration-300 hover:scale-105"
               >
                 {isMuted ? (
                   <>
@@ -119,7 +119,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible }) => {
               </Button>
             </div>
             
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-blue-400/20 rounded-[2.8rem] blur-xl" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#D72638]/20 to-[#9C1E1E]/20 rounded-[2.8rem] blur-xl" />
           </div>
         </div>
       </div>

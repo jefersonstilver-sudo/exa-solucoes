@@ -1,23 +1,35 @@
 
-/* Utility classes - Essential only - Using HSL */
+/* Utility classes - Essential only - Using HSL - EXA Red Palette */
+.text-indexa-red {
+  color: hsl(var(--exa-red));
+}
+
 .text-indexa-purple {
-  color: hsl(var(--indexa-purple));
+  color: hsl(var(--exa-red));
 }
 
 .text-indexa-mint {
   color: hsl(var(--indexa-mint));
 }
 
+.bg-indexa-red {
+  background-color: hsl(var(--exa-red));
+}
+
 .bg-indexa-purple {
-  background-color: hsl(var(--indexa-purple));
+  background-color: hsl(var(--exa-red));
 }
 
 .bg-indexa-mint {
   background-color: hsl(var(--indexa-mint));
 }
 
+.border-indexa-red {
+  border-color: hsl(var(--exa-red));
+}
+
 .border-indexa-purple {
-  border-color: hsl(var(--indexa-purple));
+  border-color: hsl(var(--exa-red));
 }
 
 /* Performance utilities */

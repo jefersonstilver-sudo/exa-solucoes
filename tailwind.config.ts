@@ -70,10 +70,12 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Cores específicas do EXA - usando HSL
-				'exa-purple': 'hsl(var(--exa-purple))',
+				// Cores específicas do EXA - Nova Paleta EXA Red usando HSL
+				'exa-red': 'hsl(var(--exa-red))',
+				'exa-dark': 'hsl(var(--exa-dark))',
+				'exa-graphite': 'hsl(var(--exa-graphite))',
+				'exa-highlight-red': 'hsl(var(--exa-highlight-red))',
 				'exa-mint': 'hsl(var(--exa-mint))',
-				'exa-purple-dark': 'hsl(var(--exa-purple-dark))',
 				// Novas cores LINKAÊ usando as variáveis HSL
 				linkae: {
 					primary: 'hsl(var(--linkae-primary))',
@@ -82,13 +84,17 @@ export default {
 					cyan: 'hsl(var(--linkae-cyan))',
 					white: 'hsl(var(--linkae-white))'
 				},
-				// Cores EXA - Nova identidade
+				// Cores EXA - Nova Paleta EXA Red
 				exa: {
-					purple: '#5E3D8C',
-					black: '#0A0A0A',
-					yellow: '#FFD54F',
-					blue: '#4FC3F7',
-					white: '#FFFFFF',
+					red: '#9C1E1E',           // EXA Red Primary
+					dark: '#180A0A',          // EXA Dark Background
+					graphite: '#3B1E1E',      // EXA Graphite Secondary
+					highlightRed: '#D72638',  // EXA Highlight Red
+					black: '#0A0A0A',         // EXA Shadow
+					gray: '#D9D9D9',          // EXA Gray
+					white: '#FFFFFF',         // EXA White
+					yellow: '#FFD54F',        // Mantém amarelo
+					blue: '#4FC3F7',          // Mantém azul
 				}
 			},
 			borderRadius: {

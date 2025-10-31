@@ -52,8 +52,8 @@ const ExpansaoImpactoSection = () => {
                 key={index}
                 className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 text-center"
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-exa-purple/20 rounded-full mb-6">
-                  <Icon className="w-8 h-8 text-exa-purple" />
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#9C1E1E]/20 rounded-full mb-6">
+                  <Icon className="w-8 h-8 text-[#9C1E1E]" />
                 </div>
                 <div className="text-4xl md:text-5xl font-bold text-white mb-2">
                   {typeof milestone.value === 'number' ? milestone.value : milestone.value}
@@ -61,7 +61,7 @@ const ExpansaoImpactoSection = () => {
                 <div className="text-base md:text-lg text-gray-300 mb-2">
                   {milestone.label}
                 </div>
-                <div className="text-sm text-exa-purple font-semibold">
+                <div className="text-sm text-[#9C1E1E] font-semibold">
                   {milestone.year}
                 </div>
               </div>

@@ -21,11 +21,11 @@ const TimelineStep: React.FC<TimelineStepProps> = ({
     <div className="relative flex flex-col items-center">
       {/* Linha conectora (não mostrar no último) */}
       {!isLast && (
-        <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-gradient-to-r from-exa-purple to-exa-blue transform translate-x-1/2" />
+        <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] transform translate-x-1/2" />
       )}
       
       {/* Círculo do ícone */}
-      <div className="relative z-10 w-24 h-24 bg-gradient-to-br from-exa-purple to-exa-blue rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300">
+      <div className="relative z-10 w-24 h-24 bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300">
         <Icon className="w-12 h-12 text-white" />
         
         {/* Número */}
@@ -36,7 +36,7 @@ const TimelineStep: React.FC<TimelineStepProps> = ({
       
       {/* Texto */}
       <div className="mt-6 text-center max-w-xs">
-        <h3 className="font-montserrat font-semibold text-xl text-exa-purple mb-2">
+        <h3 className="font-montserrat font-semibold text-xl text-[#9C1E1E] mb-2">
           {title}
         </h3>
         <p className="font-poppins text-gray-600 text-sm">

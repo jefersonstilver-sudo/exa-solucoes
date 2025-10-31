@@ -42,7 +42,7 @@ const Home: React.FC = () => {
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indexa-purple mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#9C1E1E] mx-auto mb-4"></div>
             <p className="text-gray-600">Carregando...</p>
           </div>
         </div>
@@ -84,20 +84,20 @@ const Home: React.FC = () => {
             >
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 leading-tight">
                 Sua mídia digital em{' '}
-                <span className="bg-gradient-to-r from-[#3C1361] to-[#6A1888] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] bg-clip-text text-transparent">
                   painéis de alto impacto
                 </span>
               </h1>
               
               <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-                Conectando marcas e audiências com tecnologia e performance. <a href="/comparativo-outdoor" className="text-[#3C1361] hover:underline font-semibold">Veja por que somos 5x mais eficientes que outdoors tradicionais</a>.
+                Conectando marcas e audiências com tecnologia e performance. <a href="/comparativo-outdoor" className="text-[#9C1E1E] hover:underline font-semibold">Veja por que somos 5x mais eficientes que outdoors tradicionais</a>.
               </p>
               
               <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-16">
                 <Button
                   onClick={() => navigate('/loja')}
                   size="lg"
-                  className="bg-gradient-to-r from-[#3C1361] to-[#6A1888] hover:from-[#2A0D47] hover:to-[#4A0968] text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                  className="bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] hover:from-[#D72638] hover:to-[#9C1E1E] text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                 >
                   Começar agora
                 </Button>
@@ -105,7 +105,7 @@ const Home: React.FC = () => {
                   onClick={() => navigate('/planos')}
                   variant="outline"
                   size="lg"
-                  className="border-2 border-[#3C1361] text-[#3C1361] hover:bg-[#3C1361] hover:text-white px-8 py-4 text-lg font-semibold transition-all duration-300"
+                  className="border-2 border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E] hover:text-white px-8 py-4 text-lg font-semibold transition-all duration-300"
                 >
                   Ver planos
                 </Button>
@@ -119,11 +119,11 @@ const Home: React.FC = () => {
                   transition={{ duration: 0.5, delay: 0.1 }}
                   className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-r from-[#3C1361] to-[#6A1888] rounded-full flex items-center justify-center mb-6 mx-auto">
+                  <div className="w-16 h-16 bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] rounded-full flex items-center justify-center mb-6 mx-auto">
                     <span className="text-white text-2xl font-bold">🎯</span>
                   </div>
                   <h3 className="text-xl font-semibold mb-4 text-gray-900">Alto Impacto</h3>
-                  <p className="text-gray-600">Painéis estrategicamente posicionados para máxima visibilidade. <a href="/loja" className="text-[#3C1361] hover:underline">Veja os prédios disponíveis</a>.</p>
+                  <p className="text-gray-600">Painéis estrategicamente posicionados para máxima visibilidade. <a href="/loja" className="text-[#9C1E1E] hover:underline">Veja os prédios disponíveis</a>.</p>
                 </motion.div>
 
                 <motion.div 
@@ -132,11 +132,11 @@ const Home: React.FC = () => {
                   transition={{ duration: 0.5, delay: 0.2 }}
                   className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-r from-[#3C1361] to-[#6A1888] rounded-full flex items-center justify-center mb-6 mx-auto">
+                  <div className="w-16 h-16 bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] rounded-full flex items-center justify-center mb-6 mx-auto">
                     <span className="text-white text-2xl font-bold">📊</span>
                   </div>
                   <h3 className="text-xl font-semibold mb-4 text-gray-900">Performance</h3>
-                  <p className="text-gray-600">Métricas em tempo real para otimizar suas campanhas. <a href="/sou-sindico" className="text-[#3C1361] hover:underline">Síndicos, saiba mais sobre como funciona</a>.</p>
+                  <p className="text-gray-600">Métricas em tempo real para otimizar suas campanhas. <a href="/sou-sindico" className="text-[#9C1E1E] hover:underline">Síndicos, saiba mais sobre como funciona</a>.</p>
                 </motion.div>
 
                 <motion.div 
@@ -145,7 +145,7 @@ const Home: React.FC = () => {
                   transition={{ duration: 0.5, delay: 0.3 }}
                   className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-r from-[#3C1361] to-[#6A1888] rounded-full flex items-center justify-center mb-6 mx-auto">
+                  <div className="w-16 h-16 bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] rounded-full flex items-center justify-center mb-6 mx-auto">
                     <span className="text-white text-2xl font-bold">🚀</span>
                   </div>
                   <h3 className="text-xl font-semibold mb-4 text-gray-900">Tecnologia</h3>
@@ -174,7 +174,7 @@ const Home: React.FC = () => {
                     onClick={() => navigate('/login')}
                     variant="outline"
                     size="lg"
-                    className="border-2 border-[#3C1361] text-[#3C1361] hover:bg-[#3C1361] hover:text-white px-8 py-3"
+                    className="border-2 border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E] hover:text-white px-8 py-3"
                   >
                     Fazer Login
                   </Button>

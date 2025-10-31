@@ -18,7 +18,7 @@ const HeroSection = () => {
   const displayVideoUrl = videoUrl || defaultVideoUrl;
   return <ExaSection background="dark" className="min-h-[75vh] flex items-center relative overflow-hidden pt-24 md:pt-8">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-exa-purple via-exa-purple/80 to-exa-black opacity-90" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#9C1E1E] via-[#180A0A]/80 to-exa-black opacity-90" />
       
       {/* Animated circles */}
       <div className="absolute top-20 right-20 w-96 h-96 bg-exa-blue/20 rounded-full blur-3xl animate-pulse-soft" />

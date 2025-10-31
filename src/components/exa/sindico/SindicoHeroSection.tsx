@@ -19,7 +19,7 @@ const SindicoHeroSection = () => {
   return (
     <section 
       ref={ref}
-      className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden bg-gradient-to-br from-exa-black via-exa-purple/20 to-exa-black pt-24 md:pt-8 pb-24 md:pb-16"
+      className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden bg-gradient-to-br from-exa-black via-[#9C1E1E]/20 to-exa-black pt-24 md:pt-8 pb-24 md:pb-16"
     >
       {/* Background overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-exa-black/50 to-exa-black z-0" />
@@ -32,7 +32,7 @@ const SindicoHeroSection = () => {
       >
         <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-7xl text-white mb-6">
           Transforme a comunicação<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-exa-purple to-exa-blue">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9C1E1E] to-[#180A0A]">
             do seu prédio
           </span>
         </h1>

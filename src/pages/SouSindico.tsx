@@ -45,11 +45,11 @@ const SouSindico = () => {
         {/* Internal Linking Section */}
         <ExaSection background="light" className="py-12">
           <div className="text-center max-w-3xl mx-auto space-y-6">
-            <h2 className="font-montserrat font-bold text-2xl text-exa-purple">
+            <h2 className="font-montserrat font-bold text-2xl text-[#9C1E1E]">
               Quer Saber Mais Sobre Publicidade em Elevadores?
             </h2>
             <p className="text-gray-700 font-poppins text-lg">
-              Descubra <Link to="/comparativo-outdoor" className="text-exa-purple hover:underline font-semibold">por que painéis em elevadores superam outdoors tradicionais</Link> em taxa de atenção e ROI. Ou <Link to="/loja" className="text-exa-purple hover:underline font-semibold">veja os prédios disponíveis em nossa loja online</Link> e comece a anunciar hoje mesmo.
+              Descubra <Link to="/comparativo-outdoor" className="text-[#9C1E1E] hover:underline font-semibold">por que painéis em elevadores superam outdoors tradicionais</Link> em taxa de atenção e ROI. Ou <Link to="/loja" className="text-[#9C1E1E] hover:underline font-semibold">veja os prédios disponíveis em nossa loja online</Link> e comece a anunciar hoje mesmo.
             </p>
           </div>
         </ExaSection>

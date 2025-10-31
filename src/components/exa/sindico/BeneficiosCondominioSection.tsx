@@ -50,7 +50,7 @@ const BeneficiosCondominioSection = () => {
       >
         {/* Título */}
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-exa-purple mb-4">
+          <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-[#9C1E1E] mb-4">
             Por que os síndicos escolhem a EXA.
           </h2>
         </div>
@@ -64,7 +64,7 @@ const BeneficiosCondominioSection = () => {
               className="hover:scale-105 transition-all duration-300"
             >
               <div className="flex flex-col items-start space-y-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-exa-purple to-exa-blue rounded-2xl flex items-center justify-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] rounded-2xl flex items-center justify-center">
                   <benefit.icon className="w-8 h-8 text-white" />
                 </div>
                 <div>

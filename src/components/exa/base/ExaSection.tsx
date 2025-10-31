@@ -12,7 +12,7 @@ const ExaSection = ({ children, className, id, background = 'transparent' }: Exa
   const backgroundClasses = {
     light: 'bg-white',
     dark: 'bg-exa-black',
-    gradient: 'bg-gradient-to-br from-exa-purple/10 via-transparent to-exa-blue/10',
+    gradient: 'bg-gradient-to-br from-[#9C1E1E]/10 via-transparent to-[#180A0A]/10',
     transparent: 'bg-transparent',
   };
 

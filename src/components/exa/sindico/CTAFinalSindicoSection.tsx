@@ -8,7 +8,7 @@ const CTAFinalSindicoSection = () => {
     isVisible
   } = useScrollReveal();
   return <ExaSection background="transparent" className="py-16 md:py-20 lg:py-24">
-      <div ref={ref} className={`relative overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-br from-exa-purple via-exa-purple/90 to-exa-black p-8 md:p-12 lg:p-20 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div ref={ref} className={`relative overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-br from-[#9C1E1E] via-[#180A0A]/90 to-exa-black p-8 md:p-12 lg:p-20 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-exa-blue/20 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-exa-yellow/20 rounded-full blur-3xl" />

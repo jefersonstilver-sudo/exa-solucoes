@@ -34,7 +34,7 @@ const PorQueFuncionaSection = () => {
         }`}
       >
         <div className="text-center space-y-4">
-          <h2 className="font-montserrat font-extrabold text-4xl lg:text-5xl text-exa-purple">
+          <h2 className="font-montserrat font-extrabold text-4xl lg:text-5xl text-[#9C1E1E]">
             Por Que Funciona?
           </h2>
         </div>
@@ -46,7 +46,7 @@ const PorQueFuncionaSection = () => {
               variant="light"
               className="text-center"
             >
-              <reason.icon className="w-16 h-16 text-exa-purple mx-auto mb-6" />
+              <reason.icon className="w-16 h-16 text-[#9C1E1E] mx-auto mb-6" />
               <h3 className="font-montserrat font-semibold text-2xl text-exa-black mb-3">
                 {reason.title}
               </h3>

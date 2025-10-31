@@ -178,7 +178,7 @@ const Cadastro: React.FC = () => {
         ]}
       />
       <motion.div
-        className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4"
+        className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-[#3B1E1E]/10 flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -311,7 +311,7 @@ const Cadastro: React.FC = () => {
               <Button 
                 onClick={handleSignUp}
                 disabled={isLoading || !acceptedTerms || !hasReadTermsCompletely}
-                className="w-full h-12 bg-gradient-to-r from-indexa-purple to-indexa-green hover:from-indexa-purple/90 hover:to-indexa-green/90 text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="w-full h-12 bg-gradient-to-r from-[#9C1E1E] to-indexa-green hover:from-[#D72638] hover:to-indexa-green/90 text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isLoading ? (
                   <div className="flex items-center">

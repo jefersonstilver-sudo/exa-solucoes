@@ -24,9 +24,9 @@ const ExaCTA = ({
   const baseClasses = 'inline-flex items-center justify-center font-montserrat font-semibold rounded-full transition-all duration-300 hover:scale-105 active:scale-95';
   
   const variantClasses = {
-    primary: 'bg-gradient-to-r from-exa-purple to-exa-purple/90 text-white shadow-lg hover:shadow-xl',
+    primary: 'bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] text-white shadow-lg hover:shadow-xl',
     secondary: 'bg-exa-yellow text-exa-black shadow-lg hover:shadow-xl',
-    outline: 'bg-transparent border-2 border-exa-purple text-exa-purple hover:bg-exa-purple hover:text-white',
+    outline: 'bg-transparent border-2 border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E] hover:text-white',
   };
 
   const sizeClasses = {

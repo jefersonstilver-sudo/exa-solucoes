@@ -44,7 +44,7 @@ const ComoFuncionaSection = () => {
       >
         {/* Título */}
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-exa-purple mb-4">
+          <h2 className="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl text-[#9C1E1E] mb-4">
             Simples, automático e inteligente.
           </h2>
         </div>
