@@ -27,7 +27,7 @@ const HeroSection = () => {
       <div ref={ref} className={`relative z-10 w-full grid lg:grid-cols-2 gap-12 items-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Left side - Text content */}
         <div className="space-y-6 md:space-y-8">
-          <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-7xl text-white leading-tight">
+          <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-7xl text-white leading-tight pt-6 md:pt-0">
             Publicidade que <span className="text-exa-yellow">convive</span>.
           </h1>
           
