@@ -49,7 +49,7 @@ const Contato = () => {
           {/* Left side - Form */}
           <div className="space-y-6">
             <div className="space-y-4">
-              <h1 className="font-montserrat font-extrabold text-4xl lg:text-5xl text-exa-purple">
+              <h1 className="font-montserrat font-extrabold text-4xl lg:text-5xl text-[#9C1E1E]">
                 Entre em Contato
               </h1>
               <p className="font-poppins text-lg text-gray-600">
@@ -125,7 +125,7 @@ const Contato = () => {
 
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-exa-purple to-exa-purple/90 hover:scale-105 transition-transform text-lg py-6"
+                className="w-full bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] hover:scale-105 transition-transform text-lg py-6"
               >
                 Enviar Mensagem
               </Button>
@@ -135,18 +135,18 @@ const Contato = () => {
           {/* Right side - Contact Info */}
           <div className="space-y-8 lg:pl-12">
             <div className="bg-white rounded-3xl p-8 shadow-lg space-y-6">
-              <h2 className="font-montserrat font-bold text-2xl text-exa-purple mb-6">
+              <h2 className="font-montserrat font-bold text-2xl text-[#9C1E1E] mb-6">
                 Informações de Contato
               </h2>
 
               <div className="space-y-4">
                 <div className="flex items-start space-x-4">
-                  <Mail className="w-6 h-6 text-exa-purple flex-shrink-0 mt-1" />
+                  <Mail className="w-6 h-6 text-[#9C1E1E] flex-shrink-0 mt-1" />
                   <div>
                     <p className="font-montserrat font-semibold text-exa-black">Email</p>
                     <a 
                       href="mailto:contato@exa.com.br" 
-                      className="font-poppins text-gray-600 hover:text-exa-purple transition-colors"
+                      className="font-poppins text-gray-600 hover:text-[#9C1E1E] transition-colors"
                     >
                       contato@exa.com.br
                     </a>
@@ -154,12 +154,12 @@ const Contato = () => {
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <Phone className="w-6 h-6 text-exa-purple flex-shrink-0 mt-1" />
+                  <Phone className="w-6 h-6 text-[#9C1E1E] flex-shrink-0 mt-1" />
                   <div>
                     <p className="font-montserrat font-semibold text-exa-black">Telefone</p>
                     <a 
                       href="tel:+5545991415856" 
-                      className="font-poppins text-gray-600 hover:text-exa-purple transition-colors"
+                      className="font-poppins text-gray-600 hover:text-[#9C1E1E] transition-colors"
                     >
                       +55 45 9141-5856
                     </a>
@@ -167,7 +167,7 @@ const Contato = () => {
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <MapPin className="w-6 h-6 text-exa-purple flex-shrink-0 mt-1" />
+                  <MapPin className="w-6 h-6 text-[#9C1E1E] flex-shrink-0 mt-1" />
                   <div>
                     <p className="font-montserrat font-semibold text-exa-black">Localização</p>
                     <p className="font-poppins text-gray-600">
@@ -178,7 +178,7 @@ const Contato = () => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-exa-purple to-exa-purple/80 rounded-3xl p-8 text-white">
+            <div className="bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] rounded-3xl p-8 text-white">
               <h3 className="font-montserrat font-bold text-xl mb-4">
                 Horário de Atendimento
               </h3>

@@ -43,7 +43,7 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
-            <Filter className="h-5 w-5 mr-2 text-indexa-purple" />
+            <Filter className="h-5 w-5 mr-2 text-[#9C1E1E]" />
             Filtros Avançados
           </div>
           {hasActiveFilters && (

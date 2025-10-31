@@ -115,7 +115,7 @@ const PaidOrdersSection: React.FC<PaidOrdersSectionProps> = ({ loading, onRefres
       <Card>
         <CardContent className="p-8">
           <div className="flex items-center justify-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
+            <RefreshCw className="h-8 w-8 animate-spin text-[#9C1E1E]" />
             <span className="ml-3 text-gray-600">Carregando pedidos pagos...</span>
           </div>
         </CardContent>

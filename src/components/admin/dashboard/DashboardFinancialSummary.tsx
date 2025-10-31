@@ -21,7 +21,7 @@ const DashboardFinancialSummary = ({
       currency: 'BRL'
     }).format(value);
   };
-  return <Card className="bg-gradient-to-r from-indexa-purple via-indexa-purple-dark to-indexa-purple text-white shadow-2xl border-0">
+  return <Card className="bg-gradient-to-r from-[#9C1E1E] via-[#180A0A] to-[#9C1E1E] text-white shadow-2xl border-0">
       
       
     </Card>;

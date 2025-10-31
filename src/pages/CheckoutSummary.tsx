@@ -221,7 +221,7 @@ const CheckoutSummary = () => {
         }} transition={{
           delay: 0.1
         }} className="text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#3C1361] to-purple-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#D72638] bg-clip-text text-transparent mb-2">
               Resumo do Pedido
             </h1>
             <p className="text-gray-600 text-lg">
@@ -259,7 +259,7 @@ const CheckoutSummary = () => {
             }}>
                 {/* Payment Methods Comparison */}
                 <div className="bg-white rounded-2xl shadow-lg border p-6">
-                  <h3 className="text-xl font-bold text-[#3C1361] mb-4">Formas de Pagamento</h3>
+                  <h3 className="text-xl font-bold text-[#9C1E1E] mb-4">Formas de Pagamento</h3>
                   <div className="space-y-4">
                     {isFreeOrder ? <div className="flex items-center space-x-3 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
                         <div className="w-4 h-4 bg-green-500 rounded-full"></div>

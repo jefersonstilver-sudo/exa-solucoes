@@ -122,7 +122,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
             <Button 
               type="submit" 
               disabled={loading || loadingPanels} 
-              className="bg-indexa-purple hover:bg-indexa-purple-dark"
+              className="bg-[#9C1E1E] hover:bg-[#180A0A]"
             >
               {loading ? 'Salvando...' : (building ? 'Atualizar Prédio' : 'Criar Prédio')}
             </Button>

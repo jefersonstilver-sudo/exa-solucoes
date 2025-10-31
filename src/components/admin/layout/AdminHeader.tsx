@@ -45,7 +45,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title = 'Dashboard' }) => {
   const userName = userProfile?.email?.split('@')[0] || 'Usuario';
 
   return (
-    <header className="bg-gradient-to-r from-[#3C1361] via-[#9333EA] to-[#A855F7] shadow-lg border-b border-white/20">
+    <header className="bg-gradient-to-r from-[#9C1E1E] via-[#D72638] to-[#180A0A] shadow-lg border-b border-white/20">
       <div className="flex items-center justify-between px-6 py-4">
         {/* Título da página */}
         <div className="flex items-center space-x-6">

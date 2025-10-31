@@ -118,10 +118,10 @@ const RealPaidOrdersSection: React.FC<RealPaidOrdersSectionProps> = ({ loading, 
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paidOrders.map((order) => (
-                <Card key={order.id} className="bg-gradient-to-br from-[#3C1361]/20 to-white border-[#00FFAB]/30">
+                <Card key={order.id} className="bg-gradient-to-br from-[#9C1E1E]/20 to-white border-[#D72638]/30">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <Badge className="bg-[#00FFAB] text-[#3C1361] font-semibold text-xs px-2 py-1">
+                      <Badge className="bg-[#D72638] text-white font-semibold text-xs px-2 py-1">
                         Aguardando Vídeo
                       </Badge>
                       <span className="text-sm text-gray-600">
@@ -159,7 +159,7 @@ const RealPaidOrdersSection: React.FC<RealPaidOrdersSectionProps> = ({ loading, 
                         variant="outline"
                         size="sm"
                         onClick={() => sendReminderEmail(order.client_email, order.id)}
-                        className="w-full border-[#00FFAB] text-[#00FFAB] hover:bg-[#00FFAB] hover:text-[#3C1361]"
+                        className="w-full border-[#D72638] text-[#9C1E1E] hover:bg-[#D72638] hover:text-white"
                       >
                         <Mail className="h-3 w-3 mr-1" />
                         Enviar Lembrete

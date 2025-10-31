@@ -17,7 +17,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Search className="h-5 w-5 mr-2 text-indexa-purple" />
+          <Search className="h-5 w-5 mr-2 text-[#9C1E1E]" />
           Buscar Prédios
         </CardTitle>
       </CardHeader>

@@ -70,7 +70,7 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
               className={`relative ${className}`}
             >
               {isSuperAdmin ? (
-                <Crown className="h-5 w-5 text-indexa-purple" />
+                <Crown className="h-5 w-5 text-[#9C1E1E]" />
               ) : isRegularAdmin ? (
                 <ShieldCheck className="h-5 w-5 text-green-500" />
               ) : (
@@ -96,7 +96,7 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
         disabled={!isLoggedIn || (!isSuperAdmin && !isRegularAdmin)}
       >
         {isSuperAdmin ? (
-          <Crown className="h-4 w-4 text-indexa-purple" />
+          <Crown className="h-4 w-4 text-[#9C1E1E]" />
         ) : isRegularAdmin ? (
           <ShieldCheck className="h-4 w-4 text-green-500" />
         ) : (
@@ -112,7 +112,7 @@ const AdminAccessButton: React.FC<AdminAccessButtonProps> = ({
     <Button
       variant={isSuperAdmin ? "default" : "outline"}
       onClick={handleAdminAccess}
-      className={`flex items-center gap-2 ${isSuperAdmin ? 'bg-indexa-purple hover:bg-indexa-purple/90 text-white' : ''} ${className}`}
+      className={`flex items-center gap-2 ${isSuperAdmin ? 'bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white' : ''} ${className}`}
       disabled={!isLoggedIn || (!isSuperAdmin && !isRegularAdmin)}
     >
       {isSuperAdmin ? (

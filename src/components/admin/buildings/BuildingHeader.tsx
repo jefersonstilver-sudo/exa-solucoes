@@ -18,7 +18,7 @@ const BuildingHeader: React.FC<BuildingHeaderProps> = ({
     <div className="flex items-center justify-between">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-          <Building2 className="h-8 w-8 mr-3 text-indexa-purple" />
+          <Building2 className="h-8 w-8 mr-3 text-[#9C1E1E]" />
           Sistema Completo de Prédios
         </h1>
         <p className="text-gray-600 mt-2">
@@ -31,7 +31,7 @@ const BuildingHeader: React.FC<BuildingHeaderProps> = ({
           Atualizar
         </Button>
         <Button 
-          className="bg-indexa-purple hover:bg-indexa-purple-dark"
+          className="bg-[#9C1E1E] hover:bg-[#180A0A]"
           onClick={onNewBuilding}
         >
           <Plus className="h-4 w-4 mr-2" />

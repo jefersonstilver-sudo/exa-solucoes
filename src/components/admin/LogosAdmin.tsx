@@ -318,9 +318,9 @@ const LogosAdmin: React.FC = () => {
             Visualização em tempo real de como as logos aparecerão na homepage
           </CardDescription>
         </CardHeader>
-        <CardContent className="bg-gradient-to-br from-exa-black via-exa-purple/10 to-exa-black rounded-lg p-8">
+        <CardContent className="bg-gradient-to-br from-exa-black via-[#9C1E1E]/10 to-exa-black rounded-lg p-8">
           <h3 className="font-montserrat font-bold text-2xl text-center text-white mb-6">
-            Empresas que <span className="text-transparent bg-clip-text bg-gradient-to-r from-exa-purple to-exa-blue">confiam na EXA</span>
+            Empresas que <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9C1E1E] to-[#180A0A]">confiam na EXA</span>
           </h3>
           <LogoTicker speed={60} />
         </CardContent>

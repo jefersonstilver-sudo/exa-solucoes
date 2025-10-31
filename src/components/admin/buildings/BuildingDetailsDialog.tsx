@@ -53,7 +53,7 @@ const BuildingDetailsDialog: React.FC<BuildingDetailsDialogProps> = ({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <Building2 className="h-6 w-6 mr-2 text-indexa-purple" />
+            <Building2 className="h-6 w-6 mr-2 text-[#9C1E1E]" />
             {building.nome}
           </DialogTitle>
           <DialogDescription>

@@ -115,11 +115,11 @@ const OrderReconciliationPanel = () => {
                 <div className="text-sm text-green-800">Pedidos Corrigidos</div>
               </div>
               
-              <div className="text-center p-3 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">
+              <div className="text-center p-3 bg-[#3B1E1E]/10 rounded-lg">
+                <div className="text-2xl font-bold text-[#9C1E1E]">
                   R$ {result.totalValue.toFixed(2)}
                 </div>
-                <div className="text-sm text-purple-800">Valor Auditado</div>
+                <div className="text-sm text-[#D72638]">Valor Auditado</div>
               </div>
               
               <div className="text-center p-3 bg-red-50 rounded-lg">

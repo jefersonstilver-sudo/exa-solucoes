@@ -104,10 +104,10 @@ const ComparativoOutdoor = () => {
 
             {/* EXA */}
             <ExaCard variant="light" className="p-8 border-4 border-exa-yellow relative">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-exa-yellow text-exa-purple font-bold px-6 py-2 rounded-full">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-exa-yellow text-[#9C1E1E] font-bold px-6 py-2 rounded-full">
                 MELHOR ESCOLHA
               </div>
-              <h3 className="font-montserrat font-bold text-2xl text-exa-purple mb-6">EXA ELEVADORES</h3>
+              <h3 className="font-montserrat font-bold text-2xl text-[#9C1E1E] mb-6">EXA ELEVADORES</h3>
               <div className="space-y-4 text-left">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Custo/mês</span>
@@ -123,7 +123,7 @@ const ComparativoOutdoor = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Público</span>
-                  <span className="font-bold text-exa-purple">Premium A/B</span>
+                  <span className="font-bold text-[#9C1E1E]">Premium A/B</span>
                 </div>
               </div>
             </ExaCard>
@@ -134,13 +134,13 @@ const ComparativoOutdoor = () => {
       {/* Detailed Comparison Table */}
       <ExaSection background="light">
         <div className="space-y-8">
-          <h2 className="font-montserrat font-extrabold text-3xl lg:text-4xl text-exa-purple text-center">
+          <h2 className="font-montserrat font-extrabold text-3xl lg:text-4xl text-[#9C1E1E] text-center">
             Comparativo Técnico Completo
           </h2>
 
           <div className="overflow-x-auto">
             <table className="w-full border-collapse bg-white rounded-xl overflow-hidden shadow-lg">
-              <thead className="bg-gradient-to-r from-exa-purple to-exa-blue text-white">
+              <thead className="bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] text-white">
                 <tr>
                   <th className="p-4 text-left font-montserrat">Critério</th>
                   <th className="p-4 text-center font-montserrat">Outdoor</th>
@@ -220,9 +220,9 @@ const ComparativoOutdoor = () => {
 
               <div className="bg-exa-yellow/20 rounded-xl p-6 mt-6">
                 <div className="flex items-start gap-4">
-                  <TrendingUp className="w-8 h-8 text-exa-purple flex-shrink-0" />
+                  <TrendingUp className="w-8 h-8 text-[#9C1E1E] flex-shrink-0" />
                   <div>
-                    <p className="font-montserrat font-bold text-exa-purple mb-2">
+                    <p className="font-montserrat font-bold text-[#9C1E1E] mb-2">
                       Resultado: EXA é {((Number(outdoorCPM) / Number(exaCPM)) || 1).toFixed(1)}x mais eficiente em CPM
                     </p>
                     <p className="text-sm text-gray-700">
@@ -240,7 +240,7 @@ const ComparativoOutdoor = () => {
       {/* When to Choose */}
       <ExaSection background="light">
         <div className="space-y-12">
-          <h2 className="font-montserrat font-extrabold text-3xl lg:text-4xl text-exa-purple text-center">
+          <h2 className="font-montserrat font-extrabold text-3xl lg:text-4xl text-[#9C1E1E] text-center">
             Quando Escolher Cada Um?
           </h2>
 
@@ -306,7 +306,7 @@ const ComparativoOutdoor = () => {
           <div className="space-y-4">
             {faqData.map((faq, idx) => (
               <ExaCard key={idx} variant="light" className="p-6">
-                <h4 className="font-montserrat font-bold text-lg text-exa-purple mb-3">
+              <h4 className="font-montserrat font-bold text-lg text-[#9C1E1E] mb-3">
                   {faq.question}
                 </h4>
                 <p className="text-gray-700 font-poppins">
@@ -321,16 +321,16 @@ const ComparativoOutdoor = () => {
       {/* CTA Final */}
       <ExaSection background="light">
         <div className="text-center space-y-8 max-w-3xl mx-auto">
-          <h2 className="font-montserrat font-extrabold text-3xl lg:text-4xl text-exa-purple">
+          <h2 className="font-montserrat font-extrabold text-3xl lg:text-4xl text-[#9C1E1E]">
             Outdoor Não Está Trazendo Resultados?
           </h2>
           <p className="font-poppins text-xl text-gray-700">
             Teste EXA por 30 dias GRÁTIS e compare você mesmo os resultados.
-            Sem compromisso, sem taxa de setup. Veja também <a href="/sou-sindico" className="text-exa-purple hover:underline font-semibold">como síndicos podem instalar painéis gratuitamente</a>.
+            Sem compromisso, sem taxa de setup. Veja também <a href="/sou-sindico" className="text-[#9C1E1E] hover:underline font-semibold">como síndicos podem instalar painéis gratuitamente</a>.
           </p>
           <Button
             onClick={() => navigate('/loja')}
-            className="bg-gradient-to-r from-exa-purple to-exa-blue text-white px-12 py-6 text-xl font-bold hover:scale-105 transition-transform"
+            className="bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] text-white px-12 py-6 text-xl font-bold hover:scale-105 transition-transform"
           >
             Comparar Meu Anúncio Agora
           </Button>

@@ -143,11 +143,11 @@ const SuperAdminDebugPanel = () => {
   };
 
   return (
-    <Card className="mb-6 border-2 border-indexa-purple/20">
+    <Card className="mb-6 border-2 border-[#9C1E1E]/20">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
-            <Database className="h-5 w-5 mr-2 text-indexa-purple" />
+            <Database className="h-5 w-5 mr-2 text-[#9C1E1E]" />
             Sistema de Monitoramento - Dados Reais
           </div>
           <Button 
@@ -182,13 +182,13 @@ const SuperAdminDebugPanel = () => {
             <div className="text-xs text-green-600">Cadastrados</div>
           </Card>
 
-          <Card className="p-3 bg-purple-50">
+          <Card className="p-3 bg-[#3B1E1E]/10">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-purple-800">Painéis</span>
-              <TrendingUp className="h-4 w-4 text-purple-600" />
+              <span className="font-medium text-[#D72638]">Painéis</span>
+              <TrendingUp className="h-4 w-4 text-[#9C1E1E]" />
             </div>
-            <div className="text-2xl font-bold text-purple-900">{systemStats.total_panels}</div>
-            <div className="text-xs text-purple-600">Total ativo</div>
+            <div className="text-2xl font-bold text-[#180A0A]">{systemStats.total_panels}</div>
+            <div className="text-xs text-[#9C1E1E]">Total ativo</div>
           </Card>
 
           <Card className="p-3 bg-orange-50">

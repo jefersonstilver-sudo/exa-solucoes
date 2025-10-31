@@ -124,7 +124,7 @@ const ApprovedVideosSection: React.FC<ApprovedVideosSectionProps> = ({ loading, 
       <Card>
         <CardContent className="p-8">
           <div className="flex items-center justify-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
+            <RefreshCw className="h-8 w-8 animate-spin text-[#9C1E1E]" />
             <span className="ml-3 text-gray-600">Carregando vídeos aprovados...</span>
           </div>
         </CardContent>

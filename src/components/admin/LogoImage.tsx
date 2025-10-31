@@ -25,7 +25,7 @@ const LogoImage: React.FC<LogoImageProps> = ({ logo, className = '', size = 'md'
   };
 
   const containerClass = `
-    ${sizeClasses[size]} flex-shrink-0 bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 rounded-lg flex items-center justify-center overflow-hidden border
+    ${sizeClasses[size]} flex-shrink-0 bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] rounded-lg flex items-center justify-center overflow-hidden border
     ${className}
   `;
 

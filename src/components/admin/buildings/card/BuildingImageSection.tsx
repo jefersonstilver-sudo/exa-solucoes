@@ -40,7 +40,7 @@ const BuildingImageSection: React.FC<BuildingImageSectionProps> = ({ building })
 
   const getPadraoPublicoBadge = (padrao: string) => {
     const styles = {
-      alto: 'bg-purple-500/90 text-white border-0 shadow-md',
+      alto: 'bg-[#9C1E1E]/90 text-white border-0 shadow-md',
       medio: 'bg-blue-500/90 text-white border-0 shadow-md',
       normal: 'bg-gray-500/90 text-white border-0 shadow-md'
     };
@@ -64,7 +64,7 @@ const BuildingImageSection: React.FC<BuildingImageSectionProps> = ({ building })
   const totalImages = [building.imagem_principal, building.imagem_2, building.imagem_3, building.imagem_4].filter(Boolean).length;
 
   return (
-    <div className="relative w-full md:w-2/5 h-48 md:h-auto bg-gradient-to-br from-indexa-purple/10 to-indexa-purple/5">
+    <div className="relative w-full md:w-2/5 h-48 md:h-auto bg-gradient-to-br from-[#9C1E1E]/10 to-[#9C1E1E]/5">
       {primaryImage ? (
         <img
           src={primaryImage}
@@ -73,7 +73,7 @@ const BuildingImageSection: React.FC<BuildingImageSectionProps> = ({ building })
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <Building2 className="h-16 w-16 text-indexa-purple/30" />
+          <Building2 className="h-16 w-16 text-[#9C1E1E]/30" />
         </div>
       )}
       

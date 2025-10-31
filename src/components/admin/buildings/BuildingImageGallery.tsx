@@ -154,7 +154,7 @@ const BuildingImageGallery: React.FC<BuildingImageGalleryProps> = ({
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <Camera className="h-6 w-6 mr-2 text-indexa-purple" />
+            <Camera className="h-6 w-6 mr-2 text-[#9C1E1E]" />
             Galeria de Imagens - {building.nome}
           </DialogTitle>
           <DialogDescription>

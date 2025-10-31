@@ -221,9 +221,9 @@ export default function Confirmacao() {
         transition={{ duration: 0.5 }}
         className="flex items-center justify-center min-h-[80vh] px-4"
       >
-        <Card className="w-full max-w-md shadow-lg border-indexa-purple/10">
+        <Card className="w-full max-w-md shadow-lg border-[#9C1E1E]/10">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold text-indexa-purple">
+            <CardTitle className="text-2xl font-bold text-[#9C1E1E]">
               Confirmação de Email
             </CardTitle>
             <CardDescription>
@@ -241,7 +241,7 @@ export default function Confirmacao() {
                 animate={{ scale: 1 }}
                 className="text-center"
               >
-                <Loader2 className="h-16 w-16 text-indexa-purple animate-spin mx-auto mb-4" />
+                <Loader2 className="h-16 w-16 text-[#9C1E1E] animate-spin mx-auto mb-4" />
                 <p className="text-lg text-gray-700">{message}</p>
                 
                 {/* Debug info para desenvolvimento */}
@@ -267,14 +267,14 @@ export default function Confirmacao() {
                 <div className="flex flex-col gap-3 mt-6">
                   <Button
                     onClick={() => navigate('/loja')}
-                    className="bg-indexa-purple hover:bg-indexa-purple-dark"
+                    className="bg-[#9C1E1E] hover:bg-[#180A0A]"
                   >
                     Ir para a Loja
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => navigate('/login')}
-                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
+                    className="border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
                   >
                     Fazer Login
                   </Button>
@@ -300,7 +300,7 @@ export default function Confirmacao() {
                     <Button
                       onClick={handleResendEmail}
                       disabled={isResending}
-                      className="bg-indexa-purple hover:bg-indexa-purple-dark flex items-center gap-2"
+                      className="bg-[#9C1E1E] hover:bg-[#180A0A] flex items-center gap-2"
                     >
                       {isResending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -310,11 +310,11 @@ export default function Confirmacao() {
                       {isResending ? 'Enviando...' : 'Reenviar Email'}
                     </Button>
                   )}
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate('/cadastro')}
-                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
-                  >
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate('/cadastro')}
+                      className="border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
+                    >
                     Criar Nova Conta
                   </Button>
                 </div>
@@ -339,7 +339,7 @@ export default function Confirmacao() {
                     <Button
                       onClick={handleResendEmail}
                       disabled={isResending}
-                      className="bg-indexa-purple hover:bg-indexa-purple-dark flex items-center gap-2"
+                      className="bg-[#9C1E1E] hover:bg-[#180A0A] flex items-center gap-2"
                     >
                       {isResending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -351,14 +351,14 @@ export default function Confirmacao() {
                   )}
                   <Button
                     onClick={() => navigate('/cadastro')}
-                    className="bg-indexa-purple hover:bg-indexa-purple-dark"
+                    className="bg-[#9C1E1E] hover:bg-[#180A0A]"
                   >
                     Criar Nova Conta
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => navigate('/login')}
-                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
+                    className="border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
                   >
                     Voltar para Login
                   </Button>
@@ -382,14 +382,14 @@ export default function Confirmacao() {
                 <div className="flex flex-col gap-2 mt-6">
                   <Button
                     onClick={() => navigate('/login')}
-                    className="bg-indexa-purple hover:bg-indexa-purple-dark"
+                    className="bg-[#9C1E1E] hover:bg-[#180A0A]"
                   >
                     Fazer Login
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => navigate('/loja')}
-                    className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple/10"
+                    className="border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
                   >
                     Ir para a Loja
                   </Button>

@@ -26,7 +26,7 @@ const BuildingsPageHeader: React.FC<BuildingsPageHeaderProps> = ({
           Atualizar
         </Button>
         <Button 
-          className="bg-indexa-purple hover:bg-indexa-purple-dark text-white"
+          className="bg-[#9C1E1E] hover:bg-[#180A0A] text-white"
           onClick={onNewBuilding}
         >
           <Plus className="h-4 w-4 mr-2" />

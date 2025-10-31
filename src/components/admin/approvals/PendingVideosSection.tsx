@@ -175,7 +175,7 @@ const PendingVideosSection: React.FC<PendingVideosSectionProps> = ({ loading, on
       <Card>
         <CardContent className="p-8">
           <div className="flex items-center justify-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
+            <RefreshCw className="h-8 w-8 animate-spin text-[#9C1E1E]" />
             <span className="ml-3 text-gray-600">Carregando vídeos para aprovação...</span>
           </div>
         </CardContent>

@@ -20,7 +20,7 @@ const DashboardHeader = ({
   return <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div className="flex-1">
         <div className="flex items-center space-x-3 mb-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-indexa-purple to-indexa-purple-dark rounded-xl flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] rounded-xl flex items-center justify-center shadow-lg">
             <Crown className="h-6 w-6 text-white" />
           </div>
           <div>
@@ -40,7 +40,7 @@ const DashboardHeader = ({
             <RefreshCw className="h-4 w-4 mr-2" />
             Atualizar
           </Button>
-          <Button onClick={handleExportReport} className="bg-indexa-purple hover:bg-indexa-purple-dark shadow-lg">
+          <Button onClick={handleExportReport} className="bg-[#9C1E1E] hover:bg-[#180A0A] shadow-lg">
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>

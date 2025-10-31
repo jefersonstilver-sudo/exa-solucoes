@@ -73,12 +73,12 @@ const ComingSoonPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indexa-purple via-indexa-purple-dark to-black flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-black flex items-center justify-center relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-indexa-mint/10 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-indexa-purple/20 rounded-full blur-3xl animate-pulse-soft"></div>
-        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-indexa-mint/5 rounded-full blur-2xl animate-float" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-20 left-20 w-72 h-72 bg-[#D72638]/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-[#9C1E1E]/20 rounded-full blur-3xl animate-pulse-soft"></div>
+        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-[#D72638]/5 rounded-full blur-2xl animate-float" style={{ animationDelay: '1s' }}></div>
       </div>
 
       <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">

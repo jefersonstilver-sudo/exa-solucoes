@@ -33,14 +33,14 @@ export default function Login() {
           transition={{ duration: 0.3 }}
           className="flex items-center justify-center min-h-[80vh] px-4"
         >
-          <Card className="w-full max-w-md shadow-lg border-indexa-purple/10">
+          <Card className="w-full max-w-md shadow-lg border-[#9C1E1E]/10">
             <CardHeader className="space-y-1 text-center">
               <motion.div
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1, duration: 0.5 }}
               >
-                <CardTitle className="text-2xl font-bold text-indexa-purple flex items-center justify-center gap-2">
+                <CardTitle className="text-2xl font-bold text-[#9C1E1E] flex items-center justify-center gap-2">
                   <LogIn size={24} /> {isResetMode ? 'Redefinir senha' : 'Acesse sua conta'}
                 </CardTitle>
                 <CardDescription>

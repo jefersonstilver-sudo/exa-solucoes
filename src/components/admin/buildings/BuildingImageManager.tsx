@@ -208,7 +208,7 @@ const BuildingImageManager: React.FC<BuildingImageManagerProps> = ({
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <Camera className="h-6 w-6 mr-2 text-indexa-purple" />
+            <Camera className="h-6 w-6 mr-2 text-[#9C1E1E]" />
             Galeria de Imagens - {building.nome}
           </DialogTitle>
           <DialogDescription>

@@ -25,10 +25,10 @@ const BuildingMetrics: React.FC<BuildingMetricsProps> = ({ building, panelStats 
 
       <div className="text-center">
         <div className="flex items-center justify-center space-x-1 mb-1">
-          <Eye className="h-4 w-4 text-purple-600" />
+          <Eye className="h-4 w-4 text-[#9C1E1E]" />
           <span className="text-xs text-gray-500">Público</span>
         </div>
-        <div className="font-bold text-purple-600">{building.publico_estimado}</div>
+        <div className="font-bold text-[#9C1E1E]">{building.publico_estimado}</div>
       </div>
 
       <div className="text-center">
