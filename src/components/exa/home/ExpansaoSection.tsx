@@ -32,7 +32,7 @@ const ExpansaoSection = () => {
           {timeline.map((item, index) => (
             <div 
               key={index}
-              className="bg-gradient-to-br from-exa-purple to-exa-purple/80 rounded-3xl p-8 text-center space-y-4 hover:scale-105 transition-transform duration-300"
+              className="bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] rounded-3xl p-8 text-center space-y-4 hover:scale-105 transition-transform duration-300 shadow-lg"
             >
               {index === 0 ? (
                 <MapPin className="w-12 h-12 text-exa-yellow mx-auto" />

@@ -53,7 +53,7 @@ const MobileOptimizedFooter = () => {
   const logoUrl = isExaPage ? 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1MzkyNDY3NywiZXhwIjoxNzg1NDYwNjc3fQ.Obullg6SYYcT2j1mmJgZ4MIL-_9lqNDHmImhft_ZbmM' : undefined;
   const brandText = isExaPage ? 'EXA' : 'INDEXA';
   console.log('🦶 Footer: Renderizando MobileOptimizedFooter ÚNICO - PREVENINDO DUPLICAÇÃO');
-  return <footer id="unique-indexa-footer" className="bg-exa-purple-dark text-white w-full relative" data-footer-debug="single-footer">
+  return <footer id="unique-indexa-footer" className="bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] text-white w-full relative" data-footer-debug="single-footer">
       <div className="container mx-auto px-4 lg:px-6">
         
         {/* Desktop Layout - 3 columns */}
