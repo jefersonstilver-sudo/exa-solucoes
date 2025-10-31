@@ -13,7 +13,7 @@ const GlobalLoadingPage: React.FC<GlobalLoadingPageProps> = ({
   progress = 0
 }) => {
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-[#2D1B69] via-[#1A0F3D] to-[#0F0729] z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-gradient-to-br from-[#9C1E1E] via-[#180A0A] to-[#0B0B0B] z-50 flex items-center justify-center">
       <div className="text-center">
         {/* Spinner elegante - apenas a bolinha com roda */}
         <motion.div

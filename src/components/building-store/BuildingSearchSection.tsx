@@ -110,7 +110,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
                   <div className={`relative ${isMobile ? 'p-4' : 'p-6'}`}>
                     {/* Elementos decorativos apenas em desktop */}
                     {!isMobile && <>
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#3C1361]/5 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#9C1E1E]/5 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
                         <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#58E3AB]/5 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
                       </>}
                     
@@ -124,7 +124,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
                   }} transition={{
                     delay: 0.2
                   }}>
-                       <h1 className={`font-bold text-[#3C1361] ${isMobile ? 'text-2xl mb-3' : 'text-3xl mb-4'}`}>
+                       <h1 className={`font-bold text-[#9C1E1E] ${isMobile ? 'text-2xl mb-3' : 'text-3xl mb-4'}`}>
                          Encontre prédios para publicidade
                        </h1>
                     </motion.div>
@@ -147,11 +147,11 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
                              onPlaceSelect={handlePlaceSelect}
                              onClear={handleClearLocationLocal}
                              placeholder={isMobile ? "Digite o endereço da sua empresa..." : "Digite o endereço da sua empresa ou negócio..."}
-                             className={`w-full border-2 border-gray-200 rounded-xl focus:border-[#3C1361] focus:ring-2 focus:ring-[#3C1361]/10 bg-white transition-all duration-300 shadow-lg ${isMobile ? 'text-base h-12' : 'text-lg h-12'}`}
+                             className={`w-full border-2 border-gray-200 rounded-xl focus:border-[#9C1E1E] focus:ring-2 focus:ring-[#9C1E1E]/10 bg-white transition-all duration-300 shadow-lg ${isMobile ? 'text-base h-12' : 'text-lg h-12'}`}
                            />
                         </div>
                         
-                        <Button type="submit" disabled={isSearching || !localSearchValue.trim()} className={`bg-gradient-to-r from-[#3C1361] to-[#4A1B7D] hover:from-[#4A1B7D] hover:to-[#3C1361] text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${isMobile ? 'px-8 py-3 h-12 w-full' : 'px-10 py-3 h-12 w-full'}`}>
+                        <Button type="submit" disabled={isSearching || !localSearchValue.trim()} className={`bg-gradient-to-r from-[#9C1E1E] to-[#D72638] hover:from-[#D72638] hover:to-[#9C1E1E] text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${isMobile ? 'px-8 py-3 h-12 w-full' : 'px-10 py-3 h-12 w-full'}`}>
                           {isSearching ? <div className="flex items-center justify-center">
                               <div className="w-5 h-5 border-t-2 border-white rounded-full animate-spin mr-2"></div>
                               Buscando...

@@ -73,7 +73,7 @@ const CartUserStatus: React.FC<CartUserStatusProps> = ({ isLoggedIn, user }) => 
           <div className="bg-gradient-to-r from-[#00FFAB]/20 to-[#00FFAB]/10 p-4 rounded-xl">
             <div className="flex items-center gap-3">
               <div className="bg-[#00FFAB]/30 rounded-full p-2">
-                <LogIn className="h-4 w-4 text-[#3C1361]" />
+                <LogIn className="h-4 w-4 text-[#9C1E1E]" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-800">
@@ -85,7 +85,7 @@ const CartUserStatus: React.FC<CartUserStatusProps> = ({ isLoggedIn, user }) => 
               </div>
               <Button
                 size="sm"
-                className="bg-[#3C1361] hover:bg-[#00FFAB] hover:text-[#3C1361] text-white text-xs h-8 transition-colors font-medium"
+                className="bg-[#9C1E1E] hover:bg-[#00FFAB] hover:text-[#9C1E1E] text-white text-xs h-8 transition-colors font-medium"
                 onClick={() => navigate('/login')}
               >
                 Fazer Login

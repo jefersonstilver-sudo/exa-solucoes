@@ -21,11 +21,11 @@ const BuildingStoreHeader = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className={`bg-gradient-to-br from-[#3C1361]/10 to-[#4A1B6B]/10 rounded-full flex items-center justify-center mx-auto mb-6 ${
+            className={`bg-gradient-to-br from-[#9C1E1E]/10 to-[#D72638]/10 rounded-full flex items-center justify-center mx-auto mb-6 ${
               isMobile ? 'w-16 h-16' : 'w-20 h-20'
             }`}
           >
-            <Building2 className={`text-[#3C1361] ${isMobile ? 'h-8 w-8' : 'h-10 w-10'}`} />
+            <Building2 className={`text-[#9C1E1E] ${isMobile ? 'h-8 w-8' : 'h-10 w-10'}`} />
           </motion.div>
           
           <motion.h1
@@ -59,13 +59,13 @@ const BuildingStoreHeader = () => {
           transition={{ delay: 0.5 }}
           className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-8'} max-w-2xl mx-auto`}
         >
-          <div className={`flex items-center ${isMobile ? 'justify-center' : 'justify-end'} text-[#3C1361]`}>
+          <div className={`flex items-center ${isMobile ? 'justify-center' : 'justify-end'} text-[#9C1E1E]`}>
             <MapPin className="h-5 w-5 mr-2" />
             <span className={`font-medium ${isMobile ? 'text-sm' : 'text-base'}`}>
               Localizações Premium
             </span>
           </div>
-          <div className={`flex items-center ${isMobile ? 'justify-center' : 'justify-start'} text-[#3C1361]`}>
+          <div className={`flex items-center ${isMobile ? 'justify-center' : 'justify-start'} text-[#9C1E1E]`}>
             <Search className="h-5 w-5 mr-2" />
             <span className={`font-medium ${isMobile ? 'text-sm' : 'text-base'}`}>
               Busca por Região

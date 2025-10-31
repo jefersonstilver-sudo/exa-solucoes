@@ -51,7 +51,7 @@ const BuildingStore = () => {
             </p>
             <button 
               onClick={() => window.location.reload()} 
-              className="px-4 py-2 bg-[#3C1361] text-white rounded-md hover:bg-[#3C1361]/80"
+              className="px-4 py-2 bg-[#9C1E1E] text-white rounded-md hover:bg-[#9C1E1E]/80"
             >
               Tentar novamente
             </button>

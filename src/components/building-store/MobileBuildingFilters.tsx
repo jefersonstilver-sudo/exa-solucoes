@@ -52,7 +52,7 @@ const MobileBuildingFilters: React.FC<MobileBuildingFiltersProps> = ({
               <Filter className="h-4 w-4" />
               <span>Filtros</span>
               {activeFiltersCount > 0 && (
-                <div className="absolute -top-2 -right-2 bg-[#3C1361] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <div className="absolute -top-2 -right-2 bg-[#9C1E1E] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {activeFiltersCount}
                 </div>
               )}
@@ -60,7 +60,7 @@ const MobileBuildingFilters: React.FC<MobileBuildingFiltersProps> = ({
           </SheetTrigger>
           
           <SheetContent side="left" className="w-[320px] p-0 overflow-y-auto">
-            <SheetHeader className="p-4 border-b bg-gradient-to-r from-[#3C1361] to-[#4A1B6B]">
+            <SheetHeader className="p-4 border-b bg-gradient-to-r from-[#9C1E1E] to-[#D72638]">
               <SheetTitle className="flex items-center justify-between text-white">
                 <div className="flex items-center space-x-2">
                   <Filter className="h-5 w-5" />

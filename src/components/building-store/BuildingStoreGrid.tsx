@@ -35,8 +35,8 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
       }} animate={{
         opacity: 1
       }} className="text-center py-4">
-          <div className="flex items-center justify-center space-x-2 text-[#3C1361]">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#3C1361]"></div>
+          <div className="flex items-center justify-center space-x-2 text-[#9C1E1E]">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#9C1E1E]"></div>
             
           </div>
         </motion.div>
@@ -112,8 +112,8 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
           delay: 0.2,
           type: "spring",
           stiffness: 200
-        }} className={`bg-gradient-to-br from-[#3C1361]/10 to-[#4A1B6B]/10 rounded-full flex items-center justify-center mx-auto mb-6 ${isMobile ? 'w-16 h-16' : 'w-24 h-24'}`}>
-            <Building2 className={`text-[#3C1361] ${isMobile ? 'h-8 w-8' : 'h-12 w-12'}`} />
+        }} className={`bg-gradient-to-br from-[#9C1E1E]/10 to-[#D72638]/10 rounded-full flex items-center justify-center mx-auto mb-6 ${isMobile ? 'w-16 h-16' : 'w-24 h-24'}`}>
+            <Building2 className={`text-[#9C1E1E] ${isMobile ? 'h-8 w-8' : 'h-12 w-12'}`} />
           </motion.div>
           
           <motion.div initial={{

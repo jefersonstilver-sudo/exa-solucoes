@@ -54,11 +54,11 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
     }} transition={{
       delay: 0.1
     }}>
-          <Button variant="outline" className="w-full border-2 border-gradient-to-r from-[#3C1361]/20 to-[#3C1361]/30 text-[#3C1361] hover:bg-gradient-to-r hover:from-[#3C1361]/5 hover:to-[#3C1361]/10 hover:border-[#3C1361]/50 rounded-2xl flex gap-3 justify-center items-center py-6 relative overflow-hidden group transition-all duration-300 shadow-sm hover:shadow-md" onClick={() => setMapOpen(!mapOpen)}>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#3C1361]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <Button variant="outline" className="w-full border-2 border-gradient-to-r from-[#9C1E1E]/20 to-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-gradient-to-r hover:from-[#9C1E1E]/5 hover:to-[#9C1E1E]/10 hover:border-[#9C1E1E]/50 rounded-2xl flex gap-3 justify-center items-center py-6 relative overflow-hidden group transition-all duration-300 shadow-sm hover:shadow-md" onClick={() => setMapOpen(!mapOpen)}>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#9C1E1E]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <Map className="h-5 w-5 transition-transform group-hover:scale-110 duration-300 relative z-10" />
             <span className="relative z-10 font-semibold">{mapOpen ? "Fechar mapa" : "Ver no mapa"}</span>
-            <Sparkles className="h-4 w-4 text-[#3C1361]/50 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <Sparkles className="h-4 w-4 text-[#9C1E1E]/50 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Button>
         </motion.div>}
       
@@ -69,7 +69,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
     }} transition={{
       delay: 0.1
     }}>
-          <Button variant="outline" className="w-14 h-14 border-2 border-[#3C1361]/20 text-[#3C1361] hover:bg-[#3C1361]/5 hover:border-[#3C1361]/50 rounded-xl p-0 transition-all duration-300 shadow-sm hover:shadow-md group" onClick={() => setMapOpen(!mapOpen)}>
+          <Button variant="outline" className="w-14 h-14 border-2 border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E]/50 rounded-xl p-0 transition-all duration-300 shadow-sm hover:shadow-md group" onClick={() => setMapOpen(!mapOpen)}>
             <Map className="h-5 w-5 transition-transform group-hover:scale-110 duration-300" />
           </Button>
         </motion.div>}
@@ -95,7 +95,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
             <div className="absolute inset-0">
               <BuildingMap buildings={mapBuildings} selectedLocation={selectedLocation} scrollwheel={false} requirePreciseGeocode={false} enableClustering={false} />
               <div className="absolute top-2 right-2 z-10">
-                <Button variant="outline" className="border-2 border-[#3C1361]/20 text-[#3C1361] bg-white/90 hover:bg-white rounded-lg px-3 py-2 h-9 flex items-center gap-2 shadow-sm" onClick={() => setIsMapDialogOpen(true)}>
+                <Button variant="outline" className="border-2 border-[#9C1E1E]/20 text-[#9C1E1E] bg-white/90 hover:bg-white rounded-lg px-3 py-2 h-9 flex items-center gap-2 shadow-sm" onClick={() => setIsMapDialogOpen(true)}>
                   <Maximize2 className="h-4 w-4" />
                   <span className="hidden sm:inline text-sm font-medium">Expandir</span>
                 </Button>
@@ -115,10 +115,10 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       <div className="lg:hidden w-full">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" className="w-full border-2 border-[#3C1361]/20 text-[#3C1361] hover:bg-gradient-to-r hover:from-[#3C1361]/5 hover:to-[#3C1361]/10 hover:border-[#3C1361]/40 rounded-2xl py-6 font-semibold transition-all duration-300 shadow-sm hover:shadow-md group">
+            <Button variant="outline" className="w-full border-2 border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-gradient-to-r hover:from-[#9C1E1E]/5 hover:to-[#9C1E1E]/10 hover:border-[#9C1E1E]/40 rounded-2xl py-6 font-semibold transition-all duration-300 shadow-sm hover:shadow-md group">
               <Filter className="mr-3 h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
               Filtrar prédios
-              <motion.div className="ml-auto h-2 w-2 bg-[#3C1361] rounded-full opacity-50" animate={{
+              <motion.div className="ml-auto h-2 w-2 bg-[#9C1E1E] rounded-full opacity-50" animate={{
               scale: [1, 1.2, 1]
             }} transition={{
               duration: 2,
@@ -127,7 +127,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-[85%] sm:w-[400px] overflow-y-auto p-0 bg-gradient-to-b from-white to-gray-50/30">
-            <SheetHeader className="p-6 border-b border-gray-100 bg-gradient-to-r from-[#3C1361] to-[#3C1361]/90">
+            <SheetHeader className="p-6 border-b border-gray-100 bg-gradient-to-r from-[#9C1E1E] to-[#9C1E1E]/90">
               <SheetTitle className="text-xl font-bold text-white flex items-center">
                 <Filter className="h-5 w-5 mr-3" />
                 Filtrar Prédios
@@ -148,7 +148,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
     }} transition={{
       delay: 0.1
     }}>
-          <div className="bg-gradient-to-r from-[#3C1361] via-[#3C1361] to-[#4A1B6B] p-4 relative overflow-hidden">
+          <div className="bg-gradient-to-r from-[#9C1E1E] via-[#9C1E1E] to-[#D72638] p-4 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-12 translate-x-12"></div>
             <h3 className="text-lg font-bold text-white flex items-center relative z-10">
@@ -173,7 +173,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       delay: 0.1
     }}>
           <div className="w-14 h-14 bg-white rounded-xl border-2 border-gray-100/50 shadow-lg flex items-center justify-center">
-            <Filter className="h-4 w-4 text-[#3C1361]" />
+            <Filter className="h-4 w-4 text-[#9C1E1E]" />
           </div>
         </motion.div>}
     </div>;

@@ -68,14 +68,14 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
     }`;
 
     if (isAdding) {
-      return `${baseClass} bg-[#3C1361]/80 text-white cursor-wait`;
+      return `${baseClass} bg-[#9C1E1E]/80 text-white cursor-wait`;
     }
     
     if (inCart) {
       return `${baseClass} bg-green-500 hover:bg-green-500 text-white cursor-default`;
     }
     
-    return `${baseClass} bg-[#3C1361] hover:bg-[#3C1361]/90 text-white hover:scale-105 active:scale-95`;
+    return `${baseClass} bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white hover:scale-105 active:scale-95`;
   };
 
   return (
@@ -84,7 +84,7 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
     }`}>
       <div className={isMobile ? 'w-full' : 'mb-3 lg:mb-0'}>
         <p className="text-xs text-gray-600 mb-1">A partir de</p>
-        <p className={`font-bold text-[#3C1361] ${isMobile ? 'text-xl' : 'text-2xl'}`}>
+        <p className={`font-bold text-[#9C1E1E] ${isMobile ? 'text-xl' : 'text-2xl'}`}>
           R$ {building.preco_base || 280}
           <span className="text-sm font-normal text-gray-500">/mês</span>
         </p>

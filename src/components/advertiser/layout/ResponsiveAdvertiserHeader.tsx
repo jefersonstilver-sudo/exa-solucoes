@@ -16,7 +16,7 @@ const ResponsiveAdvertiserHeader = ({
 }: ResponsiveAdvertiserHeaderProps) => {
   if (isMobile) {
     return (
-      <header className="bg-gradient-to-r from-[#3C1361] via-[#9333EA] to-[#A855F7] border-b border-white/20 px-4 py-3 shadow-lg lg:hidden">
+      <header className="bg-gradient-to-r from-[#9C1E1E] via-[#D72638] to-[#9C1E1E] border-b border-white/20 px-4 py-3 shadow-lg lg:hidden">
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"

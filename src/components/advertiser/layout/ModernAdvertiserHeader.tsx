@@ -32,7 +32,7 @@ const ModernAdvertiserHeader = () => {
   };
 
   return (
-    <header className="bg-gradient-to-r from-[#3C1361] via-[#9333EA] to-[#A855F7] border-b border-white/20 px-6 py-3 shadow-lg hidden lg:block">
+    <header className="bg-gradient-to-r from-[#9C1E1E] via-[#D72638] to-[#9C1E1E] border-b border-white/20 px-6 py-3 shadow-lg hidden lg:block">
       <div className="flex items-center justify-end">
         <div className="flex items-center space-x-4">
           {/* Botão Loja Online */}
@@ -43,7 +43,7 @@ const ModernAdvertiserHeader = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/20">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-white text-[#3C1361] font-semibold">
+                  <AvatarFallback className="bg-white text-[#9C1E1E] font-semibold">
                     {user?.email?.charAt(0).toUpperCase() || 'A'}
                   </AvatarFallback>
                 </Avatar>

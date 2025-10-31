@@ -67,11 +67,11 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
       transition={{ delay, duration: 0.3 }}
     >
       <div className="flex items-center gap-3 group">
-        <div className="p-2 rounded-lg bg-[#3C1361]/10 group-hover:bg-[#3C1361]/20 transition-colors duration-200">
-          <Icon className="h-4 w-4 text-[#3C1361]" />
+        <div className="p-2 rounded-lg bg-[#9C1E1E]/10 group-hover:bg-[#9C1E1E]/20 transition-colors duration-200">
+          <Icon className="h-4 w-4 text-[#9C1E1E]" />
         </div>
-        <Label className="text-base font-semibold text-gray-900 group-hover:text-[#3C1361] transition-colors duration-200">{title}</Label>
-        <Sparkles className="h-3 w-3 text-[#3C1361]/30 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+        <Label className="text-base font-semibold text-gray-900 group-hover:text-[#9C1E1E] transition-colors duration-200">{title}</Label>
+        <Sparkles className="h-3 w-3 text-[#9C1E1E]/30 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
       </div>
       <div className="pl-4 border-l-2 border-gray-100">
         {children}
@@ -87,7 +87,7 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600 font-medium">Distância máxima</span>
-            <Badge variant="secondary" className="bg-gradient-to-r from-[#3C1361]/10 to-[#3C1361]/20 text-[#3C1361] border-0 shadow-sm">
+            <Badge variant="secondary" className="bg-gradient-to-r from-[#9C1E1E]/10 to-[#9C1E1E]/20 text-[#9C1E1E] border-0 shadow-sm">
               {localRadius/1000}km
             </Badge>
           </div>
@@ -134,12 +134,12 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
                   }
                 }}
                 disabled={loading}
-                className="border-2 border-gray-300 data-[state=checked]:border-[#3C1361] data-[state=checked]:bg-[#3C1361]"
+                className="border-2 border-gray-300 data-[state=checked]:border-[#9C1E1E] data-[state=checked]:bg-[#9C1E1E]"
               />
-              <div className="p-1.5 rounded-lg bg-gray-100 group-hover:bg-[#3C1361]/10 transition-colors duration-200">
-                <type.icon className="h-4 w-4 text-gray-600 group-hover:text-[#3C1361] transition-colors duration-200" />
+              <div className="p-1.5 rounded-lg bg-gray-100 group-hover:bg-[#9C1E1E]/10 transition-colors duration-200">
+                <type.icon className="h-4 w-4 text-gray-600 group-hover:text-[#9C1E1E] transition-colors duration-200" />
               </div>
-              <span className="text-sm font-medium text-gray-700 group-hover:text-[#3C1361] transition-colors duration-200">
+              <span className="text-sm font-medium text-gray-700 group-hover:text-[#9C1E1E] transition-colors duration-200">
                 {type.label}
               </span>
             </motion.label>

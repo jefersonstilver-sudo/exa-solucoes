@@ -87,7 +87,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({
       <Button 
         onClick={handleCheckoutClick} 
         disabled={isEmpty || isSubmitting} 
-        className="w-full bg-[#3C1361] hover:bg-[#2A0D45] text-white"
+        className="w-full bg-[#9C1E1E] hover:bg-[#180A0A] text-white"
       >
         {isSubmitting ? (
           <>

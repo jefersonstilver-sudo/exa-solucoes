@@ -52,7 +52,7 @@ const ModernAdvertiserSidebar = () => {
   };
 
   return (
-    <div className="bg-gradient-to-b from-[#3C1361] to-[#2A0D47] border-r border-purple-800/30 w-64 min-h-screen">
+    <div className="bg-gradient-to-b from-[#9C1E1E] to-[#180A0A] border-r border-red-800/30 w-64 min-h-screen">
       <div className="p-6">
         {/* Logo da Indexa - agora clicável */}
         <div className="flex items-center justify-center mb-8">
@@ -72,7 +72,7 @@ const ModernAdvertiserSidebar = () => {
               className={cn(
                 'flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200',
                 isActive(item.href, item.exact)
-                  ? 'bg-[#00FFAB] text-[#3C1361] shadow-lg font-semibold'
+                  ? 'bg-[#00FFAB] text-[#9C1E1E] shadow-lg font-semibold'
                   : 'text-purple-100 hover:text-white hover:bg-white/10 hover:translate-x-1'
               )}
             >
