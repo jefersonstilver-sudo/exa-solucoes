@@ -45,7 +45,7 @@ const HeroSection = () => {
 
         {/* Right side - Visual element */}
         <div className="relative group mt-8 lg:mt-0">
-          <div className="bg-gradient-to-b from-gray-800 to-gray-900 p-3 md:p-4 lg:p-6 rounded-3xl shadow-2xl border border-white/80 max-w-[280px] md:max-w-[320px] mx-auto hover:scale-105 transition-transform duration-300">
+          <div className="bg-gradient-to-b from-zinc-200 to-zinc-100 p-2 md:p-2.5 lg:p-3 rounded-3xl shadow-2xl border border-white/90 max-w-[280px] md:max-w-[320px] mx-auto hover:scale-105 transition-transform duration-300">
             <div className="bg-black rounded-2xl overflow-hidden shadow-inner aspect-[9/16]">
               {!loading && <video autoPlay loop muted playsInline controls className="w-full h-full object-cover" key={displayVideoUrl}>
                   <source src={displayVideoUrl} type="video/mp4" />
