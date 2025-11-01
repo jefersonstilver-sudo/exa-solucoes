@@ -1,6 +1,7 @@
 import React from 'react';
 import ExaSection from '../base/ExaSection';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+import { usePageOptimization } from '@/hooks/usePageOptimization';
 import { Building2, FileText, MapPin, Globe, Instagram, MessageCircle, Mail } from 'lucide-react';
 
 const dadosEmpresa = [
@@ -49,21 +50,27 @@ const dadosEmpresa = [
 ];
 
 const DadosInstitucionaisSection = () => {
-  const { ref, isVisible } = useScrollReveal(0.2);
+  const { shouldReduceMotion, animationDuration } = usePageOptimization();
+  const { ref, isVisible } = useScrollReveal({ 
+    threshold: 0.2, 
+    reducedMotion: shouldReduceMotion 
+  });
 
   return (
-    <ExaSection background="light" className="py-16 md:py-24">
+    <ExaSection background="light" paddingSize="md" lazyLoad>
       <div 
         ref={ref}
-        className={`max-w-[1200px] mx-auto transition-all duration-700 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
+        className="max-w-[1200px] mx-auto"
+        style={{
+          transition: `all ${animationDuration}ms ease-out`,
+          opacity: isVisible ? 1 : 0
+        }}
       >
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#111111] font-montserrat mb-12">
+        <h2 className="text-responsive-h2 text-[#111111] font-montserrat mb-8 md:mb-12 text-tracking-tight">
           Informações Corporativas
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
           {dadosEmpresa.map((dado, index) => {
             const IconComponent = dado.icon;
             const iconColors: { [key: string]: string } = {
@@ -79,13 +86,13 @@ const DadosInstitucionaisSection = () => {
             return (
               <div 
                 key={index} 
-                className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 flex items-start gap-4"
+                className="bg-white rounded-xl p-5 md:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 flex items-start gap-3 md:gap-4 min-h-[80px] md:min-h-[100px]"
               >
-                <div className="flex-shrink-0">
-                  <IconComponent className={`w-6 h-6 ${iconColors[dado.label]}`} />
+                <div className="flex-shrink-0 pt-1">
+                  <IconComponent className={`w-5 h-5 md:w-6 md:h-6 ${iconColors[dado.label]}`} />
                 </div>
-                <div className="flex-1">
-                  <span className="text-[#111111] font-semibold block mb-1 font-montserrat">
+                <div className="flex-1 min-w-0">
+                  <span className="text-responsive-sm text-[#111111] font-semibold block mb-1 font-montserrat">
                     {dado.label}
                   </span>
                   {dado.link ? (
@@ -93,12 +100,12 @@ const DadosInstitucionaisSection = () => {
                       href={dado.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#C8102E] hover:underline transition-all font-inter"
+                      className="text-responsive-body text-[#C8102E] hover:underline transition-all font-inter break-words"
                     >
                       {dado.value}
                     </a>
                   ) : (
-                    <span className="text-[#555555] font-inter">
+                    <span className="text-responsive-body text-[#555555] font-inter break-words">
                       {dado.value}
                     </span>
                   )}
