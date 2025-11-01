@@ -33,7 +33,7 @@ const ValoresSection = () => {
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white font-montserrat mb-12 text-center">
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#111111] font-montserrat mb-12 text-center">
           Valores e Propósito
         </h2>
 

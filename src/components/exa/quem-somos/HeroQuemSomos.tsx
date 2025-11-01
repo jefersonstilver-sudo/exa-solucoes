@@ -6,7 +6,7 @@ const HeroQuemSomos = () => {
   const { ref, isVisible } = useScrollReveal(0.1);
 
   return (
-    <ExaSection background="gradient" className="pt-24 md:pt-32 pb-16 md:pb-20">
+    <ExaSection background="gradient" className="pt-32 md:pt-40 lg:pt-48 pb-16 md:pb-20">
       <div 
         ref={ref}
         className={`max-w-[1200px] mx-auto transition-all duration-700 ${
