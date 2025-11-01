@@ -17,11 +17,13 @@ const partners = [
     logo: secoviLogo,
     name: 'Secovi Paraná',
     scale: 1.3,
+    link: 'https://secovipr.com.br/',
   },
   {
     logo: dePaulaLogo,
     name: 'De Paula',
     scale: 1,
+    link: 'https://depaulacontadores.com.br/',
   },
 ];
 
