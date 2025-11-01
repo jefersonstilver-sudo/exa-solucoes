@@ -23,6 +23,12 @@ const DesktopNavigation = () => {
         Sou Síndico
       </Link>
       <Link 
+        to="/quem-somos" 
+        className="text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat"
+      >
+        Quem Somos
+      </Link>
+      <Link 
         to="/contato" 
         className="text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat"
       >

@@ -40,6 +40,7 @@ import Exa from './pages/Exa';
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const Contato = lazy(() => import('./pages/Contato'));
 const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
+const QuemSomos = lazy(() => import('./pages/QuemSomos'));
 
 // Blog pages
 const BlogIndex = lazy(() => import('./pages/blog/Index'));
@@ -176,6 +177,11 @@ const AppContent = () => {
           <Route path="/sou-sindico" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando Sou Síndico..." />}>
               <SouSindico />
+            </Suspense>
+          } />
+          <Route path="/quem-somos" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando Quem Somos..." />}>
+              <QuemSomos />
             </Suspense>
           } />
           <Route path="/contato" element={

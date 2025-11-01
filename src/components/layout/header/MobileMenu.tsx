@@ -43,6 +43,13 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
             Sou Síndico
           </Link>
           <Link 
+            to="/quem-somos" 
+            className="block text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat py-2"
+            onClick={onClose}
+          >
+            Quem Somos
+          </Link>
+          <Link 
             to="/contato" 
             className="block text-white hover:text-exa-yellow transition-colors duration-200 font-medium font-montserrat py-2"
             onClick={onClose}
