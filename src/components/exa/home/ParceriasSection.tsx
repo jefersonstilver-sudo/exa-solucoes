@@ -2,28 +2,25 @@ import React from 'react';
 import ExaSection from '../base/ExaSection';
 import ExaCard from '../base/ExaCard';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-import { Code, Building, Newspaper, Home } from 'lucide-react';
+import portalCidadeLogo from '@/assets/partners/portal-cidade.png';
+import secoviLogo from '@/assets/partners/secovi.png';
+import dePaulaLogo from '@/assets/partners/de-paula.png';
 
 const partners = [
   {
-    icon: Code,
-    name: 'Indexa Mídia',
-    description: 'Desenvolvimento tecnológico e integração digital',
+    logo: portalCidadeLogo,
+    name: 'Portal da Cidade Foz do Iguaçu',
+    description: 'Conteúdo local e visibilidade cruzada',
   },
   {
-    icon: Building,
+    logo: secoviLogo,
     name: 'Secovi Paraná',
     description: 'Apoio institucional no setor condominial',
   },
   {
-    icon: Newspaper,
-    name: 'Portal da Cidade',
-    description: 'Conteúdo local e visibilidade cruzada',
-  },
-  {
-    icon: Home,
-    name: 'Condomínios Parceiros',
-    description: 'Base estrutural e legitimidade',
+    logo: dePaulaLogo,
+    name: 'De Paula',
+    description: 'Parceiro estratégico no mercado imobiliário',
   },
 ];
 
@@ -47,10 +44,16 @@ const ParceriasSection = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {partners.map((partner, index) => (
-            <ExaCard key={index} variant="light" className="text-center">
-              <partner.icon className="w-12 h-12 text-exa-purple mx-auto mb-4" />
+            <ExaCard key={index} variant="light" className="text-center p-8">
+              <div className="flex items-center justify-center mb-6 min-h-[100px]">
+                <img 
+                  src={partner.logo} 
+                  alt={partner.name}
+                  className="max-h-20 max-w-[200px] w-auto h-auto object-contain"
+                />
+              </div>
               <h3 className="font-montserrat font-semibold text-lg text-exa-black mb-2">
                 {partner.name}
               </h3>
