@@ -1,11 +1,10 @@
 import React from 'react';
 import ExaSection from '../base/ExaSection';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-import { Layers, Palette, Zap, Sparkles } from 'lucide-react';
+import { Layers, Zap, Sparkles } from 'lucide-react';
 
 const pillars = [
   { icon: Layers, title: 'Integração Arquitetônica', description: 'Telas modernas que se tornam parte do espaço' },
-  { icon: Palette, title: 'Curadoria Estética', description: 'Cada vídeo é revisado quanto a cor e contraste' },
   { icon: Zap, title: 'Impacto Controlado', description: 'Brilho calibrado, transições suaves' },
   { icon: Sparkles, title: 'Experiência Visual', description: 'Elevadores transformados em vitrines elegantes' },
 ];
