@@ -47,7 +47,7 @@ const ParceriasSection = () => {
               <img 
                 src={partner.logo} 
                 alt={partner.name}
-                className="max-h-24 max-w-[220px] w-auto h-auto object-contain filter brightness-0 invert"
+                className="max-h-24 max-w-[220px] w-auto h-auto object-contain"
               />
             </div>
           ))}
