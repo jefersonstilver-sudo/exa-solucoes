@@ -44,7 +44,12 @@ const ExaSection = ({
   };
 
   useEffect(() => {
-    if (!lazyLoad || !sectionRef.current) return;
+    if (!lazyLoad) {
+      setIsVisible(true);
+      return;
+    }
+
+    if (!sectionRef.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -54,8 +59,8 @@ const ExaSection = ({
         }
       },
       { 
-        threshold: 0.05,
-        rootMargin: '50px'
+        threshold: 0.01,
+        rootMargin: '100px'
       }
     );
 
