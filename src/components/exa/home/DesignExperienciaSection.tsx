@@ -34,7 +34,7 @@ const DesignExperienciaSection = () => {
           {pillars.map((pillar, index) => (
             <div key={index} className="text-center space-y-4">
               <div className="bg-gradient-to-br from-exa-purple to-exa-blue rounded-full w-20 h-20 flex items-center justify-center mx-auto">
-                <pillar.icon className="w-10 h-10 text-white" />
+                <pillar.icon className="w-10 h-10 text-white" strokeWidth={1.5} fill="none" />
               </div>
               <h3 className="font-montserrat font-semibold text-lg text-exa-black">
                 {pillar.title}
