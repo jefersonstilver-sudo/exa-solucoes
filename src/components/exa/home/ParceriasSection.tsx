@@ -10,17 +10,14 @@ const partners = [
   {
     logo: portalCidadeLogo,
     name: 'Portal da Cidade Foz do Iguaçu',
-    description: 'Conteúdo local e visibilidade cruzada',
   },
   {
     logo: secoviLogo,
     name: 'Secovi Paraná',
-    description: 'Apoio institucional no setor condominial',
   },
   {
     logo: dePaulaLogo,
     name: 'De Paula',
-    description: 'Parceiro estratégico no mercado imobiliário',
   },
 ];
 
@@ -46,21 +43,13 @@ const ParceriasSection = () => {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {partners.map((partner, index) => (
-            <ExaCard key={index} variant="light" className="text-center p-8">
-              <div className="flex items-center justify-center mb-6 min-h-[100px]">
-                <img 
-                  src={partner.logo} 
-                  alt={partner.name}
-                  className="max-h-20 max-w-[200px] w-auto h-auto object-contain"
-                />
-              </div>
-              <h3 className="font-montserrat font-semibold text-lg text-exa-black mb-2">
-                {partner.name}
-              </h3>
-              <p className="font-poppins text-gray-600 text-sm">
-                {partner.description}
-              </p>
-            </ExaCard>
+            <div key={index} className="bg-gradient-to-br from-exa-purple to-exa-blue rounded-xl p-10 flex items-center justify-center hover:scale-105 transition-transform duration-300 min-h-[140px]">
+              <img 
+                src={partner.logo} 
+                alt={partner.name}
+                className="max-h-24 max-w-[220px] w-auto h-auto object-contain filter brightness-0 invert"
+              />
+            </div>
           ))}
         </div>
       </div>
