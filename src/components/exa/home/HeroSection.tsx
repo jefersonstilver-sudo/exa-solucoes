@@ -16,7 +16,7 @@ const HeroSection = () => {
   // Fallback video URL
   const defaultVideoUrl = 'https://indexa.net.br/wp-content/uploads/2025/01/indexa_exa.mp4';
   const displayVideoUrl = videoUrl || defaultVideoUrl;
-  return <ExaSection background="dark" className="min-h-[75vh] flex items-center relative overflow-hidden pt-24 md:pt-8">
+  return <ExaSection background="dark" className="min-h-[60vh] md:min-h-[65vh] flex items-center relative overflow-hidden pt-24 md:pt-8">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#9C1E1E] via-[#180A0A]/80 to-exa-black opacity-90" />
       
