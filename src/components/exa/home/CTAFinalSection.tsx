@@ -31,7 +31,7 @@ const CTAFinalSection = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-          <ExaCTA variant="primary" size="lg" to="/loja">
+          <ExaCTA variant="primary" size="lg" href="https://wa.me/554591415856">
             Quero Anunciar
           </ExaCTA>
           <ExaCTA variant="outline" size="lg" to="/contato">
