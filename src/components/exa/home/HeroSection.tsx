@@ -26,7 +26,7 @@ const HeroSection = () => {
 
       <div ref={ref} className={`relative z-10 w-full grid lg:grid-cols-2 gap-12 items-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Left side - Text content */}
-        <div className="space-y-4 md:space-y-6">
+        <div className="space-y-6 md:space-y-6">
           <h1 className="font-montserrat font-extrabold text-3xl md:text-4xl lg:text-6xl text-white leading-tight">
             Publicidade que <span className="text-exa-yellow">convive</span>.
           </h1>
@@ -35,7 +35,7 @@ const HeroSection = () => {
             A EXA conecta marcas aos instantes reais da vida urbana — atenção genuína, presença diária e resultados duradouros.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 pt-2">
+          <div className="hidden sm:flex flex-col sm:flex-row gap-4 pt-2">
             <ExaCTA 
               variant="primary" 
               size="lg" 
@@ -48,7 +48,7 @@ const HeroSection = () => {
         </div>
 
         {/* Right side - Visual element */}
-        <div className="relative group mt-12 lg:mt-6">
+        <div className="relative group mt-6 lg:mt-6">
           <div className="bg-gradient-to-b from-zinc-300 via-zinc-200 to-zinc-100 p-2 md:p-2.5 lg:p-3 rounded-3xl shadow-2xl border border-white/90 max-w-[240px] md:max-w-[280px] mx-auto hover:scale-105 transition-transform duration-300">
             <div className="bg-black rounded-2xl overflow-hidden shadow-inner aspect-[9/16]">
               {!loading && <video autoPlay loop muted playsInline controls className="w-full h-full object-cover" key={displayVideoUrl}>
