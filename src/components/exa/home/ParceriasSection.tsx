@@ -10,14 +10,17 @@ const partners = [
   {
     logo: portalCidadeLogo,
     name: 'Portal da Cidade Foz do Iguaçu',
+    scale: 1.3,
   },
   {
     logo: secoviLogo,
     name: 'Secovi Paraná',
+    scale: 1.3,
   },
   {
     logo: dePaulaLogo,
     name: 'De Paula',
+    scale: 1,
   },
 ];
 
@@ -48,6 +51,7 @@ const ParceriasSection = () => {
                 src={partner.logo} 
                 alt={partner.name}
                 className="max-h-24 max-w-[220px] w-auto h-auto object-contain"
+                style={{ transform: `scale(${partner.scale})` }}
               />
             </div>
           ))}
