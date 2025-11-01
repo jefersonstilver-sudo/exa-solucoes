@@ -10,7 +10,8 @@ const partners = [
   {
     logo: portalCidadeLogo,
     name: 'Portal da Cidade Foz do Iguaçu',
-    scale: 1.3,
+    scale: 1.5,
+    link: 'https://foz.portaldacidade.com/noticias',
   },
   {
     logo: secoviLogo,
@@ -46,7 +47,11 @@ const ParceriasSection = () => {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {partners.map((partner, index) => (
-            <div key={index} className="bg-red-800/40 backdrop-blur-sm rounded-xl p-10 flex items-center justify-center hover:bg-red-800/60 transition-all duration-300 min-h-[140px] border border-red-700/30">
+            <div 
+              key={index} 
+              className={`bg-red-800/40 backdrop-blur-sm rounded-xl p-10 flex items-center justify-center hover:bg-red-800/60 transition-all duration-300 min-h-[140px] border border-red-700/30 ${partner.link ? 'cursor-pointer' : ''}`}
+              onClick={() => partner.link && window.open(partner.link, '_blank', 'noopener,noreferrer')}
+            >
               <img 
                 src={partner.logo} 
                 alt={partner.name}
