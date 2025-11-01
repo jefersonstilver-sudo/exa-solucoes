@@ -55,56 +55,42 @@ const DadosInstitucionaisSection = () => {
     <ExaSection background="transparent" className="py-16 md:py-24">
       <div 
         ref={ref}
-        className={`max-w-4xl mx-auto transition-all duration-1000 delay-400 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+        className={`max-w-[1200px] mx-auto transition-all duration-700 ${
+          isVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <h2 className="text-3xl md:text-4xl font-bold text-[#111111] mb-12 text-center font-montserrat">
-          Informações Corporativas
-        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16">
+          {/* Coluna Esquerda: Título */}
+          <div className="md:col-span-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#111111] font-montserrat">
+              Informações Corporativas
+            </h2>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {dadosEmpresa.map((dado, index) => {
-            const Icon = dado.icon;
-            const content = (
-              <div className="flex items-start gap-4 p-6 bg-white border border-gray-100 rounded-lg hover:shadow-md transition-all duration-300 group">
-                <div className="flex-shrink-0">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#C8102E]/10 group-hover:bg-[#C8102E]/20 transition-colors duration-300">
-                    <Icon className="w-6 h-6 text-[#C8102E]" strokeWidth={1.5} />
-                  </div>
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#111111] mb-1 font-montserrat">
-                    {dado.label}
-                  </p>
-                  <p className={`text-base font-inter ${dado.link ? 'text-[#C8102E] group-hover:underline' : 'text-[#555555]'}`}>
+          {/* Coluna Direita: Dados */}
+          <div className="md:col-span-8 space-y-4 text-base md:text-lg font-inter leading-[1.8]">
+            {dadosEmpresa.map((dado, index) => (
+              <div key={index} className="flex flex-col md:flex-row md:gap-3">
+                <span className="text-[#111111] font-semibold min-w-[140px]">
+                  {dado.label}:
+                </span>
+                {dado.link ? (
+                  <a 
+                    href={dado.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#C8102E] underline hover:no-underline transition-all"
+                  >
                     {dado.value}
-                  </p>
-                </div>
+                  </a>
+                ) : (
+                  <span className="text-[#555555]">
+                    {dado.value}
+                  </span>
+                )}
               </div>
-            );
-
-            if (dado.link) {
-              return (
-                <a
-                  key={index}
-                  href={dado.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  {content}
-                </a>
-              );
-            }
-
-            return (
-              <div key={index}>
-                {content}
-              </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </div>
     </ExaSection>

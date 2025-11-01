@@ -5,7 +5,6 @@ import HeroQuemSomos from '@/components/exa/quem-somos/HeroQuemSomos';
 import EssenciaSection from '@/components/exa/quem-somos/EssenciaSection';
 import ValoresSection from '@/components/exa/quem-somos/ValoresSection';
 import DadosInstitucionaisSection from '@/components/exa/quem-somos/DadosInstitucionaisSection';
-import FooterQuemSomos from '@/components/exa/quem-somos/FooterQuemSomos';
 
 const QuemSomos = () => {
   const companySchema = {
@@ -68,7 +67,6 @@ const QuemSomos = () => {
         <EssenciaSection />
         <ValoresSection />
         <DadosInstitucionaisSection />
-        <FooterQuemSomos />
       </div>
     </Layout>
   );
