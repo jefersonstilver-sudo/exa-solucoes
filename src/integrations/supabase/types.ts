@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_rate_limits: {
+        Row: {
+          created_at: string | null
+          endpoint: string
+          id: string
+          identifier: string
+          request_count: number | null
+          window_start: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          identifier: string
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          identifier?: string
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       building_action_logs: {
         Row: {
           action_description: string | null
@@ -1634,6 +1661,39 @@ export type Database = {
           },
         ]
       }
+      role_change_audit: {
+        Row: {
+          change_reason: string | null
+          changed_by: string | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          new_role: Database["public"]["Enums"]["app_role"] | null
+          old_role: Database["public"]["Enums"]["app_role"] | null
+          user_id: string | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          new_role?: Database["public"]["Enums"]["app_role"] | null
+          old_role?: Database["public"]["Enums"]["app_role"] | null
+          user_id?: string | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          new_role?: Database["public"]["Enums"]["app_role"] | null
+          old_role?: Database["public"]["Enums"]["app_role"] | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       sindicos_interessados: {
         Row: {
           celular: string
@@ -1807,6 +1867,30 @@ export type Database = {
           tentativa_id?: string | null
           transaction_id?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -2363,6 +2447,15 @@ export type Database = {
         Args: { p_month: number; p_year: number }
         Returns: Json
       }
+      get_own_sensitive_data: {
+        Args: never
+        Returns: {
+          cpf: string
+          documento_estrangeiro: string
+          documento_frente_url: string
+          documento_verso_url: string
+        }[]
+      }
       get_paid_orders_without_video: {
         Args: never
         Returns: {
@@ -2555,6 +2648,13 @@ export type Database = {
       get_unread_notifications_count: { Args: never; Returns: number }
       get_user_role: { Args: never; Returns: string }
       get_video_current_status: { Args: { p_video_id: string }; Returns: Json }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       investigate_missing_transaction: {
         Args: { p_amount: number; p_email: string }
         Returns: Json
@@ -2784,7 +2884,12 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "client"
+        | "admin"
+        | "admin_marketing"
+        | "super_admin"
+        | "painel"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2911,6 +3016,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["client", "admin", "admin_marketing", "super_admin", "painel"],
+    },
   },
 } as const

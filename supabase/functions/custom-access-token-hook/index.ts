@@ -85,22 +85,22 @@ Deno.serve(async (req) => {
     
     console.log('✅ Auth payload validated for user:', payload.claims.email);
 
-    // Try to get role from database
+    // Try to get role from user_roles table (SECURE - separate from users table)
     try {
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('role, email')
-        .eq('id', payload.user_id)
+      const { data: userRoleData, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', payload.user_id)
         .single();
 
       if (error) {
         console.warn('⚠️ Error fetching user role, using default:', error.message);
         payload.claims.user_role = 'client';
-      } else if (userData?.role) {
-        payload.claims.user_role = userData.role;
-        console.log('✅ Role retrieved from database:', userData.role);
+      } else if (userRoleData?.role) {
+        payload.claims.user_role = userRoleData.role;
+        console.log('✅ Role retrieved from user_roles table:', userRoleData.role);
       } else {
-        console.warn('⚠️ No role found, using default');
+        console.warn('⚠️ No role found in user_roles, using default');
         payload.claims.user_role = 'client';
       }
     } catch (dbError) {
