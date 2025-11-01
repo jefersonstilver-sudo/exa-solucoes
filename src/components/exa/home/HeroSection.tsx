@@ -39,7 +39,7 @@ const HeroSection = () => {
             <ExaCTA 
               variant="primary" 
               size="lg" 
-              href={`https://wa.me/554591071566?text=${encodeURIComponent("Olá! Gostaria de anunciar com a EXA")}`}
+              href={`https://api.whatsapp.com/send/?phone=554591415856&text=${encodeURIComponent("Olá! Gostaria de anunciar com a EXA")}&type=phone_number&app_absent=0`}
             >
               Falar com Vendedor
             </ExaCTA>

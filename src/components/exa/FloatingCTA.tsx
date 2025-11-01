@@ -17,7 +17,7 @@ const FloatingCTA = () => {
   if (!isVisible) return null;
 
   const whatsappMessage = encodeURIComponent("Olá! Gostaria de anunciar com a EXA");
-  const whatsappLink = `https://wa.me/554591071566?text=${whatsappMessage}`;
+  const whatsappLink = `https://api.whatsapp.com/send/?phone=554591415856&text=${whatsappMessage}&type=phone_number&app_absent=0`;
 
   return (
     <a
