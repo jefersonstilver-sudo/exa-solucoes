@@ -1,23 +1,24 @@
 import React from 'react';
 import ExaSection from '@/components/exa/base/ExaSection';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+import portalCidadeLogo from '@/assets/partners/portal-cidade.png';
+import secoviLogo from '@/assets/partners/secovi.png';
+import dePaulaLogo from '@/assets/partners/de-paula.png';
+
 const CredibilidadeSection = () => {
   const {
     ref,
     isVisible
   } = useScrollReveal();
   const parceiros = [{
-    name: 'Indexa Mídia',
-    logo: '/placeholder.svg'
+    name: 'Portal da Cidade Foz do Iguaçu',
+    logo: portalCidadeLogo
   }, {
     name: 'Secovi Paraná',
-    logo: '/placeholder.svg'
+    logo: secoviLogo
   }, {
-    name: 'Portal da Cidade',
-    logo: '/placeholder.svg'
-  }, {
-    name: 'Condomínios Parceiros',
-    logo: '/placeholder.svg'
+    name: 'De Paula',
+    logo: dePaulaLogo
   }];
   return (
     <ExaSection background="transparent" className="py-16">
@@ -26,10 +27,14 @@ const CredibilidadeSection = () => {
           Credibilidade e Confiança
         </h2>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 items-center justify-items-center max-w-4xl mx-auto">
           {parceiros.map((parceiro, index) => (
-            <div key={index} className="flex items-center justify-center p-6 bg-white/5 rounded-xl backdrop-blur-sm hover:bg-white/10 transition-all">
-              <span className="text-white/80 font-poppins text-sm">{parceiro.name}</span>
+            <div key={index} className="flex items-center justify-center p-8 bg-white/5 rounded-xl backdrop-blur-sm hover:bg-white/10 transition-all duration-300 w-full min-h-[120px]">
+              <img 
+                src={parceiro.logo} 
+                alt={parceiro.name} 
+                className="max-h-20 max-w-[180px] w-auto h-auto object-contain filter brightness-0 invert opacity-90 hover:opacity-100 transition-opacity"
+              />
             </div>
           ))}
         </div>
