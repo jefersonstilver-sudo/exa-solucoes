@@ -1,5 +1,6 @@
 import React from 'react';
 import ExaSection from '../base/ExaSection';
+import ExaCard from '../base/ExaCard';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { Compass, Settings, Heart } from 'lucide-react';
 
@@ -25,34 +26,44 @@ const ValoresSection = () => {
   const { ref, isVisible } = useScrollReveal(0.2);
 
   return (
-    <ExaSection background="transparent" className="py-16 md:py-24">
+    <ExaSection background="gradient" className="py-16 md:py-24">
       <div 
         ref={ref}
         className={`max-w-[1200px] mx-auto transition-all duration-700 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16">
-          {/* Coluna Esquerda: Título */}
-          <div className="md:col-span-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#111111] font-montserrat">
-              Valores e Propósito
-            </h2>
-          </div>
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white font-montserrat mb-12 text-center">
+          Valores e Propósito
+        </h2>
 
-          {/* Coluna Direita: Conteúdo */}
-          <div className="md:col-span-8 space-y-8 text-base md:text-lg text-[#555555] font-inter leading-[1.8]">
-            {valores.map((valor, index) => (
-              <div key={index}>
-                <h3 className="text-[#111111] font-bold mb-2 font-montserrat">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          {valores.map((valor, index) => {
+            const IconComponent = valor.icon;
+            const gradients = [
+              'from-[#9C1E1E] to-[#C8102E]',
+              'from-purple-600 to-blue-600',
+              'from-yellow-500 to-orange-500'
+            ];
+            
+            return (
+              <ExaCard 
+                key={index} 
+                variant="light" 
+                className="text-center hover:scale-105 transition-transform duration-300"
+              >
+                <div className={`w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br ${gradients[index]} flex items-center justify-center`}>
+                  <IconComponent className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-[#111111] mb-3 font-montserrat">
                   {valor.title}
                 </h3>
-                <p>
+                <p className="text-[#555555] font-inter leading-relaxed">
                   {valor.description}
                 </p>
-              </div>
-            ))}
-          </div>
+              </ExaCard>
+            );
+          })}
         </div>
       </div>
     </ExaSection>

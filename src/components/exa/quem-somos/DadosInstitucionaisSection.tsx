@@ -52,45 +52,60 @@ const DadosInstitucionaisSection = () => {
   const { ref, isVisible } = useScrollReveal(0.2);
 
   return (
-    <ExaSection background="transparent" className="py-16 md:py-24">
+    <ExaSection background="light" className="py-16 md:py-24">
       <div 
         ref={ref}
         className={`max-w-[1200px] mx-auto transition-all duration-700 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16">
-          {/* Coluna Esquerda: Título */}
-          <div className="md:col-span-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#111111] font-montserrat">
-              Informações Corporativas
-            </h2>
-          </div>
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#111111] font-montserrat mb-12">
+          Informações Corporativas
+        </h2>
 
-          {/* Coluna Direita: Dados */}
-          <div className="md:col-span-8 space-y-4 text-base md:text-lg font-inter leading-[1.8]">
-            {dadosEmpresa.map((dado, index) => (
-              <div key={index} className="flex flex-col md:flex-row md:gap-3">
-                <span className="text-[#111111] font-semibold min-w-[140px]">
-                  {dado.label}:
-                </span>
-                {dado.link ? (
-                  <a 
-                    href={dado.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#C8102E] underline hover:no-underline transition-all"
-                  >
-                    {dado.value}
-                  </a>
-                ) : (
-                  <span className="text-[#555555]">
-                    {dado.value}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {dadosEmpresa.map((dado, index) => {
+            const IconComponent = dado.icon;
+            const iconColors: { [key: string]: string } = {
+              'Razão Social': 'text-[#C8102E]',
+              'CNPJ': 'text-gray-600',
+              'Endereço': 'text-[#C8102E]',
+              'Site': 'text-blue-600',
+              'Instagram': 'text-pink-500',
+              'WhatsApp': 'text-green-500',
+              'E-mail': 'text-blue-500'
+            };
+
+            return (
+              <div 
+                key={index} 
+                className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 flex items-start gap-4"
+              >
+                <div className="flex-shrink-0">
+                  <IconComponent className={`w-6 h-6 ${iconColors[dado.label]}`} />
+                </div>
+                <div className="flex-1">
+                  <span className="text-[#111111] font-semibold block mb-1 font-montserrat">
+                    {dado.label}
                   </span>
-                )}
+                  {dado.link ? (
+                    <a 
+                      href={dado.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#C8102E] hover:underline transition-all font-inter"
+                    >
+                      {dado.value}
+                    </a>
+                  ) : (
+                    <span className="text-[#555555] font-inter">
+                      {dado.value}
+                    </span>
+                  )}
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </div>
     </ExaSection>

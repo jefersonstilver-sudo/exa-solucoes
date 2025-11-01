@@ -4,6 +4,7 @@ import SEO from '@/components/seo/SEO';
 import HeroQuemSomos from '@/components/exa/quem-somos/HeroQuemSomos';
 import EssenciaSection from '@/components/exa/quem-somos/EssenciaSection';
 import ValoresSection from '@/components/exa/quem-somos/ValoresSection';
+import ConfiancaSection from '@/components/exa/quem-somos/ConfiancaSection';
 import DadosInstitucionaisSection from '@/components/exa/quem-somos/DadosInstitucionaisSection';
 
 const QuemSomos = () => {
@@ -66,6 +67,7 @@ const QuemSomos = () => {
         <HeroQuemSomos />
         <EssenciaSection />
         <ValoresSection />
+        <ConfiancaSection />
         <DadosInstitucionaisSection />
       </div>
     </Layout>
