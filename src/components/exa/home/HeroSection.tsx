@@ -36,8 +36,12 @@ const HeroSection = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 pt-2">
-            <ExaCTA variant="primary" size="lg" to="/loja">
-              Anuncie com a EXA
+            <ExaCTA 
+              variant="primary" 
+              size="lg" 
+              href={`https://wa.me/554591071566?text=${encodeURIComponent("Olá! Gostaria de anunciar com a EXA")}`}
+            >
+              Falar com Vendedor
             </ExaCTA>
             
           </div>

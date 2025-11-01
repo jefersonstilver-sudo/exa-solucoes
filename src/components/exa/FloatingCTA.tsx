@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 
 const FloatingCTA = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -17,16 +16,21 @@ const FloatingCTA = () => {
 
   if (!isVisible) return null;
 
+  const whatsappMessage = encodeURIComponent("Olá! Gostaria de anunciar com a EXA");
+  const whatsappLink = `https://wa.me/554591071566?text=${whatsappMessage}`;
+
   return (
-    <Link
-      to="/loja"
+    <a
+      href={whatsappLink}
+      target="_blank"
+      rel="noopener noreferrer"
       className="fixed bottom-8 right-8 z-50 bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] text-white px-6 py-4 rounded-full shadow-2xl hover:scale-110 transition-all duration-300 flex items-center space-x-2 group animate-fade-in"
     >
-      <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+      <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
       <span className="font-montserrat font-semibold hidden sm:inline">
-        Anuncie com a EXA
+        Falar no WhatsApp
       </span>
-    </Link>
+    </a>
   );
 };
 
