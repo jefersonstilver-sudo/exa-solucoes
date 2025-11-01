@@ -43,7 +43,7 @@ const ParceriasSection = () => {
             Um Ecossistema que Cresce Junto
           </h2>
           <p className="font-poppins text-xl text-white/80 max-w-3xl mx-auto">
-            A EXA nasce de uma rede de parceiros que compartilham o mesmo propósito: profissionalizar e valorizar a comunicação urbana.
+            Empresas que confiam e validam nossa solução para transformar a gestão de mídia exterior.
           </p>
         </div>
 
