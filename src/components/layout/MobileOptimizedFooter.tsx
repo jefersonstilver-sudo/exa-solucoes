@@ -85,8 +85,8 @@ const MobileOptimizedFooter = () => {
               <ul className="space-y-4">
                 <li className="flex items-center">
                   <Phone className="h-4 w-4 mr-2 text-white/80" />
-                  <a href="https://wa.me/554591071566?text=Ol%C3%A1%20quero%20informa%C3%A7%C3%B5es%20sobre%20um%20projeto%20de%20v%C3%ADdeo" target="_blank" rel="noopener noreferrer" className="text-base text-white/80 hover:text-white transition-colors">
-                    +55 45 9107-1566
+                  <a href="https://wa.me/554591415856" target="_blank" rel="noopener noreferrer" className="text-base text-white/80 hover:text-white transition-colors">
+                    +55 45 9141-5856
                   </a>
                 </li>
                 <li className="flex items-center">
@@ -130,11 +130,11 @@ const MobileOptimizedFooter = () => {
 
             <AccordionSection title="Contato">
               <div className="space-y-4">
-                <a href="https://wa.me/554591071566?text=Ol%C3%A1%20quero%20informa%C3%A7%C3%B5es%20sobre%20um%20projeto%20de%20v%C3%ADdeo" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors">
+                <a href="https://wa.me/554591415856" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors">
                   <div className="w-8 h-8 bg-exa-mint/20 rounded-full flex items-center justify-center">
                     <Phone className="h-4 w-4 text-exa-mint" />
                   </div>
-                  <span className="text-white/90">(45) 9107-1566</span>
+                  <span className="text-white/90">(45) 9141-5856</span>
                 </a>
                 
                 <a href="mailto:comercial@examidia.com.br" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-colors">
