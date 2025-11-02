@@ -76,7 +76,7 @@ const BuildingFilterSidebar: React.FC<BuildingFilterSidebarProps> = React.memo((
       
       {/* Map Area (Expandable) */}
       <AnimatePresence>
-        {mapOpen && <motion.div className="w-full rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100 relative border-2 border-gray-200/50 shadow-lg" initial={{
+        {mapOpen && <motion.div className="w-full rounded-2xl overflow-visible bg-gradient-to-br from-gray-50 via-white to-gray-100 relative border-2 border-gray-200/50 shadow-lg" initial={{
         opacity: 0,
         height: 0,
         scale: 0.95

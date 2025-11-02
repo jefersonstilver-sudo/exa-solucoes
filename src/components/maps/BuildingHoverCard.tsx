@@ -207,9 +207,12 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
         side={side || dynamicSide} 
         sideOffset={getDynamicSideOffset()}
         align="center"
-        avoidCollisions
-        collisionPadding={12}
-        className="w-72 sm:w-80 max-h-[85vh] overflow-auto p-0 bg-white border border-gray-200 shadow-2xl rounded-xl"
+        alignOffset={0}
+        avoidCollisions={true}
+        collisionPadding={30}
+        sticky="always"
+        className="w-72 sm:w-80 max-h-[75vh] overflow-y-auto p-0 bg-white border border-gray-200 shadow-2xl rounded-xl z-[9999]"
+        style={{ maxWidth: 'calc(100vw - 40px)' }}
       >
         <div className="relative">
           {/* Header with Building Image */}

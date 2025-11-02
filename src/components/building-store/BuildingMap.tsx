@@ -580,10 +580,10 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full bg-gray-100 rounded-lg overflow-hidden">
+    <div className="relative w-full h-full bg-gray-100 rounded-lg overflow-visible">
       {/* Loading indicator */}
       {!isReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10 rounded-lg">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
             <p className="text-gray-600 text-sm">Carregando mapa...</p>
@@ -591,7 +591,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         </div>
       )}
       
-      <div ref={mapRef} className="w-full h-full" />
+      <div ref={mapRef} className="w-full h-full rounded-lg" />
       
       {/* Business Location Editor */}
       {businessLocation && (
