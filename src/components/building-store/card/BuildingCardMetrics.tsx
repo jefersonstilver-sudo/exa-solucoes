@@ -7,12 +7,6 @@ interface BuildingCardMetricsProps {
 const BuildingCardMetrics: React.FC<BuildingCardMetricsProps> = ({
   building
 }) => {
-  // Log para debug
-  console.log('📊 [METRICS] Building:', building.nome);
-  console.log('📊 [METRICS] visualizacoes_mes:', building.visualizacoes_mes);
-  console.log('📊 [METRICS] numero_elevadores:', building.numero_elevadores);
-  console.log('📊 [METRICS] publico_estimado:', building.publico_estimado);
-
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M`;

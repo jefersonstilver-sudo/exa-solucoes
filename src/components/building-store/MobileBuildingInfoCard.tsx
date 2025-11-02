@@ -2,7 +2,7 @@ import React from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { MapPin, DollarSign, Calendar, Users, Building2, X } from 'lucide-react';
+import { MapPin, DollarSign, Calendar, Users, Building2, X, Eye, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface MobileBuildingInfoCardProps {
@@ -45,91 +45,88 @@ const MobileBuildingInfoCard: React.FC<MobileBuildingInfoCardProps> = ({ buildin
     }
   };
 
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
+    return num.toLocaleString('pt-BR');
+  };
+
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-full duration-300">
-      <Card className="bg-white shadow-2xl border-border/50 max-h-[50vh] overflow-hidden">
-        <CardHeader className="p-3 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground">
+      <Card className="bg-white shadow-2xl border-gray-200 max-h-[50vh] overflow-hidden">
+        <CardHeader className="p-4 bg-gray-50 border-b border-gray-200">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm leading-tight">{building.nome}</h3>
-              <div className="flex items-center gap-1 mt-1 text-xs opacity-90">
-                <MapPin className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{building.endereco}, {building.bairro}</span>
+              <h3 className="font-bold text-base text-gray-900 leading-tight">{building.nome}</h3>
+              <div className="flex items-center gap-1 mt-1.5 text-xs text-gray-600">
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">{building.bairro}</span>
               </div>
             </div>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={onClose}
-              className="text-primary-foreground hover:bg-white/20 h-8 w-8 p-0 flex-shrink-0"
+              className="text-gray-500 hover:bg-gray-200 h-8 w-8 p-0 flex-shrink-0"
             >
               <X className="w-4 h-4" />
             </Button>
           </div>
         </CardHeader>
         
-        <CardContent className="p-3 space-y-3">
+        <CardContent className="p-4 space-y-3">
           {/* Status */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Status:</span>
-            <Badge variant="outline" className={`text-xs px-2 py-1 ${getStatusColor(building.status)}`}>
+          <div className="flex items-center justify-between py-2 border-b border-gray-100">
+            <span className="text-xs text-gray-600 font-medium">Status</span>
+            <Badge variant="outline" className={`text-xs px-2.5 py-1 font-medium ${getStatusColor(building.status)}`}>
               {getDisplayStatus(building.status)}
             </Badge>
           </div>
 
-          {/* Price */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <DollarSign className="w-3 h-3" />
-              Preço Base:
-            </span>
-            <span className="font-semibold text-sm text-primary">
-              {formatPrice(building.preco_base || 0)}
-            </span>
+          {/* Métricas em Grid */}
+          <div className="grid grid-cols-3 gap-3 py-2">
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-1">
+                <Users className="w-4 h-4 text-gray-500" />
+              </div>
+              <p className="text-xs text-gray-600 mb-0.5">Público</p>
+              <p className="text-sm font-bold text-gray-900">
+                {formatNumber(building.publico_estimado || 0)}
+              </p>
+            </div>
+
+            <div className="text-center border-l border-r border-gray-200">
+              <div className="flex items-center justify-center mb-1">
+                <Eye className="w-4 h-4 text-gray-500" />
+              </div>
+              <p className="text-xs text-gray-600 mb-0.5">Exibições</p>
+              <p className="text-sm font-bold text-gray-900">
+                {formatNumber(building.visualizacoes_mes || 0)}
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-1">
+                <Monitor className="w-4 h-4 text-gray-500" />
+              </div>
+              <p className="text-xs text-gray-600 mb-0.5">Telas</p>
+              <p className="text-sm font-bold text-gray-900">
+                {building.numero_elevadores || 0}
+              </p>
+            </div>
           </div>
 
-          {/* Views */}
-          {building.visualizacoes_mes && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                Views/mês:
-              </span>
-              <span className="text-sm font-medium">
-                {building.visualizacoes_mes.toLocaleString('pt-BR')}
-              </span>
-            </div>
-          )}
-
-          {/* Building Type */}
-          {building.venue_type && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Building2 className="w-3 h-3" />
-                Tipo:
-              </span>
-              <span className="text-sm">{building.venue_type}</span>
-            </div>
-          )}
-
-          {/* Amenities */}
-          {building.amenities && building.amenities.length > 0 && (
-            <div className="space-y-2">
-              <span className="text-xs text-muted-foreground">Facilidades:</span>
-              <div className="flex flex-wrap gap-1">
-                {building.amenities.slice(0, 3).map((amenity, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5">
-                    {amenity}
-                  </Badge>
-                ))}
-                {building.amenities.length > 3 && (
-                  <Badge variant="outline" className="text-xs px-2 py-0.5">
-                    +{building.amenities.length - 3}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Price */}
+          <div className="flex items-center justify-between py-2 border-t border-gray-100">
+            <span className="text-xs text-gray-600 font-medium">A partir de</span>
+            <span className="font-bold text-lg text-[#9C1E1E]">
+              {formatPrice(building.preco_base || 0)}<span className="text-sm text-gray-500 font-normal">/mês</span>
+            </span>
+          </div>
         </CardContent>
       </Card>
     </div>
