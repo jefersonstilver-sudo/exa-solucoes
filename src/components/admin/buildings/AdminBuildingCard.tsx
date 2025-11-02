@@ -51,9 +51,9 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
     }
   };
 
-  // New building metrics
+  // Building metrics conectadas aos dados reais
   const buildingMetrics = {
-    paineis_ativos: building.paineis_ativos || 0,
+    numero_telas: building.numero_elevadores || 0, // Número de telas definido no cadastro
     vendas_mes_atual: building.vendas_mes_atual || 0
   };
   return <Card className={`transition-all duration-200 hover:shadow-lg ${building.status === 'manutenção' ? 'border-orange-200 bg-orange-50/30' : building.status === 'instalação' ? 'border-blue-200 bg-blue-50/30' : building.status === 'inativo' ? 'border-gray-200 bg-gray-50/30' : 'border-gray-200'}`}>
@@ -125,7 +125,7 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                   <p className="font-medium">{building.publico_estimado || 'N/A'}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Elevadores:</span>
+                  <span className="text-gray-500">Telas:</span>
                   <p className="font-medium">{building.numero_elevadores || 'N/A'}</p>
                 </div>
                 <div>
@@ -154,9 +154,9 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                 <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100">
                   <div className="flex items-center">
                     <Monitor className="h-4 w-4 mr-2 text-green-600" />
-                    <span className="text-sm text-gray-600">Painéis Ativos</span>
+                    <span className="text-sm text-gray-600">Número de Telas</span>
                   </div>
-                  <span className="font-bold text-green-600">{buildingMetrics.paineis_ativos}</span>
+                  <span className="font-bold text-green-600">{buildingMetrics.numero_telas}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100">
                   <div className="flex items-center">
