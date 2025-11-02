@@ -71,14 +71,10 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
     );
   }
 
-  // Lógica adaptativa para o grid baseado na quantidade de prédios
-  const buildingCount = buildings?.length || 0;
-  const shouldUseWideCards = sidebarCollapsed && buildingCount <= 3;
-
-  // Layout desktop: Grid com sidebar lateral
+  // Layout desktop: Grid com sidebar lateral - NOVO LAYOUT 2 COLUNAS
   return (
     <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
-      {/* Left sidebar with filters - Desktop only - MAIS FINA */}
+      {/* Left sidebar with filters - Desktop only */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-3'}`}>
         <div className="sticky top-4">
           <BuildingFilterSidebar 
@@ -92,7 +88,7 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
         </div>
       </div>
       
-      {/* Main content with building grid - RESPONSIVO E INTELIGENTE */}
+      {/* Main content with building grid - 2 COLUNAS PROFISSIONAL */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:col-span-11' : 'lg:col-span-9'}`}>
         <BuildingStoreResultsHeader 
           isLoading={isLoading}
@@ -102,21 +98,13 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
           sortOption={sortOption}
           hasLocationSearch={!!selectedLocation}
         />
-        <div className={`w-full ${
-          sidebarCollapsed 
-            ? shouldUseWideCards 
-              ? 'grid grid-cols-1 gap-6' // Cards largos quando poucos prédios
-              : 'grid grid-cols-1 lg:grid-cols-2 gap-6' // 2 colunas quando muitos prédios
-            : '' // Layout normal quando sidebar expandida
-        }`}>
-          <BuildingStoreGrid 
-            buildings={buildings}
-            isLoading={isLoading}
-            isSearching={isSearching}
-            selectedLocation={selectedLocation}
-            wideMode={sidebarCollapsed}
-          />
-        </div>
+        <BuildingStoreGrid 
+          buildings={buildings}
+          isLoading={isLoading}
+          isSearching={isSearching}
+          selectedLocation={selectedLocation}
+          compactMode={true}
+        />
       </div>
     </div>
   );

@@ -14,24 +14,109 @@ import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 
 interface BuildingStoreCardProps {
   building: BuildingStore;
-  wideMode?: boolean;
+  compactMode?: boolean;
 }
 
 const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({ 
   building,
-  wideMode = false
+  compactMode = false
 }) => {
   const isMobile = useIsMobile();
   const { setHoveredBuilding, setSelectedBuildingId, businessLocation } = useBuildingStore();
 
   console.log('🏢 [BUILDING STORE CARD] === RENDERIZANDO CARD ===');
   console.log('🏢 [BUILDING STORE CARD] isMobile:', isMobile);
+  console.log('🏢 [BUILDING STORE CARD] compactMode:', compactMode);
   console.log('🏢 [BUILDING STORE CARD] Building:', building.nome);
+
+  // Modo compact vertical para grid de 2 colunas (e-commerce style)
+  if (compactMode && !isMobile) {
+    return (
+      <Card 
+        id={`building-${building.id}`} 
+        className="overflow-hidden bg-white shadow-lg hover:shadow-2xl transition-all duration-300 border-0 group relative h-full flex flex-col cursor-pointer"
+        onMouseEnter={() => setHoveredBuilding?.(building.id)}
+        onMouseLeave={() => setHoveredBuilding?.(null)}
+        onClick={() => setSelectedBuildingId?.(building.id)}
+      >
+        {/* Banner PRÉ-VENDA */}
+        {(building.status?.toLowerCase() === 'instalação' || building.status?.toLowerCase() === 'instalacao') && (
+          <div className="absolute top-3 right-3 z-30 transform rotate-12">
+            <div className="bg-blue-600 text-white px-3 py-1.5 text-xs font-bold tracking-wide shadow-xl rounded-lg border-2 border-white">
+              PRÉ-VENDA
+            </div>
+          </div>
+        )}
+        
+        <CardContent className="p-0 flex flex-col h-full">
+          {/* Imagem - Aspect ratio 4:3 */}
+          <div className="relative overflow-hidden aspect-[4/3]">
+            <BuildingCardImage building={building} mode="fill" />
+            
+            {/* Badge Premium */}
+            {building.padrao_publico === 'alto' && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="absolute bottom-2 right-2 z-10"
+              >
+                <div className="bg-amber-500 text-white px-2 py-1 rounded-md text-xs font-semibold border border-amber-600">
+                  ⭐ Premium
+                </div>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Conteúdo - Flexível e compacto */}
+          <div className="p-4 flex flex-col flex-1">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col h-full"
+            >
+              {/* Header */}
+              <div className="mb-3">
+                <BuildingCardHeader building={building} />
+                {businessLocation && (
+                  <div className="mt-2">
+                    <BuildingCardDistance building={building} businessLocation={businessLocation} />
+                  </div>
+                )}
+              </div>
+
+              {/* Métricas compactas */}
+              <div className="mb-3 flex-1">
+                <BuildingCardMetrics building={building} />
+              </div>
+
+              {/* Amenities inline */}
+              <div className="mb-3">
+                <BuildingCardAmenities building={building} />
+              </div>
+
+              {/* Ações - sempre no final */}
+              <div className="mt-auto">
+                <BuildingCardActions building={building} />
+              </div>
+            </motion.div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isMobile) {
     // Layout mobile: Card vertical compacto com título no topo
     return (
-      <Card id={`building-${building.id}`} className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative" onMouseEnter={() => setHoveredBuilding?.(building.id)} onMouseLeave={() => setHoveredBuilding?.(null)} onClick={() => setSelectedBuildingId?.(building.id)}>
+      <Card 
+        id={`building-${building.id}`} 
+        className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative" 
+        onMouseEnter={() => setHoveredBuilding?.(building.id)} 
+        onMouseLeave={() => setHoveredBuilding?.(null)} 
+        onClick={() => setSelectedBuildingId?.(building.id)}
+      >
         {/* Banner PRÉ-VENDA no topo direito do card */}
         {(building.status?.toLowerCase() === 'instalação' || building.status?.toLowerCase() === 'instalacao') && (
           <div className="absolute top-3 right-3 z-30 transform rotate-12">
@@ -103,9 +188,15 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
     );
   }
 
-  // Layout desktop: Card horizontal com título no topo
+  // Layout desktop padrão: Card horizontal (fallback para páginas individuais)
   return (
-    <Card id={`building-${building.id}`} className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative" onMouseEnter={() => setHoveredBuilding?.(building.id)} onMouseLeave={() => setHoveredBuilding?.(null)} onClick={() => setSelectedBuildingId?.(building.id)}>
+    <Card 
+      id={`building-${building.id}`} 
+      className="overflow-hidden bg-white shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group relative" 
+      onMouseEnter={() => setHoveredBuilding?.(building.id)} 
+      onMouseLeave={() => setHoveredBuilding?.(null)} 
+      onClick={() => setSelectedBuildingId?.(building.id)}
+    >
       {/* Banner PRÉ-VENDA no topo direito do card */}
       {(building.status?.toLowerCase() === 'instalação' || building.status?.toLowerCase() === 'instalacao') && (
         <div className="absolute top-3 right-3 z-30 transform rotate-12">
@@ -115,12 +206,10 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
         </div>
       )}
       <CardContent className="p-0 relative">
-        <div className={`flex flex-col lg:flex-row ${wideMode ? 'min-h-[420px]' : 'min-h-[320px]'}`}>
+        <div className="flex flex-col lg:flex-row min-h-[320px]">
           {/* Imagem Principal - Desktop: Lado esquerdo */}
-          <div className={`${wideMode ? 'lg:w-1/2' : 'lg:w-2/5'} relative overflow-hidden`}>
-            <BuildingCardImage building={building} mode={wideMode ? 'fill' : 'square'} />
-            
-            
+          <div className="lg:w-2/5 relative overflow-hidden">
+            <BuildingCardImage building={building} mode="square" />
             
             {/* Badge de prioridade se for high-end */}
             {building.padrao_publico === 'alto' && (
@@ -138,7 +227,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
           </div>
 
           {/* Informações - Desktop: Lado direito com título no topo */}
-          <div className={`${wideMode ? 'lg:w-1/2' : 'lg:w-3/5'} p-4 lg:p-6 relative flex flex-col`}>
+          <div className="lg:w-3/5 p-4 lg:p-6 relative flex flex-col">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
