@@ -25,6 +25,13 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
   videoCount
 }) => {
   console.log('🏢 [ADMIN BUILDING CARD] Renderizando prédio:', building.nome, 'Status:', building.status);
+  console.log('📊 [ADMIN BUILDING CARD] Dados do prédio:', {
+    id: building.id,
+    numero_elevadores: building.numero_elevadores,
+    numero_unidades: building.numero_unidades,
+    publico_estimado: building.publico_estimado,
+    vendas_mes_atual: building.vendas_mes_atual
+  });
   const getImageUrl = (path: string) => {
     if (!path) return null;
     if (path.startsWith('http')) return path;
