@@ -207,7 +207,7 @@ export function ModernAdminSidebar() {
     switch (userInfo.role) {
       case 'super_admin': return 'text-yellow-400';
       case 'admin': return 'text-blue-400';
-      case 'admin_marketing': return 'text-purple-400';
+      case 'admin_marketing': return 'text-orange-400';
       default: return 'text-indexa-mint';
     }
   };
@@ -233,7 +233,7 @@ export function ModernAdminSidebar() {
 
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#1e1b4b] via-[#4c1d95] to-[#7c3aed] border-r border-white/20 shadow-2xl"
+      className="h-screen bg-gradient-to-b from-[#180A0A] via-[#3B1E1E] to-[#9C1E1E] border-r border-white/20 shadow-2xl"
       collapsible="icon"
       variant={isMobile ? "floating" : "sidebar"}
     >
@@ -268,7 +268,7 @@ export function ModernAdminSidebar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-white text-[#1e1b4b] font-semibold text-xs">
+                      <AvatarFallback className="bg-white text-[#9C1E1E] font-semibold text-xs">
                         {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
                       </AvatarFallback>
                     </Avatar>
@@ -302,7 +302,7 @@ export function ModernAdminSidebar() {
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && (
-              <SidebarGroupLabel className="text-xs font-semibold text-violet-200 uppercase tracking-wider mb-3 px-2">
+              <SidebarGroupLabel className="text-xs font-semibold text-red-200 uppercase tracking-wider mb-3 px-2">
                 {group.label}
               </SidebarGroupLabel>
             )}
@@ -320,7 +320,7 @@ export function ModernAdminSidebar() {
                           to={item.href}
                           className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 font-medium text-sm group ${
                             isActive 
-                              ? "bg-white !text-[#1e1b4b] font-bold shadow-lg hover:!bg-white hover:!text-[#1e1b4b]" 
+                              ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
                               : "text-white hover:bg-white/20 hover:text-white"
                           }`}
                         >
