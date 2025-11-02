@@ -49,6 +49,7 @@ const BuildingStoreResultsHeader: React.FC<BuildingStoreResultsHeaderProps> = ({
             {hasLocationSearch && (
               <SelectItem value="distance">Ordenar por: Distância</SelectItem>
             )}
+            <SelectItem value="audience-desc">Ordenar por: Maior Público</SelectItem>
             <SelectItem value="price-asc">Ordenar por: Menor Preço</SelectItem>
             <SelectItem value="price-desc">Ordenar por: Maior Preço</SelectItem>
             {!hasLocationSearch && (
