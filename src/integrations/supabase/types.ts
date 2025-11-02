@@ -2349,11 +2349,13 @@ export type Database = {
           latitude: number
           longitude: number
           nome: string
+          numero_elevadores: number
           preco_base: number
           publico_estimado: number
           quantidade_telas: number
           status: string
           venue_type: string
+          visualizacoes_mes: number
         }[]
       }
       get_coupon_stats: {
