@@ -57,19 +57,19 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
             <div className="relative overflow-hidden h-48 mx-4 rounded-lg">
               <BuildingCardImage building={building} />
               
-              {/* Badge premium */}
-              {building.padrao_publico === 'alto' && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="absolute bottom-2 right-2 z-10"
-                >
-                  <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
-                    ⭐ Premium
-                  </div>
-                </motion.div>
-              )}
+            {/* Badge premium */}
+            {building.padrao_publico === 'alto' && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="absolute bottom-2 right-2 z-10"
+              >
+                <div className="bg-amber-500 text-white px-2 py-1 rounded-md text-xs font-semibold border border-amber-600">
+                  ⭐ Premium
+                </div>
+              </motion.div>
+            )}
 
               
             </div>
@@ -130,7 +130,7 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
                 transition={{ delay: 0.3 }}
                 className="absolute bottom-3 right-3 z-10"
               >
-                <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg">
+                <div className="bg-amber-500 text-white px-3 py-1.5 rounded-md text-xs font-semibold border border-amber-600">
                   ⭐ Premium
                 </div>
               </motion.div>

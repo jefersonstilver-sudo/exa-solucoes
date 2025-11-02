@@ -7,6 +7,12 @@ interface BuildingCardMetricsProps {
 const BuildingCardMetrics: React.FC<BuildingCardMetricsProps> = ({
   building
 }) => {
+  // Log para debug
+  console.log('📊 [METRICS] Building:', building.nome);
+  console.log('📊 [METRICS] visualizacoes_mes:', building.visualizacoes_mes);
+  console.log('📊 [METRICS] numero_elevadores:', building.numero_elevadores);
+  console.log('📊 [METRICS] publico_estimado:', building.publico_estimado);
+
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M`;
@@ -16,36 +22,39 @@ const BuildingCardMetrics: React.FC<BuildingCardMetricsProps> = ({
     }
     return num.toString();
   };
-  return <div className="grid grid-cols-3 gap-3 mb-4">
-      <div className="bg-gray-50 p-3 rounded-lg">
+
+  return (
+    <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="bg-gray-50 border border-gray-200 p-3 rounded-md">
         <div className="flex items-center mb-1">
-          <Users className="h-4 w-4 text-gray-600 mr-1" />
+          <Users className="h-3.5 w-3.5 text-gray-500 mr-1" />
           <span className="text-xs text-gray-600 font-medium">Público</span>
         </div>
-        <p className="text-lg font-bold text-gray-900">
-          {formatNumber(building.publico_estimado)}
+        <p className="text-base font-bold text-gray-900">
+          {formatNumber(building.publico_estimado || 0)}
         </p>
       </div>
       
-      <div className="bg-gray-50 p-3 rounded-lg">
+      <div className="bg-gray-50 border border-gray-200 p-3 rounded-md">
         <div className="flex items-center mb-1">
-          <Eye className="h-4 w-4 text-gray-600 mr-1" />
-          <span className="text-xs text-gray-600 font-medium">Exibições/Mês</span>
+          <Eye className="h-3.5 w-3.5 text-gray-500 mr-1" />
+          <span className="text-xs text-gray-600 font-medium">Exibições</span>
         </div>
-        <p className="text-lg font-bold text-gray-900">
+        <p className="text-base font-bold text-gray-900">
           {formatNumber(building.visualizacoes_mes || 0)}
         </p>
       </div>
 
-      <div className="bg-gray-50 p-3 rounded-lg">
+      <div className="bg-gray-50 border border-gray-200 p-3 rounded-md">
         <div className="flex items-center mb-1">
-          <Building2 className="h-4 w-4 text-gray-600 mr-1" />
+          <Building2 className="h-3.5 w-3.5 text-gray-500 mr-1" />
           <span className="text-xs text-gray-600 font-medium">Telas</span>
         </div>
-        <p className="text-lg font-bold text-gray-900">
+        <p className="text-base font-bold text-gray-900">
           {building.numero_elevadores || 0}
         </p>
       </div>
-    </div>;
+    </div>
+  );
 };
 export default BuildingCardMetrics;
