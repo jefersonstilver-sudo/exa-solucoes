@@ -120,47 +120,34 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
     });
 
     // Convert secure minimal data to BuildingStore (with restricted data)
-    const buildingStores: BuildingStore[] = buildings.map(building => {
-      const visualizacoes = (building as any).visualizacoes_mes || 0;
-      const numeroTelas = (building as any).numero_elevadores || 0;
-      
-      console.log('🔄 [BUILDING SERVICE] Mapeando prédio:', {
-        nome: building.nome,
-        visualizacoes_mes_raw: (building as any).visualizacoes_mes,
-        numero_elevadores_raw: (building as any).numero_elevadores,
-        visualizacoes_final: visualizacoes,
-        numeroTelas_final: numeroTelas
-      });
-      
-      return {
-        id: building.id,
-        nome: building.nome,
-        endereco: building.endereco || '', // Now available from public store
-        cidade: '', // Not available
-        estado: '', // Not available  
-        bairro: building.bairro || extractNeighborhoodFromEndereco(building.endereco) || 'Bairro não definido',
-        venue_type: building.venue_type,
-        status: building.status,
-        latitude: Number((building as any).latitude),
-        longitude: Number((building as any).longitude),
-        manual_latitude: undefined,
-        manual_longitude: undefined,
-        position_validated: undefined,
-        publico_estimado: building.publico_estimado || 0, // Now available from database
-        visualizacoes_mes: visualizacoes, // Exibições mensais calculadas
-        preco_base: Number(building.preco_base) || 280,
-        imagem_principal: building.imagem_principal || '',
-        imagem_2: '', // Not available in minimal data
-        imagem_3: '', // Not available in minimal data
-        imagem_4: '', // Not available in minimal data
-        imagens: [], // Not available
-        amenities: [], // Removed for security - no longer exposed
-        caracteristicas: [], // Removed for security - no longer exposed
-        padrao_publico: 'normal' as 'alto' | 'medio' | 'normal', // Default value since removed for security
-        quantidade_telas: building.quantidade_telas || 1,
-        numero_elevadores: numeroTelas // Número de telas
-      };
-    });
+    const buildingStores: BuildingStore[] = buildings.map(building => ({
+      id: building.id,
+      nome: building.nome,
+      endereco: building.endereco || '', // Now available from public store
+      cidade: '', // Not available
+      estado: '', // Not available  
+      bairro: building.bairro || extractNeighborhoodFromEndereco(building.endereco) || 'Bairro não definido',
+      venue_type: building.venue_type,
+      status: building.status,
+      latitude: Number((building as any).latitude),
+      longitude: Number((building as any).longitude),
+      manual_latitude: undefined,
+      manual_longitude: undefined,
+      position_validated: undefined,
+      publico_estimado: building.publico_estimado || 0, // Now available from database
+      visualizacoes_mes: (building as any).visualizacoes_mes || 0, // Exibições mensais calculadas
+      preco_base: Number(building.preco_base) || 280,
+      imagem_principal: building.imagem_principal || '',
+      imagem_2: '', // Not available in minimal data
+      imagem_3: '', // Not available in minimal data
+      imagem_4: '', // Not available in minimal data
+      imagens: [], // Not available
+      amenities: [], // Removed for security - no longer exposed
+      caracteristicas: [], // Removed for security - no longer exposed
+      padrao_publico: 'normal' as 'alto' | 'medio' | 'normal', // Default value since removed for security
+      quantidade_telas: building.quantidade_telas || 1,
+      numero_elevadores: (building as any).numero_elevadores || 0 // Número de telas
+    }));
 
     return buildingStores;
     

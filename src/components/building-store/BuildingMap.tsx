@@ -58,7 +58,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         }
 
       // Determine center - filter out invalid coordinates (0,0)
-      const defaultCenter = { lat: -25.5163, lng: -54.5854 }; // Foz do Iguaçu default
+      const defaultCenter = { lat: -25.5469, lng: -54.5882 }; // Foz do Iguaçu - Centro da cidade
       const firstWithCoords = buildings?.find(b => 
         !!b.latitude && !!b.longitude && 
         b.latitude !== 0 && b.longitude !== 0
@@ -69,7 +69,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
 
         const map = new maps.Map(mapRef.current, {
           center,
-          zoom: selectedLocation ? defaultZoom : 12,
+          zoom: selectedLocation ? defaultZoom : 13, // Zoom ajustado para mostrar a cidade toda
           mapTypeControl: false,
           fullscreenControl: false,
           streetViewControl: false,
