@@ -83,7 +83,7 @@ const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpd
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="numero_elevadores">Número de Elevadores</Label>
+            <Label htmlFor="numero_elevadores">Número de Telas</Label>
             <Input
               id="numero_elevadores"
               type="number"
