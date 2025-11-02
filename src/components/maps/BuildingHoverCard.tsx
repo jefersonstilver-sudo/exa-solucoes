@@ -11,7 +11,8 @@ import {
   Plus,
   Check,
   Loader2,
-  Navigation
+  Navigation,
+  Eye
 } from 'lucide-react';
 import type { BuildingStore } from '@/services/buildingStoreService';
 import { getImageUrl } from '@/services/buildingStoreService';
@@ -110,6 +111,16 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
     }).format(price);
   };
 
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
+    return num.toLocaleString('pt-BR');
+  };
+
   // Calculate distance to business location
   const getBuildingDistance = () => {
     if (!businessLocation) return null;
@@ -198,14 +209,14 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
         align="center"
         avoidCollisions
         collisionPadding={12}
-        className="w-72 sm:w-80 max-h-[85vh] overflow-auto p-0 bg-gradient-to-br from-white to-purple-50/30 border border-purple-200 shadow-2xl shadow-purple-500/20 rounded-xl backdrop-blur-sm"
+        className="w-72 sm:w-80 max-h-[85vh] overflow-auto p-0 bg-white border border-gray-200 shadow-2xl rounded-xl"
       >
         <div className="relative">
-          {/* 3D Purple Header with Building Image */}
-          <div className="relative h-40 bg-gradient-to-br from-purple-600 via-[#3C1361] to-purple-800 overflow-hidden">
-            {/* 3D Background Pattern */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1)_0%,transparent_50%)]" />
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.1)_0%,transparent_70%)]" />
+          {/* Header with Building Image */}
+          <div className="relative h-40 bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 overflow-hidden">
+            {/* Subtle Background Pattern */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.05)_0%,transparent_50%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,transparent_70%)]" />
             
             {building.imagem_principal ? (
               <div className="relative h-full">
@@ -227,23 +238,11 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
               </div>
             )}
             
-            {/* Público Badge - canto superior esquerdo */}
-            <div className="absolute top-4 left-4">
-              <div className="bg-white/90 backdrop-blur-sm text-purple-900 px-2 py-1 rounded-lg shadow-lg border border-white/50 flex items-center">
-                <Users className="h-3 w-3 mr-1" />
-                <span className="text-xs font-medium">
-                  {building.publico_estimado ? 
-                    building.publico_estimado.toLocaleString('pt-BR') : 
-                    building.padrao_publico || 'Público Geral'}
-                </span>
-              </div>
-            </div>
-
             {/* Status Badge */}
             <div className="absolute top-4 right-4">
               <Badge 
                 variant={getStatusVariant(building.status)} 
-                className="bg-white/90 text-purple-900 border-white/50 shadow-lg backdrop-blur-sm"
+                className="bg-white/95 backdrop-blur-sm shadow-lg"
               >
                 {getStatusLabel(building.status)}
               </Badge>
@@ -275,37 +274,67 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
             </div>
           </div>
 
-          {/* Content with 3D effect */}
-          <div className="p-5 bg-gradient-to-b from-white to-gray-50/50">
+          {/* Content */}
+          <div className="p-5 bg-white">
 
-            {/* Price Section with 3D effect */}
-            <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 mb-4 shadow-inner border border-purple-200">
+            {/* Métricas em Grid */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="text-center bg-gray-50 border border-gray-200 p-3 rounded-md">
+                <div className="flex items-center justify-center mb-1">
+                  <Users className="w-4 h-4 text-gray-500" />
+                </div>
+                <p className="text-xs text-gray-600 mb-0.5">Público</p>
+                <p className="text-sm font-bold text-gray-900">
+                  {formatNumber(building.publico_estimado || 0)}
+                </p>
+              </div>
+
+              <div className="text-center bg-gray-50 border border-gray-200 p-3 rounded-md">
+                <div className="flex items-center justify-center mb-1">
+                  <Eye className="w-4 h-4 text-gray-500" />
+                </div>
+                <p className="text-xs text-gray-600 mb-0.5">Exibições</p>
+                <p className="text-sm font-bold text-gray-900">
+                  {formatNumber(building.visualizacoes_mes || 0)}
+                </p>
+              </div>
+
+              <div className="text-center bg-gray-50 border border-gray-200 p-3 rounded-md">
+                <div className="flex items-center justify-center mb-1">
+                  <Monitor className="w-4 h-4 text-gray-500" />
+                </div>
+                <p className="text-xs text-gray-600 mb-0.5">Telas</p>
+                <p className="text-sm font-bold text-gray-900">
+                  {building.numero_elevadores || 0}
+                </p>
+              </div>
+            </div>
+
+            {/* Price Section */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-purple-600 mb-1 font-medium">💰 A partir de</p>
-                  <p className="text-2xl font-bold text-[#3C1361]">
+                  <p className="text-xs text-gray-600 mb-1 font-medium">A partir de</p>
+                  <p className="text-2xl font-bold text-[#9C1E1E]">
                     {formatPrice(building.preco_base)}
-                    <span className="text-sm font-normal text-purple-500">/mês</span>
-                  </p>
-                  <p className="text-xs text-purple-600 mt-1">
-                    {building.quantidade_telas} painel{building.quantidade_telas !== 1 ? 'éis' : ''} disponível{building.quantidade_telas !== 1 ? 'eis' : ''}
+                    <span className="text-sm font-normal text-gray-500">/mês</span>
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Action Button with 3D effect */}
+            {/* Action Button */}
             <Button
               onClick={handleAddToCart}
               disabled={inCartLocal || isAdding}
-              className={`w-full py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
+              className={`w-full py-2.5 sm:py-3 font-semibold text-xs sm:text-sm transition-all duration-200 ${
                 !cart && !(window as any).__simpleCart
                   ? 'bg-gray-400 hover:bg-gray-500 text-white cursor-not-allowed' 
                   : isAdding 
-                    ? 'bg-[#3C1361]/80 text-white cursor-wait' 
+                    ? 'bg-[#9C1E1E]/80 text-white cursor-wait' 
                     : inCartLocal 
                       ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
-                      : 'bg-gradient-to-r from-[#3C1361] to-purple-700 hover:from-[#3C1361]/90 hover:to-purple-600 text-white hover:scale-[1.02] active:scale-95'
+                      : 'bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white hover:scale-105 active:scale-95'
               }`}
             >
               {(!cart && !(window as any).__simpleCart) ? (
@@ -325,13 +354,13 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
                   {(building.caracteristicas || building.amenities || []).slice(0, 3).map((item, index) => (
                     <span 
                       key={index}
-                      className="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full border border-purple-200"
+                      className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-md border border-gray-200"
                     >
                       {item}
                     </span>
                   ))}
                   {(building.caracteristicas || building.amenities || []).length > 3 && (
-                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
+                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-md">
                       +{(building.caracteristicas || building.amenities || []).length - 3}
                     </span>
                   )}
