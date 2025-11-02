@@ -69,7 +69,7 @@ export const useBuildingFormData = (building: any, open: boolean) => {
         numero_andares: building.numero_andares || 0,
         numero_elevadores: building.numero_elevadores || 0,
         numero_blocos: building.numero_blocos || 1,
-        publico_estimado: building.publico_estimado || (building.numero_unidades * 3) || 0,
+        publico_estimado: building.publico_estimado || (building.numero_unidades * 3.5) || 0,
         preco_base: building.preco_base || 0,
         padrao_publico: building.padrao_publico || 'normal',
         status: building.status || 'ativo',
@@ -116,8 +116,8 @@ export const useBuildingFormData = (building: any, open: boolean) => {
     setLoading(true);
 
     try {
-      // Montar payload sem tentar atualizar a coluna gerada "publico_estimado"
-      const { publico_estimado, caracteristicas, ...rest } = formData as any;
+      // Montar payload incluindo publico_estimado (pode ser editado manualmente)
+      const { caracteristicas, ...rest } = formData as any;
 
       const payload = {
         ...rest,
