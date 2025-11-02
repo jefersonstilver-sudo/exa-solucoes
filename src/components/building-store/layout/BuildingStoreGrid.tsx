@@ -40,7 +40,7 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
     return (
       <div className="w-full pb-6">
         {/* Barra de controle única - sticky no topo */}
-        <div className="sticky top-0 z-10 bg-white shadow-sm">
+        <div className="sticky top-0 z-20 bg-white shadow-md border-b border-gray-200">
           <MobileBuildingFilters 
             filters={filters}
             handleFilterChange={handleFilterChange}
@@ -54,7 +54,7 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
         </div>
         
         {/* Grid de prédios mobile - sem header duplicado */}
-        <div className="w-full px-4 pt-4">
+        <div className="w-full px-3 pt-4">
           <BuildingStoreGrid 
             buildings={buildings}
             isLoading={isLoading}

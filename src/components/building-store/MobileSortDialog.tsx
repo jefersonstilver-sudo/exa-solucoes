@@ -34,10 +34,9 @@ const MobileSortDialog: React.FC<MobileSortDialogProps> = ({
       <SheetTrigger asChild>
         <Button 
           variant="outline" 
-          size="sm"
-          className="flex items-center space-x-1 bg-white border-gray-300 hover:bg-gray-50 h-9"
+          className="flex items-center justify-center bg-white border-2 border-gray-300 hover:bg-gray-50 hover:border-[#9C1E1E] transition-all h-11 w-11 rounded-lg shadow-sm p-0"
         >
-          <ArrowUpDown className="h-4 w-4" />
+          <ArrowUpDown className="h-5 w-5 text-gray-700" />
         </Button>
       </SheetTrigger>
       

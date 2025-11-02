@@ -35,22 +35,20 @@ const MobileBuildingFilters: React.FC<MobileBuildingFiltersProps> = ({
 
   return (
     <>
-      {/* Barra de controle compacta - Layout horizontal único */}
-      <div className="flex items-center justify-end p-3 bg-white border-b border-gray-200">
-        {/* Grupo de ações */}
-        <div className="flex items-center gap-2">
+      {/* Barra de controle mobile profissional */}
+      <div className="w-full bg-white shadow-sm">
+        <div className="flex items-center justify-center gap-3 px-4 py-3">
           {/* Botão Filtros */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button 
                 variant="outline" 
-                size="sm"
-                className="flex items-center space-x-1 relative bg-white border-gray-300 hover:bg-gray-50 h-9"
+                className="flex items-center gap-2 relative bg-white border-2 border-gray-300 hover:bg-gray-50 hover:border-[#9C1E1E] transition-all h-11 px-4 rounded-lg shadow-sm flex-1 justify-center"
               >
-                <Filter className="h-4 w-4" />
-                <span className="text-xs">Filtros</span>
+                <Filter className="h-4 w-4 text-gray-700" />
+                <span className="text-sm font-medium text-gray-700">Filtros</span>
                 {activeFiltersCount > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-[#9C1E1E] text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                  <div className="absolute -top-1.5 -right-1.5 bg-[#9C1E1E] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-md">
                     {activeFiltersCount}
                   </div>
                 )}
@@ -89,7 +87,7 @@ const MobileBuildingFilters: React.FC<MobileBuildingFiltersProps> = ({
           {/* Botão Mapa */}
           <MobileMapDialog 
             buildingsCount={buildingsCount}
-            className="h-9"
+            className="h-11 flex-1 border-2 shadow-sm"
           />
 
           {/* Botão Ordenar */}

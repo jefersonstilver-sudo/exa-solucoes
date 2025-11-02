@@ -45,13 +45,12 @@ const MobileMapDialog: React.FC<MobileMapDialogProps> = ({ buildingsCount, class
       <DialogTrigger asChild>
         <Button 
           variant="outline" 
-          size="sm"
-          className={`flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 text-blue-700 hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 shadow-sm transition-all duration-200 ${className}`}
+          className={`flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 text-blue-700 hover:from-blue-100 hover:to-indigo-100 hover:border-blue-400 transition-all duration-200 rounded-lg justify-center ${className}`}
         >
           <Map className="h-4 w-4" />
-          <span className="font-medium">Mapa</span>
+          <span className="font-medium text-sm">Mapa</span>
           {buildingsCount > 0 && (
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+            <Badge variant="secondary" className="bg-blue-600 text-white text-xs font-bold h-5 px-2">
               {buildingsCount}
             </Badge>
           )}
