@@ -82,9 +82,9 @@ const BuildingCardDistance: React.FC<BuildingCardDistanceProps> = ({
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="inline-flex items-center bg-gray-100 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium"
+      className="inline-flex items-center bg-gray-100 border border-gray-300 text-gray-700 px-2 py-1 rounded-md text-xs font-medium whitespace-nowrap"
     >
-      <MapPin className="w-3.5 h-3.5 mr-1.5" />
+      <MapPin className="w-3 h-3 mr-1" />
       <span>{displayDistance}</span>
     </motion.div>
   );

@@ -2,6 +2,7 @@
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import { BuildingStore } from '@/services/buildingStoreService';
+import BuildingCardDistance from './BuildingCardDistance';
 
 // Helper local para extrair bairro caso necessário
 const extractNeighborhoodFromAddress = (endereco?: string): string => {
@@ -25,9 +26,10 @@ const extractNeighborhoodFromAddress = (endereco?: string): string => {
 
 interface BuildingCardHeaderProps {
   building: BuildingStore;
+  businessLocation?: { lat: number; lng: number } | null;
 }
 
-const BuildingCardHeader: React.FC<BuildingCardHeaderProps> = ({ building }) => {
+const BuildingCardHeader: React.FC<BuildingCardHeaderProps> = ({ building, businessLocation }) => {
   // Fallback local caso o bairro ainda não esteja sendo extraído corretamente no serviço
   const bairroDisplay = building.bairro || 
     extractNeighborhoodFromAddress(building.endereco) || 
@@ -35,9 +37,16 @@ const BuildingCardHeader: React.FC<BuildingCardHeaderProps> = ({ building }) => 
 
   return (
     <div className="mb-4">
-      <h3 className="text-xl font-bold text-gray-900 mb-1">
-        {building.nome}
-      </h3>
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <h3 className="text-xl font-bold text-gray-900 flex-1">
+          {building.nome}
+        </h3>
+        {businessLocation && (
+          <div className="flex-shrink-0">
+            <BuildingCardDistance building={building} businessLocation={businessLocation} />
+          </div>
+        )}
+      </div>
       <div className="flex items-center text-gray-600 mb-2">
         <MapPin className="h-4 w-4 mr-1" />
         <span className="text-sm">{bairroDisplay}</span>
