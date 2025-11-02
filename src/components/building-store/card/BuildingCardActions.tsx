@@ -88,9 +88,6 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
           R$ {building.preco_base || 280}
           <span className="text-sm font-normal text-gray-500">/mês</span>
         </p>
-        <p className="text-xs text-gray-500 mt-1">
-          {building.quantidade_telas} painel{building.quantidade_telas !== 1 ? 'éis' : ''} disponível{building.quantidade_telas !== 1 ? 'eis' : ''}
-        </p>
       </div>
       
       <div className={`flex ${isMobile ? 'w-full justify-center' : 'justify-center lg:justify-end'}`}>
