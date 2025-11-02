@@ -36,30 +36,25 @@ const BuildingStoreGridLayout: React.FC<BuildingStoreGridLayoutProps> = ({
   const isMobile = useIsMobile();
 
   if (isMobile) {
-    // Layout mobile: Stack vertical com filtros em drawer e mapa responsivo
+    // Layout mobile: Stack vertical com barra de controle única no topo
     return (
-      <div className="w-full space-y-4 pb-6">
-        {/* Filtros mobile com mapa integrado */}
-        <div className="w-full bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="w-full pb-6">
+        {/* Barra de controle única - sticky no topo */}
+        <div className="sticky top-0 z-10 bg-white shadow-sm">
           <MobileBuildingFilters 
             filters={filters}
             handleFilterChange={handleFilterChange}
             isLoading={isLoading}
             isSearching={isSearching}
             buildingsCount={buildings?.length || 0}
+            sortOption={sortOption}
+            setSortOption={setSortOption}
+            hasLocationSearch={!!selectedLocation}
           />
         </div>
         
-        {/* Grid de prédios mobile - layout melhorado */}
-        <div className="w-full px-1">
-          <BuildingStoreResultsHeader 
-            isLoading={isLoading}
-            isSearching={isSearching}
-            buildingsCount={buildings?.length || 0}
-            onSortChange={(value) => { setSortOption(value); }}
-            sortOption={sortOption}
-            hasLocationSearch={!!selectedLocation}
-          />
+        {/* Grid de prédios mobile - sem header duplicado */}
+        <div className="w-full px-4 pt-4">
           <BuildingStoreGrid 
             buildings={buildings}
             isLoading={isLoading}
