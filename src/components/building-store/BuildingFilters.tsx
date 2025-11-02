@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import type { BuildingFilters } from '@/hooks/useBuildingStore';
 import { motion } from 'framer-motion';
+import useBuildingStore from '@/hooks/building-store/useBuildingStore';
+import { getNumericDistanceToBuilding } from '@/services/distanceCalculation';
 
 interface BuildingFiltersProps {
   filters: BuildingFilters;
@@ -26,8 +28,40 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
   loading = false,
   compact = false
 }) => {
+  const { allBuildings, businessLocation } = useBuildingStore();
+  
   // Local state for radius slider to prevent flickering
   const [localRadius, setLocalRadius] = useState(filters.radius);
+
+  // Calculate dynamic max radius based on furthest building
+  const { maxRadius, minRadius } = useMemo(() => {
+    if (!businessLocation || !allBuildings || allBuildings.length === 0) {
+      return { maxRadius: 20000, minRadius: 1000 };
+    }
+
+    let furthestDistance = 0;
+    
+    allBuildings.forEach(building => {
+      const distance = getNumericDistanceToBuilding(businessLocation, building);
+      if (distance && distance > furthestDistance) {
+        furthestDistance = distance;
+      }
+    });
+
+    // Add 1km buffer to furthest distance, round up to nearest km
+    const maxKm = Math.ceil((furthestDistance + 1000) / 1000);
+    const calculatedMax = maxKm * 1000;
+    
+    // Set minimum based on context
+    const calculatedMin = Math.min(1000, Math.floor(furthestDistance / 4 / 1000) * 1000);
+    
+    console.log(`📏 [FILTERS] Furthest building: ${furthestDistance}m, Max: ${calculatedMax}m, Min: ${calculatedMin}m`);
+    
+    return { 
+      maxRadius: Math.max(calculatedMax, 2000), // At least 2km
+      minRadius: Math.max(calculatedMin, 500) // At least 500m
+    };
+  }, [businessLocation, allBuildings]);
 
   // Debounced update to store
   const debouncedUpdateRadius = useCallback(
@@ -37,7 +71,7 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           onFilterChange({ radius: value });
-        }, 300);
+        }, 150); // Reduced from 300ms for better responsiveness
       };
     })(),
     [onFilterChange]
@@ -53,6 +87,14 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
   useEffect(() => {
     setLocalRadius(filters.radius);
   }, [filters.radius]);
+
+  // Adjust radius if it exceeds new max
+  useEffect(() => {
+    if (localRadius > maxRadius) {
+      setLocalRadius(maxRadius);
+      onFilterChange({ radius: maxRadius });
+    }
+  }, [maxRadius, localRadius, onFilterChange]);
 
   const venueTypes = [
     { value: 'Residencial', label: 'Residencial', icon: Building2 },
@@ -86,25 +128,25 @@ const BuildingFilters: React.FC<BuildingFiltersProps> = ({
       <FilterSection title="Distância Máxima" icon={MapPin} delay={0.1}>
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600 font-medium">Distância máxima</span>
+            <span className="text-sm text-gray-600 font-medium">Raio de busca</span>
             <Badge variant="secondary" className="bg-gradient-to-r from-[#9C1E1E]/10 to-[#9C1E1E]/20 text-[#9C1E1E] border-0 shadow-sm">
-              {localRadius/1000}km
+              {(localRadius/1000).toFixed(1)}km
             </Badge>
           </div>
           <div className="px-2">
             <Slider
               value={[localRadius]}
               onValueChange={(value) => handleRadiusChange(value[0])}
-              max={20000}
-              min={1000}
-              step={500}
-              className="w-full"
+              max={maxRadius}
+              min={minRadius}
+              step={100}
+              className="w-full cursor-pointer"
               disabled={loading}
             />
           </div>
           <div className="flex justify-between text-xs text-gray-500">
-            <span>1km</span>
-            <span>20km</span>
+            <span>{(minRadius/1000).toFixed(1)}km</span>
+            <span>{(maxRadius/1000).toFixed(0)}km</span>
           </div>
         </div>
       </FilterSection>
