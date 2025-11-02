@@ -87,7 +87,7 @@ const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpd
             <Input
               id="numero_elevadores"
               type="number"
-              value={formData.numero_elevadores}
+              value={formData.numero_elevadores || ''}
               onChange={(e) => onUpdate({ numero_elevadores: parseInt(e.target.value) || 0 })}
               min="0"
               placeholder="Ex: 2 (opcional)"
