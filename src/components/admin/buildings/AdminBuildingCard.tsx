@@ -167,6 +167,13 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                 </div>
                 <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100">
                   <div className="flex items-center">
+                    <Eye className="h-4 w-4 mr-2 text-purple-600" />
+                    <span className="text-sm text-gray-600">Exibições/Mês</span>
+                  </div>
+                  <span className="font-bold text-purple-600">{(building.visualizacoes_mes || 0).toLocaleString('pt-BR')}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100">
+                  <div className="flex items-center">
                     <DollarSign className="h-4 w-4 mr-2 text-blue-600" />
                     <span className="text-sm text-gray-600">Vendas do Mês</span>
                   </div>
