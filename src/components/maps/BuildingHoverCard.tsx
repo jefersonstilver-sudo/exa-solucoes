@@ -205,13 +205,13 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
       </HoverCardTrigger>
       <HoverCardContent 
         side={side || dynamicSide} 
-        sideOffset={getDynamicSideOffset()}
+        sideOffset={20}
         align="center"
         alignOffset={0}
         avoidCollisions={true}
-        collisionPadding={30}
+        collisionPadding={{ top: 120, bottom: 30, left: 30, right: 30 }}
         sticky="always"
-        className="w-72 sm:w-80 max-h-[75vh] overflow-y-auto p-0 bg-white border border-gray-200 shadow-2xl rounded-xl z-[9999]"
+        className="w-72 sm:w-80 max-h-[70vh] overflow-y-auto p-0 bg-white border border-gray-200 shadow-2xl rounded-xl z-[9999]"
         style={{ maxWidth: 'calc(100vw - 40px)' }}
       >
         <div className="relative">
@@ -241,16 +241,6 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
               </div>
             )}
             
-            {/* Status Badge */}
-            <div className="absolute top-4 right-4">
-              <Badge 
-                variant={getStatusVariant(building.status)} 
-                className="bg-white/95 backdrop-blur-sm shadow-lg"
-              >
-                {getStatusLabel(building.status)}
-              </Badge>
-            </div>
-
             {/* Building Info Overlay */}
             <div className="absolute bottom-4 left-4 right-4 text-white">
               <h3 className="font-bold text-lg mb-1 drop-shadow-sm">
