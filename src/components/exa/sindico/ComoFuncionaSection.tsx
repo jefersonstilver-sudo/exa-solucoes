@@ -4,7 +4,7 @@ import TimelineStep from './TimelineStep';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { Clipboard, Wrench, Monitor, RefreshCw } from 'lucide-react';
 
-const ComoFuncionaSection = () => {
+const ComoFuncionaSection = React.memo(() => {
   const { ref, isVisible } = useScrollReveal();
 
   const steps = [
@@ -65,6 +65,8 @@ const ComoFuncionaSection = () => {
       </div>
     </ExaSection>
   );
-};
+});
+
+ComoFuncionaSection.displayName = 'ComoFuncionaSection';
 
 export default ComoFuncionaSection;

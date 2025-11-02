@@ -4,8 +4,12 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export const BoxesCore = ({ className, ...rest }: { className?: string }) => {
-  const rows = new Array(150).fill(1);
-  const cols = new Array(100).fill(1);
+  // Detect mobile - drastically reduce elements for performance
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  
+  // Mobile: 30x20=600 elements vs Desktop: 150x100=15,000 elements
+  const rows = new Array(isMobile ? 30 : 150).fill(1);
+  const cols = new Array(isMobile ? 20 : 100).fill(1);
   
   // EXA-themed colors - purple, blue, and complementary tones
   const colors = [
@@ -27,6 +31,7 @@ export const BoxesCore = ({ className, ...rest }: { className?: string }) => {
     <div
       style={{
         transform: `translate(-40%,-60%) skewX(-48deg) skewY(14deg) scale(0.675) rotate(0deg) translateZ(0)`,
+        willChange: 'transform', // Performance hint for GPU acceleration
       }}
       className={cn(
         "absolute left-1/4 p-4 -top-1/4 flex -translate-x-1/2 -translate-y-1/2 w-full h-full z-0",
@@ -41,15 +46,19 @@ export const BoxesCore = ({ className, ...rest }: { className?: string }) => {
         >
           {cols.map((_, j) => (
             <motion.div
-              whileHover={{
-                backgroundColor: getRandomColor(),
-                transition: { duration: 0 },
-              }}
+              // Disable hover animations on mobile for performance
+              {...(!isMobile && {
+                whileHover: {
+                  backgroundColor: getRandomColor(),
+                  transition: { duration: 0 },
+                }
+              })}
               animate={{
                 transition: { duration: 2 },
               }}
               key={`col` + j}
               className="w-16 h-8 border-r border-t border-slate-700 relative"
+              style={{ willChange: 'background-color' }}
             >
               {j % 2 === 0 && i % 2 === 0 ? (
                 <svg

@@ -4,7 +4,7 @@ import ExaCard from '@/components/exa/base/ExaCard';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { Smartphone, Star, Lock, Zap, MessageSquare, Leaf } from 'lucide-react';
 
-const BeneficiosCondominioSection = () => {
+const BeneficiosCondominioSection = React.memo(() => {
   const { ref, isVisible } = useScrollReveal();
 
   const benefits = [
@@ -82,6 +82,8 @@ const BeneficiosCondominioSection = () => {
       </div>
     </ExaSection>
   );
-};
+});
+
+BeneficiosCondominioSection.displayName = 'BeneficiosCondominioSection';
 
 export default BeneficiosCondominioSection;

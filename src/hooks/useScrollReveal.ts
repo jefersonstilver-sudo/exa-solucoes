@@ -9,10 +9,14 @@ export const useScrollReveal = (threshold = 0.1) => {
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.disconnect();
+          observer.disconnect(); // Disconnect after revealing (performance)
         }
       },
-      { threshold }
+      { 
+        threshold,
+        // Pre-load sections slightly before they enter viewport
+        rootMargin: '50px 0px 50px 0px'
+      }
     );
 
     if (ref.current) {

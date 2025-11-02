@@ -4,7 +4,7 @@ import CondominiosTicker from './CondominiosTicker';
 import { useVideoConfig } from '@/hooks/useVideoConfig';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
-const SindicoHeroSection = () => {
+const SindicoHeroSection = React.memo(() => {
   const { ref, isVisible } = useScrollReveal();
   const { data: config } = useVideoConfig();
 
@@ -55,6 +55,8 @@ const SindicoHeroSection = () => {
       </div>
     </section>
   );
-};
+});
+
+SindicoHeroSection.displayName = 'SindicoHeroSection';
 
 export default SindicoHeroSection;
