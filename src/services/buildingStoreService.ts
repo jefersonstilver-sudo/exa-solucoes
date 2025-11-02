@@ -28,6 +28,7 @@ export interface BuildingStore {
   caracteristicas: string[];
   padrao_publico: 'alto' | 'medio' | 'normal';
   quantidade_telas: number;
+  numero_elevadores: number; // Número de telas (campo renomeado)
 }
 
 /**
@@ -134,7 +135,7 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       manual_longitude: undefined,
       position_validated: undefined,
       publico_estimado: building.publico_estimado || 0, // Now available from database
-      visualizacoes_mes: 0, // not exposed publicly
+      visualizacoes_mes: (building as any).visualizacoes_mes || 0, // Exibições mensais calculadas
       preco_base: Number(building.preco_base) || 280,
       imagem_principal: building.imagem_principal || '',
       imagem_2: '', // Not available in minimal data
@@ -144,7 +145,8 @@ export const fetchBuildingsForStore = async (): Promise<BuildingStore[]> => {
       amenities: [], // Removed for security - no longer exposed
       caracteristicas: [], // Removed for security - no longer exposed
       padrao_publico: 'normal' as 'alto' | 'medio' | 'normal', // Default value since removed for security
-      quantidade_telas: building.quantidade_telas || 1
+      quantidade_telas: building.quantidade_telas || 1,
+      numero_elevadores: (building as any).numero_elevadores || 0 // Número de telas
     }));
 
     return buildingStores;

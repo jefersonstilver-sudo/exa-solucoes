@@ -36,6 +36,16 @@ const BuildingCardMetrics: React.FC<BuildingCardMetricsProps> = ({
           {formatNumber(building.visualizacoes_mes || 0)}
         </p>
       </div>
+
+      <div className="bg-green-50 p-3 rounded-lg">
+        <div className="flex items-center mb-1">
+          <Building2 className="h-4 w-4 text-green-600 mr-1" />
+          <span className="text-xs text-green-600 font-medium">Telas</span>
+        </div>
+        <p className="text-lg font-bold text-green-900">
+          {building.numero_elevadores || 0}
+        </p>
+      </div>
     </div>;
 };
 export default BuildingCardMetrics;

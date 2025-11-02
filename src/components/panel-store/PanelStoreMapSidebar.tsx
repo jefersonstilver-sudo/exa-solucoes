@@ -70,7 +70,8 @@ const PanelStoreMapSidebar: React.FC<PanelStoreMapSidebarProps> = ({
     imagens: [],
     amenities: [],
     caracteristicas: [],
-    padrao_publico: 'normal' as const
+    padrao_publico: 'normal' as const,
+    numero_elevadores: 0
   }));
 
   return (

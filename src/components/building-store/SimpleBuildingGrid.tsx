@@ -36,7 +36,8 @@ const convertToBuildingStore = (building: SimpleBuildingStore): BuildingStore =>
     amenities: building.amenities || [],
     caracteristicas: building.caracteristicas || [],
     padrao_publico: building.padrao_publico,
-    quantidade_telas: building.quantidade_telas
+    quantidade_telas: building.quantidade_telas,
+    numero_elevadores: (building as any).numero_elevadores || 0
   };
 };
 
