@@ -36,13 +36,8 @@ const MobileBuildingFilters: React.FC<MobileBuildingFiltersProps> = ({
   return (
     <>
       {/* Barra de controle compacta - Layout horizontal único */}
-      <div className="flex items-center justify-between p-3 bg-white border-b border-gray-200">
-        {/* Contador à esquerda */}
-        <div className="text-sm font-medium text-gray-700">
-          {buildingsCount} {buildingsCount === 1 ? 'prédio' : 'prédios'}
-        </div>
-        
-        {/* Grupo de ações à direita */}
+      <div className="flex items-center justify-end p-3 bg-white border-b border-gray-200">
+        {/* Grupo de ações */}
         <div className="flex items-center gap-2">
           {/* Botão Filtros */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
