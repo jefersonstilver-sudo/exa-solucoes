@@ -27,7 +27,7 @@ interface CommercialDataFormProps {
 const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpdate }) => {
   // Função para calcular público estimado automaticamente
   const handleUnidadesChange = (value: number) => {
-    const publicoCalculado = value * 3;
+    const publicoCalculado = value * 3.5;
     onUpdate({ 
       numero_unidades: value,
       publico_estimado: publicoCalculado 
@@ -64,7 +64,7 @@ const CommercialDataForm: React.FC<CommercialDataFormProps> = ({ formData, onUpd
               placeholder="Calculado automaticamente (editável)"
             />
             <p className="text-xs text-muted-foreground">
-              Calculado como: {formData.numero_unidades} unidades × 3 = {formData.numero_unidades * 3}
+              Calculado como: {formData.numero_unidades} unidades × 3.5 = {Math.round(formData.numero_unidades * 3.5)}
             </p>
           </div>
         </div>
