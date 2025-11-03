@@ -144,6 +144,16 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                         Min. {coupon.min_meses} meses
                       </div>
                     )}
+                    {(coupon.min_predios || coupon.max_predios) && (
+                      <div className="text-xs text-muted-foreground">
+                        {coupon.min_predios && coupon.max_predios 
+                          ? `${coupon.min_predios} a ${coupon.max_predios} prédios`
+                          : coupon.min_predios 
+                          ? `Mín. ${coupon.min_predios} prédios`
+                          : `Máx. ${coupon.max_predios} prédios`
+                        }
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">

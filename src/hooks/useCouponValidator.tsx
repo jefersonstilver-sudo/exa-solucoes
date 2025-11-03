@@ -54,7 +54,7 @@ export function useCouponValidator() {
     }
   }, []);
 
-  const validateCoupon = useCallback(async (code: string, orderValue: number) => {
+  const validateCoupon = useCallback(async (code: string, orderValue: number, quantidadePredios: number = 0) => {
     if (!code) {
       const result = {
         valid: false,
@@ -69,12 +69,13 @@ export function useCouponValidator() {
     setIsValidating(true);
     
     try {
-      console.log('[useCouponValidator] Validando cupom:', { code, orderValue });
+      console.log('[useCouponValidator] Validando cupom:', { code, orderValue, quantidadePredios });
       
       const { data: responseData, error } = await supabase
         .rpc('validate_coupon_secure', { 
           p_codigo: code,
-          p_valor_pedido: orderValue || 0
+          p_valor_pedido: orderValue || 0,
+          p_quantidade_predios: quantidadePredios || 0
         });
       
       if (error) {

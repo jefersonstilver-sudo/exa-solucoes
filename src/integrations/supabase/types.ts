@@ -637,6 +637,7 @@ export type Database = {
           lista_predios: string[] | null
           pedido_id: string | null
           plano_meses: number | null
+          quantidade_predios: number | null
           user_id: string
           valor_pedido_estimado: number | null
         }
@@ -649,6 +650,7 @@ export type Database = {
           lista_predios?: string[] | null
           pedido_id?: string | null
           plano_meses?: number | null
+          quantidade_predios?: number | null
           user_id: string
           valor_pedido_estimado?: number | null
         }
@@ -661,6 +663,7 @@ export type Database = {
           lista_predios?: string[] | null
           pedido_id?: string | null
           plano_meses?: number | null
+          quantidade_predios?: number | null
           user_id?: string
           valor_pedido_estimado?: number | null
         }
@@ -732,8 +735,10 @@ export type Database = {
           descricao: string | null
           expira_em: string | null
           id: string
+          max_predios: number | null
           max_usos: number
           min_meses: number
+          min_predios: number | null
           tipo_desconto: string | null
           uso_por_usuario: number | null
           usos_atuais: number
@@ -750,8 +755,10 @@ export type Database = {
           descricao?: string | null
           expira_em?: string | null
           id?: string
+          max_predios?: number | null
           max_usos?: number
           min_meses?: number
+          min_predios?: number | null
           tipo_desconto?: string | null
           uso_por_usuario?: number | null
           usos_atuais?: number
@@ -768,8 +775,10 @@ export type Database = {
           descricao?: string | null
           expira_em?: string | null
           id?: string
+          max_predios?: number | null
           max_usos?: number
           min_meses?: number
+          min_predios?: number | null
           tipo_desconto?: string | null
           uso_por_usuario?: number | null
           usos_atuais?: number
@@ -2906,10 +2915,16 @@ export type Database = {
         }
         Returns: boolean
       }
-      validate_coupon_secure: {
-        Args: { p_codigo: string; p_valor_pedido?: number }
-        Returns: Json
-      }
+      validate_coupon_secure:
+        | { Args: { p_codigo: string; p_valor_pedido?: number }; Returns: Json }
+        | {
+            Args: {
+              p_codigo: string
+              p_quantidade_predios?: number
+              p_valor_pedido?: number
+            }
+            Returns: Json
+          }
       validate_cupom: {
         Args: { p_codigo: string; p_meses: number }
         Returns: {

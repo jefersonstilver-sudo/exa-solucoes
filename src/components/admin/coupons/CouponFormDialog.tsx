@@ -36,7 +36,9 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
     valor_minimo_pedido: 0,
     uso_por_usuario: undefined,
     categoria: 'geral',
-    ativo: true
+    ativo: true,
+    min_predios: undefined,
+    max_predios: undefined
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +56,9 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
         valor_minimo_pedido: editingCoupon.valor_minimo_pedido || 0,
         uso_por_usuario: editingCoupon.uso_por_usuario || undefined,
         categoria: editingCoupon.categoria,
-        ativo: editingCoupon.ativo
+        ativo: editingCoupon.ativo,
+        min_predios: editingCoupon.min_predios || undefined,
+        max_predios: editingCoupon.max_predios || undefined
       });
     } else {
       setFormData({
@@ -67,7 +71,9 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
         valor_minimo_pedido: 0,
         uso_por_usuario: undefined,
         categoria: 'geral',
-        ativo: true
+        ativo: true,
+        min_predios: undefined,
+        max_predios: undefined
       });
     }
   }, [editingCoupon, isOpen]);
@@ -271,6 +277,38 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
                 value={formData.valor_minimo_pedido}
                 onChange={(e) => setFormData(prev => ({ ...prev, valor_minimo_pedido: parseFloat(e.target.value) || 0 }))}
                 min="0"
+              />
+            </div>
+          </div>
+
+          {/* Quantidade de Prédios */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="minPredios">Mínimo de Prédios</Label>
+              <Input
+                id="minPredios"
+                type="number"
+                value={formData.min_predios || ''}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  min_predios: e.target.value ? parseInt(e.target.value) : undefined 
+                }))}
+                placeholder="Sem mínimo"
+                min="1"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxPredios">Máximo de Prédios</Label>
+              <Input
+                id="maxPredios"
+                type="number"
+                value={formData.max_predios || ''}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  max_predios: e.target.value ? parseInt(e.target.value) : undefined 
+                }))}
+                placeholder="Sem máximo"
+                min="1"
               />
             </div>
           </div>

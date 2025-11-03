@@ -16,6 +16,8 @@ export interface Coupon {
   uso_por_usuario?: number;
   data_inicio?: string;
   categoria: string;
+  min_predios?: number;
+  max_predios?: number;
 }
 
 export interface CouponStats {
@@ -50,6 +52,8 @@ export interface CreateCouponData {
   uso_por_usuario?: number;
   categoria: string;
   ativo: boolean;
+  min_predios?: number;
+  max_predios?: number;
 }
 
 export interface CouponFilters {
