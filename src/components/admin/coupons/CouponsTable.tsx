@@ -240,6 +240,7 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                 <TableRow>
                   <TableHead>Email</TableHead>
                   <TableHead>Telefone</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Plano</TableHead>
                   <TableHead>Prédios</TableHead>
                   <TableHead>Valor Pedido</TableHead>
@@ -253,9 +254,21 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                     <TableCell className="font-medium">{detail.user_email}</TableCell>
                     <TableCell>{detail.user_telefone}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {detail.plano_meses} {detail.plano_meses === 1 ? 'mês' : 'meses'}
+                      <Badge 
+                        variant={detail.status_compra.includes('não finalizada') ? 'outline' : 'default'}
+                        className={detail.status_compra.includes('não finalizada') ? 'border-orange-500 text-orange-600' : ''}
+                      >
+                        {detail.status_compra}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {detail.plano_meses ? (
+                        <Badge variant="outline">
+                          {detail.plano_meses} {detail.plano_meses === 1 ? 'mês' : 'meses'}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs overflow-auto">
@@ -268,7 +281,7 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                             ))}
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Nenhum</span>
+                          <span className="text-muted-foreground text-sm">-</span>
                         )}
                       </div>
                     </TableCell>

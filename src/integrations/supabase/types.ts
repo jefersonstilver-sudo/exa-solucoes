@@ -627,6 +627,60 @@ export type Database = {
         }
         Relationships: []
       }
+      cupom_aplicacoes: {
+        Row: {
+          aplicado_em: string
+          created_at: string
+          cupom_id: string
+          finalizado: boolean | null
+          id: string
+          lista_predios: string[] | null
+          pedido_id: string | null
+          plano_meses: number | null
+          user_id: string
+          valor_pedido_estimado: number | null
+        }
+        Insert: {
+          aplicado_em?: string
+          created_at?: string
+          cupom_id: string
+          finalizado?: boolean | null
+          id?: string
+          lista_predios?: string[] | null
+          pedido_id?: string | null
+          plano_meses?: number | null
+          user_id: string
+          valor_pedido_estimado?: number | null
+        }
+        Update: {
+          aplicado_em?: string
+          created_at?: string
+          cupom_id?: string
+          finalizado?: boolean | null
+          id?: string
+          lista_predios?: string[] | null
+          pedido_id?: string | null
+          plano_meses?: number | null
+          user_id?: string
+          valor_pedido_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cupom_aplicacoes_cupom_id_fkey"
+            columns: ["cupom_id"]
+            isOneToOne: false
+            referencedRelation: "cupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cupom_aplicacoes_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cupom_usos: {
         Row: {
           created_at: string
@@ -2375,6 +2429,7 @@ export type Database = {
           lista_predios: string[]
           pedido_id: string
           plano_meses: number
+          status_compra: string
           user_email: string
           user_telefone: string
           valor_desconto: number

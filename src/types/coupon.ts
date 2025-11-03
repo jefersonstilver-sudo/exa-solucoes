@@ -29,12 +29,13 @@ export interface CouponStats {
 export interface CouponUsageDetail {
   user_email: string;
   user_telefone: string;
-  pedido_id: string;
+  pedido_id: string | null;
   valor_pedido: number;
   valor_desconto: number;
-  plano_meses: number;
-  lista_predios: string[];
+  plano_meses: number | null;
+  lista_predios: string[] | null;
   data_uso: string;
+  status_compra: string;
 }
 
 export interface CreateCouponData {
