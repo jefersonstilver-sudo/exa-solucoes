@@ -18,16 +18,16 @@ import { Link } from 'react-router-dom';
 const SouSindico = () => {
   return <Layout>
       <SEO
-        title="Painel Digital GRÁTIS para Seu Condomínio | EXA Foz do Iguaçu"
-        description="Síndicos de Foz: ganhe um painel digital 21&quot; GRATUITO para seu prédio. Modernize a comunicação, valorize o condomínio e ainda gere receita com anúncios. Sem custos de instalação."
+        title="Painel Digital GRATUITO para Seu Condomínio | EXA"
+        description="Síndico, modernize seu prédio sem gastar nada! Painel digital grátis + WIFI + instalação gratuita."
         keywords="painel digital gratuito condomínio, comunicação visual síndico, modernizar condomínio foz iguaçu, painel aviso elevador grátis, tecnologia condomínio gratuita, como modernizar condomínio sem custo"
-        canonical="https://exa.com.br/sou-sindico"
-        ogImage="https://exa.com.br/og-sindico.jpg"
+        canonical="https://examidia.com.br/sou-sindico"
+        ogImage="https://examidia.com.br/og-image.jpg?v=3"
         structuredData={[
           organizationSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' },
-            { name: 'Sou Síndico', url: 'https://exa.com.br/sou-sindico' }
+            { name: 'Início', url: 'https://examidia.com.br/' },
+            { name: 'Sou Síndico', url: 'https://examidia.com.br/sou-sindico' }
           ]),
           createFAQSchema(sindicoFAQs)
         ]}
