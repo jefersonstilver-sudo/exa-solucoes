@@ -16,19 +16,19 @@ interface SEOProps {
 }
 
 const SEO: React.FC<SEOProps> = ({
-  title = 'EXA | Publicidade Inteligente em Elevadores - Painéis Digitais Foz do Iguaçu',
-  description = 'Transforme elevadores em mídia premium. Painéis digitais 21" em prédios de alto padrão em Foz do Iguaçu. Teste GRÁTIS por 30 dias. Alcance 10.000+ moradores diariamente.',
+  title = 'EXA | Publicidade Inteligente em Elevadores - Foz do Iguaçu',
+  description = 'Transforme elevadores em mídia premium. Alcance milhares de moradores diariamente em prédios de alto padrão.',
   keywords = 'painel digital elevador, publicidade elevador foz iguaçu, mídia indoor condomínio, digital signage elevador, tela publicidade prédio',
   canonical,
   ogType = 'website',
-  ogImage = 'https://exa.com.br/og-image.jpg',
-  ogImageAlt = 'EXA - Painéis Digitais para Elevadores em Foz do Iguaçu',
+  ogImage = 'https://examidia.com.br/og-image.jpg',
+  ogImageAlt = 'EXA - Publicidade Inteligente em Elevadores',
   twitterCard = 'summary_large_image',
   noindex = false,
   nofollow = false,
   structuredData = [],
 }) => {
-  const siteUrl = 'https://exa.com.br';
+  const siteUrl = 'https://examidia.com.br';
   const currentUrl = canonical || `${siteUrl}${window.location.pathname}`;
 
   return (
