@@ -254,23 +254,10 @@ export const useEnhancedPaymentOrderCreator = () => {
         source_tentativa_id: sourceTentativaId
       });
 
-      // Coupon usage handling
+      // Coupon usage will be tracked via the cupom_id in pedidos table
+      // The get_coupon_usage_details RPC function reads from pedidos table
       if (couponId) {
-        const couponUsageData = prepareForInsert({
-          cupom_id: couponId,
-          user_id: sessionUser.id,
-          pedido_id: pedido.id
-        });
-
-        const { error: couponError } = await supabase
-          .from('cupom_usos')
-          .insert(couponUsageData as any);
-
-        if (couponError) {
-          console.error('❌ [ENHANCED_ORDER_CREATOR] Erro ao registrar uso do cupom:', couponError);
-        } else {
-          console.log('✅ [ENHANCED_ORDER_CREATOR] Uso do cupom registrado');
-        }
+        console.log('✅ [ENHANCED_ORDER_CREATOR] Cupom vinculado ao pedido:', couponId);
       }
 
       logCheckoutEvent(
