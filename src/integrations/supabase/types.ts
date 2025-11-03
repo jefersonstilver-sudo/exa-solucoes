@@ -2372,8 +2372,11 @@ export type Database = {
         Args: { cupom_id_param: string }
         Returns: {
           data_uso: string
+          lista_predios: string[]
           pedido_id: string
+          plano_meses: number
           user_email: string
+          user_telefone: string
           valor_desconto: number
           valor_pedido: number
         }[]

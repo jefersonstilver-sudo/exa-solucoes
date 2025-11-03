@@ -238,8 +238,11 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Valor do Pedido</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Plano</TableHead>
+                  <TableHead>Prédios</TableHead>
+                  <TableHead>Valor Pedido</TableHead>
                   <TableHead>Desconto</TableHead>
                   <TableHead>Data de Uso</TableHead>
                 </TableRow>
@@ -247,9 +250,30 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
               <TableBody>
                 {usageDetails.map((detail, index) => (
                   <TableRow key={index}>
-                    <TableCell>{detail.user_email}</TableCell>
+                    <TableCell className="font-medium">{detail.user_email}</TableCell>
+                    <TableCell>{detail.user_telefone}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {detail.plano_meses} {detail.plano_meses === 1 ? 'mês' : 'meses'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-xs overflow-auto">
+                        {detail.lista_predios && detail.lista_predios.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {detail.lista_predios.map((predio, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {predio}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Nenhum</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>R$ {detail.valor_pedido.toFixed(2)}</TableCell>
-                    <TableCell className="text-green-600">
+                    <TableCell className="text-green-600 font-semibold">
                       - R$ {detail.valor_desconto.toFixed(2)}
                     </TableCell>
                     <TableCell>
