@@ -61,13 +61,13 @@ const Home: React.FC = () => {
         title="Painéis Digitais para Elevadores em Foz do Iguaçu | EXA Publicidade Inteligente"
         description="Anuncie em painéis digitais HD de 21&quot; nos elevadores de Foz do Iguaçu. Alcance milhares de pessoas diariamente com mídia indoor de alto impacto. Planos a partir de R$297/mês. Instalação gratuita para síndicos."
         keywords="painel digital elevador foz iguaçu, publicidade elevador, mídia indoor, anúncio prédio residencial, outdoor digital, marketing condomínio, painéis publicitários digitais"
-        canonical="https://exa.com.br/"
-        ogImage="https://exa.com.br/og-home.jpg"
+        canonical="https://examidia.com.br/"
+        ogImage="https://examidia.com.br/og-image.jpg?v=3"
         structuredData={[
           organizationSchema,
           webSiteSchema,
           createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' }
+            { name: 'Início', url: 'https://examidia.com.br/' }
           ]),
           createFAQSchema(homeFAQs)
         ]}
@@ -83,14 +83,14 @@ const Home: React.FC = () => {
               className="max-w-4xl mx-auto text-center"
             >
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 leading-tight">
-                Sua mídia digital em{' '}
+                Sua marca onde{' '}
                 <span className="bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] bg-clip-text text-transparent">
-                  painéis de alto impacto
+                  seus clientes estão todos os dias
                 </span>
               </h1>
               
               <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-                Conectando marcas e audiências com tecnologia e performance. <a href="/comparativo-outdoor" className="text-[#9C1E1E] hover:underline font-semibold">Veja por que somos 5x mais eficientes que outdoors tradicionais</a>.
+                Alcance milhares de pessoas diariamente com painéis digitais em prédios de alto padrão. Publicidade eficiente, resultados mensuráveis. <a href="/comparativo-outdoor" className="text-[#9C1E1E] hover:underline font-semibold">5x mais eficiente que outdoors tradicionais</a>.
               </p>
               
               <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-16">
