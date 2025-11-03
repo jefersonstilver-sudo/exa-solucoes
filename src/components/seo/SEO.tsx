@@ -21,7 +21,7 @@ const SEO: React.FC<SEOProps> = ({
   keywords = 'painel digital elevador, publicidade elevador foz iguaçu, mídia indoor condomínio, digital signage elevador, tela publicidade prédio',
   canonical,
   ogType = 'website',
-  ogImage = 'https://examidia.com.br/og-image.jpg',
+  ogImage = 'https://examidia.com.br/og-image.jpg?v=2',
   ogImageAlt = 'EXA - Publicidade Inteligente em Elevadores',
   twitterCard = 'summary_large_image',
   noindex = false,
