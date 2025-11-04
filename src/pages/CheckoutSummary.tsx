@@ -212,22 +212,7 @@ const CheckoutSummary = () => {
           </motion.div>
 
           {/* Page Title */}
-          <motion.div initial={{
-          opacity: 0,
-          y: -10
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          delay: 0.1
-        }} className="text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#D72638] bg-clip-text text-transparent mb-2">
-              Resumo do Pedido
-            </h1>
-            <p className="text-gray-600 text-lg">
-              Confira todos os detalhes antes de finalizar sua campanha
-            </p>
-          </motion.div>
+          
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8">
