@@ -11,7 +11,7 @@ interface BenefitCardProps {
 
 const BenefitCard: React.FC<BenefitCardProps> = ({ option, onSelect, disabled = false }) => {
   return (
-    <Card className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 hover:border-primary">
+    <Card className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 hover:border-exa-red">
       <div className="p-6 flex flex-col items-center text-center space-y-4">
         {/* Icon */}
         <div className="text-6xl group-hover:scale-110 transition-transform duration-300">
@@ -42,7 +42,7 @@ const BenefitCard: React.FC<BenefitCardProps> = ({ option, onSelect, disabled = 
       </div>
 
       {/* Hover effect overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-exa-red/5 to-exa-highlight-red/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
     </Card>
   );
 };

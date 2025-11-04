@@ -35,7 +35,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <AlertDialogDescription className="text-center space-y-4 pt-4">
             <div className="text-6xl">{benefitIcon}</div>
             <p className="text-lg">
-              Você escolheu: <strong className="text-primary">{benefitName}</strong>
+              Você escolheu: <strong className="text-exa-red">{benefitName}</strong>
             </p>
             <p className="text-sm text-muted-foreground">
               Após confirmar, esta escolha não poderá ser alterada e você receberá o código do vale-presente por email.

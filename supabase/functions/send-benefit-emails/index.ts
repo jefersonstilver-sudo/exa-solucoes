@@ -110,7 +110,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       color: #333;
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
     }
     .container {
       max-width: 600px;
@@ -124,7 +124,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
       padding: 40px 20px;
       text-align: center;
     }
@@ -139,7 +139,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       padding: 40px 30px;
     }
     h1 {
-      color: #667eea;
+      color: #DC2626;
       font-size: 28px;
       margin: 0 0 20px 0;
       text-align: center;
@@ -151,7 +151,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       margin: 15px 0;
     }
     .highlight {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
       padding: 20px;
       border-radius: 8px;
       text-align: center;
@@ -164,7 +164,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
     }
     .button {
       display: inline-block;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
       color: white;
       text-decoration: none;
       padding: 16px 40px;
@@ -188,7 +188,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       background: #f8f9fa;
       padding: 15px;
       border-radius: 8px;
-      border-left: 4px solid #667eea;
+      border-left: 4px solid #DC2626;
       margin: 20px 0;
     }
   </style>
@@ -203,7 +203,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
         <h1>🎉 Parabéns, ${name}!</h1>
         <p>A cada painel instalado, a EXA celebra junto de quem esteve no campo!</p>
         ${point ? `<div class="highlight"><p>📍 Ponto ativado: ${point}</p></div>` : ''}
-        <p>Você é parte da <strong>revolução da atenção nos condomínios</strong>. Por isso, queremos te agradecer com um presente especial de <strong style="color: #667eea; font-size: 20px;">R$ 50,00</strong>.</p>
+        <p>Você é parte da <strong>revolução da atenção nos condomínios</strong>. Por isso, queremos te agradecer com um presente especial de <strong style="color: #DC2626; font-size: 20px;">R$ 50,00</strong>.</p>
         <div style="text-align: center;">
           <a href="${link}" class="button">🎁 ESCOLHER MEU PRESENTE</a>
         </div>
@@ -256,7 +256,7 @@ function createGiftCodeHTML(name: string, choice: string, code: string): string 
       color: #333;
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
     }
     .container {
       max-width: 600px;
@@ -270,7 +270,7 @@ function createGiftCodeHTML(name: string, choice: string, code: string): string 
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
       padding: 40px 20px;
       text-align: center;
     }
@@ -286,7 +286,7 @@ function createGiftCodeHTML(name: string, choice: string, code: string): string 
       text-align: center;
     }
     h1 {
-      color: #667eea;
+      color: #DC2626;
       font-size: 28px;
       margin: 0 0 20px 0;
     }
@@ -297,7 +297,7 @@ function createGiftCodeHTML(name: string, choice: string, code: string): string 
       margin: 15px 0;
     }
     .choice-box {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
       padding: 30px;
       border-radius: 12px;
       margin: 30px 0;
@@ -314,7 +314,7 @@ function createGiftCodeHTML(name: string, choice: string, code: string): string 
     }
     .code-box {
       background: #f8f9fa;
-      border: 3px dashed #667eea;
+      border: 3px dashed #DC2626;
       padding: 30px;
       border-radius: 12px;
       margin: 30px 0;
@@ -322,7 +322,7 @@ function createGiftCodeHTML(name: string, choice: string, code: string): string 
     .code-box p {
       margin: 0 0 15px 0;
       font-weight: 600;
-      color: #667eea;
+      color: #DC2626;
       font-size: 14px;
       text-transform: uppercase;
       letter-spacing: 1px;
