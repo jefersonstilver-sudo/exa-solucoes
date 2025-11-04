@@ -244,7 +244,7 @@ export function ModernAdminSidebar() {
             size="custom" 
             linkTo="/" 
             variant="light"
-            className={collapsed ? "w-8 h-8 md:w-10 md:h-10" : "w-16 h-16 md:w-24 md:h-24"}
+            className={collapsed ? "w-12 h-12 md:w-14 md:h-14" : "w-16 h-16 md:w-24 md:h-24"}
           />
         </div>
         
@@ -325,7 +325,7 @@ export function ModernAdminSidebar() {
                       <SidebarMenuButton asChild>
                         <NavLink
                           to={item.href}
-                          className={`flex ${collapsed ? 'flex-col items-center px-2 py-2.5 gap-1' : 'flex-row items-center px-3 py-2.5 md:py-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
+                          className={`flex ${collapsed ? 'flex-col items-center px-2 py-3 gap-1.5' : 'flex-row items-center px-3 py-2.5 md:py-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
                             isActive 
                               ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
                               : "text-white hover:bg-white/20 hover:text-white"
@@ -335,7 +335,7 @@ export function ModernAdminSidebar() {
                             <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4 md:h-5 md:w-5'}`} />
                           </div>
                           {collapsed ? (
-                            <span className="text-[9px] leading-tight text-center truncate w-full">
+                            <span className="text-[10px] leading-tight text-center truncate w-full font-medium">
                               {item.title.split(' ')[0]}
                             </span>
                           ) : (
