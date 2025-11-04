@@ -154,20 +154,16 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
                 
                 <div className="flex items-center gap-3 text-xs text-gray-600 mb-2">
                   <span>
-                    <strong className="text-blue-600">{building.numero_elevadores || 0}</strong> telas
+                    <strong className="text-blue-600">{building.paineis.length}</strong> {building.paineis.length === 1 ? 'tela selecionada' : 'telas selecionadas'}
                   </span>
                   {building.publico_estimado > 0 && (
-                    <span>•</span>
+                    <>
+                      <span>•</span>
+                      <span>
+                        <strong className="text-orange-600">{building.publico_estimado.toLocaleString('pt-BR')}</strong> pessoas/mês
+                      </span>
+                    </>
                   )}
-                  {building.publico_estimado > 0 && (
-                    <span>
-                      <strong className="text-orange-600">{building.publico_estimado.toLocaleString('pt-BR')}</strong> pessoas/mês
-                    </span>
-                  )}
-                </div>
-
-                <div className="text-xs text-gray-500">
-                  {building.paineis.length} {building.paineis.length === 1 ? 'painel' : 'painéis'} selecionado{building.paineis.length !== 1 ? 's' : ''}
                 </div>
               </div>
             </div>
