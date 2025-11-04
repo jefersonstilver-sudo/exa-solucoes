@@ -18,8 +18,6 @@ import NewTermsCheckbox from '@/components/auth/NewTermsCheckbox';
 import { TermsScrollViewer } from '@/components/auth/TermsScrollViewer';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
-import { PasswordInput, validatePassword } from '@/components/auth/PasswordInput';
-
 const Cadastro: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,52 +34,46 @@ const Cadastro: React.FC = () => {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const location = useLocation();
-  const { formatDocument, validateDocument } = useDocumentValidation();
-  
+  const {
+    formatDocument,
+    validateDocument
+  } = useDocumentValidation();
   const searchParams = new URLSearchParams(location.search);
   const redirectTo = searchParams.get('redirect') || '/';
-
   const handleChangeDocument = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatDocument(e.target.value, documentType);
     setDocument(formatted);
   };
-
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPhone(e.target.value);
   };
-
   const validatePhone = (phoneNumber: string): boolean => {
     const digits = phoneNumber.replace(/\D/g, '');
     return digits.length >= 10 && digits.length <= 11;
   };
-
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-
     try {
-      // Validação de senha forte
-      const passwordValidation = validatePassword(password);
-      if (!passwordValidation.isValid) {
-        setError(`Senha não atende aos requisitos de segurança: ${passwordValidation.errors[0]}`);
+      // Validations
+      if (password.length < 6) {
+        setError('Senha deve ter pelo menos 6 caracteres');
         return;
       }
-
       if (password !== confirmPassword) {
         setError('Senhas não coincidem');
         return;
       }
-
       if (!validatePhone(phone)) {
         setError('Número de celular inválido');
         return;
       }
-
       if (!validateDocument(document, documentType)) {
         setError(documentType === 'cpf' ? 'CPF inválido' : 'Número do documento inválido');
         return;
@@ -102,18 +94,18 @@ const Cadastro: React.FC = () => {
           return;
         }
       }
-
       if (!acceptedTerms) {
         setError('Você deve aceitar os termos de uso');
         return;
       }
-
       if (!hasReadTermsCompletely) {
         setError('Você precisa ler os termos completamente antes de aceitar');
         return;
       }
-
-      const { data, error } = await supabase.auth.signUp({
+      const {
+        data,
+        error
+      } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -129,20 +121,15 @@ const Cadastro: React.FC = () => {
           }
         }
       });
-
       if (error) throw error;
-
       toast({
         title: "Conta criada com sucesso!",
         description: "Verifique seu e-mail para confirmar sua conta."
       });
-
       navigate(`/email-enviado?email=${encodeURIComponent(email)}`);
-
     } catch (error: any) {
       console.error("Erro no cadastro:", error);
       let errorMessage = "Erro ao criar conta. Tente novamente.";
-
       if (error.message?.includes('already registered')) {
         errorMessage = "Este e-mail já está cadastrado. Faça login.";
       } else if (error.message?.includes('Invalid email')) {
@@ -150,9 +137,7 @@ const Cadastro: React.FC = () => {
       } else if (error.message?.includes('Password')) {
         errorMessage = "Senha muito simples. Use uma senha mais forte.";
       }
-
       setError(errorMessage);
-      
       toast({
         variant: "destructive",
         title: "Erro ao criar conta",
@@ -162,29 +147,21 @@ const Cadastro: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  return (
-    <Layout>
-      <SEO
-        title="Criar Conta - EXA Publicidade Inteligente"
-        description="Crie sua conta gratuita na EXA e comece a anunciar em painéis digitais de elevadores em Foz do Iguaçu. Cadastro rápido e seguro."
-        keywords="criar conta exa, cadastro anunciante, criar anúncio elevador, cadastro mídia indoor"
-        canonical="https://exa.com.br/cadastro"
-        noindex={true}
-        structuredData={[
-          organizationSchema,
-          createBreadcrumbSchema([
-            { name: 'Início', url: 'https://exa.com.br/' },
-            { name: 'Cadastro', url: 'https://exa.com.br/cadastro' }
-          ])
-        ]}
-      />
-      <motion.div
-        className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-[#3B1E1E]/10 flex items-center justify-center p-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
+  return <Layout>
+      <SEO title="Criar Conta - EXA Publicidade Inteligente" description="Crie sua conta gratuita na EXA e comece a anunciar em painéis digitais de elevadores em Foz do Iguaçu. Cadastro rápido e seguro." keywords="criar conta exa, cadastro anunciante, criar anúncio elevador, cadastro mídia indoor" canonical="https://exa.com.br/cadastro" noindex={true} structuredData={[organizationSchema, createBreadcrumbSchema([{
+      name: 'Início',
+      url: 'https://exa.com.br/'
+    }, {
+      name: 'Cadastro',
+      url: 'https://exa.com.br/cadastro'
+    }])]} />
+      <motion.div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-[#3B1E1E]/10 flex items-center justify-center p-4" initial={{
+      opacity: 0
+    }} animate={{
+      opacity: 1
+    }} transition={{
+      duration: 0.5
+    }}>
         <Card className="w-full max-w-4xl bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
           <CardContent className="p-4 sm:p-6 lg:p-8 pt-16 sm:pt-20 lg:pt-24">
             <RegistrationHeader />
@@ -201,15 +178,7 @@ const Cadastro: React.FC = () => {
                       <User className="h-4 w-4 mr-2 text-indexa-purple" /> 
                       Nome completo <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Seu nome completo"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
-                    />
+                    <Input id="name" type="text" placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} required className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500" />
                   </div>
                   
                   {/* E-mail */}
@@ -218,127 +187,72 @@ const Cadastro: React.FC = () => {
                       <Mail className="h-4 w-4 mr-2 text-indexa-purple" /> 
                       E-mail <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
-                    />
+                    <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500" />
                   </div>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Senha */}
-                  <PasswordInput
-                    id="password"
-                    label="Senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Crie uma senha forte"
-                    required
-                    showRequirements={true}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="flex items-center text-gray-900">
+                      <Lock className="h-4 w-4 mr-2 text-indexa-purple" /> 
+                      Senha <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <Input id="password" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} required className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500" />
+                  </div>
                   
                   {/* Confirmar Senha */}
-                  <PasswordInput
-                    id="confirmPassword"
-                    label="Confirmar senha"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Digite a senha novamente"
-                    required
-                    showRequirements={false}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" className="flex items-center text-gray-900">
+                      <Lock className="h-4 w-4 mr-2 text-indexa-purple" /> 
+                      Confirmar senha <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <Input id="confirmPassword" type="password" placeholder="Digite a senha novamente" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500" />
+                  </div>
                 </div>
 
                 {/* Celular */}
-                <PhoneInput
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  required
-                />
+                <PhoneInput value={phone} onChange={handlePhoneChange} required />
                 
                 {/* Documento */}
-                <DocumentInput
-                  documentType={documentType}
-                  document={document}
-                  country={country}
-                  documentFrontUrl={documentFrontUrl}
-                  documentBackUrl={documentBackUrl}
-                  onDocumentTypeChange={setDocumentType}
-                  onDocumentChange={handleChangeDocument}
-                  onCountryChange={setCountry}
-                  onDocumentFrontChange={setDocumentFrontUrl}
-                  onDocumentBackChange={setDocumentBackUrl}
-                />
+                <DocumentInput documentType={documentType} document={document} country={country} documentFrontUrl={documentFrontUrl} documentBackUrl={documentBackUrl} onDocumentTypeChange={setDocumentType} onDocumentChange={handleChangeDocument} onCountryChange={setCountry} onDocumentFrontChange={setDocumentFrontUrl} onDocumentBackChange={setDocumentBackUrl} />
               </form>
             </div>
 
             {/* Termos de Uso */}
             <div className="mt-12 pt-8 border-t border-gray-200">
-              <TermsScrollViewer 
-                onScrollToBottom={setHasReadTermsCompletely} 
-                hasScrolledToBottom={hasReadTermsCompletely}
-              />
+              <TermsScrollViewer onScrollToBottom={setHasReadTermsCompletely} hasScrolledToBottom={hasReadTermsCompletely} />
               
               <div className="mt-6">
-                <NewTermsCheckbox
-                  acceptedTerms={acceptedTerms}
-                  acceptedPrivacy={acceptedPrivacy}
-                  onTermsChange={setAcceptedTerms}
-                  onPrivacyChange={setAcceptedPrivacy}
-                  hasReadTermsCompletely={hasReadTermsCompletely}
-                  hasReadPrivacyCompletely={true}
-                />
+                <NewTermsCheckbox acceptedTerms={acceptedTerms} acceptedPrivacy={acceptedPrivacy} onTermsChange={setAcceptedTerms} onPrivacyChange={setAcceptedPrivacy} hasReadTermsCompletely={hasReadTermsCompletely} hasReadPrivacyCompletely={true} />
               </div>
             </div>
 
             {/* Botão de Criar Conta */}
             <div className="mt-8">
-              <Button 
-                onClick={handleSignUp}
-                disabled={isLoading || !acceptedTerms || !hasReadTermsCompletely}
-                className="w-full h-12 bg-gradient-to-r from-[#9C1E1E] to-indexa-green hover:from-[#D72638] hover:to-indexa-green/90 text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {isLoading ? (
-                  <div className="flex items-center">
+              <Button onClick={handleSignUp} disabled={isLoading || !acceptedTerms || !hasReadTermsCompletely} className="w-full h-12 bg-gradient-to-r from-[#9C1E1E] to-indexa-green hover:from-[#D72638] hover:to-indexa-green/90 text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                {isLoading ? <div className="flex items-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     Criando conta...
-                  </div>
-                ) : (
-                  'Criar Conta'
-                )}
+                  </div> : 'Criar Conta'}
               </Button>
 
-              {(!hasReadTermsCompletely || !acceptedTerms) && (
-                <p className="text-sm text-orange-600 mt-2 text-center">
-                  {!hasReadTermsCompletely 
-                    ? "📖 Leia os termos completamente para habilitar o botão" 
-                    : "✅ Aceite os termos para continuar"
-                  }
-                </p>
-              )}
+              {(!hasReadTermsCompletely || !acceptedTerms) && <p className="text-sm text-orange-600 mt-2 text-center">
+                  {!hasReadTermsCompletely ? "📖 Leia os termos completamente para habilitar o botão" : "✅ Aceite os termos para continuar"}
+                </p>}
             </div>
             
             <div className="text-center pt-6 border-t border-gray-200 mt-8">
               <p className="text-gray-600 mb-2">
                 Já tem uma conta?
               </p>
-              <Link 
-                to="/login" 
-                className="text-indexa-purple hover:text-indexa-purple/80 font-semibold transition-colors"
-              >
+              <Link to="/login" className="text-indexa-purple hover:text-indexa-purple/80 font-semibold transition-colors">
                 Fazer Login
               </Link>
             </div>
           </CardContent>
         </Card>
       </motion.div>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default Cadastro;
