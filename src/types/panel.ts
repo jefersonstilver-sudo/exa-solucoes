@@ -31,6 +31,7 @@ export interface Building {
   apartments?: number;
   status?: string;
   quantidade_telas?: number; // ADICIONADO
+  publico_estimado?: number; // ADICIONADO - pessoas impactadas mensalmente
 }
 
 export interface Panel {
