@@ -238,7 +238,7 @@ export function ModernAdminSidebar() {
       variant={isMobile ? "floating" : isTablet ? "sidebar" : "sidebar"}
       style={{ backgroundColor: '#180A0A' }}
     >
-      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-6'} border-b border-white/20`}>
+      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-6'} border-b border-white/20 bg-[#180A0A]`}>
         <div className="flex items-center justify-center mb-3 md:mb-4">
           <UnifiedLogo 
             size="custom" 
@@ -299,7 +299,13 @@ export function ModernAdminSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className={`${collapsed ? 'px-2' : 'px-3 md:px-4'} py-4 md:py-6 space-y-4 md:space-y-6 overflow-y-auto admin-sidebar-scroll`}>
+      <SidebarContent 
+        className={`${collapsed ? 'px-2' : 'px-3 md:px-4'} py-4 md:py-6 space-y-4 md:space-y-6 overflow-y-auto admin-sidebar-scroll`}
+        style={{ 
+          background: 'linear-gradient(180deg, #180A0A 0%, #3B1E1E 50%, #9C1E1E 100%)',
+          backgroundColor: '#180A0A'
+        }}
+      >
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && (
@@ -340,7 +346,7 @@ export function ModernAdminSidebar() {
         ))}
       </SidebarContent>
       
-      <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3 md:p-4'} border-t border-white/20`}>
+      <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3 md:p-4'} border-t border-white/20 bg-[#9C1E1E]`}>
         <div className="flex items-center space-x-2 text-white text-xs md:text-sm">
           <Shield className={`${collapsed ? 'h-4 w-4' : 'h-3 w-3 md:h-4 md:w-4'}`} />
           {!collapsed && <span className="truncate">Sistema Seguro</span>}
