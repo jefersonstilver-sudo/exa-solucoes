@@ -66,9 +66,9 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Estatísticas Gerais</h2>
+    <div className="space-y-3 md:space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <h2 className="text-base md:text-lg font-semibold text-gray-900">Estatísticas Gerais</h2>
         <DataIntegrityBadge 
           isRealData={hasRealData}
           dataSource="Supabase - Dados Reais"
@@ -76,19 +76,19 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
         />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
       {statsCards.map((stat, index) => (
         <Card key={index} className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">
               {stat.title}
             </CardTitle>
-            <div className={`w-12 h-12 ${stat.iconBg} rounded-xl flex items-center justify-center`}>
-              <stat.icon className={`h-6 w-6 ${stat.iconColor}`} />
+            <div className={`w-10 h-10 md:w-12 md:h-12 ${stat.iconBg} rounded-xl flex items-center justify-center`}>
+              <stat.icon className={`h-5 w-5 md:h-6 md:w-6 ${stat.iconColor}`} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
+            <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 break-words">{stat.value}</div>
             <div className="space-y-1">
               <GrowthIndicator 
                 value={stat.growth} 

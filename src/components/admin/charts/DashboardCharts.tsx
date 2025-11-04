@@ -21,32 +21,35 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6 md:mt-8">
       {/* Receita Mensal - Dados Reais */}
       <Card className="bg-white border border-purple-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-gray-900 flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2 text-indexa-purple" />
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
+            <TrendingUp className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
             Receita Total (Dados Reais)
           </CardTitle>
-          <CardDescription className="text-gray-600 flex items-center">
-            <Database className="h-4 w-4 mr-1" />
+          <CardDescription className="text-xs md:text-sm text-gray-600 flex items-center">
+            <Database className="h-3 w-3 md:h-4 md:w-4 mr-1" />
             Baseado em pedidos pagos no Supabase
           </CardDescription>
         </CardHeader>
         <CardContent>
           {data.revenueData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <LineChart data={data.revenueData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="month" 
                   stroke="#64748b"
-                  fontSize={12}
+                  fontSize={10}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
                 <YAxis 
                   stroke="#64748b"
-                  fontSize={12}
+                  fontSize={10}
                   tickFormatter={formatCurrency}
                 />
                 <Tooltip 
@@ -55,16 +58,17 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                   contentStyle={{ 
                     backgroundColor: '#f8fafc', 
                     border: '1px solid #e2e8f0',
-                    borderRadius: '8px'
+                    borderRadius: '8px',
+                    fontSize: '12px'
                   }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="revenue" 
                   stroke="#4A0968" 
-                  strokeWidth={3}
-                  dot={{ fill: '#4A0968', strokeWidth: 2, r: 6 }}
-                  activeDot={{ r: 8, fill: '#4A0968' }}
+                  strokeWidth={2}
+                  dot={{ fill: '#4A0968', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, fill: '#4A0968' }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -79,19 +83,19 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
 
       {/* Status dos Pedidos - Dados Reais */}
       <Card className="bg-white border border-purple-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-gray-900 flex items-center">
-            <PieChartIcon className="h-5 w-5 mr-2 text-indexa-purple" />
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
+            <PieChartIcon className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
             Status dos Pedidos (Dados Reais)
           </CardTitle>
-          <CardDescription className="text-gray-600 flex items-center">
-            <Database className="h-4 w-4 mr-1" />
+          <CardDescription className="text-xs md:text-sm text-gray-600 flex items-center">
+            <Database className="h-3 w-3 md:h-4 md:w-4 mr-1" />
             Status atual dos pedidos no sistema
           </CardDescription>
         </CardHeader>
         <CardContent>
           {data.orderStatusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
                   data={data.orderStatusData}
@@ -101,7 +105,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                   label={({ name, value, percent }) => 
                     `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
                   }
-                  outerRadius={80}
+                  outerRadius={70}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -109,7 +113,10 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: any) => [value, 'Pedidos']} />
+                <Tooltip 
+                  formatter={(value: any) => [value, 'Pedidos']}
+                  contentStyle={{ fontSize: '12px' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           ) : (
@@ -123,36 +130,37 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
 
       {/* Status dos Painéis - Dados Reais */}
       <Card className="bg-white border border-purple-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-gray-900 flex items-center">
-            <BarChart3 className="h-5 w-5 mr-2 text-indexa-purple" />
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
+            <BarChart3 className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
             Status dos Painéis (Dados Reais)
           </CardTitle>
-          <CardDescription className="text-gray-600 flex items-center">
-            <Database className="h-4 w-4 mr-1" />
+          <CardDescription className="text-xs md:text-sm text-gray-600 flex items-center">
+            <Database className="h-3 w-3 md:h-4 md:w-4 mr-1" />
             Status operacional dos painéis cadastrados
           </CardDescription>
         </CardHeader>
         <CardContent>
           {data.panelStatusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={data.panelStatusData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="status" 
                   stroke="#64748b"
-                  fontSize={12}
+                  fontSize={10}
                 />
                 <YAxis 
                   stroke="#64748b"
-                  fontSize={12}
+                  fontSize={10}
                 />
                 <Tooltip 
                   formatter={(value: any) => [value, 'Painéis']}
                   contentStyle={{ 
                     backgroundColor: '#f8fafc', 
                     border: '1px solid #e2e8f0',
-                    borderRadius: '8px'
+                    borderRadius: '8px',
+                    fontSize: '12px'
                   }}
                 />
                 <Bar 
@@ -173,36 +181,40 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
 
       {/* Crescimento de Usuários - Dados Reais */}
       <Card className="bg-white border border-purple-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-gray-900 flex items-center">
-            <Users className="h-5 w-5 mr-2 text-indexa-purple" />
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
+            <Users className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
             Total de Usuários (Dados Reais)
           </CardTitle>
-          <CardDescription className="text-gray-600 flex items-center">
-            <Database className="h-4 w-4 mr-1" />
+          <CardDescription className="text-xs md:text-sm text-gray-600 flex items-center">
+            <Database className="h-3 w-3 md:h-4 md:w-4 mr-1" />
             Usuários registrados no sistema
           </CardDescription>
         </CardHeader>
         <CardContent>
           {data.userGrowthData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <AreaChart data={data.userGrowthData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="month" 
                   stroke="#64748b"
-                  fontSize={12}
+                  fontSize={10}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
                 <YAxis 
                   stroke="#64748b"
-                  fontSize={12}
+                  fontSize={10}
                 />
                 <Tooltip 
                   formatter={(value: any) => [value, 'Usuários']}
                   contentStyle={{ 
                     backgroundColor: '#f8fafc', 
                     border: '1px solid #e2e8f0',
-                    borderRadius: '8px'
+                    borderRadius: '8px',
+                    fontSize: '12px'
                   }}
                 />
                 <Area 

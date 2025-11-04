@@ -37,16 +37,18 @@ const ModernAdminHeader = () => {
 
   return (
     <div className="flex items-center justify-between flex-1">
-      <div className="flex items-center space-x-4">
-        <h1 className="text-lg font-semibold text-foreground">{getAdminTitle()}</h1>
+      <div className="flex items-center space-x-2 md:space-x-4">
+        <h1 className="text-sm sm:text-base md:text-lg font-semibold text-foreground truncate">
+          {getAdminTitle()}
+        </h1>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2 md:space-x-4">
         <NotificationCenter />
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full touch-target">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
                   {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
@@ -56,7 +58,7 @@ const ModernAdminHeader = () => {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <div className="flex flex-col space-y-1 p-2">
-              <p className="text-sm font-medium leading-none">
+              <p className="text-sm font-medium leading-none truncate">
                 {userProfile?.email || 'Admin'}
               </p>
               <p className="text-xs leading-none text-muted-foreground">
@@ -64,7 +66,7 @@ const ModernAdminHeader = () => {
               </p>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
+            <DropdownMenuItem onClick={handleSignOut} className="touch-target">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Sair</span>
             </DropdownMenuItem>
