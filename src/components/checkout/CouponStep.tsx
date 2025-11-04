@@ -5,6 +5,8 @@ import { CheckCircle, XCircle, Loader2, Tag, Smartphone, Mail, Gift } from 'luci
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Info } from 'lucide-react';
 
 interface CouponStepProps {
   couponCode: string;
@@ -54,10 +56,51 @@ const CouponStep: React.FC<CouponStepProps> = ({
       className="space-y-6"
     >
       <motion.div variants={itemVariants} className="space-y-2">
-        <h2 className="text-xl font-semibold flex items-center">
-          <Tag className="mr-3 h-5 w-5 text-[#3C1361]" />
-          Cupom de Desconto
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold flex items-center">
+            <Tag className="mr-3 h-5 w-5 text-[#3C1361]" />
+            Cupom de Desconto
+          </h2>
+          <HoverCard openDelay={200}>
+            <HoverCardTrigger asChild>
+              <button className="inline-flex items-center justify-center rounded-full w-5 h-5 bg-[#3C1361]/10 hover:bg-[#3C1361]/20 transition-colors">
+                <Info className="h-3 w-3 text-[#3C1361]" />
+              </button>
+            </HoverCardTrigger>
+            <HoverCardContent className="w-80 p-4 bg-gradient-to-br from-white to-gray-50 border-2 shadow-xl">
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <div className="rounded-full p-2 bg-[#3C1361]/10">
+                    <Tag className="h-4 w-4 text-[#3C1361]" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-gray-900 mb-1">
+                      Como funcionam os cupons?
+                    </h3>
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      Os cupons podem ter diferentes requisitos como quantidade mínima de prédios, valor mínimo do pedido ou período de contrato específico.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="pt-2 border-t space-y-2">
+                  <div className="flex items-start gap-2 text-xs">
+                    <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">Descontos aplicados automaticamente no total</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-xs">
+                    <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">Verifique as condições antes de aplicar</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-xs">
+                    <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">Cada cupom tem limite de uso</span>
+                  </div>
+                </div>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
+        </div>
         <p className="text-sm text-muted-foreground">
           Se você possui um cupom promocional, insira o código abaixo
         </p>

@@ -9,6 +9,7 @@ import { MoreHorizontal, Edit, Trash, Eye, Copy, ToggleLeft, ToggleRight } from 
 import { Coupon, CouponUsageDetail } from '@/types/coupon';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import CouponDetailsHoverCard from './CouponDetailsHoverCard';
 
 interface CouponsTableProps {
   coupons: Coupon[];
@@ -125,12 +126,17 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
                 <TableRow key={coupon.id}>
                   <TableCell className="font-mono font-medium">
                     <div className="flex items-center gap-2">
-                      {coupon.codigo}
+                      <CouponDetailsHoverCard coupon={coupon}>
+                        <span className="font-semibold text-[#3C1361]">
+                          {coupon.codigo}
+                        </span>
+                      </CouponDetailsHoverCard>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => copyCode(coupon.codigo)}
-                        className="h-6 w-6 p-0"
+                        className="h-6 w-6 p-0 hover:bg-[#3C1361]/10"
+                        title="Copiar código"
                       >
                         <Copy className="h-3 w-3" />
                       </Button>
