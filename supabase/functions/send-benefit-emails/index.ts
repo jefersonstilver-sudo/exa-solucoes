@@ -25,6 +25,8 @@ interface GiftCodeEmail {
     provider_email: string;
     benefit_choice: string;
     gift_code: string;
+    delivery_type?: 'code' | 'link';
+    redemption_instructions?: string;
   };
 }
 
@@ -79,9 +81,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (type === "gift_code") {
-      const { provider_name, provider_email, benefit_choice, gift_code } = data;
+      const { provider_name, provider_email, benefit_choice, gift_code, delivery_type, redemption_instructions } = data;
 
-      const html = createGiftCodeHTML(provider_name, benefit_choice, gift_code);
+      const html = createGiftCodeHTML(provider_name, benefit_choice, gift_code, delivery_type, redemption_instructions);
 
       const result = await resend.emails.send({
         from: "EXA Mídia <noreply@examidia.com.br>",
@@ -249,7 +251,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
   `;
 }
 
-function createGiftCodeHTML(name: string, choice: string, code: string): string {
+function createGiftCodeHTML(name: string, choice: string, code: string, deliveryType?: 'code' | 'link', instructions?: string): string {
   const benefitNames: Record<string, string> = {
     shopee: "Shopee 🛍️",
     renner: "Renner 👗",
@@ -268,6 +270,7 @@ function createGiftCodeHTML(name: string, choice: string, code: string): string 
   };
 
   const benefitName = benefitNames[choice] || choice;
+  const isLink = deliveryType === 'link';
 
   return `
 <!DOCTYPE html>
@@ -384,9 +387,15 @@ function createGiftCodeHTML(name: string, choice: string, code: string): string 
           <h2>${benefitName}</h2>
         </div>
         <div class="code-box">
-          <p>💳 Código do Presente:</p>
-          <h2>${code}</h2>
+          <p>${isLink ? '🔗 Link de Resgate:' : '💳 Código do Presente:'}</p>
+          ${isLink ? `<a href="${code}" style="color: #DC2626; text-decoration: underline; word-break: break-all; font-size: 18px; font-weight: 600;">${code}</a>` : `<h2>${code}</h2>`}
         </div>
+        ${instructions ? `
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left;">
+          <p style="margin: 0 0 10px 0; font-weight: 600; color: #DC2626; font-size: 16px;">📝 Como Resgatar:</p>
+          <p style="margin: 0; color: #555; white-space: pre-line;">${instructions}</p>
+        </div>
+        ` : ''}
         <p>Obrigado por fazer parte da <strong>construção da EXA MÍDIA</strong>.</p>
         <p>Continue acompanhando as ativações com a gente! 🚀</p>
       </div>

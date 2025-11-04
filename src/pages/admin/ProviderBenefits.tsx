@@ -79,9 +79,9 @@ const ProviderBenefits = () => {
     setIsCodeModalOpen(true);
   };
 
-  const handleConfirmCode = async (code: string) => {
+  const handleConfirmCode = async (data: { code: string; deliveryType: 'code' | 'link'; instructions: string }) => {
     if (selectedBenefit) {
-      await insertGiftCode(selectedBenefit, code);
+      await insertGiftCode(selectedBenefit, data.code, data.deliveryType, data.instructions);
       setSelectedBenefit(null);
     }
   };
@@ -121,6 +121,14 @@ const ProviderBenefits = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={() => navigate('/super_admin/gerenciar-beneficios')}
+            size="lg"
+            variant="outline"
+          >
+            <Gift className="h-4 w-4 mr-2" />
+            Gerenciar
+          </Button>
           <Button 
             onClick={() => navigate('/super_admin/preview-beneficio')} 
             size="lg"
@@ -355,6 +363,11 @@ const ProviderBenefits = () => {
             selectedBenefitData.benefit_choice
               ? getBenefitName(selectedBenefitData.benefit_choice)
               : ''
+          }
+          deliveryDays={
+            selectedBenefitData.benefit_choice
+              ? benefitOptions.find((b) => b.id === selectedBenefitData.benefit_choice)?.delivery_days
+              : undefined
           }
         />
       )}

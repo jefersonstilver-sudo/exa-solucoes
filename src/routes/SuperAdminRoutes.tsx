@@ -20,6 +20,7 @@ import LeadsExa from '@/pages/admin/LeadsExa';
 import LogosPage from '@/pages/admin/LogosPage';
 import ProviderBenefits from '@/pages/admin/ProviderBenefits';
 import BenefitPreview from '@/pages/admin/BenefitPreview';
+import BenefitManagement from '@/pages/admin/BenefitManagement';
 
 const SuperAdminRoutes = () => {
   return (
@@ -31,6 +32,7 @@ const SuperAdminRoutes = () => {
       <Route path="aprovacoes" element={<ApprovalsPage />} />
       <Route path="beneficio-prestadores" element={<ProviderBenefits />} />
       <Route path="preview-beneficio" element={<BenefitPreview />} />
+      <Route path="gerenciar-beneficios" element={<BenefitManagement />} />
       
       {/* ATIVOS */}
       <Route path="predios" element={<BuildingsManagement />} />

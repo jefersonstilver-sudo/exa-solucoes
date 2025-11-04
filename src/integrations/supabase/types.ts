@@ -41,6 +41,45 @@ export type Database = {
         }
         Relationships: []
       }
+      available_benefits: {
+        Row: {
+          category: string
+          created_at: string
+          delivery_days: number
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          subtitle: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          delivery_days?: number
+          icon: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          subtitle?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          delivery_days?: number
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          subtitle?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       building_action_logs: {
         Row: {
           action_description: string | null
@@ -1700,6 +1739,7 @@ export type Database = {
           benefit_chosen_at: string | null
           created_at: string | null
           created_by: string | null
+          delivery_type: string | null
           final_email_sent_at: string | null
           gift_code: string | null
           gift_code_inserted_at: string | null
@@ -1709,6 +1749,7 @@ export type Database = {
           observation: string | null
           provider_email: string
           provider_name: string
+          redemption_instructions: string | null
           status: string | null
           token_used: boolean | null
           token_used_at: string | null
@@ -1721,6 +1762,7 @@ export type Database = {
           benefit_chosen_at?: string | null
           created_at?: string | null
           created_by?: string | null
+          delivery_type?: string | null
           final_email_sent_at?: string | null
           gift_code?: string | null
           gift_code_inserted_at?: string | null
@@ -1730,6 +1772,7 @@ export type Database = {
           observation?: string | null
           provider_email: string
           provider_name: string
+          redemption_instructions?: string | null
           status?: string | null
           token_used?: boolean | null
           token_used_at?: string | null
@@ -1742,6 +1785,7 @@ export type Database = {
           benefit_chosen_at?: string | null
           created_at?: string | null
           created_by?: string | null
+          delivery_type?: string | null
           final_email_sent_at?: string | null
           gift_code?: string | null
           gift_code_inserted_at?: string | null
@@ -1751,6 +1795,7 @@ export type Database = {
           observation?: string | null
           provider_email?: string
           provider_name?: string
+          redemption_instructions?: string | null
           status?: string | null
           token_used?: boolean | null
           token_used_at?: string | null

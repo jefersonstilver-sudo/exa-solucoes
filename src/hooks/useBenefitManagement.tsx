@@ -105,7 +105,7 @@ export const useBenefitManagement = () => {
     }
   };
 
-  const insertGiftCode = async (benefitId: string, giftCode: string) => {
+  const insertGiftCode = async (benefitId: string, giftCode: string, deliveryType: 'code' | 'link', instructions: string) => {
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -134,6 +134,8 @@ export const useBenefitManagement = () => {
           gift_code: giftCode,
           gift_code_inserted_at: new Date().toISOString(),
           gift_code_inserted_by: user.id,
+          delivery_type: deliveryType,
+          redemption_instructions: instructions,
           status: 'code_sent',
         })
         .eq('id', benefitId);
@@ -149,6 +151,8 @@ export const useBenefitManagement = () => {
             provider_email: benefit.provider_email,
             benefit_choice: benefit.benefit_choice,
             gift_code: giftCode,
+            delivery_type: deliveryType,
+            redemption_instructions: instructions,
           },
         },
       });

@@ -12,6 +12,8 @@ export interface ProviderBenefit {
   gift_code?: string;
   gift_code_inserted_at?: string;
   gift_code_inserted_by?: string;
+  delivery_type?: 'code' | 'link';
+  redemption_instructions?: string;
   status: 'pending' | 'choice_made' | 'code_sent' | 'cancelled';
   invitation_sent_at?: string;
   final_email_sent_at?: string;
@@ -26,6 +28,9 @@ export interface BenefitOption {
   subtitle?: string;
   icon: string;
   category: 'shopping' | 'food' | 'transport' | 'entertainment';
+  delivery_days: 1 | 3;
+  is_active: boolean;
+  sort_order: number;
 }
 
 export interface CreateBenefitRequest {

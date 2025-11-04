@@ -8,6 +8,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Milhões de produtos',
     icon: '🛍️',
     category: 'shopping',
+    delivery_days: 3,
+    is_active: true,
+    sort_order: 1,
   },
   {
     id: 'renner',
@@ -15,6 +18,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Moda feminina e masculina',
     icon: '👗',
     category: 'shopping',
+    delivery_days: 3,
+    is_active: true,
+    sort_order: 2,
   },
   {
     id: 'riachuelo',
@@ -22,6 +28,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Estilo e conforto',
     icon: '👔',
     category: 'shopping',
+    delivery_days: 3,
+    is_active: true,
+    sort_order: 3,
   },
   {
     id: 'havaianas',
@@ -29,6 +38,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Os originais',
     icon: '🩴',
     category: 'shopping',
+    delivery_days: 3,
+    is_active: true,
+    sort_order: 4,
   },
   {
     id: 'arezzo',
@@ -36,6 +48,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Calçados e acessórios',
     icon: '👠',
     category: 'shopping',
+    delivery_days: 3,
+    is_active: true,
+    sort_order: 5,
   },
   {
     id: 'petz',
@@ -43,6 +58,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Tudo para seu pet',
     icon: '🐾',
     category: 'shopping',
+    delivery_days: 3,
+    is_active: true,
+    sort_order: 6,
   },
 
   // Food
@@ -52,6 +70,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Chocolates deliciosos',
     icon: '🍫',
     category: 'food',
+    delivery_days: 1,
+    is_active: true,
+    sort_order: 7,
   },
   {
     id: 'mcdonalds',
@@ -59,6 +80,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Amo muito tudo isso',
     icon: '🍟',
     category: 'food',
+    delivery_days: 1,
+    is_active: true,
+    sort_order: 8,
   },
   {
     id: 'madero',
@@ -66,6 +90,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Hambúrgueres premium',
     icon: '🍔',
     category: 'food',
+    delivery_days: 1,
+    is_active: true,
+    sort_order: 9,
   },
   {
     id: 'jeronimo',
@@ -73,6 +100,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Pizzas e lanches',
     icon: '🍕',
     category: 'food',
+    delivery_days: 1,
+    is_active: true,
+    sort_order: 10,
   },
   {
     id: 'ze_delivery',
@@ -80,6 +110,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Bebidas geladas',
     icon: '🍺',
     category: 'food',
+    delivery_days: 1,
+    is_active: true,
+    sort_order: 11,
   },
 
   // Transport
@@ -89,6 +122,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Viagens e entregas',
     icon: '🚗',
     category: 'transport',
+    delivery_days: 1,
+    is_active: true,
+    sort_order: 12,
   },
 
   // Entertainment
@@ -98,6 +134,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Música e podcasts',
     icon: '🎧',
     category: 'entertainment',
+    delivery_days: 1,
+    is_active: true,
+    sort_order: 13,
   },
   {
     id: 'netflix',
@@ -105,6 +144,9 @@ export const benefitOptions: BenefitOption[] = [
     subtitle: 'Séries e filmes',
     icon: '🎬',
     category: 'entertainment',
+    delivery_days: 1,
+    is_active: true,
+    sort_order: 14,
   },
 ];
 
