@@ -96,6 +96,10 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
     sum + (building.numero_unidades || 0), 0
   );
 
+  const totalTelas = buildings.reduce((sum, building) => 
+    sum + (building.quantidade_telas || 0), 0
+  );
+
   return (
     <Card className={className}>
       <CardHeader>
@@ -109,8 +113,8 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
               </CardTitle>
               <div className="text-sm text-gray-600 font-normal">
                 {buildings.length} {buildings.length === 1 ? 'local' : 'locais'}
+                {totalTelas > 0 && ` • ${totalTelas} ${totalTelas === 1 ? 'tela' : 'telas'}`}
                 {totalPublico > 0 && ` • ${totalPublico.toLocaleString()} pessoas`}
-                {totalUnidades > 0 && ` • ${totalUnidades} unidades`}
               </div>
             </div>
           </CollapsibleTrigger>

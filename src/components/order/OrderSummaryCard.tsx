@@ -2,7 +2,9 @@
 import React from 'react';
 import { 
   DollarSign, 
-  Calendar 
+  Calendar,
+  Monitor,
+  Users
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -12,12 +14,16 @@ interface OrderSummaryCardProps {
   };
   displayPanels: string[];
   isRecovered?: boolean;
+  totalScreens?: number;
+  totalAudience?: number;
 }
 
 export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({ 
   orderDetails, 
   displayPanels, 
-  isRecovered 
+  isRecovered,
+  totalScreens = 0,
+  totalAudience = 0
 }) => {
 
   return (
@@ -42,6 +48,26 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
               <p className="text-lg">{displayPanels.length} {displayPanels.length === 1 ? 'local' : 'locais'}</p>
             </div>
           </div>
+          
+          {totalScreens > 0 && (
+            <div className="flex items-center space-x-3">
+              <Monitor className="h-8 w-8 text-blue-500" />
+              <div>
+                <p className="font-medium">Total de Telas</p>
+                <p className="text-lg">{totalScreens} {totalScreens === 1 ? 'tela' : 'telas'}</p>
+              </div>
+            </div>
+          )}
+          
+          {totalAudience > 0 && (
+            <div className="flex items-center space-x-3">
+              <Users className="h-8 w-8 text-green-500" />
+              <div>
+                <p className="font-medium">Pessoas Impactadas</p>
+                <p className="text-lg">{totalAudience.toLocaleString()}/mês</p>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

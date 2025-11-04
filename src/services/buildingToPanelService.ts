@@ -44,6 +44,7 @@ export const convertBuildingToPanel = (building: BuildingStore): Panel => {
       caracteristicas: building.caracteristicas || [],
       preco_base: building.preco_base || 280,
       quantidade_telas: building.quantidade_telas || 1,
+      publico_estimado: building.publico_estimado || 0,
       imagens: building.imagens || []
     }
   };

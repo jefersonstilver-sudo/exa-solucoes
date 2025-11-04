@@ -25,6 +25,7 @@ import { MigrationFixButton } from '@/components/order/MigrationFixButton';
 import { useVideoScheduleMonitor } from '@/hooks/useVideoScheduleMonitor';
 import { BlockedOrderAlert } from '@/components/order/BlockedOrderAlert';
 import { OrderNameEdit } from '@/components/order/OrderNameEdit';
+import { useSelectedBuildingsDetails } from '@/hooks/useSelectedBuildingsDetails';
 
 interface OrderDetails {
   id: string;
@@ -192,6 +193,17 @@ const OrderDetails = () => {
   // Use building IDs from the new lista_predios column
   const displayBuildingIds = orderDetails?.lista_predios || [];
 
+  // Buscar detalhes dos prédios para calcular totais
+  const { buildings: buildingDetails } = useSelectedBuildingsDetails(displayBuildingIds);
+  
+  const totalScreens = buildingDetails.reduce((sum, building) => 
+    sum + (building.quantidade_telas || 0), 0
+  );
+  
+  const totalAudience = buildingDetails.reduce((sum, building) => 
+    sum + (building.publico_estimado || 0), 0
+  );
+
   // Verificar se há dados de localização incompletos
   const hasLocationData = (displayBuildingIds && displayBuildingIds.length > 0) || 
                          (displayPanels && displayPanels.length > 0);
@@ -285,6 +297,8 @@ const OrderDetails = () => {
           orderDetails={orderDetails}
           displayPanels={displayPanels}
           isRecovered={enhancedData?.isRecovered}
+          totalScreens={totalScreens}
+          totalAudience={totalAudience}
         />
 
         {/* Gestão de Vídeos */}
