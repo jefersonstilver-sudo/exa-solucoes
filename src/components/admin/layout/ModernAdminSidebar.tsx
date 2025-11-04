@@ -235,38 +235,38 @@ export function ModernAdminSidebar() {
     <Sidebar 
       className="h-screen bg-gradient-to-b from-[#180A0A] via-[#3B1E1E] to-[#9C1E1E] border-r border-white/20 shadow-2xl"
       collapsible="icon"
-      variant={isMobile ? "floating" : "sidebar"}
+      variant={isMobile ? "floating" : isTablet ? "sidebar" : "sidebar"}
     >
-      <SidebarHeader className="p-6 border-b border-white/20">
-        <div className="flex items-center justify-center mb-4">
+      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-6'} border-b border-white/20`}>
+        <div className="flex items-center justify-center mb-3 md:mb-4">
           <UnifiedLogo 
             size="custom" 
             linkTo="/" 
             variant="light"
-            className={collapsed ? "w-10 h-10" : "w-24 h-24"}
+            className={collapsed ? "w-8 h-8 md:w-10 md:h-10" : "w-16 h-16 md:w-24 md:h-24"}
           />
         </div>
         
         {!collapsed && (
           <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="text-white font-semibold text-sm truncate">
+            <div className="flex-1 min-w-0">
+              <div className="text-white font-semibold text-xs md:text-sm truncate">
                 {userProfile?.email?.split('@')[0] || 'Admin'}
               </div>
-              <div className="flex items-center space-x-2 mt-1">
+              <div className="flex items-center space-x-1 md:space-x-2 mt-1">
                 <Crown className={`h-3 w-3 ${getAdminBadgeColor()}`} />
-                <span className={`text-xs font-medium ${getAdminBadgeColor()}`}>
+                <span className={`text-[10px] md:text-xs font-medium ${getAdminBadgeColor()} truncate`}>
                   {getAdminTitle()}
                 </span>
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 md:space-x-2">
               <NotificationCenter />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20 touch-target">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="bg-white text-[#9C1E1E] font-semibold text-xs">
                         {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
@@ -298,11 +298,11 @@ export function ModernAdminSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-4 py-6 space-y-6 overflow-y-auto admin-sidebar-scroll">
+      <SidebarContent className={`${collapsed ? 'px-2' : 'px-3 md:px-4'} py-4 md:py-6 space-y-4 md:space-y-6 overflow-y-auto admin-sidebar-scroll`}>
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && (
-              <SidebarGroupLabel className="text-xs font-semibold text-red-200 uppercase tracking-wider mb-3 px-2">
+              <SidebarGroupLabel className="text-[10px] md:text-xs font-semibold text-red-200 uppercase tracking-wider mb-2 md:mb-3 px-2">
                 {group.label}
               </SidebarGroupLabel>
             )}
@@ -318,14 +318,14 @@ export function ModernAdminSidebar() {
                       <SidebarMenuButton asChild>
                         <NavLink
                           to={item.href}
-                          className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 font-medium text-sm group ${
+                          className={`flex items-center ${collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2.5 md:py-3'} rounded-xl transition-all duration-200 font-medium text-xs md:text-sm group touch-target ${
                             isActive 
                               ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
                               : "text-white hover:bg-white/20 hover:text-white"
                           }`}
                         >
-                          <div className="mr-3 transition-transform duration-200 group-hover:scale-110">
-                            <Icon className="h-5 w-5" />
+                          <div className={`${collapsed ? '' : 'mr-2 md:mr-3'} transition-transform duration-200 group-hover:scale-110`}>
+                            <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4 md:h-5 md:w-5'}`} />
                           </div>
                           {!collapsed && <span>{item.title}</span>}
                         </NavLink>
@@ -339,13 +339,13 @@ export function ModernAdminSidebar() {
         ))}
       </SidebarContent>
       
-      <SidebarFooter className="p-4 border-t border-white/20">
-        <div className="flex items-center space-x-2 text-white text-sm">
-          <Shield className="h-4 w-4" />
-          {!collapsed && <span>Sistema Seguro</span>}
+      <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3 md:p-4'} border-t border-white/20`}>
+        <div className="flex items-center space-x-2 text-white text-xs md:text-sm">
+          <Shield className={`${collapsed ? 'h-4 w-4' : 'h-3 w-3 md:h-4 md:w-4'}`} />
+          {!collapsed && <span className="truncate">Sistema Seguro</span>}
         </div>
         {!collapsed && (
-          <div className="text-xs text-white/60 mt-0.5">
+          <div className="text-[10px] md:text-xs text-white/60 mt-0.5">
             INDEXA Admin v3.0
           </div>
         )}

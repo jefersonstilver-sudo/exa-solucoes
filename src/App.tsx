@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/hooks/useAuth';
 import { SimpleCartProvider } from '@/contexts/SimpleCartContext';
+import { ResponsiveProvider } from '@/contexts/ResponsiveContext';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 import PageTransitionLoader from '@/components/loading/PageTransitionLoader';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
@@ -308,17 +309,19 @@ function App() {
   return (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AuthProvider>
-            <Router>
-              <SimpleCartProvider>
-                <ErrorBoundary>
-                  <AppContent />
-                </ErrorBoundary>
-              </SimpleCartProvider>
-            </Router>
-          </AuthProvider>
-        </TooltipProvider>
+        <ResponsiveProvider>
+          <TooltipProvider>
+            <AuthProvider>
+              <Router>
+                <SimpleCartProvider>
+                  <ErrorBoundary>
+                    <AppContent />
+                  </ErrorBoundary>
+                </SimpleCartProvider>
+              </Router>
+            </AuthProvider>
+          </TooltipProvider>
+        </ResponsiveProvider>
       </QueryClientProvider>
     </HelmetProvider>
   );
