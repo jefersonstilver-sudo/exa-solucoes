@@ -50,52 +50,26 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     }).format(date);
   };
 
-  // Agrupar painéis por prédio (sem duplicatas)
+  // Agrupar painéis por prédio - conta TODOS os items do carrinho por prédio
   const paineisPorPredio = cartItems.reduce((acc, item) => {
     const buildingId = item.panel.buildings?.id || 'unknown';
     const buildingName = item.panel.buildings?.nome || 'Prédio não identificado';
-    const panelId = item.panel.id;
-    
-    console.log('[OrderSummaryCard] Processando item:', {
-      panelId,
-      buildingId,
-      buildingName,
-      numero_elevadores: item.panel.buildings?.numero_elevadores,
-      quantidade_telas: item.panel.buildings?.quantidade_telas
-    });
     
     if (!acc[buildingId]) {
       acc[buildingId] = {
         nome: buildingName,
         endereco: item.panel.buildings?.endereco || '',
         bairro: item.panel.buildings?.bairro || '',
-        numero_elevadores: item.panel.buildings?.numero_elevadores || 0,
         publico_estimado: item.panel.buildings?.publico_estimado || 0,
-        paineis: [],
-        panelIds: new Set() // Para evitar duplicatas
+        telasSelecionadas: 0 // Contador de telas selecionadas do carrinho
       };
     }
     
-    // Adicionar apenas se não existir
-    if (!acc[buildingId].panelIds.has(panelId)) {
-      acc[buildingId].panelIds.add(panelId);
-      acc[buildingId].paineis.push(item.panel);
-    } else {
-      console.warn('[OrderSummaryCard] Painel duplicado detectado:', panelId);
-    }
+    // Incrementa o contador de telas selecionadas para este prédio
+    acc[buildingId].telasSelecionadas++;
     
     return acc;
   }, {} as Record<string, any>);
-
-  console.log('[OrderSummaryCard] Resultado final paineisPorPredio:', 
-    Object.entries(paineisPorPredio).map(([id, data]: [string, any]) => ({
-      buildingId: id,
-      buildingName: data.nome,
-      numero_elevadores: data.numero_elevadores,
-      paineisUnicos: data.paineis.length,
-      panelIds: Array.from(data.panelIds)
-    }))
-  );
 
   // Calcular público total
   const publicoTotal = Object.values(paineisPorPredio).reduce((total, building: any) => {
@@ -181,11 +155,7 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
                 
                 <div className="flex items-center gap-3 text-xs text-gray-600 mb-2">
                   <span>
-                    <strong className="text-blue-600">{building.numero_elevadores || 0}</strong> elevadores no prédio
-                  </span>
-                  <span>•</span>
-                  <span>
-                    <strong className="text-purple-600">{building.paineis.length}</strong> {building.paineis.length === 1 ? 'tela selecionada' : 'telas selecionadas'}
+                    <strong className="text-purple-600">{building.telasSelecionadas}</strong> {building.telasSelecionadas === 1 ? 'tela selecionada' : 'telas selecionadas'}
                   </span>
                   {building.publico_estimado > 0 && (
                     <>
