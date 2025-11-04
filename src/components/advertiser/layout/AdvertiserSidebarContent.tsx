@@ -97,7 +97,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
 
   return (
     <aside className={cn(
-      "h-screen bg-gradient-to-b from-[#1e40af] via-[#3b82f6] to-[#60a5fa] shadow-xl flex flex-col transition-all duration-300",
+      "h-screen bg-gradient-to-b from-[#3C1361] via-[#5a1a8f] to-[#8b1874] shadow-xl flex flex-col transition-all duration-300",
       isCollapsed ? "w-16" : "w-80"
     )}>
       {/* Logo da EXA no topo */}
@@ -136,7 +136,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-white text-[#1e40af] font-semibold text-xs">
+                      <AvatarFallback className="bg-white text-[#3C1361] font-semibold text-xs">
                         {user?.email?.charAt(0).toUpperCase() || 'A'}
                       </AvatarFallback>
                     </Avatar>
@@ -172,7 +172,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-white text-[#1e40af] font-semibold text-xs">
+                    <AvatarFallback className="bg-white text-[#3C1361] font-semibold text-xs">
                       {user?.email?.charAt(0).toUpperCase() || 'A'}
                     </AvatarFallback>
                   </Avatar>
@@ -206,9 +206,9 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
         {Object.entries(groupedItems).map(([sectionKey, items]) => (
           <div key={sectionKey}>
             {!isCollapsed && (
-              <h3 className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-3 px-2">
-                {sections[sectionKey as keyof typeof sections]}
-              </h3>
+            <h3 className="text-xs font-semibold text-purple-200 uppercase tracking-wider mb-3 px-2">
+              {sections[sectionKey as keyof typeof sections]}
+            </h3>
             )}
             <div className={cn(isCollapsed ? "space-y-1" : "space-y-1")}>
               {items.map((item) => (
@@ -220,14 +220,14 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                     'flex items-center rounded-xl text-sm font-medium transition-all duration-200 group',
                     isCollapsed ? "p-2 justify-center" : "space-x-3 px-3 py-3",
                     isActive(item.href)
-                      ? 'bg-white text-[#1e40af] shadow-lg font-semibold'
+                      ? 'bg-white text-[#3C1361] shadow-lg font-semibold'
                       : 'text-white hover:text-white hover:bg-white/20 hover:translate-x-1'
                   )}
                   title={isCollapsed ? item.title : undefined}
                 >
                   <item.icon className={cn(
                     "transition-transform duration-200 group-hover:scale-110",
-                    isActive(item.href) ? "text-[#1e40af]" : "text-white",
+                    isActive(item.href) ? "text-[#3C1361]" : "text-white",
                     isCollapsed ? "h-5 w-5" : "h-5 w-5"
                   )} />
                   {!isCollapsed && <span>{item.title}</span>}

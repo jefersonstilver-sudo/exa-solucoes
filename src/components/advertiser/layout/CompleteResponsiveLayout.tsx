@@ -40,7 +40,7 @@ const CompleteResponsiveLayout = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setSidebarOpen(true)}
-                  className="bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  className="bg-gradient-to-r from-[#3C1361] to-[#5a1a8f] text-white hover:from-[#5a1a8f] hover:to-[#3C1361] shadow-md transition-all duration-300"
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
@@ -49,12 +49,12 @@ const CompleteResponsiveLayout = () => {
                   variant="ghost"
                   size="icon"
                   onClick={toggleSidebarCollapse}
-                  className="hover:bg-gray-100 transition-colors"
+                  className="text-[#3C1361] hover:bg-[#3C1361]/10 transition-colors"
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
               ) : null}
-              <h1 className="text-2xl font-bold text-gray-900">Portal do Anunciante</h1>
+              <h1 className="text-2xl font-bold text-[#3C1361]">Portal do Anunciante</h1>
             </div>
             <Outlet />
           </div>
