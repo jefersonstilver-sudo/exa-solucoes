@@ -27,24 +27,46 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 }) => {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-center text-2xl">
+      <AlertDialogContent className="max-w-lg rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
+        <div className="bg-gradient-to-br from-[#DC2626] to-[#991b1b] p-8">
+          <AlertDialogTitle className="text-center text-3xl font-black text-white">
             Confirmar escolha?
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-center space-y-4 pt-4">
-            <div className="text-6xl">{benefitIcon}</div>
-            <p className="text-lg">
-              Você escolheu: <strong className="text-exa-red">{benefitName}</strong>
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Após confirmar, esta escolha não poderá ser alterada e você receberá o código do vale-presente por email.
-            </p>
+        </div>
+        
+        <div className="p-8">
+          <AlertDialogDescription className="text-center space-y-6">
+            <div className="relative inline-block">
+              <div className="text-8xl animate-bounce">{benefitIcon}</div>
+              <div className="absolute inset-0 bg-[#DC2626]/20 rounded-full blur-3xl" />
+            </div>
+            
+            <div className="bg-gradient-to-br from-[#DC2626]/10 to-[#DC2626]/5 rounded-2xl p-6 border-2 border-[#DC2626]/20">
+              <p className="text-lg text-gray-700 mb-2 font-medium">
+                Você escolheu:
+              </p>
+              <p className="text-3xl font-black text-[#DC2626]">{benefitName}</p>
+            </div>
+            
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-6">
+              <p className="text-sm text-gray-700 font-medium leading-relaxed">
+                ⚠️ Após confirmar, esta escolha não poderá ser alterada e você receberá o código do vale-presente por email.
+              </p>
+            </div>
           </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Voltar</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
+        </div>
+        
+        <AlertDialogFooter className="p-6 pt-0 gap-3">
+          <AlertDialogCancel 
+            onClick={onClose}
+            className="flex-1 py-6 text-base font-bold rounded-2xl border-2 border-gray-300 hover:bg-gray-50"
+          >
+            Voltar
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={onConfirm}
+            className="flex-1 py-6 text-base font-bold rounded-2xl bg-gradient-to-r from-[#DC2626] to-[#991b1b] hover:from-[#991b1b] hover:to-[#7f1d1d] text-white shadow-lg"
+          >
             ✅ Sim, confirmar
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -41,37 +41,37 @@ const BenefitPreview = () => {
   const selectedBenefitData = benefitOptions.find((b) => b.id === selectedBenefit);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary/90 to-background">
+    <div className="min-h-screen bg-[#1a0000]">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground py-6 px-4 shadow-lg">
+      <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] py-6 px-4 shadow-2xl">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
               onClick={() => navigate('/super_admin/beneficio-prestadores')}
-              className="text-primary-foreground hover:bg-primary-foreground/10"
+              className="text-white hover:bg-white/10 font-bold"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar para Admin
             </Button>
-            <div className="text-sm bg-primary-foreground/20 px-3 py-1 rounded">
+            <div className="text-sm bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full font-bold text-white border border-white/30">
               MODO PREVIEW
             </div>
           </div>
           <div className="text-center">
-            <h1 className="text-4xl font-black mb-2">EXA MÍDIA</h1>
-            <p className="text-primary-foreground/80">Publicidade que vive nos elevadores</p>
+            <h1 className="text-5xl font-black text-white mb-2">EXA</h1>
+            <p className="text-white/80 font-medium">Publicidade que vive nos elevadores</p>
           </div>
         </div>
       </div>
 
       {/* Controles de Preview */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <Card className="p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">Configurar Preview</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-3xl p-8 mb-8 shadow-2xl">
+          <h2 className="text-2xl font-black mb-6 text-gray-900">Configurar Preview</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="preview_name">Nome do Prestador</Label>
+              <Label htmlFor="preview_name" className="font-bold text-gray-700">Nome do Prestador</Label>
               <Input
                 id="preview_name"
                 value={previewData.provider_name}
@@ -79,10 +79,11 @@ const BenefitPreview = () => {
                   setPreviewData({ ...previewData, provider_name: e.target.value })
                 }
                 placeholder="Ex: João Silva"
+                className="rounded-2xl border-2 border-gray-200 focus:border-[#DC2626] py-6 text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="preview_point">Ponto de Ativação</Label>
+              <Label htmlFor="preview_point" className="font-bold text-gray-700">Ponto de Ativação</Label>
               <Input
                 id="preview_point"
                 value={previewData.activation_point}
@@ -90,70 +91,82 @@ const BenefitPreview = () => {
                   setPreviewData({ ...previewData, activation_point: e.target.value })
                 }
                 placeholder="Ex: Edifício Copacabana"
+                className="rounded-2xl border-2 border-gray-200 focus:border-[#DC2626] py-6 text-base"
               />
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Preview da Página */}
-        <Card className="p-8 shadow-2xl">
-          {/* Saudação */}
-          <div className="text-center mb-8">
-            <div className="inline-block bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-6 py-3 rounded-full mb-4">
-              <Gift className="inline-block mr-2 h-6 w-6" />
-              <span className="font-bold text-lg">Parabéns, {previewData.provider_name}!</span>
-            </div>
-            <p className="text-lg text-muted-foreground">
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+          {/* Card de Boas-vindas */}
+          <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] p-8">
+            <h2 className="text-4xl font-black text-white mb-2 flex items-center justify-center gap-3">
+              <span className="text-5xl">🎁</span>
+              Parabéns, {previewData.provider_name}!
+            </h2>
+            <p className="text-white/90 text-xl font-medium text-center">
               Você ajudou a ativar mais um ponto EXA!
             </p>
+          </div>
+          
+          <div className="p-8 space-y-6">
             {previewData.activation_point && (
-              <p className="text-primary font-semibold mt-2">📍 {previewData.activation_point}</p>
+              <div className="flex items-center justify-center gap-2 text-gray-700 bg-gray-50 rounded-2xl py-4 px-6">
+                <span className="text-2xl">📍</span>
+                <span className="text-lg font-semibold">{previewData.activation_point}</span>
+              </div>
             )}
-          </div>
+            
+            <div className="bg-gradient-to-br from-[#DC2626]/10 to-[#DC2626]/5 rounded-2xl p-8 border-2 border-[#DC2626]/20">
+              <p className="text-xl text-gray-700 mb-2 font-medium text-center">
+                Escolha onde quer usar seu presente de
+              </p>
+              <p className="text-5xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent text-center">
+                R$ 50,00
+              </p>
+            </div>
 
-          {/* Valor do Presente */}
-          <div className="bg-muted/50 rounded-lg p-6 text-center mb-8">
-            <p className="text-muted-foreground mb-2">
-              Escolha onde quer usar seu presente de
-            </p>
-            <p className="text-4xl font-black text-primary">R$ 50,00</p>
-          </div>
+            {/* Categorias */}
+            <div className="flex justify-center gap-3 flex-wrap">
+              {Object.keys(groupedBenefits).map((category) => (
+                <Button
+                  key={category}
+                  variant={currentCategory === category ? 'default' : 'outline'}
+                  onClick={() => setCurrentCategory(category)}
+                  className={
+                    currentCategory === category
+                      ? 'rounded-2xl font-bold px-6 py-6 bg-gradient-to-r from-[#DC2626] to-[#991b1b] hover:from-[#991b1b] hover:to-[#7f1d1d]'
+                      : 'rounded-2xl font-bold px-6 py-6 border-2 border-gray-300 hover:bg-gray-50'
+                  }
+                >
+                  {categoryLabels[category as keyof typeof categoryLabels]}
+                </Button>
+              ))}
+            </div>
 
-          {/* Categorias */}
-          <div className="flex justify-center gap-2 mb-6 flex-wrap">
-            {Object.keys(groupedBenefits).map((category) => (
-              <Button
+            {/* Opções de Benefícios */}
+            {Object.entries(groupedBenefits).map(([category, benefits]) => (
+              <div
                 key={category}
-                variant={currentCategory === category ? 'default' : 'outline'}
-                onClick={() => setCurrentCategory(category)}
-                size="sm"
+                className={currentCategory === category ? 'block' : 'hidden'}
               >
-                {categoryLabels[category as keyof typeof categoryLabels]}
-              </Button>
+                <h3 className="text-2xl font-black mb-6 text-center text-gray-900">
+                  {categoryLabels[category as keyof typeof categoryLabels]}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {benefits.map((benefit) => (
+                    <BenefitCard
+                      key={benefit.id}
+                      option={benefit}
+                      onSelect={handleBenefitSelect}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-
-          {/* Opções de Benefícios */}
-          {Object.entries(groupedBenefits).map(([category, benefits]) => (
-            <div
-              key={category}
-              className={currentCategory === category ? 'block' : 'hidden'}
-            >
-              <h3 className="text-xl font-bold mb-4 text-center">
-                {categoryLabels[category as keyof typeof categoryLabels]}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {benefits.map((benefit) => (
-                  <BenefitCard
-                    key={benefit.id}
-                    option={benefit}
-                    onSelect={handleBenefitSelect}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </Card>
+        </div>
       </div>
 
       {/* Confirmation Modal */}
