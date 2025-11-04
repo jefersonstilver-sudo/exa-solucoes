@@ -42,7 +42,24 @@ const handler = async (req: Request): Promise<Response> => {
     if (type === "invitation") {
       const { provider_name, provider_email, access_token, activation_point } = data;
       const siteUrl = Deno.env.get('SITE_URL') || 'https://examidia.com.br';
+      
+      // Validação e logging do SITE_URL
+      if (!siteUrl || siteUrl.includes('undefined') || !siteUrl.startsWith('http')) {
+        console.error('❌ SITE_URL inválido:', siteUrl);
+        return new Response(
+          JSON.stringify({ error: 'Invalid SITE_URL configuration' }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       const presentLink = `${siteUrl}/presente?token=${access_token}`;
+      
+      console.log('✅ Email Configuration:', {
+        siteUrl,
+        presentLink,
+        provider_email,
+        token: access_token.substring(0, 15) + '...' // Log parcial por segurança
+      });
 
       const html = createInvitationHTML(provider_name, presentLink, activation_point);
 
@@ -206,6 +223,14 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
         <p>Você é parte da <strong>revolução da atenção nos condomínios</strong>. Por isso, queremos te agradecer com um presente especial de <strong style="color: #DC2626; font-size: 20px;">R$ 50,00</strong>.</p>
         <div style="text-align: center;">
           <a href="${link}" class="button">🎁 ESCOLHER MEU PRESENTE</a>
+        </div>
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+          <p style="font-size: 12px; color: #666; margin: 0 0 10px 0;">
+            Ou copie e cole este link no seu navegador:
+          </p>
+          <p style="font-size: 14px; color: #DC2626; margin: 0; word-break: break-all; font-family: 'Courier New', monospace;">
+            ${link}
+          </p>
         </div>
         <div class="note">
           <p style="margin: 0;"><strong>⚠️ Importante:</strong> Este link é único e pessoal. Após escolher seu presente, ele não poderá ser usado novamente.</p>
