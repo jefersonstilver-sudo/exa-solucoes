@@ -50,10 +50,11 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     }).format(date);
   };
 
-  // Agrupar painéis por prédio - conta TODOS os items do carrinho por prédio
+  // Agrupar painéis por prédio - conta painéis ÚNICOS (sem duplicatas)
   const paineisPorPredio = cartItems.reduce((acc, item) => {
     const buildingId = item.panel.buildings?.id || 'unknown';
     const buildingName = item.panel.buildings?.nome || 'Prédio não identificado';
+    const panelId = item.panel.id;
     
     if (!acc[buildingId]) {
       acc[buildingId] = {
@@ -61,15 +62,20 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         endereco: item.panel.buildings?.endereco || '',
         bairro: item.panel.buildings?.bairro || '',
         publico_estimado: item.panel.buildings?.publico_estimado || 0,
-        telasSelecionadas: 0 // Contador de telas selecionadas do carrinho
+        panelIds: new Set<string>() // Set para evitar contar painéis duplicados
       };
     }
     
-    // Incrementa o contador de telas selecionadas para este prédio
-    acc[buildingId].telasSelecionadas++;
+    // Adiciona o panelId ao Set (automaticamente evita duplicatas)
+    acc[buildingId].panelIds.add(panelId);
     
     return acc;
   }, {} as Record<string, any>);
+  
+  // Adicionar o contador de telas após o reduce
+  Object.values(paineisPorPredio).forEach((building: any) => {
+    building.telasSelecionadas = building.panelIds.size;
+  });
 
   // Calcular público total
   const publicoTotal = Object.values(paineisPorPredio).reduce((total, building: any) => {
