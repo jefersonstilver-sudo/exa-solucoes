@@ -325,7 +325,7 @@ export function ModernAdminSidebar() {
                       <SidebarMenuButton asChild>
                         <NavLink
                           to={item.href}
-                          className={`flex items-center ${collapsed ? 'px-2 py-2 justify-center' : 'px-3 py-2.5 md:py-3'} rounded-xl transition-all duration-200 font-medium text-xs md:text-sm group touch-target ${
+                          className={`flex ${collapsed ? 'flex-col items-center px-2 py-2.5 gap-1' : 'flex-row items-center px-3 py-2.5 md:py-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
                             isActive 
                               ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
                               : "text-white hover:bg-white/20 hover:text-white"
@@ -334,7 +334,13 @@ export function ModernAdminSidebar() {
                           <div className={`${collapsed ? '' : 'mr-2 md:mr-3'} transition-transform duration-200 group-hover:scale-110`}>
                             <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4 md:h-5 md:w-5'}`} />
                           </div>
-                          {!collapsed && <span>{item.title}</span>}
+                          {collapsed ? (
+                            <span className="text-[9px] leading-tight text-center truncate w-full">
+                              {item.title.split(' ')[0]}
+                            </span>
+                          ) : (
+                            <span className="text-xs md:text-sm">{item.title}</span>
+                          )}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
