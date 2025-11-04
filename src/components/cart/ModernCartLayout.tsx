@@ -204,7 +204,7 @@ const ModernCartLayout = ({
         
         <Button
           onClick={handleCheckout}
-          disabled={!canProceed || isProcessing || isCheckoutLoading}
+          disabled={isProcessing || isCheckoutLoading}
           className="w-full bg-[#3C1361] hover:bg-[#3C1361]/90 text-white font-medium py-3"
           size="lg"
         >
@@ -221,11 +221,6 @@ const ModernCartLayout = ({
           )}
         </Button>
 
-        {!canProceed && (
-          <p className="text-xs text-gray-500 text-center">
-            {cartItems.length === 0 ? 'Adicione painéis ao carrinho' : 'Faça login para continuar'}
-          </p>
-        )}
       </div>
     </div>
   );

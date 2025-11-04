@@ -28,8 +28,8 @@ export const useSimplifiedCheckout = () => {
 
     if (!isLoggedIn || !user?.id) {
       console.log('🛒 [SimplifiedCheckout] Usuário não logado, redirecionando');
-      toast.error("Faça login para continuar com a compra");
-      navigate('/login?redirect=/selecionar-plano');
+      toast.info("Faça login ou crie uma conta para continuar");
+      navigate('/cadastro?redirect=/selecionar-plano');
       return false;
     }
 
@@ -73,7 +73,7 @@ export const useSimplifiedCheckout = () => {
     console.log('🛒 [SimplifiedCheckout] Continuando checkout para:', targetStep);
 
     if (!isLoggedIn) {
-      navigate('/login?redirect=/selecionar-plano');
+      navigate('/cadastro?redirect=/selecionar-plano');
       return;
     }
 
