@@ -53,7 +53,7 @@ const CheckoutCoupon = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-4">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
           {/* Progress Header */}
           <div className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8">

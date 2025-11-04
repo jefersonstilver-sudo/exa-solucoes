@@ -22,7 +22,7 @@ const Layout: React.FC<LayoutProps> = memo(({ children, className = '' }) => {
         onToggleCart={cart?.toggleCart || (() => {})}
       />
       
-      <main className={`flex-1 relative mobile-scroll-fix pt-20 ${className}`}>
+      <main className={`flex-1 relative mobile-scroll-fix pt-16 ${className}`}>
         {children}
       </main>
       

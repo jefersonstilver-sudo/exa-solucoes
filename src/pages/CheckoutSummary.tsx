@@ -185,7 +185,7 @@ const CheckoutSummary = () => {
   };
   if (isLoading) {
     return <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24 py-8 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-4 py-8 flex items-center justify-center">
           <motion.div initial={{
           opacity: 0
         }} animate={{
@@ -198,7 +198,7 @@ const CheckoutSummary = () => {
       </Layout>;
   }
   return <Layout>
-      <div className="min-h-screen bg-gray-50 pt-24">
+      <div className="min-h-screen bg-gray-50 pt-4">
         <div className="container mx-auto px-4 py-4 max-w-6xl">
           {/* Progress Bar - Sem card wrapper */}
           <div className="mb-4">

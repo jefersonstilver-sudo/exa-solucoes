@@ -113,7 +113,7 @@ const ErrosAnunciarCondominios = () => {
           createFAQSchema(articleFAQs)
         ]}
       />
-      <article className="min-h-screen bg-white pt-24 pb-16">
+      <article className="min-h-screen bg-white pt-4 pb-16">
         <div className="container mx-auto px-4 lg:px-8 max-w-4xl">
           <header className="mb-12">
             <div className="mb-4">

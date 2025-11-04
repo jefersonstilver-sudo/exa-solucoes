@@ -12,7 +12,7 @@ const BuildingStoreHeader = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className={`text-center ${isMobile ? 'py-8 px-4' : 'py-16 px-8'}`}
+      className={`text-center ${isMobile ? 'py-4 px-4' : 'py-6 px-8'}`}
     >
       <div className="max-w-4xl mx-auto">
         {/* Header centralizado */}

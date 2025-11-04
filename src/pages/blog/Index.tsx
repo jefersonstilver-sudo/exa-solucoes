@@ -74,7 +74,7 @@ const BlogIndex = () => {
           ])
         ]}
       />
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white pt-24 pb-16">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white pt-4 pb-16">
         <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
           {/* Hero do Blog */}
           <header className="text-center mb-16">

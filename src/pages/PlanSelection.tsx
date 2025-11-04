@@ -141,7 +141,7 @@ const PlanSelection = () => {
         keywords="preço publicidade elevador, planos anúncio prédio, quanto custa painel digital, valor publicidade indoor"
         structuredData={[planoEssencialSchema, planoExpansaoSchema, planoPremiumSchema, planoDominioSchema]}
       />
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-4">
         <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
           {/* Unified Progress Header */}
           <div className="bg-white rounded-xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8">
