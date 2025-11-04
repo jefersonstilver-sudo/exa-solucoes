@@ -13,9 +13,9 @@ export class EmailService {
     const html = EmailTemplates.createConfirmationHTML(userName, confirmationUrl);
 
     return await this.resend.emails.send({
-      from: 'Indexa <noreply@indexamidia.com.br>',
+      from: 'EXA <noreply@examidia.com.br>',
       to: [userEmail],
-      subject: '🎯 Confirme seu email na Indexa - Bem-vindo!',
+      subject: '🎯 Confirme seu email na EXA - Bem-vindo!',
       html,
     });
   }
@@ -24,9 +24,20 @@ export class EmailService {
     const html = EmailTemplates.createResendHTML(userName, confirmationUrl);
 
     return await this.resend.emails.send({
-      from: 'Indexa <noreply@indexamidia.com.br>',
+      from: 'EXA <noreply@examidia.com.br>',
       to: [userEmail],
-      subject: '🎯 Confirme seu email na Indexa (Reenviado)',
+      subject: '🎯 Confirme seu email na EXA (Reenviado)',
+      html,
+    });
+  }
+
+  async sendPasswordRecoveryEmail(userEmail: string, userName: string, recoveryUrl: string) {
+    const html = EmailTemplates.createPasswordRecoveryHTML(userName, recoveryUrl);
+
+    return await this.resend.emails.send({
+      from: 'EXA <noreply@examidia.com.br>',
+      to: [userEmail],
+      subject: '🔒 Recuperação de senha - EXA',
       html,
     });
   }

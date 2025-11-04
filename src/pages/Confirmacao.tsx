@@ -165,7 +165,7 @@ export default function Confirmacao() {
         
         // Tratamento baseado no tipo de link
         if (type === 'signup') {
-          setMessage('Email confirmado com sucesso! Bem-vindo(a) à Indexa!');
+          setMessage('Email confirmado com sucesso! Bem-vindo(a) à EXA!');
           toast.success('Email confirmado! Sua conta está ativa.');
           setTimeout(() => navigate('/loja'), 2000);
         } else if (type === 'recovery') {
@@ -215,17 +215,19 @@ export default function Confirmacao() {
 
   return (
     <Layout>
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-center min-h-[80vh] px-4"
-      >
-        <Card className="w-full max-w-md shadow-lg border-[#9C1E1E]/10">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold text-[#9C1E1E]">
-              Confirmação de Email
-            </CardTitle>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          <Card className="shadow-2xl border-0 overflow-hidden">
+            <div className="h-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700" />
+            <CardHeader className="space-y-1 text-center pt-8">
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Confirmação de Email
+              </CardTitle>
             <CardDescription>
               {status === 'loading' ? 'Processando confirmação...' : 
                status === 'success' ? 'Confirmação realizada!' : 
@@ -241,7 +243,7 @@ export default function Confirmacao() {
                 animate={{ scale: 1 }}
                 className="text-center"
               >
-                <Loader2 className="h-16 w-16 text-[#9C1E1E] animate-spin mx-auto mb-4" />
+                <Loader2 className="h-16 w-16 text-purple-600 animate-spin mx-auto mb-4" />
                 <p className="text-lg text-gray-700">{message}</p>
                 
                 {/* Debug info para desenvolvimento */}
@@ -274,7 +276,7 @@ export default function Confirmacao() {
                   <Button
                     variant="outline"
                     onClick={() => navigate('/login')}
-                    className="border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
+                    className="border-purple-300 text-purple-700 hover:bg-purple-50 font-semibold py-6 text-lg w-full"
                   >
                     Fazer Login
                   </Button>
@@ -300,7 +302,7 @@ export default function Confirmacao() {
                     <Button
                       onClick={handleResendEmail}
                       disabled={isResending}
-                      className="bg-[#9C1E1E] hover:bg-[#180A0A] flex items-center gap-2"
+                      className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-6 text-lg shadow-lg w-full flex items-center justify-center gap-2"
                     >
                       {isResending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -313,7 +315,7 @@ export default function Confirmacao() {
                     <Button
                       variant="outline"
                       onClick={() => navigate('/cadastro')}
-                      className="border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E]/10"
+                      className="border-purple-300 text-purple-700 hover:bg-purple-50 font-semibold py-6 text-lg w-full"
                     >
                     Criar Nova Conta
                   </Button>
@@ -397,8 +399,9 @@ export default function Confirmacao() {
               </motion.div>
             )}
           </CardContent>
-        </Card>
-      </motion.div>
+          </Card>
+        </motion.div>
+      </div>
     </Layout>
   );
 }

@@ -58,66 +58,75 @@ export default function EmailSent() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-lg"
+          className="w-full max-w-md"
         >
-          <Card className="shadow-lg border border-border">
-            <CardContent className="p-8 text-center space-y-6">
+          <Card className="shadow-2xl border-0 overflow-hidden">
+            <div className="h-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700" />
+            <CardContent className="p-8 space-y-6">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center"
+                className="flex justify-center"
               >
-                <Mail className="w-8 h-8 text-primary" />
+                <div className="rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 p-6">
+                  <Mail className="h-12 w-12 text-purple-600" />
+                </div>
               </motion.div>
               
-              <div className="space-y-2">
-                <h1 className="text-2xl font-bold text-foreground">
-                  Email enviado!
+              <div className="text-center space-y-3">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  Email Enviado!
                 </h1>
-                <p className="text-muted-foreground text-sm">
-                  Verifique sua caixa de entrada para continuar
+                <p className="text-gray-600">
+                  Enviamos um link de confirmação para:
+                </p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {email}
                 </p>
               </div>
 
-              {email && (
-                <div className="bg-muted/50 rounded-lg p-4 border border-border/50">
-                  <p className="text-xs text-muted-foreground mb-1">Enviado para:</p>
-                  <p className="font-medium text-foreground break-words">{email}</p>
-                </div>
-              )}
-
-              <div className="text-sm text-muted-foreground space-y-1">
-                <p>Enviamos um link de confirmação para seu email.</p>
-                <p>Clique no link para ativar sua conta.</p>
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 space-y-2">
+                <p className="text-sm text-purple-800 font-medium">
+                  📧 Verifique sua caixa de entrada
+                </p>
+                <p className="text-xs text-purple-700">
+                  Não esqueça de checar também a pasta de spam. O email vem de <strong>noreply@examidia.com.br</strong>
+                </p>
               </div>
 
-              <div className="space-y-3 pt-2">
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 text-center">
+                  Não recebeu o email?
+                </p>
                 <Button
                   onClick={handleResendEmail}
-                  disabled={isResending || !email}
-                  className="w-full"
+                  disabled={isResending}
+                  variant="outline"
+                  className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
                 >
                   {isResending ? (
                     <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                       Reenviando...
                     </>
                   ) : (
-                    'Reenviar email'
+                    'Reenviar email de confirmação'
                   )}
                 </Button>
-                
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
                 <button
                   onClick={() => navigate('/login')}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-sm text-purple-600 hover:text-purple-700 hover:underline w-full"
                 >
-                  Voltar para login
+                  Voltar para o login
                 </button>
               </div>
             </CardContent>
