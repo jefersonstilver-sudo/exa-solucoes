@@ -42,10 +42,16 @@ serve(async (req: Request) => {
 
     const emailService = new EmailService(resendKey);
     
-    // Detectar URLs dinamicamente
-    const currentUrl = new URL(req.url);
-    let baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
-    baseUrl = URLValidator.validateAndCorrectUrl(baseUrl);
+    // ✅ Priorizar SITE_URL da env
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://examidia.com.br';
+    let baseUrl = siteUrl;
+    
+    // Fallback secundário se não houver SITE_URL
+    if (!Deno.env.get('SITE_URL')) {
+      const currentUrl = new URL(req.url);
+      baseUrl = URLValidator.validateAndCorrectUrl(`${currentUrl.protocol}//${currentUrl.host}`);
+      console.log('⚠️ [UNIFIED-EMAIL] SITE_URL não definida, usando detecção dinâmica:', baseUrl);
+    }
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://aakenoljsycyrcrchgxj.supabase.co';
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -202,7 +208,7 @@ serve(async (req: Request) => {
       let confirmationUrl;
       try {
         // Usar LinkGenerator que é mais robusto contra expiração
-        confirmationUrl = await linkGenerator.generateConfirmationLink(user.email, originalToken, redirectUrl);
+        confirmationUrl = await linkGenerator.generateConfirmationLink(user.email, originalToken);
         console.log('✅ [UNIFIED-EMAIL] URL de confirmação construída via LinkGenerator:', {
           baseUrl,
           redirectTo: redirectUrl,

@@ -20,11 +20,16 @@ export class LinkGenerator {
   async generateConfirmationLink(email: string, originalToken?: string): Promise<string> {
     console.log('🔗 [LINK-GENERATOR] Gerando link de confirmação válido para:', email);
     
+    // ✅ Definir URLs no escopo global do método
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://examidia.com.br';
+    const redirectUrl = `${siteUrl}/confirmacao`;
+    
+    console.log(`🌐 [LINK-GENERATOR] URL de redirecionamento: ${redirectUrl}`);
+    
     try {
       // Se temos um token original válido, tentar usá-lo primeiro
       if (originalToken) {
         console.log('🔄 [LINK-GENERATOR] Tentando usar token original fornecido');
-        const siteUrl = Deno.env.get('SITE_URL') || 'https://indexamidia.com.br';
         const directLink = `${siteUrl}/confirmacao#access_token=${originalToken}&type=signup`;
         
         // Verificar se o token ainda é válido (teste simples)
@@ -76,14 +81,8 @@ export class LinkGenerator {
       
       console.log(`🔧 [LINK-GENERATOR] Usando estratégia: ${linkType}`);
       
-      // Tentar gerar link com o tipo principal
-        // Detectar URL base dinamicamente
-        const siteUrl = Deno.env.get('SITE_URL') || 'https://indexamidia.com.br';
-        const redirectUrl = `${siteUrl}/confirmacao`;
-        
-        console.log(`🌐 [LINK-GENERATOR] URL de redirecionamento: ${redirectUrl}`);
-        
-        // CONFIGURAÇÕES OTIMIZADAS para links de longa duração
+      // Tentar gerar link com o tipo principal (redirectUrl já está definido no escopo global)
+      // CONFIGURAÇÕES OTIMIZADAS para links de longa duração
         const { data, error } = await this.supabaseAdmin.auth.admin.generateLink({
           type: linkType,
           email: email,

@@ -58,7 +58,7 @@ export default function EmailSent() {
 
   return (
     <Layout>
-      <div className="min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50 p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -66,7 +66,7 @@ export default function EmailSent() {
           className="w-full max-w-md"
         >
           <Card className="shadow-2xl border-0 overflow-hidden">
-            <div className="h-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700" />
+            <div className="h-2 bg-gradient-to-r from-exa-red via-exa-highlight-red to-exa-dark" />
             <CardContent className="p-8 space-y-6">
               <motion.div
                 initial={{ scale: 0 }}
@@ -74,13 +74,13 @@ export default function EmailSent() {
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                 className="flex justify-center"
               >
-                <div className="rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 p-6">
-                  <Mail className="h-12 w-12 text-purple-600" />
+                <div className="rounded-full bg-gradient-to-br from-red-50 to-red-100 p-6">
+                  <Mail className="h-12 w-12 text-exa-red" />
                 </div>
               </motion.div>
               
               <div className="text-center space-y-3">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-exa-red to-exa-highlight-red bg-clip-text text-transparent">
                   Email Enviado!
                 </h1>
                 <p className="text-gray-600">
@@ -91,11 +91,11 @@ export default function EmailSent() {
                 </p>
               </div>
 
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 space-y-2">
-                <p className="text-sm text-purple-800 font-medium">
+              <div className="bg-gradient-to-r from-red-50 to-red-100 border border-exa-red/20 rounded-lg p-4 space-y-2">
+                <p className="text-sm text-exa-red font-medium">
                   📧 Verifique sua caixa de entrada
                 </p>
-                <p className="text-xs text-purple-700">
+                <p className="text-xs text-exa-dark">
                   Não esqueça de checar também a pasta de spam. O email vem de <strong>noreply@examidia.com.br</strong>
                 </p>
               </div>
@@ -108,7 +108,7 @@ export default function EmailSent() {
                   onClick={handleResendEmail}
                   disabled={isResending}
                   variant="outline"
-                  className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
+                  className="w-full border-exa-red text-exa-red hover:bg-red-50"
                 >
                   {isResending ? (
                     <>
@@ -124,7 +124,7 @@ export default function EmailSent() {
               <div className="pt-4 border-t border-gray-200">
                 <button
                   onClick={() => navigate('/login')}
-                  className="text-sm text-purple-600 hover:text-purple-700 hover:underline w-full"
+                  className="text-sm text-exa-red hover:text-exa-highlight-red hover:underline w-full"
                 >
                   Voltar para o login
                 </button>

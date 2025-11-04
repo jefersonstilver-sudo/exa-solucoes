@@ -86,10 +86,10 @@ export default {
 				},
 				// Cores EXA - Nova Paleta EXA Red
 				exa: {
-					red: '#9C1E1E',           // EXA Red Primary
-					dark: '#180A0A',          // EXA Dark Background
-					graphite: '#3B1E1E',      // EXA Graphite Secondary
-					highlightRed: '#D72638',  // EXA Highlight Red
+					red: 'hsl(var(--exa-red))',              // EXA Red Primary
+					dark: 'hsl(var(--exa-dark))',            // EXA Dark Background
+					graphite: 'hsl(var(--exa-graphite))',    // EXA Graphite Secondary
+					highlightRed: 'hsl(var(--exa-highlight-red))', // EXA Highlight Red
 					black: '#0A0A0A',         // EXA Shadow
 					gray: '#D9D9D9',          // EXA Gray
 					white: '#FFFFFF',         // EXA White

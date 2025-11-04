@@ -163,7 +163,7 @@ const Cadastro: React.FC = () => {
       duration: 0.5
     }}>
         <Card className="w-full max-w-4xl bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
-          <CardContent className="p-4 sm:p-6 lg:p-8 pt-16 sm:pt-20 lg:pt-24">
+          <CardContent className="p-4 sm:p-6 lg:p-8">
             <RegistrationHeader />
             
             {error && <ErrorDisplay error={error} />}
@@ -175,19 +175,19 @@ const Cadastro: React.FC = () => {
                   {/* Nome */}
                   <div className="space-y-2">
                     <Label htmlFor="name" className="flex items-center text-gray-900">
-                      <User className="h-4 w-4 mr-2 text-indexa-purple" /> 
+                      <User className="h-4 w-4 mr-2 text-exa-red" /> 
                       Nome completo <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input id="name" type="text" placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} required className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500" />
+                    <Input id="name" type="text" placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} required className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500" />
                   </div>
                   
                   {/* E-mail */}
                   <div className="space-y-2">
                     <Label htmlFor="email" className="flex items-center text-gray-900">
-                      <Mail className="h-4 w-4 mr-2 text-indexa-purple" /> 
+                      <Mail className="h-4 w-4 mr-2 text-exa-red" /> 
                       E-mail <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500" />
+                    <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500" />
                   </div>
                 </div>
 
@@ -195,19 +195,19 @@ const Cadastro: React.FC = () => {
                   {/* Senha */}
                   <div className="space-y-2">
                     <Label htmlFor="password" className="flex items-center text-gray-900">
-                      <Lock className="h-4 w-4 mr-2 text-indexa-purple" /> 
+                      <Lock className="h-4 w-4 mr-2 text-exa-red" /> 
                       Senha <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input id="password" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} required className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500" />
+                    <Input id="password" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} required className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500" />
                   </div>
                   
                   {/* Confirmar Senha */}
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword" className="flex items-center text-gray-900">
-                      <Lock className="h-4 w-4 mr-2 text-indexa-purple" /> 
+                      <Lock className="h-4 w-4 mr-2 text-exa-red" /> 
                       Confirmar senha <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input id="confirmPassword" type="password" placeholder="Digite a senha novamente" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500" />
+                    <Input id="confirmPassword" type="password" placeholder="Digite a senha novamente" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500" />
                   </div>
                 </div>
 
@@ -230,7 +230,7 @@ const Cadastro: React.FC = () => {
 
             {/* Botão de Criar Conta */}
             <div className="mt-8">
-              <Button onClick={handleSignUp} disabled={isLoading || !acceptedTerms || !hasReadTermsCompletely} className="w-full h-12 bg-gradient-to-r from-[#9C1E1E] to-indexa-green hover:from-[#D72638] hover:to-indexa-green/90 text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+              <Button onClick={handleSignUp} disabled={isLoading || !acceptedTerms || !hasReadTermsCompletely} className="w-full h-12 bg-gradient-to-r from-exa-red to-exa-highlight-red hover:from-exa-highlight-red hover:to-exa-red text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                 {isLoading ? <div className="flex items-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     Criando conta...
@@ -242,7 +242,7 @@ const Cadastro: React.FC = () => {
               <p className="text-gray-600 mb-2">
                 Já tem uma conta?
               </p>
-              <Link to="/login" className="text-indexa-purple hover:text-indexa-purple/80 font-semibold transition-colors">
+              <Link to="/login" className="text-exa-red hover:text-exa-highlight-red font-semibold transition-colors">
                 Fazer Login
               </Link>
             </div>
