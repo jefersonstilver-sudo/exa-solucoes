@@ -16,6 +16,7 @@ import { Gift, Mail, Copy, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useBenefitManagement } from '@/hooks/useBenefitManagement';
 import BenefitStatusBadge from '@/components/benefits/BenefitStatusBadge';
 import InsertCodeModal from '@/components/benefits/InsertCodeModal';
+import DeleteConfirmationDialog from '@/components/benefits/DeleteConfirmationDialog';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { benefitOptions } from '@/data/benefitOptions';
@@ -47,6 +48,7 @@ const ProviderBenefits = () => {
   const [selectedBenefit, setSelectedBenefit] = useState<string | null>(null);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [benefitToCancel, setBenefitToCancel] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     console.log('🎁 useEffect: Loading benefits...');
@@ -82,9 +84,16 @@ const ProviderBenefits = () => {
     }
   };
 
-  const handleCancelBenefit = async (benefitId: string) => {
-    if (window.confirm('Tem certeza que deseja cancelar este benefício? O link do email ficará inválido imediatamente.')) {
-      await cancelBenefit(benefitId);
+  const handleCancelBenefit = (benefitId: string) => {
+    setBenefitToCancel(benefitId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmCancelBenefit = async () => {
+    if (benefitToCancel) {
+      await cancelBenefit(benefitToCancel);
+      setIsDeleteDialogOpen(false);
+      setBenefitToCancel(null);
     }
   };
 
@@ -94,6 +103,7 @@ const ProviderBenefits = () => {
   };
 
   const selectedBenefitData = benefits.find((b) => b.id === selectedBenefit);
+  const benefitToCancelData = benefits.find((b) => b.id === benefitToCancel);
 
   return (
     <div className="space-y-6 p-6">
@@ -334,6 +344,19 @@ const ProviderBenefits = () => {
               ? getBenefitName(selectedBenefitData.benefit_choice)
               : ''
           }
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {benefitToCancelData && (
+        <DeleteConfirmationDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={() => {
+            setIsDeleteDialogOpen(false);
+            setBenefitToCancel(null);
+          }}
+          onConfirm={confirmCancelBenefit}
+          providerName={benefitToCancelData.provider_name}
         />
       )}
     </div>
