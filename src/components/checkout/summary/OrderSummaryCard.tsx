@@ -61,6 +61,7 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         nome: buildingName,
         endereco: item.panel.buildings?.endereco || '',
         bairro: item.panel.buildings?.bairro || '',
+        numero_elevadores: item.panel.buildings?.numero_elevadores || 0,
         publico_estimado: item.panel.buildings?.publico_estimado || 0,
         paineis: [],
         panelIds: new Set() // Para evitar duplicatas
@@ -160,7 +161,11 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
                 
                 <div className="flex items-center gap-3 text-xs text-gray-600 mb-2">
                   <span>
-                    <strong className="text-blue-600">{building.paineis.length}</strong> {building.paineis.length === 1 ? 'tela selecionada' : 'telas selecionadas'}
+                    <strong className="text-blue-600">{building.numero_elevadores || 0}</strong> elevadores no prédio
+                  </span>
+                  <span>•</span>
+                  <span>
+                    <strong className="text-purple-600">{building.paineis.length}</strong> {building.paineis.length === 1 ? 'tela selecionada' : 'telas selecionadas'}
                   </span>
                   {building.publico_estimado > 0 && (
                     <>
