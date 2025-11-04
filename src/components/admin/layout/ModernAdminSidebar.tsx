@@ -325,22 +325,19 @@ export function ModernAdminSidebar() {
                       <SidebarMenuButton asChild>
                         <NavLink
                           to={item.href}
-                          className={`flex ${collapsed ? 'flex-col items-center px-2 py-3 gap-1.5' : 'flex-row items-center px-3 py-2.5 md:py-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
+                          className={`flex ${collapsed ? 'flex-col items-center justify-center !h-auto !w-full px-2 py-3 gap-1.5' : 'flex-row items-center px-3 py-2.5 md:py-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
                             isActive 
                               ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
                               : "text-white hover:bg-white/20 hover:text-white"
                           }`}
+                          style={collapsed ? { minHeight: '60px' } : {}}
                         >
-                          <div className={`${collapsed ? '' : 'mr-2 md:mr-3'} transition-transform duration-200 group-hover:scale-110`}>
+                          <div className={`${collapsed ? 'flex-shrink-0' : 'mr-2 md:mr-3'} transition-transform duration-200 group-hover:scale-110`}>
                             <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4 md:h-5 md:w-5'}`} />
                           </div>
-                          {collapsed ? (
-                            <span className="text-[10px] leading-tight text-center truncate w-full font-medium">
-                              {item.title.split(' ')[0]}
-                            </span>
-                          ) : (
-                            <span className="text-xs md:text-sm">{item.title}</span>
-                          )}
+                          <span className={`${collapsed ? 'text-[10px] leading-tight text-center w-full block' : 'text-xs md:text-sm'} font-medium`}>
+                            {collapsed ? item.title.split(' ')[0] : item.title}
+                          </span>
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
