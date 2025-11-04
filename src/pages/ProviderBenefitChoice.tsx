@@ -43,6 +43,8 @@ const ProviderBenefitChoice = () => {
       } else if (response.error === 'TOKEN_ALREADY_USED') {
         setValidationData(response);
         setPageState('already_used');
+      } else if (response.error === 'TOKEN_CANCELLED') {
+        setPageState('invalid');
       } else {
         setPageState('invalid');
       }
