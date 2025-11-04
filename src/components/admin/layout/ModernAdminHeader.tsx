@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import NotificationCenter from '@/components/admin/layout/NotificationCenter';
+import exaLogo from '@/assets/exa-logo.png';
 
 const ModernAdminHeader = () => {
   const { userProfile, logout } = useAuth();
@@ -35,12 +36,33 @@ const ModernAdminHeader = () => {
     }
   };
 
+  const getRoleLabel = () => {
+    switch (userInfo.role) {
+      case 'super_admin':
+        return 'Super Admin';
+      case 'admin':
+        return 'Admin';
+      case 'admin_marketing':
+        return 'Admin Marketing';
+      default:
+        return 'Admin';
+    }
+  };
+
   return (
     <div className="flex items-center justify-between flex-1">
-      <div className="flex items-center space-x-2 md:space-x-4">
-        <h1 className="text-sm sm:text-base md:text-lg font-semibold text-foreground truncate">
-          {getAdminTitle()}
-        </h1>
+      {/* EXA Logo with Role Label */}
+      <div className="flex items-center gap-3">
+        <div className="flex flex-col items-center">
+          <img 
+            src={exaLogo} 
+            alt="EXA" 
+            className="h-10 md:h-12 w-auto brightness-0 invert"
+          />
+          <span className="text-[10px] md:text-xs text-white/80 font-medium -mt-1">
+            {getRoleLabel()}
+          </span>
+        </div>
       </div>
 
       <div className="flex items-center space-x-2 md:space-x-4">
@@ -48,9 +70,9 @@ const ModernAdminHeader = () => {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full touch-target">
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full touch-target hover:bg-white/20">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
+                <AvatarFallback className="bg-white/20 text-white font-semibold text-xs backdrop-blur-sm">
                   {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
                 </AvatarFallback>
               </Avatar>
@@ -62,7 +84,7 @@ const ModernAdminHeader = () => {
                 {userProfile?.email || 'Admin'}
               </p>
               <p className="text-xs leading-none text-muted-foreground">
-                {userInfo.role === 'admin' ? 'Admin Geral' : 'Admin Marketing'}
+                {getRoleLabel()}
               </p>
             </div>
             <DropdownMenuSeparator />

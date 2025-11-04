@@ -98,16 +98,36 @@ export const combineAndSortData = (pedidos: OrderOrAttempt[], tentativas: OrderO
 };
 
 export const calculateStats = (pedidos: OrderOrAttempt[], tentativas: OrderOrAttempt[]): OrdersStats => {
-  const totalOrders = pedidos.length;
-  const totalAttempts = tentativas.length;
-  const totalRevenue = pedidos
-    .filter(p => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(p.status))
-    .reduce((sum, p) => sum + p.valor_total, 0);
-  const abandonedValue = tentativas.reduce((sum, t) => sum + t.valor_total, 0);
+  // Considerar apenas pedidos pagos/concluídos para stats
+  const paidOrders = pedidos.filter(p => 
+    ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(p.status)
+  );
   
-  // Fórmula corrigida: conversões / total de interações * 100
-  const totalInteractions = totalOrders + totalAttempts;
-  const conversionRate = totalInteractions > 0 ? (totalOrders / totalInteractions) * 100 : 0;
+  const totalOrders = pedidos.length;
+  const totalPaidOrders = paidOrders.length;
+  const totalAttempts = tentativas.length;
+  
+  // Receita real apenas de pedidos pagos
+  const totalRevenue = paidOrders.reduce((sum, p) => sum + (p.valor_total || 0), 0);
+  
+  // Valor abandonado das tentativas
+  const abandonedValue = tentativas.reduce((sum, t) => sum + (t.valor_total || 0), 0);
+  
+  // Taxa de conversão: pedidos PAGOS / (pedidos pagos + tentativas) * 100
+  // Isso representa o percentual de sucesso real na conversão
+  const totalInteractions = totalPaidOrders + totalAttempts;
+  const conversionRate = totalInteractions > 0 
+    ? Number(((totalPaidOrders / totalInteractions) * 100).toFixed(1))
+    : 0;
+  
+  console.log('📊 Stats calculados:', {
+    totalOrders,
+    totalPaidOrders,
+    totalAttempts,
+    totalRevenue: totalRevenue.toFixed(2),
+    conversionRate: `${conversionRate}%`,
+    abandonedValue: abandonedValue.toFixed(2)
+  });
   
   return {
     total_orders: totalOrders,

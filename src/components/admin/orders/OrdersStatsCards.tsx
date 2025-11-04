@@ -16,10 +16,19 @@ interface OrdersStatsCardsProps {
 
 const OrdersStatsCards: React.FC<OrdersStatsCardsProps> = ({ stats, activeOrdersCount = 0 }) => {
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+    if (value >= 1000000) {
+      // Valores acima de 1 milhão - formato: R$ 1.2M
+      return `R$ ${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      // Valores acima de 1 mil - formato: R$ 45.8k
+      return `R$ ${(value / 1000).toFixed(1)}k`;
+    } else {
+      // Valores menores que 1 mil - formato completo
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(value);
+    }
   };
 
   return (
@@ -68,10 +77,10 @@ const OrdersStatsCards: React.FC<OrdersStatsCardsProps> = ({ stats, activeOrders
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">
-            {stats.conversion_rate.toFixed(1)}%
+            {stats.conversion_rate}%
           </div>
           <p className="text-xs text-gray-600 mt-1">
-            Tentativas → Pedidos
+            Pagos / (Pagos + Tentativas)
           </p>
         </CardContent>
       </Card>

@@ -8,6 +8,7 @@ import { formatCurrency } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
+import { CouponBadge } from '@/components/admin/orders/CouponBadge';
 interface EnhancedOrderCardProps {
   item: OrderOrAttempt;
   isSelected: boolean;
@@ -142,6 +143,7 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                 <CardTitle className="text-sm">
                   {item.type === 'order' ? `Pedido #${item.id.substring(0, 8)}` : `Cotação #${item.id.substring(0, 8)}`}
                 </CardTitle>
+                {item.coupon_code && <CouponBadge couponCode={item.coupon_code} size="md" />}
                 <Badge className={getStatusColor(item.status)}>
                   {getStatusText(item.status)}
                 </Badge>

@@ -4,6 +4,7 @@ import { User, DollarSign, Calendar, Building2, Phone, Mail } from 'lucide-react
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CouponBadge } from '@/components/admin/orders/CouponBadge';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -59,6 +60,7 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">#{order.id.substring(0, 8)}</span>
+          <CouponBadge couponCode={order.coupon_code} size="sm" />
         </div>
         <Badge className={`${getStatusColor(order.status)} text-white border-0`}>
           {getStatusText(order.status)}

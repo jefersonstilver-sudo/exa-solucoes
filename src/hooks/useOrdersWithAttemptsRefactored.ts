@@ -65,7 +65,9 @@ export const useOrdersWithAttemptsRefactored = () => {
         client_name: pedido.client_name, // Agora enriquecido
         client_phone: pedido.client_phone, // Novo
         client_cpf: pedido.client_cpf, // Novo
-        video_status: pedido.video_status
+        video_status: pedido.video_status,
+        cupom_id: pedido.cupom_id, // Campo de cupom
+        coupon_code: pedido.coupon_code // Código do cupom
       })) || [];
       
       const tentativasFormatadas = formatAttemptsData(tentativasComEmails);

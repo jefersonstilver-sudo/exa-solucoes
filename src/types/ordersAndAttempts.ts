@@ -22,6 +22,8 @@ export interface OrderOrAttempt {
     endereco: string;
     bairro: string;
   }>;
+  cupom_id?: string;
+  coupon_code?: string;
 }
 
 export interface OrdersStats {

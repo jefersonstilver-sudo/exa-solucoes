@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { RefreshCw, Gift, Download, Search, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
@@ -10,6 +10,8 @@ import OrdersPageAlerts from '@/components/admin/orders/OrdersPageAlerts';
 import OrdersPageFilters from '@/components/admin/orders/OrdersPageFilters';
 import { OrderMobileList } from '@/components/admin/orders/OrderMobileList';
 import { MobileActionMenu } from '@/components/admin/shared/MobileActionMenu';
+import { OrderPeriodFilter, filterByPeriod, PeriodFilter } from '@/components/admin/orders/OrderPeriodFilter';
+import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -18,9 +20,22 @@ const OrdersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('current_month'); // Default: mês atual
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Calcular pedidos ativos para os stats
+  // Aplicar filtro de período primeiro
+  const periodFilteredItems = useMemo(() => {
+    return filterByPeriod(ordersAndAttempts, periodFilter);
+  }, [ordersAndAttempts, periodFilter]);
+
+  // Recalcular stats baseado no período filtrado
+  const filteredStats = useMemo(() => {
+    const orders = periodFilteredItems.filter(item => item.type === 'order');
+    const attempts = periodFilteredItems.filter(item => item.type === 'attempt');
+    return calculateStats(orders, attempts);
+  }, [periodFilteredItems]);
+
+  // Calcular pedidos ativos para os stats (sempre considerar todos, não filtrar por período)
   const activeOrdersCount = ordersAndAttempts.filter(item => {
     if (item.type !== 'order') return false;
     if (item.status !== 'video_aprovado') return false;
@@ -32,7 +47,7 @@ const OrdersPage = () => {
     return today >= startDate && today <= endDate;
   }).length;
 
-  const filteredItems = ordersAndAttempts.filter(item => {
+  const filteredItems = periodFilteredItems.filter(item => {
     const matchesSearch = 
       item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.type === 'order' ? item.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
@@ -108,22 +123,27 @@ const OrdersPage = () => {
           </div>
         </div>
 
+        {/* Period Filter */}
+        <div className="p-4 bg-white border-b">
+          <OrderPeriodFilter value={periodFilter} onChange={setPeriodFilter} />
+        </div>
+
         {/* Mobile Stats - Compact */}
         <div className="p-4 bg-white border-b">
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
               <p className="text-xs text-muted-foreground">Pedidos</p>
-              <p className="text-lg font-bold text-foreground">{stats.total_orders}</p>
+              <p className="text-lg font-bold text-foreground">{filteredStats.total_orders}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Receita</p>
               <p className="text-lg font-bold text-green-600">
-                R$ {(stats.total_revenue / 1000).toFixed(0)}k
+                R$ {(filteredStats.total_revenue / 1000).toFixed(1)}k
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Conversão</p>
-              <p className="text-lg font-bold text-blue-600">{stats.conversion_rate}%</p>
+              <p className="text-lg font-bold text-blue-600">{filteredStats.conversion_rate}%</p>
             </div>
           </div>
         </div>
@@ -186,11 +206,16 @@ const OrdersPage = () => {
         </div>
       </div>
 
+      {/* Period Filter */}
+      <div className="flex justify-end">
+        <OrderPeriodFilter value={periodFilter} onChange={setPeriodFilter} />
+      </div>
+
       {/* Enhanced Stats Cards */}
-      <OrdersStatsCards stats={stats} activeOrdersCount={activeOrdersCount} />
+      <OrdersStatsCards stats={filteredStats} activeOrdersCount={activeOrdersCount} />
 
       {/* Filters and Search */}
-      <OrdersPageFilters 
+      <OrdersPageFilters
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         statusFilter={statusFilter}
