@@ -121,15 +121,16 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light">
   <title>Presente EXA</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       line-height: 1.6;
-      color: #333;
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
+      background-color: #DC2626 !important;
     }
     .container {
       max-width: 600px;
@@ -137,7 +138,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       padding: 20px;
     }
     .email-container {
-      background: white;
+      background-color: #ffffff !important;
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -147,24 +148,23 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       padding: 40px 20px;
       text-align: center;
     }
-    .logo {
-      font-size: 42px;
-      font-weight: 900;
-      color: white;
-      margin: 0;
-      letter-spacing: 2px;
+    .logo-img {
+      width: 120px;
+      height: auto;
+      display: inline-block;
     }
     .content {
       padding: 40px 30px;
+      background-color: #ffffff !important;
     }
     h1 {
-      color: #DC2626;
+      color: #DC2626 !important;
       font-size: 28px;
       margin: 0 0 20px 0;
       text-align: center;
     }
     p {
-      color: #555;
+      color: #333333 !important;
       font-size: 16px;
       line-height: 1.8;
       margin: 15px 0;
@@ -177,7 +177,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       margin: 30px 0;
     }
     .highlight p {
-      color: white;
+      color: #ffffff !important;
       font-weight: bold;
       margin: 0;
     }
@@ -191,58 +191,84 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       font-weight: bold;
       font-size: 18px;
       margin: 20px 0;
-      transition: transform 0.2s;
-    }
-    .button:hover {
-      transform: translateY(-2px);
     }
     .footer {
-      background: #f8f9fa;
+      background-color: #f8f9fa !important;
       padding: 30px;
       text-align: center;
-      color: #718096;
+      color: #718096 !important;
       font-size: 14px;
     }
     .note {
-      background: #f8f9fa;
+      background-color: #f8f9fa !important;
       padding: 15px;
       border-radius: 8px;
       border-left: 4px solid #DC2626;
       margin: 20px 0;
     }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #DC2626 !important;
+      }
+      .email-container {
+        background-color: #ffffff !important;
+      }
+      .content {
+        background-color: #ffffff !important;
+      }
+      h1 {
+        color: #DC2626 !important;
+      }
+      p {
+        color: #333333 !important;
+      }
+      .highlight p {
+        color: #ffffff !important;
+      }
+      .button {
+        color: #ffffff !important;
+      }
+      .footer {
+        background-color: #f8f9fa !important;
+        color: #718096 !important;
+      }
+      .note {
+        background-color: #f8f9fa !important;
+      }
+    }
   </style>
 </head>
-<body>
+<body style="background-color: #DC2626 !important;">
   <div class="container">
-    <div class="email-container">
+    <div class="email-container" style="background-color: #ffffff !important;">
       <div class="header">
-        <h1 class="logo">EXA</h1>
+        <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" alt="EXA" class="logo-img" style="filter: brightness(0) invert(1);">
       </div>
-      <div class="content">
-        <h1>🎉 Parabéns, ${name}!</h1>
-        <p>A cada painel instalado, a EXA celebra junto de quem esteve no campo!</p>
-        ${point ? `<div class="highlight"><p>📍 Ponto ativado: ${point}</p></div>` : ''}
-        <p>Você é parte da <strong>revolução da atenção nos condomínios</strong>. Por isso, queremos te agradecer com um presente especial de <strong style="color: #DC2626; font-size: 20px;">R$ 50,00</strong>.</p>
+      <div class="content" style="background-color: #ffffff !important;">
+        <h1 style="color: #DC2626 !important;">🎉 Parabéns, ${name}!</h1>
+        <p style="color: #333333 !important;">A cada painel instalado, a EXA celebra junto de quem esteve no campo!</p>
+        ${point ? `<div class="highlight"><p style="color: #ffffff !important;">📍 Ponto ativado: ${point}</p></div>` : ''}
+        <p style="color: #333333 !important;">Você é parte da <strong>revolução da atenção nos condomínios</strong>. Por isso, queremos te agradecer com um presente especial de <strong style="color: #DC2626; font-size: 20px;">R$ 50,00</strong>.</p>
         <div style="text-align: center;">
-          <a href="${link}" class="button" style="color: #ffffff !important; text-decoration: none !important;">
+          <a href="${link}" class="button" style="background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%); color: #ffffff !important; text-decoration: none !important; display: inline-block; padding: 16px 40px; border-radius: 50px; font-weight: bold; font-size: 18px; margin: 20px 0;">
             <span style="color: #ffffff !important;">🎁 ESCOLHER MEU PRESENTE</span>
           </a>
         </div>
-        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
-          <p style="font-size: 12px; color: #666; margin: 0 0 10px 0;">
+        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa !important; border-radius: 8px; text-align: center;">
+          <p style="font-size: 12px; color: #666666 !important; margin: 0 0 10px 0;">
             Ou copie e cole este link no seu navegador:
           </p>
-          <p style="font-size: 14px; color: #DC2626; margin: 0; word-break: break-all; font-family: 'Courier New', monospace;">
+          <p style="font-size: 14px; color: #DC2626 !important; margin: 0; word-break: break-all; font-family: 'Courier New', monospace;">
             ${link}
           </p>
         </div>
-        <div class="note">
-          <p style="margin: 0;"><strong>⚠️ Importante:</strong> Este link é único e pessoal. Após escolher seu presente, ele não poderá ser usado novamente.</p>
+        <div class="note" style="background-color: #f8f9fa !important;">
+          <p style="margin: 0; color: #333333 !important;"><strong>⚠️ Importante:</strong> Este link é único e pessoal. Após escolher seu presente, ele não poderá ser usado novamente.</p>
         </div>
       </div>
-      <div class="footer">
-        <p>© 2025 EXA MÍDIA. Obrigado por fazer parte!</p>
-        <p style="margin-top: 10px;">Publicidade que vive nos elevadores 🚀</p>
+      <div class="footer" style="background-color: #f8f9fa !important; color: #718096 !important;">
+        <p style="color: #718096 !important;">© 2025 EXA MÍDIA. Obrigado por fazer parte!</p>
+        <p style="margin-top: 10px; color: #718096 !important;">Publicidade que vive nos elevadores 🚀</p>
       </div>
     </div>
   </div>
@@ -278,15 +304,16 @@ function createGiftCodeHTML(name: string, choice: string, code: string, delivery
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light">
   <title>Seu Presente EXA</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       line-height: 1.6;
-      color: #333;
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
+      background-color: #DC2626 !important;
     }
     .container {
       max-width: 600px;
@@ -294,7 +321,7 @@ function createGiftCodeHTML(name: string, choice: string, code: string, delivery
       padding: 20px;
     }
     .email-container {
-      background: white;
+      background-color: #ffffff !important;
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -304,24 +331,23 @@ function createGiftCodeHTML(name: string, choice: string, code: string, delivery
       padding: 40px 20px;
       text-align: center;
     }
-    .logo {
-      font-size: 42px;
-      font-weight: 900;
-      color: white;
-      margin: 0;
-      letter-spacing: 2px;
+    .logo-img {
+      width: 120px;
+      height: auto;
+      display: inline-block;
     }
     .content {
       padding: 40px 30px;
       text-align: center;
+      background-color: #ffffff !important;
     }
     h1 {
-      color: #DC2626;
+      color: #DC2626 !important;
       font-size: 28px;
       margin: 0 0 20px 0;
     }
     p {
-      color: #555;
+      color: #333333 !important;
       font-size: 16px;
       line-height: 1.8;
       margin: 15px 0;
@@ -333,17 +359,17 @@ function createGiftCodeHTML(name: string, choice: string, code: string, delivery
       margin: 30px 0;
     }
     .choice-box p {
-      color: white;
+      color: #ffffff !important;
       font-size: 18px;
       margin: 0 0 10px 0;
     }
     .choice-box h2 {
-      color: white;
+      color: #ffffff !important;
       font-size: 32px;
       margin: 0;
     }
     .code-box {
-      background: #f8f9fa;
+      background-color: #f8f9fa !important;
       border: 3px dashed #DC2626;
       padding: 30px;
       border-radius: 12px;
@@ -352,7 +378,7 @@ function createGiftCodeHTML(name: string, choice: string, code: string, delivery
     .code-box p {
       margin: 0 0 15px 0;
       font-weight: 600;
-      color: #DC2626;
+      color: #DC2626 !important;
       font-size: 14px;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -360,48 +386,84 @@ function createGiftCodeHTML(name: string, choice: string, code: string, delivery
     .code-box h2 {
       margin: 0;
       font-size: 36px;
-      color: #333;
+      color: #1A1A1A !important;
       font-weight: 900;
       letter-spacing: 4px;
       font-family: 'Courier New', monospace;
     }
     .footer {
-      background: #f8f9fa;
+      background-color: #f8f9fa !important;
       padding: 30px;
       text-align: center;
-      color: #718096;
+      color: #718096 !important;
       font-size: 14px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #DC2626 !important;
+      }
+      .email-container {
+        background-color: #ffffff !important;
+      }
+      .content {
+        background-color: #ffffff !important;
+      }
+      h1 {
+        color: #DC2626 !important;
+      }
+      p {
+        color: #333333 !important;
+      }
+      .choice-box p {
+        color: #ffffff !important;
+      }
+      .choice-box h2 {
+        color: #ffffff !important;
+      }
+      .code-box {
+        background-color: #f8f9fa !important;
+      }
+      .code-box p {
+        color: #DC2626 !important;
+      }
+      .code-box h2 {
+        color: #1A1A1A !important;
+      }
+      .footer {
+        background-color: #f8f9fa !important;
+        color: #718096 !important;
+      }
     }
   </style>
 </head>
-<body>
+<body style="background-color: #DC2626 !important;">
   <div class="container">
-    <div class="email-container">
+    <div class="email-container" style="background-color: #ffffff !important;">
       <div class="header">
-        <h1 class="logo">EXA</h1>
+        <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" alt="EXA" class="logo-img" style="filter: brightness(0) invert(1);">
       </div>
-      <div class="content">
-        <h1>🎁 Aqui está seu presente, ${name}!</h1>
+      <div class="content" style="background-color: #ffffff !important;">
+        <h1 style="color: #DC2626 !important;">🎁 Aqui está seu presente, ${name}!</h1>
         <div class="choice-box">
-          <p>Você escolheu:</p>
-          <h2>${benefitName}</h2>
+          <p style="color: #ffffff !important;">Você escolheu:</p>
+          <h2 style="color: #ffffff !important;">${benefitName}</h2>
         </div>
-        <div class="code-box">
-          <p>${isLink ? '🔗 Link de Resgate:' : '💳 Código do Presente:'}</p>
-          ${isLink ? `<a href="${code}" style="color: #DC2626; text-decoration: underline; word-break: break-all; font-size: 18px; font-weight: 600;">${code}</a>` : `<h2>${code}</h2>`}
+        <div class="code-box" style="background-color: #f8f9fa !important;">
+          <p style="color: #DC2626 !important;">${isLink ? '🔗 Link de Resgate:' : '💳 Código do Presente:'}</p>
+          ${isLink ? `<a href="${code}" style="color: #DC2626 !important; text-decoration: underline; word-break: break-all; font-size: 18px; font-weight: 600;">${code}</a>` : `<h2 style="color: #1A1A1A !important;">${code}</h2>`}
         </div>
         ${instructions ? `
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left;">
-          <p style="margin: 0 0 10px 0; font-weight: 600; color: #DC2626; font-size: 16px;">📝 Como Resgatar:</p>
-          <p style="margin: 0; color: #555; white-space: pre-line;">${instructions}</p>
+        <div style="background-color: #f8f9fa !important; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left;">
+          <p style="margin: 0 0 10px 0; font-weight: 600; color: #DC2626 !important; font-size: 16px;">📝 Como Resgatar:</p>
+          <p style="margin: 0; color: #333333 !important; white-space: pre-line;">${instructions}</p>
         </div>
         ` : ''}
-        <p>Obrigado por fazer parte da <strong>construção da EXA MÍDIA</strong>.</p>
-        <p>Continue acompanhando as ativações com a gente! 🚀</p>
+        <p style="color: #333333 !important;">Obrigado por fazer parte da <strong>construção da EXA MÍDIA</strong>.</p>
+        <p style="color: #333333 !important;">Continue acompanhando as ativações com a gente! 🚀</p>
       </div>
-      <div class="footer">
-        <p>© 2025 EXA MÍDIA</p>
-        <p style="margin-top: 10px;">Publicidade que vive nos elevadores</p>
+      <div class="footer" style="background-color: #f8f9fa !important;">
+        <p style="color: #718096 !important;">© 2025 EXA MÍDIA</p>
+        <p style="margin-top: 10px; color: #718096 !important;">Publicidade que vive nos elevadores</p>
       </div>
     </div>
   </div>
