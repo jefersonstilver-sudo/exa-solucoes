@@ -43,8 +43,8 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   const totalAfterCoupon = baseTotal - couponDiscountAmount;
   const pixDiscountAmount = paymentMethod === 'pix' ? totalAfterCoupon * pixDiscount / 100 : 0;
 
-  // CRÍTICO: Usar calculateTotalPrice para garantir valor mínimo de R$ 0,05
-  const finalTotal = calculateTotalPrice(selectedPlan, cartItems, couponDiscount, couponValid);
+  // CRÍTICO: Calcular o total final considerando o método de pagamento
+  const finalTotal = Math.max(0, totalAfterCoupon - pixDiscountAmount);
   const totalSavings = couponDiscountAmount + pixDiscountAmount;
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
