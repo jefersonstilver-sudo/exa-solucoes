@@ -31,6 +31,7 @@ export interface Building {
   apartments?: number;
   status?: string;
   quantidade_telas?: number; // ADICIONADO
+  numero_elevadores?: number; // ADICIONADO - número real de telas/elevadores no prédio
   publico_estimado?: number; // ADICIONADO - pessoas impactadas mensalmente
 }
 

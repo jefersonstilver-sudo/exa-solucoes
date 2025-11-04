@@ -60,6 +60,8 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         nome: buildingName,
         endereco: item.panel.buildings?.endereco || '',
         bairro: item.panel.buildings?.bairro || '',
+        numero_elevadores: item.panel.buildings?.numero_elevadores || 0,
+        publico_estimado: item.panel.buildings?.publico_estimado || 0,
         paineis: []
       };
     }
@@ -67,6 +69,11 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     acc[buildingId].paineis.push(item.panel);
     return acc;
   }, {} as Record<string, any>);
+
+  // Calcular público total
+  const publicoTotal = Object.values(paineisPorPredio).reduce((total, building: any) => {
+    return total + (building.publico_estimado || 0);
+  }, 0);
 
   return (
     <motion.div
@@ -125,6 +132,16 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Público Total */}
+          {publicoTotal > 0 && (
+            <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+              <p className="text-sm text-orange-700 font-medium mb-1">Público Alvo Total Estimado</p>
+              <p className="text-2xl font-bold text-orange-900">
+                {publicoTotal.toLocaleString('pt-BR')} pessoas/mês
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -158,9 +175,29 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
                         {building.bairro && <span>, {building.bairro}</span>}
                       </div>
                     )}
+                    
+                    {/* Quantidade de telas e público */}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div className="flex items-center space-x-2 text-sm">
+                        <Monitor className="h-4 w-4 text-blue-600" />
+                        <span className="text-gray-700">
+                          <span className="font-semibold text-blue-600">{building.numero_elevadores || 0}</span> telas
+                        </span>
+                      </div>
+                      {building.publico_estimado > 0 && (
+                        <div className="flex items-center space-x-2 text-sm">
+                          <span className="text-gray-700">
+                            <span className="font-semibold text-orange-600">
+                              {building.publico_estimado.toLocaleString('pt-BR')}
+                            </span> pessoas/mês
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-blue-600">
-                        {building.paineis.length} {building.paineis.length === 1 ? 'painel' : 'painéis'}
+                        {building.paineis.length} {building.paineis.length === 1 ? 'painel selecionado' : 'painéis selecionados'}
                       </span>
                       <div className="flex space-x-1">
                         {building.paineis.map((painel: any, index: number) => (
