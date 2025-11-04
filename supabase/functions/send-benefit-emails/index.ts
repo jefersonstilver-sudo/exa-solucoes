@@ -182,8 +182,8 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
     .button {
       display: inline-block;
       background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
-      color: white;
-      text-decoration: none;
+      color: #ffffff !important;
+      text-decoration: none !important;
       padding: 16px 40px;
       border-radius: 50px;
       font-weight: bold;
@@ -222,7 +222,9 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
         ${point ? `<div class="highlight"><p>📍 Ponto ativado: ${point}</p></div>` : ''}
         <p>Você é parte da <strong>revolução da atenção nos condomínios</strong>. Por isso, queremos te agradecer com um presente especial de <strong style="color: #DC2626; font-size: 20px;">R$ 50,00</strong>.</p>
         <div style="text-align: center;">
-          <a href="${link}" class="button">🎁 ESCOLHER MEU PRESENTE</a>
+          <a href="${link}" class="button" style="color: #ffffff !important; text-decoration: none !important;">
+            <span style="color: #ffffff !important;">🎁 ESCOLHER MEU PRESENTE</span>
+          </a>
         </div>
         <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
           <p style="font-size: 12px; color: #666; margin: 0 0 10px 0;">
