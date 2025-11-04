@@ -2394,7 +2394,9 @@ export type Database = {
           id: string
           imagem_principal: string
           nome: string
+          numero_elevadores: number
           preco_base: number
+          publico_estimado: number
           quantidade_telas: number
           status: string
           venue_type: string
