@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, ShoppingCart, Building2, Bell, MoreHorizontal } from 'lucide-react';
+import { Home, ShoppingCart, Building2, Gift, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 
@@ -24,22 +24,22 @@ const MobileBottomNav = () => {
     {
       icon: ShoppingCart,
       label: 'Pedidos',
-      path: buildPath('/orders'),
+      path: buildPath('/pedidos'),
     },
     {
       icon: Building2,
       label: 'Prédios',
-      path: buildPath('/buildings'),
+      path: buildPath('/predios'),
     },
     {
-      icon: Bell,
-      label: 'Alertas',
-      path: buildPath('/notifications'),
+      icon: Gift,
+      label: 'Benefícios',
+      path: buildPath('/beneficio-prestadores'),
     },
     {
       icon: MoreHorizontal,
       label: 'Mais',
-      path: buildPath('/settings'),
+      path: buildPath('/configuracoes'),
     },
   ];
 

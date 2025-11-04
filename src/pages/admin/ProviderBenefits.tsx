@@ -21,10 +21,15 @@ import DeleteConfirmationDialog from '@/components/benefits/DeleteConfirmationDi
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { benefitOptions } from '@/data/benefitOptions';
+import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
+import BenefitMobileList from '@/components/admin/benefits/BenefitMobileList';
+import BenefitMobileActions from '@/components/admin/benefits/BenefitMobileActions';
+import { ProviderBenefit } from '@/types/providerBenefits';
 
 const ProviderBenefits = () => {
   console.log('🎁 ProviderBenefits component rendering...');
   const navigate = useNavigate();
+  const { isMobile } = useAdvancedResponsive();
   
   const {
     benefits,
@@ -107,6 +112,207 @@ const ProviderBenefits = () => {
   const selectedBenefitData = benefits.find((b) => b.id === selectedBenefit);
   const benefitToCancelData = benefits.find((b) => b.id === benefitToCancel);
 
+  const handleViewDetails = (benefit: ProviderBenefit) => {
+    setSelectedBenefit(benefit.id);
+    setIsCodeModalOpen(true);
+  };
+
+  const handleCopyLinkMobile = (benefit: ProviderBenefit) => {
+    copyBenefitLink(benefit.access_token);
+  };
+
+  const handleInsertCodeMobile = (benefit: ProviderBenefit) => {
+    handleInsertCode(benefit.id);
+  };
+
+  // Mobile View
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#FEE2E2] to-background">
+        {/* Mobile Header */}
+        <div className="sticky top-0 z-10 bg-white border-b border-border shadow-sm">
+          <div className="p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-[#9C1E1E] to-[#DC2626] flex items-center justify-center">
+                <Gift className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl font-bold text-foreground">
+                  Benefício Prestadores
+                </h1>
+                <p className="text-sm text-muted-foreground truncate">
+                  Gerencie presentes dos prestadores
+                </p>
+              </div>
+            </div>
+
+            <BenefitMobileActions
+              onNewBenefit={() => setShowForm(!showForm)}
+              onManageBenefits={() => navigate('/super_admin/gerenciar-beneficios')}
+              onPreviewEmail={() => navigate('/super_admin/preview-beneficio')}
+            />
+          </div>
+        </div>
+
+        {/* Mobile Form */}
+        {showForm && (
+          <div className="p-4">
+            <Card className="border-2 border-[#9C1E1E]/20">
+              <CardHeader>
+                <CardTitle className="text-lg">Criar Novo Benefício</CardTitle>
+                <CardDescription className="text-sm">
+                  Preencha os dados do prestador
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="provider_name" className="text-base font-semibold">
+                      Nome completo *
+                    </Label>
+                    <Input
+                      id="provider_name"
+                      required
+                      value={formData.provider_name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, provider_name: e.target.value })
+                      }
+                      placeholder="Ex: João Silva"
+                      className="h-12 text-base"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="provider_email" className="text-base font-semibold">
+                      E-mail *
+                    </Label>
+                    <Input
+                      id="provider_email"
+                      type="email"
+                      required
+                      value={formData.provider_email}
+                      onChange={(e) =>
+                        setFormData({ ...formData, provider_email: e.target.value })
+                      }
+                      placeholder="joao@email.com"
+                      className="h-12 text-base"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="activation_point" className="text-base font-semibold">
+                      Nome do ponto ativado
+                    </Label>
+                    <Input
+                      id="activation_point"
+                      value={formData.activation_point}
+                      onChange={(e) =>
+                        setFormData({ ...formData, activation_point: e.target.value })
+                      }
+                      placeholder="Ex: Edifício Copacabana"
+                      className="h-12 text-base"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="observation" className="text-base font-semibold">
+                      Observação
+                    </Label>
+                    <Textarea
+                      id="observation"
+                      value={formData.observation}
+                      onChange={(e) =>
+                        setFormData({ ...formData, observation: e.target.value })
+                      }
+                      placeholder="Notas internas"
+                      rows={3}
+                      className="text-base"
+                    />
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <Button 
+                      type="submit" 
+                      disabled={isLoading} 
+                      className="w-full h-12 text-base bg-[#9C1E1E] hover:bg-[#7D1818]"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Criando...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="mr-2 h-5 w-5" />
+                          Criar e Enviar Email
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setShowForm(false)}
+                      className="w-full h-12 text-base"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Mobile List */}
+        <div className="p-4">
+          <BenefitMobileList
+            benefits={benefits}
+            isLoading={isLoading}
+            onViewDetails={handleViewDetails}
+            onCopyLink={handleCopyLinkMobile}
+            onInsertCode={handleInsertCodeMobile}
+          />
+        </div>
+
+        {/* Modals */}
+        {selectedBenefitData && (
+          <InsertCodeModal
+            isOpen={isCodeModalOpen}
+            onClose={() => {
+              setIsCodeModalOpen(false);
+              setSelectedBenefit(null);
+            }}
+            onConfirm={handleConfirmCode}
+            providerName={selectedBenefitData.provider_name}
+            benefitChoice={
+              selectedBenefitData.benefit_choice
+                ? getBenefitName(selectedBenefitData.benefit_choice)
+                : ''
+            }
+            deliveryDays={
+              selectedBenefitData.benefit_choice
+                ? benefitOptions.find((b) => b.id === selectedBenefitData.benefit_choice)?.delivery_days
+                : undefined
+            }
+          />
+        )}
+
+        {benefitToCancelData && (
+          <DeleteConfirmationDialog
+            isOpen={isDeleteDialogOpen}
+            onClose={() => {
+              setIsDeleteDialogOpen(false);
+              setBenefitToCancel(null);
+            }}
+            onConfirm={confirmCancelBenefit}
+            providerName={benefitToCancelData.provider_name}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Desktop View
   return (
     <div className="space-y-6 p-6">
       {/* Header */}

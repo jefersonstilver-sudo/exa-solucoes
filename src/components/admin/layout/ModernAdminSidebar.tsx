@@ -230,13 +230,12 @@ export function ModernAdminSidebar() {
 
   const collapsed = state === "collapsed";
 
-  // Auto-close on mobile when navigating
+  // Auto-close sidebar on mobile after navigation
   React.useEffect(() => {
     if (isMobile && open) {
-      const timer = setTimeout(() => setOpen(false), 300);
-      return () => clearTimeout(timer);
+      setOpen(false);
     }
-  }, [location.pathname, isMobile, open, setOpen]);
+  }, [location.pathname, isMobile, setOpen]);
 
   return (
     <Sidebar 
