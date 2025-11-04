@@ -18,6 +18,7 @@ import LeadsProdutora from '@/pages/admin/LeadsProdutora';
 import LeadsLinkae from '@/pages/admin/LeadsLinkae';
 import LeadsExa from '@/pages/admin/LeadsExa';
 import LogosPage from '@/pages/admin/LogosPage';
+import ProviderBenefits from '@/pages/admin/ProviderBenefits';
 
 const SuperAdminRoutes = () => {
   return (
@@ -27,6 +28,7 @@ const SuperAdminRoutes = () => {
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />
+      <Route path="beneficio-prestadores" element={<ProviderBenefits />} />
       
       {/* ATIVOS */}
       <Route path="predios" element={<BuildingsManagement />} />

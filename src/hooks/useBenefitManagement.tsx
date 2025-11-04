@@ -83,17 +83,21 @@ export const useBenefitManagement = () => {
   const listBenefits = async () => {
     setIsLoading(true);
     try {
+      console.log('📋 listBenefits: Fetching benefits...');
       const { data, error } = await supabase
         .from('provider_benefits')
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('📋 listBenefits result:', { data, error });
+
       if (error) throw error;
 
       setBenefits((data || []) as ProviderBenefit[]);
+      console.log('✅ Benefits loaded:', data?.length || 0);
       return data;
     } catch (error: any) {
-      console.error('Erro ao listar benefícios:', error);
+      console.error('❌ Erro ao listar benefícios:', error);
       toast.error('Erro ao carregar benefícios');
       throw error;
     } finally {

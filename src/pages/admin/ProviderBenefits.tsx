@@ -21,6 +21,8 @@ import { ptBR } from 'date-fns/locale';
 import { benefitOptions } from '@/data/benefitOptions';
 
 const ProviderBenefits = () => {
+  console.log('🎁 ProviderBenefits component rendering...');
+  
   const {
     benefits,
     isLoading,
@@ -30,6 +32,8 @@ const ProviderBenefits = () => {
     resendInvitation,
     copyBenefitLink,
   } = useBenefitManagement();
+
+  console.log('🎁 Benefits state:', { benefits, isLoading });
 
   const [formData, setFormData] = useState({
     provider_name: '',
@@ -43,11 +47,13 @@ const ProviderBenefits = () => {
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
 
   useEffect(() => {
+    console.log('🎁 useEffect: Loading benefits...');
     listBenefits();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🎁 Submitting benefit:', formData);
     try {
       await createBenefit(formData);
       setFormData({
@@ -58,7 +64,7 @@ const ProviderBenefits = () => {
       });
       setShowForm(false);
     } catch (error) {
-      console.error('Erro ao criar benefício:', error);
+      console.error('❌ Erro ao criar benefício:', error);
     }
   };
 
