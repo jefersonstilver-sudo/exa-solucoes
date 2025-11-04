@@ -130,17 +130,17 @@ const ProviderBenefits = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#FEE2E2] to-background">
         {/* Mobile Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-border shadow-sm">
+        <div className="sticky top-0 z-10 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-b border-white/20 shadow-lg">
           <div className="p-4 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-[#9C1E1E] to-[#DC2626] flex items-center justify-center">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                 <Gift className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-bold text-foreground">
+                <h1 className="text-xl font-bold text-white">
                   Benefício Prestadores
                 </h1>
-                <p className="text-sm text-muted-foreground truncate">
+                <p className="text-sm text-white/90 truncate">
                   Gerencie presentes dos prestadores
                 </p>
               </div>

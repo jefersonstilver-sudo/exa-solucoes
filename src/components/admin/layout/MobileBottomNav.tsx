@@ -19,35 +19,37 @@ const MobileBottomNav = () => {
     {
       icon: Home,
       label: 'Dashboard',
-      path: buildPath('/'),
+      path: buildPath(''),
     },
     {
       icon: ShoppingCart,
       label: 'Pedidos',
-      path: buildPath('/pedidos'),
+      path: buildPath('pedidos'),
     },
     {
       icon: Building2,
       label: 'Prédios',
-      path: buildPath('/predios'),
+      path: buildPath('predios'),
     },
     {
       icon: Gift,
       label: 'Benefícios',
-      path: buildPath('/beneficio-prestadores'),
+      path: buildPath('beneficio-prestadores'),
     },
     {
       icon: MoreHorizontal,
       label: 'Mais',
-      path: buildPath('/configuracoes'),
+      path: buildPath('configuracoes'),
     },
   ];
 
   const isActive = (path: string) => {
-    if (path === buildPath('/')) {
+    // Exact match for dashboard
+    if (path === buildPath('')) {
       return location.pathname === path;
     }
-    return location.pathname.startsWith(path);
+    // For other paths, check if current path starts with it
+    return location.pathname.includes(path.split('/').pop() || '');
   };
 
   return (
