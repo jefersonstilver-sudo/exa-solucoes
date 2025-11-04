@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import SecureEmergencyPasswordReset from '@/components/admin/setup/SecureEmergencyPasswordReset';
 
 interface UserData {
   id: string;
@@ -75,9 +74,6 @@ const UserManagement = () => {
             </Button>
           </div>
         </div>
-
-        {/* Secure Emergency Reset Component */}
-        <SecureEmergencyPasswordReset />
 
         <Card>
           <CardContent className="p-6">

@@ -340,7 +340,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
                             variant="outline"
                             size="sm"
                             onClick={() => handleRoleChange(user.id, user.role)}
-                            disabled={user.role === 'super_admin' && user.email === 'jefersonstilver@gmail.com'}
+                            disabled={user.role === 'super_admin'}
                           >
                             <Settings className="h-3 w-3 mr-1" />
                             {user.role === 'admin' ? 'Promover' : 'Alterar'}

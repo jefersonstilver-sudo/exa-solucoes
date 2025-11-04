@@ -54,7 +54,7 @@ const AdvertiserDashboard = () => {
     });
 
     // BLOQUEIO: Super admin não deve acessar área do anunciante
-    if (userProfile?.email === 'jefersonstilver@gmail.com' || userProfile?.role === 'super_admin') {
+    if (userProfile?.role === 'super_admin') {
       console.log('🚫 BLOQUEIO: Super admin tentando acessar área do anunciante');
       toast.error('Super administrador deve usar o painel administrativo');
       navigate('/super_admin', {
@@ -217,7 +217,7 @@ const AdvertiserDashboard = () => {
   }
 
   // Verificação adicional de segurança
-  if (userProfile?.email === 'jefersonstilver@gmail.com' || userProfile?.role === 'super_admin') {
+  if (userProfile?.role === 'super_admin') {
     return <div className="flex items-center justify-center min-h-[60vh] flex-col">
         <Shield className="h-16 w-16 text-red-500 mb-4" />
         <h1 className="text-2xl font-bold text-red-500 mb-2">Acesso Negado</h1>

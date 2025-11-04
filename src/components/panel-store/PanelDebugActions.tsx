@@ -1,6 +1,5 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import CartDebugButton from '@/components/debug/CartDebugButton';
 
 interface PanelDebugActionsProps {
   cartItemsCount: number;
@@ -38,7 +37,6 @@ const PanelDebugActions: React.FC<PanelDebugActionsProps> = ({
       </div>
       
       <div className="space-x-2">
-        <CartDebugButton />
         <Button 
           variant="outline" 
           size="sm"

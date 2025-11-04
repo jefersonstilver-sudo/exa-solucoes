@@ -38,8 +38,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Derivar isLoggedIn do session em vez de user
   const isLoggedIn = !!session?.access_token;
 
-  // Derivar isSuperAdmin
-  const isSuperAdmin = userProfile?.role === 'super_admin' && userProfile?.email === 'jefersonstilver@gmail.com';
+  // Derivar isSuperAdmin - APENAS verificar role, não email
+  const isSuperAdmin = userProfile?.role === 'super_admin';
 
   // Derivar isAdmin (backward compatibility)
   const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';

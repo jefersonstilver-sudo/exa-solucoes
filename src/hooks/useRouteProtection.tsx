@@ -35,7 +35,7 @@ export const useRouteProtection = ({
     if (isLoading) return;
     
     const currentPath = window.location.pathname;
-    const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
+    const isSuperAdmin = user?.role === 'super_admin';
     
     console.log('🔐 ROUTE PROTECTION - Análise granular de acesso:', { 
       currentPath,

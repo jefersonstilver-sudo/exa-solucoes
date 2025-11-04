@@ -5,7 +5,7 @@ export const useAdminBasePath = () => {
   const { userProfile } = useAuth();
 
   const basePath = useMemo(() => {
-    const isSuperAdmin = userProfile?.role === 'super_admin' && userProfile?.email === 'jefersonstilver@gmail.com';
+    const isSuperAdmin = userProfile?.role === 'super_admin';
     
     if (isSuperAdmin) {
       return '/super_admin';
@@ -30,7 +30,7 @@ export const useAdminBasePath = () => {
   return {
     basePath,
     buildPath,
-    isSuperAdmin: userProfile?.role === 'super_admin' && userProfile?.email === 'jefersonstilver@gmail.com',
+    isSuperAdmin: userProfile?.role === 'super_admin',
     isRegularAdmin: userProfile?.role === 'admin' || userProfile?.role === 'admin_marketing'
   };
 };

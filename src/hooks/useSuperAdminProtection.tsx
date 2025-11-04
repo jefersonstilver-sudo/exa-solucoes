@@ -14,8 +14,7 @@ export const useSuperAdminProtection = () => {
       return;
     }
 
-    const isSuperAdmin = userProfile?.role === 'super_admin' && 
-                        userProfile?.email === 'jefersonstilver@gmail.com';
+    const isSuperAdmin = userProfile?.role === 'super_admin';
     const currentPath = location.pathname;
 
     console.log('🛡️ PROTECTION - Verificação simples:', {
@@ -36,7 +35,7 @@ export const useSuperAdminProtection = () => {
   }, [userProfile, isLoading, isLoggedIn, location.pathname, navigate]);
 
   return {
-    isSuperAdmin: userProfile?.role === 'super_admin' && userProfile?.email === 'jefersonstilver@gmail.com',
+    isSuperAdmin: userProfile?.role === 'super_admin',
     isProtected: true
   };
 };

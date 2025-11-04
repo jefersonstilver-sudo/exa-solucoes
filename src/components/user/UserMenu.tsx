@@ -34,7 +34,7 @@ const UserMenu = () => {
   };
 
   // VERIFICAÇÃO RIGOROSA DO SUPER ADMIN
-  const isSuperAdmin = user?.email === 'jefersonstilver@gmail.com' && user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'super_admin';
   const isAdmin = user?.role === 'admin';
   const isClient = user?.role === 'client';
 

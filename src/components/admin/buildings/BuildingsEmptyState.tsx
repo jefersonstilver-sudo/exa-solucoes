@@ -21,7 +21,7 @@ const BuildingsEmptyState: React.FC<BuildingsEmptyStateProps> = ({
           <p className="text-lg font-medium mb-2">Nenhum prédio encontrado</p>
           <p className="text-sm text-gray-400">
             As políticas RLS foram corrigidas com sucesso. 
-            {userEmail === 'jefersonstilver@gmail.com' ? 
+            {userEmail ? 
               ' Como super admin, você pode adicionar novos prédios.' :
               ' Contate o administrador para adicionar prédios.'
             }

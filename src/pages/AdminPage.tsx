@@ -17,7 +17,7 @@ const AdminPage = () => {
     if (isLoading) return;
 
     const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'admin_marketing';
-    const isSuperAdmin = userProfile?.role === 'super_admin' && userProfile?.email === 'jefersonstilver@gmail.com';
+    const isSuperAdmin = userProfile?.role === 'super_admin';
 
     console.log('🛡️ AdminPage Protection:', {
       userEmail: userProfile?.email,
@@ -53,7 +53,7 @@ const AdminPage = () => {
   }
 
   const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'admin_marketing';
-  const isSuperAdmin = userProfile?.role === 'super_admin' && userProfile?.email === 'jefersonstilver@gmail.com';
+  const isSuperAdmin = userProfile?.role === 'super_admin';
 
   if (!isLoggedIn || (!isAdmin && !isSuperAdmin)) {
     return (

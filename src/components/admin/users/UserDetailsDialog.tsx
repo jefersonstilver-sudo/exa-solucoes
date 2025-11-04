@@ -378,8 +378,8 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
                   <div className="text-xs text-red-600 bg-red-100 p-3 rounded-lg">
                     <p><strong>Lembrete de Segurança:</strong></p>
-                    <p>• Apenas jefersonstilver@gmail.com é Super Admin permanente</p>
-                    <p>• Outras contas jamais podem ser promovidas a Super Admin</p>
+                    <p>• Roles de super_admin são gerenciados exclusivamente via tabela user_roles</p>
+                    <p>• Outras contas jamais podem ser promovidas a Super Admin sem autorização</p>
                     <p>• Senhas resetadas são geradas automaticamente de forma segura</p>
                     <p>• A nova senha será exibida apenas uma vez após a geração</p>
                   </div>

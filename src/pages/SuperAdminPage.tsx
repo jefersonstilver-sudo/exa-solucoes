@@ -49,7 +49,7 @@ const SuperAdminPage = () => {
       email: userProfile?.email,
       role: userProfile?.role,
       isSuperAdmin,
-      emailMatch: userProfile?.email === 'jefersonstilver@gmail.com',
+      emailMatch: userProfile?.role === 'super_admin',
       roleMatch: userProfile?.role === 'super_admin'
     });
 
@@ -122,8 +122,8 @@ const SuperAdminPage = () => {
               Esta área é exclusiva do Super Administrador do sistema INDEXA.
             </p>
             <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg mt-4">
-              <p><strong>Email necessário:</strong> jefersonstilver@gmail.com</p>
               <p><strong>Role necessária:</strong> super_admin</p>
+              <p className="mt-2 text-xs">Apenas usuários com role de super_admin no banco de dados podem acessar esta área.</p>
             </div>
           </div>
           <button
