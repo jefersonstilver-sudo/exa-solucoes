@@ -17,6 +17,7 @@ import LeadsLinkae from '@/pages/admin/LeadsLinkae';
 import LeadsExa from '@/pages/admin/LeadsExa';
 import LogosAdmin from '@/components/admin/LogosAdmin';
 import ProviderBenefits from '@/pages/admin/ProviderBenefits';
+import BenefitPreview from '@/pages/admin/BenefitPreview';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 const AdminRoutes = () => {
@@ -30,6 +31,7 @@ const AdminRoutes = () => {
       <Route path="pedidos/:id" element={<OrderDetails />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />
       <Route path="beneficio-prestadores" element={<ProviderBenefits />} />
+      <Route path="preview-beneficio" element={<BenefitPreview />} />
       
       {/* ATIVOS */}
       <Route path="predios" element={<BuildingsManagement />} />

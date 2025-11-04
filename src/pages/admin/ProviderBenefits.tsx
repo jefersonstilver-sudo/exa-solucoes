@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -12,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Gift, Mail, Copy, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Gift, Mail, Copy, Loader2, Plus, Trash2, Eye } from 'lucide-react';
 import { useBenefitManagement } from '@/hooks/useBenefitManagement';
 import BenefitStatusBadge from '@/components/benefits/BenefitStatusBadge';
 import InsertCodeModal from '@/components/benefits/InsertCodeModal';
@@ -23,6 +24,7 @@ import { benefitOptions } from '@/data/benefitOptions';
 
 const ProviderBenefits = () => {
   console.log('🎁 ProviderBenefits component rendering...');
+  const navigate = useNavigate();
   
   const {
     benefits,
@@ -118,10 +120,20 @@ const ProviderBenefits = () => {
             Presenteie os prestadores que ajudaram na ativação de pontos EXA
           </p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)} size="lg">
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Benefício
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => navigate('/super_admin/preview-beneficio')} 
+            size="lg"
+            variant="outline"
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            Visualizar Preview
+          </Button>
+          <Button onClick={() => setShowForm(!showForm)} size="lg">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Benefício
+          </Button>
+        </div>
       </div>
 
       {/* Form */}
