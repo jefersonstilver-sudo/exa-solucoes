@@ -236,6 +236,7 @@ export function ModernAdminSidebar() {
       className="h-screen bg-gradient-to-b from-[#180A0A] via-[#3B1E1E] to-[#9C1E1E] border-r border-white/20 shadow-2xl"
       collapsible="icon"
       variant={isMobile ? "floating" : isTablet ? "sidebar" : "sidebar"}
+      style={{ backgroundColor: '#180A0A' }}
     >
       <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-6'} border-b border-white/20`}>
         <div className="flex items-center justify-center mb-3 md:mb-4">
