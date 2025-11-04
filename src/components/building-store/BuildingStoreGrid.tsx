@@ -138,22 +138,6 @@ const BuildingStoreGrid: React.FC<BuildingStoreGridProps> = ({
   
   return (
     <div>
-      {/* Status da busca se houver localização selecionada */}
-      {selectedLocation && (
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl ${isMobile ? 'p-3 mb-4' : 'p-4 mb-6'}`}
-        >
-          <div className="flex items-center">
-            <Sparkles className="h-5 w-5 text-green-600 mr-3" />
-            <span className={`text-green-800 font-medium ${isMobile ? 'text-sm' : ''}`}>
-              Exibindo {buildings.length} prédio{buildings.length !== 1 ? 's' : ''} próximo{buildings.length !== 1 ? 's' : ''} à sua busca
-            </span>
-          </div>
-        </motion.div>
-      )}
-
       {/* Grid de prédios em 2 colunas - Layout E-commerce profissional */}
       <motion.div
         initial={{ opacity: 0 }}
