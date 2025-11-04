@@ -52,108 +52,71 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
       currency: 'BRL'
     }).format(value);
   };
-  return <Card className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-white to-gray-50">
-      <CardHeader className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6">
-        <CardTitle className="flex items-center text-xl font-bold">
-          <Calculator className="h-6 w-6 mr-3" />
-          Detalhamento de Preços
+  return <Card className="shadow-sm border">
+      <CardHeader className="p-4 pb-3">
+        <CardTitle className="text-lg font-semibold">
+          Resumo Financeiro
         </CardTitle>
-        <p className="text-green-100 mt-2">
-          Veja como chegamos ao valor final
-        </p>
       </CardHeader>
       
-      <CardContent className="p-6 space-y-4">
+      <CardContent className="p-4 pt-0 space-y-2">
         {/* Valor Base */}
-        <div className="flex justify-between items-center py-3 border-b border-gray-100">
-          <span className="text-gray-700 font-medium">
-            Valor base ({cartItems.length} {cartItems.length === 1 ? 'painel' : 'painéis'} × {selectedPlan} {selectedPlan === 1 ? 'mês' : 'meses'})
+        <div className="flex justify-between items-center py-2 border-b">
+          <span className="text-sm text-gray-600">
+            Valor base ({cartItems.length} × {selectedPlan}m)
           </span>
-          <span className="font-bold text-gray-900">{formatCurrency(baseTotal)}</span>
+          <span className="font-semibold text-gray-900">{formatCurrency(baseTotal)}</span>
         </div>
 
         {/* Desconto do Cupom */}
-        {couponValid && couponDiscount > 0 && <motion.div initial={{
-        opacity: 0,
-        x: 20
-      }} animate={{
-        opacity: 1,
-        x: 0
-      }} className="flex justify-between items-center py-3 border-b border-gray-100">
-            <div className="flex items-center space-x-2">
-              <Tag className="h-4 w-4 text-orange-500" />
-              <span className="text-orange-600 font-medium">
-                Desconto do cupom ({couponDiscount}%)
+        {couponValid && couponDiscount > 0 && (
+          <div className="flex justify-between items-center py-2 border-b">
+            <div className="flex items-center space-x-1.5">
+              <Tag className="h-3.5 w-3.5 text-orange-500" />
+              <span className="text-sm text-orange-600">
+                Cupom ({couponDiscount}%)
               </span>
             </div>
-            <span className="font-bold text-orange-600">
+            <span className="font-semibold text-orange-600">
               -{formatCurrency(couponDiscountAmount)}
             </span>
-          </motion.div>}
-
-        {/* Subtotal após cupom */}
-        {couponValid && couponDiscount > 0}
+          </div>
+        )}
 
         {/* Desconto PIX */}
-        {paymentMethod === 'pix' && <motion.div initial={{
-        opacity: 0,
-        x: 20
-      }} animate={{
-        opacity: 1,
-        x: 0
-      }} className="flex justify-between items-center py-3 border-b border-gray-100">
-            <div className="flex items-center space-x-2">
-              <Smartphone className="h-4 w-4 text-green-500" />
-              <span className="text-green-600 font-medium">
-                Desconto PIX ({pixDiscount}%)
+        {paymentMethod === 'pix' && (
+          <div className="flex justify-between items-center py-2 border-b">
+            <div className="flex items-center space-x-1.5">
+              <Smartphone className="h-3.5 w-3.5 text-green-500" />
+              <span className="text-sm text-green-600">
+                PIX ({pixDiscount}%)
               </span>
             </div>
-            <span className="font-bold text-green-600">
+            <span className="font-semibold text-green-600">
               -{formatCurrency(pixDiscountAmount)}
             </span>
-          </motion.div>}
+          </div>
+        )}
 
         {/* Total Final */}
-        <motion.div initial={{
-        opacity: 0,
-        scale: 0.95
-      }} animate={{
-        opacity: 1,
-        scale: 1
-      }} className="flex justify-between items-center py-4 border-t-2 border-gray-200 bg-gradient-to-r from-[#3C1361]/5 to-purple-100/50 -mx-6 px-6 mt-6">
-          <span className="text-xl font-bold text-[#3C1361]">TOTAL FINAL</span>
-          <span className="text-2xl font-bold text-[#3C1361]">
+        <div className="flex justify-between items-center pt-3 border-t-2">
+          <span className="text-base font-bold text-gray-900">TOTAL</span>
+          <span className="text-xl font-bold text-[#3C1361]">
             {formatCurrency(finalTotal)}
           </span>
-        </motion.div>
+        </div>
 
         {/* Economia Total */}
-        {totalSavings > 0 && <motion.div initial={{
-        opacity: 0,
-        y: 10
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-            <div className="flex items-center space-x-2 text-green-800">
-              <TrendingDown className="h-5 w-5" />
-              <span className="font-bold">
-                Você está economizando {formatCurrency(totalSavings)}!
+        {totalSavings > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-center space-x-1.5">
+              <TrendingDown className="h-4 w-4 text-green-700" />
+              <span className="text-sm font-semibold text-green-800">
+                Economia: {formatCurrency(totalSavings)}
               </span>
             </div>
-            <div className="text-sm text-green-700 mt-1">
-              {couponDiscountAmount > 0 && <span>Cupom: {formatCurrency(couponDiscountAmount)}</span>}
-              {couponDiscountAmount > 0 && pixDiscountAmount > 0 && <span> + </span>}
-              {pixDiscountAmount > 0 && <span>PIX: {formatCurrency(pixDiscountAmount)}</span>}
-            </div>
-          </motion.div>}
-
-        {/* Informações adicionais */}
-        <div className="text-xs text-gray-500 mt-4 space-y-1">
-          <p>• Valores incluem todos os painéis selecionados</p>
-          <p>• Campanha inicia após aprovação do material</p>
-          <p>• Faturamento mensal conforme plano escolhido</p>
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>;
 };

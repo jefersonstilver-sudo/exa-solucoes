@@ -19,21 +19,14 @@ const ProgressHeader: React.FC<ProgressHeaderProps> = ({ currentStep }) => {
   });
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="text-center mb-2 md:mb-4"
-    >
-      <h3 className="text-xs md:text-lg font-semibold text-gray-900 mb-1">
-        Progresso do Seu Pedido
+    <div className="text-center mb-3">
+      <h3 className="text-sm font-semibold text-gray-900 mb-1">
+        Etapa {currentStep + 1} de {PROGRESS_STEPS.length}
       </h3>
-      <p className="text-xs md:text-sm text-gray-600 hidden sm:block">
-        {PROGRESS_STEPS[currentStep]?.motivationalText || 'Continue para finalizar!'}
+      <p className="text-xs text-gray-600">
+        {progressPercentage}% concluído
       </p>
-      <div className="text-xs text-gray-500 mt-1">
-        Etapa {currentStep + 1} de {PROGRESS_STEPS.length} - {progressPercentage}% concluído
-      </div>
-    </motion.div>
+    </div>
   );
 };
 

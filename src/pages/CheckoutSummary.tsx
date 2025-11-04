@@ -198,124 +198,65 @@ const CheckoutSummary = () => {
       </Layout>;
   }
   return <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 pt-24">
-        <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
-          {/* Progress Header */}
-          <motion.div initial={{
-          opacity: 0,
-          y: -20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} className="bg-white rounded-2xl shadow-lg border p-4 sm:p-6 mb-6 sm:mb-8">
+      <div className="min-h-screen bg-gray-50 pt-24">
+        <div className="container mx-auto px-4 py-4 max-w-6xl">
+          {/* Progress Bar - Sem card wrapper */}
+          <div className="mb-4">
             <UnifiedCheckoutProgress currentStep={2} />
-          </motion.div>
-
-          {/* Page Title */}
-          
-
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8">
-            {/* Left Column - Order Details */}
-            <div className="lg:col-span-2 space-y-6">
-              <motion.div initial={{
-              opacity: 0,
-              x: -20
-            }} animate={{
-              opacity: 1,
-              x: 0
-            }} transition={{
-              delay: 0.2
-            }}>
-                <OrderSummaryCard cartItems={cartItems} selectedPlan={selectedPlan} />
-              </motion.div>
-            </div>
-
-            {/* Right Column - Payment */}
-            <div className="space-y-6">
-              <motion.div initial={{
-              opacity: 0,
-              x: 20
-            }} animate={{
-              opacity: 1,
-              x: 0
-            }} transition={{
-              delay: 0.3
-            }}>
-                {/* Payment Method Selector */}
-                {isFreeOrder ? (
-                  <div className="bg-white rounded-2xl shadow-lg border p-6">
-                    <h3 className="text-xl font-bold text-[#9C1E1E] mb-4">Formas de Pagamento</h3>
-                    <div className="flex items-center space-x-3 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
-                      <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="font-medium text-green-800">Pedido Gratuito - Cupom 100%</p>
-                        <p className="text-sm text-green-600">Acesso liberado imediatamente</p>
-                      </div>
-                      <p className="font-bold text-green-700">R$ 0,00</p>
-                    </div>
-                  </div>
-                ) : (
-                  <PaymentMethodSelector 
-                    selectedMethod={paymentMethod}
-                    onMethodChange={setPaymentMethod}
-                    totalAmount={baseTotal}
-                    pixDiscount={pixDiscount}
-                  />
-                )}
-              </motion.div>
-
-              <motion.div initial={{
-              opacity: 0,
-              x: 20
-            }} animate={{
-              opacity: 1,
-              x: 0
-            }} transition={{
-              delay: 0.4
-            }}>
-                <PricingBreakdown cartItems={cartItems} selectedPlan={selectedPlan} couponValid={couponValid} couponDiscount={couponDiscount} pixDiscount={pixDiscount} paymentMethod={paymentMethod} />
-              </motion.div>
-            </div>
           </div>
 
-          {/* Payment Actions */}
-          <motion.div initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          delay: 0.5
-        }} className="bg-white rounded-2xl shadow-lg border p-6 sm:p-8">
-            <div className="flex flex-col space-y-6">
-              {/* Security Notice */}
-              
+          {/* Main Content Grid - 2 colunas 60/40 */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
+            {/* Left Column - Order Details */}
+            <div>
+              <OrderSummaryCard cartItems={cartItems} selectedPlan={selectedPlan} />
+            </div>
 
-              {/* Payment Buttons */}
-              <div className="space-y-4">
+            {/* Right Column - Payment (Sticky) */}
+            <div className="lg:sticky lg:top-24 space-y-4 h-fit">
+              {/* Payment Method Selector */}
+              {isFreeOrder ? (
+                <div className="bg-white rounded-lg shadow-sm border p-4">
+                  <h3 className="text-lg font-semibold mb-3">Forma de Pagamento</h3>
+                  <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-green-800 text-sm">Pedido Gratuito - Cupom 100%</p>
+                      <p className="text-xs text-green-600">Acesso liberado imediatamente</p>
+                    </div>
+                    <p className="font-bold text-green-700">R$ 0,00</p>
+                  </div>
+                </div>
+              ) : (
+                <PaymentMethodSelector 
+                  selectedMethod={paymentMethod}
+                  onMethodChange={setPaymentMethod}
+                  totalAmount={baseTotal}
+                  pixDiscount={pixDiscount}
+                />
+              )}
+
+              {/* Pricing Breakdown */}
+              <PricingBreakdown 
+                cartItems={cartItems} 
+                selectedPlan={selectedPlan} 
+                couponValid={couponValid} 
+                couponDiscount={couponDiscount} 
+                pixDiscount={pixDiscount} 
+                paymentMethod={paymentMethod} 
+              />
+
+              {/* Payment Buttons - Integrado */}
+              <div className="space-y-3">
                 {isFreeOrder ? (
-                  /* Botão para Pedido Gratuito */
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }} 
-                    whileTap={{ scale: 0.98 }} 
+                  <button 
                     onClick={handlePixPayment} 
                     disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
-                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                        <div className="w-3 h-3 bg-white rounded-full"></div>
-                      </div>
-                      <div className="text-left">
-                        <div className="text-lg font-bold">Finalizar Pedido Gratuito</div>
-                        <div className="text-sm opacity-90">Cupom de 100% aplicado - R$ 0,00</div>
-                      </div>
-                    </div>
-                  </motion.button>
+                    {isPixProcessing ? 'Processando...' : 'Finalizar Pedido Gratuito'}
+                  </button>
                 ) : (
-                  /* Show only the selected payment method button */
                   paymentMethod === 'pix' ? (
                     <PixPaymentButton 
                       totalAmount={pixTotal} 
@@ -330,15 +271,18 @@ const CheckoutSummary = () => {
                     />
                   )
                 )}
-              </div>
 
-              {/* Back Button */}
-              <Button variant="outline" onClick={handleBack} className="flex items-center justify-center space-x-2 w-full sm:w-auto mx-auto border-2 hover:bg-gray-50">
-                <ArrowLeft className="h-4 w-4" />
-                <span>Voltar para Cupons</span>
-              </Button>
+                {/* Back Link */}
+                <button 
+                  onClick={handleBack}
+                  className="w-full flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-900 py-2 text-sm transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <span>Voltar para Cupons</span>
+                </button>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
