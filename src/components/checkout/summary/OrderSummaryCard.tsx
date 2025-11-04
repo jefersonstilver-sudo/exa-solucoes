@@ -50,23 +50,29 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     }).format(date);
   };
 
-  // Agrupar painéis por prédio
+  // Agrupar painéis por prédio (sem duplicatas)
   const paineisPorPredio = cartItems.reduce((acc, item) => {
     const buildingId = item.panel.buildings?.id || 'unknown';
     const buildingName = item.panel.buildings?.nome || 'Prédio não identificado';
+    const panelId = item.panel.id;
     
     if (!acc[buildingId]) {
       acc[buildingId] = {
         nome: buildingName,
         endereco: item.panel.buildings?.endereco || '',
         bairro: item.panel.buildings?.bairro || '',
-        numero_elevadores: item.panel.buildings?.numero_elevadores || 0,
         publico_estimado: item.panel.buildings?.publico_estimado || 0,
-        paineis: []
+        paineis: [],
+        panelIds: new Set() // Para evitar duplicatas
       };
     }
     
-    acc[buildingId].paineis.push(item.panel);
+    // Adicionar apenas se não existir
+    if (!acc[buildingId].panelIds.has(panelId)) {
+      acc[buildingId].panelIds.add(panelId);
+      acc[buildingId].paineis.push(item.panel);
+    }
+    
     return acc;
   }, {} as Record<string, any>);
 
