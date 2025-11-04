@@ -18,6 +18,7 @@ import NewTermsCheckbox from '@/components/auth/NewTermsCheckbox';
 import { TermsScrollViewer } from '@/components/auth/TermsScrollViewer';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
+import { PasswordInput, validatePassword } from '@/components/auth/PasswordInput';
 
 const Cadastro: React.FC = () => {
   const [name, setName] = useState('');
@@ -64,9 +65,10 @@ const Cadastro: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Validations
-      if (password.length < 6) {
-        setError('Senha deve ter pelo menos 6 caracteres');
+      // Validação de senha forte
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
+        setError(`Senha não atende aos requisitos de segurança: ${passwordValidation.errors[0]}`);
         return;
       }
 
@@ -230,38 +232,26 @@ const Cadastro: React.FC = () => {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Senha */}
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="flex items-center text-gray-900">
-                      <Lock className="h-4 w-4 mr-2 text-indexa-purple" /> 
-                      Senha <span className="text-red-500 ml-1">*</span>
-                    </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Mínimo 6 caracteres"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
-                    />
-                  </div>
+                  <PasswordInput
+                    id="password"
+                    label="Senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Crie uma senha forte"
+                    required
+                    showRequirements={true}
+                  />
                   
                   {/* Confirmar Senha */}
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="flex items-center text-gray-900">
-                      <Lock className="h-4 w-4 mr-2 text-indexa-purple" /> 
-                      Confirmar senha <span className="text-red-500 ml-1">*</span>
-                    </Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="Digite a senha novamente"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
-                    />
-                  </div>
+                  <PasswordInput
+                    id="confirmPassword"
+                    label="Confirmar senha"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Digite a senha novamente"
+                    required
+                    showRequirements={false}
+                  />
                 </div>
 
                 {/* Celular */}
