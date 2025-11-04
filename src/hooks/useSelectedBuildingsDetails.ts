@@ -15,6 +15,7 @@ interface BuildingDetails {
   publico_estimado?: number;
   numero_unidades?: number;
   quantidade_telas?: number;
+  numero_elevadores?: number;
   caracteristicas?: string[];
   latitude?: number;
   longitude?: number;

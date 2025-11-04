@@ -43,7 +43,7 @@ export const convertBuildingToPanel = (building: BuildingStore): Panel => {
       venue_type: building.venue_type || 'comercial',
       caracteristicas: building.caracteristicas || [],
       preco_base: building.preco_base || 280,
-      quantidade_telas: building.quantidade_telas || 1,
+      quantidade_telas: building.numero_elevadores || 1,
       publico_estimado: building.publico_estimado || 0,
       imagens: building.imagens || []
     }

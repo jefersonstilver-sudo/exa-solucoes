@@ -97,7 +97,7 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
   );
 
   const totalTelas = buildings.reduce((sum, building) => 
-    sum + (building.quantidade_telas || 0), 0
+    sum + (building.quantidade_telas || building.numero_elevadores || 0), 0
   );
 
   return (

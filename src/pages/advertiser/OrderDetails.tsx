@@ -197,7 +197,7 @@ const OrderDetails = () => {
   const { buildings: buildingDetails } = useSelectedBuildingsDetails(displayBuildingIds);
   
   const totalScreens = buildingDetails.reduce((sum, building) => 
-    sum + (building.quantidade_telas || 0), 0
+    sum + (building.quantidade_telas || building.numero_elevadores || 0), 0
   );
   
   const totalAudience = buildingDetails.reduce((sum, building) => 
