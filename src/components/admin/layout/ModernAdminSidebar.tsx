@@ -18,7 +18,8 @@ import {
   Megaphone,
   LogOut,
   Zap,
-  Film
+  Film,
+  Gift
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -94,6 +95,12 @@ export function ModernAdminSidebar() {
           href: buildPath('aprovacoes'),
           icon: CheckSquare,
           permission: 'canViewApprovals'
+        },
+        {
+          title: 'Benefício Prestadores',
+          href: buildPath('beneficio-prestadores'),
+          icon: Gift,
+          permission: 'canViewOrders'
         }
       ]
     },

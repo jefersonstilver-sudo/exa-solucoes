@@ -1692,6 +1692,72 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_benefits: {
+        Row: {
+          access_token: string
+          activation_point: string | null
+          benefit_choice: string | null
+          benefit_chosen_at: string | null
+          created_at: string | null
+          created_by: string | null
+          final_email_sent_at: string | null
+          gift_code: string | null
+          gift_code_inserted_at: string | null
+          gift_code_inserted_by: string | null
+          id: string
+          invitation_sent_at: string | null
+          observation: string | null
+          provider_email: string
+          provider_name: string
+          status: string | null
+          token_used: boolean | null
+          token_used_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token: string
+          activation_point?: string | null
+          benefit_choice?: string | null
+          benefit_chosen_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          final_email_sent_at?: string | null
+          gift_code?: string | null
+          gift_code_inserted_at?: string | null
+          gift_code_inserted_by?: string | null
+          id?: string
+          invitation_sent_at?: string | null
+          observation?: string | null
+          provider_email: string
+          provider_name: string
+          status?: string | null
+          token_used?: boolean | null
+          token_used_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          activation_point?: string | null
+          benefit_choice?: string | null
+          benefit_chosen_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          final_email_sent_at?: string | null
+          gift_code?: string | null
+          gift_code_inserted_at?: string | null
+          gift_code_inserted_by?: string | null
+          id?: string
+          invitation_sent_at?: string | null
+          observation?: string | null
+          provider_email?: string
+          provider_name?: string
+          status?: string | null
+          token_used?: boolean | null
+          token_used_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       qr_codes: {
         Row: {
           campanha_id: string
@@ -2825,6 +2891,10 @@ export type Database = {
         Returns: Json
       }
       recover_lost_transactions: { Args: never; Returns: Json }
+      register_benefit_choice: {
+        Args: { p_choice: string; p_token: string }
+        Returns: Json
+      }
       register_payment_processing: {
         Args: {
           p_amount?: number
@@ -2917,6 +2987,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_benefit_token: { Args: { p_token: string }; Returns: Json }
       validate_coupon_secure:
         | { Args: { p_codigo: string; p_valor_pedido?: number }; Returns: Json }
         | {
