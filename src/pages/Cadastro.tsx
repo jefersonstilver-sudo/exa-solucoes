@@ -236,10 +236,6 @@ const Cadastro: React.FC = () => {
                     Criando conta...
                   </div> : 'Criar Conta'}
               </Button>
-
-              {(!hasReadTermsCompletely || !acceptedTerms) && <p className="text-sm text-orange-600 mt-2 text-center">
-                  {!hasReadTermsCompletely ? "📖 Leia os termos completamente para habilitar o botão" : "✅ Aceite os termos para continuar"}
-                </p>}
             </div>
             
             <div className="text-center pt-6 border-t border-gray-200 mt-8">
