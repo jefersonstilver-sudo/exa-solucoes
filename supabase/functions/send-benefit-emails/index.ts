@@ -41,7 +41,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (type === "invitation") {
       const { provider_name, provider_email, access_token, activation_point } = data;
-      const presentLink = `https://exapainel.app/presente?token=${access_token}`;
+      const siteUrl = Deno.env.get('SITE_URL') || 'https://examidia.com.br';
+      const presentLink = `${siteUrl}/presente?token=${access_token}`;
 
       const html = createInvitationHTML(provider_name, presentLink, activation_point);
 
