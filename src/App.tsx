@@ -25,6 +25,7 @@ import CheckoutFinish from './pages/CheckoutFinish';
 import Payment from './pages/Payment';
 import PixPayment from './pages/PixPayment';
 import Confirmacao from './pages/Confirmacao';
+import ResetPassword from './pages/ResetPassword';
 import LoginPage from './pages/LoginPage';
 import Cadastro from './pages/Cadastro';
 import TermosUso from './pages/TermosUso';
@@ -154,6 +155,11 @@ const AppContent = () => {
           {/* CONFIRMAÇÕES - MOVIDA PARA CIMA PARA EVITAR CONFLITOS */}
           <Route path="/confirmacao" element={<Confirmacao />} />
           <Route path="/confirmacao/*" element={<Confirmacao />} />
+          <Route path="/reset-password" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando redefinição de senha..." />}>
+              <ResetPassword />
+            </Suspense>
+          } />
           
           {/* CHECKOUT FLOW CORRIGIDO - REMOVIDA ROTA /checkout ANTIGA */}
           <Route path="/checkout/cupom" element={<CheckoutCoupon />} />

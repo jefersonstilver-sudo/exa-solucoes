@@ -114,6 +114,58 @@ serve(async (req: Request) => {
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
 
+    } else if (action === 'recovery' || email_data?.email_action_type === 'recovery') {
+      // RECUPERAÇÃO DE SENHA
+      const userEmail = user?.email || email;
+      
+      if (!userEmail) {
+        return new Response(JSON.stringify({ 
+          error: 'Email é obrigatório para recuperação',
+          success: false 
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      if (!email_data?.token_hash) {
+        return new Response(JSON.stringify({ 
+          error: 'Token de recuperação não encontrado',
+          success: false 
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      console.log('🔒 [UNIFIED-EMAIL] Enviando email de recuperação para:', userEmail);
+
+      // Construir URL de recuperação
+      const recoveryUrl = `${baseUrl}/auth/confirm?token_hash=${email_data.token_hash}&type=recovery&next=/reset-password`;
+      
+      const userName = user?.user_metadata?.name || userEmail.split('@')[0];
+      const { data: emailData, error: emailError } = await emailService.sendPasswordRecoveryEmail(
+        userEmail, 
+        userName, 
+        URLValidator.validateAndCorrectUrl(recoveryUrl)
+      );
+
+      if (emailError) {
+        console.error('❌ [UNIFIED-EMAIL] Erro ao enviar recuperação:', emailError);
+        throw emailError;
+      }
+
+      console.log('✅ [UNIFIED-EMAIL] Email de recuperação enviado com sucesso!');
+
+      return new Response(JSON.stringify({ 
+        message: 'Email de recuperação enviado com sucesso',
+        email_id: emailData?.id,
+        success: true
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+
     } else {
       // EMAIL DE CONFIRMAÇÃO INICIAL (webhook do Supabase)
       if (!user?.email) {
