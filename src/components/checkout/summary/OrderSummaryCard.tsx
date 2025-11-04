@@ -56,6 +56,14 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     const buildingName = item.panel.buildings?.nome || 'Prédio não identificado';
     const panelId = item.panel.id;
     
+    console.log('[OrderSummaryCard] Processando item:', {
+      panelId,
+      buildingId,
+      buildingName,
+      numero_elevadores: item.panel.buildings?.numero_elevadores,
+      quantidade_telas: item.panel.buildings?.quantidade_telas
+    });
+    
     if (!acc[buildingId]) {
       acc[buildingId] = {
         nome: buildingName,
@@ -72,10 +80,22 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     if (!acc[buildingId].panelIds.has(panelId)) {
       acc[buildingId].panelIds.add(panelId);
       acc[buildingId].paineis.push(item.panel);
+    } else {
+      console.warn('[OrderSummaryCard] Painel duplicado detectado:', panelId);
     }
     
     return acc;
   }, {} as Record<string, any>);
+
+  console.log('[OrderSummaryCard] Resultado final paineisPorPredio:', 
+    Object.entries(paineisPorPredio).map(([id, data]: [string, any]) => ({
+      buildingId: id,
+      buildingName: data.nome,
+      numero_elevadores: data.numero_elevadores,
+      paineisUnicos: data.paineis.length,
+      panelIds: Array.from(data.panelIds)
+    }))
+  );
 
   // Calcular público total
   const publicoTotal = Object.values(paineisPorPredio).reduce((total, building: any) => {
