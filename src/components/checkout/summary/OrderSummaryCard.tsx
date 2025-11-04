@@ -50,11 +50,10 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     }).format(date);
   };
 
-  // Agrupar painéis por prédio - conta painéis ÚNICOS (sem duplicatas)
+  // Agrupar painéis por prédio - pega dados reais do banco
   const paineisPorPredio = cartItems.reduce((acc, item) => {
     const buildingId = item.panel.buildings?.id || 'unknown';
     const buildingName = item.panel.buildings?.nome || 'Prédio não identificado';
-    const panelId = item.panel.id;
     
     if (!acc[buildingId]) {
       acc[buildingId] = {
@@ -62,20 +61,13 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         endereco: item.panel.buildings?.endereco || '',
         bairro: item.panel.buildings?.bairro || '',
         publico_estimado: item.panel.buildings?.publico_estimado || 0,
-        panelIds: new Set<string>() // Set para evitar contar painéis duplicados
+        // Pega o número real de telas do prédio do banco de dados
+        quantidadeTelas: item.panel.buildings?.quantidade_telas || item.panel.buildings?.numero_elevadores || 0
       };
     }
     
-    // Adiciona o panelId ao Set (automaticamente evita duplicatas)
-    acc[buildingId].panelIds.add(panelId);
-    
     return acc;
   }, {} as Record<string, any>);
-  
-  // Adicionar o contador de telas após o reduce
-  Object.values(paineisPorPredio).forEach((building: any) => {
-    building.telasSelecionadas = building.panelIds.size;
-  });
 
   // Calcular público total
   const publicoTotal = Object.values(paineisPorPredio).reduce((total, building: any) => {
@@ -161,7 +153,7 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
                 
                 <div className="flex items-center gap-3 text-xs text-gray-600 mb-2">
                   <span>
-                    <strong className="text-purple-600">{building.telasSelecionadas}</strong> {building.telasSelecionadas === 1 ? 'tela selecionada' : 'telas selecionadas'}
+                    <strong className="text-purple-600">{building.quantidadeTelas}</strong> {building.quantidadeTelas === 1 ? 'tela' : 'telas'}
                   </span>
                   {building.publico_estimado > 0 && (
                     <>
