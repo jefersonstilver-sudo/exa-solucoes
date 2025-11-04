@@ -237,6 +237,30 @@ export const useBenefitManagement = () => {
     toast.success('Link copiado para a área de transferência!');
   };
 
+  const cancelBenefit = async (benefitId: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('provider_benefits')
+        .update({
+          status: 'cancelled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', benefitId);
+
+      if (error) throw error;
+
+      toast.success('Benefício cancelado! O link não é mais válido.');
+      await listBenefits();
+    } catch (error: any) {
+      console.error('Erro ao cancelar benefício:', error);
+      toast.error(error.message || 'Erro ao cancelar benefício');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     isLoading,
     benefits,
@@ -247,5 +271,6 @@ export const useBenefitManagement = () => {
     validateToken,
     registerChoice,
     copyBenefitLink,
+    cancelBenefit,
   };
 };

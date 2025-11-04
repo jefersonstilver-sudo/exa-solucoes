@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Gift, Mail, Copy, Loader2, Plus } from 'lucide-react';
+import { Gift, Mail, Copy, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useBenefitManagement } from '@/hooks/useBenefitManagement';
 import BenefitStatusBadge from '@/components/benefits/BenefitStatusBadge';
 import InsertCodeModal from '@/components/benefits/InsertCodeModal';
@@ -31,6 +31,7 @@ const ProviderBenefits = () => {
     insertGiftCode,
     resendInvitation,
     copyBenefitLink,
+    cancelBenefit,
   } = useBenefitManagement();
 
   console.log('🎁 Benefits state:', { benefits, isLoading });
@@ -45,6 +46,7 @@ const ProviderBenefits = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedBenefit, setSelectedBenefit] = useState<string | null>(null);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [benefitToCancel, setBenefitToCancel] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('🎁 useEffect: Loading benefits...');
@@ -77,6 +79,12 @@ const ProviderBenefits = () => {
     if (selectedBenefit) {
       await insertGiftCode(selectedBenefit, code);
       setSelectedBenefit(null);
+    }
+  };
+
+  const handleCancelBenefit = async (benefitId: string) => {
+    if (window.confirm('Tem certeza que deseja cancelar este benefício? O link do email ficará inválido imediatamente.')) {
+      await cancelBenefit(benefitId);
     }
   };
 
@@ -260,31 +268,45 @@ const ProviderBenefits = () => {
                         })}
                       </TableCell>
                       <TableCell className="text-right space-x-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyBenefitLink(benefit.access_token)}
-                          title="Copiar link"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                        {benefit.status === 'pending' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => resendInvitation(benefit.id)}
-                            title="Reenviar email"
-                          >
-                            <Mail className="h-3 w-3" />
-                          </Button>
+                        {benefit.status !== 'cancelled' && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => copyBenefitLink(benefit.access_token)}
+                              title="Copiar link"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            {benefit.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => resendInvitation(benefit.id)}
+                                title="Reenviar email"
+                              >
+                                <Mail className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {benefit.status === 'choice_made' && !benefit.gift_code && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleInsertCode(benefit.id)}
+                                title="Inserir código"
+                              >
+                                <Gift className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </>
                         )}
-                        {benefit.status === 'choice_made' && !benefit.gift_code && (
+                        {benefit.status !== 'cancelled' && benefit.status !== 'code_sent' && (
                           <Button
                             size="sm"
-                            onClick={() => handleInsertCode(benefit.id)}
-                            title="Inserir código"
+                            variant="destructive"
+                            onClick={() => handleCancelBenefit(benefit.id)}
+                            title="Cancelar benefício"
                           >
-                            <Gift className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         )}
                       </TableCell>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 
 interface BenefitStatusBadgeProps {
-  status: 'pending' | 'choice_made' | 'code_sent';
+  status: 'pending' | 'choice_made' | 'code_sent' | 'cancelled';
 }
 
 const BenefitStatusBadge: React.FC<BenefitStatusBadgeProps> = ({ status }) => {
@@ -21,6 +21,11 @@ const BenefitStatusBadge: React.FC<BenefitStatusBadgeProps> = ({ status }) => {
       label: 'Código enviado',
       variant: 'default' as const,
       className: 'bg-green-100 text-green-800 border-green-300',
+    },
+    cancelled: {
+      label: 'Cancelado',
+      variant: 'destructive' as const,
+      className: 'bg-red-100 text-red-800 border-red-300',
     },
   };
 

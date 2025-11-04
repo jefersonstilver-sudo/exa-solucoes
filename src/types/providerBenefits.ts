@@ -12,7 +12,7 @@ export interface ProviderBenefit {
   gift_code?: string;
   gift_code_inserted_at?: string;
   gift_code_inserted_by?: string;
-  status: 'pending' | 'choice_made' | 'code_sent';
+  status: 'pending' | 'choice_made' | 'code_sent' | 'cancelled';
   invitation_sent_at?: string;
   final_email_sent_at?: string;
   created_by?: string;
