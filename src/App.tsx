@@ -33,6 +33,7 @@ import PoliticaPrivacidade from './pages/PoliticaPrivacidade';
 import NaoEncontrado from './pages/NaoEncontrado';
 import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
+import ProviderBenefitChoice from './pages/ProviderBenefitChoice';
 
 // Importações diretas para páginas principais (performance otimizada)
 import PaineisPublicitarios from './pages/PaineisPublicitarios';
@@ -295,6 +296,9 @@ const AppContent = () => {
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/termos-uso" element={<TermosUso />} />
           <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+
+          {/* Rota pública de escolha de benefício prestadores */}
+          <Route path="/presente" element={<ProviderBenefitChoice />} />
 
           {/* Rotas administrativas */}
           <Route path="/super_admin/*" element={<SuperAdminPage />} />
