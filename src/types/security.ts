@@ -39,3 +39,17 @@ export interface SuspiciousIP {
   lastAttempt: string;
   eventTypes: string[];
 }
+
+export interface BlockedIP {
+  id: string;
+  ip_address: string;
+  blocked_by: string;
+  blocked_at: string;
+  reason: string;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
+  metadata?: Record<string, any>;
+  blocked_by_name?: string;
+  blocked_by_email?: string;
+}

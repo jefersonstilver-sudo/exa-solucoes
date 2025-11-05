@@ -80,6 +80,42 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_ips: {
+        Row: {
+          blocked_at: string | null
+          blocked_by: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          ip_address: string
+          is_active: boolean | null
+          metadata: Json | null
+          reason: string | null
+        }
+        Insert: {
+          blocked_at?: string | null
+          blocked_by?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          reason?: string | null
+        }
+        Update: {
+          blocked_at?: string | null
+          blocked_by?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       building_action_logs: {
         Row: {
           action_description: string | null
@@ -2745,6 +2781,7 @@ export type Database = {
         Args: { p_video1_id: string; p_video2_id: string }
         Returns: boolean
       }
+      cleanup_expired_blocked_ips: { Args: never; Returns: undefined }
       cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_orphaned_users: { Args: never; Returns: Json }
       cleanup_unauthorized_uploads: { Args: never; Returns: Json }
