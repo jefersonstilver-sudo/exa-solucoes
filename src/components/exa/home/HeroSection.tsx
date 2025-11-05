@@ -24,7 +24,7 @@ const HeroSection = () => {
       <div className="absolute top-20 right-20 w-96 h-96 bg-exa-blue/20 rounded-full blur-3xl animate-pulse-soft" />
       <div className="absolute bottom-20 left-20 w-96 h-96 bg-exa-yellow/10 rounded-full blur-3xl animate-pulse-soft" />
 
-      <div ref={ref} className={`relative z-10 w-full flex flex-col lg:grid lg:grid-cols-2 gap-6 md:gap-8 lg:gap-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div ref={ref} className={`relative z-10 w-full flex flex-col lg:grid lg:grid-cols-2 gap-8 md:gap-10 lg:gap-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Left side - Text content */}
         <div className="space-y-3 md:space-y-4 order-1">
           <h1 className="font-montserrat font-extrabold text-3xl md:text-5xl lg:text-6xl text-white leading-tight">
