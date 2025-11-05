@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Video, Upload, Play, Trash2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useVideoActivityTracking } from '@/hooks/tracking/useVideoActivityTracking';
 
 interface VideoData {
   id: string;
@@ -19,6 +20,7 @@ interface VideoData {
 
 const MyVideos = () => {
   const { userProfile } = useAuth();
+  const { trackVideoView } = useVideoActivityTracking();
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -123,7 +125,8 @@ const MyVideos = () => {
     }
   };
 
-  const handlePreview = (videoUrl: string) => {
+  const handlePreview = (videoId: string, videoUrl: string) => {
+    trackVideoView(videoId);
     window.open(videoUrl, '_blank');
   };
 
@@ -183,7 +186,7 @@ const MyVideos = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => handlePreview(video.url)}
+                    onClick={() => handlePreview(video.id, video.url)}
                     className="flex-1"
                   >
                     <Play className="h-4 w-4 mr-1" />

@@ -61,10 +61,21 @@ Deno.serve(async (req) => {
       throw behaviorError;
     }
 
+    // Buscar dados de atividade na plataforma
+    const { data: platformActivity, error: platformError } = await supabase
+      .from('client_platform_activity')
+      .select('*')
+      .eq('user_id', user_id)
+      .single();
+
+    if (platformError && platformError.code !== 'PGRST116') {
+      console.error('⚠️ No platform activity data for user:', user_id);
+    }
+
     // Buscar dados de pedidos
     const { data: ordersData, error: ordersError } = await supabase
       .from('pedidos')
-      .select('id, status, valor_total, created_at, lista_predios, plano_meses')
+      .select('id, status, valor_total, created_at, lista_predios, plano_meses, data_inicio, data_fim')
       .eq('client_id', user_id)
       .in('status', ['pago', 'ativo', 'pago_pendente_video', 'video_aprovado', 'video_enviado']);
 
@@ -112,13 +123,52 @@ Deno.serve(async (req) => {
       total_orders: analysisData.total_orders,
     });
 
-    // Criar prompt para IA
+    // Determinar se cliente tem plano ativo
+    const hasActivePlan = ordersData && ordersData.length > 0;
+    const activeOrders = ordersData?.filter(o => 
+      o.data_fim && new Date(o.data_fim) >= new Date()
+    ) || [];
+    
+    const nearestRenewal = activeOrders.length > 0 
+      ? activeOrders.sort((a, b) => new Date(a.data_fim).getTime() - new Date(b.data_fim).getTime())[0]
+      : null;
+
+    const daysUntilRenewal = nearestRenewal
+      ? Math.floor((new Date(nearestRenewal.data_fim).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    // Criar prompt para IA com CONTEXTO DE CICLO DE VIDA
     const prompt = `
 Você é um analista de CRM especializado em publicidade digital e comportamento de clientes B2B.
 
 Analise o comportamento do cliente abaixo e forneça insights acionáveis para a equipe de vendas.
 
-DADOS DO CLIENTE:
+⚠️ CONTEXTO CRÍTICO DO CICLO DE VIDA:
+- Lifecycle Stage: ${behaviorData?.lifecycle_stage || 'prospect'}
+- TEM PLANO ATIVO: ${hasActivePlan ? 'SIM' : 'NÃO'}
+${hasActivePlan ? `
+  - Número de planos ativos: ${activeOrders.length}
+  - Plano mais antigo termina em: ${nearestRenewal?.data_fim}
+  - Dias até renovação: ${daysUntilRenewal} dias
+  - Duração do plano: ${nearestRenewal?.plano_meses} meses
+  - ⚠️ IMPORTANTE: Cliente JÁ É PAGANTE! Não tem baixo interesse por não comprar de novo.
+` : ''}
+
+📊 ATIVIDADE NA PLATAFORMA:
+${platformActivity ? `
+- Total de logins: ${platformActivity.total_logins || 0}
+- Último login: ${platformActivity.last_login ? new Date(platformActivity.last_login).toLocaleDateString('pt-BR') : 'Nunca'}
+- Frequência de acesso: ${(platformActivity.login_frequency || 0).toFixed(1)} logins/semana
+- Total de vídeos enviados: ${platformActivity.total_videos_uploaded || 0}
+- Total de trocas de vídeos: ${platformActivity.total_videos_swapped || 0}
+- Vídeos aguardando aprovação: ${platformActivity.videos_pending_approval || 0}
+- Vídeos aprovados: ${platformActivity.videos_approved || 0}
+- Último vídeo enviado: ${platformActivity.last_video_upload ? new Date(platformActivity.last_video_upload).toLocaleDateString('pt-BR') : 'Nunca'}
+- Visualizações de pedidos ativos: ${platformActivity.active_orders_views || 0}
+- Engagement Score: ${platformActivity.platform_engagement_score || 0}/100
+` : '- Sem dados de atividade na plataforma ainda'}
+
+📈 DADOS DE NAVEGAÇÃO:
 - Tempo total no site: ${Math.floor(analysisData.total_time_spent / 60)} minutos
 - Páginas visitadas: ${JSON.stringify(analysisData.pages_visited, null, 2)}
 - Prédios visualizados: ${analysisData.buildings_viewed.length} (tempo total: ${analysisData.buildings_viewed.reduce((sum, b) => sum + b.time_spent, 0)} segundos)
@@ -130,6 +180,8 @@ DADOS DO CLIENTE:
 )}
 - Vídeos assistidos: ${analysisData.videos_watched.length} (${analysisData.videos_watched.filter(v => v.completed).length} completos)
 - Taxa de conclusão de vídeos: ${analysisData.videos_watched.length > 0 ? Math.round((analysisData.videos_watched.filter(v => v.completed).length / analysisData.videos_watched.length) * 100) : 0}%
+
+💰 DADOS COMERCIAIS:
 - Carrinhos abandonados: ${analysisData.cart_abandonments}
 - Checkouts iniciados: ${analysisData.checkout_starts}
 - Pedidos completados: ${analysisData.total_orders}
@@ -176,12 +228,42 @@ FORNEÇA A ANÁLISE NO SEGUINTE FORMATO JSON (responda APENAS com JSON válido, 
   ]
 }
 
+🎯 INSTRUÇÕES CRÍTICAS DE ANÁLISE:
+
+1. **CLIENTES COM PLANO ATIVO E USO FREQUENTE:**
+   - Se tem plano ativo + logins recentes (< 7 dias) + envia/troca vídeos:
+   - ✅ NÃO dar baixo score de intenção! Cliente JÁ É PAGANTE e ATIVO
+   - ✅ Score deve ser ALTO (80-100)
+   - ✅ Foco em UPSELL e RENOVAÇÃO, não em "converter"
+
+2. **CLIENTES COM PLANO ATIVO MAS SEM USO:**
+   - Se tem plano ativo MAS último login > 30 dias:
+   - ⚠️ RISCO DE CHURN ALTO
+   - ⚠️ Ações urgentes de reengajamento
+   - ⚠️ Ligar para entender problemas
+
+3. **CLIENTES PRÓXIMOS DE RENOVAR:**
+   - Se dias_até_renovação < 30:
+   - 🔔 PRIORIDADE MÁXIMA para contato
+   - 🔔 Oferecer incentivo de renovação antecipada
+   - 🔔 Verificar satisfação
+
+4. **VALORIZE ENGAGEMENT NA PLATAFORMA:**
+   - Logins frequentes = cliente engajado
+   - Trocas de vídeos = cliente ativo e satisfeito
+   - Vídeos aprovados = cliente produtivo
+   - Use esses dados no score!
+
+5. **DIFERENCIE CLARAMENTE:**
+   - Cliente que NÃO COMPRA porque JÁ TEM PLANO (✅ BOM!)
+   - Cliente que NÃO COMPRA porque ABANDONOU (❌ RUIM!)
+
 CRITÉRIOS PARA AVALIAÇÃO:
-- Interest Score: considere tempo no site, engajamento com conteúdo, visualizações de prédios, vídeos assistidos
-- Conversion Probability: analise checkouts iniciados, histórico de compras, valor abandonado vs. gasto
-- Recommended Actions: ações específicas e acionáveis para a equipe de vendas
-- Main Interests: identifique padrões nos prédios visualizados e páginas visitadas
-- Churn Risk: avalie risco de perder o cliente baseado em comportamento recente e engajamento
+- Interest Score: Para clientes ATIVOS, considere uso da plataforma > navegação
+- Conversion Probability: Se JÁ É CLIENTE, foque em renovação/upsell
+- Recommended Actions: Ações ESPECÍFICAS baseadas no lifecycle stage
+- Main Interests: Identifique padrões e preferências
+- Churn Risk: CRÍTICO para clientes com plano mas sem uso
 `;
 
     // Chamar Lovable AI

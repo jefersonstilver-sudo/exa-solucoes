@@ -546,6 +546,38 @@ export type Database = {
         }
         Relationships: []
       }
+      client_activity_events: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_activity_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_behavior_analytics: {
         Row: {
           ai_behavior_summary: string | null
@@ -557,17 +589,25 @@ export type Database = {
           cart_abandonments: number | null
           checkout_starts: number | null
           created_at: string
+          days_until_renewal: number | null
           device_type: string | null
+          has_active_plan: boolean | null
           id: string
           last_ai_analysis: string | null
+          last_platform_activity: string | null
           last_visit: string | null
+          lifecycle_stage: string | null
           most_viewed_building_id: string | null
           pages_visited: Json | null
+          plan_end_date: string | null
+          platform_usage_score: number | null
           purchase_intent_score: number | null
           session_id: string | null
+          total_platform_logins: number | null
           total_sessions: number | null
           total_time_spent: number | null
           total_video_time: number | null
+          total_videos_managed: number | null
           updated_at: string
           user_id: string
           video_completion_rate: number | null
@@ -583,17 +623,25 @@ export type Database = {
           cart_abandonments?: number | null
           checkout_starts?: number | null
           created_at?: string
+          days_until_renewal?: number | null
           device_type?: string | null
+          has_active_plan?: boolean | null
           id?: string
           last_ai_analysis?: string | null
+          last_platform_activity?: string | null
           last_visit?: string | null
+          lifecycle_stage?: string | null
           most_viewed_building_id?: string | null
           pages_visited?: Json | null
+          plan_end_date?: string | null
+          platform_usage_score?: number | null
           purchase_intent_score?: number | null
           session_id?: string | null
+          total_platform_logins?: number | null
           total_sessions?: number | null
           total_time_spent?: number | null
           total_video_time?: number | null
+          total_videos_managed?: number | null
           updated_at?: string
           user_id: string
           video_completion_rate?: number | null
@@ -609,17 +657,25 @@ export type Database = {
           cart_abandonments?: number | null
           checkout_starts?: number | null
           created_at?: string
+          days_until_renewal?: number | null
           device_type?: string | null
+          has_active_plan?: boolean | null
           id?: string
           last_ai_analysis?: string | null
+          last_platform_activity?: string | null
           last_visit?: string | null
+          lifecycle_stage?: string | null
           most_viewed_building_id?: string | null
           pages_visited?: Json | null
+          plan_end_date?: string | null
+          platform_usage_score?: number | null
           purchase_intent_score?: number | null
           session_id?: string | null
+          total_platform_logins?: number | null
           total_sessions?: number | null
           total_time_spent?: number | null
           total_video_time?: number | null
+          total_videos_managed?: number | null
           updated_at?: string
           user_id?: string
           video_completion_rate?: number | null
@@ -697,6 +753,83 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      client_platform_activity: {
+        Row: {
+          active_orders_count: number | null
+          active_orders_views: number | null
+          created_at: string | null
+          days_until_renewal: number | null
+          id: string
+          last_login: string | null
+          last_order_view: string | null
+          last_video_upload: string | null
+          login_frequency: number | null
+          nearest_renewal_date: string | null
+          platform_engagement_score: number | null
+          renewal_notifications_sent: number | null
+          total_logins: number | null
+          total_videos_swapped: number | null
+          total_videos_uploaded: number | null
+          updated_at: string | null
+          user_id: string
+          videos_approved: number | null
+          videos_pending_approval: number | null
+          videos_rejected: number | null
+        }
+        Insert: {
+          active_orders_count?: number | null
+          active_orders_views?: number | null
+          created_at?: string | null
+          days_until_renewal?: number | null
+          id?: string
+          last_login?: string | null
+          last_order_view?: string | null
+          last_video_upload?: string | null
+          login_frequency?: number | null
+          nearest_renewal_date?: string | null
+          platform_engagement_score?: number | null
+          renewal_notifications_sent?: number | null
+          total_logins?: number | null
+          total_videos_swapped?: number | null
+          total_videos_uploaded?: number | null
+          updated_at?: string | null
+          user_id: string
+          videos_approved?: number | null
+          videos_pending_approval?: number | null
+          videos_rejected?: number | null
+        }
+        Update: {
+          active_orders_count?: number | null
+          active_orders_views?: number | null
+          created_at?: string | null
+          days_until_renewal?: number | null
+          id?: string
+          last_login?: string | null
+          last_order_view?: string | null
+          last_video_upload?: string | null
+          login_frequency?: number | null
+          nearest_renewal_date?: string | null
+          platform_engagement_score?: number | null
+          renewal_notifications_sent?: number | null
+          total_logins?: number | null
+          total_videos_swapped?: number | null
+          total_videos_uploaded?: number | null
+          updated_at?: string | null
+          user_id?: string
+          videos_approved?: number | null
+          videos_pending_approval?: number | null
+          videos_rejected?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_platform_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       configuracoes_sindico: {
         Row: {
@@ -2435,6 +2568,10 @@ export type Database = {
         }
         Returns: Json
       }
+      calculate_lifecycle_stage: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
       can_access_building_contacts: { Args: never; Returns: boolean }
       can_access_order: { Args: { p_pedido_id: string }; Returns: boolean }
       can_access_panel_credentials: { Args: never; Returns: boolean }
@@ -2979,6 +3116,10 @@ export type Database = {
           p_old_values?: Json
         }
         Returns: string
+      }
+      log_client_activity: {
+        Args: { p_event_data?: Json; p_event_type: string; p_user_id: string }
+        Returns: undefined
       }
       log_financial_access: {
         Args: {

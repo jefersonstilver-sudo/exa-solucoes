@@ -197,7 +197,13 @@ export const getAllClientsForCRM = async () => {
       (users || []).map(async (user) => {
         const { data: analytics } = await supabase
           .from('client_behavior_analytics')
-          .select('purchase_intent_score, ai_interest_level, last_visit')
+          .select('purchase_intent_score, ai_interest_level, last_visit, lifecycle_stage, days_until_renewal')
+          .eq('user_id', user.id)
+          .single();
+
+        const { data: platformActivity } = await supabase
+          .from('client_platform_activity')
+          .select('total_logins, last_login, total_videos_uploaded, total_videos_swapped, platform_engagement_score')
           .eq('user_id', user.id)
           .single();
 
@@ -228,6 +234,14 @@ export const getAllClientsForCRM = async () => {
           total_orders: totalOrders,
           total_attempts: totalAttempts,
           last_purchase_date: lastPurchaseDate,
+          // Novos dados de plataforma
+          lifecycle_stage: analytics?.lifecycle_stage || 'prospect',
+          days_until_renewal: analytics?.days_until_renewal,
+          total_logins: platformActivity?.total_logins || 0,
+          last_login: platformActivity?.last_login,
+          total_videos_uploaded: platformActivity?.total_videos_uploaded || 0,
+          total_videos_swapped: platformActivity?.total_videos_swapped || 0,
+          platform_engagement_score: platformActivity?.platform_engagement_score || 0,
         };
       })
     );

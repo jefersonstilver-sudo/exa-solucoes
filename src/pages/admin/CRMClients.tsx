@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, TrendingUp, DollarSign, Users, Loader2, FileText, UserRound, AlertCircle } from 'lucide-react';
 import { getAllClientsForCRM } from '@/services/crmService';
@@ -23,6 +24,14 @@ interface ClientBasic {
   total_orders: number;
   total_attempts: number;
   last_purchase_date?: string;
+  // Novos campos
+  lifecycle_stage?: string;
+  days_until_renewal?: number;
+  total_logins?: number;
+  last_login?: string;
+  total_videos_uploaded?: number;
+  total_videos_swapped?: number;
+  platform_engagement_score?: number;
 }
 
 export default function CRMClients() {
@@ -115,6 +124,37 @@ export default function CRMClients() {
         return sorted.sort((a, b) => (a.nome || a.email).localeCompare(b.nome || b.email));
       case 'name_desc':
         return sorted.sort((a, b) => (b.nome || b.email).localeCompare(a.nome || a.email));
+      
+      // NOVAS ORDENAÇÕES - Atividade na Plataforma
+      case 'most_active':
+        return sorted.sort((a, b) => (b.total_logins || 0) - (a.total_logins || 0));
+      case 'recent_login':
+        return sorted.sort((a, b) => {
+          if (!a.last_login) return 1;
+          if (!b.last_login) return -1;
+          return new Date(b.last_login).getTime() - new Date(a.last_login).getTime();
+        });
+      case 'most_videos_uploaded':
+        return sorted.sort((a, b) => (b.total_videos_uploaded || 0) - (a.total_videos_uploaded || 0));
+      case 'most_videos_swapped':
+        return sorted.sort((a, b) => (b.total_videos_swapped || 0) - (a.total_videos_swapped || 0));
+      case 'highest_engagement':
+        return sorted.sort((a, b) => (b.platform_engagement_score || 0) - (a.platform_engagement_score || 0));
+      
+      // NOVAS ORDENAÇÕES - Lifecycle
+      case 'renewal_soon':
+        return sorted
+          .filter(c => c.days_until_renewal != null && c.days_until_renewal <= 60)
+          .sort((a, b) => (a.days_until_renewal || 999) - (b.days_until_renewal || 999));
+      case 'at_risk':
+        return sorted
+          .filter(c => c.lifecycle_stage === 'at_risk')
+          .sort((a, b) => (b.platform_engagement_score || 0) - (a.platform_engagement_score || 0));
+      case 'active_engaged':
+        return sorted
+          .filter(c => c.lifecycle_stage === 'active_engaged')
+          .sort((a, b) => (b.platform_engagement_score || 0) - (a.platform_engagement_score || 0));
+      
       default:
         return sorted;
     }
@@ -222,6 +262,19 @@ export default function CRMClients() {
               <SelectItem value="total_orders_desc">Mais Pedidos</SelectItem>
               <SelectItem value="total_orders_asc">Menos Pedidos</SelectItem>
               <SelectItem value="total_attempts_desc">Mais Tentativas Abandonadas</SelectItem>
+              
+              {/* Novas ordenações - Atividade na Plataforma */}
+              <SelectItem value="most_active">🔥 Mais Ativo (Logins)</SelectItem>
+              <SelectItem value="recent_login">⏰ Login Mais Recente</SelectItem>
+              <SelectItem value="most_videos_uploaded">📹 Mais Vídeos Enviados</SelectItem>
+              <SelectItem value="most_videos_swapped">🔄 Mais Trocas de Vídeos</SelectItem>
+              <SelectItem value="highest_engagement">⭐ Maior Engagement</SelectItem>
+              
+              {/* Novas ordenações - Lifecycle */}
+              <SelectItem value="renewal_soon">🔔 Próximo de Renovar</SelectItem>
+              <SelectItem value="at_risk">⚠️ Em Risco de Churn</SelectItem>
+              <SelectItem value="active_engaged">✅ Ativos e Engajados</SelectItem>
+              
               <SelectItem value="score_desc">Maior Score IA</SelectItem>
               <SelectItem value="score_asc">Menor Score IA</SelectItem>
               <SelectItem value="name_asc">Nome (A-Z)</SelectItem>
@@ -265,15 +318,50 @@ export default function CRMClients() {
                   </div>
                   
                   <div className="space-y-2 flex-1 min-w-0">
-                    {/* Nome */}
-                    <h3 className="text-lg font-bold">
-                      {client.nome || client.email.split('@')[0]}
-                    </h3>
+                    {/* Nome com Badge de Lifecycle */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg font-bold">
+                        {client.nome || client.email.split('@')[0]}
+                      </h3>
+                      
+                      {/* Lifecycle Stage Badge */}
+                      {client.lifecycle_stage === 'renewal_opportunity' && (
+                        <Badge variant="default" className="bg-yellow-500 hover:bg-yellow-600">
+                          🔔 Renovação em {client.days_until_renewal} dias
+                        </Badge>
+                      )}
+                      {client.lifecycle_stage === 'active_engaged' && (
+                        <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                          ✅ Cliente Ativo
+                        </Badge>
+                      )}
+                      {client.lifecycle_stage === 'at_risk' && (
+                        <Badge variant="destructive">
+                          ⚠️ Em Risco
+                        </Badge>
+                      )}
+                    </div>
                     
                     {/* Email */}
                     <p className="text-sm text-muted-foreground truncate">
                       {client.email}
                     </p>
+                    
+                    {/* Métricas de Engagement */}
+                    <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
+                      {(client.total_logins || 0) > 0 && (
+                        <span title="Total de logins">🔐 {client.total_logins} logins</span>
+                      )}
+                      {(client.total_videos_uploaded || 0) > 0 && (
+                        <span title="Vídeos enviados">📹 {client.total_videos_uploaded} vídeos</span>
+                      )}
+                      {(client.total_videos_swapped || 0) > 0 && (
+                        <span title="Trocas de vídeos">🔄 {client.total_videos_swapped} trocas</span>
+                      )}
+                      {(client.platform_engagement_score || 0) > 0 && (
+                        <span title="Score de engajamento">⭐ {client.platform_engagement_score}/100</span>
+                      )}
+                    </div>
                     
                     {/* Telefone com ações */}
                     {client.telefone && (

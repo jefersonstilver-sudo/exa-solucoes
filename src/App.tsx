@@ -15,6 +15,7 @@ import ComingSoonPage from '@/pages/ComingSoonPage';
 import { useState, useEffect } from 'react';
 import { usePageTransition } from '@/hooks/usePageTransition';
 import { useLoadingState } from '@/hooks/useLoadingState';
+import { GlobalActivityTracker } from '@/components/tracking/GlobalActivityTracker';
 
 // Importações diretas para páginas críticas
 import BuildingStore from './pages/BuildingStore';
@@ -140,6 +141,8 @@ const AppContent = () => {
   return (
     <PageTransitionLoader isLoading={isTransitioning} loadingMessage={loadingMessage}>
       <div className="min-h-screen bg-background">
+        {/* Global Activity Tracker - tracks login/logout */}
+        <GlobalActivityTracker />
         <Routes>
           {/* Rotas principais */}
           <Route path="/" element={<Exa />} />
