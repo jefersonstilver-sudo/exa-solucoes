@@ -168,12 +168,12 @@ const ErrosAnunciarCondominios = () => {
                   <div className="space-y-4 ml-16">
                     <div className="bg-red-50 p-4 rounded-lg">
                       <p className="font-semibold text-red-800 mb-2">❌ O Problema:</p>
-                      <p className="text-gray-700" dangerouslySetInnerHTML={{ __html: erro.problema }} />
+                      <p className="text-gray-700">{erro.problema}</p>
                     </div>
 
                     <div className="bg-green-50 p-4 rounded-lg">
                       <p className="font-semibold text-green-800 mb-2">✅ A Solução:</p>
-                      <p className="text-gray-700" dangerouslySetInnerHTML={{ __html: erro.solucao }} />
+                      <p className="text-gray-700">{erro.solucao}</p>
                     </div>
 
                     <div className="bg-orange-50 p-4 rounded-lg border-l-4 border-orange-500">
