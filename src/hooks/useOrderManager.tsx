@@ -105,10 +105,13 @@ export const useOrderManager = () => {
         throw new Error(`Erro ao criar pedido: ${error.message}`);
       }
 
-      // Log do evento no sistema
+      // Log do evento no sistema com metadata completo
+      const { ip, user_agent } = await import('@/services/captureRequestMetadata').then(m => m.captureRequestMetadata());
       await supabase.from('log_eventos_sistema').insert({
         tipo_evento: 'PEDIDO_CREATED_FOR_PIX',
-        descricao: `Pedido criado: ID=${pedido.id}, Prédios=${listaPredios.length}, Painéis=${listaPaineis.length}, Valor=${totalPrice}`
+        descricao: `Pedido criado: ID=${pedido.id}, Prédios=${listaPredios.length}, Painéis=${listaPaineis.length}, Valor=${totalPrice}`,
+        ip,
+        user_agent
       });
 
       return {

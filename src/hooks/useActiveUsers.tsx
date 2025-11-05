@@ -13,8 +13,22 @@ export interface ActiveSession {
   browser: string;
   is_vpn: boolean;
   last_activity: string;
+  created_at?: string;
   user_name?: string;
   user_email?: string;
+  latitude?: number;
+  longitude?: number;
+  isp?: string;
+  asn?: string;
+  org?: string;
+  platform?: string;
+  screen_width?: number;
+  screen_height?: number;
+  pixel_ratio?: number;
+  cpu_cores?: number;
+  device_memory?: number;
+  timezone?: string;
+  language?: string;
 }
 
 export const useActiveUsers = () => {

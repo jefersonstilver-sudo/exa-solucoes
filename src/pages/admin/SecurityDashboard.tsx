@@ -168,17 +168,18 @@ export default function SecurityDashboard() {
           </div>
         </TabsContent>
 
-        {/* Tab: Sessões Ativas */}
+        {/* Tab: Sessões Ativas - LARGURA TOTAL */}
         <TabsContent value="sessions" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <ActiveUsersCard totalActive={totalActive} isLoading={isLoadingUsers} />
             <SecurityMetricsCards metrics={metrics} isLoading={isLoading} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ActiveSessionsList sessions={sessions} />
-            <SecurityEventTimeline events={events} isConnected={isConnected} />
-          </div>
+          {/* SESSÕES ATIVAS - LARGURA TOTAL */}
+          <ActiveSessionsList sessions={sessions} />
+
+          {/* TIMELINE DE EVENTOS - LARGURA TOTAL */}
+          <SecurityEventTimeline events={events} isConnected={isConnected} />
         </TabsContent>
 
         {/* Tab: Geolocalização */}
