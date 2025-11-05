@@ -1,20 +1,31 @@
 
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRealOrderDetails } from '@/hooks/useRealOrderDetails';
-import { RealOrderHeader } from '@/components/admin/orders/RealOrderHeader';
-import { RealOrderCustomerCard } from '@/components/admin/orders/RealOrderCustomerCard';
-import { RealOrderInfoCard } from '@/components/admin/orders/RealOrderInfoCard';
-import { RealOrderFinancialCard } from '@/components/admin/orders/RealOrderFinancialCard';
-import { RealOrderPanelsCard } from '@/components/admin/orders/RealOrderPanelsCard';
-import { RealOrderVideosCard } from '@/components/admin/orders/RealOrderVideosCard';
+import { ProfessionalOrderReport } from '@/components/admin/orders/ProfessionalOrderReport';
+import { ProfessionalPDFExporter } from '@/components/admin/orders/ProfessionalPDFExporter';
 
 const OrderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { loading, orderDetails, orderVideos, panelData } = useRealOrderDetails(id || '');
+  const [isExporting, setIsExporting] = React.useState(false);
+
+  const handleExportPDF = async () => {
+    if (!orderDetails) return;
+    
+    setIsExporting(true);
+    try {
+      const exporter = new ProfessionalPDFExporter();
+      await exporter.generateReport(orderDetails, panelData, orderVideos);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -40,44 +51,39 @@ const OrderDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Botão de voltar */}
-        <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Botões de ação */}
+        <div className="flex items-center justify-between gap-4">
           <Button
             variant="outline"
             onClick={() => navigate('/super_admin/pedidos')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-white hover:bg-gray-50 border-gray-300 font-semibold"
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar para Lista
           </Button>
+
+          <Button
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="flex items-center gap-2 bg-[#3C1361] hover:bg-[#2A0E45] text-white font-semibold shadow-lg transition-all"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {isExporting ? 'Gerando PDF...' : 'Exportar PDF'}
+          </Button>
         </div>
 
-        {/* Header com informações principais e export profissional */}
-        <RealOrderHeader 
-          order={orderDetails} 
+        {/* Relatório Profissional */}
+        <ProfessionalOrderReport 
+          order={orderDetails}
           panels={panelData}
           videos={orderVideos}
         />
-
-        {/* Grid de informações principais */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Informações do Cliente */}
-          <RealOrderCustomerCard order={orderDetails} />
-
-          {/* Informações do Pedido */}
-          <RealOrderInfoCard order={orderDetails} />
-
-          {/* Resumo Financeiro */}
-          <RealOrderFinancialCard order={orderDetails} />
-        </div>
-
-        {/* Seção de Painéis */}
-        <RealOrderPanelsCard panels={panelData} order={orderDetails} />
-
-        {/* Seção de Gestão de Vídeos */}
-        <RealOrderVideosCard videos={orderVideos} orderId={orderDetails.id} />
       </div>
     </div>
   );
