@@ -49,29 +49,6 @@ const OrdersPageFilters: React.FC<OrdersPageFiltersProps> = ({
               />
             </div>
           </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline"
-                className="border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white font-medium"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Tipo: {typeFilter === 'all' ? 'Todos' : typeFilter === 'order' ? 'Pedidos' : 'Tentativas'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-white border-gray-200">
-              <DropdownMenuItem onClick={() => setTypeFilter('all')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                Todos
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTypeFilter('order')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                Apenas Pedidos
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTypeFilter('attempt')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                Apenas Tentativas
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
