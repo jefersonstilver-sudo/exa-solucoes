@@ -53,7 +53,7 @@ export const useActiveUsers = () => {
 
     fetchActiveSessions();
 
-    const interval = setInterval(fetchActiveSessions, 10000);
+    const interval = setInterval(fetchActiveSessions, 3000);
 
     const channel = supabase
       .channel('active-sessions-channel')

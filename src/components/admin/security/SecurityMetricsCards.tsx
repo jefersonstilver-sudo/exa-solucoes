@@ -41,8 +41,8 @@ export const SecurityMetricsCards = ({ metrics, isLoading }: SecurityMetricsCard
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map(i => (
+      <>
+        {[1, 2, 3].map(i => (
           <Card key={i} className="animate-pulse">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div className="h-4 bg-muted rounded w-24" />
@@ -53,12 +53,12 @@ export const SecurityMetricsCards = ({ metrics, isLoading }: SecurityMetricsCard
             </CardContent>
           </Card>
         ))}
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <>
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (
@@ -77,6 +77,6 @@ export const SecurityMetricsCards = ({ metrics, isLoading }: SecurityMetricsCard
           </Card>
         );
       })}
-    </div>
+    </>
   );
 };

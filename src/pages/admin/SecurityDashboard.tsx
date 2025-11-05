@@ -15,6 +15,7 @@ import { ActiveSessionsList } from '@/components/admin/security/ActiveSessionsLi
 import { GeographicDistributionChart } from '@/components/admin/security/GeographicDistributionChart';
 import { GeographicSecurityAlert } from '@/components/admin/security/GeographicSecurityAlert';
 import { IPBlockingPanel } from '@/components/admin/security/IPBlockingPanel';
+import { LiveUpdateIndicator } from '@/components/admin/security/LiveUpdateIndicator';
 import { SecurityAnalytics } from '@/services/securityAnalytics';
 import { toast } from 'sonner';
 
@@ -68,32 +69,33 @@ export default function SecurityDashboard() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header Profissional */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary/10 rounded-xl">
-            <Shield className="h-8 w-8 text-primary" />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-primary/10 rounded-xl">
+              <Shield className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Monitoramento de Segurança</h1>
+              <p className="text-muted-foreground">Central de segurança e monitoramento em tempo real</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Monitoramento de Segurança</h1>
-            <p className="text-muted-foreground">Central de segurança e monitoramento em tempo real</p>
+          
+          <div className="flex gap-2">
+            <Button
+              onClick={handleExport}
+              disabled={isExporting}
+              variant="outline"
+              size="sm"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {isExporting ? 'Exportando...' : 'Exportar CSV'}
+            </Button>
           </div>
         </div>
-        
-        <div className="flex gap-2">
-          <Button
-            onClick={handleExport}
-            disabled={isExporting}
-            variant="outline"
-            size="sm"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isExporting ? 'Exportando...' : 'Exportar CSV'}
-          </Button>
-          <Button onClick={handleRefresh} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
-        </div>
+
+        {/* Indicador de Atualização em Tempo Real */}
+        <LiveUpdateIndicator />
       </div>
 
       {/* Threat Level - Sempre visível */}
@@ -131,8 +133,8 @@ export default function SecurityDashboard() {
 
         {/* Tab: Visão Geral */}
         <TabsContent value="overview" className="space-y-6">
-          {/* Cards de Métricas */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          {/* Cards de Métricas - Layout Reorganizado */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <ActiveUsersCard totalActive={totalActive} isLoading={isLoadingUsers} />
             <SecurityMetricsCards metrics={metrics} isLoading={isLoading} />
           </div>
@@ -156,11 +158,7 @@ export default function SecurityDashboard() {
         <TabsContent value="sessions" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <ActiveUsersCard totalActive={totalActive} isLoading={isLoadingUsers} />
-            <div className="md:col-span-3">
-              <div className="grid gap-4 md:grid-cols-3">
-                <SecurityMetricsCards metrics={metrics} isLoading={isLoading} />
-              </div>
-            </div>
+            <SecurityMetricsCards metrics={metrics} isLoading={isLoading} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
