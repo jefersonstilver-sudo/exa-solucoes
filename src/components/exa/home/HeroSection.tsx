@@ -16,7 +16,7 @@ const HeroSection = () => {
   // Fallback video URL
   const defaultVideoUrl = 'https://indexa.net.br/wp-content/uploads/2025/01/indexa_exa.mp4';
   const displayVideoUrl = videoUrl || defaultVideoUrl;
-  return <ExaSection background="dark" className="min-h-[18vh] md:min-h-[20vh] flex items-center relative overflow-hidden pt-20 md:pt-22 pb-0 md:pb-0">
+  return <ExaSection background="dark" className="min-h-[16vh] md:min-h-[18vh] flex items-center relative overflow-hidden pt-20 md:pt-22 pb-0 md:pb-0">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#9C1E1E] via-[#180A0A]/80 to-exa-black opacity-90" />
       
@@ -26,7 +26,7 @@ const HeroSection = () => {
 
       <div ref={ref} className={`relative z-10 w-full grid lg:grid-cols-2 gap-4 md:gap-6 items-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Left side - Text content */}
-        <div className="space-y-3 md:space-y-4">
+        <div className="space-y-2 md:space-y-3">
           <h1 className="font-montserrat font-extrabold text-3xl md:text-4xl lg:text-6xl text-white leading-tight">
             Publicidade que <span className="text-exa-yellow">convive</span>.
           </h1>
