@@ -103,8 +103,9 @@ export const useSupabaseData = () => {
   const fetchDataIndividually = async () => {
     try {
       console.log('🔄 Buscando dados individualmente...');
+      // Using users_with_role view for secure role reading
       const [usersResult, buildingsResult, ordersResult, panelsResult] = await Promise.all([
-        supabase.from('users').select('*'),
+        supabase.from('users_with_role').select('*'),
         supabase.from('buildings').select('*'),
         supabase.from('pedidos').select('*'),
         supabase.from('painels').select('*')
@@ -149,10 +150,11 @@ export const useSupabaseData = () => {
     try {
       console.log('📊 Gerando dados para gráficos...');
       // Buscar dados reais com datas
+      // Using users_with_role view for secure role reading
       const [ordersResult, panelsResult, usersResult] = await Promise.all([
         supabase.from('pedidos').select('*').order('created_at'),
         supabase.from('painels').select('*'),
-        supabase.from('users').select('*').order('data_criacao')
+        supabase.from('users_with_role').select('*').order('data_criacao')
       ]);
 
       const orders = ordersResult.data || [];

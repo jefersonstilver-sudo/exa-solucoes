@@ -495,6 +495,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "campanhas_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "campanhas_painel_id_fkey"
             columns: ["painel_id"]
             isOneToOne: false
@@ -574,6 +581,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_activity_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -827,6 +841,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_platform_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1972,6 +1993,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pedidos_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pedidos_cupom_id_fkey"
             columns: ["cupom_id"]
             isOneToOne: false
@@ -2492,6 +2520,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "videos_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       webhook_logs: {
@@ -2523,7 +2558,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      users_with_role: {
+        Row: {
+          avatar_url: string | null
+          cpf: string | null
+          data_criacao: string | null
+          documento_estrangeiro: string | null
+          documento_frente_url: string | null
+          documento_verso_url: string | null
+          email: string | null
+          email_verified_at: string | null
+          id: string | null
+          nome: string | null
+          privacy_accepted_at: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          telefone: string | null
+          terms_accepted_at: string | null
+          tipo_documento: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       activate_video: {
@@ -3117,7 +3171,9 @@ export type Database = {
       }
       get_unified_client_data: { Args: { p_user_id: string }; Returns: Json }
       get_unread_notifications_count: { Args: never; Returns: number }
-      get_user_role: { Args: never; Returns: string }
+      get_user_role:
+        | { Args: never; Returns: string }
+        | { Args: { p_user_id: string }; Returns: string }
       get_video_current_status: { Args: { p_video_id: string }; Returns: Json }
       has_role: {
         Args: {

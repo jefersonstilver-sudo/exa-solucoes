@@ -52,6 +52,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { updateUserRole, loading: secureLoading } = useSecureAdmin();
 
+  // Filter team members - role now comes from users_with_role view (secure)
   const indexaTeam = users.filter(user => 
     user.role === 'super_admin' || user.role === 'admin' || user.role === 'admin_marketing'
   );

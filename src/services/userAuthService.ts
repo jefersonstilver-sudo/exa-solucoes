@@ -28,7 +28,8 @@ export const logoutUser = async (): Promise<{success: boolean, error?: any}> => 
 };
 
 /**
- * Updates a user's profile information (simplified)
+ * Updates a user's profile information (DEPRECATED - use useSecureAdmin hook instead)
+ * This function should not be used for role updates - use admin_update_user_role_secure RPC
  */
 export const updateUserProfileData = async (
   userProfile: Partial<UserProfile>, 
@@ -39,18 +40,11 @@ export const updateUserProfileData = async (
       return { success: false, error: new Error('User ID required') };
     }
 
-    // Update users table (source of truth)
+    // SECURITY: Role updates should use admin_update_user_role_secure RPC
+    // This function is deprecated for role updates
     if (userProfile.role) {
-      const { error } = await supabase
-        .from('users')
-        .update({ role: userProfile.role })
-        .eq('id', currentUserId);
-      
-      if (error) {
-        return { success: false, error };
-      }
-      
-      // Trigger will automatically sync metadata
+      console.warn('SECURITY WARNING: Direct role update attempted via userAuthService. Use admin_update_user_role_secure RPC instead.');
+      return { success: false, error: new Error('Use admin_update_user_role_secure RPC for role updates') };
     }
     
     return { success: true };
@@ -61,26 +55,16 @@ export const updateUserProfileData = async (
 };
 
 /**
- * Sets a user's role (simplified - only updates users table, trigger handles sync)
+ * Sets a user's role (DEPRECATED - use useSecureAdmin hook instead)
+ * SECURITY: This function should NOT be used. Use admin_update_user_role_secure RPC instead.
  */
 export const setUserRoleData = async (
   userId: string, 
   role: UserRole
 ): Promise<{success: boolean, error?: any}> => {
-  try {
-    // Update users table - trigger will handle auth metadata sync
-    const { error } = await supabase
-      .from('users')
-      .update({ role })
-      .eq('id', userId);
-      
-    if (error) {
-      return { success: false, error };
-    }
-    
-    return { success: true };
-  } catch (error) {
-    console.error('Error updating role:', error);
-    return { success: false, error };
-  }
+  console.warn('SECURITY WARNING: setUserRoleData is deprecated. Use admin_update_user_role_secure RPC via useSecureAdmin hook.');
+  return { 
+    success: false, 
+    error: new Error('Use admin_update_user_role_secure RPC for role updates') 
+  };
 };

@@ -97,9 +97,10 @@ const VideoManagement = () => {
       // Buscar informações dos clientes
       const videosWithClientInfo = await Promise.all(
         data.map(async (video: any) => {
+          // Using users_with_role view for secure role reading
           const { data: userData } = await supabase
-            .from('users')
-            .select('email')
+            .from('users_with_role')
+            .select('email, role')
             .eq('id', video.pedidos.client_id)
             .single();
 

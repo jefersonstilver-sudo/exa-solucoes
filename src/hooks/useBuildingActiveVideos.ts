@@ -96,9 +96,10 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       const clientIds = [...new Set(pedidos.map(p => p.client_id))];
 
       // 4. Buscar dados de vídeos e clientes em PARALELO
+      // Using users_with_role view for secure role reading
       const [videosData, clientsData, pedidoVideosData] = await Promise.all([
         supabase.from('videos').select('id, nome, url, duracao').in('id', videoIds),
-        supabase.from('users').select('id, email').in('id', clientIds),
+        supabase.from('users_with_role').select('id, email').in('id', clientIds),
         supabase.from('pedido_videos').select('pedido_id, video_id, slot_position').in('pedido_id', pedidoIds)
       ]);
 

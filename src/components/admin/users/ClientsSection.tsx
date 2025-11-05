@@ -49,6 +49,7 @@ interface ClientsSectionProps {
 const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Filter clients - role now comes from users_with_role view (secure)
   const clients = users.filter(user => user.role === 'client');
 
   const filteredClients = clients.filter(user =>

@@ -26,11 +26,11 @@ const UsersPage = () => {
       setLoading(true);
       console.log('👥 USERS PAGE: Buscando todos os usuários do Supabase...');
 
-      // Buscar dados da tabela users (nossa tabela)
+      // Buscar dados da tabela users_with_role (view segura que lê roles de user_roles)
       const {
         data: usersData,
         error: usersError
-      } = await supabase.from('users').select('*').order('data_criacao', {
+      } = await supabase.from('users_with_role').select('*').order('data_criacao', {
         ascending: false
       });
       if (usersError) {
