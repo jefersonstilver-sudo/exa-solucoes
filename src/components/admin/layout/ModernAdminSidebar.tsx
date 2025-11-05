@@ -331,18 +331,16 @@ export function ModernAdminSidebar() {
                       <SidebarMenuButton asChild>
                         <NavLink
                           to={item.href}
-                          className={`flex flex-row items-center ${collapsed ? 'justify-center px-2 py-3 gap-2' : 'px-3 py-2.5 md:py-3 gap-2 md:gap-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
+                          className={`flex flex-row items-center ${collapsed ? 'px-2 py-3 gap-2 justify-start' : 'px-3 py-2.5 md:py-3 gap-2 md:gap-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
                             isActive 
                               ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
                               : "text-white hover:bg-white/20 hover:text-white"
                           }`}
                         >
-                          <Icon className={`${collapsed ? 'h-6 w-6' : 'h-4 w-4 md:h-5 md:w-5'} flex-shrink-0 transition-transform duration-200 group-hover:scale-110`} />
-                          {!collapsed && (
-                            <span className="text-xs md:text-sm font-medium truncate">
-                              {item.title}
-                            </span>
-                          )}
+                          <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4 md:h-5 md:w-5'} flex-shrink-0 transition-transform duration-200 group-hover:scale-110`} />
+                          <span className={`${collapsed ? 'text-[10px] leading-tight' : 'text-xs md:text-sm'} font-semibold truncate whitespace-nowrap`}>
+                            {item.title}
+                          </span>
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -356,14 +354,12 @@ export function ModernAdminSidebar() {
       
       <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3 md:p-4'} border-t border-white/20 bg-[#9C1E1E]`}>
         <div className="flex items-center space-x-2 text-white text-xs md:text-sm">
-          <Shield className={`${collapsed ? 'h-4 w-4' : 'h-3 w-3 md:h-4 md:w-4'}`} />
-          {!collapsed && <span className="truncate">Sistema Seguro</span>}
+          <Shield className={`${collapsed ? 'h-4 w-4' : 'h-3 w-3 md:h-4 md:w-4'} flex-shrink-0`} />
+          <span className={`${collapsed ? 'text-[9px]' : 'text-xs'} truncate whitespace-nowrap`}>Sistema Seguro</span>
         </div>
-        {!collapsed && (
-          <div className="text-[10px] md:text-xs text-white/60 mt-0.5">
-            INDEXA Admin v3.0
-          </div>
-        )}
+        <div className={`${collapsed ? 'text-[8px]' : 'text-[10px] md:text-xs'} text-white/60 mt-0.5 truncate`}>
+          INDEXA Admin v3.0
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
