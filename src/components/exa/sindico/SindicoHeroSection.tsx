@@ -19,7 +19,7 @@ const SindicoHeroSection = React.memo(() => {
   return (
     <section 
       ref={ref}
-      className="relative min-h-[calc(100vh-4rem)] md:min-h-screen flex flex-col justify-center items-center overflow-hidden bg-gradient-to-br from-exa-black via-[#9C1E1E]/20 to-exa-black pt-20 md:pt-12 pb-28 md:pb-24"
+      className="relative min-h-[calc(100vh-4rem)] md:min-h-[60vh] lg:min-h-[65vh] flex flex-col justify-center items-center overflow-hidden bg-gradient-to-br from-exa-black via-[#9C1E1E]/20 to-exa-black pt-20 md:pt-16 lg:pt-12 pb-28 md:pb-20 lg:pb-16"
     >
       {/* Background overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-exa-black/50 to-exa-black z-0" />
