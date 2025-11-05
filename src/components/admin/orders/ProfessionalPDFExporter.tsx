@@ -424,69 +424,34 @@ export class ProfessionalPDFExporter {
   private async addFootersOnAllPages(order: OrderData): Promise<void> {
     const totalPages = this.doc.getNumberOfPages();
     
-    // Gerar QR Code para validação - usando domínio de produção
-    const validationUrl = `https://examidia.com.br/validate-order?order=${order.id}`;
-    let qrDataUrl = '';
-    
-    try {
-      qrDataUrl = await QRCode.toDataURL(validationUrl, { 
-        width: 200, 
-        margin: 1,
-        errorCorrectionLevel: 'M'
-      });
-      console.log('QR Code generated for URL:', validationUrl);
-    } catch (error) {
-      console.error('QR Code generation failed:', error);
-    }
-    
     for (let i = 1; i <= totalPages; i++) {
       this.doc.setPage(i);
-      const footerY = this.pageHeight - 35;
+      const footerY = this.pageHeight - 25;
       
       // Linha separadora minimalista
       this.doc.setDrawColor(229, 231, 235);
       this.doc.setLineWidth(0.3);
       this.doc.line(this.margin, footerY, this.pageWidth - this.margin, footerY);
       
-      // QR Code - lado esquerdo
-      if (qrDataUrl) {
-        this.doc.addImage(qrDataUrl, 'PNG', this.margin, footerY + 3, 25, 25);
-      }
-      
-      // Informações da empresa - centro
+      // Informações da empresa - lado esquerdo
       this.doc.setTextColor(107, 114, 128);
       this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
       
-      this.doc.text('EXA - Publicidade Inteligente', this.margin + 30, footerY + 8);
-      this.doc.text('www.examidia.com.br', this.margin + 30, footerY + 14);
+      this.doc.text('EXA - Publicidade Inteligente', this.margin, footerY + 6);
+      this.doc.text('www.examidia.com.br', this.margin, footerY + 11);
       
-      // Instruções de validação
-      this.doc.setFontSize(6);
-      this.doc.setTextColor(156, 30, 30);
-      this.doc.setFont('helvetica', 'bold');
-      this.doc.text('Valide este documento:', this.margin + 30, footerY + 20);
-      this.doc.setFont('helvetica', 'normal');
-      this.doc.setTextColor(107, 114, 128);
-      this.doc.text('Escaneie o QR Code', this.margin + 30, footerY + 24);
-      
-      // Paginação - lado direito
+      // Paginação - centro
       const pageText = `Pág. ${i}/${totalPages}`;
       const pageWidth = this.doc.getTextWidth(pageText);
+      const centerX = (this.pageWidth - pageWidth) / 2;
       this.doc.setFontSize(7);
-      this.doc.text(pageText, this.pageWidth - this.margin - pageWidth, footerY + 8);
+      this.doc.text(pageText, centerX, footerY + 8);
       
       // Data de emissão - lado direito
       const emittedText = `Emitido: ${this.emittedAt}`;
       const emittedWidth = this.doc.getTextWidth(emittedText);
-      this.doc.text(emittedText, this.pageWidth - this.margin - emittedWidth, footerY + 14);
-      
-      // Marca de proteção
-      this.doc.setFontSize(6);
-      this.doc.setTextColor(200, 200, 200);
-      const protectionText = '🔒 Documento Protegido';
-      const protectionWidth = this.doc.getTextWidth(protectionText);
-      this.doc.text(protectionText, this.pageWidth - this.margin - protectionWidth, footerY + 20);
+      this.doc.text(emittedText, this.pageWidth - this.margin - emittedWidth, footerY + 8);
     }
   }
 
