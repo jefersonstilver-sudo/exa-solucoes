@@ -22,6 +22,7 @@ import ProviderBenefits from '@/pages/admin/ProviderBenefits';
 import BenefitPreview from '@/pages/admin/BenefitPreview';
 import BenefitManagement from '@/pages/admin/BenefitManagement';
 import CRMClients from '@/pages/admin/CRMClients';
+import SecurityDashboard from '@/pages/admin/SecurityDashboard';
 
 const SuperAdminRoutes = () => {
   return (
@@ -51,6 +52,7 @@ const SuperAdminRoutes = () => {
       <Route path="cupons" element={<CouponsPage />} />
       <Route path="homepage-config" element={<HomepageImagesPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
+      <Route path="seguranca" element={<SecurityDashboard />} />
       
       {/* CONTEÚDO */}
       <Route path="videos" element={<VideoManagement />} />

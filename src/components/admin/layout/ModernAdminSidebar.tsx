@@ -174,6 +174,13 @@ export function ModernAdminSidebar() {
           permission: 'canManageCoupons'
         },
         {
+          title: 'Segurança',
+          href: buildPath('seguranca'),
+          icon: Shield,
+          permission: 'canManageSystemSettings',
+          requireSuperAdmin: true
+        },
+        {
           title: 'Configurações',
           href: buildPath('configuracoes'),
           icon: Settings,
