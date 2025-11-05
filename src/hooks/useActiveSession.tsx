@@ -15,13 +15,13 @@ export const useActiveSession = () => {
 
     const startSession = async () => {
       try {
-        console.log('🔵 Iniciando rastreamento de sessão avançado...');
+        console.log('🔵 [RASTREAMENTO AVANÇADO] Iniciando captura completa de dados...');
         
-        // Obtém IP real do usuário usando múltiplos serviços
+        // 1. OBTER IP REAL (múltiplos serviços)
         const ip = await ipGeolocationService.getRealIP();
-        console.log('✅ IP real obtido:', ip);
+        console.log('✅ IP real capturado:', ip);
 
-        // Obtém informações adicionais do navegador
+        // 2. CAPTURAR INFORMAÇÕES DO DISPOSITIVO
         const screenInfo = {
           width: window.screen.width,
           height: window.screen.height,
@@ -29,21 +29,43 @@ export const useActiveSession = () => {
           pixelRatio: window.devicePixelRatio
         };
 
+        // 3. INFORMAÇÕES DO NAVEGADOR
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const language = navigator.language;
         const languages = navigator.languages?.join(',') || language;
+        const platform = navigator.platform;
+        
+        // 4. HARDWARE (quando disponível)
+        const cpuCores = (navigator as any).hardwareConcurrency || null;
+        const deviceMemory = (navigator as any).deviceMemory || null;
 
-        console.log('📱 Informações do dispositivo:', {
-          screen: screenInfo,
-          timezone,
-          language,
-          languages
-        });
+        // 5. REFERRER E UTM PARAMETERS
+        const urlParams = new URLSearchParams(window.location.search);
+        const utmSource = urlParams.get('utm_source') || null;
+        const utmMedium = urlParams.get('utm_medium') || null;
+        const utmCampaign = urlParams.get('utm_campaign') || null;
+        const referrer = document.referrer || null;
 
-        // Busca geolocalização com múltiplos provedores
-        console.log('🔵 Buscando geolocalização detalhada...');
+        console.log('📱 [DEVICE] Screen:', screenInfo, 'CPU:', cpuCores, 'RAM:', deviceMemory, 'GB');
+        console.log('🌍 [LOCALE] Timezone:', timezone, 'Language:', language);
+        console.log('🔗 [TRACKING] Referrer:', referrer, 'UTM:', { utmSource, utmMedium, utmCampaign });
+
+        // 6. GEOLOCALIZAÇÃO AVANÇADA
+        console.log('🔵 [GEO] Buscando geolocalização detalhada para IP:', ip);
         const location = await ipGeolocationService.getIPLocation(ip);
-        console.log('✅ Localização obtida:', location);
+        
+        if (location) {
+          console.log('✅ [GEO] Localização completa obtida:', {
+            country: location.country,
+            city: location.city,
+            isp: location.isp,
+            asn: location.asn,
+            vpn: location.is_vpn,
+            timezone: location.timezone
+          });
+        } else {
+          console.warn('⚠️ [GEO] Falha ao obter geolocalização - dados limitados');
+        }
 
         const sessionData = {
           session_id: sessionId,
@@ -59,9 +81,29 @@ export const useActiveSession = () => {
           latitude: location?.latitude || 0,
           longitude: location?.longitude || 0,
           is_vpn: location?.is_vpn || false,
+          // NOVOS CAMPOS AVANÇADOS
+          timezone,
+          language,
+          languages,
+          screen_width: screenInfo.width,
+          screen_height: screenInfo.height,
+          screen_color_depth: screenInfo.colorDepth,
+          pixel_ratio: screenInfo.pixelRatio,
+          isp: location?.isp || null,
+          asn: location?.asn || null,
+          org: location?.org || null,
+          platform,
+          cpu_cores: cpuCores,
+          device_memory: deviceMemory,
+          referrer,
+          utm_source: utmSource,
+          utm_medium: utmMedium,
+          utm_campaign: utmCampaign,
           last_activity: new Date().toISOString(),
           expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString()
         };
+
+        console.log('🔵 [DATABASE] Inserindo sessão completa:', sessionData);
 
         console.log('🔵 Tentando inserir sessão:', sessionData);
 
@@ -77,19 +119,19 @@ export const useActiveSession = () => {
 
         console.log('✅ Sessão criada com sucesso:', data);
 
-        console.log('🔵 Registrando evento de sistema com detalhes avançados...');
+        console.log('🔵 [SYSTEM EVENT] Registrando evento de início de sessão...');
         await supabase.from('log_eventos_sistema').insert({
           tipo_evento: 'USER_SESSION_START',
-          descricao: `Sessão iniciada: ${location?.city || 'Unknown'}, ${location?.region || 'Unknown'} - ${location?.country || 'Unknown'} | Timezone: ${timezone} | ${location?.is_vpn ? '🔴 VPN/Proxy detectado' : '✅ Conexão direta'} | ISP: ${location?.isp || 'Unknown'}`,
+          descricao: `🌍 ${location?.city || 'Unknown'}, ${location?.region || 'Unknown'} - ${location?.country || 'Unknown'} | ⏰ ${timezone} | ${location?.is_vpn ? '🔴 VPN/PROXY' : '✅ Direct'} | 📡 ${location?.isp || 'Unknown ISP'} | 💻 ${platform} | 🖥️ ${screenInfo.width}x${screenInfo.height} | 🧠 ${cpuCores || '?'} cores | 💾 ${deviceMemory || '?'}GB`,
           ip,
           user_agent: navigator.userAgent
         });
         
-        console.log('✅ Evento de sessão registrado com sucesso:', {
+        console.log('✅ [SUCCESS] Sessão rastreada completamente:', {
           location: `${location?.city}, ${location?.country}`,
           vpn: location?.is_vpn,
-          timezone,
-          isp: location?.isp
+          isp: location?.isp,
+          screen: `${screenInfo.width}x${screenInfo.height}`
         });
       } catch (error) {
         console.error('❌ Erro ao iniciar sessão:', error);

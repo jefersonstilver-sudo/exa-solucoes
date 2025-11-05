@@ -2411,61 +2411,115 @@ export type Database = {
       }
       user_sessions: {
         Row: {
+          asn: string | null
           browser: string | null
           city: string | null
+          connection_type: string | null
           country: string | null
           country_code: string | null
+          cpu_cores: number | null
           created_at: string | null
+          device_memory: number | null
           device_type: string | null
           expires_at: string | null
           id: string
           ip_address: string | null
           is_vpn: boolean | null
+          isp: string | null
+          language: string | null
+          languages: string | null
           last_activity: string | null
           latitude: number | null
           longitude: number | null
+          org: string | null
+          pixel_ratio: number | null
+          platform: string | null
+          referrer: string | null
           region: string | null
+          screen_color_depth: number | null
+          screen_height: number | null
+          screen_width: number | null
           session_id: string
+          timezone: string | null
           user_agent: string | null
           user_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
+          asn?: string | null
           browser?: string | null
           city?: string | null
+          connection_type?: string | null
           country?: string | null
           country_code?: string | null
+          cpu_cores?: number | null
           created_at?: string | null
+          device_memory?: number | null
           device_type?: string | null
           expires_at?: string | null
           id?: string
           ip_address?: string | null
           is_vpn?: boolean | null
+          isp?: string | null
+          language?: string | null
+          languages?: string | null
           last_activity?: string | null
           latitude?: number | null
           longitude?: number | null
+          org?: string | null
+          pixel_ratio?: number | null
+          platform?: string | null
+          referrer?: string | null
           region?: string | null
+          screen_color_depth?: number | null
+          screen_height?: number | null
+          screen_width?: number | null
           session_id: string
+          timezone?: string | null
           user_agent?: string | null
           user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
+          asn?: string | null
           browser?: string | null
           city?: string | null
+          connection_type?: string | null
           country?: string | null
           country_code?: string | null
+          cpu_cores?: number | null
           created_at?: string | null
+          device_memory?: number | null
           device_type?: string | null
           expires_at?: string | null
           id?: string
           ip_address?: string | null
           is_vpn?: boolean | null
+          isp?: string | null
+          language?: string | null
+          languages?: string | null
           last_activity?: string | null
           latitude?: number | null
           longitude?: number | null
+          org?: string | null
+          pixel_ratio?: number | null
+          platform?: string | null
+          referrer?: string | null
           region?: string | null
+          screen_color_depth?: number | null
+          screen_height?: number | null
+          screen_width?: number | null
           session_id?: string
+          timezone?: string | null
           user_agent?: string | null
           user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: []
       }
