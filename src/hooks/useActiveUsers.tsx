@@ -25,22 +25,39 @@ export const useActiveUsers = () => {
   useEffect(() => {
     const fetchActiveSessions = async () => {
       try {
-        const { data, error } = await supabase
+        // Buscar sessões ativas
+        const { data: sessions, error: sessionsError } = await supabase
           .from('user_sessions')
-          .select(`
-            *,
-            users:user_id (nome, email)
-          `)
+          .select('*')
           .gte('expires_at', new Date().toISOString())
           .order('last_activity', { ascending: false });
 
-        if (error) throw error;
+        if (sessionsError) throw sessionsError;
 
-        const formattedSessions = (data || []).map((session: any) => ({
-          ...session,
-          user_name: session.users?.nome,
-          user_email: session.users?.email
-        }));
+        // Buscar dados dos usuários separadamente
+        const userIds = sessions?.filter(s => s.user_id).map(s => s.user_id) || [];
+        let usersData: any[] = [];
+        
+        if (userIds.length > 0) {
+          const { data: users, error: usersError } = await supabase
+            .from('users')
+            .select('id, nome, email')
+            .in('id', userIds);
+          
+          if (!usersError) {
+            usersData = users || [];
+          }
+        }
+
+        // Combinar dados
+        const formattedSessions = (sessions || []).map((session: any) => {
+          const user = usersData.find(u => u.id === session.user_id);
+          return {
+            ...session,
+            user_name: user?.nome,
+            user_email: user?.email
+          };
+        });
 
         setSessions(formattedSessions);
         setTotalActive(formattedSessions.length);
