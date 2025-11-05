@@ -31,11 +31,21 @@ const SessionCard = ({ session }: { session: ActiveSession }) => {
 
   const getCountryFlag = (countryCode: string) => {
     if (!countryCode || countryCode === 'XX' || countryCode.length !== 2) {
+      return '🌍'; // Globo para desconhecido
+    }
+    
+    try {
+      // Converte código do país em emoji de bandeira usando Regional Indicator Symbols
+      const code = countryCode.toUpperCase();
+      const codePoints = [...code].map(char => 127397 + char.charCodeAt(0));
+      const flag = String.fromCodePoint(...codePoints);
+      
+      console.log(`🎌 Gerando bandeira para ${code}:`, flag);
+      return flag;
+    } catch (error) {
+      console.error('Erro ao gerar bandeira:', error);
       return '🌍';
     }
-    const codePoints = [...countryCode.toUpperCase()]
-      .map(char => 127397 + char.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
   };
 
   const getRiskBadgeColor = () => {
@@ -67,8 +77,13 @@ const SessionCard = ({ session }: { session: ActiveSession }) => {
       <div className="flex items-center gap-2 min-w-[180px] flex-1">
         <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         <span className="font-medium text-sm truncate">
-          {session.user_name || (session.user_id ? 'Usuário Autenticado' : 'Visitante Anônimo')}
+          {session.user_name || (session.user_id ? 'Carregando...' : 'Visitante Anônimo')}
         </span>
+        {session.user_email && (
+          <span className="text-xs text-muted-foreground truncate hidden lg:inline">
+            ({session.user_email})
+          </span>
+        )}
       </div>
 
       {/* IP */}
@@ -183,21 +198,30 @@ const SessionCard = ({ session }: { session: ActiveSession }) => {
                 <span className="text-muted-foreground">Plataforma:</span> {session.platform}
               </div>
             )}
-            {session.screen_width && session.screen_height && (
+            {session.screen_width && session.screen_height ? (
               <div>
                 <span className="text-muted-foreground">Resolução:</span>{' '}
                 {session.screen_width}×{session.screen_height}
-                {session.pixel_ratio && ` (${session.pixel_ratio}× DPR)`}
+                {session.pixel_ratio && ` (${session.pixel_ratio.toFixed(1)}× DPR)`}
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground/70">
+                ℹ️ Dados de tela não disponíveis (sessão antiga)
               </div>
             )}
-            {session.cpu_cores && (
+            {session.cpu_cores ? (
               <div>
                 <span className="text-muted-foreground">CPU:</span> {session.cpu_cores} cores
               </div>
-            )}
-            {session.device_memory && (
+            ) : null}
+            {session.device_memory ? (
               <div>
                 <span className="text-muted-foreground">RAM:</span> {session.device_memory} GB
+              </div>
+            ) : null}
+            {!session.cpu_cores && !session.device_memory && (
+              <div className="text-xs text-muted-foreground/70">
+                ℹ️ Dados de hardware não disponíveis
               </div>
             )}
           </div>

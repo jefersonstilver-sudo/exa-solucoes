@@ -73,17 +73,31 @@ export const useActiveUsers = () => {
             console.log('✅ Dados da tabela users:', users);
           }
 
-          // Para usuários não encontrados, buscar do auth
+          // Para TODOS os usuários (incluindo os que têm nome null), buscar do auth para pegar metadata
           for (const userId of userIds) {
-            if (!usersData.find(u => u.id === userId)) {
+            const existingUser = usersData.find(u => u.id === userId);
+            
+            // Se não tem nome ou não foi encontrado, buscar do auth
+            if (!existingUser || !existingUser.nome) {
               try {
                 const { data: authData } = await supabase.auth.admin.getUserById(userId);
                 if (authData?.user) {
-                  usersData.push({
-                    id: userId,
-                    nome: authData.user.user_metadata?.full_name || authData.user.email?.split('@')[0] || 'Usuário',
-                    email: authData.user.email
-                  });
+                  const metadata = authData.user.user_metadata || {};
+                  const nome = metadata.name || metadata.full_name || metadata.nome || authData.user.email?.split('@')[0];
+                  
+                  if (existingUser) {
+                    // Atualizar usuário existente com nome do auth
+                    existingUser.nome = nome;
+                    existingUser.email = existingUser.email || authData.user.email;
+                  } else {
+                    // Adicionar novo usuário
+                    usersData.push({
+                      id: userId,
+                      nome: nome,
+                      email: authData.user.email
+                    });
+                  }
+                  console.log(`✅ Nome encontrado no auth para ${userId}:`, nome);
                 }
               } catch (error) {
                 console.log('⚠️ Não foi possível buscar do auth para:', userId);
@@ -100,7 +114,7 @@ export const useActiveUsers = () => {
           
           return {
             ...session,
-            user_name: user?.nome || (session.user_id ? 'Usuário' : null),
+            user_name: user?.nome || null,
             user_email: user?.email || null
           };
         });
@@ -118,10 +132,9 @@ export const useActiveUsers = () => {
 
     fetchActiveSessions();
 
-    const interval = setInterval(fetchActiveSessions, 3000);
-
+    // Setup realtime subscription para atualizações em tempo real
     const channel = supabase
-      .channel('active-sessions-channel')
+      .channel('active-sessions-updates')
       .on(
         'postgres_changes',
         {
@@ -129,11 +142,18 @@ export const useActiveUsers = () => {
           schema: 'public',
           table: 'user_sessions'
         },
-        () => {
+        (payload) => {
+          console.log('🔥 Atualização em tempo real na sessão:', payload);
+          // Refetch quando houver mudanças
           fetchActiveSessions();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Status da conexão realtime:', status);
+      });
+
+    // Setup polling como backup (a cada 30 segundos)
+    const interval = setInterval(fetchActiveSessions, 30000);
 
     return () => {
       clearInterval(interval);
