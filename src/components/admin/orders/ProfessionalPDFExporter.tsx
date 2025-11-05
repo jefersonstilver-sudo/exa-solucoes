@@ -173,11 +173,11 @@ export class ProfessionalPDFExporter {
     // Logo EXA bem posicionada
     let drewLogo = false;
     try {
-      const logoUrl = '/exa-logo.png';
+      const logoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
       const dataUrl = await this.loadImageAsDataURL(logoUrl);
-      const logoH = 10;
-      const logoW = logoH * 3.5;
-      this.doc.addImage(dataUrl, 'PNG', this.margin, 12, logoW, logoH);
+      // Maintain aspect ratio - logo is square
+      const logoSize = 12;
+      this.doc.addImage(dataUrl, 'PNG', this.margin, 11, logoSize, logoSize);
       drewLogo = true;
     } catch (error) {
       this.doc.setTextColor(255, 255, 255);
@@ -421,7 +421,7 @@ export class ProfessionalPDFExporter {
     const totalPages = this.doc.getNumberOfPages();
     
     // Gerar QR Code para validação
-    const validationUrl = `${window.location.origin}/validate-order?order=${order.id}`;
+    const validationUrl = `https://www.examidia.com.br/validate-order?order=${order.id}`;
     let qrDataUrl = '';
     
     try {
