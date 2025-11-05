@@ -25,39 +25,73 @@ export const useActiveUsers = () => {
   useEffect(() => {
     const fetchActiveSessions = async () => {
       try {
-        // Buscar sessões ativas
+        console.log('🔄 Buscando sessões ativas...');
+        
+        // Buscar sessões ativas com TODAS as informações avançadas
         const { data: sessions, error: sessionsError } = await supabase
           .from('user_sessions')
           .select('*')
           .gte('expires_at', new Date().toISOString())
           .order('last_activity', { ascending: false });
 
-        if (sessionsError) throw sessionsError;
+        if (sessionsError) {
+          console.error('❌ Erro ao buscar sessões:', sessionsError);
+          throw sessionsError;
+        }
 
-        // Buscar dados dos usuários separadamente
+        console.log('✅ Sessões encontradas:', sessions?.length);
+
+        // Buscar dados dos usuários da tabela users E do auth.users
         const userIds = sessions?.filter(s => s.user_id).map(s => s.user_id) || [];
         let usersData: any[] = [];
         
         if (userIds.length > 0) {
+          console.log('🔍 Buscando dados de usuários para IDs:', userIds);
+          
+          // Primeiro tenta buscar da tabela users
           const { data: users, error: usersError } = await supabase
             .from('users')
             .select('id, nome, email')
             .in('id', userIds);
           
-          if (!usersError) {
-            usersData = users || [];
+          if (!usersError && users) {
+            usersData = users;
+            console.log('✅ Dados da tabela users:', users);
+          }
+
+          // Para usuários não encontrados, buscar do auth
+          for (const userId of userIds) {
+            if (!usersData.find(u => u.id === userId)) {
+              try {
+                const { data: authData } = await supabase.auth.admin.getUserById(userId);
+                if (authData?.user) {
+                  usersData.push({
+                    id: userId,
+                    nome: authData.user.user_metadata?.full_name || authData.user.email?.split('@')[0] || 'Usuário',
+                    email: authData.user.email
+                  });
+                }
+              } catch (error) {
+                console.log('⚠️ Não foi possível buscar do auth para:', userId);
+              }
+            }
           }
         }
 
-        // Combinar dados
+        console.log('📊 Dados finais dos usuários:', usersData);
+
+        // Combinar dados com TODAS as informações avançadas
         const formattedSessions = (sessions || []).map((session: any) => {
           const user = usersData.find(u => u.id === session.user_id);
+          
           return {
             ...session,
-            user_name: user?.nome,
-            user_email: user?.email
+            user_name: user?.nome || (session.user_id ? 'Usuário' : null),
+            user_email: user?.email || null
           };
         });
+
+        console.log('✅ Sessões formatadas:', formattedSessions);
 
         setSessions(formattedSessions);
         setTotalActive(formattedSessions.length);

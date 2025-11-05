@@ -35,55 +35,73 @@ export const ActiveSessionsList = ({ sessions }: ActiveSessionsListProps) => {
   };
 
   return (
-    <Card className="h-[700px] flex flex-col">
-      <CardHeader className="flex-shrink-0">
-        <CardTitle className="flex items-center gap-2">
-          <Globe className="h-5 w-5 text-primary" />
-          Sessões Ativas em Tempo Real
-          <Badge variant="outline" className="ml-auto">
+    <Card className="h-[700px] flex flex-col shadow-lg border-2">
+      <CardHeader className="flex-shrink-0 bg-gradient-to-r from-primary/5 to-transparent border-b">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Globe className="h-5 w-5 text-primary" />
+          </div>
+          <span className="flex-1">Sessões Ativas em Tempo Real</span>
+          <Badge variant="secondary" className="ml-auto font-semibold px-3 py-1">
             {sessions.length} {sessions.length === 1 ? 'usuário' : 'usuários'}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden p-0">
-        <ScrollArea className="h-full px-6">
-          <div className="space-y-4 pb-4">
+        <ScrollArea className="h-full px-4 md:px-6">
+          <div className="space-y-3 py-4">
             {sessions.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Globe className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">Nenhuma sessão ativa</p>
-                <p className="text-sm">Aguardando conexões...</p>
+              <div className="text-center py-16 text-muted-foreground">
+                <div className="w-20 h-20 mx-auto mb-4 bg-muted/50 rounded-full flex items-center justify-center">
+                  <Globe className="h-10 w-10 opacity-50" />
+                </div>
+                <p className="font-semibold text-lg mb-1">Nenhuma sessão ativa</p>
+                <p className="text-sm">Aguardando conexões de usuários...</p>
               </div>
             ) : (
               sessions.map((session: any) => (
                 <div
                   key={session.id}
-                  className="p-4 rounded-lg border-2 bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200"
+                  className="p-3 md:p-4 rounded-xl border-2 bg-gradient-to-br from-card to-card/50 hover:border-primary/50 hover:shadow-lg hover:scale-[1.01] transition-all duration-200"
                 >
-                  {/* Header da Sessão */}
+                  {/* Header da Sessão com bandeira e informações do usuário */}
                   <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-4xl leading-none">{getCountryFlag(session.country_code)}</span>
-                      <div>
-                        <div className="font-semibold text-base">
-                          {session.user_name || 'Visitante Anônimo'}
+                    <div className="flex items-center gap-2.5 md:gap-3 flex-1 min-w-0">
+                      <div className="flex-shrink-0 w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center text-3xl md:text-4xl border border-primary/20 shadow-sm">
+                        {getCountryFlag(session.country_code)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm md:text-base truncate">
+                          {session.user_name || (session.user_id ? '👤 Usuário do Sistema' : '🌐 Visitante Anônimo')}
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {session.user_email || 'Não autenticado'}
+                        <div className="text-xs text-muted-foreground truncate">
+                          {session.user_email || (session.user_id ? 'Email não disponível' : 'Não autenticado')}
                         </div>
+                        {session.user_id && (
+                          <div className="text-[10px] text-muted-foreground/70 truncate mt-0.5">
+                            ID: {session.user_id.slice(0, 8)}...
+                          </div>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap gap-1 justify-end">
+                    <div className="flex flex-wrap gap-1 justify-end flex-shrink-0">
+                      {session.user_id && (
+                        <Badge variant="default" className="text-xs gap-1 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                          <Shield className="h-3 w-3" />
+                          Autenticado
+                        </Badge>
+                      )}
                       {session.is_vpn && (
                         <Badge variant="destructive" className="text-xs gap-1">
                           <Shield className="h-3 w-3" />
-                          VPN/Proxy
+                          VPN
                         </Badge>
                       )}
                       {session.country_code !== 'BR' && session.country_code !== 'XX' && (
-                        <Badge variant="secondary" className="text-xs">
-                          🌍 Internacional
+                        <Badge variant="secondary" className="text-xs gap-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20">
+                          <Globe className="h-3 w-3" />
+                          Internacional
                         </Badge>
                       )}
                     </div>

@@ -67,29 +67,43 @@ export default function SecurityDashboard() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header Profissional */}
+    <div className="container mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+      {/* Header Moderno e Profissional */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-primary/10 rounded-xl">
-              <Shield className="h-8 w-8 text-primary" />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="p-2.5 md:p-3 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl border border-primary/20 shadow-sm">
+              <Shield className="h-6 w-6 md:h-8 md:w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Monitoramento de Segurança</h1>
-              <p className="text-muted-foreground">Central de segurança e monitoramento em tempo real</p>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                Monitoramento de Segurança
+              </h1>
+              <p className="text-sm md:text-base text-muted-foreground">
+                Central de segurança e monitoramento em tempo real
+              </p>
             </div>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline">Atualizar</span>
+            </Button>
             <Button
               onClick={handleExport}
               disabled={isExporting}
               variant="outline"
               size="sm"
+              className="gap-2"
             >
-              <Download className="h-4 w-4 mr-2" />
-              {isExporting ? 'Exportando...' : 'Exportar CSV'}
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">{isExporting ? 'Exportando...' : 'Exportar CSV'}</span>
             </Button>
           </div>
         </div>
