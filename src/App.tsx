@@ -56,6 +56,7 @@ const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
 const EmailSent = lazy(() => import('./pages/EmailSent'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const ValidateOrder = lazy(() => import('./pages/public/ValidateOrder'));
 
 // Lazy load das páginas da área do anunciante
 const AdvertiserDashboard = lazy(() => import('./pages/advertiser/AdvertiserDashboard'));
@@ -173,6 +174,13 @@ const AppContent = () => {
           <Route path="/pedido-confirmado" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando confirmação..." />}>
               <OrderConfirmation />
+            </Suspense>
+          } />
+          
+          {/* VALIDAÇÃO PÚBLICA DE PEDIDOS */}
+          <Route path="/validate-order" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando validação..." />}>
+              <ValidateOrder />
             </Suspense>
           } />
 
