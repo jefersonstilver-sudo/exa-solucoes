@@ -2547,10 +2547,15 @@ export type Database = {
         Args: { p_pedido_video_id: string; p_reason: string }
         Returns: Json
       }
-      admin_update_user_role_secure: {
-        Args: { p_admin_id?: string; p_new_role: string; p_user_id: string }
-        Returns: Json
-      }
+      admin_update_user_role_secure:
+        | {
+            Args: { p_admin_id?: string; p_new_role: string; p_user_id: string }
+            Returns: Json
+          }
+        | {
+            Args: { p_admin_id: string; p_new_role: string; p_user_id: string }
+            Returns: Json
+          }
       admin_update_user_secure: {
         Args: {
           p_cpf?: string

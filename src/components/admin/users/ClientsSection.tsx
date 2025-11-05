@@ -58,12 +58,11 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
 
   const handleBlockUser = async (userId: string, userEmail: string) => {
     try {
-      const banUntil = new Date();
-      banUntil.setFullYear(banUntil.getFullYear() + 1); // Ban por 1 ano
-      
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
-        ban_duration: 'none',
-        user_metadata: { banned_until: banUntil.toISOString() }
+      const { error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'block_user',
+          userId
+        }
       });
 
       if (error) throw error;
@@ -78,8 +77,11 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
 
   const handleUnblockUser = async (userId: string, userEmail: string) => {
     try {
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
-        user_metadata: { banned_until: null }
+      const { error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'unblock_user',
+          userId
+        }
       });
 
       if (error) throw error;
@@ -115,7 +117,12 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
     if (!confirmDelete) return;
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'delete_user',
+          userId
+        }
+      });
 
       if (error) throw error;
 

@@ -134,13 +134,19 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     try {
       setLoading(true);
 
-      // Atualizar metadados do usuário
-      const { error } = await supabase.auth.admin.updateUserById(user.id, {
-        user_metadata: {
-          ...user.raw_user_meta_data,
-          name: editData.name,
-          telefone: editData.telefone,
-          observacoes: editData.observacoes
+      // Atualizar metadados do usuário via Edge Function
+      const { error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'update_metadata',
+          userId: user.id,
+          data: {
+            user_metadata: {
+              ...user.raw_user_meta_data,
+              name: editData.name,
+              telefone: editData.telefone,
+              observacoes: editData.observacoes
+            }
+          }
         }
       });
 
@@ -171,8 +177,14 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         throw new Error('Falha ao gerar senha segura');
       }
 
-      const { error } = await supabase.auth.admin.updateUserById(user.id, {
-        password: securePassword
+      const { error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'reset_password',
+          userId: user.id,
+          data: {
+            password: securePassword
+          }
+        }
       });
 
       if (error) throw error;
