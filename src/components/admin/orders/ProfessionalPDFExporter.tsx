@@ -156,100 +156,99 @@ export class ProfessionalPDFExporter {
   }
 
   private async drawHeader(): Promise<void> {
-    // Fundo do header
-    this.doc.setFillColor(60, 19, 97);
-    this.doc.rect(0, 0, this.pageWidth, 55, 'F');
+    // Header principal - Vermelho EXA
+    this.doc.setFillColor(156, 30, 30); // Vermelho escuro EXA #9C1E1E
+    this.doc.rect(0, 0, this.pageWidth, 45, 'F');
     
     // Tentar carregar logo EXA
     let drewLogo = false;
     try {
       const logoUrl = '/exa-logo.png';
       const dataUrl = await this.loadImageAsDataURL(logoUrl);
-      // Calcular proporção correta da logo para evitar distorção
-      const logoH = 18;
-      const logoW = logoH * 3.5; // Proporção aproximada da logo EXA
-      this.doc.addImage(dataUrl, 'PNG', this.margin, 18, logoW, logoH);
+      // Logo maior e bem posicionada
+      const logoH = 14;
+      const logoW = logoH * 3.5;
+      this.doc.addImage(dataUrl, 'PNG', this.margin, 15, logoW, logoH);
       drewLogo = true;
     } catch (error) {
       console.log('Logo não carregada, usando fallback');
-    }
-    
-    if (!drewLogo) {
       // Fallback - texto EXA
       this.doc.setTextColor(255, 255, 255);
-      this.doc.setFontSize(24);
+      this.doc.setFontSize(20);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text('EXA', this.margin, 32);
+      this.doc.text('EXA', this.margin, 26);
     }
     
-    // Subtitle
+    // Subtitle elegante
     this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(10);
+    this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Publicidade Inteligente', this.margin, drewLogo ? 45 : 42);
+    this.doc.text('Publicidade Inteligente', this.margin, drewLogo ? 33 : 35);
     
-    // Título do documento
+    // Título do documento - lado direito
     this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(14);
+    this.doc.setFontSize(11);
     this.doc.setFont('helvetica', 'bold');
     const titleText = 'RELATÓRIO DETALHADO DO PEDIDO';
     const titleWidth = this.doc.getTextWidth(titleText);
-    this.doc.text(titleText, this.pageWidth - this.margin - titleWidth, 26);
+    this.doc.text(titleText, this.pageWidth - this.margin - titleWidth, 20);
     
-    // Data de emissão
-    this.doc.setFontSize(9);
+    // Data de emissão - lado direito
+    this.doc.setFontSize(7);
     this.doc.setFont('helvetica', 'normal');
     const emittedText = `Emitido em: ${this.emittedAt}`;
     const emittedWidth = this.doc.getTextWidth(emittedText);
-    this.doc.text(emittedText, this.pageWidth - this.margin - emittedWidth, 40);
+    this.doc.text(emittedText, this.pageWidth - this.margin - emittedWidth, 32);
     
-    this.yPosition = 65;
+    this.yPosition = 55;
   }
 
   private drawSection(title: string): void {
-    this.checkPageBreak(28);
+    this.checkPageBreak(20);
     
-    // Fundo da seção
-    this.doc.setFillColor(248, 249, 250);
-    this.doc.rect(this.margin, this.yPosition - 4, this.contentWidth, 20, 'F');
+    // Fundo cinza claro
+    this.doc.setFillColor(249, 250, 251);
+    this.doc.rect(this.margin, this.yPosition - 2, this.contentWidth, 14, 'F');
     
-    // Barra vertical roxa como marcador
-    this.doc.setFillColor(60, 19, 97);
-    this.doc.rect(this.margin + 2, this.yPosition - 2, 3, 16, 'F');
+    // Borda superior
+    this.doc.setDrawColor(229, 231, 235);
+    this.doc.setLineWidth(0.5);
+    this.doc.line(this.margin, this.yPosition - 2, this.pageWidth - this.margin, this.yPosition - 2);
     
     // Título da seção
-    this.doc.setTextColor(60, 19, 97);
-    this.doc.setFontSize(13);
+    this.doc.setTextColor(31, 41, 55);
+    this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(title, this.margin + 8, this.yPosition + 9);
+    this.doc.text(title, this.margin + 4, this.yPosition + 6);
     
-    this.yPosition += 26;
+    this.yPosition += 18;
   }
 
   private drawInfoRow(label: string, value: string, isHighlight: boolean = false): void {
-    this.checkPageBreak(10);
+    this.checkPageBreak(8);
     
     if (isHighlight) {
-      this.doc.setFillColor(252, 248, 254);
-      this.doc.rect(this.margin, this.yPosition - 2, this.contentWidth, 12, 'F');
+      this.doc.setFillColor(254, 242, 242);
+      this.doc.rect(this.margin, this.yPosition - 1, this.contentWidth, 9, 'F');
     }
     
     // Label
-    this.doc.setTextColor(75, 85, 99);
-    this.doc.setFontSize(10);
+    this.doc.setTextColor(107, 114, 128);
+    this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(label + ':', this.margin + 5, this.yPosition + 5);
+    this.doc.text(label + ':', this.margin + 3, this.yPosition + 4);
     
-    // Value - com quebra de linha se necessário
-    this.doc.setTextColor(17, 24, 39);
+    // Value
+    this.doc.setTextColor(31, 41, 55);
+    this.doc.setFontSize(8);
     this.doc.setFont('helvetica', isHighlight ? 'bold' : 'normal');
     
-    const valueLines = this.wrapText(value, this.maxTextWidth - 65, 10);
+    const valueLines = this.wrapText(value, this.maxTextWidth - 50, 8);
     valueLines.forEach((line, index) => {
-      this.doc.text(line, this.margin + 65, this.yPosition + 5 + (index * 6));
+      this.doc.text(line, this.margin + 50, this.yPosition + 4 + (index * 5));
     });
     
-    this.yPosition += Math.max(10, valueLines.length * 6 + 4);
+    this.yPosition += Math.max(8, valueLines.length * 5 + 2);
   }
 
   private drawStatusBadge(status: string, x: number, y: number): void {
@@ -279,57 +278,56 @@ export class ProfessionalPDFExporter {
   }
 
   private drawTable(headers: string[], rows: string[][]): void {
-    // Cálculo dinâmico de largura das colunas
     const baseColWidth = this.contentWidth / headers.length;
-    const minColWidth = 25;
-    const maxColWidth = this.contentWidth * 0.4;
+    const minColWidth = 20;
+    const maxColWidth = this.contentWidth * 0.35;
     
     const colWidths = headers.map(() => Math.max(minColWidth, Math.min(maxColWidth, baseColWidth)));
     
-    this.checkPageBreak(20 + (rows.length * 12));
+    this.checkPageBreak(15 + (rows.length * 8));
     
-    // Header
-    this.doc.setFillColor(60, 19, 97);
-    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 12, 'F');
+    // Header da tabela - Cinza escuro
+    this.doc.setFillColor(75, 85, 99);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 8, 'F');
     
     this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(9);
+    this.doc.setFontSize(7);
     this.doc.setFont('helvetica', 'bold');
     
     let currentX = this.margin;
     headers.forEach((header, index) => {
-      const headerLines = this.wrapText(header, colWidths[index] - 4, 9);
+      const headerLines = this.wrapText(header, colWidths[index] - 3, 7);
       headerLines.forEach((line, lineIndex) => {
-        this.doc.text(line, currentX + 2, this.yPosition + 7 + (lineIndex * 4));
+        this.doc.text(line, currentX + 2, this.yPosition + 5 + (lineIndex * 3));
       });
       currentX += colWidths[index];
     });
     
-    this.yPosition += 15;
+    this.yPosition += 10;
     
-    // Rows
+    // Linhas da tabela
     rows.forEach((row, rowIndex) => {
       const maxLinesInRow = Math.max(...row.map((cell, cellIndex) => 
-        this.wrapText(cell, colWidths[cellIndex] - 4, 8).length
+        this.wrapText(cell, colWidths[cellIndex] - 3, 7).length
       ));
-      const rowHeight = Math.max(10, maxLinesInRow * 5 + 2);
+      const rowHeight = Math.max(7, maxLinesInRow * 4 + 2);
       
       this.checkPageBreak(rowHeight);
       
       if (rowIndex % 2 === 0) {
-        this.doc.setFillColor(248, 249, 250);
+        this.doc.setFillColor(249, 250, 251);
         this.doc.rect(this.margin, this.yPosition, this.contentWidth, rowHeight, 'F');
       }
       
-      this.doc.setTextColor(17, 24, 39);
-      this.doc.setFontSize(8);
+      this.doc.setTextColor(31, 41, 55);
+      this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
       
       let currentX = this.margin;
       row.forEach((cell, cellIndex) => {
-        const cellLines = this.wrapText(cell, colWidths[cellIndex] - 4, 8);
+        const cellLines = this.wrapText(cell, colWidths[cellIndex] - 3, 7);
         cellLines.forEach((line, lineIndex) => {
-          this.doc.text(line, currentX + 2, this.yPosition + 6 + (lineIndex * 5));
+          this.doc.text(line, currentX + 2, this.yPosition + 5 + (lineIndex * 4));
         });
         currentX += colWidths[cellIndex];
       });
@@ -337,89 +335,79 @@ export class ProfessionalPDFExporter {
       this.yPosition += rowHeight;
     });
     
-    this.yPosition += 8;
+    this.yPosition += 6;
   }
 
   private drawFinancialSummary(order: OrderData): void {
-    this.checkPageBreak(45);
+    this.checkPageBreak(32);
     
-    // Caixa destacada para resumo financeiro
-    this.doc.setFillColor(252, 248, 254);
-    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 40, 'F');
+    // Caixa minimalista para resumo financeiro
+    this.doc.setFillColor(249, 250, 251);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 28, 'F');
     
-    this.doc.setDrawColor(60, 19, 97);
-    this.doc.setLineWidth(1);
-    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 40);
+    this.doc.setDrawColor(229, 231, 235);
+    this.doc.setLineWidth(0.5);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 28);
     
     // Título
-    this.doc.setTextColor(60, 19, 97);
-    this.doc.setFontSize(12);
+    this.doc.setTextColor(31, 41, 55);
+    this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('RESUMO FINANCEIRO', this.margin + 8, this.yPosition + 12);
+    this.doc.text('RESUMO FINANCEIRO', this.margin + 4, this.yPosition + 8);
     
     // Valores
     const subtotal = order.valor_total;
     const desconto = order.cupom_id ? subtotal * 0.1 : 0;
     const valorFinal = order.valor_total;
     
-    this.doc.setTextColor(17, 24, 39);
-    this.doc.setFontSize(10);
+    this.doc.setTextColor(107, 114, 128);
+    this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
     
-    this.doc.text(`Subtotal: ${this.formatCurrency(subtotal + desconto)}`, this.margin + 8, this.yPosition + 22);
+    this.doc.text(`Subtotal: ${this.formatCurrency(subtotal + desconto)}`, this.margin + 4, this.yPosition + 16);
     if (desconto > 0) {
-      this.doc.text(`Desconto: -${this.formatCurrency(desconto)}`, this.margin + 8, this.yPosition + 30);
+      this.doc.text(`Desconto: -${this.formatCurrency(desconto)}`, this.margin + 4, this.yPosition + 22);
     }
     
-    // Valor total destacado - posicionamento responsivo
-    this.doc.setFontSize(13);
+    // Valor total - lado direito
+    this.doc.setFontSize(11);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.setTextColor(60, 19, 97);
+    this.doc.setTextColor(156, 30, 30); // Vermelho EXA
     const totalText = `TOTAL: ${this.formatCurrency(valorFinal)}`;
     const totalWidth = this.doc.getTextWidth(totalText);
-    this.doc.text(totalText, this.pageWidth - this.margin - totalWidth - 8, this.yPosition + 30);
+    this.doc.text(totalText, this.pageWidth - this.margin - totalWidth - 4, this.yPosition + 20);
     
-    this.yPosition += 48;
+    this.yPosition += 34;
   }
 
   private addFootersOnAllPages(): void {
     const totalPages = this.doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       this.doc.setPage(i);
-      const footerY = this.pageHeight - 40; // Aumentar margem inferior
+      const footerY = this.pageHeight - 30;
       
-      // Linha separadora
+      // Linha separadora minimalista
       this.doc.setDrawColor(229, 231, 235);
-      this.doc.setLineWidth(0.5);
+      this.doc.setLineWidth(0.3);
       this.doc.line(this.margin, footerY, this.pageWidth - this.margin, footerY);
       
-      // Informações da empresa
+      // Informações da empresa - compacto
       this.doc.setTextColor(107, 114, 128);
-      this.doc.setFontSize(8);
+      this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
       
-      // Primeira linha - nome da empresa
-      this.doc.text('EXA - Publicidade Inteligente', this.margin, footerY + 10);
-      
-      // Segunda linha - contatos (verificar se cabem na página)
-      const contactText = 'contato@exa.com.br | www.exa.com.br';
-      const contactWidth = this.doc.getTextWidth(contactText);
-      if (this.margin + contactWidth <= this.pageWidth - this.margin) {
-        this.doc.text(contactText, this.margin, footerY + 18);
-      } else {
-        // Se não caber, quebrar em duas linhas
-        this.doc.text('contato@exa.com.br', this.margin, footerY + 18);
-        this.doc.text('www.exa.com.br', this.margin, footerY + 26);
-      }
-      
-      // Data de emissão
-      const emittedText = `Emitido em: ${this.emittedAt}`;
-      this.doc.text(emittedText, this.margin, footerY + 26);
+      this.doc.text('EXA - Publicidade Inteligente', this.margin, footerY + 8);
+      this.doc.text('contato@exa.com.br | www.exa.com.br', this.margin, footerY + 14);
       
       // Paginação - lado direito
-      const pageText = `Página ${i} de ${totalPages}`;
+      const pageText = `Pág. ${i}/${totalPages}`;
       const pageWidth = this.doc.getTextWidth(pageText);
-      this.doc.text(pageText, this.pageWidth - this.margin - pageWidth, footerY + 10);
+      this.doc.text(pageText, this.pageWidth - this.margin - pageWidth, footerY + 8);
+      
+      // Data de emissão - lado direito
+      const emittedText = `Emitido: ${this.emittedAt}`;
+      const emittedWidth = this.doc.getTextWidth(emittedText);
+      this.doc.text(emittedText, this.pageWidth - this.margin - emittedWidth, footerY + 14);
     }
   }
 
