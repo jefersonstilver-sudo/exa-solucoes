@@ -19,7 +19,8 @@ import {
   LogOut,
   Zap,
   Film,
-  Gift
+  Gift,
+  UsersRound
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -88,6 +89,12 @@ export function ModernAdminSidebar() {
           title: 'Pedidos',
           href: buildPath('pedidos'),
           icon: ShoppingBag,
+          permission: 'canViewOrders'
+        },
+        {
+          title: 'CRM Clientes',
+          href: buildPath('crm'),
+          icon: UsersRound,
           permission: 'canViewOrders'
         },
         {

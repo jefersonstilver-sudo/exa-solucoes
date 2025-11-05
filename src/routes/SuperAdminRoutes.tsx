@@ -21,6 +21,7 @@ import LogosPage from '@/pages/admin/LogosPage';
 import ProviderBenefits from '@/pages/admin/ProviderBenefits';
 import BenefitPreview from '@/pages/admin/BenefitPreview';
 import BenefitManagement from '@/pages/admin/BenefitManagement';
+import CRMClients from '@/pages/admin/CRMClients';
 
 const SuperAdminRoutes = () => {
   return (
@@ -29,6 +30,7 @@ const SuperAdminRoutes = () => {
       <Route index element={<Dashboard />} />
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
+      <Route path="crm" element={<CRMClients />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />
       <Route path="beneficio-prestadores" element={<ProviderBenefits />} />
       <Route path="preview-beneficio" element={<BenefitPreview />} />

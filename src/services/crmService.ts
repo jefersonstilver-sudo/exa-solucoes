@@ -61,6 +61,7 @@ export interface UnifiedClientData {
     total_sessions: number;
     total_time_spent: number;
     pages_visited: Record<string, number>;
+    last_visit?: string;
     buildings_viewed: Array<{
       building_id: string;
       time_spent: number;
