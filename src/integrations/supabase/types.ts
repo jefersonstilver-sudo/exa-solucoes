@@ -2199,6 +2199,7 @@ export type Database = {
           email: string
           email_verified_at: string | null
           id: string
+          nome: string | null
           privacy_accepted_at: string | null
           role: string
           telefone: string | null
@@ -2215,6 +2216,7 @@ export type Database = {
           email: string
           email_verified_at?: string | null
           id: string
+          nome?: string | null
           privacy_accepted_at?: string | null
           role: string
           telefone?: string | null
@@ -2231,6 +2233,7 @@ export type Database = {
           email?: string
           email_verified_at?: string | null
           id?: string
+          nome?: string | null
           privacy_accepted_at?: string | null
           role?: string
           telefone?: string | null

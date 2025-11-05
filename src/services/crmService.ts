@@ -183,7 +183,7 @@ export const getAllClientsForCRM = async () => {
     // Buscar todos os usuários que são clients
     const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('id, email, cpf, telefone, data_criacao')
+      .select('id, email, nome, cpf, telefone, data_criacao')
       .eq('role', 'client')
       .order('data_criacao', { ascending: false });
 
@@ -203,20 +203,31 @@ export const getAllClientsForCRM = async () => {
 
         const { data: orders } = await supabase
           .from('pedidos')
-          .select('valor_total')
+          .select('valor_total, created_at')
           .eq('client_id', user.id)
-          .in('status', ['pago', 'ativo', 'pago_pendente_video', 'video_aprovado', 'video_enviado']);
+          .in('status', ['pago', 'ativo', 'pago_pendente_video', 'video_aprovado', 'video_enviado'])
+          .order('created_at', { ascending: false });
+
+        const { data: attempts } = await supabase
+          .from('tentativas_compra')
+          .select('id')
+          .eq('id_user', user.id);
 
         const totalSpent = orders?.reduce((sum, o) => sum + (o.valor_total || 0), 0) || 0;
         const totalOrders = orders?.length || 0;
+        const totalAttempts = attempts?.length || 0;
+        const lastPurchaseDate = orders && orders.length > 0 ? orders[0].created_at : null;
 
         return {
           ...user,
+          nome: user.nome,
           purchase_intent_score: analytics?.purchase_intent_score || 0,
           ai_interest_level: analytics?.ai_interest_level || 'low',
           last_visit: analytics?.last_visit,
           total_spent: totalSpent,
           total_orders: totalOrders,
+          total_attempts: totalAttempts,
+          last_purchase_date: lastPurchaseDate,
         };
       })
     );
