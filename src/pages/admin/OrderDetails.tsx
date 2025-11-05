@@ -67,7 +67,7 @@ const OrderDetails = () => {
           <Button
             onClick={handleExportPDF}
             disabled={isExporting}
-            className="flex items-center gap-2 bg-[#3C1361] hover:bg-[#2A0E45] text-white font-semibold shadow-lg transition-all"
+            className="flex items-center gap-2 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] hover:from-[#7A1818] hover:to-[#B91C1C] text-white font-semibold shadow-lg transition-all"
           >
             {isExporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />

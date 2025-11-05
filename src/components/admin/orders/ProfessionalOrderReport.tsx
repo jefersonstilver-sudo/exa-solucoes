@@ -139,7 +139,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   return (
     <div className="w-full max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 overflow-hidden">
       {/* HEADER MINIMALISTA PROFISSIONAL */}
-      <div className="bg-[#3C1361] text-white px-6 py-5 border-b-2 border-gray-200">
+      <div className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] text-white px-6 py-5 border-b-2 border-gray-200">
         <div className="flex justify-between items-center">
           {/* Logo e Info */}
           <div className="flex items-center gap-6">
