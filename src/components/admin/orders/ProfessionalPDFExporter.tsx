@@ -44,7 +44,7 @@ export class ProfessionalPDFExporter {
   private yPosition: number = 0;
   private readonly pageWidth = 210;
   private readonly pageHeight = 297;
-  private readonly margin = 25;
+  private readonly margin = 15;
   private readonly contentWidth = this.pageWidth - (this.margin * 2);
   private readonly maxTextWidth = this.contentWidth - 10;
   private emittedAt: string = '';
@@ -156,107 +156,104 @@ export class ProfessionalPDFExporter {
   }
 
   private async drawHeader(): Promise<void> {
-    // Header principal - Vermelho EXA
-    this.doc.setFillColor(156, 30, 30); // Vermelho escuro EXA #9C1E1E
-    this.doc.rect(0, 0, this.pageWidth, 45, 'F');
+    // Header compacto - Vermelho EXA
+    this.doc.setFillColor(156, 30, 30);
+    this.doc.rect(0, 0, this.pageWidth, 35, 'F');
     
-    // Tentar carregar logo EXA
+    // Logo EXA bem posicionada
     let drewLogo = false;
     try {
       const logoUrl = '/exa-logo.png';
       const dataUrl = await this.loadImageAsDataURL(logoUrl);
-      // Logo maior e bem posicionada
-      const logoH = 14;
+      const logoH = 10;
       const logoW = logoH * 3.5;
-      this.doc.addImage(dataUrl, 'PNG', this.margin, 15, logoW, logoH);
+      this.doc.addImage(dataUrl, 'PNG', this.margin, 12, logoW, logoH);
       drewLogo = true;
     } catch (error) {
-      console.log('Logo não carregada, usando fallback');
-      // Fallback - texto EXA
       this.doc.setTextColor(255, 255, 255);
-      this.doc.setFontSize(20);
+      this.doc.setFontSize(16);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text('EXA', this.margin, 26);
+      this.doc.text('EXA', this.margin, 20);
     }
     
-    // Subtitle elegante
+    // Subtitle
     this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(8);
+    this.doc.setFontSize(7);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Publicidade Inteligente', this.margin, drewLogo ? 33 : 35);
+    this.doc.text('Publicidade Inteligente', this.margin, drewLogo ? 26 : 28);
     
-    // Título do documento - lado direito
+    // Título - centro superior
     this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(11);
+    this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'bold');
     const titleText = 'RELATÓRIO DETALHADO DO PEDIDO';
     const titleWidth = this.doc.getTextWidth(titleText);
-    this.doc.text(titleText, this.pageWidth - this.margin - titleWidth, 20);
+    this.doc.text(titleText, (this.pageWidth - titleWidth) / 2, 18);
     
     // Data de emissão - lado direito
-    this.doc.setFontSize(7);
+    this.doc.setFontSize(6);
     this.doc.setFont('helvetica', 'normal');
     const emittedText = `Emitido em: ${this.emittedAt}`;
     const emittedWidth = this.doc.getTextWidth(emittedText);
-    this.doc.text(emittedText, this.pageWidth - this.margin - emittedWidth, 32);
+    this.doc.text(emittedText, this.pageWidth - this.margin - emittedWidth, 26);
     
-    this.yPosition = 55;
+    this.yPosition = 40;
   }
 
   private drawSection(title: string): void {
-    this.checkPageBreak(20);
+    this.checkPageBreak(14);
     
-    // Fundo cinza claro
+    // Fundo cinza claro compacto
     this.doc.setFillColor(249, 250, 251);
-    this.doc.rect(this.margin, this.yPosition - 2, this.contentWidth, 14, 'F');
+    this.doc.rect(this.margin, this.yPosition - 1, this.contentWidth, 10, 'F');
     
     // Borda superior
     this.doc.setDrawColor(229, 231, 235);
-    this.doc.setLineWidth(0.5);
-    this.doc.line(this.margin, this.yPosition - 2, this.pageWidth - this.margin, this.yPosition - 2);
+    this.doc.setLineWidth(0.3);
+    this.doc.line(this.margin, this.yPosition - 1, this.pageWidth - this.margin, this.yPosition - 1);
     
     // Título da seção
     this.doc.setTextColor(31, 41, 55);
-    this.doc.setFontSize(10);
+    this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(title, this.margin + 4, this.yPosition + 6);
+    this.doc.text(title, this.margin + 2, this.yPosition + 5);
     
-    this.yPosition += 18;
+    this.yPosition += 12;
   }
 
   private drawInfoRow(label: string, value: string, isHighlight: boolean = false): void {
-    this.checkPageBreak(8);
+    this.checkPageBreak(6);
     
     if (isHighlight) {
       this.doc.setFillColor(254, 242, 242);
-      this.doc.rect(this.margin, this.yPosition - 1, this.contentWidth, 9, 'F');
+      this.doc.rect(this.margin, this.yPosition - 0.5, this.contentWidth, 6, 'F');
     }
     
     // Label
     this.doc.setTextColor(107, 114, 128);
-    this.doc.setFontSize(8);
+    this.doc.setFontSize(7);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(label + ':', this.margin + 3, this.yPosition + 4);
+    this.doc.text(label + ':', this.margin + 2, this.yPosition + 3);
     
     // Value
     this.doc.setTextColor(31, 41, 55);
-    this.doc.setFontSize(8);
+    this.doc.setFontSize(7);
     this.doc.setFont('helvetica', isHighlight ? 'bold' : 'normal');
     
-    const valueLines = this.wrapText(value, this.maxTextWidth - 50, 8);
+    const valueLines = this.wrapText(value, this.maxTextWidth - 40, 7);
     valueLines.forEach((line, index) => {
-      this.doc.text(line, this.margin + 50, this.yPosition + 4 + (index * 5));
+      this.doc.text(line, this.margin + 42, this.yPosition + 3 + (index * 4));
     });
     
-    this.yPosition += Math.max(8, valueLines.length * 5 + 2);
+    this.yPosition += Math.max(6, valueLines.length * 4 + 1);
   }
 
   private drawStatusBadge(status: string, x: number, y: number): void {
     const statusConfig = {
-      'pago_pendente_video': { bg: [251, 146, 60], text: 'Aguardando Vídeo' },
+      'pago_pendente_video': { bg: [251, 146, 60], text: 'Aguard. Vídeo' },
       'video_enviado': { bg: [59, 130, 246], text: 'Vídeo Enviado' },
-      'video_aprovado': { bg: [34, 197, 94], text: 'Vídeo Aprovado' },
-      'video_rejeitado': { bg: [239, 68, 68], text: 'Vídeo Rejeitado' },
+      'video_aprovado': { bg: [34, 197, 94], text: 'Aprovado' },
+      'video_rejeitado': { bg: [239, 68, 68], text: 'Rejeitado' },
       'pago': { bg: [34, 197, 94], text: 'Pago' },
       'pendente': { bg: [107, 114, 128], text: 'Pendente' },
       'ativo': { bg: [34, 197, 94], text: 'Ativo' },
@@ -266,51 +263,45 @@ export class ProfessionalPDFExporter {
     const config = statusConfig[status as keyof typeof statusConfig] || 
       { bg: [107, 114, 128], text: status };
     
-    // Badge background
+    // Badge compacto
     this.doc.setFillColor(config.bg[0], config.bg[1], config.bg[2]);
-    this.doc.roundedRect(x, y, 35, 8, 2, 2, 'F');
+    this.doc.roundedRect(x, y, 28, 5, 1, 1, 'F');
     
     // Badge text
     this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(8);
+    this.doc.setFontSize(6);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(config.text, x + 2, y + 5);
+    this.doc.text(config.text, x + 2, y + 3.5);
   }
 
   private drawTable(headers: string[], rows: string[][]): void {
     const baseColWidth = this.contentWidth / headers.length;
-    const minColWidth = 20;
-    const maxColWidth = this.contentWidth * 0.35;
+    const minColWidth = 18;
+    const maxColWidth = this.contentWidth * 0.3;
     
     const colWidths = headers.map(() => Math.max(minColWidth, Math.min(maxColWidth, baseColWidth)));
     
-    this.checkPageBreak(15 + (rows.length * 8));
+    this.checkPageBreak(12 + (rows.length * 6));
     
-    // Header da tabela - Cinza escuro
+    // Header da tabela
     this.doc.setFillColor(75, 85, 99);
-    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 8, 'F');
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 6, 'F');
     
     this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(7);
+    this.doc.setFontSize(6);
     this.doc.setFont('helvetica', 'bold');
     
     let currentX = this.margin;
     headers.forEach((header, index) => {
-      const headerLines = this.wrapText(header, colWidths[index] - 3, 7);
-      headerLines.forEach((line, lineIndex) => {
-        this.doc.text(line, currentX + 2, this.yPosition + 5 + (lineIndex * 3));
-      });
+      this.doc.text(header, currentX + 1.5, this.yPosition + 4);
       currentX += colWidths[index];
     });
     
-    this.yPosition += 10;
+    this.yPosition += 8;
     
-    // Linhas da tabela
+    // Linhas da tabela - ultra compactas
     rows.forEach((row, rowIndex) => {
-      const maxLinesInRow = Math.max(...row.map((cell, cellIndex) => 
-        this.wrapText(cell, colWidths[cellIndex] - 3, 7).length
-      ));
-      const rowHeight = Math.max(7, maxLinesInRow * 4 + 2);
+      const rowHeight = 5;
       
       this.checkPageBreak(rowHeight);
       
@@ -320,40 +311,38 @@ export class ProfessionalPDFExporter {
       }
       
       this.doc.setTextColor(31, 41, 55);
-      this.doc.setFontSize(7);
+      this.doc.setFontSize(6);
       this.doc.setFont('helvetica', 'normal');
       
       let currentX = this.margin;
       row.forEach((cell, cellIndex) => {
-        const cellLines = this.wrapText(cell, colWidths[cellIndex] - 3, 7);
-        cellLines.forEach((line, lineIndex) => {
-          this.doc.text(line, currentX + 2, this.yPosition + 5 + (lineIndex * 4));
-        });
+        const cellText = cell.length > 30 ? cell.substring(0, 27) + '...' : cell;
+        this.doc.text(cellText, currentX + 1.5, this.yPosition + 3.5);
         currentX += colWidths[cellIndex];
       });
       
       this.yPosition += rowHeight;
     });
     
-    this.yPosition += 6;
+    this.yPosition += 4;
   }
 
   private drawFinancialSummary(order: OrderData): void {
-    this.checkPageBreak(32);
+    this.checkPageBreak(22);
     
-    // Caixa minimalista para resumo financeiro
+    // Caixa compacta para resumo financeiro
     this.doc.setFillColor(249, 250, 251);
-    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 28, 'F');
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 18, 'F');
     
     this.doc.setDrawColor(229, 231, 235);
-    this.doc.setLineWidth(0.5);
-    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 28);
+    this.doc.setLineWidth(0.3);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 18);
     
     // Título
     this.doc.setTextColor(31, 41, 55);
-    this.doc.setFontSize(9);
+    this.doc.setFontSize(7);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('RESUMO FINANCEIRO', this.margin + 4, this.yPosition + 8);
+    this.doc.text('RESUMO FINANCEIRO', this.margin + 2, this.yPosition + 5);
     
     // Valores
     const subtotal = order.valor_total;
@@ -361,23 +350,25 @@ export class ProfessionalPDFExporter {
     const valorFinal = order.valor_total;
     
     this.doc.setTextColor(107, 114, 128);
-    this.doc.setFontSize(8);
+    this.doc.setFontSize(6);
     this.doc.setFont('helvetica', 'normal');
     
-    this.doc.text(`Subtotal: ${this.formatCurrency(subtotal + desconto)}`, this.margin + 4, this.yPosition + 16);
+    let yOffset = 10;
+    this.doc.text(`Subtotal: ${this.formatCurrency(subtotal + desconto)}`, this.margin + 2, this.yPosition + yOffset);
     if (desconto > 0) {
-      this.doc.text(`Desconto: -${this.formatCurrency(desconto)}`, this.margin + 4, this.yPosition + 22);
+      yOffset += 4;
+      this.doc.text(`Desconto: -${this.formatCurrency(desconto)}`, this.margin + 2, this.yPosition + yOffset);
     }
     
     // Valor total - lado direito
-    this.doc.setFontSize(11);
+    this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.setTextColor(156, 30, 30); // Vermelho EXA
+    this.doc.setTextColor(156, 30, 30);
     const totalText = `TOTAL: ${this.formatCurrency(valorFinal)}`;
     const totalWidth = this.doc.getTextWidth(totalText);
-    this.doc.text(totalText, this.pageWidth - this.margin - totalWidth - 4, this.yPosition + 20);
+    this.doc.text(totalText, this.pageWidth - this.margin - totalWidth - 2, this.yPosition + 13);
     
-    this.yPosition += 34;
+    this.yPosition += 22;
   }
 
   private addFootersOnAllPages(): void {
@@ -425,12 +416,12 @@ export class ProfessionalPDFExporter {
       this.drawInfoRow('ID do Pedido', `#${order.id.substring(0, 8)}`, true);
       this.drawInfoRow('Data de Criação', this.formatDate(order.created_at));
       this.drawInfoRow('Status', '');
-      this.drawStatusBadge(order.status, this.margin + 60, this.yPosition - 8);
-      this.yPosition += 5;
+      this.drawStatusBadge(order.status, this.margin + 40, this.yPosition - 5);
+      this.yPosition += 3;
       this.drawInfoRow('Plano Contratado', `${order.plano_meses} ${order.plano_meses === 1 ? 'mês' : 'meses'}`);
       this.drawInfoRow('Período de Vigência', `${this.formatSimpleDate(order.data_inicio)} até ${this.formatSimpleDate(order.data_fim)}`);
       
-      this.yPosition += 10;
+      this.yPosition += 5;
       
       // Dados do Cliente
       this.drawSection('DADOS DO CLIENTE');
@@ -438,7 +429,7 @@ export class ProfessionalPDFExporter {
       this.drawInfoRow('Email', order.client_email);
       this.drawInfoRow('Termos Aceitos', order.termos_aceitos ? 'Sim' : 'Não');
       
-      this.yPosition += 10;
+      this.yPosition += 5;
       
       // Resumo Financeiro
       this.drawFinancialSummary(order);
@@ -446,57 +437,45 @@ export class ProfessionalPDFExporter {
       // Informações de Pagamento
       if (order.log_pagamento) {
         this.drawSection('INFORMAÇÕES DE PAGAMENTO');
-        this.drawInfoRow('Método', order.log_pagamento.payment_method === 'pix' ? 'PIX' : 'Cartão de Crédito');
+        this.drawInfoRow('Método', order.log_pagamento.payment_method === 'pix' ? 'PIX' : 'Cartão');
         this.drawInfoRow('Status', order.log_pagamento.payment_status || 'N/A');
-        if (order.log_pagamento.processed_at) {
-          this.drawInfoRow('Processado em', new Date(order.log_pagamento.processed_at).toLocaleString('pt-BR'));
-        }
-        this.yPosition += 10;
+        this.yPosition += 5;
       }
       
       // Locais Contratados
       if (panels.length > 0) {
         this.drawSection('LOCAIS CONTRATADOS');
-        const panelRows = panels.map(building => [
-          building.id.substring(0, 8),
-          building.nome,
-          building.endereco,
-          building.bairro
+        const panelRows = panels.slice(0, 3).map(building => [
+          building.id.substring(0, 6),
+          building.nome.substring(0, 25),
+          building.endereco.substring(0, 30),
+          building.bairro.substring(0, 15)
         ]);
         this.drawTable(['ID', 'Nome', 'Endereço', 'Bairro'], panelRows);
+        if (panels.length > 3) {
+          this.doc.setTextColor(107, 114, 128);
+          this.doc.setFontSize(6);
+          this.doc.text(`... e mais ${panels.length - 3} locais`, this.margin + 2, this.yPosition);
+          this.yPosition += 4;
+        }
       }
       
-      // Relatório de Vídeos Enviados - SEMPRE PRESENTE
-      this.drawSection('RELATÓRIO DE VÍDEOS ENVIADOS');
-      if (videos.length === 0) {
-        this.doc.setTextColor(107, 114, 128);
-        this.doc.setFont('helvetica', 'normal');
-        this.doc.setFontSize(10);
-        this.doc.text('Nenhum vídeo enviado até o momento.', this.margin + 6, this.yPosition + 6);
-        this.yPosition += 16;
-      } else {
-        const videoRows = videos.map(video => [
+      // Vídeos
+      if (videos.length > 0) {
+        this.drawSection('VÍDEOS');
+        const videoRows = videos.slice(0, 2).map(video => [
           `Slot ${video.slot_position}`,
-          video.video_data?.nome || 'N/A',
-          video.uploaded_at ? this.formatDate(video.uploaded_at) : 
-          video.created_at ? this.formatDate(video.created_at) : 'N/A',
-          video.video_data?.duracao != null ? `${video.video_data?.duracao}s` : 'N/A',
-          video.video_data?.orientacao || 'N/A',
+          (video.video_data?.nome || 'N/A').substring(0, 20),
           video.approval_status === 'approved' ? 'Aprovado' : 
           video.approval_status === 'rejected' ? 'Rejeitado' : 'Pendente',
-          video.is_active ? 'Ativo' : 'Inativo',
-          video.selected_for_display ? 'Sim' : 'Não'
+          video.is_active ? 'Ativo' : 'Inativo'
         ]);
-        this.drawTable([
-          'Slot',
-          'Nome do Vídeo',
-          'Enviado em',
-          'Duração',
-          'Orientação',
-          'Status',
-          'Ativo',
-          'Exibição'
-        ], videoRows);
+        this.drawTable(['Slot', 'Nome', 'Status', 'Ativo'], videoRows);
+        if (videos.length > 2) {
+          this.doc.setTextColor(107, 114, 128);
+          this.doc.setFontSize(6);
+          this.doc.text(`... e mais ${videos.length - 2} vídeos`, this.margin + 2, this.yPosition);
+        }
       }
       
       // Adicionar rodapés em todas as páginas
