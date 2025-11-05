@@ -10,6 +10,8 @@ import OrdersPageAlerts from '@/components/admin/orders/OrdersPageAlerts';
 import OrdersPageFilters from '@/components/admin/orders/OrdersPageFilters';
 import { OrderMobileList } from '@/components/admin/orders/OrderMobileList';
 import { MobileActionMenu } from '@/components/admin/shared/MobileActionMenu';
+import { MobileFilterSheet } from '@/components/admin/shared/MobileFilterSheet';
+import { FilterChips } from '@/components/admin/shared/FilterChips';
 import { OrderPeriodFilter, filterByPeriod, PeriodFilter } from '@/components/admin/orders/OrderPeriodFilter';
 import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
 
@@ -20,7 +22,8 @@ const OrdersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('current_month'); // Default: mês atual
+  const [couponFilter, setCouponFilter] = useState('all');
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('current_month');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Aplicar filtro de período primeiro
@@ -28,14 +31,37 @@ const OrdersPage = () => {
     return filterByPeriod(ordersAndAttempts, periodFilter);
   }, [ordersAndAttempts, periodFilter]);
 
-  // Recalcular stats baseado no período filtrado
-  const filteredStats = useMemo(() => {
-    const orders = periodFilteredItems.filter(item => item.type === 'order');
-    const attempts = periodFilteredItems.filter(item => item.type === 'attempt');
-    return calculateStats(orders, attempts);
-  }, [periodFilteredItems]);
+  // Aplicar filtros de busca, status, tipo e cupom
+  const filteredItems = useMemo(() => {
+    return periodFilteredItems.filter(item => {
+      const matchesSearch = 
+        item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.type === 'order' ? item.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (item.type === 'order' ? item.client_email?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (item.type === 'attempt' && item.client_email?.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesStatus = statusFilter === 'all' || 
+        (item.type === 'order' && item.status === statusFilter) ||
+        (item.type === 'attempt' && statusFilter === 'tentativa');
+      
+      const matchesType = typeFilter === 'all' || item.type === typeFilter;
 
-  // Calcular pedidos ativos para os stats (sempre considerar todos, não filtrar por período)
+      const matchesCoupon = couponFilter === 'all' ||
+        (couponFilter === 'with' && (item.cupom_id || item.coupon_code)) ||
+        (couponFilter === 'without' && !item.cupom_id && !item.coupon_code);
+      
+      return matchesSearch && matchesStatus && matchesType && matchesCoupon;
+    });
+  }, [periodFilteredItems, searchTerm, statusFilter, typeFilter, couponFilter]);
+
+  // Recalcular stats baseado nos itens filtrados
+  const filteredStats = useMemo(() => {
+    const orders = filteredItems.filter(item => item.type === 'order');
+    const attempts = filteredItems.filter(item => item.type === 'attempt');
+    return calculateStats(orders, attempts);
+  }, [filteredItems]);
+
+  // Calcular pedidos ativos (sempre considerar todos)
   const activeOrdersCount = ordersAndAttempts.filter(item => {
     if (item.type !== 'order') return false;
     if (item.status !== 'video_aprovado') return false;
@@ -47,21 +73,69 @@ const OrdersPage = () => {
     return today >= startDate && today <= endDate;
   }).length;
 
-  const filteredItems = periodFilteredItems.filter(item => {
-    const matchesSearch = 
-      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.type === 'order' ? item.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
-      (item.type === 'order' ? item.client_email?.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
-      (item.type === 'attempt' && item.client_email?.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === 'all' || 
-      (item.type === 'order' && item.status === statusFilter) ||
-      (item.type === 'attempt' && statusFilter === 'tentativa');
-    
-    const matchesType = typeFilter === 'all' || item.type === typeFilter;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
+  // Contadores para filtros
+  const countByStatus = (status: string) => 
+    periodFilteredItems.filter(item => item.status === status).length;
+  
+  const countByType = (type: string) => 
+    periodFilteredItems.filter(item => item.type === type).length;
+
+  const countByCoupon = (hasCoupon: boolean) =>
+    periodFilteredItems.filter(item => 
+      hasCoupon ? (item.cupom_id || item.coupon_code) : (!item.cupom_id && !item.coupon_code)
+    ).length;
+
+  // Contar filtros ativos
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (statusFilter !== 'all') count++;
+    if (typeFilter !== 'all') count++;
+    if (couponFilter !== 'all') count++;
+    return count;
+  }, [searchTerm, statusFilter, typeFilter, couponFilter]);
+
+  // Chips de filtros
+  const filterChips = useMemo(() => {
+    const chips = [];
+    if (searchTerm) {
+      chips.push({ key: 'search', label: `Busca: "${searchTerm}"`, value: searchTerm });
+    }
+    if (statusFilter !== 'all') {
+      const statusLabels: Record<string, string> = {
+        pago: 'Pago',
+        'pago_pendente_video': 'Pago (Pendente Vídeo)',
+        'video_enviado': 'Vídeo Enviado',
+        'video_aprovado': 'Vídeo Aprovado',
+        pending: 'Pendente',
+        bloqueado: 'Bloqueado',
+      };
+      chips.push({ key: 'status', label: statusLabels[statusFilter] || statusFilter, value: statusFilter });
+    }
+    if (typeFilter !== 'all') {
+      chips.push({ key: 'type', label: typeFilter === 'order' ? 'Pedidos' : 'Tentativas', value: typeFilter });
+    }
+    if (couponFilter !== 'all') {
+      chips.push({ key: 'coupon', label: couponFilter === 'with' ? 'Com Cupom' : 'Sem Cupom', value: couponFilter });
+    }
+    return chips;
+  }, [searchTerm, statusFilter, typeFilter, couponFilter]);
+
+  const handleRemoveFilter = (key: string) => {
+    switch (key) {
+      case 'search': setSearchTerm(''); break;
+      case 'status': setStatusFilter('all'); break;
+      case 'type': setTypeFilter('all'); break;
+      case 'coupon': setCouponFilter('all'); break;
+    }
+  };
+
+  const handleClearAllFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setCouponFilter('all');
+  };
 
   const handleViewOrderDetails = (orderId: string) => {
     navigate(`/super_admin/pedidos/${orderId}`);
@@ -87,13 +161,14 @@ const OrdersPage = () => {
     },
     {
       icon: <Download className="h-4 w-4" />,
-      label: 'Exportar Relatório',
-      onClick: () => {},
+      label: 'Exportar',
+      onClick: () => console.log('Export clicked'),
     },
     {
       icon: <Filter className="h-4 w-4" />,
       label: 'Filtros',
-      onClick: () => setShowMobileFilters(!showMobileFilters),
+      badge: activeFiltersCount > 0 ? activeFiltersCount : undefined,
+      onClick: () => setShowMobileFilters(true),
     },
   ];
 
@@ -114,7 +189,7 @@ const OrdersPage = () => {
                 <div>
                   <h1 className="text-xl font-bold text-white">Pedidos</h1>
                   <p className="text-sm text-white/90">
-                    {stats.total_orders} pedidos • {stats.total_attempts} tentativas
+                    {filteredItems.length} resultados
                   </p>
                 </div>
               </div>
@@ -148,40 +223,12 @@ const OrdersPage = () => {
           </div>
         </div>
 
-        {/* Mobile Filters (conditionally shown) */}
-        {showMobileFilters && (
-          <div className="p-4 bg-white border-b space-y-3 animate-fade-in">
-            <input
-              type="text"
-              placeholder="🔍 Buscar pedido..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border rounded-lg"
-              >
-                <option value="all">Todos os Status</option>
-                <option value="pago">Pago</option>
-                <option value="aguardando_pagamento">Aguardando</option>
-                <option value="video_aprovado">Aprovado</option>
-                <option value="cancelado">Cancelado</option>
-              </select>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-4 py-2 border rounded-lg"
-              >
-                <option value="all">Todos os Tipos</option>
-                <option value="order">Pedidos</option>
-                <option value="attempt">Tentativas</option>
-              </select>
-            </div>
-          </div>
-        )}
+        {/* Filter Chips */}
+        <FilterChips
+          chips={filterChips}
+          onRemove={handleRemoveFilter}
+          onClearAll={handleClearAllFilters}
+        />
 
         {/* Mobile Order List */}
         <div className="p-4">
@@ -191,6 +238,58 @@ const OrdersPage = () => {
             onViewDetails={handleViewOrderDetails}
           />
         </div>
+
+        {/* Mobile Filter Sheet */}
+        <MobileFilterSheet
+          isOpen={showMobileFilters}
+          onClose={() => setShowMobileFilters(false)}
+          filters={{
+            search: searchTerm,
+            status: statusFilter,
+            type: typeFilter,
+            coupon: couponFilter,
+          }}
+          onFiltersChange={(newFilters) => {
+            setSearchTerm(newFilters.search || '');
+            setStatusFilter(newFilters.status || 'all');
+            setTypeFilter(newFilters.type || 'all');
+            setCouponFilter(newFilters.coupon || 'all');
+          }}
+          categories={[
+            {
+              id: 'status',
+              title: '📊 Status',
+              options: [
+                { value: 'all', label: 'Todos', count: periodFilteredItems.length },
+                { value: 'pago', label: 'Pago', count: countByStatus('pago') },
+                { value: 'pago_pendente_video', label: 'Pago (Pendente Vídeo)', count: countByStatus('pago_pendente_video') },
+                { value: 'video_enviado', label: 'Vídeo Enviado', count: countByStatus('video_enviado') },
+                { value: 'video_aprovado', label: 'Vídeo Aprovado', count: countByStatus('video_aprovado') },
+                { value: 'pending', label: 'Pendente', count: countByStatus('pending') },
+                { value: 'bloqueado', label: 'Bloqueado', count: countByStatus('bloqueado') },
+              ],
+            },
+            {
+              id: 'type',
+              title: '🏷️ Tipo',
+              options: [
+                { value: 'all', label: 'Todos', count: periodFilteredItems.length },
+                { value: 'order', label: 'Pedidos', count: countByType('order') },
+                { value: 'attempt', label: 'Tentativas', count: countByType('attempt') },
+              ],
+            },
+            {
+              id: 'coupon',
+              title: '🎫 Cupom',
+              options: [
+                { value: 'all', label: 'Todos', count: periodFilteredItems.length },
+                { value: 'with', label: 'Com Cupom', count: countByCoupon(true) },
+                { value: 'without', label: 'Sem Cupom', count: countByCoupon(false) },
+              ],
+            },
+          ]}
+          activeFiltersCount={activeFiltersCount}
+        />
       </div>
     );
   }
