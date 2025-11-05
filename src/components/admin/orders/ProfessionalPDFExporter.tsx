@@ -64,14 +64,23 @@ export class ProfessionalPDFExporter {
     });
   }
 
-  private timestampFileSuffix(): string {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    return `${year}${month}${day}-${hours}${minutes}`;
+  private getOrderNumber(orderId: string, createdAt: string): string {
+    // Extrair ano da data de criação
+    const year = new Date(createdAt).getFullYear();
+    // Pegar os últimos 3 dígitos do UUID como número sequencial
+    const idPart = orderId.replace(/-/g, '').substring(0, 8);
+    const numericPart = parseInt(idPart, 16) % 1000; // Gera número de 0-999
+    const sequentialNumber = (numericPart + 1).toString().padStart(3, '0');
+    return `${year}-${sequentialNumber}`;
+  }
+
+  private sanitizeFileName(text: string): string {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[^a-zA-Z0-9]/g, '-')   // Substitui caracteres especiais por hífen
+      .replace(/-+/g, '-')              // Remove hífens duplicados
+      .toLowerCase();
   }
 
   private async loadImageAsDataURL(url: string): Promise<string> {
@@ -198,6 +207,33 @@ export class ProfessionalPDFExporter {
     this.doc.text(emittedText, this.pageWidth - this.margin - emittedWidth, 26);
     
     this.yPosition = 40;
+  }
+
+  private drawOrderNumber(order: OrderData): void {
+    // Número do pedido destacado
+    const orderNumber = this.getOrderNumber(order.id, order.created_at);
+    
+    this.doc.setFillColor(254, 242, 242);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 12, 'F');
+    
+    this.doc.setDrawColor(156, 30, 30);
+    this.doc.setLineWidth(0.5);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 12);
+    
+    this.doc.setTextColor(156, 30, 30);
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text(`PEDIDO Nº ${orderNumber}`, this.margin + 3, this.yPosition + 7);
+    
+    // Info do cliente ao lado
+    this.doc.setFontSize(7);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(75, 85, 99);
+    const clientInfo = `Cliente: ${order.client_name} | ${this.formatCurrency(order.valor_total)}`;
+    const clientInfoWidth = this.doc.getTextWidth(clientInfo);
+    this.doc.text(clientInfo, this.pageWidth - this.margin - clientInfoWidth - 3, this.yPosition + 7);
+    
+    this.yPosition += 16;
   }
 
   private drawSection(title: string): void {
@@ -388,7 +424,7 @@ export class ProfessionalPDFExporter {
       this.doc.setFont('helvetica', 'normal');
       
       this.doc.text('EXA - Publicidade Inteligente', this.margin, footerY + 8);
-      this.doc.text('contato@exa.com.br | www.exa.com.br', this.margin, footerY + 14);
+      this.doc.text('www.examidia.com.br', this.margin, footerY + 14);
       
       // Paginação - lado direito
       const pageText = `Pág. ${i}/${totalPages}`;
@@ -410,6 +446,9 @@ export class ProfessionalPDFExporter {
     try {
       // Header
       await this.drawHeader();
+      
+      // Número do pedido destacado
+      this.drawOrderNumber(order);
       
       // Informações do Pedido
       this.drawSection('INFORMAÇÕES DO PEDIDO');
@@ -481,11 +520,16 @@ export class ProfessionalPDFExporter {
       // Adicionar rodapés em todas as páginas
       this.addFootersOnAllPages();
       
-      // Salvar o PDF com nome padronizado
-      const filename = `relatorio-pedido-${order.id.substring(0, 8)}-${this.timestampFileSuffix()}.pdf`;
+      // Gerar número de pedido formatado
+      const orderNumber = this.getOrderNumber(order.id, order.created_at);
+      
+      // Nome do arquivo profissional
+      const clientName = this.sanitizeFileName(order.client_name);
+      const filename = `pedido-${orderNumber}-${clientName}.pdf`;
+      
       this.doc.save(filename);
       
-      toast.success('Relatório profissional exportado com sucesso!');
+      toast.success(`Relatório #${orderNumber} exportado com sucesso!`);
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);
       toast.error('Erro ao gerar o relatório PDF');

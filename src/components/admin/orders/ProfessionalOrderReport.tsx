@@ -458,7 +458,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
         <div className="flex justify-between items-center text-xs text-gray-600">
           <div>
             <p className="font-semibold text-gray-900">EXA - Publicidade Inteligente</p>
-            <p>contato@exa.com.br | www.exa.com.br</p>
+            <p>www.examidia.com.br</p>
           </div>
           <div className="text-right">
             <p className="text-gray-500">Documento gerado eletronicamente</p>
