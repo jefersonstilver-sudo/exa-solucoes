@@ -3290,6 +3290,7 @@ export type Database = {
       is_super_admin_secure: { Args: never; Returns: boolean }
       is_super_admin_simple: { Args: never; Returns: boolean }
       is_super_admin_user: { Args: never; Returns: boolean }
+      is_user_admin: { Args: { user_id: string }; Returns: boolean }
       log_building_action: {
         Args: {
           p_action_type: string
