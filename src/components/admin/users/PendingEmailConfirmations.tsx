@@ -42,21 +42,28 @@ export default function PendingEmailConfirmations() {
         // Para cada usuário, verificar se o email foi confirmado
         const pendingList: PendingUser[] = [];
         
+        // Call edge function to get extended user data
+        const { data: extendedData, error: extendedError } = await supabase.functions.invoke('get-users-extended', {
+          body: { userIds: data.map(u => u.id) }
+        });
+        
+        if (extendedError) {
+          console.error('Error fetching extended user data:', extendedError);
+          throw extendedError;
+        }
+        
+        const userDataMap = new Map(extendedData.users.map((u: any) => [u.id, u]));
+        
         for (const user of data || []) {
-          try {
-            // Verificar se o usuário existe em auth.users e se o email foi confirmado
-            const { data: authUser } = await supabase.auth.admin.getUserById(user.id);
-            
-            if (authUser.user && !authUser.user.email_confirmed_at) {
-              pendingList.push({
-                id: user.id,
-                email: user.email,
-                created_at: user.data_criacao,
-                email_confirmed_at: null
-              });
-            }
-          } catch (err) {
-            console.warn('Erro ao verificar usuário:', user.email, err);
+          const extendedUser = userDataMap.get(user.id) as any;
+          
+          if (extendedUser && !extendedUser.email_confirmed_at) {
+            pendingList.push({
+              id: user.id,
+              email: user.email,
+              created_at: user.data_criacao,
+              email_confirmed_at: null
+            });
           }
         }
         
@@ -75,7 +82,9 @@ export default function PendingEmailConfirmations() {
     try {
       setResendingEmails(prev => new Set([...prev, userId]));
       
-      console.log('🔄 Reenviando email de confirmação para:', email);
+      if (import.meta.env.DEV) {
+        console.log('🔄 Reenviando email de confirmação para:', email);
+      }
       
       // Chamar a edge function unificada de reenvio
       const { data, error } = await supabase.functions.invoke('unified-email-service', {

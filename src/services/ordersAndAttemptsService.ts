@@ -3,7 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrderOrAttempt, OrdersStats } from '@/types/ordersAndAttempts';
 
 export const fetchOrdersData = async () => {
-  console.log('🔄 Buscando pedidos e tentativas com queries diretas...');
+  if (import.meta.env.DEV) {
+    console.log('🔄 Buscando pedidos e tentativas com queries diretas...');
+  }
   
   // 1. Buscar pedidos diretamente da tabela pedidos
   const { data: pedidos, error: pedidosError } = await supabase
@@ -16,7 +18,9 @@ export const fetchOrdersData = async () => {
     throw pedidosError;
   }
   
-  console.log('✅ Pedidos encontrados:', pedidos?.length || 0);
+  if (import.meta.env.DEV) {
+    console.log('✅ Pedidos encontrados:', pedidos?.length || 0);
+  }
   
   return pedidos || [];
 };
@@ -29,11 +33,15 @@ export const fetchAttemptsData = async () => {
     .order('created_at', { ascending: false });
   
   if (tentativasError) {
-    console.log('⚠️ Nenhuma tentativa encontrada ou erro:', tentativasError);
+    if (import.meta.env.DEV) {
+      console.log('⚠️ Nenhuma tentativa encontrada ou erro:', tentativasError);
+    }
     return [];
   }
   
-  console.log('✅ Tentativas encontradas:', tentativas?.length || 0);
+  if (import.meta.env.DEV) {
+    console.log('✅ Tentativas encontradas:', tentativas?.length || 0);
+  }
   return tentativas || [];
 };
 
@@ -50,26 +58,30 @@ export const enrichOrdersWithEmails = async (pedidos: any[]) => {
 
   const userMap = new Map();
   if (!usersError && users) {
-    // Para cada usuário, buscar também os dados do auth para obter metadados
-    for (const user of users) {
-      try {
-        const { data: authData } = await supabase.auth.admin.getUserById(user.id);
-        const userData = {
-          email: user.email,
-          name: authData.user?.user_metadata?.name || authData.user?.user_metadata?.full_name || user.email.split('@')[0],
-          phone: authData.user?.user_metadata?.telefone || authData.user?.user_metadata?.phone || null,
-          cpf: authData.user?.user_metadata?.cpf || null
-        };
-        userMap.set(user.id, userData);
-      } catch (error) {
-        // Fallback se não conseguir buscar metadados
+    // Call edge function to get extended user data (server-side admin API calls)
+    const { data: extendedData, error: extendedError } = await supabase.functions.invoke('get-users-extended', {
+      body: { userIds: users.map(u => u.id) }
+    });
+    
+    if (!extendedError && extendedData?.users) {
+      extendedData.users.forEach((userData: any) => {
+        userMap.set(userData.id, {
+          email: userData.email,
+          name: userData.name || userData.email.split('@')[0],
+          phone: userData.phone || null,
+          cpf: userData.cpf || null
+        });
+      });
+    } else {
+      // Fallback if edge function fails
+      users.forEach(user => {
         userMap.set(user.id, {
           email: user.email,
           name: user.email.split('@')[0],
           phone: null,
           cpf: null
         });
-      }
+      });
     }
   }
   
@@ -98,26 +110,30 @@ export const enrichAttemptsWithEmails = async (tentativas: any[]) => {
 
   const userMap = new Map();
   if (!usersError && users) {
-    // Para cada usuário, buscar também os dados do auth para obter metadados
-    for (const user of users) {
-      try {
-        const { data: authData } = await supabase.auth.admin.getUserById(user.id);
-        const userData = {
-          email: user.email,
-          name: authData.user?.user_metadata?.name || authData.user?.user_metadata?.full_name || user.email.split('@')[0],
-          phone: authData.user?.user_metadata?.telefone || authData.user?.user_metadata?.phone || null,
-          cpf: authData.user?.user_metadata?.cpf || null
-        };
-        userMap.set(user.id, userData);
-      } catch (error) {
-        // Fallback se não conseguir buscar metadados
+    // Call edge function to get extended user data (server-side admin API calls)
+    const { data: extendedData, error: extendedError } = await supabase.functions.invoke('get-users-extended', {
+      body: { userIds: users.map(u => u.id) }
+    });
+    
+    if (!extendedError && extendedData?.users) {
+      extendedData.users.forEach((userData: any) => {
+        userMap.set(userData.id, {
+          email: userData.email,
+          name: userData.name || userData.email.split('@')[0],
+          phone: userData.phone || null,
+          cpf: userData.cpf || null
+        });
+      });
+    } else {
+      // Fallback if edge function fails
+      users.forEach(user => {
         userMap.set(user.id, {
           email: user.email,
           name: user.email.split('@')[0],
           phone: null,
           cpf: null
         });
-      }
+      });
     }
   }
 

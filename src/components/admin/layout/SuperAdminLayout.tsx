@@ -11,10 +11,12 @@ interface SuperAdminLayoutProps {
 const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
   const { userProfile } = useAuth();
   
-  console.log('🏗️ SuperAdminLayout - RENDERIZANDO:', {
-    userEmail: userProfile?.email,
-    userRole: userProfile?.role
-  });
+  if (import.meta.env.DEV) {
+    console.log('🏗️ SuperAdminLayout - RENDERIZANDO:', {
+      userEmail: userProfile?.email,
+      userRole: userProfile?.role
+    });
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex w-full">

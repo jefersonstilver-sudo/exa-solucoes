@@ -10,24 +10,30 @@ export const useSuperAdminProtection = () => {
 
   useEffect(() => {
     if (isLoading) {
-      console.log('🛡️ PROTECTION: Aguardando carregamento...');
+      if (import.meta.env.DEV) {
+        console.log('🛡️ PROTECTION: Aguardando carregamento...');
+      }
       return;
     }
 
     const isSuperAdmin = userProfile?.role === 'super_admin';
     const currentPath = location.pathname;
 
-    console.log('🛡️ PROTECTION - Verificação simples:', {
-      userEmail: userProfile?.email,
-      userRole: userProfile?.role,
-      isSuperAdmin,
-      currentPath,
-      isLoggedIn
-    });
+    if (import.meta.env.DEV) {
+      console.log('🛡️ PROTECTION - Verificação simples:', {
+        userEmail: userProfile?.email,
+        userRole: userProfile?.role,
+        isSuperAdmin,
+        currentPath,
+        isLoggedIn
+      });
+    }
 
     // APENAS proteção básica - SEM redirecionamentos automáticos
     if (currentPath.startsWith('/super_admin') && (!isLoggedIn || !isSuperAdmin)) {
-      console.log('🚫 PROTECTION: Acesso negado ao super_admin');
+      if (import.meta.env.DEV) {
+        console.log('🚫 PROTECTION: Acesso negado ao super_admin');
+      }
       navigate('/login?redirect=/super_admin', { replace: true });
       return;
     }
