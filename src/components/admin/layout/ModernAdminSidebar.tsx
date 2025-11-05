@@ -40,6 +40,12 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import {
   Sidebar,
@@ -327,34 +333,53 @@ export function ModernAdminSidebar() {
               </SidebarGroupLabel>
             )}
             
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {group.items.map((item) => {
-                  const isActive = location.pathname === item.href;
-                  const Icon = item.icon;
+             <SidebarGroupContent>
+               <SidebarMenu className="space-y-1">
+                 {group.items.map((item) => {
+                   const isActive = location.pathname === item.href;
+                   const Icon = item.icon;
 
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.href}
-                          className={`flex flex-row items-center ${collapsed ? 'px-2 py-3 gap-2 justify-start' : 'px-3 py-2.5 md:py-3 gap-2 md:gap-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
-                            isActive 
-                              ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
-                              : "text-white hover:bg-white/20 hover:text-white"
-                          }`}
-                        >
-                          <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4 md:h-5 md:w-5'} flex-shrink-0 transition-transform duration-200 group-hover:scale-110`} />
-                          <span className={`${collapsed ? 'text-[10px] leading-tight' : 'text-xs md:text-sm'} font-semibold truncate whitespace-nowrap`}>
-                            {item.title}
-                          </span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
+                   const linkContent = (
+                     <NavLink
+                       to={item.href}
+                       className={`flex flex-row items-center ${collapsed ? 'px-3 py-3 gap-0 justify-center' : 'px-3 py-2.5 md:py-3 gap-2 md:gap-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
+                         isActive 
+                           ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
+                           : "text-white hover:bg-white/20 hover:text-white"
+                       }`}
+                     >
+                       <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4 md:h-5 md:w-5'} flex-shrink-0 transition-transform duration-200 group-hover:scale-110`} />
+                       {!collapsed && (
+                         <span className="text-xs md:text-sm font-semibold truncate whitespace-nowrap">
+                           {item.title}
+                         </span>
+                       )}
+                     </NavLink>
+                   );
+
+                   return (
+                     <SidebarMenuItem key={item.href}>
+                       <SidebarMenuButton asChild>
+                         {collapsed ? (
+                           <TooltipProvider delayDuration={0}>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 {linkContent}
+                               </TooltipTrigger>
+                               <TooltipContent side="right" className="bg-white text-[#9C1E1E] font-semibold">
+                                 <p>{item.title}</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+                         ) : (
+                           linkContent
+                         )}
+                       </SidebarMenuButton>
+                     </SidebarMenuItem>
+                   );
+                 })}
+               </SidebarMenu>
+             </SidebarGroupContent>
           </SidebarGroup>
         ))}
       </SidebarContent>
