@@ -19,14 +19,14 @@ const SindicoHeroSection = React.memo(() => {
   return (
     <section 
       ref={ref}
-      className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden bg-gradient-to-br from-exa-black via-[#9C1E1E]/20 to-exa-black pt-24 md:pt-8 pb-24 md:pb-16"
+      className="relative min-h-[calc(100vh-4rem)] md:min-h-screen flex flex-col justify-center items-center overflow-hidden bg-gradient-to-br from-exa-black via-[#9C1E1E]/20 to-exa-black pt-20 md:pt-12 pb-28 md:pb-24"
     >
       {/* Background overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-exa-black/50 to-exa-black z-0" />
       
       {/* Conteúdo */}
       <div 
-        className={`relative z-[50] container mx-auto px-4 md:px-[10%] max-w-[1440px] text-center transition-all duration-1000 mb-16 md:mb-20 ${
+        className={`relative z-[50] container mx-auto px-4 md:px-[10%] max-w-[1440px] text-center transition-all duration-1000 mb-auto ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >

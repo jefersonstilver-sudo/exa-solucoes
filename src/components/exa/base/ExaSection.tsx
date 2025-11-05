@@ -20,7 +20,8 @@ const ExaSection = ({ children, className, id, background = 'transparent' }: Exa
     <section 
       id={id}
       className={cn(
-        'w-full py-12 md:py-16 lg:py-24',
+        'w-full',
+        'py-12 md:py-16 lg:py-24',
         backgroundClasses[background],
         className
       )}
