@@ -57,3 +57,6 @@ verify_jwt = false
 
 [functions.validate-order]
 verify_jwt = false
+
+[functions.track-client-behavior]
+verify_jwt = false

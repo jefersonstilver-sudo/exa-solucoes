@@ -546,6 +546,125 @@ export type Database = {
         }
         Relationships: []
       }
+      client_behavior_analytics: {
+        Row: {
+          ai_behavior_summary: string | null
+          ai_interest_level: string | null
+          ai_recommended_actions: Json | null
+          avg_time_per_building: number | null
+          buildings_in_cart: Json | null
+          buildings_viewed: Json | null
+          cart_abandonments: number | null
+          checkout_starts: number | null
+          created_at: string
+          device_type: string | null
+          id: string
+          last_ai_analysis: string | null
+          last_visit: string | null
+          most_viewed_building_id: string | null
+          pages_visited: Json | null
+          purchase_intent_score: number | null
+          session_id: string | null
+          total_sessions: number | null
+          total_time_spent: number | null
+          total_video_time: number | null
+          updated_at: string
+          user_id: string
+          video_completion_rate: number | null
+          videos_watched: Json | null
+        }
+        Insert: {
+          ai_behavior_summary?: string | null
+          ai_interest_level?: string | null
+          ai_recommended_actions?: Json | null
+          avg_time_per_building?: number | null
+          buildings_in_cart?: Json | null
+          buildings_viewed?: Json | null
+          cart_abandonments?: number | null
+          checkout_starts?: number | null
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          last_ai_analysis?: string | null
+          last_visit?: string | null
+          most_viewed_building_id?: string | null
+          pages_visited?: Json | null
+          purchase_intent_score?: number | null
+          session_id?: string | null
+          total_sessions?: number | null
+          total_time_spent?: number | null
+          total_video_time?: number | null
+          updated_at?: string
+          user_id: string
+          video_completion_rate?: number | null
+          videos_watched?: Json | null
+        }
+        Update: {
+          ai_behavior_summary?: string | null
+          ai_interest_level?: string | null
+          ai_recommended_actions?: Json | null
+          avg_time_per_building?: number | null
+          buildings_in_cart?: Json | null
+          buildings_viewed?: Json | null
+          cart_abandonments?: number | null
+          checkout_starts?: number | null
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          last_ai_analysis?: string | null
+          last_visit?: string | null
+          most_viewed_building_id?: string | null
+          pages_visited?: Json | null
+          purchase_intent_score?: number | null
+          session_id?: string | null
+          total_sessions?: number | null
+          total_time_spent?: number | null
+          total_video_time?: number | null
+          updated_at?: string
+          user_id?: string
+          video_completion_rate?: number | null
+          videos_watched?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_behavior_analytics_most_viewed_building_id_fkey"
+            columns: ["most_viewed_building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_crm_notes: {
+        Row: {
+          client_id: string
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          is_important: boolean | null
+          note_type: string
+        }
+        Insert: {
+          client_id: string
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_important?: boolean | null
+          note_type: string
+        }
+        Update: {
+          client_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_important?: boolean | null
+          note_type?: string
+        }
+        Relationships: []
+      }
       client_logos: {
         Row: {
           created_at: string
@@ -2827,6 +2946,7 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_unified_client_data: { Args: { p_user_id: string }; Returns: Json }
       get_unread_notifications_count: { Args: never; Returns: number }
       get_user_role: { Args: never; Returns: string }
       get_video_current_status: { Args: { p_video_id: string }; Returns: Json }
