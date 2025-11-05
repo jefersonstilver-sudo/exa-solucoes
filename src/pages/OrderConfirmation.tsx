@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
@@ -8,6 +8,7 @@ import Layout from '@/components/layout/Layout';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useOrderDetails } from '@/hooks/useOrderDetails';
 import { useSimpleVideoUpload } from '@/hooks/useSimpleVideoUpload';
+import { useOrderViewTracking } from '@/hooks/tracking/useOrderViewTracking';
 import SuccessHeader from '@/components/order-confirmation/SuccessHeader';
 import OrderSummary from '@/components/order-confirmation/OrderSummary';
 import VideoRequirements from '@/components/order-confirmation/VideoRequirements';
@@ -18,12 +19,20 @@ import { Upload } from 'lucide-react';
 const OrderConfirmation: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { user } = useUserSession();
+  const { trackOrderView } = useOrderViewTracking();
   
   // Get order ID from URL params or localStorage (fallback)
   const orderId = searchParams.get('id') || localStorage.getItem('lastCompletedOrderId');
   
   // Get order details
   const { loading, orderDetails } = useOrderDetails({ orderId });
+
+  // Track order view when order details are loaded
+  useEffect(() => {
+    if (orderDetails?.id) {
+      trackOrderView(orderDetails.id);
+    }
+  }, [orderDetails?.id, trackOrderView]);
   
   // Video upload logic
   const {

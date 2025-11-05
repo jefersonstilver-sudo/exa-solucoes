@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrderViewTracking } from '@/hooks/tracking/useOrderViewTracking';
+import { useVideoActivityTracking } from '@/hooks/tracking/useVideoActivityTracking';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -49,6 +51,8 @@ const OrderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { userProfile } = useAuth();
+  const { trackOrderView } = useOrderViewTracking();
+  const { trackVideoUpload, trackVideoSwap } = useVideoActivityTracking();
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -123,6 +127,11 @@ const OrderDetails = () => {
       console.log('💳 [ORDER_DETAILS] Log de pagamento:', userOrder?.log_pagamento);
       
       setOrderDetails(userOrder);
+      
+      // Track order view
+      if (userOrder?.id) {
+        trackOrderView(userOrder.id);
+      }
     } catch (error) {
       console.error('❌ [ORDER_DETAILS] Erro ao carregar pedido:', error);
       toast.error('Erro ao carregar detalhes do pedido');
@@ -148,6 +157,14 @@ const OrderDetails = () => {
     });
     
     await uploadVideo(slotPosition, file, userProfile.id, title, scheduleRules);
+    
+    // Track video upload after successful upload
+    // Note: We refresh slots after upload to get the new video ID
+    await refreshSlots();
+    const uploadedSlot = videoSlots.find(slot => slot.slot_position === slotPosition);
+    if (uploadedSlot?.video_data?.id) {
+      await trackVideoUpload(uploadedSlot.video_data.id, id);
+    }
   };
 
   const handleVideoAction = async (action: () => Promise<void>) => {

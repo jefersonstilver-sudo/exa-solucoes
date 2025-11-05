@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useRealOrderDetails } from '@/hooks/useRealOrderDetails';
 import { useVideoManagement } from '@/hooks/useVideoManagement';
+import { useOrderViewTracking } from '@/hooks/tracking/useOrderViewTracking';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoManagementCard } from '@/components/order/VideoManagementCard';
@@ -16,12 +17,20 @@ const OrderDetails: React.FC = () => {
   const { id: orderId } = useParams<{ id: string }>();
   const { user } = useUserSession();
   const { loading, orderDetails, orderVideos, panelData } = useRealOrderDetails(orderId || '');
+  const { trackOrderView } = useOrderViewTracking();
   
   const videoManagement = useVideoManagement({
     orderId: orderId || '',
     userId: user?.id || '',
     orderStatus: orderDetails?.status || ''
   });
+
+  // Track order view when order details are loaded
+  useEffect(() => {
+    if (orderDetails?.id) {
+      trackOrderView(orderDetails.id);
+    }
+  }, [orderDetails?.id, trackOrderView]);
 
   if (loading) {
     return (
