@@ -172,25 +172,29 @@ export class ProfessionalPDFExporter {
     
     // Logo EXA bem posicionada
     let drewLogo = false;
+    const logoSize = 24;
+    const logoX = this.margin;
+    const logoY = 8;
+    
     try {
       const logoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
       const dataUrl = await this.loadImageAsDataURL(logoUrl);
-      // Logo EXA com tamanho adequado (quadrada)
-      const logoSize = 24;
-      this.doc.addImage(dataUrl, 'PNG', this.margin, 8, logoSize, logoSize);
+      this.doc.addImage(dataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
       drewLogo = true;
     } catch (error) {
       this.doc.setTextColor(255, 255, 255);
       this.doc.setFontSize(16);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text('EXA', this.margin, 20);
+      this.doc.text('EXA', logoX, 20);
     }
     
-    // Subtitle
+    // Subtitle ao lado da logo
     this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(7);
+    this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Publicidade Inteligente', this.margin, drewLogo ? 26 : 28);
+    const subtitleX = logoX + logoSize + 3; // 3mm de espaço após a logo
+    const subtitleY = logoY + (logoSize / 2) + 2; // Centralizado verticalmente com a logo
+    this.doc.text('Publicidade Inteligente', subtitleX, subtitleY);
     
     // Título - centro superior
     this.doc.setTextColor(255, 255, 255);
