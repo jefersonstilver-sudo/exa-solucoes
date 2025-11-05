@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { validateRequest } from './validation.ts';
 import { checkExistingUser } from './userChecks.ts';
 import { createAdminUser } from './userCreation.ts';
+import { sendAdminWelcomeEmail } from './emailService.ts';
 import { corsHeaders } from './cors.ts';
 
 serve(async (req) => {
@@ -63,6 +64,16 @@ serve(async (req) => {
       );
     }
 
+    // Enviar email de boas-vindas
+    console.log('📧 [CREATE-ADMIN] Enviando email de boas-vindas...');
+    const emailResult = await sendAdminWelcomeEmail(email, adminType, createResult.password || 'exa2025');
+    
+    if (!emailResult.success) {
+      console.warn('⚠️ [CREATE-ADMIN] Conta criada mas email não enviado:', emailResult.error);
+    } else {
+      console.log('✅ [CREATE-ADMIN] Email enviado com sucesso!');
+    }
+
     // Resposta de sucesso
     console.log('🎉 [CREATE-ADMIN] Conta criada com sucesso!');
     
@@ -70,6 +81,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         user: createResult.user,
+        emailSent: emailResult.success,
         message: 'Conta administrativa criada com sucesso!'
       }),
       { 

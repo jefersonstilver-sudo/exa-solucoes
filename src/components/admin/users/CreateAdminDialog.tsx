@@ -232,7 +232,7 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
             Criar Nova Conta Administrativa
           </DialogTitle>
           <DialogDescription>
-            Crie uma nova conta para um membro da equipe INDEXA. A senha padrão será "indexa2025".
+            Crie uma nova conta para um membro da equipe EXA. A senha padrão será "exa2025".
           </DialogDescription>
         </DialogHeader>
 
@@ -354,7 +354,7 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
                 
                 <div className="mt-2">
                   <Badge variant="outline" className="text-xs">
-                    Senha padrão: indexa2025
+                    Senha padrão: exa2025
                   </Badge>
                 </div>
               </div>

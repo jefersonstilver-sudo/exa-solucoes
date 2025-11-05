@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 interface CreateUserResult {
   user?: any;
+  password?: string;
   error?: any;
   status?: number;
 }
@@ -19,7 +20,7 @@ export const createAdminUser = async (email: string, adminType: string): Promise
     }
   );
 
-  const defaultPassword = 'indexa2025';
+  const defaultPassword = 'exa2025';
   const maxRetries = 3;
   let attempt = 0;
   let newUser = null;
@@ -109,9 +110,9 @@ export const createAdminUser = async (email: string, adminType: string): Promise
       id: newUser.id,
       email: email,
       role: adminType,
-      password: defaultPassword,
       creation_method: 'refactored_edge_function'
-    }
+    },
+    password: defaultPassword
   };
 };
 
