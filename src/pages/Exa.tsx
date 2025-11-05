@@ -49,7 +49,7 @@ const Exa = () => {
         <HeroSection />
         
         {/* Logo Ticker - Full Width */}
-        <div className="-mt-10 md:-mt-12">
+        <div className="-mt-14 md:-mt-16">
           <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
         </div>
         
