@@ -8,11 +8,13 @@ import { useNavigate } from 'react-router-dom';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import NotificationCenter from '@/components/admin/layout/NotificationCenter';
 import exaLogo from '@/assets/exa-logo.png';
+import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 
 const ModernAdminHeader = () => {
   const { userProfile, logout } = useAuth();
   const { userInfo } = useUserPermissions();
   const navigate = useNavigate();
+  const { isMobile } = useAdvancedResponsive();
 
   const handleSignOut = async () => {
     try {
@@ -51,28 +53,46 @@ const ModernAdminHeader = () => {
 
   return (
     <div className="flex items-center justify-between flex-1">
-      {/* EXA Logo with Role Label */}
-      <div className="flex items-center gap-3">
-        <div className="flex flex-col items-center">
-          <img 
-            src={exaLogo} 
-            alt="EXA" 
-            className="h-10 md:h-12 w-auto brightness-0 invert"
-          />
-          <span className="text-[10px] md:text-xs text-white/80 font-medium -mt-1">
-            {getRoleLabel()}
-          </span>
+      {/* EXA Logo - Only on Mobile */}
+      {isMobile && (
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col items-center">
+            <img 
+              src={exaLogo} 
+              alt="EXA" 
+              className="h-10 md:h-12 w-auto brightness-0 invert"
+            />
+            <span className="text-[10px] md:text-xs text-white/80 font-medium -mt-1">
+              {getRoleLabel()}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Desktop: Dynamic Title */}
+      {!isMobile && (
+        <div>
+          <h1 className="text-lg font-semibold text-foreground">
+            {getAdminTitle()}
+          </h1>
+        </div>
+      )}
 
       <div className="flex items-center space-x-2 md:space-x-4">
         <NotificationCenter />
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full touch-target hover:bg-white/20">
+            <Button 
+              variant="ghost" 
+              className={`relative h-8 w-8 rounded-full touch-target ${
+                isMobile ? 'hover:bg-white/20' : 'hover:bg-accent'
+              }`}
+            >
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-white/20 text-white font-semibold text-xs backdrop-blur-sm">
+                <AvatarFallback className={`font-semibold text-xs backdrop-blur-sm ${
+                  isMobile ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                }`}>
                   {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
                 </AvatarFallback>
               </Avatar>
