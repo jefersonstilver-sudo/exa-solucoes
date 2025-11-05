@@ -15,12 +15,33 @@ export const useActiveSession = () => {
 
     const startSession = async () => {
       try {
-        console.log('🔵 Buscando IP do usuário...');
-        const ipResponse = await fetch('https://api.ipify.org?format=json');
-        const { ip } = await ipResponse.json();
-        console.log('✅ IP obtido:', ip);
+        console.log('🔵 Iniciando rastreamento de sessão avançado...');
+        
+        // Obtém IP real do usuário usando múltiplos serviços
+        const ip = await ipGeolocationService.getRealIP();
+        console.log('✅ IP real obtido:', ip);
 
-        console.log('🔵 Buscando geolocalização...');
+        // Obtém informações adicionais do navegador
+        const screenInfo = {
+          width: window.screen.width,
+          height: window.screen.height,
+          colorDepth: window.screen.colorDepth,
+          pixelRatio: window.devicePixelRatio
+        };
+
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const language = navigator.language;
+        const languages = navigator.languages?.join(',') || language;
+
+        console.log('📱 Informações do dispositivo:', {
+          screen: screenInfo,
+          timezone,
+          language,
+          languages
+        });
+
+        // Busca geolocalização com múltiplos provedores
+        console.log('🔵 Buscando geolocalização detalhada...');
         const location = await ipGeolocationService.getIPLocation(ip);
         console.log('✅ Localização obtida:', location);
 
@@ -56,15 +77,20 @@ export const useActiveSession = () => {
 
         console.log('✅ Sessão criada com sucesso:', data);
 
-        console.log('🔵 Registrando evento de sistema...');
+        console.log('🔵 Registrando evento de sistema com detalhes avançados...');
         await supabase.from('log_eventos_sistema').insert({
           tipo_evento: 'USER_SESSION_START',
-          descricao: `Sessão iniciada: ${location?.city}, ${location?.region} - ${location?.country}`,
+          descricao: `Sessão iniciada: ${location?.city || 'Unknown'}, ${location?.region || 'Unknown'} - ${location?.country || 'Unknown'} | Timezone: ${timezone} | ${location?.is_vpn ? '🔴 VPN/Proxy detectado' : '✅ Conexão direta'} | ISP: ${location?.isp || 'Unknown'}`,
           ip,
           user_agent: navigator.userAgent
         });
         
-        console.log('✅ Evento registrado com sucesso');
+        console.log('✅ Evento de sessão registrado com sucesso:', {
+          location: `${location?.city}, ${location?.country}`,
+          vpn: location?.is_vpn,
+          timezone,
+          isp: location?.isp
+        });
       } catch (error) {
         console.error('❌ Erro ao iniciar sessão:', error);
       }
