@@ -16,7 +16,7 @@ const HeroSection = () => {
   // Fallback video URL
   const defaultVideoUrl = 'https://indexa.net.br/wp-content/uploads/2025/01/indexa_exa.mp4';
   const displayVideoUrl = videoUrl || defaultVideoUrl;
-  return <ExaSection background="dark" className="min-h-[calc(100vh-5rem)] md:min-h-[85vh] flex items-center relative overflow-hidden pt-20 md:pt-24 pb-0 md:pb-0">
+  return <ExaSection background="dark" className="min-h-[calc(100vh-5rem)] md:min-h-[75vh] flex items-center relative overflow-hidden pt-20 md:pt-24 pb-0 md:pb-0">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#9C1E1E] via-[#180A0A]/80 to-exa-black opacity-90" />
       
@@ -48,7 +48,7 @@ const HeroSection = () => {
 
         {/* Right side - Visual element */}
         <div className="relative group order-2 lg:order-none">
-          <div className="bg-gradient-to-b from-zinc-300 via-zinc-200 to-zinc-100 p-2 md:p-2.5 lg:p-3 rounded-3xl shadow-2xl border border-white/90 max-w-[200px] md:max-w-[280px] mx-auto lg:mx-0 hover:scale-105 transition-transform duration-300">
+          <div className="bg-gradient-to-b from-zinc-300 via-zinc-200 to-zinc-100 p-2 md:p-2.5 lg:p-3 rounded-3xl shadow-2xl border border-white/90 max-w-[200px] md:max-w-[240px] lg:max-w-[260px] mx-auto lg:mx-0 hover:scale-105 transition-transform duration-300">
             <div className="bg-black rounded-2xl overflow-hidden shadow-inner aspect-[9/16]">
               {!loading && <video autoPlay loop muted playsInline controls className="w-full h-full object-cover" key={displayVideoUrl}>
                   <source src={displayVideoUrl} type="video/mp4" />
