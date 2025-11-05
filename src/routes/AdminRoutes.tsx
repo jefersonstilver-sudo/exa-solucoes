@@ -19,6 +19,7 @@ import LogosAdmin from '@/components/admin/LogosAdmin';
 import ProviderBenefits from '@/pages/admin/ProviderBenefits';
 import BenefitPreview from '@/pages/admin/BenefitPreview';
 import BenefitManagement from '@/pages/admin/BenefitManagement';
+import FinancialReports from '@/pages/admin/FinancialReports';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 const AdminRoutes = () => {
@@ -34,6 +35,7 @@ const AdminRoutes = () => {
       <Route path="beneficio-prestadores" element={<ProviderBenefits />} />
       <Route path="preview-beneficio" element={<BenefitPreview />} />
       <Route path="gerenciar-beneficios" element={<BenefitManagement />} />
+      <Route path="relatorios-financeiros" element={<FinancialReports />} />
       
       {/* ATIVOS */}
       <Route path="predios" element={<BuildingsManagement />} />

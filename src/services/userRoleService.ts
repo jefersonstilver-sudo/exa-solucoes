@@ -102,6 +102,11 @@ export const getRoleDisplayInfo = (role: UserRole) => {
       description: 'Gestão de leads, campanhas e conteúdo',
       color: 'bg-purple-100 text-purple-800 border-purple-300'
     },
+    admin_financeiro: {
+      label: 'Admin Financeiro',
+      description: 'Acesso a pedidos, benefícios e relatórios financeiros',
+      color: 'bg-emerald-100 text-emerald-800 border-emerald-300'
+    },
     client: {
       label: 'Cliente',
       description: 'Acesso às funcionalidades de cliente',

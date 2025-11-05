@@ -43,6 +43,7 @@ export const useUserPermissions = () => {
       email: userProfile?.email,
       isAdmin: userProfile?.role === 'admin',
       isMarketingAdmin: userProfile?.role === 'admin_marketing',
+      isFinancialAdmin: userProfile?.role === 'admin_financeiro',
       isSuperAdmin: userProfile?.role === 'super_admin',
       isClient: userProfile?.role === 'client'
     };
@@ -60,6 +61,8 @@ export const useUserPermissions = () => {
     canManagePanels: checkPermission('canManagePanels'),
     canViewLeads: checkPermission('canViewLeads'),
     canManageHomepageConfig: checkPermission('canManageHomepageConfig'),
-    canViewOrders: checkPermission('canViewOrders')
+    canViewOrders: checkPermission('canViewOrders'),
+    canManageProviderBenefits: checkPermission('canManageProviderBenefits'),
+    canViewFinancialReports: checkPermission('canViewFinancialReports')
   };
 };

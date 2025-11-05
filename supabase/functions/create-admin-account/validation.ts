@@ -34,12 +34,13 @@ export const validateRequest = async (req: Request): Promise<ValidationResult> =
     }
 
     // Validar tipo de admin
-    const validRoles = ['admin', 'admin_marketing', 'super_admin'];
+    const validRoles = ['admin', 'admin_marketing', 'admin_financeiro', 'super_admin'];
     if (!validRoles.includes(adminType)) {
       return {
         error: { 
           error: 'Tipo de administrador inválido',
-          code: 'INVALID_ROLE' 
+          code: 'INVALID_ROLE',
+          details: 'Tipos válidos: admin, admin_marketing, admin_financeiro, super_admin'
         },
         status: 400
       };

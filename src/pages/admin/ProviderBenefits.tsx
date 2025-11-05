@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 import {
   Table,
   TableBody,
@@ -28,8 +29,13 @@ import { ProviderBenefit } from '@/types/providerBenefits';
 
 const ProviderBenefits = () => {
   console.log('🎁 ProviderBenefits component rendering...');
+  const { canManageProviderBenefits } = useUserPermissions();
   const navigate = useNavigate();
   const { isMobile } = useAdvancedResponsive();
+  
+  if (!canManageProviderBenefits) {
+    return <Navigate to="/login" replace />;
+  }
   
   const {
     benefits,

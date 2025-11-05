@@ -1,7 +1,7 @@
 
 import { Session } from '@supabase/supabase-js';
 
-export type UserRole = 'client' | 'admin' | 'admin_marketing' | 'super_admin' | 'painel';
+export type UserRole = 'client' | 'admin' | 'admin_marketing' | 'admin_financeiro' | 'super_admin' | 'painel';
 
 export interface UserProfile {
   id: string;
@@ -48,6 +48,10 @@ export interface UserPermissions {
   canManageVideos: boolean;
   canManagePortfolio: boolean;
   canManageNotifications: boolean;
+  
+  // Financeiro
+  canManageProviderBenefits: boolean;
+  canViewFinancialReports: boolean;
 }
 
 // Mapa de permissões por tipo de usuário
@@ -69,6 +73,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: true,
     canManagePortfolio: true,
     canManageNotifications: true,
+    canManageProviderBenefits: true,
+    canViewFinancialReports: true,
   },
   admin: {
     canViewDashboard: true,
@@ -87,6 +93,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: true,
     canManagePortfolio: true,
     canManageNotifications: true,
+    canManageProviderBenefits: true,
+    canViewFinancialReports: true,
   },
   admin_marketing: {
     canViewDashboard: true,
@@ -105,6 +113,28 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: true, // CORRIGIDO: Pode aprovar vídeos
     canManagePortfolio: true, // CORRIGIDO: Pode gerenciar portfólio da produtora
     canManageNotifications: true,
+    canManageProviderBenefits: false,
+    canViewFinancialReports: false,
+  },
+  admin_financeiro: {
+    canViewDashboard: true,
+    canViewOrders: true,               // ✅ Acesso TOTAL a pedidos
+    canViewApprovals: false,           // ❌ Não precisa aprovar vídeos
+    canManageBuildings: false,         // ❌ Não gerencia prédios
+    canManagePanels: false,            // ❌ Não gerencia painéis
+    canViewLeads: false,               // ❌ Não precisa ver leads
+    canViewSindicosInteressados: false,
+    canViewLeadsProdutora: false,
+    canViewLeadsCampanhas: false,
+    canManageUsers: false,             // ❌ Não cria usuários
+    canManageCoupons: false,           // ❌ Pode VER mas não CRIAR cupons
+    canManageHomepageConfig: false,
+    canManageSystemSettings: false,
+    canManageVideos: false,
+    canManagePortfolio: false,
+    canManageNotifications: false,
+    canManageProviderBenefits: true,   // ✅✅ ACESSO TOTAL a benefícios
+    canViewFinancialReports: true,     // ✅✅ ACESSO a relatórios financeiros
   },
   client: {
     canViewDashboard: false,
@@ -123,6 +153,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: false,
     canManagePortfolio: false,
     canManageNotifications: false,
+    canManageProviderBenefits: false,
+    canViewFinancialReports: false,
   },
   painel: {
     canViewDashboard: false,
@@ -141,6 +173,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: false,
     canManagePortfolio: false,
     canManageNotifications: false,
+    canManageProviderBenefits: false,
+    canViewFinancialReports: false,
   },
 };
 

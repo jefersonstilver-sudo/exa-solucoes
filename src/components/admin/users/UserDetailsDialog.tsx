@@ -112,6 +112,13 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
             Admin Marketing
           </Badge>
         );
+      case 'admin_financeiro':
+        return (
+          <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200">
+            <UserCog className="h-3 w-3 mr-1" />
+            Admin Financeiro
+          </Badge>
+        );
       default:
         return null;
     }

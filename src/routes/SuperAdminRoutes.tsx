@@ -23,6 +23,7 @@ import BenefitPreview from '@/pages/admin/BenefitPreview';
 import BenefitManagement from '@/pages/admin/BenefitManagement';
 import CRMClients from '@/pages/admin/CRMClients';
 import SecurityDashboard from '@/pages/admin/SecurityDashboard';
+import FinancialReports from '@/pages/admin/FinancialReports';
 
 const SuperAdminRoutes = () => {
   return (
@@ -36,6 +37,7 @@ const SuperAdminRoutes = () => {
       <Route path="beneficio-prestadores" element={<ProviderBenefits />} />
       <Route path="preview-beneficio" element={<BenefitPreview />} />
       <Route path="gerenciar-beneficios" element={<BenefitManagement />} />
+      <Route path="relatorios-financeiros" element={<FinancialReports />} />
       
       {/* ATIVOS */}
       <Route path="predios" element={<BuildingsManagement />} />

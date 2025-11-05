@@ -297,6 +297,13 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
             Admin Marketing
           </Badge>
         );
+      case 'admin_financeiro':
+        return (
+          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300">
+            <UserCheck className="h-3 w-3 mr-1" />
+            Admin Financeiro
+          </Badge>
+        );
       default:
         return (
           <Badge variant="secondary">

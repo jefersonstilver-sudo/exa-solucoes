@@ -61,6 +61,13 @@ const CreateAdminDialog: React.FC<CreateAdminDialogProps> = ({
       color: 'text-purple-600'
     },
     {
+      value: 'admin_financeiro',
+      label: 'Administrador Financeiro',
+      description: 'Acesso a pedidos, benefícios e relatórios financeiros',
+      icon: Briefcase,
+      color: 'text-emerald-600'
+    },
+    {
       value: 'super_admin',
       label: 'Super Administrador',
       description: 'Acesso total incluindo gestão de usuários',

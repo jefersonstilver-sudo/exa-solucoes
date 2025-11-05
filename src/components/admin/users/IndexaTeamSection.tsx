@@ -114,6 +114,13 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
             Admin Marketing
           </Badge>
         );
+      case 'admin_financeiro':
+        return (
+          <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200">
+            <UserCog className="h-3 w-3 mr-1" />
+            Admin Financeiro
+          </Badge>
+        );
       default:
         return null;
     }
@@ -151,6 +158,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
     superAdmins: indexaTeam.filter(u => u.role === 'super_admin').length,
     admins: indexaTeam.filter(u => u.role === 'admin').length,
     marketingAdmins: indexaTeam.filter(u => u.role === 'admin_marketing').length,
+    financialAdmins: indexaTeam.filter(u => u.role === 'admin_financeiro').length,
     verified: indexaTeam.filter(u => u.email_confirmed_at).length,
   };
 
@@ -195,7 +203,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
       </div>
 
       {/* Estatísticas da Equipe */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <Card className="bg-indexa-purple/5 border-indexa-purple/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total da Equipe</CardTitle>
@@ -237,6 +245,17 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
           <CardContent>
             <div className="text-2xl font-bold text-purple-500">{stats.marketingAdmins}</div>
             <p className="text-xs text-gray-500 mt-1">leads e campanhas</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Admin Financeiro</CardTitle>
+            <UserCog className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-500">{stats.financialAdmins}</div>
+            <p className="text-xs text-gray-500 mt-1">pedidos e benefícios</p>
           </CardContent>
         </Card>
 

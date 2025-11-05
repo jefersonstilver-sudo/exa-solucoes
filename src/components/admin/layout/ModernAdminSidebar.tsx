@@ -20,7 +20,8 @@ import {
   Zap,
   Film,
   Gift,
-  UsersRound
+  UsersRound,
+  FileBarChart
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -113,7 +114,13 @@ export function ModernAdminSidebar() {
           title: 'Benefício Prestadores',
           href: buildPath('beneficio-prestadores'),
           icon: Gift,
-          permission: 'canViewOrders'
+          permission: 'canManageProviderBenefits'
+        },
+        {
+          title: 'Relatórios Financeiros',
+          href: buildPath('relatorios-financeiros'),
+          icon: FileBarChart,
+          permission: 'canViewFinancialReports'
         }
       ]
     },
