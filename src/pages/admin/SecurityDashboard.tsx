@@ -3,11 +3,16 @@ import { Shield, RefreshCw, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSecurityMetrics } from '@/hooks/useSecurityMetrics';
 import { useRealtimeSecurityEvents } from '@/hooks/useRealtimeSecurityEvents';
+import { useActiveUsers } from '@/hooks/useActiveUsers';
 import { SecurityMetricsCards } from '@/components/admin/security/SecurityMetricsCards';
 import { ThreatLevelIndicator } from '@/components/admin/security/ThreatLevelIndicator';
 import { SecurityEventTimeline } from '@/components/admin/security/SecurityEventTimeline';
 import { SecurityCharts } from '@/components/admin/security/SecurityCharts';
 import { SuspiciousActivityAlert } from '@/components/admin/security/SuspiciousActivityAlert';
+import { ActiveUsersCard } from '@/components/admin/security/ActiveUsersCard';
+import { ActiveSessionsList } from '@/components/admin/security/ActiveSessionsList';
+import { GeographicDistributionChart } from '@/components/admin/security/GeographicDistributionChart';
+import { GeographicSecurityAlert } from '@/components/admin/security/GeographicSecurityAlert';
 import { SecurityAnalytics } from '@/services/securityAnalytics';
 import { toast } from 'sonner';
 
@@ -15,6 +20,15 @@ export default function SecurityDashboard() {
   const [isExporting, setIsExporting] = useState(false);
   const { metrics, eventsByType, eventsByHour, topIPs, isLoading, refetchMetrics } = useSecurityMetrics();
   const { events, isConnected } = useRealtimeSecurityEvents();
+  const {
+    sessions,
+    totalActive,
+    sessionsByCountry,
+    sessionsByRegion,
+    internationalSessions,
+    vpnSessions,
+    isLoading: isLoadingUsers
+  } = useActiveUsers();
 
   const handleRefresh = async () => {
     await refetchMetrics();
@@ -81,26 +95,42 @@ export default function SecurityDashboard() {
       {/* Threat Level Indicator */}
       <ThreatLevelIndicator metrics={metrics} />
 
+      {/* Geographic Security Alert */}
+      <GeographicSecurityAlert
+        internationalSessions={internationalSessions}
+        vpnSessions={vpnSessions}
+      />
+
       {/* Suspicious Activity Alert */}
       <SuspiciousActivityAlert />
 
       {/* Metrics Cards */}
-      <SecurityMetricsCards metrics={metrics} isLoading={isLoading} />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <ActiveUsersCard totalActive={totalActive} isLoading={isLoadingUsers} />
+        <SecurityMetricsCards metrics={metrics} isLoading={isLoading} />
+      </div>
 
-      {/* Charts and Timeline Grid */}
+      {/* Geographic Distribution Charts */}
+      <GeographicDistributionChart
+        sessionsByCountry={sessionsByCountry}
+        sessionsByRegion={sessionsByRegion}
+      />
+
+      {/* Charts, Timeline and Active Sessions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Charts - 2 columns */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
           <SecurityCharts
             eventsByHour={eventsByHour}
             eventsByType={eventsByType}
             topIPs={topIPs}
           />
+          <SecurityEventTimeline events={events} isConnected={isConnected} />
         </div>
 
-        {/* Timeline - 1 column */}
+        {/* Active Sessions - 1 column */}
         <div className="lg:col-span-1">
-          <SecurityEventTimeline events={events} isConnected={isConnected} />
+          <ActiveSessionsList sessions={sessions} />
         </div>
       </div>
     </div>

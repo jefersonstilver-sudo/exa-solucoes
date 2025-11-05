@@ -16,6 +16,7 @@ import { useState, useEffect } from 'react';
 import { usePageTransition } from '@/hooks/usePageTransition';
 import { useLoadingState } from '@/hooks/useLoadingState';
 import { GlobalActivityTracker } from '@/components/tracking/GlobalActivityTracker';
+import { useActiveSession } from '@/hooks/useActiveSession';
 
 // Importações diretas para páginas críticas
 import BuildingStore from './pages/BuildingStore';
@@ -87,6 +88,9 @@ console.log('✅ QueryClient initialized');
 const AppContent = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(MAINTENANCE_MODE && !hasLaunchTimePassed());
   const isDevSession = typeof window !== 'undefined' && sessionStorage.getItem('exa_dev_session') === 'true';
+  
+  // Active session tracking for security monitoring
+  useActiveSession();
   
   // Page transition hook
   const { isLoading: isTransitioning, loadingMessage } = usePageTransition({

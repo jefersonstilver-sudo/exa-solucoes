@@ -2373,6 +2373,66 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          country_code: string | null
+          created_at: string | null
+          device_type: string | null
+          expires_at: string | null
+          id: string
+          ip_address: string | null
+          is_vpn: boolean | null
+          last_activity: string | null
+          latitude: number | null
+          longitude: number | null
+          region: string | null
+          session_id: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_vpn?: boolean | null
+          last_activity?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          region?: string | null
+          session_id: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_vpn?: boolean | null
+          last_activity?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          region?: string | null
+          session_id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           avatar_url: string | null
@@ -2685,6 +2745,7 @@ export type Database = {
         Args: { p_video1_id: string; p_video2_id: string }
         Returns: boolean
       }
+      cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_orphaned_users: { Args: never; Returns: Json }
       cleanup_unauthorized_uploads: { Args: never; Returns: Json }
       daily_financial_reconciliation: { Args: never; Returns: Json }
