@@ -23,7 +23,13 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { action, email, user, email_data } = await req.json();
+    const body = await req.json();
+    
+    // Importar e validar entrada
+    const { validateEmailRequest } = await import('./validation.ts');
+    const validatedData = validateEmailRequest(body);
+    
+    const { action, email, user, email_data } = validatedData;
     
     console.log('📦 [UNIFIED-EMAIL] Dados recebidos:', { action, email: email || user?.email });
 

@@ -31,7 +31,12 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const event: TrackingEvent = await req.json();
+    const body = await req.json();
+    
+    // Importar e validar entrada
+    const { validateTrackingEvent } = await import('./validation.ts');
+    const event: TrackingEvent = validateTrackingEvent(body);
+    
     console.log('📊 Tracking event received:', event.event_type);
 
     // Se não tem user_id, não rastrear (usuário anônimo)

@@ -94,34 +94,40 @@ const VideoManagement = () => {
 
       if (error) throw error;
 
-      // Buscar informações dos clientes
-      const videosWithClientInfo = await Promise.all(
-        data.map(async (video: any) => {
-          // Using users_with_role view for secure role reading
-          const { data: userData } = await supabase
-            .from('users_with_role')
-            .select('email, role')
-            .eq('id', video.pedidos.client_id)
-            .single();
+      // Buscar informações dos clientes usando edge function segura
+      const clientIds = [...new Set(data.map((video: any) => video.pedidos.client_id))];
+      
+      let extendedData: any[] = [];
+      if (clientIds.length > 0) {
+        const { data: usersExtended, error: extendedError } = await supabase.functions.invoke('get-users-extended', {
+          body: { userIds: clientIds }
+        });
+        
+        if (extendedError) {
+          console.warn('Erro ao buscar dados estendidos:', extendedError);
+        } else {
+          extendedData = usersExtended || [];
+        }
+      }
 
-          const { data: authData } = await supabase.auth.admin.getUserById(video.pedidos.client_id);
-
-          return {
-            id: video.id,
-            pedido_id: video.pedido_id,
-            slot_position: video.slot_position,
-            approval_status: video.approval_status,
-            is_active: video.is_active,
-            rejection_reason: video.rejection_reason,
-            created_at: video.created_at,
-            approved_at: video.approved_at,
-            video: video.videos,
-            client_email: userData?.email || authData.user?.email || 'Email não encontrado',
-            client_name: authData.user?.user_metadata?.full_name || 'Nome não encontrado',
-            pedido_valor: video.pedidos.valor_total
-          };
-        })
-      );
+      const videosWithClientInfo = data.map((video: any) => {
+        const extended = extendedData.find((u: any) => u.id === video.pedidos.client_id);
+        
+        return {
+          id: video.id,
+          pedido_id: video.pedido_id,
+          slot_position: video.slot_position,
+          approval_status: video.approval_status,
+          is_active: video.is_active,
+          rejection_reason: video.rejection_reason,
+          created_at: video.created_at,
+          approved_at: video.approved_at,
+          video: video.videos,
+          client_email: extended?.email || 'Email não encontrado',
+          client_name: extended?.name || 'Nome não encontrado',
+          pedido_valor: video.pedidos.valor_total
+        };
+      });
 
       setVideos(videosWithClientInfo);
     } catch (error) {

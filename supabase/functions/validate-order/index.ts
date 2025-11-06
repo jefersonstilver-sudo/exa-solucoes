@@ -22,7 +22,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const { order_id, cpf }: ValidateOrderRequest = await req.json();
+    const body = await req.json();
+    
+    // Importar e validar entrada
+    const { validateOrderRequest } = await import('./validation.ts');
+    const { order_id, cpf }: ValidateOrderRequest = validateOrderRequest(body);
 
     console.log('Validating order:', { order_id, cpf_provided: !!cpf });
 

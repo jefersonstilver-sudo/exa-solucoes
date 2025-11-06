@@ -18,7 +18,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const payload = await req.json();
+    const body = await req.json();
+    
+    // Importar e validar entrada
+    const { validateWebhookPayload } = await import('./validation.ts');
+    const payload = validateWebhookPayload(body);
+    
     console.log("🔔 [MercadoPago Webhook] SISTEMA PIX COMPLETO - Webhook recebido:", payload);
 
     // Log do webhook

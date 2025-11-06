@@ -39,41 +39,33 @@ const UsersPage = () => {
         return;
       }
 
-      // Buscar dados adicionais do auth.users para cada usuário
-      const enrichedUsers = await Promise.all((usersData || []).map(async user => {
-        try {
-          const {
-            data: authData,
-            error: authError
-          } = await supabase.auth.admin.getUserById(user.id);
-          if (authError) {
-            console.warn(`Erro ao buscar dados auth para ${user.email}:`, authError);
-            return {
-              ...user,
-              email_confirmed_at: null,
-              last_sign_in_at: null,
-              raw_user_meta_data: {},
-              banned_until: null
-            };
-          }
-          return {
-            ...user,
-            email_confirmed_at: authData.user?.email_confirmed_at,
-            last_sign_in_at: authData.user?.last_sign_in_at,
-            raw_user_meta_data: authData.user?.user_metadata || {},
-            banned_until: authData.user?.user_metadata?.banned_until
-          };
-        } catch (error) {
-          console.warn(`Erro ao enriquecer dados para ${user.email}:`, error);
-          return {
-            ...user,
-            email_confirmed_at: null,
-            last_sign_in_at: null,
-            raw_user_meta_data: {},
-            banned_until: null
-          };
+      // Buscar dados adicionais do auth.users para cada usuário usando edge function segura
+      const userIds = (usersData || []).map(u => u.id);
+      
+      let extendedData: any[] = [];
+      if (userIds.length > 0) {
+        const { data: usersExtended, error: extendedError } = await supabase.functions.invoke('get-users-extended', {
+          body: { userIds }
+        });
+        
+        if (extendedError) {
+          console.warn('Erro ao buscar dados estendidos:', extendedError);
+        } else {
+          extendedData = usersExtended || [];
         }
-      }));
+      }
+
+      const enrichedUsers = (usersData || []).map(user => {
+        const extended = extendedData.find((u: any) => u.id === user.id);
+        
+        return {
+          ...user,
+          email_confirmed_at: extended?.email_confirmed_at || null,
+          last_sign_in_at: extended?.last_sign_in_at || null,
+          raw_user_meta_data: extended?.raw_user_meta_data || {},
+          banned_until: extended?.banned_until || null
+        };
+      });
       console.log('✅ USUÁRIOS CARREGADOS E ENRIQUECIDOS:', enrichedUsers.length, enrichedUsers);
       setUsers(enrichedUsers);
       toast.success(`${enrichedUsers.length} usuários carregados com sucesso`);

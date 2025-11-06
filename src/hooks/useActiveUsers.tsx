@@ -55,54 +55,27 @@ export const useActiveUsers = () => {
 
         console.log('✅ Sessões encontradas:', sessions?.length);
 
-        // Buscar dados dos usuários da tabela users E do auth.users
+        // Buscar dados dos usuários usando edge function segura
         const userIds = sessions?.filter(s => s.user_id).map(s => s.user_id) || [];
         let usersData: any[] = [];
         
         if (userIds.length > 0) {
           console.log('🔍 Buscando dados de usuários para IDs:', userIds);
           
-          // Primeiro tenta buscar da tabela users
-          const { data: users, error: usersError } = await supabase
-            .from('users')
-            .select('id, nome, email')
-            .in('id', userIds);
+          // Usar edge function para buscar dados estendidos de forma segura
+          const { data: usersExtended, error: extendedError } = await supabase.functions.invoke('get-users-extended', {
+            body: { userIds }
+          });
           
-          if (!usersError && users) {
-            usersData = users;
-            console.log('✅ Dados da tabela users:', users);
-          }
-
-          // Para TODOS os usuários (incluindo os que têm nome null), buscar do auth para pegar metadata
-          for (const userId of userIds) {
-            const existingUser = usersData.find(u => u.id === userId);
-            
-            // Se não tem nome ou não foi encontrado, buscar do auth
-            if (!existingUser || !existingUser.nome) {
-              try {
-                const { data: authData } = await supabase.auth.admin.getUserById(userId);
-                if (authData?.user) {
-                  const metadata = authData.user.user_metadata || {};
-                  const nome = metadata.name || metadata.full_name || metadata.nome || authData.user.email?.split('@')[0];
-                  
-                  if (existingUser) {
-                    // Atualizar usuário existente com nome do auth
-                    existingUser.nome = nome;
-                    existingUser.email = existingUser.email || authData.user.email;
-                  } else {
-                    // Adicionar novo usuário
-                    usersData.push({
-                      id: userId,
-                      nome: nome,
-                      email: authData.user.email
-                    });
-                  }
-                  console.log(`✅ Nome encontrado no auth para ${userId}:`, nome);
-                }
-              } catch (error) {
-                console.log('⚠️ Não foi possível buscar do auth para:', userId);
-              }
-            }
+          if (extendedError) {
+            console.warn('⚠️ Erro ao buscar dados estendidos:', extendedError);
+          } else if (usersExtended) {
+            usersData = usersExtended.map((user: any) => ({
+              id: user.id,
+              nome: user.name || user.email?.split('@')[0],
+              email: user.email
+            }));
+            console.log('✅ Dados estendidos carregados:', usersData.length);
           }
         }
 
