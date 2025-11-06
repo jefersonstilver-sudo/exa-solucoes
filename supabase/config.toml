@@ -20,7 +20,19 @@ enabled = true
 
 [auth]
 enabled = true
-external_email_enabled = true
+enable_signup = true
+enable_confirmations = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+double_confirm_changes = true
+secure_password_change = true
+
+[auth.hook.send_email]
+enabled = true
+uri = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/unified-email-service"
 
 [auth.external.google]
 enabled = false
