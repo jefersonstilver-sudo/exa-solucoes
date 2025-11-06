@@ -285,17 +285,18 @@ export class EmailTemplates {
     }
     
     .header {
-      background: #ffffff;
-      padding: 40px 40px 20px;
+      background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+      padding: 48px 40px;
       text-align: center;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: none;
     }
     
     .logo {
-      max-width: 140px;
+      max-width: 180px;
       height: auto;
       margin: 0 auto;
       display: block;
+      filter: brightness(0) invert(1);
     }
     
     .content {
@@ -320,16 +321,22 @@ export class EmailTemplates {
     
     .cta-button {
       display: inline-block;
-      background-color: #DC2626;
+      background: linear-gradient(135deg, #DC2626 0%, #991b1b 100%);
       color: #ffffff !important;
       font-weight: 600;
       text-decoration: none;
-      padding: 16px 48px;
-      border-radius: 6px;
+      padding: 18px 56px;
+      border-radius: 8px;
       font-size: 16px;
       text-align: center;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+      letter-spacing: 0.3px;
+    }
+    
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(220, 38, 38, 0.45);
     }
     
     .cta-container {
@@ -338,11 +345,12 @@ export class EmailTemplates {
     }
     
     .alert-box {
-      background-color: #fff5f5;
-      border-left: 3px solid #DC2626;
+      background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+      border-left: 4px solid #DC2626;
       padding: 20px 24px;
       margin: 32px 0;
-      border-radius: 4px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
     }
     
     .alert-box p {
@@ -358,10 +366,11 @@ export class EmailTemplates {
     }
     
     .help-section {
-      background-color: #fafafa;
-      padding: 20px 24px;
+      background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+      padding: 24px 28px;
       margin: 32px 0;
-      border-radius: 4px;
+      border-radius: 8px;
+      border: 1px solid #e5e5e5;
     }
     
     .help-section p {
@@ -454,7 +463,7 @@ export class EmailTemplates {
       <!-- Header com Logo -->
       <div class="header">
         <img 
-          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" 
+          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc2MjQ1ODAwOCwiZXhwIjoxNzkzOTk0MDA4fQ.cFyU0rkVnIEHneJp6__bvlggrnOksXsKdsOpjJXDI4U" 
           alt="EXA - Publicidade Inteligente" 
           class="logo"
         >
