@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,8 +9,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone as PhoneIcon } from 'lucide-react';
+import { User, Mail, Phone as PhoneIcon, AlertCircle, LogIn, KeyRound } from 'lucide-react';
 import DocumentInput from '@/components/auth/DocumentInput';
 import RegistrationHeader from '@/components/auth/RegistrationHeader';
 import ErrorDisplay from '@/components/auth/ErrorDisplay';
@@ -40,6 +41,9 @@ const Cadastro: React.FC = () => {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailExists, setEmailExists] = useState<boolean>(false);
+  const [emailExistsMessage, setEmailExistsMessage] = useState<string>('');
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   // Hooks
   const navigate = useNavigate();
@@ -70,12 +74,59 @@ const Cadastro: React.FC = () => {
     return digits.length >= 10 && digits.length <= 11;
   };
 
+  // Verificar se email já existe (com debounce)
+  useEffect(() => {
+    const checkEmailExists = async () => {
+      if (!email || email.length < 5 || !email.includes('@')) {
+        setEmailExists(false);
+        setEmailExistsMessage('');
+        return;
+      }
+
+      setIsCheckingEmail(true);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('check-email-exists', {
+          body: { email: email.toLowerCase().trim() }
+        });
+
+        if (error) {
+          console.error('Erro ao verificar email:', error);
+          return;
+        }
+
+        if (data?.exists) {
+          setEmailExists(true);
+          setEmailExistsMessage(data.message || 'Este email já está cadastrado.');
+        } else {
+          setEmailExists(false);
+          setEmailExistsMessage('');
+        }
+      } catch (error) {
+        console.error('Erro ao verificar email:', error);
+      } finally {
+        setIsCheckingEmail(false);
+      }
+    };
+
+    // Debounce de 800ms
+    const timeoutId = setTimeout(checkEmailExists, 800);
+    return () => clearTimeout(timeoutId);
+  }, [email]);
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
     try {
+      // VERIFICAÇÃO CRÍTICA: Email duplicado
+      if (emailExists) {
+        setError('Este email já está cadastrado. Use outro email ou faça login.');
+        setIsLoading(false);
+        return;
+      }
+
       // Validações
       const passwordValidation = validatePassword(password, name);
       if (!passwordValidation.valid) {
@@ -227,15 +278,52 @@ const Cadastro: React.FC = () => {
                       <Mail className="h-4 w-4 mr-2 text-exa-red" /> 
                       E-mail <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      placeholder="seu@email.com" 
-                      value={email} 
-                      onChange={(e) => setEmail(e.target.value)} 
-                      required 
-                      className="h-11" 
-                    />
+                    <div className="relative">
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        placeholder="seu@email.com" 
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)} 
+                        required 
+                        className={`h-11 pr-10 ${emailExists ? 'border-red-500 focus:border-red-500' : ''}`}
+                      />
+                      {isCheckingEmail && (
+                        <div className="absolute right-3 top-3">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-exa-red"></div>
+                        </div>
+                      )}
+                    </div>
+                    {emailExists && (
+                      <Alert className="mt-2 border-amber-500 bg-amber-50">
+                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                        <AlertDescription className="text-sm text-amber-800">
+                          <p className="font-semibold mb-2">{emailExistsMessage}</p>
+                          <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="border-amber-600 text-amber-700 hover:bg-amber-100"
+                              onClick={() => navigate('/login')}
+                            >
+                              <LogIn className="h-4 w-4 mr-1" />
+                              Fazer Login
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="border-amber-600 text-amber-700 hover:bg-amber-100"
+                              onClick={() => navigate('/recuperar-senha')}
+                            >
+                              <KeyRound className="h-4 w-4 mr-1" />
+                              Recuperar Senha
+                            </Button>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                 </div>
 
@@ -337,7 +425,7 @@ const Cadastro: React.FC = () => {
               {/* Botão de Criar Conta */}
               <Button 
                 type="submit"
-                disabled={isLoading || !acceptedTerms || !hasReadTermsCompletely} 
+                disabled={isLoading || !acceptedTerms || !hasReadTermsCompletely || emailExists || isCheckingEmail} 
                 className="w-full h-12 bg-gradient-to-r from-exa-red to-exa-highlight-red hover:from-exa-highlight-red hover:to-exa-red text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isLoading ? (
