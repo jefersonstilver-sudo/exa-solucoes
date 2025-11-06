@@ -286,17 +286,32 @@ export class EmailTemplates {
     
     .header {
       background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
-      padding: 48px 40px;
+      padding: 56px 40px;
       text-align: center;
       border-bottom: none;
     }
     
-    .logo {
-      max-width: 180px;
-      height: auto;
-      margin: 0 auto;
-      display: block;
-      filter: brightness(0) invert(1);
+    .brand-container {
+      text-align: center;
+    }
+    
+    .brand-logo-text {
+      font-size: 48px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 8px;
+      margin: 0;
+      text-transform: uppercase;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .brand-tagline {
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 2px;
+      margin: 8px 0 0 0;
+      text-transform: uppercase;
     }
     
     .content {
@@ -425,7 +440,17 @@ export class EmailTemplates {
       }
       
       .header {
-        padding: 32px 24px 16px;
+        padding: 40px 24px;
+      }
+      
+      .brand-logo-text {
+        font-size: 36px;
+        letter-spacing: 6px;
+      }
+      
+      .brand-tagline {
+        font-size: 12px;
+        letter-spacing: 1.5px;
       }
       
       .content {
@@ -451,9 +476,6 @@ export class EmailTemplates {
         width: 100%;
       }
       
-      .logo {
-        max-width: 120px;
-      }
     }
   </style>
 </head>
@@ -462,11 +484,10 @@ export class EmailTemplates {
     <div class="email-container">
       <!-- Header com Logo -->
       <div class="header">
-        <img 
-          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc2MjQ1ODAwOCwiZXhwIjoxNzkzOTk0MDA4fQ.cFyU0rkVnIEHneJp6__bvlggrnOksXsKdsOpjJXDI4U" 
-          alt="EXA - Publicidade Inteligente" 
-          class="logo"
-        >
+        <div class="brand-container">
+          <h1 class="brand-logo-text">EXA</h1>
+          <p class="brand-tagline">Publicidade Inteligente</p>
+        </div>
       </div>
       
       <!-- Conteúdo Principal -->
