@@ -1,15 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import SEO from '@/components/seo/SEO';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { Mail, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Mail, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { useEmailConfirmation } from '@/hooks/useEmailConfirmation';
 
 const EmailEnviado: React.FC = () => {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
+  const { resendConfirmationEmail, isResending } = useEmailConfirmation();
+
+  const handleResendEmail = async () => {
+    if (email) {
+      await resendConfirmationEmail(email);
+    }
+  };
 
   return (
     <Layout>
@@ -78,10 +86,21 @@ const EmailEnviado: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Button
                     variant="outline"
-                    onClick={() => window.location.reload()}
+                    onClick={handleResendEmail}
+                    disabled={isResending || !email}
                     className="border-exa-red text-exa-red hover:bg-red-50"
                   >
-                    Reenviar E-mail
+                    {isResending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Reenviar E-mail
+                      </>
+                    )}
                   </Button>
                   
                   <Link to="/login">
