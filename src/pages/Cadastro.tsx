@@ -42,6 +42,7 @@ const Cadastro: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailExists, setEmailExists] = useState<boolean>(false);
+  const [emailConfirmed, setEmailConfirmed] = useState<boolean>(false);
   const [emailExistsMessage, setEmailExistsMessage] = useState<string>('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
@@ -97,9 +98,11 @@ const Cadastro: React.FC = () => {
 
         if (data?.exists) {
           setEmailExists(true);
+          setEmailConfirmed(data.is_confirmed || false);
           setEmailExistsMessage(data.message || 'Este email já está cadastrado.');
         } else {
           setEmailExists(false);
+          setEmailConfirmed(false);
           setEmailExistsMessage('');
         }
       } catch (error) {
@@ -120,9 +123,9 @@ const Cadastro: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // VERIFICAÇÃO CRÍTICA: Email duplicado
-      if (emailExists) {
-        setError('Este email já está cadastrado. Use outro email ou faça login.');
+      // VERIFICAÇÃO CRÍTICA: Email duplicado E CONFIRMADO
+      if (emailExists && emailConfirmed) {
+        setError('Este email já está cadastrado e confirmado. Faça login para acessar sua conta.');
         setIsLoading(false);
         return;
       }
@@ -294,7 +297,7 @@ const Cadastro: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    {emailExists && (
+                    {emailExists && emailConfirmed && (
                       <Alert className="mt-2 border-amber-500 bg-amber-50">
                         <AlertCircle className="h-4 w-4 text-amber-600" />
                         <AlertDescription className="text-sm text-amber-800">
@@ -321,6 +324,15 @@ const Cadastro: React.FC = () => {
                               Recuperar Senha
                             </Button>
                           </div>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    {emailExists && !emailConfirmed && (
+                      <Alert className="mt-2 border-blue-500 bg-blue-50">
+                        <AlertCircle className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-sm text-blue-800">
+                          <p className="font-semibold mb-2">{emailExistsMessage}</p>
+                          <p className="text-xs mb-3">Você pode prosseguir com o cadastro. Um novo email de confirmação será enviado.</p>
                         </AlertDescription>
                       </Alert>
                     )}
@@ -425,7 +437,7 @@ const Cadastro: React.FC = () => {
               {/* Botão de Criar Conta */}
               <Button 
                 type="submit"
-                disabled={isLoading || !acceptedTerms || !hasReadTermsCompletely || emailExists || isCheckingEmail} 
+                disabled={isLoading || !acceptedTerms || !hasReadTermsCompletely || (emailExists && emailConfirmed) || isCheckingEmail}
                 className="w-full h-12 bg-gradient-to-r from-exa-red to-exa-highlight-red hover:from-exa-highlight-red hover:to-exa-red text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isLoading ? (
