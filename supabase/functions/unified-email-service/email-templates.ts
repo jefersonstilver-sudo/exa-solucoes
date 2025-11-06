@@ -320,22 +320,24 @@ export class EmailTemplates {
     }
     
     .brand-logo-text {
-      font-size: 48px;
+      font-size: 56px;
       font-weight: 700;
       color: #ffffff;
-      letter-spacing: 8px;
+      letter-spacing: 12px;
       margin: 0;
       text-transform: uppercase;
       font-family: 'Inter', sans-serif;
+      text-shadow: 0 2px 12px rgba(255, 255, 255, 0.3);
     }
     
     .brand-tagline {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 400;
-      color: rgba(255, 255, 255, 0.9);
-      letter-spacing: 2px;
-      margin: 8px 0 0 0;
+      color: #ffffff;
+      letter-spacing: 3px;
+      margin: 12px 0 0 0;
       text-transform: uppercase;
+      opacity: 0.95;
     }
     
     .content {
@@ -612,22 +614,24 @@ export class EmailTemplates {
     }
     
     .brand-logo-text {
-      font-size: 48px;
+      font-size: 56px;
       font-weight: 700;
       color: #ffffff;
-      letter-spacing: 8px;
+      letter-spacing: 12px;
       margin: 0;
       text-transform: uppercase;
       font-family: 'Inter', sans-serif;
+      text-shadow: 0 2px 12px rgba(255, 255, 255, 0.3);
     }
     
     .brand-tagline {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 400;
-      color: rgba(255, 255, 255, 0.9);
-      letter-spacing: 2px;
-      margin: 8px 0 0 0;
+      color: #ffffff;
+      letter-spacing: 3px;
+      margin: 12px 0 0 0;
       text-transform: uppercase;
+      opacity: 0.95;
     }
     
     .content {
@@ -830,22 +834,24 @@ export class EmailTemplates {
     }
     
     .brand-logo-text {
-      font-size: 48px;
+      font-size: 56px;
       font-weight: 700;
       color: #ffffff;
-      letter-spacing: 8px;
+      letter-spacing: 12px;
       margin: 0;
       text-transform: uppercase;
       font-family: 'Inter', sans-serif;
+      text-shadow: 0 2px 12px rgba(255, 255, 255, 0.3);
     }
     
     .brand-tagline {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 400;
-      color: rgba(255, 255, 255, 0.9);
-      letter-spacing: 2px;
-      margin: 8px 0 0 0;
+      color: #ffffff;
+      letter-spacing: 3px;
+      margin: 12px 0 0 0;
       text-transform: uppercase;
+      opacity: 0.95;
     }
     
     .content {
@@ -1095,22 +1101,24 @@ export class EmailTemplates {
     }
     
     .brand-logo-text {
-      font-size: 48px;
+      font-size: 56px;
       font-weight: 700;
       color: #ffffff;
-      letter-spacing: 8px;
+      letter-spacing: 12px;
       margin: 0;
       text-transform: uppercase;
       font-family: 'Inter', sans-serif;
+      text-shadow: 0 2px 12px rgba(255, 255, 255, 0.3);
     }
     
     .brand-tagline {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 400;
-      color: rgba(255, 255, 255, 0.9);
-      letter-spacing: 2px;
-      margin: 8px 0 0 0;
+      color: #ffffff;
+      letter-spacing: 3px;
+      margin: 12px 0 0 0;
       text-transform: uppercase;
+      opacity: 0.95;
     }
     
     .confetti {
@@ -1431,22 +1439,24 @@ export class EmailTemplates {
     }
     
     .brand-logo-text {
-      font-size: 48px;
+      font-size: 56px;
       font-weight: 700;
       color: #ffffff;
-      letter-spacing: 8px;
+      letter-spacing: 12px;
       margin: 0;
       text-transform: uppercase;
       font-family: 'Inter', sans-serif;
+      text-shadow: 0 2px 12px rgba(255, 255, 255, 0.3);
     }
     
     .brand-tagline {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 400;
-      color: rgba(255, 255, 255, 0.9);
-      letter-spacing: 2px;
-      margin: 8px 0 0 0;
+      color: #ffffff;
+      letter-spacing: 3px;
+      margin: 12px 0 0 0;
       text-transform: uppercase;
+      opacity: 0.95;
     }
     
     .content {
