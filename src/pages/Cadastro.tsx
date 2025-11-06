@@ -26,6 +26,8 @@ const Cadastro: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState<'BR' | 'PY' | 'AR'>('BR');
+  const [phoneCode, setPhoneCode] = useState('+55');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [document, setDocument] = useState('');
@@ -56,6 +58,11 @@ const Cadastro: React.FC = () => {
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPhone(e.target.value);
+  };
+
+  const handlePhoneCountryChange = (country: string, code: string) => {
+    setPhoneCountry(country as 'BR' | 'PY' | 'AR');
+    setPhoneCode(code);
   };
 
   const validatePhone = (phoneNumber: string): boolean => {
@@ -120,7 +127,8 @@ const Cadastro: React.FC = () => {
           emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
             name,
-            phone,
+            phone: `${phoneCode}${phone.replace(/\D/g, '')}`, // Salva com código do país
+            phoneCountry,
             document,
             documentType,
             country: documentType === 'documento_estrangeiro' ? country : null,
@@ -233,7 +241,9 @@ const Cadastro: React.FC = () => {
 
                 <PhoneInput 
                   value={phone} 
-                  onChange={handlePhoneChange} 
+                  onChange={handlePhoneChange}
+                  onCountryChange={handlePhoneCountryChange}
+                  defaultCountry="BR"
                   required 
                 />
               </div>
