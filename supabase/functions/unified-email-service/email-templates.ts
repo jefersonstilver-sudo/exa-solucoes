@@ -53,22 +53,20 @@ export class EmailTemplates {
       text-align: center;
     }
     
-    .brand-logo-text {
-      font-size: 48px;
-      font-weight: 700;
-      color: #ffffff;
-      letter-spacing: 8px;
-      margin: 0;
-      text-transform: uppercase;
-      font-family: 'Inter', sans-serif;
+    .brand-logo-img {
+      max-width: 180px;
+      height: auto;
+      margin: 0 auto;
+      display: block;
+      filter: brightness(0) invert(1);
     }
     
     .brand-tagline {
       font-size: 14px;
       font-weight: 400;
-      color: rgba(255, 255, 255, 0.9);
+      color: #ffffff;
       letter-spacing: 2px;
-      margin: 8px 0 0 0;
+      margin: 16px 0 0 0;
       text-transform: uppercase;
     }
     
@@ -174,9 +172,8 @@ export class EmailTemplates {
         padding: 40px 24px;
       }
       
-      .brand-logo-text {
-        font-size: 36px;
-        letter-spacing: 6px;
+      .brand-logo-img {
+        max-width: 140px;
       }
       
       .brand-tagline {
@@ -215,7 +212,11 @@ export class EmailTemplates {
       <!-- Header com Logo -->
       <div class="header">
         <div class="brand-container">
-          <h1 class="brand-logo-text">EXA</h1>
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc2MjQ2MDM5MCwiZXhwIjoxNzkzOTk2MzkwfQ.U2wwa9i50rmPye1n8hZv5sx1I2CyGuZxV7B9lgKmU9M"
+            alt="EXA - Publicidade Inteligente"
+            class="brand-logo-img"
+          >
           <p class="brand-tagline">Publicidade Inteligente</p>
         </div>
       </div>
@@ -507,7 +508,11 @@ export class EmailTemplates {
       <!-- Header com Logo -->
       <div class="header">
         <div class="brand-container">
-          <h1 class="brand-logo-text">EXA</h1>
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc2MjQ2MDM5MCwiZXhwIjoxNzkzOTk2MzkwfQ.U2wwa9i50rmPye1n8hZv5sx1I2CyGuZxV7B9lgKmU9M"
+            alt="EXA - Publicidade Inteligente"
+            class="brand-logo-img"
+          >
           <p class="brand-tagline">Publicidade Inteligente</p>
         </div>
       </div>
@@ -737,7 +742,11 @@ export class EmailTemplates {
     <div class="email-container">
       <div class="header">
         <div class="brand-container">
-          <h1 class="brand-logo-text">EXA</h1>
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc2MjQ2MDM5MCwiZXhwIjoxNzkzOTk2MzkwfQ.U2wwa9i50rmPye1n8hZv5sx1I2CyGuZxV7B9lgKmU9M"
+            alt="EXA - Publicidade Inteligente"
+            class="brand-logo-img"
+          >
           <p class="brand-tagline">Publicidade Inteligente</p>
         </div>
       </div>
@@ -981,7 +990,11 @@ export class EmailTemplates {
     <div class="email-container">
       <div class="header">
         <div class="brand-container">
-          <h1 class="brand-logo-text">EXA</h1>
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc2MjQ2MDM5MCwiZXhwIjoxNzkzOTk2MzkwfQ.U2wwa9i50rmPye1n8hZv5sx1I2CyGuZxV7B9lgKmU9M"
+            alt="EXA - Publicidade Inteligente"
+            class="brand-logo-img"
+          >
           <p class="brand-tagline">Publicidade Inteligente</p>
         </div>
       </div>
@@ -1298,7 +1311,11 @@ export class EmailTemplates {
     <div class="email-container">
       <div class="header">
         <div class="brand-container">
-          <h1 class="brand-logo-text">EXA</h1>
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc2MjQ2MDM5MCwiZXhwIjoxNzkzOTk2MzkwfQ.U2wwa9i50rmPye1n8hZv5sx1I2CyGuZxV7B9lgKmU9M"
+            alt="EXA - Publicidade Inteligente"
+            class="brand-logo-img"
+          >
           <p class="brand-tagline">Publicidade Inteligente</p>
         </div>
         <div class="confetti">🎉</div>
@@ -1613,7 +1630,11 @@ export class EmailTemplates {
     <div class="email-container">
       <div class="header">
         <div class="brand-container">
-          <h1 class="brand-logo-text">EXA</h1>
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc2MjQ2MDM5MCwiZXhwIjoxNzkzOTk2MzkwfQ.U2wwa9i50rmPye1n8hZv5sx1I2CyGuZxV7B9lgKmU9M"
+            alt="EXA - Publicidade Inteligente"
+            class="brand-logo-img"
+          >
           <p class="brand-tagline">Publicidade Inteligente</p>
         </div>
       </div>
