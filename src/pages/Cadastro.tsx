@@ -231,17 +231,11 @@ const Cadastro: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center text-sm font-medium text-gray-900">
-                    <PhoneIcon className="h-4 w-4 mr-2 text-exa-red" />
-                    Celular <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <PhoneInput 
-                    value={phone} 
-                    onChange={handlePhoneChange} 
-                    required 
-                  />
-                </div>
+                <PhoneInput 
+                  value={phone} 
+                  onChange={handlePhoneChange} 
+                  required 
+                />
               </div>
 
               {/* Seção 2: Senha de Acesso */}

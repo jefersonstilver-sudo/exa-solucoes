@@ -39,8 +39,8 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
     return (
       <div className="space-y-2">
         <Label className="flex items-center text-gray-900">
-          <Phone className="h-4 w-4 mr-2 text-indexa-purple" /> 
-          Celular {required && <span className="text-red-500 ml-1">*</span>}
+          <Phone className="h-4 w-4 mr-2 text-exa-red" /> 
+          Seu Whatsapp {required && <span className="text-red-500 ml-1">*</span>}
         </Label>
         <Input
           ref={ref}
