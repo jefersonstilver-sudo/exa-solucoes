@@ -9,190 +9,231 @@ export class EmailTemplates {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bem-vindo à EXA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #ffffff;
+      background-color: #f5f5f5;
+      color: #333333;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 20px;
+    .email-wrapper {
+      width: 100%;
+      background-color: #f5f5f5;
+      padding: 40px 20px;
     }
     
     .email-container {
+      max-width: 600px;
+      margin: 0 auto;
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
     
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 40px;
+      background: #ffffff;
+      padding: 40px 40px 20px;
       text-align: center;
+      border-bottom: 1px solid #f0f0f0;
     }
     
     .logo {
-      font-size: 48px;
-      font-weight: 800;
-      color: #ffffff;
-      letter-spacing: 4px;
-      margin: 0;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      max-width: 140px;
+      height: auto;
+      margin: 0 auto;
+      display: block;
     }
     
     .content {
-      padding: 40px;
-      text-align: center;
+      padding: 48px 40px;
       background: #ffffff;
     }
     
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      color: #1a202c;
-      margin: 0 0 20px;
+    .greeting {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0 0 16px;
+      line-height: 1.3;
     }
     
-    p {
+    .message {
       font-size: 16px;
       line-height: 1.6;
-      color: #4a5568;
-      margin: 0 0 24px;
+      color: #4a4a4a;
+      margin: 0 0 32px;
     }
     
-    .button {
+    .cta-button {
       display: inline-block;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #ffffff;
+      background-color: #DC2626;
+      color: #ffffff !important;
       font-weight: 600;
       text-decoration: none;
-      padding: 16px 40px;
-      border-radius: 50px;
+      padding: 16px 48px;
+      border-radius: 6px;
       font-size: 16px;
-      margin: 20px 0;
       text-align: center;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
     }
     
-    .button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    .cta-container {
+      text-align: center;
+      margin: 32px 0;
     }
     
-    .benefits {
-      background: #f7fafc;
-      border-radius: 12px;
-      padding: 24px;
-      margin: 24px 0;
-      text-align: left;
+    .info-box {
+      background-color: #fafafa;
+      border-left: 3px solid #DC2626;
+      padding: 20px 24px;
+      margin: 32px 0;
+      border-radius: 4px;
     }
     
-    .benefit-item {
-      display: flex;
-      align-items: start;
-      margin-bottom: 16px;
-    }
-    
-    .benefit-icon {
-      font-size: 24px;
-      margin-right: 12px;
-    }
-    
-    .benefit-text {
-      flex: 1;
-      color: #4a5568;
+    .info-box p {
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.6;
+      color: #666666;
       margin: 0;
     }
     
-    .footer {
-      padding: 32px 40px;
-      text-align: center;
-      background: #f7fafc;
-      border-top: 1px solid #e2e8f0;
+    .info-box strong {
+      color: #1a1a1a;
+      font-weight: 600;
     }
     
-    .footer p {
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+      margin: 32px 0;
+    }
+    
+    .footer {
+      background: #fafafa;
+      padding: 32px 40px;
+      text-align: center;
+      border-top: 1px solid #f0f0f0;
+    }
+    
+    .footer-text {
       font-size: 13px;
-      color: #718096;
+      line-height: 1.6;
+      color: #999999;
       margin: 8px 0;
     }
     
-    .footer a {
-      color: #667eea;
-      text-decoration: none;
+    .footer-brand {
+      font-size: 14px;
+      font-weight: 600;
+      color: #DC2626;
+      margin: 16px 0 8px;
     }
     
-    @media screen and (max-width: 480px) {
-      .container {
-        padding: 10px;
-        margin: 20px auto;
+    .footer-link {
+      color: #DC2626;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    @media screen and (max-width: 640px) {
+      .email-wrapper {
+        padding: 20px 10px;
       }
       
-      .header, .content, .footer {
-        padding: 24px 20px;
+      .header {
+        padding: 32px 24px 16px;
       }
       
-      h1 {
-        font-size: 24px;
+      .content {
+        padding: 32px 24px;
+      }
+      
+      .footer {
+        padding: 24px;
+      }
+      
+      .greeting {
+        font-size: 22px;
+      }
+      
+      .message {
+        font-size: 15px;
+      }
+      
+      .cta-button {
+        padding: 14px 36px;
+        font-size: 15px;
+        display: block;
+        width: 100%;
       }
       
       .logo {
-        font-size: 36px;
+        max-width: 120px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="email-wrapper">
     <div class="email-container">
+      <!-- Header com Logo -->
       <div class="header">
-        <h1 class="logo">EXA</h1>
+        <img 
+          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" 
+          alt="EXA - Publicidade Inteligente" 
+          class="logo"
+        >
       </div>
       
+      <!-- Conteúdo Principal -->
       <div class="content">
-        <h1>🎉 Bem-vindo à EXA, ${userName}!</h1>
-        <p>Estamos muito felizes em tê-lo conosco! Para começar a aproveitar todos os benefícios da nossa plataforma de painéis digitais, confirme seu e-mail clicando no botão abaixo:</p>
+        <h1 class="greeting">Bem-vindo à EXA, ${userName}!</h1>
         
-        <a href="${confirmationUrl}" class="button">✨ Ativar minha conta</a>
+        <p class="message">
+          Estamos muito felizes em tê-lo conosco. Para começar a utilizar nossa plataforma de painéis digitais e gerenciar suas campanhas publicitárias, precisamos que você confirme seu endereço de e-mail.
+        </p>
         
-        <div class="benefits">
-          <div class="benefit-item">
-            <span class="benefit-icon">📊</span>
-            <p class="benefit-text"><strong>Gestão Completa</strong><br>Controle total sobre suas campanhas e painéis digitais em tempo real</p>
-          </div>
-          <div class="benefit-item">
-            <span class="benefit-icon">🎯</span>
-            <p class="benefit-text"><strong>Alcance Estratégico</strong><br>Impacte seu público-alvo nos locais mais relevantes</p>
-          </div>
-          <div class="benefit-item">
-            <span class="benefit-icon">📈</span>
-            <p class="benefit-text"><strong>Relatórios Detalhados</strong><br>Acompanhe métricas e resultados de suas campanhas</p>
-          </div>
-          <div class="benefit-item">
-            <span class="benefit-icon">⚡</span>
-            <p class="benefit-text"><strong>Atualizações Instantâneas</strong><br>Altere conteúdo a qualquer momento, de qualquer lugar</p>
-          </div>
+        <div class="cta-container">
+          <a href="${confirmationUrl}" class="cta-button">Confirmar E-mail</a>
         </div>
         
-        <p style="font-size: 14px; color: #718096;">Este link é válido por 24 horas. Caso expire, você pode solicitar um novo link na página de login.</p>
+        <div class="info-box">
+          <p><strong>Por que confirmar seu e-mail?</strong></p>
+          <p style="margin-top: 8px;">A confirmação garante a segurança da sua conta e permite que você receba notificações importantes sobre suas campanhas, além de possibilitar a recuperação de senha caso necessário.</p>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <p class="message" style="font-size: 14px; color: #666666; margin-bottom: 0;">
+          Este link de confirmação é válido por <strong>24 horas</strong>. Caso expire, você poderá solicitar um novo através da página de login.
+        </p>
       </div>
       
+      <!-- Rodapé -->
       <div class="footer">
-        <p><strong>Precisa de ajuda?</strong></p>
-        <p>Entre em contato: <a href="mailto:suporte@examidia.com.br">suporte@examidia.com.br</a></p>
-        <p style="margin-top: 20px;">© 2025 EXA - Soluções Digitais LTDA. Todos os direitos reservados.</p>
-        <p style="font-size: 12px; color: #a0aec0;">Caso você não tenha se cadastrado, pode ignorar este e-mail com segurança.</p>
+        <p class="footer-brand">EXA • Publicidade Inteligente</p>
+        <p class="footer-text">
+          Precisa de ajuda? Entre em contato: <a href="mailto:suporte@examidia.com.br" class="footer-link">suporte@examidia.com.br</a>
+        </p>
+        <p class="footer-text" style="margin-top: 16px;">
+          © 2025 EXA Mídia. Todos os direitos reservados.
+        </p>
+        <p class="footer-text" style="font-size: 12px; color: #bbbbbb; margin-top: 12px;">
+          Se você não se cadastrou na EXA, pode ignorar este e-mail com segurança.
+        </p>
       </div>
     </div>
   </div>
@@ -208,156 +249,256 @@ export class EmailTemplates {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmação de Email - EXA</title>
+  <title>Confirmação de E-mail - EXA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #ffffff;
+      background-color: #f5f5f5;
+      color: #333333;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 20px;
+    .email-wrapper {
+      width: 100%;
+      background-color: #f5f5f5;
+      padding: 40px 20px;
     }
     
     .email-container {
+      max-width: 600px;
+      margin: 0 auto;
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
     
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 40px;
+      background: #ffffff;
+      padding: 40px 40px 20px;
       text-align: center;
+      border-bottom: 1px solid #f0f0f0;
     }
     
     .logo {
-      font-size: 48px;
-      font-weight: 800;
-      color: #ffffff;
-      letter-spacing: 4px;
-      margin: 0;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      max-width: 140px;
+      height: auto;
+      margin: 0 auto;
+      display: block;
     }
     
     .content {
-      padding: 40px;
-      text-align: center;
+      padding: 48px 40px;
       background: #ffffff;
     }
     
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      color: #1a202c;
-      margin: 0 0 20px;
+    .greeting {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0 0 16px;
+      line-height: 1.3;
     }
     
-    p {
+    .message {
       font-size: 16px;
       line-height: 1.6;
-      color: #4a5568;
-      margin: 0 0 24px;
+      color: #4a4a4a;
+      margin: 0 0 32px;
     }
     
-    .button {
+    .cta-button {
       display: inline-block;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #ffffff;
+      background-color: #DC2626;
+      color: #ffffff !important;
       font-weight: 600;
       text-decoration: none;
-      padding: 16px 40px;
-      border-radius: 50px;
+      padding: 16px 48px;
+      border-radius: 6px;
       font-size: 16px;
-      margin: 20px 0;
       text-align: center;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+    }
+    
+    .cta-container {
+      text-align: center;
+      margin: 32px 0;
     }
     
     .alert-box {
-      background: #fef5e7;
-      border-left: 4px solid #f39c12;
-      padding: 16px;
-      border-radius: 8px;
-      margin: 24px 0;
-      text-align: left;
+      background-color: #fff5f5;
+      border-left: 3px solid #DC2626;
+      padding: 20px 24px;
+      margin: 32px 0;
+      border-radius: 4px;
     }
     
     .alert-box p {
-      color: #7d6608;
-      margin: 0;
       font-size: 14px;
+      line-height: 1.6;
+      color: #991b1b;
+      margin: 0;
+    }
+    
+    .alert-box strong {
+      color: #7f1d1d;
+      font-weight: 600;
+    }
+    
+    .help-section {
+      background-color: #fafafa;
+      padding: 20px 24px;
+      margin: 32px 0;
+      border-radius: 4px;
+    }
+    
+    .help-section p {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #666666;
+      margin: 0;
+    }
+    
+    .help-section strong {
+      color: #1a1a1a;
+      display: block;
+      margin-bottom: 8px;
+    }
+    
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+      margin: 32px 0;
     }
     
     .footer {
+      background: #fafafa;
       padding: 32px 40px;
       text-align: center;
-      background: #f7fafc;
-      border-top: 1px solid #e2e8f0;
+      border-top: 1px solid #f0f0f0;
     }
     
-    .footer p {
+    .footer-text {
       font-size: 13px;
-      color: #718096;
+      line-height: 1.6;
+      color: #999999;
       margin: 8px 0;
     }
     
-    @media screen and (max-width: 480px) {
-      .container {
-        padding: 10px;
-        margin: 20px auto;
+    .footer-brand {
+      font-size: 14px;
+      font-weight: 600;
+      color: #DC2626;
+      margin: 16px 0 8px;
+    }
+    
+    .footer-link {
+      color: #DC2626;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    @media screen and (max-width: 640px) {
+      .email-wrapper {
+        padding: 20px 10px;
       }
       
-      .header, .content, .footer {
-        padding: 24px 20px;
+      .header {
+        padding: 32px 24px 16px;
       }
       
-      h1 {
-        font-size: 24px;
+      .content {
+        padding: 32px 24px;
+      }
+      
+      .footer {
+        padding: 24px;
+      }
+      
+      .greeting {
+        font-size: 22px;
+      }
+      
+      .message {
+        font-size: 15px;
+      }
+      
+      .cta-button {
+        padding: 14px 36px;
+        font-size: 15px;
+        display: block;
+        width: 100%;
+      }
+      
+      .logo {
+        max-width: 120px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="email-wrapper">
     <div class="email-container">
+      <!-- Header com Logo -->
       <div class="header">
-        <h1 class="logo">EXA</h1>
+        <img 
+          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" 
+          alt="EXA - Publicidade Inteligente" 
+          class="logo"
+        >
       </div>
       
+      <!-- Conteúdo Principal -->
       <div class="content">
-        <h1>📧 Confirmação de E-mail (Reenviado)</h1>
-        <p>Olá, ${userName}!</p>
-        <p>Você solicitou o reenvio do link de confirmação de e-mail. Clique no botão abaixo para ativar sua conta:</p>
+        <h1 class="greeting">Olá, ${userName}!</h1>
         
-        <a href="${confirmationUrl}" class="button">✨ Confirmar E-mail</a>
+        <p class="message">
+          Você solicitou o reenvio do link de confirmação de e-mail. Clique no botão abaixo para ativar sua conta e começar a usar a plataforma EXA:
+        </p>
         
-        <div class="alert-box">
-          <p><strong>⏰ Atenção:</strong> Este link expira em 24 horas. Certifique-se de confirmar seu e-mail antes que ele expire.</p>
+        <div class="cta-container">
+          <a href="${confirmationUrl}" class="cta-button">Confirmar E-mail</a>
         </div>
         
-        <p style="font-size: 14px; color: #718096; margin-top: 24px;">
-          <strong>Problemas para confirmar?</strong><br>
-          • Verifique se está usando o link mais recente<br>
-          • Tente abrir em outro navegador<br>
-          • Entre em contato com nosso suporte
-        </p>
+        <div class="alert-box">
+          <p><strong>⏰ Atenção:</strong> Este link de confirmação expira em 24 horas. Certifique-se de confirmar seu e-mail antes que ele expire para garantir o acesso total à plataforma.</p>
+        </div>
+        
+        <div class="help-section">
+          <p><strong>Problemas para confirmar?</strong></p>
+          <p>
+            • Certifique-se de usar o link mais recente enviado<br>
+            • Tente abrir em um navegador diferente<br>
+            • Verifique se o link não foi quebrado em várias linhas<br>
+            • Entre em contato com nosso suporte se o problema persistir
+          </p>
+        </div>
       </div>
       
+      <!-- Rodapé -->
       <div class="footer">
-        <p><strong>Precisa de ajuda?</strong></p>
-        <p>Entre em contato: <a href="mailto:suporte@examidia.com.br" style="color: #667eea; text-decoration: none;">suporte@examidia.com.br</a></p>
-        <p style="margin-top: 20px;">© 2025 EXA - Soluções Digitais LTDA. Todos os direitos reservados.</p>
+        <p class="footer-brand">EXA • Publicidade Inteligente</p>
+        <p class="footer-text">
+          Precisa de ajuda? Entre em contato: <a href="mailto:suporte@examidia.com.br" class="footer-link">suporte@examidia.com.br</a>
+        </p>
+        <p class="footer-text" style="margin-top: 16px;">
+          © 2025 EXA Mídia. Todos os direitos reservados.
+        </p>
+        <p class="footer-text" style="font-size: 12px; color: #bbbbbb; margin-top: 12px;">
+          Se você não solicitou este e-mail, pode ignorá-lo com segurança.
+        </p>
       </div>
     </div>
   </div>
