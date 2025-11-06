@@ -106,7 +106,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   };
 
   // Upload direto sem agendamento
-  const handleDirectUpload = () => {
+  const handleDirectUpload = async () => {
     if (!companyInfoComplete) {
       toast.error('Complete o cadastro da empresa antes de fazer upload');
       navigate('/advertiser/settings');
@@ -122,12 +122,50 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       return;
     }
 
-    onUpload(slotPosition, selectedFile, videoTitle);
-    
-    // Reset after upload
-    setSelectedFile(null);
-    setVideoTitle('');
-    setTitleError('');
+    try {
+      await onUpload(slotPosition, selectedFile, videoTitle);
+      
+      // Enviar email de confirmação de recebimento
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Buscar pedido mais recente do usuário
+          const { data: pedido } = await supabase
+            .from('pedidos')
+            .select('id')
+            .eq('client_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (pedido?.id) {
+            console.log('📧 Enviando email de vídeo recebido...');
+            const { error: emailError } = await supabase.functions.invoke('video-notification-service', {
+              body: {
+                action: 'video_submitted',
+                pedido_id: pedido.id,
+                video_title: videoTitle || 'Seu Vídeo'
+              }
+            });
+
+            if (emailError) {
+              console.warn('⚠️ Erro ao enviar email:', emailError);
+            } else {
+              console.log('✅ Email de confirmação enviado!');
+            }
+          }
+        }
+      } catch (emailErr) {
+        console.warn('⚠️ Falha ao enviar email de confirmação:', emailErr);
+      }
+      
+      // Reset after upload
+      setSelectedFile(null);
+      setVideoTitle('');
+      setTitleError('');
+    } catch (error) {
+      console.error('Erro no upload:', error);
+    }
   };
 
   const canUpload = selectedFile && videoTitle.trim() && !uploading && !isUploading;
