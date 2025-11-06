@@ -18,6 +18,8 @@ import NewTermsCheckbox from '@/components/auth/NewTermsCheckbox';
 import { TermsScrollViewer } from '@/components/auth/TermsScrollViewer';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
+import { PasswordInput } from '@/components/auth/PasswordInput';
+import { PasswordRequirements, validatePassword } from '@/components/auth/PasswordRequirements';
 const Cadastro: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -62,8 +64,9 @@ const Cadastro: React.FC = () => {
     setIsLoading(true);
     try {
       // Validations
-      if (password.length < 6) {
-        setError('Senha deve ter pelo menos 6 caracteres');
+      const passwordValidation = validatePassword(password, name);
+      if (!passwordValidation.valid) {
+        setError(passwordValidation.message || 'Senha não atende aos requisitos de segurança');
         return;
       }
       if (password !== confirmPassword) {
@@ -191,23 +194,46 @@ const Cadastro: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Senha */}
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="flex items-center text-gray-900">
+                    <Lock className="h-4 w-4 mr-2 text-exa-red" /> 
+                    Senha <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <PasswordInput
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Crie uma senha forte"
+                    required
+                    className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
+                  />
+                  <PasswordRequirements password={password} userName={name} />
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-6">
-                  {/* Senha */}
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="flex items-center text-gray-900">
-                      <Lock className="h-4 w-4 mr-2 text-exa-red" /> 
-                      Senha <span className="text-red-500 ml-1">*</span>
-                    </Label>
-                    <Input id="password" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} required className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500" />
-                  </div>
-                  
                   {/* Confirmar Senha */}
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword" className="flex items-center text-gray-900">
                       <Lock className="h-4 w-4 mr-2 text-exa-red" /> 
                       Confirmar senha <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input id="confirmPassword" type="password" placeholder="Digite a senha novamente" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500" />
+                    <PasswordInput
+                      id="confirmPassword"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Digite a senha novamente"
+                      required
+                      className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
+                    />
+                    {confirmPassword && password !== confirmPassword && (
+                      <p className="text-xs text-red-600 mt-1">As senhas não coincidem</p>
+                    )}
+                    {confirmPassword && password === confirmPassword && (
+                      <p className="text-xs text-green-600 mt-1 flex items-center">
+                        <Lock className="h-3 w-3 mr-1" /> Senhas coincidem
+                      </p>
+                    )}
                   </div>
                 </div>
 
