@@ -105,45 +105,268 @@ serve(async (req) => {
       fullUrl: confirmationUrl
     })
 
-    // Template HTML simplificado
+    // Template HTML profissional com logo EXA
     const htmlTemplate = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Confirme seu email - Indexa</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #333;">🎯 Bem-vindo à Indexa!</h1>
-          </div>
-          
-          <div style="background: #f8f9fa; padding: 30px; border-radius: 8px; margin-bottom: 30px;">
-            <h2 style="color: #333; margin-top: 0;">Olá, ${user.user_metadata?.name || user.email}!</h2>
-            <p style="color: #666; line-height: 1.6;">
-              Obrigado por se cadastrar na Indexa! Para completar seu cadastro e começar a usar nossa plataforma, 
-              você precisa confirmar seu endereço de email.
-            </p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${confirmationUrl}" 
-                 style="background: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-                ✅ Confirmar Email
-              </a>
-            </div>
-            
-            <p style="color: #888; font-size: 14px;">
-              Se o botão não funcionar, copie e cole este link no seu navegador:<br>
-              <a href="${confirmationUrl}" style="color: #007bff; word-break: break-all;">${confirmationUrl}</a>
-            </p>
-          </div>
-          
-          <div style="text-align: center; color: #888; font-size: 12px;">
-            <p>Este email foi enviado automaticamente. Se você não se cadastrou na Indexa, pode ignorar este email.</p>
-            <p>&copy; ${new Date().getFullYear()} Indexa - Todos os direitos reservados</p>
-          </div>
-        </body>
-      </html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bem-vindo à EXA</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: #333333;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    .email-wrapper {
+      width: 100%;
+      background-color: #f5f5f5;
+      padding: 40px 20px;
+    }
+    
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+      padding: 56px 40px;
+      text-align: center;
+      border-bottom: none;
+    }
+    
+    .brand-container {
+      text-align: center;
+    }
+    
+    .brand-logo-img {
+      max-width: 180px;
+      height: auto;
+      margin: 0 auto;
+      display: block;
+      filter: brightness(0) invert(1);
+    }
+    
+    .brand-tagline {
+      font-size: 14px;
+      font-weight: 400;
+      color: #ffffff;
+      letter-spacing: 2px;
+      margin: 16px 0 0 0;
+      text-transform: uppercase;
+    }
+    
+    .content {
+      padding: 48px 40px;
+      background: #ffffff;
+    }
+    
+    .greeting {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0 0 16px;
+      line-height: 1.3;
+    }
+    
+    .message {
+      font-size: 16px;
+      line-height: 1.6;
+      color: #4a4a4a;
+      margin: 0 0 32px;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #DC2626 0%, #991b1b 100%);
+      color: #ffffff !important;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 18px 56px;
+      border-radius: 8px;
+      font-size: 16px;
+      text-align: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+      letter-spacing: 0.3px;
+    }
+    
+    .cta-container {
+      text-align: center;
+      margin: 32px 0;
+    }
+    
+    .info-box {
+      background-color: #fafafa;
+      border-left: 3px solid #DC2626;
+      padding: 20px 24px;
+      margin: 32px 0;
+      border-radius: 4px;
+    }
+    
+    .info-box p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #666666;
+      margin: 0;
+    }
+    
+    .info-box strong {
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+    
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+      margin: 32px 0;
+    }
+    
+    .footer {
+      background: #fafafa;
+      padding: 32px 40px;
+      text-align: center;
+      border-top: 1px solid #f0f0f0;
+    }
+    
+    .footer-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #999999;
+      margin: 8px 0;
+    }
+    
+    .footer-brand {
+      font-size: 14px;
+      font-weight: 600;
+      color: #DC2626;
+      margin: 16px 0 8px;
+    }
+    
+    .footer-link {
+      color: #DC2626;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    @media screen and (max-width: 640px) {
+      .email-wrapper {
+        padding: 20px 10px;
+      }
+      
+      .header {
+        padding: 40px 24px;
+      }
+      
+      .brand-logo-img {
+        max-width: 140px;
+      }
+      
+      .brand-tagline {
+        font-size: 12px;
+        letter-spacing: 1.5px;
+      }
+      
+      .content {
+        padding: 32px 24px;
+      }
+      
+      .footer {
+        padding: 24px;
+      }
+      
+      .greeting {
+        font-size: 22px;
+      }
+      
+      .message {
+        font-size: 15px;
+      }
+      
+      .cta-button {
+        padding: 14px 36px;
+        font-size: 15px;
+        display: block;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <!-- Header com Logo -->
+      <div class="header">
+        <div class="brand-container">
+          <img 
+            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc2MjQ2MDM5MCwiZXhwIjoxNzkzOTk2MzkwfQ.U2wwa9i50rmPye1n8hZv5sx1I2CyGuZxV7B9lgKmU9M"
+            alt="EXA - Publicidade Inteligente"
+            class="brand-logo-img"
+          >
+          <p class="brand-tagline">Publicidade Inteligente</p>
+        </div>
+      </div>
+      
+      <!-- Conteúdo Principal -->
+      <div class="content">
+        <h1 class="greeting">Bem-vindo à EXA, ${user.user_metadata?.name || user.email.split('@')[0]}!</h1>
+        
+        <p class="message">
+          Estamos muito felizes em tê-lo conosco. Para começar a utilizar nossa plataforma de painéis digitais e gerenciar suas campanhas publicitárias, precisamos que você confirme seu endereço de e-mail.
+        </p>
+        
+        <div class="cta-container">
+          <a href="${confirmationUrl}" class="cta-button">Confirmar E-mail</a>
+        </div>
+        
+        <div class="info-box">
+          <p><strong>Por que confirmar seu e-mail?</strong></p>
+          <p style="margin-top: 8px;">A confirmação garante a segurança da sua conta e permite que você receba notificações importantes sobre suas campanhas, além de possibilitar a recuperação de senha caso necessário.</p>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <p class="message" style="font-size: 14px; color: #666666; margin-bottom: 0;">
+          Este link de confirmação é válido por <strong>24 horas</strong>. Caso expire, você poderá solicitar um novo através da página de login.
+        </p>
+      </div>
+      
+      <!-- Rodapé -->
+      <div class="footer">
+        <p class="footer-brand">EXA • Publicidade Inteligente</p>
+        <p class="footer-text">
+          Precisa de ajuda? Entre em contato: <a href="mailto:suporte@examidia.com.br" class="footer-link">suporte@examidia.com.br</a>
+        </p>
+        <p class="footer-text" style="margin-top: 16px;">
+          © 2025 EXA Mídia. Todos os direitos reservados.
+        </p>
+        <p class="footer-text" style="font-size: 12px; color: #bbbbbb; margin-top: 12px;">
+          Se você não se cadastrou na EXA, pode ignorar este e-mail com segurança.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
     `
 
     // Tentar enviar email via Resend
@@ -151,9 +374,9 @@ serve(async (req) => {
     
     try {
       const emailResult = await resend.emails.send({
-        from: 'Indexa <noreply@indexamidia.com.br>',
+        from: 'EXA <noreply@examidia.com.br>',
         to: [user.email],
-        subject: '🎯 Confirme seu email na Indexa - Bem-vindo!',
+        subject: '🎯 Confirme seu email na EXA - Bem-vindo!',
         html: htmlTemplate,
       })
 
