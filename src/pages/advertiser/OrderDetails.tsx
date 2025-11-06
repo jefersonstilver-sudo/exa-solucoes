@@ -107,24 +107,41 @@ const OrderDetails = () => {
   }, [id, userProfile]);
 
   const loadOrderDetails = async () => {
-    if (!id || !userProfile?.id) return;
+    if (!id || !userProfile?.id) {
+      console.error('❌ [ORDER_DETAILS] Dados inválidos:', { id, userId: userProfile?.id });
+      toast.error('Dados inválidos para carregar o pedido');
+      navigate('/anunciante/pedidos');
+      return;
+    }
 
     try {
-      console.log('📊 [ORDER_DETAILS] Carregando pedido:', id);
+      console.log('📊 [ORDER_DETAILS] Iniciando carregamento do pedido:', id);
+      console.log('👤 [ORDER_DETAILS] User ID:', userProfile.id);
       
-        const { data: userOrder, error: userError } = await supabase
-          .from('pedidos')
-          .select('*')
-          .eq('id', id)
-          .eq('client_id', userProfile.id)
-          .single();
+      const { data: userOrder, error: userError } = await supabase
+        .from('pedidos')
+        .select('*')
+        .eq('id', id)
+        .eq('client_id', userProfile.id)
+        .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error('❌ [ORDER_DETAILS] Erro na query:', userError);
+        throw userError;
+      }
 
-      console.log('📊 [ORDER_DETAILS] Pedido carregado:', userOrder);
+      if (!userOrder) {
+        console.error('❌ [ORDER_DETAILS] Pedido não encontrado');
+        toast.error('Pedido não encontrado');
+        navigate('/anunciante/pedidos');
+        return;
+      }
+
+      console.log('✅ [ORDER_DETAILS] Pedido carregado com sucesso:', userOrder);
       console.log('📍 [ORDER_DETAILS] Lista de painéis:', userOrder?.lista_paineis);
       console.log('🏢 [ORDER_DETAILS] Lista de prédios:', userOrder?.lista_predios);
       console.log('💳 [ORDER_DETAILS] Log de pagamento:', userOrder?.log_pagamento);
+      console.log('📊 [ORDER_DETAILS] Status:', userOrder?.status);
       
       setOrderDetails(userOrder);
       
@@ -132,9 +149,10 @@ const OrderDetails = () => {
       if (userOrder?.id) {
         trackOrderView(userOrder.id);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [ORDER_DETAILS] Erro ao carregar pedido:', error);
-      toast.error('Erro ao carregar detalhes do pedido');
+      toast.error(`Erro ao carregar detalhes: ${error.message || 'Erro desconhecido'}`);
+      navigate('/anunciante/pedidos');
     } finally {
       setLoading(false);
     }

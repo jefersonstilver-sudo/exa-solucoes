@@ -212,10 +212,19 @@ const AdvertiserOrders = () => {
                   </Button>
                 )}
                 
-                {item.type === 'order' && <Button variant="outline" size="sm" onClick={() => navigate(`/anunciante/pedido/${item.id}`)}>
+                {item.type === 'order' && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      console.log('📋 Navegando para detalhes do pedido:', item.id);
+                      navigate(`/anunciante/pedido/${item.id}`);
+                    }}
+                  >
                     <Eye className="h-4 w-4 mr-1" />
                     Detalhes
-                  </Button>}
+                  </Button>
+                )}
               </div>
             </div>
           </div>

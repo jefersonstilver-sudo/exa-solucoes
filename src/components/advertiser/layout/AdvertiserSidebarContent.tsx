@@ -97,45 +97,52 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
 
   return (
     <aside className={cn(
-      "h-screen bg-gradient-to-b from-[#3C1361] via-[#5a1a8f] to-[#8b1874] shadow-xl flex flex-col transition-all duration-300",
+      "h-screen bg-gradient-to-b from-[#3C1361] via-[#5a1a8f] to-[#8b1874] shadow-2xl flex flex-col transition-all duration-300 overflow-hidden",
       isCollapsed ? "w-16" : "w-80"
     )}>
-      {/* Logo da EXA no topo */}
-      <div className={cn("border-b border-white/20", isCollapsed ? "p-3" : "p-6")}>
-        <div className="flex items-center justify-center mb-6">
+      {/* Logo e Info do Usuário */}
+      <div className={cn(
+        "border-b border-white/20 flex-shrink-0",
+        isCollapsed ? "p-3" : "p-6"
+      )}>
+        {/* Logo EXA */}
+        <div className="flex items-center justify-center mb-4">
           <UnifiedLogo 
             size="custom" 
             linkTo="/" 
             variant="light"
             logoUrl={exaLogo}
             altText="EXA Logo"
-            className={cn("drop-shadow-lg", isCollapsed ? "w-10 h-10" : "w-20 h-20")}
+            className={cn(
+              "drop-shadow-2xl transition-all duration-300 hover:scale-105",
+              isCollapsed ? "w-10 h-10" : "w-20 h-20"
+            )}
           />
         </div>
         
-        {/* Informações do Usuário - só mostra se não estiver colapsado */}
+        {/* Informações do Usuário */}
         {!isCollapsed && (
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
+          <div className="flex items-center justify-between animate-in fade-in slide-in-from-left-5 duration-300">
+            <div className="flex-1 min-w-0">
               <div className="text-white font-semibold text-sm truncate">
                 {user?.email?.split('@')[0] || 'Anunciante'}
               </div>
               <div className="flex items-center space-x-2 mt-1">
-                <Crown className="h-3 w-3 text-yellow-300" />
-                <span className="text-xs font-medium text-yellow-300">
+                <Crown className="h-3 w-3 text-yellow-300 flex-shrink-0" />
+                <span className="text-xs font-medium text-yellow-300 truncate">
                   Portal do Anunciante
                 </span>
               </div>
             </div>
             
-            {/* Notificações e Menu do Usuário */}
-            <div className="flex items-center space-x-2">
+            {/* Notificações e Menu */}
+            <div className="flex items-center space-x-2 ml-2">
               <NotificationCenter />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
-                    <Avatar className="h-8 w-8">
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20 transition-colors">
+                    <Avatar className="h-8 w-8 ring-2 ring-white/20">
                       <AvatarFallback className="bg-white text-[#3C1361] font-semibold text-xs">
                         {user?.email?.charAt(0).toUpperCase() || 'A'}
                       </AvatarFallback>
@@ -154,7 +161,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={handleSignOut}
-                    className="text-gray-700 hover:bg-gray-100"
+                    className="text-gray-700 hover:bg-gray-100 cursor-pointer"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sair</span>
@@ -167,11 +174,11 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
         
         {/* Avatar compacto quando colapsado */}
         {isCollapsed && (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center space-y-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20">
-                  <Avatar className="h-8 w-8">
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20 transition-colors">
+                  <Avatar className="h-8 w-8 ring-2 ring-white/20">
                     <AvatarFallback className="bg-white text-[#3C1361] font-semibold text-xs">
                       {user?.email?.charAt(0).toUpperCase() || 'A'}
                     </AvatarFallback>
@@ -190,13 +197,16 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={handleSignOut}
-                  className="text-gray-700 hover:bg-gray-100"
+                  className="text-gray-700 hover:bg-gray-100 cursor-pointer"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sair</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <div className="h-8 flex items-center">
+              <NotificationCenter />
+            </div>
           </div>
         )}
       </div>
