@@ -56,7 +56,7 @@ const ErrosAnunciarCondominios = lazy(() => import('./pages/blog/ErrosAnunciarCo
 const CaseSucessoAcademia = lazy(() => import('./pages/blog/CaseSucessoAcademia'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
-const EmailSent = lazy(() => import('./pages/EmailSent'));
+const EmailSent = lazy(() => import('./pages/EmailEnviado'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 const ValidateOrder = lazy(() => import('./pages/public/ValidateOrder'));
 
