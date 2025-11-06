@@ -72,6 +72,11 @@ const OrderDetails = () => {
     error: enhancedError 
   } = useEnhancedOrderData(id || '', userProfile?.id || '');
 
+  // CRITICAL: Mover hook useSelectedBuildingsDetails para o topo para evitar erro de hooks
+  // Use building IDs from the new lista_predios column
+  const displayBuildingIds = orderDetails?.lista_predios || [];
+  const { buildings: buildingDetails } = useSelectedBuildingsDetails(displayBuildingIds);
+
   const {
     videoSlots,
     loading: videosLoading,
@@ -223,13 +228,7 @@ const OrderDetails = () => {
   }
 
   // Usar dados recuperados se disponíveis
-  const displayPanels = enhancedData?.recoveredPanels || orderDetails.lista_paineis || [];
-
-  // Use building IDs from the new lista_predios column
-  const displayBuildingIds = orderDetails?.lista_predios || [];
-
-  // Buscar detalhes dos prédios para calcular totais
-  const { buildings: buildingDetails } = useSelectedBuildingsDetails(displayBuildingIds);
+  const displayPanels = enhancedData?.recoveredPanels || orderDetails?.lista_paineis || [];
   
   const totalScreens = buildingDetails.reduce((sum, building) => 
     sum + (building.quantidade_telas || building.numero_elevadores || 0), 0
@@ -244,7 +243,7 @@ const OrderDetails = () => {
                          (displayPanels && displayPanels.length > 0);
 
   console.log('🔍 [ORDER_DETAILS] Estado final dos dados:', {
-    originalPanels: orderDetails.lista_paineis,
+    originalPanels: orderDetails?.lista_paineis,
     recoveredPanels: enhancedData?.recoveredPanels,
     displayPanels,
     displayBuildingIds,
