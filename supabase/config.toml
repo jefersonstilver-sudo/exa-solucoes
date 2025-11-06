@@ -78,3 +78,6 @@ verify_jwt = true
 
 [functions.update-platform-metrics]
 verify_jwt = false
+
+[functions.video-notification-service]
+verify_jwt = false

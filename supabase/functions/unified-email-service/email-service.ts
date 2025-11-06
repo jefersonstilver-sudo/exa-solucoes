@@ -41,4 +41,51 @@ export class EmailService {
       html,
     });
   }
+
+  async sendVideoSubmittedEmail(userEmail: string, userName: string, videoTitle: string, orderId: string) {
+    const html = EmailTemplates.createVideoSubmittedHTML(userName, videoTitle, orderId);
+
+    return await this.resend.emails.send({
+      from: 'EXA <noreply@examidia.com.br>',
+      to: [userEmail],
+      subject: '🎬 Vídeo Recebido - Em Análise | EXA',
+      html,
+    });
+  }
+
+  async sendVideoApprovedEmail(
+    userEmail: string, 
+    userName: string, 
+    videoTitle: string, 
+    buildings: string[], 
+    startDate: string, 
+    endDate: string, 
+    orderId: string
+  ) {
+    const html = EmailTemplates.createVideoApprovedHTML(userName, videoTitle, buildings, startDate, endDate, orderId);
+
+    return await this.resend.emails.send({
+      from: 'EXA <noreply@examidia.com.br>',
+      to: [userEmail],
+      subject: '🎉 Parabéns! Seu Vídeo Foi Aprovado | EXA',
+      html,
+    });
+  }
+
+  async sendVideoRejectedEmail(
+    userEmail: string, 
+    userName: string, 
+    videoTitle: string, 
+    rejectionReason: string, 
+    orderId: string
+  ) {
+    const html = EmailTemplates.createVideoRejectedHTML(userName, videoTitle, rejectionReason, orderId);
+
+    return await this.resend.emails.send({
+      from: 'EXA <noreply@examidia.com.br>',
+      to: [userEmail],
+      subject: '⚠️ Vídeo Precisa de Ajustes | EXA',
+      html,
+    });
+  }
 }

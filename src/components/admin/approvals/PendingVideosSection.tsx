@@ -101,12 +101,14 @@ const PendingVideosSection: React.FC<PendingVideosSectionProps> = ({ loading, on
     try {
       console.log(`✅ Aprovando vídeo ${videoId}...`);
       
+      const video = pendingVideos.find(v => v.id === videoId);
+      
       const { error } = await supabase
         .from('pedidos')
         .update({ 
           status: 'video_aprovado',
           log_pagamento: {
-            ...pendingVideos.find(v => v.id === videoId)?.log_pagamento,
+            ...video?.log_pagamento,
             approved_at: new Date().toISOString(),
             approved_by: 'admin'
           }
@@ -114,6 +116,26 @@ const PendingVideosSection: React.FC<PendingVideosSectionProps> = ({ loading, on
         .eq('id', videoId);
 
       if (error) throw error;
+
+      // Enviar email de aprovação
+      console.log('📧 Enviando email de aprovação...');
+      try {
+        const { error: emailError } = await supabase.functions.invoke('video-notification-service', {
+          body: {
+            action: 'video_approved',
+            pedido_id: videoId,
+            video_title: video?.video_url || 'Seu Vídeo'
+          }
+        });
+
+        if (emailError) {
+          console.warn('⚠️ Erro ao enviar email de aprovação:', emailError);
+        } else {
+          console.log('✅ Email de aprovação enviado!');
+        }
+      } catch (emailErr) {
+        console.warn('⚠️ Falha ao enviar email:', emailErr);
+      }
 
       toast.success(`Vídeo de ${clientEmail} aprovado com sucesso!`);
       onRefresh();
@@ -134,12 +156,14 @@ const PendingVideosSection: React.FC<PendingVideosSectionProps> = ({ loading, on
     try {
       console.log(`❌ Rejeitando vídeo ${videoId}...`);
       
+      const video = pendingVideos.find(v => v.id === videoId);
+      
       const { error } = await supabase
         .from('pedidos')
         .update({ 
           status: 'video_rejeitado',
           log_pagamento: {
-            ...pendingVideos.find(v => v.id === videoId)?.log_pagamento,
+            ...video?.log_pagamento,
             rejected_at: new Date().toISOString(),
             rejected_by: 'admin',
             rejection_reason: reason
@@ -148,6 +172,27 @@ const PendingVideosSection: React.FC<PendingVideosSectionProps> = ({ loading, on
         .eq('id', videoId);
 
       if (error) throw error;
+
+      // Enviar email de rejeição
+      console.log('📧 Enviando email de rejeição...');
+      try {
+        const { error: emailError } = await supabase.functions.invoke('video-notification-service', {
+          body: {
+            action: 'video_rejected',
+            pedido_id: videoId,
+            video_title: video?.video_url || 'Seu Vídeo',
+            rejection_reason: reason
+          }
+        });
+
+        if (emailError) {
+          console.warn('⚠️ Erro ao enviar email de rejeição:', emailError);
+        } else {
+          console.log('✅ Email de rejeição enviado!');
+        }
+      } catch (emailErr) {
+        console.warn('⚠️ Falha ao enviar email:', emailErr);
+      }
 
       toast.success(`Vídeo de ${clientEmail} rejeitado. Cliente será notificado.`);
       onRefresh();
