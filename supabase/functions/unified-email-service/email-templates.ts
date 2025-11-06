@@ -472,6 +472,13 @@ export class EmailTemplates {
           <a href="${confirmationUrl}" class="cta-button">Confirmar E-mail</a>
         </div>
         
+        <div class="link-box" style="background-color: #fafafa; border: 1px solid #e0e0e0; padding: 16px 20px; margin: 24px 0; border-radius: 4px;">
+          <p style="font-size: 13px; color: #666666; margin: 0 0 8px 0; font-weight: 500;">Ou copie e cole este link no seu navegador:</p>
+          <div style="background-color: #ffffff; border: 1px solid #d0d0d0; padding: 12px; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 12px; color: #333333; line-height: 1.5;">
+            ${confirmationUrl}
+          </div>
+        </div>
+        
         <div class="alert-box">
           <p><strong>⏰ Atenção:</strong> Este link de confirmação expira em 24 horas. Certifique-se de confirmar seu e-mail antes que ele expire para garantir o acesso total à plataforma.</p>
         </div>
