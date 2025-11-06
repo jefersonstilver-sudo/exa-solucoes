@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock } from 'lucide-react';
+import { User, Mail, Phone as PhoneIcon } from 'lucide-react';
 import DocumentInput from '@/components/auth/DocumentInput';
 import RegistrationHeader from '@/components/auth/RegistrationHeader';
 import ErrorDisplay from '@/components/auth/ErrorDisplay';
@@ -20,17 +20,32 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { PasswordRequirements, validatePassword } from '@/components/auth/PasswordRequirements';
+import { PersonTypeSelector } from '@/components/auth/registration/PersonTypeSelector';
+import { CompanyInfoSection } from '@/components/auth/registration/CompanyInfoSection';
+import { BusinessSegmentSelector } from '@/components/auth/registration/BusinessSegmentSelector';
 const Cadastro: React.FC = () => {
+  // Personal Information
+  const [personType, setPersonType] = useState<'individual' | 'company'>('individual');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  
+  // Individual Document
   const [document, setDocument] = useState('');
   const [documentType, setDocumentType] = useState<'cpf' | 'documento_estrangeiro'>('cpf');
-  const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('');
   const [documentFrontUrl, setDocumentFrontUrl] = useState<string>('');
   const [documentBackUrl, setDocumentBackUrl] = useState<string>('');
+  
+  // Company Information
+  const [companyName, setCompanyName] = useState('');
+  const [companyCountry, setCompanyCountry] = useState('');
+  const [companyDocument, setCompanyDocument] = useState('');
+  const [businessSegment, setBusinessSegment] = useState('');
+  
+  // Terms and Loading
   const [hasReadTermsCompletely, setHasReadTermsCompletely] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
@@ -77,23 +92,46 @@ const Cadastro: React.FC = () => {
         setError('Número de celular inválido');
         return;
       }
-      if (!validateDocument(document, documentType)) {
-        setError(documentType === 'cpf' ? 'CPF inválido' : 'Número do documento inválido');
-        return;
+
+      // Validações para Pessoa Física
+      if (personType === 'individual') {
+        if (!validateDocument(document, documentType)) {
+          setError(documentType === 'cpf' ? 'CPF inválido' : 'Número do documento inválido');
+          return;
+        }
+
+        if (documentType === 'documento_estrangeiro') {
+          if (!country) {
+            setError('Selecione o país do documento');
+            return;
+          }
+          if (!documentFrontUrl) {
+            setError('Faça o upload da frente do documento');
+            return;
+          }
+          if (!documentBackUrl) {
+            setError('Faça o upload do verso do documento');
+            return;
+          }
+        }
       }
 
-      // Validações específicas para documento estrangeiro
-      if (documentType === 'documento_estrangeiro') {
-        if (!country) {
-          setError('Selecione o país do documento');
+      // Validações para Empresa
+      if (personType === 'company') {
+        if (!companyName) {
+          setError('Informe o nome da empresa');
           return;
         }
-        if (!documentFrontUrl) {
-          setError('Faça o upload da frente do documento');
+        if (!companyCountry) {
+          setError('Selecione o país da empresa');
           return;
         }
-        if (!documentBackUrl) {
-          setError('Faça o upload do verso do documento');
+        if (!companyDocument) {
+          setError('Informe o documento da empresa');
+          return;
+        }
+        if (!businessSegment) {
+          setError('Selecione o segmento de negócio');
           return;
         }
       }
@@ -115,12 +153,19 @@ const Cadastro: React.FC = () => {
           emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
             name,
-            document,
-            documentType,
             phone,
-            country: documentType === 'documento_estrangeiro' ? country : null,
-            documentFrontUrl: documentType === 'documento_estrangeiro' ? documentFrontUrl : null,
-            documentBackUrl: documentType === 'documento_estrangeiro' ? documentBackUrl : null
+            personType,
+            // Individual data
+            document: personType === 'individual' ? document : null,
+            documentType: personType === 'individual' ? documentType : null,
+            country: personType === 'individual' && documentType === 'documento_estrangeiro' ? country : null,
+            documentFrontUrl: personType === 'individual' && documentType === 'documento_estrangeiro' ? documentFrontUrl : null,
+            documentBackUrl: personType === 'individual' && documentType === 'documento_estrangeiro' ? documentBackUrl : null,
+            // Company data
+            companyName: personType === 'company' ? companyName : null,
+            companyCountry: personType === 'company' ? companyCountry : null,
+            companyDocument: personType === 'company' ? companyDocument : null,
+            businessSegment: personType === 'company' ? businessSegment : null
           }
         }
       });
@@ -173,49 +218,79 @@ const Cadastro: React.FC = () => {
             
             {/* Formulário Principal */}
             <div className="mt-8">
-              <form onSubmit={handleSignUp} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Nome */}
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="flex items-center text-gray-900">
-                      <User className="h-4 w-4 mr-2 text-exa-red" /> 
-                      Nome completo <span className="text-red-500 ml-1">*</span>
-                    </Label>
-                    <Input id="name" type="text" placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} required className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500" />
+              <form onSubmit={handleSignUp} className="space-y-8">
+                {/* Seção 1: Informações Básicas */}
+                <div className="space-y-6">
+                  <div className="pb-2 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Informações Pessoais</h3>
                   </div>
-                  
-                  {/* E-mail */}
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="flex items-center text-sm font-medium text-gray-900">
+                        <User className="h-4 w-4 mr-2 text-exa-red" /> 
+                        Nome completo <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <Input 
+                        id="name" 
+                        type="text" 
+                        placeholder="Seu nome completo" 
+                        value={name} 
+                        onChange={e => setName(e.target.value)} 
+                        required 
+                        className="border-gray-300 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500" 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="flex items-center text-sm font-medium text-gray-900">
+                        <Mail className="h-4 w-4 mr-2 text-exa-red" /> 
+                        E-mail <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        placeholder="seu@email.com" 
+                        value={email} 
+                        onChange={e => setEmail(e.target.value)} 
+                        required 
+                        className="border-gray-300 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500" 
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="flex items-center text-gray-900">
-                      <Mail className="h-4 w-4 mr-2 text-exa-red" /> 
-                      E-mail <span className="text-red-500 ml-1">*</span>
+                    <Label htmlFor="phone" className="flex items-center text-sm font-medium text-gray-900">
+                      <PhoneIcon className="h-4 w-4 mr-2 text-exa-red" />
+                      Celular <span className="text-red-500 ml-1">*</span>
                     </Label>
-                    <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500" />
+                    <PhoneInput value={phone} onChange={handlePhoneChange} required />
                   </div>
                 </div>
 
-                {/* Senha */}
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="flex items-center text-gray-900">
-                    <Lock className="h-4 w-4 mr-2 text-exa-red" /> 
-                    Senha <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <PasswordInput
-                    id="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Crie uma senha forte"
-                    required
-                    className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
-                  />
-                  <PasswordRequirements password={password} userName={name} />
-                </div>
+                {/* Seção 2: Segurança */}
+                <div className="space-y-6">
+                  <div className="pb-2 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Senha de Acesso</h3>
+                  </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Confirmar Senha */}
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="flex items-center text-gray-900">
-                      <Lock className="h-4 w-4 mr-2 text-exa-red" /> 
+                    <Label htmlFor="password" className="text-sm font-medium text-gray-900">
+                      Senha <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <PasswordInput
+                      id="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Crie uma senha forte"
+                      required
+                      className="border-gray-300 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
+                    />
+                    <PasswordRequirements password={password} userName={name} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-900">
                       Confirmar senha <span className="text-red-500 ml-1">*</span>
                     </Label>
                     <PasswordInput
@@ -224,24 +299,58 @@ const Cadastro: React.FC = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Digite a senha novamente"
                       required
-                      className="border-exa-red/20 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
+                      className="border-gray-300 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
                     />
                     {confirmPassword && password !== confirmPassword && (
                       <p className="text-xs text-red-600 mt-1">As senhas não coincidem</p>
                     )}
                     {confirmPassword && password === confirmPassword && (
-                      <p className="text-xs text-green-600 mt-1 flex items-center">
-                        <Lock className="h-3 w-3 mr-1" /> Senhas coincidem
-                      </p>
+                      <p className="text-xs text-green-600 mt-1">✓ Senhas coincidem</p>
                     )}
                   </div>
                 </div>
 
-                {/* Celular */}
-                <PhoneInput value={phone} onChange={handlePhoneChange} required />
-                
-                {/* Documento */}
-                <DocumentInput documentType={documentType} document={document} country={country} documentFrontUrl={documentFrontUrl} documentBackUrl={documentBackUrl} onDocumentTypeChange={setDocumentType} onDocumentChange={handleChangeDocument} onCountryChange={setCountry} onDocumentFrontChange={setDocumentFrontUrl} onDocumentBackChange={setDocumentBackUrl} />
+                {/* Seção 3: Tipo de Cadastro */}
+                <div className="space-y-6">
+                  <div className="pb-2 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Tipo de Cadastro</h3>
+                  </div>
+
+                  <PersonTypeSelector value={personType} onChange={setPersonType} />
+
+                  {personType === 'individual' && (
+                    <DocumentInput 
+                      documentType={documentType} 
+                      document={document} 
+                      country={country} 
+                      documentFrontUrl={documentFrontUrl} 
+                      documentBackUrl={documentBackUrl} 
+                      onDocumentTypeChange={setDocumentType} 
+                      onDocumentChange={handleChangeDocument} 
+                      onCountryChange={setCountry} 
+                      onDocumentFrontChange={setDocumentFrontUrl} 
+                      onDocumentBackChange={setDocumentBackUrl} 
+                    />
+                  )}
+
+                  {personType === 'company' && (
+                    <div className="space-y-6">
+                      <CompanyInfoSection
+                        companyName={companyName}
+                        companyCountry={companyCountry}
+                        companyDocument={companyDocument}
+                        onCompanyNameChange={setCompanyName}
+                        onCompanyCountryChange={setCompanyCountry}
+                        onCompanyDocumentChange={setCompanyDocument}
+                      />
+                      
+                      <BusinessSegmentSelector
+                        value={businessSegment}
+                        onChange={setBusinessSegment}
+                      />
+                    </div>
+                  )}
+                </div>
               </form>
             </div>
 
