@@ -26,6 +26,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
       case 'BR':
         return 'CNPJ';
       case 'AR':
+        return 'CUIT';
       case 'PY':
         return 'RUC';
       default:
@@ -38,29 +39,37 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
       case 'BR':
         return '00.000.000/0000-00';
       case 'AR':
-        return 'RUC da empresa argentina';
+        return '20-12345678-3';
       case 'PY':
-        return 'RUC da empresa paraguaia';
+        return '80012345-6';
       default:
         return 'Número do documento';
     }
   };
 
   const formatDocument = (value: string) => {
-    const cleaned = value.replace(/\D/g, '');
+    const digits = value.replace(/\D/g, '');
     
-    if (companyCountry === 'BR') {
-      // Format CNPJ: 00.000.000/0000-00
-      if (cleaned.length <= 14) {
-        return cleaned
-          .replace(/(\d{2})(\d)/, '$1.$2')
-          .replace(/(\d{3})(\d)/, '$1.$2')
-          .replace(/(\d{3})(\d)/, '$1/$2')
-          .replace(/(\d{4})(\d)/, '$1-$2');
-      }
+    switch (companyCountry) {
+      case 'BR': // CNPJ: 00.000.000/0000-00
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+        if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+        if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+        return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`;
+        
+      case 'AR': // CUIT: 20-12345678-3
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 10) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+        return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10, 11)}`;
+        
+      case 'PY': // RUC: 80012345-6
+        if (digits.length <= 8) return digits;
+        return `${digits.slice(0, 8)}-${digits.slice(8, 9)}`;
+        
+      default:
+        return digits;
     }
-    
-    return cleaned;
   };
 
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,9 +133,9 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
               className="h-11 bg-white border-gray-300 focus:border-exa-red text-gray-900 placeholder-gray-500"
             />
             <p className="text-xs text-gray-600">
-              {companyCountry === 'BR' 
-                ? 'Digite apenas números, a formatação será automática' 
-                : 'Informe o RUC conforme documentação oficial'}
+              {companyCountry === 'BR' && 'Digite apenas números, a formatação será automática'}
+              {companyCountry === 'AR' && 'CUIT emitido pela AFIP - formatação automática'}
+              {companyCountry === 'PY' && 'RUC emitido pela SET - formatação automática'}
             </p>
           </div>
         )}

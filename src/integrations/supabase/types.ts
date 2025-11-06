@@ -2533,6 +2533,12 @@ export type Database = {
           documento_verso_url: string | null
           email: string
           email_verified_at: string | null
+          empresa_aceite_data: string | null
+          empresa_aceite_termo: boolean | null
+          empresa_documento: string | null
+          empresa_nome: string | null
+          empresa_pais: string | null
+          empresa_segmento: string | null
           id: string
           nome: string | null
           privacy_accepted_at: string | null
@@ -2550,6 +2556,12 @@ export type Database = {
           documento_verso_url?: string | null
           email: string
           email_verified_at?: string | null
+          empresa_aceite_data?: string | null
+          empresa_aceite_termo?: boolean | null
+          empresa_documento?: string | null
+          empresa_nome?: string | null
+          empresa_pais?: string | null
+          empresa_segmento?: string | null
           id: string
           nome?: string | null
           privacy_accepted_at?: string | null
@@ -2567,6 +2579,12 @@ export type Database = {
           documento_verso_url?: string | null
           email?: string
           email_verified_at?: string | null
+          empresa_aceite_data?: string | null
+          empresa_aceite_termo?: boolean | null
+          empresa_documento?: string | null
+          empresa_nome?: string | null
+          empresa_pais?: string | null
+          empresa_segmento?: string | null
           id?: string
           nome?: string | null
           privacy_accepted_at?: string | null

@@ -20,12 +20,8 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { PasswordRequirements, validatePassword } from '@/components/auth/PasswordRequirements';
-import { PersonTypeSelector } from '@/components/auth/registration/PersonTypeSelector';
-import { CompanyInfoSection } from '@/components/auth/registration/CompanyInfoSection';
-import { BusinessSegmentSelector } from '@/components/auth/registration/BusinessSegmentSelector';
 const Cadastro: React.FC = () => {
   // Personal Information
-  const [personType, setPersonType] = useState<'individual' | 'company'>('individual');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,12 +34,6 @@ const Cadastro: React.FC = () => {
   const [country, setCountry] = useState('');
   const [documentFrontUrl, setDocumentFrontUrl] = useState<string>('');
   const [documentBackUrl, setDocumentBackUrl] = useState<string>('');
-  
-  // Company Information
-  const [companyName, setCompanyName] = useState('');
-  const [companyCountry, setCompanyCountry] = useState('');
-  const [companyDocument, setCompanyDocument] = useState('');
-  const [businessSegment, setBusinessSegment] = useState('');
   
   // Terms and Loading
   const [hasReadTermsCompletely, setHasReadTermsCompletely] = useState(false);
@@ -93,45 +83,23 @@ const Cadastro: React.FC = () => {
         return;
       }
 
-      // Validações para Pessoa Física
-      if (personType === 'individual') {
-        if (!validateDocument(document, documentType)) {
-          setError(documentType === 'cpf' ? 'CPF inválido' : 'Número do documento inválido');
-          return;
-        }
-
-        if (documentType === 'documento_estrangeiro') {
-          if (!country) {
-            setError('Selecione o país do documento');
-            return;
-          }
-          if (!documentFrontUrl) {
-            setError('Faça o upload da frente do documento');
-            return;
-          }
-          if (!documentBackUrl) {
-            setError('Faça o upload do verso do documento');
-            return;
-          }
-        }
+      // Validar documento
+      if (!validateDocument(document, documentType)) {
+        setError(documentType === 'cpf' ? 'CPF inválido' : 'Número do documento inválido');
+        return;
       }
 
-      // Validações para Empresa
-      if (personType === 'company') {
-        if (!companyName) {
-          setError('Informe o nome da empresa');
+      if (documentType === 'documento_estrangeiro') {
+        if (!country) {
+          setError('Selecione o país do documento');
           return;
         }
-        if (!companyCountry) {
-          setError('Selecione o país da empresa');
+        if (!documentFrontUrl) {
+          setError('Faça o upload da frente do documento');
           return;
         }
-        if (!companyDocument) {
-          setError('Informe o documento da empresa');
-          return;
-        }
-        if (!businessSegment) {
-          setError('Selecione o segmento de negócio');
+        if (!documentBackUrl) {
+          setError('Faça o upload do verso do documento');
           return;
         }
       }
@@ -154,18 +122,11 @@ const Cadastro: React.FC = () => {
           data: {
             name,
             phone,
-            personType,
-            // Individual data
-            document: personType === 'individual' ? document : null,
-            documentType: personType === 'individual' ? documentType : null,
-            country: personType === 'individual' && documentType === 'documento_estrangeiro' ? country : null,
-            documentFrontUrl: personType === 'individual' && documentType === 'documento_estrangeiro' ? documentFrontUrl : null,
-            documentBackUrl: personType === 'individual' && documentType === 'documento_estrangeiro' ? documentBackUrl : null,
-            // Company data
-            companyName: personType === 'company' ? companyName : null,
-            companyCountry: personType === 'company' ? companyCountry : null,
-            companyDocument: personType === 'company' ? companyDocument : null,
-            businessSegment: personType === 'company' ? businessSegment : null
+            document,
+            documentType,
+            country: documentType === 'documento_estrangeiro' ? country : null,
+            documentFrontUrl: documentType === 'documento_estrangeiro' ? documentFrontUrl : null,
+            documentBackUrl: documentType === 'documento_estrangeiro' ? documentBackUrl : null
           }
         }
       });
@@ -310,46 +271,24 @@ const Cadastro: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Seção 3: Tipo de Cadastro */}
+                {/* Seção 3: Documentação */}
                 <div className="space-y-6">
                   <div className="pb-2 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">Tipo de Cadastro</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Documentação</h3>
                   </div>
 
-                  <PersonTypeSelector value={personType} onChange={setPersonType} />
-
-                  {personType === 'individual' && (
-                    <DocumentInput 
-                      documentType={documentType} 
-                      document={document} 
-                      country={country} 
-                      documentFrontUrl={documentFrontUrl} 
-                      documentBackUrl={documentBackUrl} 
-                      onDocumentTypeChange={setDocumentType} 
-                      onDocumentChange={handleChangeDocument} 
-                      onCountryChange={setCountry} 
-                      onDocumentFrontChange={setDocumentFrontUrl} 
-                      onDocumentBackChange={setDocumentBackUrl} 
-                    />
-                  )}
-
-                  {personType === 'company' && (
-                    <div className="space-y-6">
-                      <CompanyInfoSection
-                        companyName={companyName}
-                        companyCountry={companyCountry}
-                        companyDocument={companyDocument}
-                        onCompanyNameChange={setCompanyName}
-                        onCompanyCountryChange={setCompanyCountry}
-                        onCompanyDocumentChange={setCompanyDocument}
-                      />
-                      
-                      <BusinessSegmentSelector
-                        value={businessSegment}
-                        onChange={setBusinessSegment}
-                      />
-                    </div>
-                  )}
+                  <DocumentInput 
+                    documentType={documentType} 
+                    document={document} 
+                    country={country} 
+                    documentFrontUrl={documentFrontUrl} 
+                    documentBackUrl={documentBackUrl} 
+                    onDocumentTypeChange={setDocumentType} 
+                    onDocumentChange={handleChangeDocument} 
+                    onCountryChange={setCountry} 
+                    onDocumentFrontChange={setDocumentFrontUrl} 
+                    onDocumentBackChange={setDocumentBackUrl} 
+                  />
                 </div>
               </form>
             </div>

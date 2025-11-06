@@ -1,9 +1,12 @@
 
-import React, { useState, useRef } from 'react';
-import { Upload, Loader2, Video } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, Loader2, Video, AlertTriangle } from 'lucide-react';
 import { VideoTitleInput } from '@/components/video-upload/VideoTitleInput';
 import { VideoUploadScheduleForm, ScheduleRule } from '@/components/video-upload/VideoUploadScheduleForm';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VideoSlotUploadProps {
   slotPosition: number;
@@ -18,11 +21,52 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   isUploading,
   onUpload
 }) => {
+  const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState('');
   const [titleError, setTitleError] = useState('');
   const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [companyInfoComplete, setCompanyInfoComplete] = useState(false);
+  const [checkingCompanyInfo, setCheckingCompanyInfo] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    checkCompanyInfo();
+  }, []);
+
+  const checkCompanyInfo = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setCompanyInfoComplete(false);
+        setCheckingCompanyInfo(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_aceite_termo')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      const isComplete = !!(
+        data?.empresa_nome &&
+        data?.empresa_pais &&
+        data?.empresa_documento &&
+        data?.empresa_segmento &&
+        data?.empresa_aceite_termo
+      );
+
+      setCompanyInfoComplete(isComplete);
+    } catch (error) {
+      console.error('Erro ao verificar informações da empresa:', error);
+      setCompanyInfoComplete(false);
+    } finally {
+      setCheckingCompanyInfo(false);
+    }
+  };
 
   const validateTitle = (title: string): boolean => {
     if (!title.trim()) {
@@ -63,6 +107,12 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
 
   // Upload direto sem agendamento
   const handleDirectUpload = () => {
+    if (!companyInfoComplete) {
+      toast.error('Complete o cadastro da empresa antes de fazer upload');
+      navigate('/advertiser/settings');
+      return;
+    }
+
     if (!validateTitle(videoTitle)) {
       return;
     }
@@ -81,6 +131,37 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   };
 
   const canUpload = selectedFile && videoTitle.trim() && !uploading && !isUploading;
+
+  if (checkingCompanyInfo) {
+    return (
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+        <div className="flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-exa-red mr-3" />
+          <p className="text-gray-600">Verificando informações...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!companyInfoComplete) {
+    return (
+      <div className="border-2 border-amber-500 bg-amber-50 rounded-lg p-8 text-center">
+        <AlertTriangle className="mx-auto h-16 w-16 text-amber-600 mb-4" />
+        <h3 className="text-xl font-semibold text-amber-900 mb-2">
+          Cadastro de Empresa Pendente
+        </h3>
+        <p className="text-amber-800 mb-6">
+          Para fazer upload de vídeos, você precisa completar o cadastro da empresa/marca que será divulgada.
+        </p>
+        <Button
+          onClick={() => navigate('/advertiser/settings')}
+          className="bg-amber-600 hover:bg-amber-700 text-white"
+        >
+          Completar Cadastro Agora
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">

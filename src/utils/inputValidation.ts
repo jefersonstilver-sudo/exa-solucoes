@@ -125,3 +125,45 @@ export const validateNumeric = (
   
   return { isValid: true, value: num };
 };
+
+// Validate company documents (CNPJ, RUC, CUIT)
+export const validateCompanyDocument = (document: string, country: 'BR' | 'AR' | 'PY'): boolean => {
+  const cleanDoc = document.replace(/[^\d]/g, '');
+  
+  switch (country) {
+    case 'BR': // CNPJ - 14 digits
+      return cleanDoc.length === 14 && !/^(\d)\1{13}$/.test(cleanDoc);
+    case 'PY': // RUC Paraguay - 9 digits
+      return cleanDoc.length === 9;
+    case 'AR': // CUIT Argentina - 11 digits
+      return cleanDoc.length === 11;
+    default:
+      return false;
+  }
+};
+
+// Format company documents with automatic mask
+export const formatCompanyDocument = (value: string, country: 'BR' | 'AR' | 'PY'): string => {
+  const digits = value.replace(/\D/g, '');
+  
+  switch (country) {
+    case 'BR': // CNPJ: 00.000.000/0000-00
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+      if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+      if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+      return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`;
+      
+    case 'AR': // CUIT: 20-12345678-3
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 10) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+      return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10, 11)}`;
+      
+    case 'PY': // RUC: 80012345-6
+      if (digits.length <= 8) return digits;
+      return `${digits.slice(0, 8)}-${digits.slice(8, 9)}`;
+      
+    default:
+      return digits;
+  }
+};

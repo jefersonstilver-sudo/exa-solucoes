@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import AvatarUpload from '@/components/ui/avatar-upload';
 import DocumentUpload from '@/components/ui/document-upload';
+import { CompanyBrandSection } from '@/components/settings/CompanyBrandSection';
 
 interface UserSettings {
   email: string;
@@ -383,6 +384,9 @@ const AdvertiserSettings = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Empresa/Marca */}
+      <CompanyBrandSection />
 
       {/* Segurança */}
       <Card>
