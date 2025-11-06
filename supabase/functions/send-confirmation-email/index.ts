@@ -158,21 +158,25 @@ serve(async (req) => {
       text-align: center;
     }
     
-    .brand-logo-img {
-      max-width: 180px;
-      height: auto;
-      margin: 0 auto;
-      display: block;
-      filter: brightness(0) invert(1);
+    .brand-logo-text {
+      font-size: 56px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 12px;
+      margin: 0;
+      text-transform: uppercase;
+      font-family: 'Inter', sans-serif;
+      text-shadow: 0 2px 12px rgba(255, 255, 255, 0.3);
     }
     
     .brand-tagline {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 400;
       color: #ffffff;
-      letter-spacing: 2px;
-      margin: 16px 0 0 0;
+      letter-spacing: 3px;
+      margin: 12px 0 0 0;
       text-transform: uppercase;
+      opacity: 0.95;
     }
     
     .content {
@@ -277,13 +281,14 @@ serve(async (req) => {
         padding: 40px 24px;
       }
       
-      .brand-logo-img {
-        max-width: 140px;
+      .brand-logo-text {
+        font-size: 42px;
+        letter-spacing: 8px;
       }
       
       .brand-tagline {
-        font-size: 12px;
-        letter-spacing: 1.5px;
+        font-size: 11px;
+        letter-spacing: 2px;
       }
       
       .content {
@@ -317,11 +322,7 @@ serve(async (req) => {
       <!-- Header com Logo -->
       <div class="header">
         <div class="brand-container">
-          <img 
-            src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0"
-            alt="EXA - Publicidade Inteligente"
-            class="brand-logo-img"
-          >
+          <h1 class="brand-logo-text">EXA</h1>
           <p class="brand-tagline">Publicidade Inteligente</p>
         </div>
       </div>
