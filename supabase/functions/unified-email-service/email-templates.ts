@@ -43,17 +43,33 @@ export class EmailTemplates {
     }
     
     .header {
-      background: #ffffff;
-      padding: 40px 40px 20px;
+      background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+      padding: 56px 40px;
       text-align: center;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: none;
     }
     
-    .logo {
-      max-width: 140px;
-      height: auto;
-      margin: 0 auto;
-      display: block;
+    .brand-container {
+      text-align: center;
+    }
+    
+    .brand-logo-text {
+      font-size: 48px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 8px;
+      margin: 0;
+      text-transform: uppercase;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .brand-tagline {
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 2px;
+      margin: 8px 0 0 0;
+      text-transform: uppercase;
     }
     
     .content {
@@ -78,16 +94,17 @@ export class EmailTemplates {
     
     .cta-button {
       display: inline-block;
-      background-color: #DC2626;
+      background: linear-gradient(135deg, #DC2626 0%, #991b1b 100%);
       color: #ffffff !important;
       font-weight: 600;
       text-decoration: none;
-      padding: 16px 48px;
-      border-radius: 6px;
+      padding: 18px 56px;
+      border-radius: 8px;
       font-size: 16px;
       text-align: center;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+      letter-spacing: 0.3px;
     }
     
     .cta-container {
@@ -154,7 +171,17 @@ export class EmailTemplates {
       }
       
       .header {
-        padding: 32px 24px 16px;
+        padding: 40px 24px;
+      }
+      
+      .brand-logo-text {
+        font-size: 36px;
+        letter-spacing: 6px;
+      }
+      
+      .brand-tagline {
+        font-size: 12px;
+        letter-spacing: 1.5px;
       }
       
       .content {
@@ -179,10 +206,6 @@ export class EmailTemplates {
         display: block;
         width: 100%;
       }
-      
-      .logo {
-        max-width: 120px;
-      }
     }
   </style>
 </head>
@@ -191,11 +214,10 @@ export class EmailTemplates {
     <div class="email-container">
       <!-- Header com Logo -->
       <div class="header">
-        <img 
-          src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" 
-          alt="EXA - Publicidade Inteligente" 
-          class="logo"
-        >
+        <div class="brand-container">
+          <h1 class="brand-logo-text">EXA</h1>
+          <p class="brand-tagline">Publicidade Inteligente</p>
+        </div>
       </div>
       
       <!-- Conteúdo Principal -->
@@ -578,18 +600,32 @@ export class EmailTemplates {
     }
     
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 40px;
+      background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+      padding: 56px 40px;
       text-align: center;
     }
     
-    .logo {
+    .brand-container {
+      text-align: center;
+    }
+    
+    .brand-logo-text {
       font-size: 48px;
-      font-weight: 800;
+      font-weight: 700;
       color: #ffffff;
-      letter-spacing: 4px;
+      letter-spacing: 8px;
       margin: 0;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      text-transform: uppercase;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .brand-tagline {
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 2px;
+      margin: 8px 0 0 0;
+      text-transform: uppercase;
     }
     
     .content {
@@ -614,17 +650,18 @@ export class EmailTemplates {
     
     .button {
       display: inline-block;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #991b1b 100%);
       color: #ffffff;
       font-weight: 600;
       text-decoration: none;
-      padding: 16px 40px;
-      border-radius: 50px;
+      padding: 18px 56px;
+      border-radius: 8px;
       font-size: 16px;
       margin: 20px 0;
       text-align: center;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+      letter-spacing: 0.3px;
     }
     
     .security-box {
@@ -699,7 +736,10 @@ export class EmailTemplates {
   <div class="container">
     <div class="email-container">
       <div class="header">
-        <h1 class="logo">EXA</h1>
+        <div class="brand-container">
+          <h1 class="brand-logo-text">EXA</h1>
+          <p class="brand-tagline">Publicidade Inteligente</p>
+        </div>
       </div>
       
       <div class="content">
@@ -778,18 +818,32 @@ export class EmailTemplates {
     }
     
     .header {
-      background: linear-gradient(135deg, #4299e1 0%, #667eea 100%);
-      padding: 40px;
+      background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+      padding: 56px 40px;
       text-align: center;
     }
     
-    .logo {
+    .brand-container {
+      text-align: center;
+    }
+    
+    .brand-logo-text {
       font-size: 48px;
-      font-weight: 800;
+      font-weight: 700;
       color: #ffffff;
-      letter-spacing: 4px;
+      letter-spacing: 8px;
       margin: 0;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      text-transform: uppercase;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .brand-tagline {
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 2px;
+      margin: 8px 0 0 0;
+      text-transform: uppercase;
     }
     
     .content {
@@ -879,17 +933,18 @@ export class EmailTemplates {
     
     .button {
       display: inline-block;
-      background: linear-gradient(135deg, #4299e1 0%, #667eea 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #991b1b 100%);
       color: #ffffff;
       font-weight: 600;
       text-decoration: none;
-      padding: 16px 40px;
-      border-radius: 50px;
+      padding: 18px 56px;
+      border-radius: 8px;
       font-size: 16px;
       margin: 20px 0;
       text-align: center;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4);
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+      letter-spacing: 0.3px;
     }
     
     .footer {
@@ -925,7 +980,10 @@ export class EmailTemplates {
   <div class="container">
     <div class="email-container">
       <div class="header">
-        <h1 class="logo">EXA</h1>
+        <div class="brand-container">
+          <h1 class="brand-logo-text">EXA</h1>
+          <p class="brand-tagline">Publicidade Inteligente</p>
+        </div>
       </div>
       
       <div class="content">
@@ -1025,18 +1083,32 @@ export class EmailTemplates {
     }
     
     .header {
-      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-      padding: 40px;
+      background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+      padding: 56px 40px;
       text-align: center;
     }
     
-    .logo {
+    .brand-container {
+      text-align: center;
+    }
+    
+    .brand-logo-text {
       font-size: 48px;
-      font-weight: 800;
+      font-weight: 700;
       color: #ffffff;
-      letter-spacing: 4px;
+      letter-spacing: 8px;
       margin: 0;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      text-transform: uppercase;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .brand-tagline {
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 2px;
+      margin: 8px 0 0 0;
+      text-transform: uppercase;
     }
     
     .confetti {
@@ -1174,17 +1246,18 @@ export class EmailTemplates {
     
     .button {
       display: inline-block;
-      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #991b1b 100%);
       color: #ffffff;
       font-weight: 600;
       text-decoration: none;
-      padding: 16px 40px;
-      border-radius: 50px;
+      padding: 18px 56px;
+      border-radius: 8px;
       font-size: 16px;
       margin: 20px 0;
       text-align: center;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+      letter-spacing: 0.3px;
     }
     
     .footer {
@@ -1224,7 +1297,10 @@ export class EmailTemplates {
   <div class="container">
     <div class="email-container">
       <div class="header">
-        <h1 class="logo">EXA</h1>
+        <div class="brand-container">
+          <h1 class="brand-logo-text">EXA</h1>
+          <p class="brand-tagline">Publicidade Inteligente</p>
+        </div>
         <div class="confetti">🎉</div>
       </div>
       
@@ -1343,18 +1419,32 @@ export class EmailTemplates {
     }
     
     .header {
-      background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
-      padding: 40px;
+      background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+      padding: 56px 40px;
       text-align: center;
     }
     
-    .logo {
+    .brand-container {
+      text-align: center;
+    }
+    
+    .brand-logo-text {
       font-size: 48px;
-      font-weight: 800;
+      font-weight: 700;
       color: #ffffff;
-      letter-spacing: 4px;
+      letter-spacing: 8px;
       margin: 0;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      text-transform: uppercase;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .brand-tagline {
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 2px;
+      margin: 8px 0 0 0;
+      text-transform: uppercase;
     }
     
     .content {
@@ -1475,17 +1565,18 @@ export class EmailTemplates {
     
     .button {
       display: inline-block;
-      background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+      background: linear-gradient(135deg, #DC2626 0%, #991b1b 100%);
       color: #ffffff;
       font-weight: 600;
       text-decoration: none;
-      padding: 16px 40px;
-      border-radius: 50px;
+      padding: 18px 56px;
+      border-radius: 8px;
       font-size: 16px;
       margin: 20px 0;
       text-align: center;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(237, 137, 54, 0.4);
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+      letter-spacing: 0.3px;
     }
     
     .footer {
@@ -1521,7 +1612,10 @@ export class EmailTemplates {
   <div class="container">
     <div class="email-container">
       <div class="header">
-        <h1 class="logo">EXA</h1>
+        <div class="brand-container">
+          <h1 class="brand-logo-text">EXA</h1>
+          <p class="brand-tagline">Publicidade Inteligente</p>
+        </div>
       </div>
       
       <div class="content">
