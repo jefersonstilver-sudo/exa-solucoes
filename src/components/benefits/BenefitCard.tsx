@@ -23,6 +23,7 @@ const getIconEmoji = (icon: string): string => {
     'Store': '🏪',
     'CreditCard': '💳',
     'Utensils': '🍽️',
+    'UtensilsCrossed': '🍔',
     'Coffee': '☕',
     'Pizza': '🍕',
     'Sandwich': '🥪',
