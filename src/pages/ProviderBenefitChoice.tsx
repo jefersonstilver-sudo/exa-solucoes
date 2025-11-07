@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import { Loader2, CheckCircle, AlertCircle, Clock, Zap } from 'lucide-react';
 import { useBenefitManagement } from '@/hooks/useBenefitManagement';
 import BenefitCard from '@/components/benefits/BenefitCard';
 import ConfirmationModal from '@/components/benefits/ConfirmationModal';
-import { benefitOptions, categoryLabels } from '@/data/benefitOptions';
+import { benefitOptions } from '@/data/benefitOptions';
 import type { TokenValidationResponse } from '@/types/providerBenefits';
+
+// Versão da página para cache busting
+const PAGE_VERSION = '2.0.1';
+const BUILD_TIME = new Date().toISOString();
 
 type PageState = 'loading' | 'valid' | 'invalid' | 'already_used' | 'choosing' | 'success';
 
@@ -23,6 +27,8 @@ const ProviderBenefitChoice = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    console.log(`🎁 ProviderBenefitChoice v${PAGE_VERSION} carregada em ${BUILD_TIME}`);
+    
     if (!token) {
       setPageState('invalid');
       return;
@@ -197,128 +203,142 @@ const ProviderBenefitChoice = () => {
 
   // Choosing state
   return (
-    <div className="min-h-screen bg-[#1a0000] py-6 px-4">
-      <div className="max-w-5xl mx-auto">
-        {/* Header com Logo */}
-        <div className="text-center mb-6">
-          <div className="inline-block bg-white rounded-2xl px-8 py-4 shadow-xl mb-4">
-            <h1 className="text-3xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
-              EXA
-            </h1>
-            <p className="text-xs text-gray-600 font-medium">Publicidade nos elevadores</p>
-          </div>
-
-          {/* Card de Boas-vindas - Compacto */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] p-6">
-              <h2 className="text-2xl md:text-3xl font-black text-white mb-1 flex items-center justify-center gap-2">
-                <span className="text-3xl">🎁</span>
-                Parabéns, {validationData?.provider_name}!
-              </h2>
-              <p className="text-white/90 text-base font-medium">
-                Você ajudou a ativar mais um ponto EXA!
-              </p>
+    <>
+      <Helmet>
+        <title>Escolha seu Presente - EXA Mídia</title>
+        <meta name="description" content="Escolha seu vale-presente de R$ 50,00" />
+        <meta httpEquiv="cache-control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="pragma" content="no-cache" />
+        <meta httpEquiv="expires" content="0" />
+      </Helmet>
+      
+      <div className="min-h-screen bg-gradient-to-br from-[#1a0000] via-[#2a0000] to-[#1a0000] py-4 sm:py-8 px-3 sm:px-4">
+        <div className="max-w-6xl mx-auto">
+          {/* Header Compacto */}
+          <div className="text-center mb-6">
+            {/* Logo */}
+            <div className="inline-flex items-center gap-2 bg-white rounded-xl px-6 py-3 shadow-2xl mb-4">
+              <h1 className="text-2xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
+                EXA MÍDIA
+              </h1>
             </div>
-            
-            <div className="p-6 space-y-4">
-              {validationData?.activation_point && (
-                <div className="flex items-center justify-center gap-2 text-gray-700 bg-gray-50 rounded-xl py-3 px-4">
-                  <span className="text-xl">📍</span>
-                  <span className="text-sm font-semibold">{validationData.activation_point}</span>
+
+            {/* Card Principal - Mais Compacto */}
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-100">
+              <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] px-4 py-5 sm:px-6">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className="text-3xl">🎁</span>
+                  <h2 className="text-xl sm:text-2xl font-black text-white">
+                    Parabéns, {validationData?.provider_name}!
+                  </h2>
                 </div>
-              )}
+                <p className="text-white/95 text-sm font-semibold">
+                  Você ajudou a ativar mais um ponto EXA
+                </p>
+              </div>
               
-              <div className="bg-gradient-to-br from-[#DC2626]/10 to-[#DC2626]/5 rounded-xl p-6 border-2 border-[#DC2626]/20">
-                <p className="text-base text-gray-700 mb-1 font-medium">
-                  Escolha onde quer usar seu presente de
-                </p>
-                <p className="text-4xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
-                  R$ 50,00
-                </p>
+              <div className="px-4 py-5 sm:px-6 space-y-3">
+                {validationData?.activation_point && (
+                  <div className="inline-flex items-center gap-2 bg-gray-50 rounded-lg py-2 px-4 border border-gray-200">
+                    <span className="text-lg">📍</span>
+                    <span className="text-sm font-bold text-gray-700">{validationData.activation_point}</span>
+                  </div>
+                )}
+                
+                <div className="bg-gradient-to-br from-[#DC2626]/10 via-[#DC2626]/5 to-[#991b1b]/10 rounded-xl p-4 border-2 border-[#DC2626]/30">
+                  <p className="text-sm text-gray-700 font-semibold mb-1">
+                    Escolha seu vale-presente de
+                  </p>
+                  <p className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
+                    R$ 50,00
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Benefícios por Tempo de Entrega */}
-        <div className="space-y-8 mt-8">
-          {/* Entrega Rápida - 1 dia */}
-          {fastDeliveryBenefits.length > 0 && (
-            <div className="space-y-4">
-              <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-4 shadow-xl">
-                <div className="flex items-center justify-center gap-3">
-                  <span className="text-3xl">⚡</span>
-                  <div className="text-center">
-                    <h3 className="text-2xl font-black text-white">
-                      ENTREGA EM ATÉ 24 HORAS
-                    </h3>
-                    <p className="text-white/90 text-sm font-medium">
-                      Escolha agora e receba rápido!
-                    </p>
+          {/* Seções de Benefícios */}
+          <div className="space-y-6">
+            {/* Entrega Expressa - 24h */}
+            {fastDeliveryBenefits.length > 0 && (
+              <div className="space-y-3">
+                <div className="bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 rounded-xl p-3 sm:p-4 shadow-xl border-2 border-emerald-300">
+                  <div className="flex items-center justify-center gap-2 sm:gap-3">
+                    <Zap className="h-6 w-6 sm:h-7 sm:w-7 text-white fill-white" />
+                    <div className="text-center">
+                      <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 justify-center">
+                        ENTREGA EM ATÉ 24 HORAS
+                      </h3>
+                      <p className="text-white/95 text-xs sm:text-sm font-bold">
+                        Receba seu código rapidamente!
+                      </p>
+                    </div>
+                    <Zap className="h-6 w-6 sm:h-7 sm:w-7 text-white fill-white" />
                   </div>
-                  <span className="text-3xl">⚡</span>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                  {fastDeliveryBenefits.map((option) => (
+                    <BenefitCard
+                      key={option.id}
+                      option={option}
+                      onSelect={handleSelectOption}
+                      disabled={isSubmitting}
+                    />
+                  ))}
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {fastDeliveryBenefits.map((option) => (
-                  <BenefitCard
-                    key={option.id}
-                    option={option}
-                    onSelect={handleSelectOption}
-                    disabled={isSubmitting}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* Entrega Normal - 3 dias */}
-          {normalDeliveryBenefits.length > 0 && (
-            <div className="space-y-4">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 shadow-xl">
-                <div className="flex items-center justify-center gap-3">
-                  <span className="text-3xl">📦</span>
-                  <div className="text-center">
-                    <h3 className="text-2xl font-black text-white">
-                      ENTREGA EM ATÉ 3 DIAS ÚTEIS
-                    </h3>
-                    <p className="text-white/90 text-sm font-medium">
-                      Grandes lojas e marcas!
-                    </p>
+            {/* Entrega Padrão - 3 dias */}
+            {normalDeliveryBenefits.length > 0 && (
+              <div className="space-y-3">
+                <div className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-xl p-3 sm:p-4 shadow-xl border-2 border-blue-300">
+                  <div className="flex items-center justify-center gap-2 sm:gap-3">
+                    <Clock className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                    <div className="text-center">
+                      <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 justify-center">
+                        ENTREGA EM ATÉ 3 DIAS ÚTEIS
+                      </h3>
+                      <p className="text-white/95 text-xs sm:text-sm font-bold">
+                        Grandes marcas e lojas!
+                      </p>
+                    </div>
+                    <Clock className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
                   </div>
-                  <span className="text-3xl">📦</span>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                  {normalDeliveryBenefits.map((option) => (
+                    <BenefitCard
+                      key={option.id}
+                      option={option}
+                      onSelect={handleSelectOption}
+                      disabled={isSubmitting}
+                    />
+                  ))}
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {normalDeliveryBenefits.map((option) => (
-                  <BenefitCard
-                    key={option.id}
-                    option={option}
-                    onSelect={handleSelectOption}
-                    disabled={isSubmitting}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* Confirmation Modal */}
+        {selectedBenefit && (
+          <ConfirmationModal
+            isOpen={isConfirmModalOpen}
+            onClose={() => {
+              setIsConfirmModalOpen(false);
+              setSelectedOption(null);
+            }}
+            onConfirm={handleConfirmChoice}
+            benefitName={selectedBenefit.name}
+            benefitIcon={selectedBenefit.icon}
+            deliveryDays={selectedBenefit.delivery_days}
+          />
+        )}
       </div>
-
-      {/* Confirmation Modal */}
-      {selectedBenefit && (
-        <ConfirmationModal
-          isOpen={isConfirmModalOpen}
-          onClose={() => {
-            setIsConfirmModalOpen(false);
-            setSelectedOption(null);
-          }}
-          onConfirm={handleConfirmChoice}
-          benefitName={selectedBenefit.name}
-          benefitIcon={selectedBenefit.icon}
-          deliveryDays={selectedBenefit.delivery_days}
-        />
-      )}
-    </div>
+      {/* Cache busting marker */}
+      <div style={{ display: 'none' }} data-version={PAGE_VERSION} data-build={BUILD_TIME} />
+    </>
   );
 };
 
