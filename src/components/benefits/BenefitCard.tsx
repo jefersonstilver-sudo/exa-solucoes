@@ -9,63 +9,41 @@ interface BenefitCardProps {
 }
 
 const BenefitCard: React.FC<BenefitCardProps> = ({ option, onSelect, disabled = false }) => {
-  const deliveryLabel = option.delivery_days === 1 ? 'Até 24h' : `Até ${option.delivery_days} dias`;
-  const isFastDelivery = option.delivery_days === 1;
-  
   return (
-    <div className="group relative bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100">
-      {/* Badge de entrega rápida */}
-      {isFastDelivery && (
-        <div className="absolute top-4 right-4 z-10 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
-          <span>⚡</span>
-          <span>{deliveryLabel}</span>
-        </div>
-      )}
-      
-      {/* Badge de entrega normal */}
-      {!isFastDelivery && (
-        <div className="absolute top-4 right-4 z-10 bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
-          <span>📦</span>
-          <span>{deliveryLabel}</span>
-        </div>
-      )}
-      
+    <div className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
       {/* Gradiente de hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#DC2626]/0 via-[#DC2626]/0 to-[#DC2626]/0 group-hover:from-[#DC2626]/5 group-hover:via-[#DC2626]/10 group-hover:to-[#DC2626]/5 transition-all duration-500" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#DC2626]/0 via-[#DC2626]/0 to-[#DC2626]/0 group-hover:from-[#DC2626]/5 group-hover:via-[#DC2626]/10 group-hover:to-[#DC2626]/5 transition-all duration-300" />
       
       {/* Ring animado no hover */}
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-[#DC2626] to-[#991b1b] rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-[#DC2626] to-[#991b1b] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm" />
       
-      <div className="relative bg-white rounded-3xl p-8 flex flex-col items-center text-center space-y-6 h-full">
+      <div className="relative bg-white rounded-2xl p-5 flex items-center gap-4 h-full">
         {/* Ícone com animação */}
-        <div className="relative">
-          <div className="text-7xl group-hover:scale-125 transition-transform duration-500 group-hover:rotate-12">
+        <div className="relative flex-shrink-0">
+          <div className="text-4xl group-hover:scale-110 transition-transform duration-300">
             {option.icon}
           </div>
-          <div className="absolute inset-0 bg-[#DC2626]/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         </div>
 
-        {/* Nome */}
-        <div className="flex-1 space-y-2">
-          <h3 className="font-black text-xl text-gray-900 group-hover:text-[#DC2626] transition-colors duration-300">
+        {/* Conteúdo */}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-black text-lg text-gray-900 group-hover:text-[#DC2626] transition-colors duration-300 truncate">
             {option.name}
           </h3>
-
-          {/* Subtitle */}
           {option.subtitle && (
-            <p className="text-sm text-gray-600 font-medium">
+            <p className="text-xs text-gray-600 font-medium truncate">
               {option.subtitle}
             </p>
           )}
         </div>
 
-        {/* Button com estilo iFood */}
+        {/* Button compacto */}
         <Button
           onClick={() => onSelect(option.id)}
           disabled={disabled}
-          className="w-full bg-gradient-to-r from-[#DC2626] to-[#991b1b] hover:from-[#991b1b] hover:to-[#7f1d1d] text-white font-bold text-base py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-shrink-0 bg-gradient-to-r from-[#DC2626] to-[#991b1b] hover:from-[#991b1b] hover:to-[#7f1d1d] text-white font-bold text-sm px-5 py-5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Selecionar
+          Escolher
         </Button>
       </div>
     </div>

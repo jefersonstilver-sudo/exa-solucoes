@@ -82,14 +82,9 @@ const ProviderBenefitChoice = () => {
 
   const selectedBenefit = benefitOptions.find((opt) => opt.id === selectedOption);
 
-  // Group benefits by category
-  const groupedBenefits = benefitOptions.reduce((acc, option) => {
-    if (!acc[option.category]) {
-      acc[option.category] = [];
-    }
-    acc[option.category].push(option);
-    return acc;
-  }, {} as Record<string, typeof benefitOptions>);
+  // Group benefits by delivery time
+  const fastDeliveryBenefits = benefitOptions.filter(opt => opt.delivery_days === 1);
+  const normalDeliveryBenefits = benefitOptions.filter(opt => opt.delivery_days === 3);
 
   if (pageState === 'loading') {
     return (
@@ -202,42 +197,42 @@ const ProviderBenefitChoice = () => {
 
   // Choosing state
   return (
-    <div className="min-h-screen bg-[#1a0000] py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#1a0000] py-6 px-4">
+      <div className="max-w-5xl mx-auto">
         {/* Header com Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-block bg-white rounded-3xl px-12 py-8 shadow-2xl mb-8 transform hover:scale-105 transition-transform duration-300">
-            <h1 className="text-5xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent mb-2">
+        <div className="text-center mb-6">
+          <div className="inline-block bg-white rounded-2xl px-8 py-4 shadow-xl mb-4">
+            <h1 className="text-3xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
               EXA
             </h1>
-            <p className="text-sm text-gray-600 font-medium tracking-wide">Publicidade que vive nos elevadores</p>
+            <p className="text-xs text-gray-600 font-medium">Publicidade nos elevadores</p>
           </div>
 
-          {/* Card de Boas-vindas */}
-          <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] p-8">
-              <h2 className="text-4xl font-black text-white mb-2 flex items-center justify-center gap-3">
-                <span className="text-5xl">🎁</span>
+          {/* Card de Boas-vindas - Compacto */}
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] p-6">
+              <h2 className="text-2xl md:text-3xl font-black text-white mb-1 flex items-center justify-center gap-2">
+                <span className="text-3xl">🎁</span>
                 Parabéns, {validationData?.provider_name}!
               </h2>
-              <p className="text-white/90 text-xl font-medium">
+              <p className="text-white/90 text-base font-medium">
                 Você ajudou a ativar mais um ponto EXA!
               </p>
             </div>
             
-            <div className="p-8 space-y-6">
+            <div className="p-6 space-y-4">
               {validationData?.activation_point && (
-                <div className="flex items-center justify-center gap-2 text-gray-700 bg-gray-50 rounded-2xl py-4 px-6">
-                  <span className="text-2xl">📍</span>
-                  <span className="text-lg font-semibold">{validationData.activation_point}</span>
+                <div className="flex items-center justify-center gap-2 text-gray-700 bg-gray-50 rounded-xl py-3 px-4">
+                  <span className="text-xl">📍</span>
+                  <span className="text-sm font-semibold">{validationData.activation_point}</span>
                 </div>
               )}
               
-              <div className="bg-gradient-to-br from-[#DC2626]/10 to-[#DC2626]/5 rounded-2xl p-8 border-2 border-[#DC2626]/20">
-                <p className="text-xl text-gray-700 mb-2 font-medium">
+              <div className="bg-gradient-to-br from-[#DC2626]/10 to-[#DC2626]/5 rounded-xl p-6 border-2 border-[#DC2626]/20">
+                <p className="text-base text-gray-700 mb-1 font-medium">
                   Escolha onde quer usar seu presente de
                 </p>
-                <p className="text-5xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
+                <p className="text-4xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
                   R$ 50,00
                 </p>
               </div>
@@ -245,19 +240,27 @@ const ProviderBenefitChoice = () => {
           </div>
         </div>
 
-        {/* Grid de Benefícios por Categoria */}
-        <div className="space-y-12 mt-12">
-          {Object.entries(groupedBenefits).map(([category, options]) => (
-            <div key={category} className="space-y-6">
-              <div className="flex items-center justify-center gap-4">
-                <div className="h-px bg-white/20 flex-1" />
-                <h3 className="text-3xl font-black text-white px-6 py-3 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
-                  {categoryLabels[category]}
-                </h3>
-                <div className="h-px bg-white/20 flex-1" />
+        {/* Benefícios por Tempo de Entrega */}
+        <div className="space-y-8 mt-8">
+          {/* Entrega Rápida - 1 dia */}
+          {fastDeliveryBenefits.length > 0 && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-4 shadow-xl">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-3xl">⚡</span>
+                  <div className="text-center">
+                    <h3 className="text-2xl font-black text-white">
+                      ENTREGA EM ATÉ 24 HORAS
+                    </h3>
+                    <p className="text-white/90 text-sm font-medium">
+                      Escolha agora e receba rápido!
+                    </p>
+                  </div>
+                  <span className="text-3xl">⚡</span>
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {options.map((option) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {fastDeliveryBenefits.map((option) => (
                   <BenefitCard
                     key={option.id}
                     option={option}
@@ -267,7 +270,37 @@ const ProviderBenefitChoice = () => {
                 ))}
               </div>
             </div>
-          ))}
+          )}
+
+          {/* Entrega Normal - 3 dias */}
+          {normalDeliveryBenefits.length > 0 && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 shadow-xl">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-3xl">📦</span>
+                  <div className="text-center">
+                    <h3 className="text-2xl font-black text-white">
+                      ENTREGA EM ATÉ 3 DIAS ÚTEIS
+                    </h3>
+                    <p className="text-white/90 text-sm font-medium">
+                      Grandes lojas e marcas!
+                    </p>
+                  </div>
+                  <span className="text-3xl">📦</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {normalDeliveryBenefits.map((option) => (
+                  <BenefitCard
+                    key={option.id}
+                    option={option}
+                    onSelect={handleSelectOption}
+                    disabled={isSubmitting}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
