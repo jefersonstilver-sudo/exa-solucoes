@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdvertiserProtection } from '@/hooks/useAdvertiserProtection';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrderViewTracking } from '@/hooks/tracking/useOrderViewTracking';
 import { useVideoActivityTracking } from '@/hooks/tracking/useVideoActivityTracking';
@@ -51,6 +52,10 @@ const OrderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { userProfile } = useAuth();
+  
+  // PROTEÇÃO DE ROTA - Redireciona se não estiver logado
+  const { isAuthenticated, isLoading: authLoading } = useAdvertiserProtection();
+  
   const { trackOrderView } = useOrderViewTracking();
   const { trackVideoUpload, trackVideoSwap } = useVideoActivityTracking();
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
@@ -203,10 +208,19 @@ const OrderDetails = () => {
     window.open(videoUrl, '_blank');
   };
 
+  // Enquanto verifica autenticação, não mostrar nada
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
   if (loading || videosLoading || enhancedLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
         <p className="ml-2 text-lg">Carregando detalhes...</p>
       </div>
     );
@@ -230,13 +244,32 @@ const OrderDetails = () => {
   // Usar dados recuperados se disponíveis
   const displayPanels = enhancedData?.recoveredPanels || orderDetails?.lista_paineis || [];
   
-  const totalScreens = buildingDetails.reduce((sum, building) => 
-    sum + (building.quantidade_telas || building.numero_elevadores || 0), 0
-  );
+  console.log('📊 [ORDER_DETAILS] Calculando métricas:', {
+    buildingDetailsCount: buildingDetails.length,
+    buildingDetails: buildingDetails.map(b => ({
+      nome: b.nome,
+      quantidade_telas: b.quantidade_telas,
+      numero_elevadores: b.numero_elevadores,
+      publico_estimado: b.publico_estimado
+    }))
+  });
   
-  const totalAudience = buildingDetails.reduce((sum, building) => 
-    sum + (building.publico_estimado || 0), 0
-  );
+  const totalScreens = buildingDetails.reduce((sum, building) => {
+    const screens = building.quantidade_telas || building.numero_elevadores || 0;
+    console.log(`  📺 ${building.nome}: ${screens} telas`);
+    return sum + screens;
+  }, 0);
+  
+  const totalAudience = buildingDetails.reduce((sum, building) => {
+    const audience = building.publico_estimado || 0;
+    console.log(`  👥 ${building.nome}: ${audience} pessoas`);
+    return sum + audience;
+  }, 0);
+
+  console.log('📊 [ORDER_DETAILS] Totais calculados:', {
+    totalScreens,
+    totalAudience
+  });
 
   // Verificar se há dados de localização incompletos
   const hasLocationData = (displayBuildingIds && displayBuildingIds.length > 0) || 
@@ -274,7 +307,7 @@ const OrderDetails = () => {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6 px-4 md:px-0 py-4">
         {/* Header */}
         <OrderHeader orderId={orderDetails.id} />
 

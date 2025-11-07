@@ -26,45 +26,61 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
   totalAudience = 0
 }) => {
 
+  console.log('📊 [ORDER_SUMMARY] Dados recebidos:', {
+    plano_meses: orderDetails.plano_meses,
+    displayPanels: displayPanels.length,
+    totalScreens,
+    totalAudience,
+    isRecovered
+  });
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Resumo do Pedido</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex items-center space-x-3">
-            <Calendar className="h-8 w-8 text-purple-500" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+          <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+            <Calendar className="h-8 w-8 text-purple-600 flex-shrink-0" />
             <div>
-              <p className="font-medium">Duração do Contrato</p>
-              <p className="text-lg">{orderDetails.plano_meses} {orderDetails.plano_meses === 1 ? 'mês' : 'meses'}</p>
+              <p className="text-sm font-medium text-gray-600">Duração do Contrato</p>
+              <p className="text-xl font-bold text-gray-900">
+                {orderDetails.plano_meses} {orderDetails.plano_meses === 1 ? 'mês' : 'meses'}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <Calendar className="h-8 w-8 text-orange-500" />
+          <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
+            <Calendar className="h-8 w-8 text-orange-600 flex-shrink-0" />
             <div>
-              <p className="font-medium">Locais Contratados</p>
-              <p className="text-lg">{displayPanels.length} {displayPanels.length === 1 ? 'local' : 'locais'}</p>
+              <p className="text-sm font-medium text-gray-600">Locais Contratados</p>
+              <p className="text-xl font-bold text-gray-900">
+                {displayPanels.length} {displayPanels.length === 1 ? 'local' : 'locais'}
+              </p>
             </div>
           </div>
           
           {totalScreens > 0 && (
-            <div className="flex items-center space-x-3">
-              <Monitor className="h-8 w-8 text-blue-500" />
+            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+              <Monitor className="h-8 w-8 text-blue-600 flex-shrink-0" />
               <div>
-                <p className="font-medium">Total de Telas</p>
-                <p className="text-lg">{totalScreens} {totalScreens === 1 ? 'tela' : 'telas'}</p>
+                <p className="text-sm font-medium text-gray-600">Total de Telas</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {totalScreens} {totalScreens === 1 ? 'tela' : 'telas'}
+                </p>
               </div>
             </div>
           )}
           
           {totalAudience > 0 && (
-            <div className="flex items-center space-x-3">
-              <Users className="h-8 w-8 text-green-500" />
+            <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+              <Users className="h-8 w-8 text-green-600 flex-shrink-0" />
               <div>
-                <p className="font-medium">Pessoas Impactadas</p>
-                <p className="text-lg">{totalAudience.toLocaleString()}/mês</p>
+                <p className="text-sm font-medium text-gray-600">Pessoas Impactadas</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {totalAudience.toLocaleString()}<span className="text-sm font-normal">/mês</span>
+                </p>
               </div>
             </div>
           )}
