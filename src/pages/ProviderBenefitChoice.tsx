@@ -163,40 +163,45 @@ const ProviderBenefitChoice = () => {
 
   if (pageState === 'success') {
     return (
-      <div className="min-h-screen bg-[#1a0000] flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full bg-white rounded-3xl p-12 shadow-2xl">
-          <div className="flex flex-col items-center text-center space-y-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full bg-white rounded-3xl p-8 sm:p-12 shadow-2xl border border-gray-200">
+          <div className="flex flex-col items-center text-center space-y-6">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center ring-8 ring-green-100 shadow-lg">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center ring-8 ring-emerald-100 shadow-xl">
                 <CheckCircle className="h-14 w-14 text-white" strokeWidth={3} />
               </div>
               <div className="absolute -top-2 -right-2 text-4xl animate-bounce">🎉</div>
             </div>
+            
             <h1 className="text-4xl font-black text-gray-900">Parabéns!</h1>
-            <div className="space-y-4 w-full">
-              <p className="text-xl text-gray-700 font-medium">Sua escolha foi registrada com sucesso!</p>
-              <div className="bg-gradient-to-br from-[#DC2626]/10 to-[#DC2626]/5 rounded-2xl p-8 border-2 border-[#DC2626]/20">
-                <div className="text-7xl mb-4 animate-pulse">{selectedBenefit?.icon}</div>
-                <p className="text-3xl font-black text-[#DC2626]">{selectedBenefit?.name}</p>
-              </div>
+            
+            <p className="text-lg text-gray-700 font-medium">
+              Sua escolha foi registrada com sucesso!
+            </p>
+            
+            <div className="w-full bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-8 border-2 border-emerald-200">
+              <div className="text-7xl mb-4">{selectedBenefit?.icon}</div>
+              <p className="text-3xl font-black text-gray-900 mb-2">{selectedBenefit?.name}</p>
+              {selectedBenefit?.subtitle && (
+                <p className="text-base text-gray-600 font-medium">{selectedBenefit.subtitle}</p>
+              )}
             </div>
-            <div className="bg-gray-50 p-8 rounded-2xl max-w-md w-full space-y-4">
-              <p className="text-base text-gray-700">
-                Em breve você receberá um email com o código do seu vale-presente de <strong className="text-2xl text-[#DC2626] font-black">R$ 50,00</strong>.
+            
+            <div className="w-full bg-white p-6 rounded-2xl border-2 border-gray-200 space-y-4">
+              <p className="text-base text-gray-700 leading-relaxed">
+                Em breve você receberá um email com o código do seu vale-presente de <strong className="text-2xl text-emerald-600 font-black">R$ 50,00</strong>
               </p>
+              
               {selectedBenefit && (
-                <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
-                  <p className="text-sm font-semibold text-amber-900 mb-1">⚡ Prazo de Entrega</p>
-                  <p className="text-base text-amber-800">
-                    {selectedBenefit.delivery_days === 1 ? (
-                      <span className="font-bold">Até 24 horas</span>
-                    ) : (
-                      <span className="font-bold">Até {selectedBenefit.delivery_days} dias úteis</span>
-                    )}
+                <div className={`${selectedBenefit.delivery_days === 1 ? 'bg-emerald-100 border-emerald-300' : 'bg-blue-100 border-blue-300'} border-2 rounded-xl p-4`}>
+                  <p className={`text-base font-black ${selectedBenefit.delivery_days === 1 ? 'text-emerald-800' : 'text-blue-800'}`}>
+                    {selectedBenefit.delivery_days === 1 ? '⚡' : '📦'} Código enviado em até {selectedBenefit.delivery_days === 1 ? '24 horas' : '3 dias úteis'}
                   </p>
                 </div>
               )}
-              <div className="h-px bg-gray-200" />
+            </div>
+            
+            <div className="pt-4">
               <p className="text-base text-gray-700 font-bold">
                 Obrigado por fazer parte da EXA MÍDIA! 🚀
               </p>
