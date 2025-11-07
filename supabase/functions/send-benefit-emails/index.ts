@@ -130,7 +130,7 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       line-height: 1.6;
       margin: 0;
       padding: 0;
-      background-color: #DC2626 !important;
+      background-color: #F5F5F5 !important;
     }
     .container {
       max-width: 600px;
@@ -139,76 +139,117 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
     }
     .email-container {
       background-color: #ffffff !important;
-      border-radius: 12px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
     }
     .header {
-      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
-      padding: 40px 20px;
+      background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+      padding: 50px 20px;
       text-align: center;
     }
     .logo-img {
-      width: 120px;
+      width: 140px;
       height: auto;
       display: inline-block;
     }
     .content {
-      padding: 40px 30px;
+      padding: 50px 40px;
       background-color: #ffffff !important;
     }
     h1 {
-      color: #DC2626 !important;
-      font-size: 28px;
-      margin: 0 0 20px 0;
+      color: #1A1A1A !important;
+      font-size: 32px;
+      margin: 0 0 24px 0;
       text-align: center;
+      font-weight: 800;
     }
     p {
       color: #333333 !important;
-      font-size: 16px;
+      font-size: 17px;
       line-height: 1.8;
-      margin: 15px 0;
+      margin: 16px 0;
     }
     .highlight {
-      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
-      padding: 20px;
-      border-radius: 8px;
+      background-color: #DC2626 !important;
+      padding: 24px 28px;
+      border-radius: 12px;
       text-align: center;
-      margin: 30px 0;
+      margin: 32px 0;
+      box-shadow: 0 4px 16px rgba(220, 38, 38, 0.25);
     }
     .highlight p {
       color: #ffffff !important;
-      font-weight: bold;
+      font-weight: 700;
+      font-size: 18px;
       margin: 0;
+      letter-spacing: 0.5px;
     }
     .button {
       display: inline-block;
-      background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%);
+      background-color: #DC2626 !important;
       color: #ffffff !important;
       text-decoration: none !important;
-      padding: 16px 40px;
+      padding: 20px 50px;
       border-radius: 50px;
-      font-weight: bold;
+      font-weight: 700;
       font-size: 18px;
-      margin: 20px 0;
+      margin: 28px 0;
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+      transition: all 0.3s ease;
+      letter-spacing: 0.5px;
+    }
+    .button:hover {
+      box-shadow: 0 8px 28px rgba(220, 38, 38, 0.45);
+      transform: translateY(-2px);
     }
     .footer {
-      background-color: #f8f9fa !important;
-      padding: 30px;
+      background-color: #F9FAFB !important;
+      padding: 35px;
       text-align: center;
-      color: #718096 !important;
+      color: #6B7280 !important;
       font-size: 14px;
+      border-top: 1px solid #E5E7EB;
     }
     .note {
-      background-color: #f8f9fa !important;
-      padding: 15px;
-      border-radius: 8px;
-      border-left: 4px solid #DC2626;
-      margin: 20px 0;
+      background-color: #FEF3F2 !important;
+      padding: 20px 24px;
+      border-radius: 12px;
+      border-left: 5px solid #DC2626;
+      margin: 28px 0;
+    }
+    .note p {
+      margin: 0;
+      color: #991B1B !important;
+      font-size: 15px;
+    }
+    .link-box {
+      margin-top: 28px;
+      padding: 20px;
+      background-color: #F9FAFB !important;
+      border-radius: 12px;
+      text-align: center;
+      border: 2px solid #E5E7EB;
+    }
+    .link-box p:first-child {
+      font-size: 13px;
+      color: #6B7280 !important;
+      margin: 0 0 12px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    .link-box p:last-child {
+      font-size: 14px;
+      color: #DC2626 !important;
+      margin: 0;
+      word-break: break-all;
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
     }
     @media (prefers-color-scheme: dark) {
       body {
-        background-color: #DC2626 !important;
+        background-color: #F5F5F5 !important;
       }
       .email-container {
         background-color: #ffffff !important;
@@ -217,58 +258,86 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
         background-color: #ffffff !important;
       }
       h1 {
-        color: #DC2626 !important;
+        color: #1A1A1A !important;
       }
       p {
         color: #333333 !important;
+      }
+      .highlight {
+        background-color: #DC2626 !important;
       }
       .highlight p {
         color: #ffffff !important;
       }
       .button {
+        background-color: #DC2626 !important;
         color: #ffffff !important;
       }
       .footer {
-        background-color: #f8f9fa !important;
-        color: #718096 !important;
+        background-color: #F9FAFB !important;
+        color: #6B7280 !important;
       }
       .note {
-        background-color: #f8f9fa !important;
+        background-color: #FEF3F2 !important;
+      }
+      .note p {
+        color: #991B1B !important;
+      }
+      .link-box {
+        background-color: #F9FAFB !important;
+      }
+      .link-box p:first-child {
+        color: #6B7280 !important;
+      }
+      .link-box p:last-child {
+        color: #DC2626 !important;
+      }
+    }
+    @media only screen and (max-width: 600px) {
+      .content {
+        padding: 35px 25px;
+      }
+      h1 {
+        font-size: 26px;
+      }
+      .button {
+        padding: 18px 40px;
+        font-size: 16px;
       }
     }
   </style>
 </head>
-<body style="background-color: #DC2626 !important;">
+<body style="background-color: #F5F5F5 !important;">
   <div class="container">
     <div class="email-container" style="background-color: #ffffff !important;">
       <div class="header">
         <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" alt="EXA" class="logo-img" style="filter: brightness(0) invert(1);">
       </div>
       <div class="content" style="background-color: #ffffff !important;">
-        <h1 style="color: #DC2626 !important;">🎉 Parabéns, ${name}!</h1>
-        <p style="color: #333333 !important;">A cada painel instalado, a EXA celebra junto de quem esteve no campo!</p>
-        ${point ? `<div class="highlight"><p style="color: #ffffff !important;">📍 Ponto ativado: ${point}</p></div>` : ''}
-        <p style="color: #333333 !important;">Você é parte da <strong>revolução da atenção nos condomínios</strong>. Por isso, queremos te agradecer com um presente especial de <strong style="color: #DC2626; font-size: 20px;">R$ 50,00</strong>.</p>
+        <h1 style="color: #1A1A1A !important;">🎉 Parabéns, ${name}!</h1>
+        <p style="color: #333333 !important; text-align: center;">A cada painel instalado, a EXA celebra junto de quem esteve no campo!</p>
+        ${point ? `<div class="highlight" style="background-color: #DC2626 !important;"><p style="color: #ffffff !important;">📍 Ponto ativado: ${point}</p></div>` : ''}
+        <p style="color: #333333 !important; text-align: center;">Você é parte da <strong>revolução da atenção nos condomínios</strong>. Por isso, queremos te agradecer com um presente especial de <strong style="color: #DC2626; font-size: 22px;">R$ 50,00</strong>.</p>
         <div style="text-align: center;">
-          <a href="${link}" class="button" style="background: linear-gradient(135deg, #DC2626 0%, #1A1A1A 100%); color: #ffffff !important; text-decoration: none !important; display: inline-block; padding: 16px 40px; border-radius: 50px; font-weight: bold; font-size: 18px; margin: 20px 0;">
-            <span style="color: #ffffff !important;">🎁 ESCOLHER MEU PRESENTE</span>
+          <a href="${link}" class="button" style="background-color: #DC2626 !important; color: #ffffff !important; text-decoration: none !important; display: inline-block; padding: 20px 50px; border-radius: 50px; font-weight: 700; font-size: 18px; margin: 28px 0; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);">
+            <span style="color: #ffffff !important; font-weight: 700;">🎁 ESCOLHER MEU PRESENTE</span>
           </a>
         </div>
-        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa !important; border-radius: 8px; text-align: center;">
-          <p style="font-size: 12px; color: #666666 !important; margin: 0 0 10px 0;">
+        <div class="link-box" style="background-color: #F9FAFB !important; border: 2px solid #E5E7EB; padding: 20px; border-radius: 12px; margin-top: 28px; text-align: center;">
+          <p style="font-size: 13px; color: #6B7280 !important; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
             Ou copie e cole este link no seu navegador:
           </p>
-          <p style="font-size: 14px; color: #DC2626 !important; margin: 0; word-break: break-all; font-family: 'Courier New', monospace;">
+          <p style="font-size: 14px; color: #DC2626 !important; margin: 0; word-break: break-all; font-family: 'Courier New', monospace; font-weight: 600;">
             ${link}
           </p>
         </div>
-        <div class="note" style="background-color: #f8f9fa !important;">
-          <p style="margin: 0; color: #333333 !important;"><strong>⚠️ Importante:</strong> Este link é único e pessoal. Após escolher seu presente, ele não poderá ser usado novamente.</p>
+        <div class="note" style="background-color: #FEF3F2 !important; padding: 20px 24px; border-radius: 12px; border-left: 5px solid #DC2626; margin: 28px 0;">
+          <p style="margin: 0; color: #991B1B !important; font-size: 15px;"><strong>⚠️ Importante:</strong> Este link é único e pessoal. Após escolher seu presente, ele não poderá ser usado novamente.</p>
         </div>
       </div>
-      <div class="footer" style="background-color: #f8f9fa !important; color: #718096 !important;">
-        <p style="color: #718096 !important;">© 2025 EXA MÍDIA. Obrigado por fazer parte!</p>
-        <p style="margin-top: 10px; color: #718096 !important;">Publicidade que vive nos elevadores 🚀</p>
+      <div class="footer" style="background-color: #F9FAFB !important; color: #6B7280 !important; padding: 35px; text-align: center; font-size: 14px; border-top: 1px solid #E5E7EB;">
+        <p style="color: #6B7280 !important; margin: 0;">© 2025 EXA MÍDIA. Obrigado por fazer parte!</p>
+        <p style="margin-top: 10px; color: #6B7280 !important;">Publicidade que vive nos elevadores 🚀</p>
       </div>
     </div>
   </div>
