@@ -9,7 +9,7 @@ import ConfirmationModal from '@/components/benefits/ConfirmationModal';
 import type { TokenValidationResponse } from '@/types/providerBenefits';
 
 // Versão da página para cache busting
-const PAGE_VERSION = '4.0.0';
+const PAGE_VERSION = '5.0.0';
 const BUILD_TIME = new Date().toISOString();
 
 const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
@@ -223,59 +223,57 @@ const ProviderBenefitChoice = () => {
         <meta httpEquiv="expires" content="0" />
       </Helmet>
       
-      <div className="min-h-screen bg-gradient-to-br from-[#1a0000] via-[#4A0E0E] to-[#2D0808]">
-        {/* Header Profissional com Logo - Estilo iFood */}
-        <header className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] shadow-xl sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        {/* Header Profissional - Estilo iFood */}
+        <header className="bg-[#DC2626] shadow-lg sticky top-0 z-50">
+          <div className="max-w-6xl mx-auto px-4 py-4">
             <div className="flex items-center justify-center">
               <img 
                 src={EXA_LOGO_URL} 
                 alt="EXA Mídia" 
-                className="h-14 sm:h-16 w-auto object-contain filter brightness-0 invert"
+                className="h-10 w-auto object-contain filter brightness-0 invert"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.nextElementSibling!.classList.remove('hidden');
                 }}
               />
               <div className="hidden">
-                <h1 className="text-2xl sm:text-3xl font-black text-white">
-                  EXA MÍDIA
-                </h1>
+                <h1 className="text-xl font-black text-white">EXA MÍDIA</h1>
               </div>
             </div>
           </div>
         </header>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="space-y-6">{/* Conteúdo */}
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="space-y-4">
 
             {/* Card de Boas-vindas */}
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
-              <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] px-6 py-8">
-                <div className="text-center space-y-2">
-                  <div className="text-5xl mb-2">🎁</div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-[#DC2626] px-6 py-6">
+                <div className="text-center">
+                  <div className="text-4xl mb-2">🎁</div>
+                  <h2 className="text-2xl font-bold text-white mb-1">
                     Parabéns, {validationData?.provider_name}!
                   </h2>
-                  <p className="text-white/90 text-base font-medium">
+                  <p className="text-white/90 text-sm">
                     Você ativou um novo ponto EXA
                   </p>
                 </div>
               </div>
               
-              <div className="px-6 py-6 space-y-4">
+              <div className="px-6 py-5 space-y-3">
                 {validationData?.activation_point && (
-                  <div className="flex items-center justify-center gap-2 bg-gray-50 rounded-xl py-3 px-4 border border-gray-200">
-                    <span className="text-xl">📍</span>
-                    <span className="text-sm font-semibold text-gray-700">{validationData.activation_point}</span>
+                  <div className="flex items-center justify-center gap-2 bg-gray-50 rounded-lg py-2 px-3">
+                    <span className="text-lg">📍</span>
+                    <span className="text-xs font-medium text-gray-700">{validationData.activation_point}</span>
                   </div>
                 )}
                 
-                <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 border-2 border-emerald-200">
-                  <p className="text-sm text-gray-700 font-medium mb-2 text-center">
+                <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+                  <p className="text-xs text-gray-600 mb-1 text-center">
                     Escolha seu vale-presente de
                   </p>
-                  <p className="text-4xl sm:text-5xl font-black text-center bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                  <p className="text-3xl font-black text-center text-emerald-600">
                     R$ 50,00
                   </p>
                 </div>
@@ -284,26 +282,19 @@ const ProviderBenefitChoice = () => {
           </div>
 
           {/* Seções de Benefícios */}
-          <div className="space-y-6">
+          <div className="space-y-5 mt-5">
             {/* Entrega Expressa - 24h */}
             {fastDeliveryBenefits.length > 0 && (
-              <div className="space-y-6">
-                <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 rounded-3xl p-8 shadow-2xl border-4 border-white/20 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.2),transparent_70%)] animate-pulse" />
-                  <div className="relative flex items-center justify-center gap-4">
-                    <Zap className="h-10 w-10 text-white fill-white animate-bounce" />
-                    <div className="text-center">
-                      <h3 className="text-3xl md:text-4xl font-black text-white mb-1">
-                        ⚡ ENTREGA EM ATÉ 24 HORAS ⚡
-                      </h3>
-                      <p className="text-white text-lg font-bold">
-                        Receba seu código rapidamente!
-                      </p>
-                    </div>
-                    <Zap className="h-10 w-10 text-white fill-white animate-bounce" />
+              <div className="space-y-3">
+                <div className="bg-emerald-500 rounded-xl px-4 py-3 shadow-md">
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="h-5 w-5 text-white" />
+                    <h3 className="text-base font-bold text-white">
+                      ⚡ Entrega em até 24 horas
+                    </h3>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-3">
                   {fastDeliveryBenefits.map((option) => (
                     <BenefitCard
                       key={option.id}
@@ -318,23 +309,16 @@ const ProviderBenefitChoice = () => {
 
             {/* Entrega Padrão - 3 dias */}
             {normalDeliveryBenefits.length > 0 && (
-              <div className="space-y-6">
-                <div className="bg-gradient-to-r from-blue-500 via-sky-500 to-blue-600 rounded-3xl p-8 shadow-2xl border-4 border-white/20 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(255,255,255,0.2),transparent_70%)] animate-pulse" />
-                  <div className="relative flex items-center justify-center gap-4">
-                    <Clock className="h-10 w-10 text-white animate-spin" style={{ animationDuration: '3s' }} />
-                    <div className="text-center">
-                      <h3 className="text-3xl md:text-4xl font-black text-white mb-1">
-                        🕐 ENTREGA EM ATÉ 3 DIAS ÚTEIS 🕐
-                      </h3>
-                      <p className="text-white text-lg font-bold">
-                        Grandes marcas e lojas!
-                      </p>
-                    </div>
-                    <Clock className="h-10 w-10 text-white animate-spin" style={{ animationDuration: '3s' }} />
+              <div className="space-y-3">
+                <div className="bg-blue-500 rounded-xl px-4 py-3 shadow-md">
+                  <div className="flex items-center justify-center gap-2">
+                    <Clock className="h-5 w-5 text-white" />
+                    <h3 className="text-base font-bold text-white">
+                      📦 Entrega em até 3 dias úteis
+                    </h3>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-3">
                   {normalDeliveryBenefits.map((option) => (
                     <BenefitCard
                       key={option.id}
@@ -350,8 +334,8 @@ const ProviderBenefitChoice = () => {
         </div>
         
         {/* Footer */}
-        <footer className="mt-12 pb-8 text-center">
-          <p className="text-sm text-white/60 font-medium">
+        <footer className="mt-8 pb-6 text-center">
+          <p className="text-xs text-gray-500">
             EXA Mídia © 2025 - Publicidade Inteligente
           </p>
         </footer>
