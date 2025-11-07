@@ -30,6 +30,29 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   const deliveryLabel = deliveryDays === 1 ? 'até 24 horas' : `até ${deliveryDays} dias úteis`;
   const isFastDelivery = deliveryDays === 1;
   
+  // Converter ícone de texto para emoji
+  const getDisplayIcon = (icon: string): string => {
+    // Se já for emoji, retorna
+    if (/\p{Emoji}/u.test(icon)) {
+      return icon;
+    }
+    
+    // Mapeamento de textos do banco para emojis
+    const iconMap: Record<string, string> = {
+      'Beef': '🍔',
+      'Beer': '🍺',
+      'Tv': '🎬',
+      'UtensilsCrossed': '🍔',
+      'IceCream': '🍦',
+      'Popcorn': '🍿',
+      'Pizza': '🍕',
+    };
+    
+    return iconMap[icon] || '🎁'; // Fallback para presente
+  };
+  
+  const displayIcon = getDisplayIcon(benefitIcon);
+  
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent className="max-w-lg rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
@@ -42,7 +65,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <div className="p-8">
           <AlertDialogDescription className="text-center space-y-6">
             <div className="relative inline-block">
-              <div className="text-8xl animate-bounce">{benefitIcon}</div>
+              <div className="text-8xl animate-bounce">{displayIcon}</div>
               <div className="absolute inset-0 bg-[#DC2626]/20 rounded-full blur-3xl" />
             </div>
             
