@@ -14,6 +14,30 @@ import { validateCompanyDocument, formatCompanyDocument } from '@/utils/inputVal
 import { cn } from '@/lib/utils';
 
 const businessSegments = [
+  // Turismo e Atrações (Foz do Iguaçu - Tríplice Fronteira)
+  { value: 'tourist_attraction', label: 'Atrações Turísticas' },
+  { value: 'tour_guide', label: 'Guias Turísticos' },
+  { value: 'travel_agency', label: 'Agências de Turismo' },
+  { value: 'adventure_tourism', label: 'Turismo de Aventura' },
+  { value: 'ecological_tourism', label: 'Turismo Ecológico' },
+  { value: 'souvenirs', label: 'Lojas de Souvenirs' },
+  { value: 'duty_free', label: 'Duty Free / Free Shop' },
+  { value: 'cambio', label: 'Casas de Câmbio' },
+  
+  // Lojas de Departamento e Varejo
+  { value: 'department_store', label: 'Lojas de Departamento' },
+  { value: 'shopping', label: 'Shopping Centers' },
+  { value: 'outlet', label: 'Outlets' },
+  { value: 'wholesale', label: 'Atacado e Distribuição' },
+  
+  // Eletrônicos e Tecnologia
+  { value: 'electronics', label: 'Lojas de Eletrônicos' },
+  { value: 'electronics_import', label: 'Eletrônicos Importados' },
+  { value: 'cellphone', label: 'Celulares e Acessórios' },
+  { value: 'computers', label: 'Informática e Computadores' },
+  { value: 'technology', label: 'Tecnologia' },
+  { value: 'games', label: 'Games e Consoles' },
+  
   // Alimentação e Bebidas
   { value: 'restaurant', label: 'Restaurantes' },
   { value: 'bar', label: 'Bares e Pubs' },
@@ -309,20 +333,20 @@ export const CompanyBrandSection: React.FC = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Building2 className="h-5 w-5 mr-2" />
+    <Card className="shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-exa-red/5 to-transparent">
+        <CardTitle className="flex items-center text-xl">
+          <Building2 className="h-5 w-5 mr-2 text-exa-red" />
           Empresa ou Marca que Você Representa
         </CardTitle>
-        <div className="flex items-start space-x-2 mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-start space-x-2 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-blue-900">
             Informações opcionais, mas <strong>OBRIGATÓRIAS</strong> para fazer upload de vídeos
           </p>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-6">
         <div className="space-y-2">
           <Label htmlFor="companyName">
             Nome da Empresa/Marca <span className="text-red-500">*</span>
@@ -386,11 +410,16 @@ export const CompanyBrandSection: React.FC = () => {
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white z-50" align="start">
+            <PopoverContent 
+              className="w-[--radix-popover-trigger-width] p-0 bg-white z-50" 
+              align="start"
+              side="bottom"
+              sideOffset={4}
+            >
               <Command className="bg-white">
                 <CommandInput 
                   placeholder="Digite para buscar..." 
-                  className="h-11"
+                  className="h-11 border-none focus:ring-0"
                 />
                 <CommandList className="max-h-[300px] overflow-y-auto">
                   <CommandEmpty>Nenhum segmento encontrado.</CommandEmpty>
@@ -431,20 +460,21 @@ export const CompanyBrandSection: React.FC = () => {
           />
         </div>
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-center pt-6">
           <Button
             onClick={handleSave}
             disabled={loading}
-            className="bg-indexa-purple hover:bg-indexa-purple/90"
+            size="lg"
+            className="bg-exa-red hover:bg-exa-red/90 text-white px-12 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                 Salvando...
               </>
             ) : (
               <>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-5 w-5 mr-2" />
                 Salvar Informações da Empresa
               </>
             )}

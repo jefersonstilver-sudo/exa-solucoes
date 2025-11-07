@@ -12,6 +12,30 @@ interface BusinessSegmentSelectorProps {
 }
 
 const businessSegments = [
+  // Turismo e Atrações (Foz do Iguaçu - Tríplice Fronteira)
+  { value: 'tourist_attraction', label: 'Atrações Turísticas' },
+  { value: 'tour_guide', label: 'Guias Turísticos' },
+  { value: 'travel_agency', label: 'Agências de Turismo' },
+  { value: 'adventure_tourism', label: 'Turismo de Aventura' },
+  { value: 'ecological_tourism', label: 'Turismo Ecológico' },
+  { value: 'souvenirs', label: 'Lojas de Souvenirs' },
+  { value: 'duty_free', label: 'Duty Free / Free Shop' },
+  { value: 'cambio', label: 'Casas de Câmbio' },
+  
+  // Lojas de Departamento e Varejo
+  { value: 'department_store', label: 'Lojas de Departamento' },
+  { value: 'shopping_center', label: 'Shopping Centers' },
+  { value: 'outlet', label: 'Outlets' },
+  { value: 'wholesale', label: 'Atacado e Distribuição' },
+  
+  // Eletrônicos e Tecnologia
+  { value: 'electronics', label: 'Lojas de Eletrônicos' },
+  { value: 'electronics_import', label: 'Eletrônicos Importados' },
+  { value: 'cellphone', label: 'Celulares e Acessórios' },
+  { value: 'computers', label: 'Informática e Computadores' },
+  { value: 'technology', label: 'Tecnologia' },
+  { value: 'games', label: 'Games e Consoles' },
+  
   // Alimentação e Bebidas
   { value: 'restaurant', label: 'Restaurantes' },
   { value: 'bar', label: 'Bares e Pubs' },
@@ -196,11 +220,16 @@ export const BusinessSegmentSelector: React.FC<BusinessSegmentSelectorProps> = (
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white z-50" align="start">
+        <PopoverContent 
+          className="w-[--radix-popover-trigger-width] p-0 bg-white z-50" 
+          align="start"
+          side="bottom"
+          sideOffset={4}
+        >
           <Command className="bg-white">
             <CommandInput 
               placeholder="Digite para buscar..." 
-              className="h-11"
+              className="h-11 border-none focus:ring-0"
             />
             <CommandList className="max-h-[300px] overflow-y-auto">
               <CommandEmpty>Nenhum segmento encontrado.</CommandEmpty>

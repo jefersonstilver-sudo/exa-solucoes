@@ -206,30 +206,32 @@ const AdvertiserSettings = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Perfil</h1>
-        <p className="text-gray-600 mt-1">Gerencie suas informações pessoais e documentação</p>
+      <div className="text-center mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Configurações do Perfil</h1>
+        <p className="text-gray-600 mt-2">Gerencie suas informações pessoais e documentação</p>
       </div>
 
       {/* Dados Pessoais */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <User className="h-5 w-5 mr-2" />
+      <Card className="shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-exa-red/5 to-transparent">
+          <CardTitle className="flex items-center text-xl">
+            <User className="h-5 w-5 mr-2 text-exa-red" />
             Dados Pessoais
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pt-6">
           {/* Foto de Perfil */}
-          <AvatarUpload
-            value={settings.avatar_url}
-            onChange={(url) => setSettings(prev => ({ ...prev, avatar_url: url || '' }))}
-            userName={settings.name}
-          />
+          <div className="flex justify-center">
+            <AvatarUpload
+              value={settings.avatar_url}
+              onChange={(url) => setSettings(prev => ({ ...prev, avatar_url: url || '' }))}
+              userName={settings.name}
+            />
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -266,10 +268,10 @@ const AdvertiserSettings = () => {
       </Card>
 
       {/* Documentação */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <FileText className="h-5 w-5 mr-2" />
+      <Card className="shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-exa-red/5 to-transparent">
+          <CardTitle className="flex items-center text-xl">
+            <FileText className="h-5 w-5 mr-2 text-exa-red" />
             Documentação
           </CardTitle>
         </CardHeader>
@@ -342,17 +344,17 @@ const AdvertiserSettings = () => {
       </Card>
 
       {/* Notificações */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Bell className="h-5 w-5 mr-2" />
+      <Card className="shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-exa-red/5 to-transparent">
+          <CardTitle className="flex items-center text-xl">
+            <Bell className="h-5 w-5 mr-2 text-exa-red" />
             Preferências de Notificação
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+        <CardContent className="space-y-6 pt-6">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div className="space-y-0.5">
-              <Label>Notificações por Email</Label>
+              <Label className="text-base font-medium">Notificações por Email</Label>
               <p className="text-sm text-gray-500">Receba atualizações sobre suas campanhas por email</p>
             </div>
             <Switch
@@ -361,9 +363,9 @@ const AdvertiserSettings = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div className="space-y-0.5">
-              <Label>Notificações SMS</Label>
+              <Label className="text-base font-medium">Notificações SMS</Label>
               <p className="text-sm text-gray-500">Receba alertas importantes via SMS</p>
             </div>
             <Switch
@@ -372,9 +374,9 @@ const AdvertiserSettings = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div className="space-y-0.5">
-              <Label>Notificações Push</Label>
+              <Label className="text-base font-medium">Notificações Push</Label>
               <p className="text-sm text-gray-500">Receba notificações no navegador</p>
             </div>
             <Switch
@@ -389,17 +391,17 @@ const AdvertiserSettings = () => {
       <CompanyBrandSection />
 
       {/* Segurança */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Shield className="h-5 w-5 mr-2" />
+      <Card className="shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-exa-red/5 to-transparent">
+          <CardTitle className="flex items-center text-xl">
+            <Shield className="h-5 w-5 mr-2 text-exa-red" />
             Segurança
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+        <CardContent className="space-y-6 pt-6">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div className="space-y-0.5">
-              <Label>Alterar Senha</Label>
+              <Label className="text-base font-medium">Alterar Senha</Label>
               <p className="text-sm text-gray-500">Altere sua senha de acesso</p>
             </div>
             <Button variant="outline" onClick={() => toast.info('Funcionalidade em desenvolvimento')}>
@@ -407,25 +409,26 @@ const AdvertiserSettings = () => {
             </Button>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <div className="space-y-0.5">
-              <Label>Cancelamento de Conta</Label>
-              <p className="text-sm text-gray-500">Para cancelar sua conta, entre em contato por email: suporte@indexa.com.br</p>
+              <Label className="text-base font-medium text-amber-900">Cancelamento de Conta</Label>
+              <p className="text-sm text-amber-700">Para cancelar sua conta, entre em contato por email: suporte@indexa.com.br</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Botão Salvar */}
-      <div className="flex justify-end">
+      <div className="flex justify-center pt-4">
         <Button 
           onClick={handleSave} 
           disabled={saving}
-          className="bg-indexa-purple hover:bg-indexa-purple/90"
+          size="lg"
+          className="bg-exa-red hover:bg-exa-red/90 text-white px-12 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
         >
           {saving ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
               Salvando...
             </>
           ) : (
