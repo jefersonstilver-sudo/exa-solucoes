@@ -42,10 +42,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       'Beef': '🍔',
       'Beer': '🍺',
       'Tv': '🎬',
+      'Pizza': '🍕',
       'UtensilsCrossed': '🍔',
       'IceCream': '🍦',
       'Popcorn': '🍿',
-      'Pizza': '🍕',
     };
     
     return iconMap[icon] || '🎁'; // Fallback para presente

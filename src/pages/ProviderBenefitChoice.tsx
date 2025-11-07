@@ -16,6 +16,27 @@ const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object
 
 type PageState = 'loading' | 'valid' | 'invalid' | 'already_used' | 'choosing' | 'success';
 
+// Função helper para converter ícone de texto para emoji
+const getIconEmoji = (icon: string): string => {
+  // Se já for emoji, retorna
+  if (/\p{Emoji}/u.test(icon)) {
+    return icon;
+  }
+  
+  // Mapeamento de textos do banco para emojis
+  const iconMap: Record<string, string> = {
+    'Beef': '🍔',
+    'Beer': '🍺',
+    'Tv': '🎬',
+    'Pizza': '🍕',
+    'UtensilsCrossed': '🍔',
+    'IceCream': '🍦',
+    'Popcorn': '🍿',
+  };
+  
+  return iconMap[icon] || icon;
+};
+
 const ProviderBenefitChoice = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -180,7 +201,7 @@ const ProviderBenefitChoice = () => {
             </p>
             
             <div className="w-full bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-8 border-2 border-emerald-200">
-              <div className="text-7xl mb-4">{selectedBenefit?.icon}</div>
+              <div className="text-7xl mb-4">{getIconEmoji(selectedBenefit?.icon || '')}</div>
               <p className="text-3xl font-black text-gray-900 mb-2">{selectedBenefit?.name}</p>
               {selectedBenefit?.subtitle && (
                 <p className="text-base text-gray-600 font-medium">{selectedBenefit.subtitle}</p>
