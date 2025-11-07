@@ -9,7 +9,7 @@ import ConfirmationModal from '@/components/benefits/ConfirmationModal';
 import type { TokenValidationResponse } from '@/types/providerBenefits';
 
 // Versão da página para cache busting
-const PAGE_VERSION = '3.0.0';
+const PAGE_VERSION = '4.0.0';
 const BUILD_TIME = new Date().toISOString();
 
 const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
@@ -223,22 +223,22 @@ const ProviderBenefitChoice = () => {
         <meta httpEquiv="expires" content="0" />
       </Helmet>
       
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <div className="min-h-screen bg-gradient-to-br from-[#1a0000] via-[#4A0E0E] to-[#2D0808]">
         {/* Header Profissional com Logo - Estilo iFood */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <header className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] shadow-xl sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-center">
               <img 
                 src={EXA_LOGO_URL} 
                 alt="EXA Mídia" 
-                className="h-12 sm:h-14 w-auto object-contain"
+                className="h-14 sm:h-16 w-auto object-contain filter brightness-0 invert"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.nextElementSibling!.classList.remove('hidden');
                 }}
               />
               <div className="hidden">
-                <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
+                <h1 className="text-2xl sm:text-3xl font-black text-white">
                   EXA MÍDIA
                 </h1>
               </div>
@@ -287,22 +287,23 @@ const ProviderBenefitChoice = () => {
           <div className="space-y-6">
             {/* Entrega Expressa - 24h */}
             {fastDeliveryBenefits.length > 0 && (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl p-4 shadow-lg">
-                  <div className="flex items-center justify-center gap-3">
-                    <Zap className="h-7 w-7 text-white fill-white" />
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 rounded-3xl p-8 shadow-2xl border-4 border-white/20 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.2),transparent_70%)] animate-pulse" />
+                  <div className="relative flex items-center justify-center gap-4">
+                    <Zap className="h-10 w-10 text-white fill-white animate-bounce" />
                     <div className="text-center">
-                      <h3 className="text-xl font-black text-white">
-                        ENTREGA EM ATÉ 24 HORAS
+                      <h3 className="text-3xl md:text-4xl font-black text-white mb-1">
+                        ⚡ ENTREGA EM ATÉ 24 HORAS ⚡
                       </h3>
-                      <p className="text-white/95 text-sm font-semibold">
-                        Código por email rapidamente
+                      <p className="text-white text-lg font-bold">
+                        Receba seu código rapidamente!
                       </p>
                     </div>
-                    <Zap className="h-7 w-7 text-white fill-white" />
+                    <Zap className="h-10 w-10 text-white fill-white animate-bounce" />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {fastDeliveryBenefits.map((option) => (
                     <BenefitCard
                       key={option.id}
@@ -317,22 +318,23 @@ const ProviderBenefitChoice = () => {
 
             {/* Entrega Padrão - 3 dias */}
             {normalDeliveryBenefits.length > 0 && (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 shadow-lg">
-                  <div className="flex items-center justify-center gap-3">
-                    <Clock className="h-7 w-7 text-white" />
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-blue-500 via-sky-500 to-blue-600 rounded-3xl p-8 shadow-2xl border-4 border-white/20 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(255,255,255,0.2),transparent_70%)] animate-pulse" />
+                  <div className="relative flex items-center justify-center gap-4">
+                    <Clock className="h-10 w-10 text-white animate-spin" style={{ animationDuration: '3s' }} />
                     <div className="text-center">
-                      <h3 className="text-xl font-black text-white">
-                        ENTREGA EM ATÉ 3 DIAS ÚTEIS
+                      <h3 className="text-3xl md:text-4xl font-black text-white mb-1">
+                        🕐 ENTREGA EM ATÉ 3 DIAS ÚTEIS 🕐
                       </h3>
-                      <p className="text-white/95 text-sm font-semibold">
-                        Grandes marcas para você
+                      <p className="text-white text-lg font-bold">
+                        Grandes marcas e lojas!
                       </p>
                     </div>
-                    <Clock className="h-7 w-7 text-white" />
+                    <Clock className="h-10 w-10 text-white animate-spin" style={{ animationDuration: '3s' }} />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {normalDeliveryBenefits.map((option) => (
                     <BenefitCard
                       key={option.id}
@@ -349,7 +351,7 @@ const ProviderBenefitChoice = () => {
         
         {/* Footer */}
         <footer className="mt-12 pb-8 text-center">
-          <p className="text-sm text-gray-500 font-medium">
+          <p className="text-sm text-white/60 font-medium">
             EXA Mídia © 2025 - Publicidade Inteligente
           </p>
         </footer>
