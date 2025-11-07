@@ -3,14 +3,16 @@ import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Loader2, CheckCircle, AlertCircle, Clock, Zap } from 'lucide-react';
 import { useBenefitManagement } from '@/hooks/useBenefitManagement';
+import { useBenefitOptions } from '@/hooks/useBenefitOptions';
 import BenefitCard from '@/components/benefits/BenefitCard';
 import ConfirmationModal from '@/components/benefits/ConfirmationModal';
-import { benefitOptions } from '@/data/benefitOptions';
 import type { TokenValidationResponse } from '@/types/providerBenefits';
 
 // Versão da página para cache busting
-const PAGE_VERSION = '2.0.1';
+const PAGE_VERSION = '3.0.0';
 const BUILD_TIME = new Date().toISOString();
+
+const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
 
 type PageState = 'loading' | 'valid' | 'invalid' | 'already_used' | 'choosing' | 'success';
 
@@ -19,6 +21,7 @@ const ProviderBenefitChoice = () => {
   const token = searchParams.get('token');
 
   const { validateToken, registerChoice } = useBenefitManagement();
+  const { benefits: benefitOptions, isLoading: isBenefitsLoading } = useBenefitOptions();
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [validationData, setValidationData] = useState<TokenValidationResponse | null>(null);
@@ -34,8 +37,11 @@ const ProviderBenefitChoice = () => {
       return;
     }
 
-    validateTokenAsync();
-  }, [token]);
+    // Espera os benefícios carregarem antes de validar o token
+    if (!isBenefitsLoading && benefitOptions.length > 0) {
+      validateTokenAsync();
+    }
+  }, [token, isBenefitsLoading, benefitOptions]);
 
   const validateTokenAsync = async () => {
     if (!token) return;
@@ -212,44 +218,59 @@ const ProviderBenefitChoice = () => {
         <meta httpEquiv="expires" content="0" />
       </Helmet>
       
-      <div className="min-h-screen bg-gradient-to-br from-[#1a0000] via-[#2a0000] to-[#1a0000] py-4 sm:py-8 px-3 sm:px-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Header Compacto */}
-          <div className="text-center mb-6">
-            {/* Logo */}
-            <div className="inline-flex items-center gap-2 bg-white rounded-xl px-6 py-3 shadow-2xl mb-4">
-              <h1 className="text-2xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
-                EXA MÍDIA
-              </h1>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+        {/* Header Profissional com Logo - Estilo iFood */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-center">
+              <img 
+                src={EXA_LOGO_URL} 
+                alt="EXA Mídia" 
+                className="h-12 sm:h-14 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling!.classList.remove('hidden');
+                }}
+              />
+              <div className="hidden">
+                <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
+                  EXA MÍDIA
+                </h1>
+              </div>
             </div>
+          </div>
+        </header>
 
-            {/* Card Principal - Mais Compacto */}
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-100">
-              <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] px-4 py-5 sm:px-6">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <span className="text-3xl">🎁</span>
-                  <h2 className="text-xl sm:text-2xl font-black text-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="space-y-6">{/* Conteúdo */}
+
+            {/* Card de Boas-vindas */}
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+              <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] px-6 py-8">
+                <div className="text-center space-y-2">
+                  <div className="text-5xl mb-2">🎁</div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white">
                     Parabéns, {validationData?.provider_name}!
                   </h2>
+                  <p className="text-white/90 text-base font-medium">
+                    Você ativou um novo ponto EXA
+                  </p>
                 </div>
-                <p className="text-white/95 text-sm font-semibold">
-                  Você ajudou a ativar mais um ponto EXA
-                </p>
               </div>
               
-              <div className="px-4 py-5 sm:px-6 space-y-3">
+              <div className="px-6 py-6 space-y-4">
                 {validationData?.activation_point && (
-                  <div className="inline-flex items-center gap-2 bg-gray-50 rounded-lg py-2 px-4 border border-gray-200">
-                    <span className="text-lg">📍</span>
-                    <span className="text-sm font-bold text-gray-700">{validationData.activation_point}</span>
+                  <div className="flex items-center justify-center gap-2 bg-gray-50 rounded-xl py-3 px-4 border border-gray-200">
+                    <span className="text-xl">📍</span>
+                    <span className="text-sm font-semibold text-gray-700">{validationData.activation_point}</span>
                   </div>
                 )}
                 
-                <div className="bg-gradient-to-br from-[#DC2626]/10 via-[#DC2626]/5 to-[#991b1b]/10 rounded-xl p-4 border-2 border-[#DC2626]/30">
-                  <p className="text-sm text-gray-700 font-semibold mb-1">
+                <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 border-2 border-emerald-200">
+                  <p className="text-sm text-gray-700 font-medium mb-2 text-center">
                     Escolha seu vale-presente de
                   </p>
-                  <p className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent">
+                  <p className="text-4xl sm:text-5xl font-black text-center bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
                     R$ 50,00
                   </p>
                 </div>
@@ -261,22 +282,22 @@ const ProviderBenefitChoice = () => {
           <div className="space-y-6">
             {/* Entrega Expressa - 24h */}
             {fastDeliveryBenefits.length > 0 && (
-              <div className="space-y-3">
-                <div className="bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 rounded-xl p-3 sm:p-4 shadow-xl border-2 border-emerald-300">
-                  <div className="flex items-center justify-center gap-2 sm:gap-3">
-                    <Zap className="h-6 w-6 sm:h-7 sm:w-7 text-white fill-white" />
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl p-4 shadow-lg">
+                  <div className="flex items-center justify-center gap-3">
+                    <Zap className="h-7 w-7 text-white fill-white" />
                     <div className="text-center">
-                      <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 justify-center">
+                      <h3 className="text-xl font-black text-white">
                         ENTREGA EM ATÉ 24 HORAS
                       </h3>
-                      <p className="text-white/95 text-xs sm:text-sm font-bold">
-                        Receba seu código rapidamente!
+                      <p className="text-white/95 text-sm font-semibold">
+                        Código por email rapidamente
                       </p>
                     </div>
-                    <Zap className="h-6 w-6 sm:h-7 sm:w-7 text-white fill-white" />
+                    <Zap className="h-7 w-7 text-white fill-white" />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {fastDeliveryBenefits.map((option) => (
                     <BenefitCard
                       key={option.id}
@@ -291,22 +312,22 @@ const ProviderBenefitChoice = () => {
 
             {/* Entrega Padrão - 3 dias */}
             {normalDeliveryBenefits.length > 0 && (
-              <div className="space-y-3">
-                <div className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-xl p-3 sm:p-4 shadow-xl border-2 border-blue-300">
-                  <div className="flex items-center justify-center gap-2 sm:gap-3">
-                    <Clock className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 shadow-lg">
+                  <div className="flex items-center justify-center gap-3">
+                    <Clock className="h-7 w-7 text-white" />
                     <div className="text-center">
-                      <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 justify-center">
+                      <h3 className="text-xl font-black text-white">
                         ENTREGA EM ATÉ 3 DIAS ÚTEIS
                       </h3>
-                      <p className="text-white/95 text-xs sm:text-sm font-bold">
-                        Grandes marcas e lojas!
+                      <p className="text-white/95 text-sm font-semibold">
+                        Grandes marcas para você
                       </p>
                     </div>
-                    <Clock className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                    <Clock className="h-7 w-7 text-white" />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {normalDeliveryBenefits.map((option) => (
                     <BenefitCard
                       key={option.id}
@@ -320,22 +341,30 @@ const ProviderBenefitChoice = () => {
             )}
           </div>
         </div>
-
-        {/* Confirmation Modal */}
-        {selectedBenefit && (
-          <ConfirmationModal
-            isOpen={isConfirmModalOpen}
-            onClose={() => {
-              setIsConfirmModalOpen(false);
-              setSelectedOption(null);
-            }}
-            onConfirm={handleConfirmChoice}
-            benefitName={selectedBenefit.name}
-            benefitIcon={selectedBenefit.icon}
-            deliveryDays={selectedBenefit.delivery_days}
-          />
-        )}
+        
+        {/* Footer */}
+        <footer className="mt-12 pb-8 text-center">
+          <p className="text-sm text-gray-500 font-medium">
+            EXA Mídia © 2025 - Publicidade Inteligente
+          </p>
+        </footer>
       </div>
+
+      {/* Confirmation Modal */}
+      {selectedBenefit && (
+        <ConfirmationModal
+          isOpen={isConfirmModalOpen}
+          onClose={() => {
+            setIsConfirmModalOpen(false);
+            setSelectedOption(null);
+          }}
+          onConfirm={handleConfirmChoice}
+          benefitName={selectedBenefit.name}
+          benefitIcon={selectedBenefit.icon}
+          deliveryDays={selectedBenefit.delivery_days}
+        />
+      )}
+      
       {/* Cache busting marker */}
       <div style={{ display: 'none' }} data-version={PAGE_VERSION} data-build={BUILD_TIME} />
     </>

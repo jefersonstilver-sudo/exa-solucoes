@@ -3,14 +3,18 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Gift, ArrowLeft } from 'lucide-react';
+import { Gift, ArrowLeft, Zap, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BenefitCard from '@/components/benefits/BenefitCard';
 import ConfirmationModal from '@/components/benefits/ConfirmationModal';
-import { benefitOptions, categoryLabels } from '@/data/benefitOptions';
+import { useBenefitOptions } from '@/hooks/useBenefitOptions';
+
+const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
 
 const BenefitPreview = () => {
   const navigate = useNavigate();
+  const { benefits: benefitOptions, isLoading } = useBenefitOptions();
+  
   const [previewData, setPreviewData] = useState({
     provider_name: 'João Silva',
     activation_point: 'Edifício Esmeralda - Centro',
@@ -18,7 +22,6 @@ const BenefitPreview = () => {
 
   const [selectedBenefit, setSelectedBenefit] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentCategory, setCurrentCategory] = useState<string>('shopping');
 
   const handleBenefitSelect = (benefitId: string) => {
     setSelectedBenefit(benefitId);
@@ -30,20 +33,26 @@ const BenefitPreview = () => {
     // No preview, apenas fecha o modal
   };
 
-  const groupedBenefits = benefitOptions.reduce((acc, benefit) => {
-    if (!acc[benefit.category]) {
-      acc[benefit.category] = [];
-    }
-    acc[benefit.category].push(benefit);
-    return acc;
-  }, {} as Record<string, typeof benefitOptions>);
+  const fastDeliveryBenefits = benefitOptions.filter(opt => opt.delivery_days === 1);
+  const normalDeliveryBenefits = benefitOptions.filter(opt => opt.delivery_days === 3);
 
   const selectedBenefitData = benefitOptions.find((b) => b.id === selectedBenefit);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#DC2626] mx-auto" />
+          <p className="text-gray-600 font-medium">Carregando benefícios...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#1a0000]">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] py-6 px-4 shadow-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      {/* Header Admin */}
+      <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] py-6 px-4 shadow-lg border-b-4 border-[#991b1b]">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <Button
@@ -55,23 +64,19 @@ const BenefitPreview = () => {
               Voltar para Admin
             </Button>
             <div className="text-sm bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full font-bold text-white border border-white/30">
-              MODO PREVIEW
+              🔍 MODO PREVIEW
             </div>
-          </div>
-          <div className="text-center">
-            <h1 className="text-5xl font-black text-white mb-2">EXA</h1>
-            <p className="text-white/80 font-medium">Publicidade que vive nos elevadores</p>
           </div>
         </div>
       </div>
 
       {/* Controles de Preview */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="bg-white rounded-3xl p-8 mb-8 shadow-2xl">
-          <h2 className="text-2xl font-black mb-6 text-gray-900">Configurar Preview</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl p-6 mb-6 shadow-lg border border-gray-200">
+          <h2 className="text-xl font-black mb-4 text-gray-900">⚙️ Configurar Preview</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="preview_name" className="font-bold text-gray-700">Nome do Prestador</Label>
+              <Label htmlFor="preview_name" className="font-bold text-gray-700 text-sm">Nome do Prestador</Label>
               <Input
                 id="preview_name"
                 value={previewData.provider_name}
@@ -79,11 +84,11 @@ const BenefitPreview = () => {
                   setPreviewData({ ...previewData, provider_name: e.target.value })
                 }
                 placeholder="Ex: João Silva"
-                className="rounded-2xl border-2 border-gray-200 focus:border-[#DC2626] py-6 text-base"
+                className="rounded-xl border-2 border-gray-200 focus:border-[#DC2626]"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="preview_point" className="font-bold text-gray-700">Ponto de Ativação</Label>
+              <Label htmlFor="preview_point" className="font-bold text-gray-700 text-sm">Ponto de Ativação</Label>
               <Input
                 id="preview_point"
                 value={previewData.activation_point}
@@ -91,80 +96,115 @@ const BenefitPreview = () => {
                   setPreviewData({ ...previewData, activation_point: e.target.value })
                 }
                 placeholder="Ex: Edifício Copacabana"
-                className="rounded-2xl border-2 border-gray-200 focus:border-[#DC2626] py-6 text-base"
+                className="rounded-xl border-2 border-gray-200 focus:border-[#DC2626]"
               />
             </div>
           </div>
         </div>
 
-        {/* Preview da Página */}
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+        {/* Preview da Página - Estilo Final */}
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+          {/* Header com Logo */}
+          <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+            <div className="px-6 py-4 flex items-center justify-center">
+              <img 
+                src={EXA_LOGO_URL} 
+                alt="EXA Mídia" 
+                className="h-12 w-auto object-contain"
+              />
+            </div>
+          </header>
+
           {/* Card de Boas-vindas */}
           <div className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] p-8">
-            <h2 className="text-4xl font-black text-white mb-2 flex items-center justify-center gap-3">
-              <span className="text-5xl">🎁</span>
-              Parabéns, {previewData.provider_name}!
-            </h2>
-            <p className="text-white/90 text-xl font-medium text-center">
-              Você ajudou a ativar mais um ponto EXA!
-            </p>
+            <div className="text-center space-y-2">
+              <div className="text-5xl mb-2">🎁</div>
+              <h2 className="text-3xl font-black text-white">
+                Parabéns, {previewData.provider_name}!
+              </h2>
+              <p className="text-white/90 text-base font-medium">
+                Você ativou um novo ponto EXA
+              </p>
+            </div>
           </div>
           
-          <div className="p-8 space-y-6">
+          <div className="p-6 space-y-6">
             {previewData.activation_point && (
-              <div className="flex items-center justify-center gap-2 text-gray-700 bg-gray-50 rounded-2xl py-4 px-6">
-                <span className="text-2xl">📍</span>
-                <span className="text-lg font-semibold">{previewData.activation_point}</span>
+              <div className="flex items-center justify-center gap-2 bg-gray-50 rounded-xl py-3 px-4 border border-gray-200">
+                <span className="text-xl">📍</span>
+                <span className="text-sm font-semibold text-gray-700">{previewData.activation_point}</span>
               </div>
             )}
             
-            <div className="bg-gradient-to-br from-[#DC2626]/10 to-[#DC2626]/5 rounded-2xl p-8 border-2 border-[#DC2626]/20">
-              <p className="text-xl text-gray-700 mb-2 font-medium text-center">
-                Escolha onde quer usar seu presente de
+            <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 border-2 border-emerald-200">
+              <p className="text-sm text-gray-700 font-medium mb-2 text-center">
+                Escolha seu vale-presente de
               </p>
-              <p className="text-5xl font-black bg-gradient-to-r from-[#DC2626] to-[#991b1b] bg-clip-text text-transparent text-center">
+              <p className="text-5xl font-black text-center bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
                 R$ 50,00
               </p>
             </div>
 
-            {/* Categorias */}
-            <div className="flex justify-center gap-3 flex-wrap">
-              {Object.keys(groupedBenefits).map((category) => (
-                <Button
-                  key={category}
-                  variant={currentCategory === category ? 'default' : 'outline'}
-                  onClick={() => setCurrentCategory(category)}
-                  className={
-                    currentCategory === category
-                      ? 'rounded-2xl font-bold px-6 py-6 bg-gradient-to-r from-[#DC2626] to-[#991b1b] hover:from-[#991b1b] hover:to-[#7f1d1d]'
-                      : 'rounded-2xl font-bold px-6 py-6 border-2 border-gray-300 hover:bg-gray-50'
-                  }
-                >
-                  {categoryLabels[category as keyof typeof categoryLabels]}
-                </Button>
-              ))}
-            </div>
-
-            {/* Opções de Benefícios */}
-            {Object.entries(groupedBenefits).map(([category, benefits]) => (
-              <div
-                key={category}
-                className={currentCategory === category ? 'block' : 'hidden'}
-              >
-                <h3 className="text-2xl font-black mb-6 text-center text-gray-900">
-                  {categoryLabels[category as keyof typeof categoryLabels]}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {benefits.map((benefit) => (
-                    <BenefitCard
-                      key={benefit.id}
-                      option={benefit}
-                      onSelect={handleBenefitSelect}
-                    />
-                  ))}
+            {/* Seções de Benefícios */}
+            <div className="space-y-6">
+              {/* Entrega Expressa */}
+              {fastDeliveryBenefits.length > 0 && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl p-4 shadow-lg">
+                    <div className="flex items-center justify-center gap-3">
+                      <Zap className="h-7 w-7 text-white fill-white" />
+                      <div className="text-center">
+                        <h3 className="text-xl font-black text-white">
+                          ENTREGA EM ATÉ 24 HORAS
+                        </h3>
+                        <p className="text-white/95 text-sm font-semibold">
+                          Código por email rapidamente
+                        </p>
+                      </div>
+                      <Zap className="h-7 w-7 text-white fill-white" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {fastDeliveryBenefits.map((benefit) => (
+                      <BenefitCard
+                        key={benefit.id}
+                        option={benefit}
+                        onSelect={handleBenefitSelect}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )}
+
+              {/* Entrega Padrão */}
+              {normalDeliveryBenefits.length > 0 && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 shadow-lg">
+                    <div className="flex items-center justify-center gap-3">
+                      <Clock className="h-7 w-7 text-white" />
+                      <div className="text-center">
+                        <h3 className="text-xl font-black text-white">
+                          ENTREGA EM ATÉ 3 DIAS ÚTEIS
+                        </h3>
+                        <p className="text-white/95 text-sm font-semibold">
+                          Grandes marcas para você
+                        </p>
+                      </div>
+                      <Clock className="h-7 w-7 text-white" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {normalDeliveryBenefits.map((benefit) => (
+                      <BenefitCard
+                        key={benefit.id}
+                        option={benefit}
+                        onSelect={handleBenefitSelect}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -177,6 +217,7 @@ const BenefitPreview = () => {
           onConfirm={handleConfirm}
           benefitName={selectedBenefitData.name}
           benefitIcon={selectedBenefitData.icon}
+          deliveryDays={selectedBenefitData.delivery_days}
         />
       )}
     </div>
