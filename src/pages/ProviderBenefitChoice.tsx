@@ -29,6 +29,7 @@ const getIconEmoji = (icon: string): string => {
     'Beer': '🍺',
     'Tv': '🎬',
     'Pizza': '🍕',
+    'Jeronimo': '🍔',
     'UtensilsCrossed': '🍔',
     'IceCream': '🍦',
     'Popcorn': '🍿',

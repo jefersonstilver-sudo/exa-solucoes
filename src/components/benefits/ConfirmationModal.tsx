@@ -43,6 +43,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       'Beer': '🍺',
       'Tv': '🎬',
       'Pizza': '🍕',
+      'Jeronimo': '🍔',
       'UtensilsCrossed': '🍔',
       'IceCream': '🍦',
       'Popcorn': '🍿',

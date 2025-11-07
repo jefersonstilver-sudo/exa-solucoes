@@ -47,6 +47,7 @@ const getIconEmoji = (icon: string): string => {
     'McDonald\'s': '🍔',
     'McDonalds': '🍔',
     'Madero': '🍔',
+    'Jeronimo': '🍔',
     'Zé Delivery': '🍺',
     'ZeDelivery': '🍺',
     'Ze Delivery': '🍺',
