@@ -93,9 +93,22 @@ export const useBenefitManagement = () => {
 
       if (error) throw error;
 
-      setBenefits((data || []) as ProviderBenefit[]);
-      console.log('✅ Benefits loaded:', data?.length || 0);
-      return data;
+      // Ordenar: primeiro os que precisam de código (escolheram mas ainda não têm código)
+      // Depois os demais por data de criação
+      const sortedData = (data || []).sort((a, b) => {
+        const aRequiresAction = a.benefit_choice && !a.gift_code && a.status !== 'cancelled';
+        const bRequiresAction = b.benefit_choice && !b.gift_code && b.status !== 'cancelled';
+        
+        if (aRequiresAction && !bRequiresAction) return -1;
+        if (!aRequiresAction && bRequiresAction) return 1;
+        
+        // Se ambos precisam de ação ou nenhum precisa, ordenar por data
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      setBenefits(sortedData as ProviderBenefit[]);
+      console.log('✅ Benefits loaded:', sortedData?.length || 0);
+      return sortedData;
     } catch (error: any) {
       console.error('❌ Erro ao listar benefícios:', error);
       toast.error('Erro ao carregar benefícios');

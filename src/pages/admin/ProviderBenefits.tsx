@@ -476,84 +476,124 @@ const ProviderBenefits = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {benefits.map((benefit) => (
-                    <TableRow key={benefit.id}>
-                      <TableCell className="font-medium">{benefit.provider_name}</TableCell>
-                      <TableCell>{benefit.provider_email}</TableCell>
-                      <TableCell>
-                        {benefit.activation_point || (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {benefit.benefit_choice ? (
-                          <span>{getBenefitName(benefit.benefit_choice)}</span>
-                        ) : (
-                          <span className="text-muted-foreground">Aguardando</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <BenefitStatusBadge status={benefit.status} />
-                      </TableCell>
-                      <TableCell>
-                        {benefit.gift_code ? (
-                          <code className="text-xs bg-muted px-2 py-1 rounded">
-                            {benefit.gift_code}
-                          </code>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(benefit.created_at), 'dd/MM/yyyy', {
-                          locale: ptBR,
-                        })}
-                      </TableCell>
-                      <TableCell className="text-right space-x-1">
-                        {benefit.status !== 'cancelled' && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => copyBenefitLink(benefit.access_token)}
-                              title="Copiar link"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                            {benefit.status === 'pending' && (
+                  {benefits.map((benefit) => {
+                    const requiresAction = benefit.benefit_choice && !benefit.gift_code && benefit.status !== 'cancelled';
+                    const selectedBenefitOption = benefit.benefit_choice 
+                      ? benefitOptions.find(b => b.id === benefit.benefit_choice) 
+                      : null;
+                    const deliveryTime = selectedBenefitOption?.delivery_days === 1 
+                      ? 'em até 24 horas' 
+                      : `em até ${selectedBenefitOption?.delivery_days || 3} dias`;
+
+                    return (
+                      <TableRow 
+                        key={benefit.id}
+                        className={requiresAction ? 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100' : ''}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {requiresAction && (
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                              </span>
+                            )}
+                            {benefit.provider_name}
+                          </div>
+                        </TableCell>
+                        <TableCell>{benefit.provider_email}</TableCell>
+                        <TableCell>
+                          {benefit.activation_point || (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {benefit.benefit_choice ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="font-medium">{getBenefitName(benefit.benefit_choice)}</span>
+                              {requiresAction && (
+                                <span className="text-xs text-amber-700 font-semibold flex items-center gap-1">
+                                  <span>⚡</span> Entrega {deliveryTime}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Aguardando</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <BenefitStatusBadge status={benefit.status} />
+                            {requiresAction && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-amber-500 text-white animate-pulse">
+                                AÇÃO NECESSÁRIA
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {benefit.gift_code ? (
+                            <code className="text-xs bg-muted px-2 py-1 rounded">
+                              {benefit.gift_code}
+                            </code>
+                          ) : requiresAction ? (
+                            <span className="text-amber-700 font-semibold text-xs">Aguardando código</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(benefit.created_at), 'dd/MM/yyyy', {
+                            locale: ptBR,
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right space-x-1">
+                          {benefit.status !== 'cancelled' && (
+                            <>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => resendInvitation(benefit.id)}
-                                title="Reenviar email"
+                                onClick={() => copyBenefitLink(benefit.access_token)}
+                                title="Copiar link"
                               >
-                                <Mail className="h-3 w-3" />
+                                <Copy className="h-3 w-3" />
                               </Button>
-                            )}
-                            {benefit.status === 'choice_made' && !benefit.gift_code && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleInsertCode(benefit.id)}
-                                title="Inserir código"
-                              >
-                                <Gift className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </>
-                        )}
-                        {benefit.status !== 'cancelled' && benefit.status !== 'code_sent' && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleCancelBenefit(benefit.id)}
-                            title="Cancelar benefício"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                              {benefit.status === 'pending' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => resendInvitation(benefit.id)}
+                                  title="Reenviar email"
+                                >
+                                  <Mail className="h-3 w-3" />
+                                </Button>
+                              )}
+                              {requiresAction && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleInsertCode(benefit.id)}
+                                  title="Inserir código"
+                                  className="bg-amber-500 hover:bg-amber-600 text-white animate-pulse"
+                                >
+                                  <Gift className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                          {benefit.status !== 'cancelled' && benefit.status !== 'code_sent' && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleCancelBenefit(benefit.id)}
+                              title="Cancelar benefício"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

@@ -177,6 +177,18 @@ const ProviderBenefitChoice = () => {
               <p className="text-base text-gray-700">
                 Em breve você receberá um email com o código do seu vale-presente de <strong className="text-2xl text-[#DC2626] font-black">R$ 50,00</strong>.
               </p>
+              {selectedBenefit && (
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-amber-900 mb-1">⚡ Prazo de Entrega</p>
+                  <p className="text-base text-amber-800">
+                    {selectedBenefit.delivery_days === 1 ? (
+                      <span className="font-bold">Até 24 horas</span>
+                    ) : (
+                      <span className="font-bold">Até {selectedBenefit.delivery_days} dias úteis</span>
+                    )}
+                  </p>
+                </div>
+              )}
               <div className="h-px bg-gray-200" />
               <p className="text-base text-gray-700 font-bold">
                 Obrigado por fazer parte da EXA MÍDIA! 🚀
@@ -270,6 +282,7 @@ const ProviderBenefitChoice = () => {
           onConfirm={handleConfirmChoice}
           benefitName={selectedBenefit.name}
           benefitIcon={selectedBenefit.icon}
+          deliveryDays={selectedBenefit.delivery_days}
         />
       )}
     </div>

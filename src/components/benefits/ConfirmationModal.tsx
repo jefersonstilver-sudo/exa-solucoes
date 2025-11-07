@@ -16,6 +16,7 @@ interface ConfirmationModalProps {
   onConfirm: () => void;
   benefitName: string;
   benefitIcon: string;
+  deliveryDays?: number;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -24,7 +25,11 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   onConfirm,
   benefitName,
   benefitIcon,
+  deliveryDays = 3,
 }) => {
+  const deliveryLabel = deliveryDays === 1 ? 'até 24 horas' : `até ${deliveryDays} dias úteis`;
+  const isFastDelivery = deliveryDays === 1;
+  
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent className="max-w-lg rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
@@ -46,6 +51,14 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 Você escolheu:
               </p>
               <p className="text-3xl font-black text-[#DC2626]">{benefitName}</p>
+            </div>
+            
+            {/* Badge de prazo de entrega */}
+            <div className={`${isFastDelivery ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} border-2 rounded-2xl p-4`}>
+              <p className={`text-sm font-bold ${isFastDelivery ? 'text-green-800' : 'text-blue-800'} flex items-center justify-center gap-2`}>
+                <span className="text-xl">{isFastDelivery ? '⚡' : '📦'}</span>
+                Você receberá o código <span className="underline">{deliveryLabel}</span>
+              </p>
             </div>
             
             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-6">

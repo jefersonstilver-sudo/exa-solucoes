@@ -9,8 +9,27 @@ interface BenefitCardProps {
 }
 
 const BenefitCard: React.FC<BenefitCardProps> = ({ option, onSelect, disabled = false }) => {
+  const deliveryLabel = option.delivery_days === 1 ? 'Até 24h' : `Até ${option.delivery_days} dias`;
+  const isFastDelivery = option.delivery_days === 1;
+  
   return (
     <div className="group relative bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100">
+      {/* Badge de entrega rápida */}
+      {isFastDelivery && (
+        <div className="absolute top-4 right-4 z-10 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+          <span>⚡</span>
+          <span>{deliveryLabel}</span>
+        </div>
+      )}
+      
+      {/* Badge de entrega normal */}
+      {!isFastDelivery && (
+        <div className="absolute top-4 right-4 z-10 bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+          <span>📦</span>
+          <span>{deliveryLabel}</span>
+        </div>
+      )}
+      
       {/* Gradiente de hover */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#DC2626]/0 via-[#DC2626]/0 to-[#DC2626]/0 group-hover:from-[#DC2626]/5 group-hover:via-[#DC2626]/10 group-hover:to-[#DC2626]/5 transition-all duration-500" />
       
