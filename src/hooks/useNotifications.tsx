@@ -29,8 +29,22 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      // Priorizar notificações urgentes
+      const sortedData = (data || []).sort((a, b) => {
+        // Notificações benefit_choice_made sempre no topo
+        if (a.type === 'benefit_choice_made' && b.type !== 'benefit_choice_made') return -1;
+        if (a.type !== 'benefit_choice_made' && b.type === 'benefit_choice_made') return 1;
+        
+        // Se não lida, vem antes
+        if (!a.is_read && b.is_read) return -1;
+        if (a.is_read && !b.is_read) return 1;
+        
+        // Senão, ordenar por data
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      setNotifications(sortedData);
+      setUnreadCount(sortedData.filter(n => !n.is_read).length || 0);
     } catch (error: any) {
       console.error('Erro ao carregar notificações:', error);
       toast.error('Erro ao carregar notificações');

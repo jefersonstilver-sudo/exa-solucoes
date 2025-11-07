@@ -41,6 +41,12 @@ const handler = async (req: Request): Promise<Response> => {
     const { type, data }: EmailRequest = await req.json();
     console.log(`Processing ${type} email request`);
 
+    // Inicializar cliente Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.49.4');
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
     if (type === "invitation") {
       const { provider_name, provider_email, access_token, activation_point } = data;
       const siteUrl = Deno.env.get('SITE_URL') || 'https://examidia.com.br';
@@ -63,7 +69,18 @@ const handler = async (req: Request): Promise<Response> => {
         token: access_token.substring(0, 15) + '...' // Log parcial por segurança
       });
 
-      const html = createInvitationHTML(provider_name, presentLink, activation_point);
+      // Buscar benefícios ativos do banco
+      const { data: benefits, error: benefitsError } = await supabaseClient
+        .from('available_benefits')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+
+      if (benefitsError) {
+        console.error('❌ Erro ao buscar benefícios:', benefitsError);
+      }
+
+      const html = createInvitationHTML(provider_name, presentLink, activation_point, benefits || []);
 
       const result = await resend.emails.send({
         from: "EXA Mídia <noreply@examidia.com.br>",
@@ -114,7 +131,32 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
-function createInvitationHTML(name: string, link: string, point?: string): string {
+interface Benefit {
+  id: string;
+  name: string;
+  subtitle?: string;
+  icon: string;
+  delivery_days: number;
+}
+
+function createInvitationHTML(name: string, link: string, point: string | undefined, benefits: Benefit[]): string {
+  // Separar benefícios por prazo de entrega
+  const fastDelivery = benefits.filter(b => b.delivery_days === 1);
+  const standardDelivery = benefits.filter(b => b.delivery_days > 1);
+
+  // Função para renderizar grid de benefícios
+  const renderBenefitGrid = (benefitList: Benefit[]) => {
+    return benefitList.map(benefit => `
+      <div style="background: #ffffff !important; border: 2px solid #E5E7EB; border-radius: 12px; padding: 20px; text-align: center; transition: all 0.3s ease;">
+        <div style="font-size: 48px; margin-bottom: 12px;">${benefit.icon}</div>
+        <h3 style="color: #1A1A1A !important; font-size: 16px; font-weight: 700; margin: 0 0 6px 0;">${benefit.name}</h3>
+        ${benefit.subtitle ? `<p style="color: #6B7280 !important; font-size: 13px; margin: 0 0 10px 0;">${benefit.subtitle}</p>` : ''}
+        <div style="display: inline-block; background-color: #DC2626 !important; color: #ffffff !important; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+          ${benefit.delivery_days === 1 ? '24h' : `${benefit.delivery_days} dias`}
+        </div>
+      </div>
+    `).join('');
+  };
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -293,6 +335,24 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
         color: #DC2626 !important;
       }
     }
+    .benefits-section {
+      margin: 35px 0;
+    }
+    .benefits-section h2 {
+      color: #1A1A1A !important;
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 0 20px 0;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 30px;
+    }
     @media only screen and (max-width: 600px) {
       .content {
         padding: 35px 25px;
@@ -303,6 +363,9 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
       .button {
         padding: 18px 40px;
         font-size: 16px;
+      }
+      .benefits-grid {
+        grid-template-columns: 1fr !important;
       }
     }
   </style>
@@ -318,9 +381,27 @@ function createInvitationHTML(name: string, link: string, point?: string): strin
         <p style="color: #333333 !important; text-align: center;">A cada painel instalado, a EXA celebra junto de quem esteve no campo!</p>
         ${point ? `<div class="highlight" style="background-color: #DC2626 !important;"><p style="color: #ffffff !important;">📍 Ponto ativado: ${point}</p></div>` : ''}
         <p style="color: #333333 !important; text-align: center;">Você é parte da <strong>revolução da atenção nos condomínios</strong>. Por isso, queremos te agradecer com um presente especial de <strong style="color: #DC2626; font-size: 22px;">R$ 50,00</strong>.</p>
+        
+        ${fastDelivery.length > 0 ? `
+        <div class="benefits-section">
+          <h2 style="color: #1A1A1A !important;">⚡ ENTREGA EM ATÉ 24H</h2>
+          <div class="benefits-grid">
+            ${renderBenefitGrid(fastDelivery)}
+          </div>
+        </div>
+        ` : ''}
+        
+        ${standardDelivery.length > 0 ? `
+        <div class="benefits-section">
+          <h2 style="color: #1A1A1A !important;">📦 ENTREGA EM ATÉ 3 DIAS</h2>
+          <div class="benefits-grid">
+            ${renderBenefitGrid(standardDelivery)}
+          </div>
+        </div>
+        ` : ''}
         <div style="text-align: center;">
           <a href="${link}" class="button" style="background-color: #DC2626 !important; color: #ffffff !important; text-decoration: none !important; display: inline-block; padding: 20px 50px; border-radius: 50px; font-weight: 700; font-size: 18px; margin: 28px 0; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);">
-            <span style="color: #ffffff !important; font-weight: 700;">🎁 ESCOLHER MEU PRESENTE</span>
+            <span style="color: #ffffff !important; font-weight: 700 !important; -webkit-text-fill-color: #ffffff !important;">🎁 ESCOLHER MEU PRESENTE</span>
           </a>
         </div>
         <div class="link-box" style="background-color: #F9FAFB !important; border: 2px solid #E5E7EB; padding: 20px; border-radius: 12px; margin-top: 28px; text-align: center;">

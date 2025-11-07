@@ -38,6 +38,14 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
+      case 'benefit_choice_made':
+        return <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />;
+      case 'benefit_created':
+        return <span className="text-lg">🎁</span>;
+      case 'benefit_code_sent':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'benefit_cancelled':
+        return <XCircle className="h-4 w-4 text-gray-500" />;
       case 'video_approved':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'video_rejected':
@@ -59,6 +67,14 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
 
   const getNotificationColor = (type: string) => {
     switch (type) {
+      case 'benefit_choice_made':
+        return 'border-l-red-500 bg-red-50/80 border-2 border-red-200';
+      case 'benefit_created':
+        return 'border-l-blue-500 bg-blue-50/50';
+      case 'benefit_code_sent':
+        return 'border-l-green-500 bg-green-50/50';
+      case 'benefit_cancelled':
+        return 'border-l-gray-500 bg-gray-50/50';
       case 'video_approved':
       case 'payment_confirmed':
       case 'payment_received':
@@ -97,7 +113,10 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
     }
 
     // Navegação baseada no tipo de notificação
-    if (notification.metadata?.pedido_id) {
+    if (notification.type.startsWith('benefit_')) {
+      navigate('/super_admin/beneficio-prestadores');
+      onClose();
+    } else if (notification.metadata?.pedido_id) {
       navigate(`/anunciante/pedido/${notification.metadata.pedido_id}`);
       onClose();
     }

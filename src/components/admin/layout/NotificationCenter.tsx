@@ -20,6 +20,11 @@ const NotificationCenter = () => {
   const navigate = useNavigate();
   const { basePath } = useAdminBasePath();
 
+  // Verificar se há notificações urgentes de benefício
+  const hasUrgentBenefits = notifications.some(
+    n => n.type === 'benefit_choice_made' && !n.is_read
+  );
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -33,6 +38,14 @@ const NotificationCenter = () => {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
+      case 'benefit_choice_made':
+        return '⚠️';
+      case 'benefit_created':
+        return '🎁';
+      case 'benefit_code_sent':
+        return '✅';
+      case 'benefit_cancelled':
+        return '❌';
       case 'sale':
         return '💰';
       case 'warning':
@@ -50,8 +63,11 @@ const NotificationCenter = () => {
       markAsRead(notification.id);
     }
 
-    // Se for notificação de venda, redirecionar para pedidos
-    if (notification.type === 'sale' && notification.metadata?.pedido_id) {
+    // Navegação baseada no tipo
+    if (notification.type.startsWith('benefit_')) {
+      navigate(`${basePath}/beneficio-prestadores`);
+      setIsOpen(false);
+    } else if (notification.type === 'sale' && notification.metadata?.pedido_id) {
       navigate(`${basePath}/pedidos/${notification.metadata.pedido_id}`);
       setIsOpen(false);
     }
@@ -67,11 +83,13 @@ const NotificationCenter = () => {
           size="sm" 
           className="relative p-2 hover:bg-accent hover:text-accent-foreground transition-colors rounded-md"
         >
-          <Bell className="h-5 w-5" />
+          <Bell className={hasUrgentBenefits ? "h-5 w-5 animate-pulse text-red-500" : "h-5 w-5"} />
           {unreadCount > 0 && (
             <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+              variant={hasUrgentBenefits ? "destructive" : "default"}
+              className={`absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs ${
+                hasUrgentBenefits ? 'animate-pulse' : ''
+              }`}
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
@@ -112,7 +130,11 @@ const NotificationCenter = () => {
               <div
                 key={notification.id}
                 className={`p-3 border-b hover:bg-accent cursor-pointer transition-colors ${
-                  !notification.is_read ? 'bg-accent/50 border-l-4 border-l-primary' : ''
+                  notification.type === 'benefit_choice_made' 
+                    ? 'bg-red-50 border-l-4 border-l-red-500 animate-pulse' 
+                    : !notification.is_read 
+                    ? 'bg-accent/50 border-l-4 border-l-primary' 
+                    : ''
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
