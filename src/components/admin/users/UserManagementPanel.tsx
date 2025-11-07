@@ -71,10 +71,25 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
   const [promoteToRole, setPromoteToRole] = useState('admin');
   const [promoting, setPromoting] = useState(false);
 
+  // Log quando props mudam
+  React.useEffect(() => {
+    console.log('📊 [USER_MANAGEMENT_PANEL] Props atualizadas:', {
+      usersCount: users.length,
+      loading,
+      users: users.slice(0, 3) // Primeiros 3 para debug
+    });
+  }, [users, loading]);
+
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  console.log('🔍 [FILTER] Resultado da busca:', {
+    searchTerm,
+    totalUsers: users.length,
+    filteredUsers: filteredUsers.length
+  });
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -582,8 +597,35 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
               <TableBody>
                 {filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                      {users.length === 0 ? 'Nenhum usuário encontrado' : 'Nenhum usuário corresponde à busca'}
+                    <TableCell colSpan={6} className="text-center py-12">
+                      <div className="flex flex-col items-center space-y-4">
+                        <div className="p-4 bg-yellow-50 rounded-full">
+                          {users.length === 0 ? (
+                            <Users className="h-12 w-12 text-yellow-600" />
+                          ) : (
+                            <Search className="h-12 w-12 text-gray-400" />
+                          )}
+                        </div>
+                        <div>
+                          {users.length === 0 ? (
+                            <>
+                              <p className="text-gray-900 font-semibold text-lg">Nenhum usuário encontrado no banco</p>
+                              <p className="text-sm text-gray-600 mt-2">Possíveis causas:</p>
+                              <ul className="text-sm text-gray-500 mt-2 space-y-1 text-left">
+                                <li>• Políticas RLS bloqueando acesso aos dados</li>
+                                <li>• Tabela de usuários vazia</li>
+                                <li>• Problemas de conexão com o Supabase</li>
+                              </ul>
+                              <p className="text-xs text-gray-400 mt-3">Verifique o console do navegador para logs detalhados</p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-gray-700 font-medium">Nenhum resultado encontrado</p>
+                              <p className="text-sm text-gray-500 mt-1">Tente ajustar os filtros de busca</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
