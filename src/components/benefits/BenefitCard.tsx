@@ -42,6 +42,14 @@ const getIconEmoji = (icon: string): string => {
     'Heart': '❤️',
     'Sparkles': '✨',
     'Star': '⭐',
+    // Marcas específicas
+    'McDonald\'s': '🍔',
+    'McDonalds': '🍔',
+    'Madero': '🍔',
+    'Zé Delivery': '🍺',
+    'ZeDelivery': '🍺',
+    'Ze Delivery': '🍺',
+    'Netflix': '🎬',
   };
   
   // Se o ícone já for um emoji, retorna ele
