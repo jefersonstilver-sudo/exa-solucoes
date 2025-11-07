@@ -26,14 +26,12 @@ import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import BenefitMobileList from '@/components/admin/benefits/BenefitMobileList';
 import BenefitMobileActions from '@/components/admin/benefits/BenefitMobileActions';
 import { ProviderBenefit } from '@/types/providerBenefits';
-import { useNotifications } from '@/hooks/useNotifications';
 
 const ProviderBenefits = () => {
   console.log('🎁 ProviderBenefits component rendering...');
   const { canManageProviderBenefits } = useUserPermissions();
   const navigate = useNavigate();
   const { isMobile } = useAdvancedResponsive();
-  const { notifications, markAsRead } = useNotifications();
   
   if (!canManageProviderBenefits) {
     return <Navigate to="/login" replace />;
@@ -49,18 +47,6 @@ const ProviderBenefits = () => {
     copyBenefitLink,
     cancelBenefit,
   } = useBenefitManagement();
-
-  // Marcar notificações de benefícios como lidas quando entrar na página
-  useEffect(() => {
-    const benefitNotifications = notifications.filter(
-      n => n.type.startsWith('benefit_') && !n.is_read
-    );
-    
-    if (benefitNotifications.length > 0) {
-      console.log(`📬 Marcando ${benefitNotifications.length} notificações de benefícios como lidas`);
-      benefitNotifications.forEach(n => markAsRead(n.id));
-    }
-  }, [notifications, markAsRead]);
 
   console.log('🎁 Benefits state:', { benefits, isLoading });
 
