@@ -1,20 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  CreditCard, 
-  Calendar, 
-  Clock, 
-  DollarSign, 
-  ChevronDown, 
-  ChevronUp,
-  CheckCircle,
-  Hash
-} from 'lucide-react';
+import { CreditCard, Calendar, Clock, DollarSign, ChevronDown, ChevronUp, CheckCircle, Hash } from 'lucide-react';
 import { ClickableLocationsDisplay } from './ClickableLocationsDisplay';
 import { CouponInfoDisplay } from './CouponInfoDisplay';
-
 interface PurchaseInfoCardProps {
   orderDetails: {
     created_at: string;
@@ -29,57 +18,58 @@ interface PurchaseInfoCardProps {
     cupom_id?: string;
   };
 }
-
-export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails }) => {
+export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
+  orderDetails
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
-
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
   };
-
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return {
       date: date.toLocaleDateString('pt-BR'),
-      time: date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      time: date.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     };
   };
-
   const getPaymentMethod = () => {
     if (orderDetails.log_pagamento?.payment_method) {
       return orderDetails.log_pagamento.payment_method === 'pix' ? 'PIX' : 'Cartão de Crédito';
     }
     return 'PIX'; // Default baseado no contexto
   };
-
   const getTransactionId = () => {
     const logPagamento = orderDetails.log_pagamento;
     if (!logPagamento) return 'N/A';
-    
-    return logPagamento.payment_id || 
-           logPagamento.external_reference || 
-           logPagamento.preferenceId ||
-           'N/A';
+    return logPagamento.payment_id || logPagamento.external_reference || logPagamento.preferenceId || 'N/A';
   };
-
   const getPaymentStatus = () => {
     if (orderDetails.log_pagamento?.payment_status === 'approved') {
-      return { label: 'Pagamento Aprovado', color: 'text-green-600' };
+      return {
+        label: 'Pagamento Aprovado',
+        color: 'text-green-600'
+      };
     }
-    
+
     // Status que indicam pagamento confirmado
     const paidStatuses = ['pago', 'pago_pendente_video', 'video_aprovado', 'ativo'];
-    
     if (paidStatuses.includes(orderDetails.status) || orderDetails.status.includes('pago')) {
-      return { label: 'Pagamento Confirmado', color: 'text-green-600' };
+      return {
+        label: 'Pagamento Confirmado',
+        color: 'text-green-600'
+      };
     }
-    
-    return { label: 'Processando', color: 'text-yellow-600' };
+    return {
+      label: 'Processando',
+      color: 'text-yellow-600'
+    };
   };
-
   const getContractPeriod = () => {
     if (orderDetails.data_inicio && orderDetails.data_fim) {
       const startDate = new Date(orderDetails.data_inicio).toLocaleDateString('pt-BR');
@@ -88,32 +78,23 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
     }
     return `${orderDetails.plano_meses} ${orderDetails.plano_meses === 1 ? 'mês' : 'meses'}`;
   };
-
   const purchaseDateTime = formatDateTime(orderDetails.created_at);
   const paymentStatus = getPaymentStatus();
   const transactionId = getTransactionId();
-
   console.log('💳 [PURCHASE_INFO] Dados do pedido:', {
     orderDetails,
     transactionId,
     paymentMethod: getPaymentMethod(),
     contractPeriod: getContractPeriod()
   });
-
-  return (
-    <Card>
+  return <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center">
             <CreditCard className="h-5 w-5 mr-2" />
             Informações de Compra
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="flex items-center">
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
         </CardTitle>
@@ -140,17 +121,7 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
           </div>
           
           {/* UPDATED: Usar nova coluna lista_predios com fallback para lista_paineis */}
-          <div className="flex items-center space-x-3">
-            <div>
-              <p className="text-sm text-gray-600">Locais Contratados</p>
-              <ClickableLocationsDisplay 
-                listaPaineis={orderDetails.lista_paineis || []}
-                listaPredios={orderDetails.lista_predios || []}
-                orderDetails={orderDetails}
-                className="mt-1"
-              />
-            </div>
-          </div>
+          
 
           <div className="flex items-center space-x-3">
             <CheckCircle className="h-6 w-6 text-green-500" />
@@ -162,19 +133,12 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
         </div>
 
         {/* Informações expandidas */}
-        {isExpanded && (
-          <div className="border-t pt-4 space-y-4">
+        {isExpanded && <div className="border-t pt-4 space-y-4">
             {/* Seção de Cupom (se aplicável) */}
-            {orderDetails.cupom_id && (
-              <div className="mb-6">
+            {orderDetails.cupom_id && <div className="mb-6">
                 <h4 className="font-semibold mb-3 text-green-800">Cupom Aplicado</h4>
-                <CouponInfoDisplay 
-                  cupomId={orderDetails.cupom_id}
-                  valorOriginal={orderDetails.valor_total}
-                  showDetails={true}
-                />
-              </div>
-            )}
+                <CouponInfoDisplay cupomId={orderDetails.cupom_id} valorOriginal={orderDetails.valor_total} showDetails={true} />
+              </div>}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -190,22 +154,17 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
                       <div className="flex items-center space-x-1">
                         <Hash className="h-3 w-3 text-gray-400" />
                         <span className="font-mono text-xs">
-                          {transactionId.length > 20 ? 
-                            `${transactionId.substring(0, 20)}...` : 
-                            transactionId
-                          }
+                          {transactionId.length > 20 ? `${transactionId.substring(0, 20)}...` : transactionId}
                         </span>
                       </div>
                     </div>
                   </div>
-                  {orderDetails.log_pagamento?.processed_at && (
-                    <div className="flex justify-between">
+                  {orderDetails.log_pagamento?.processed_at && <div className="flex justify-between">
                       <span className="text-gray-600">Processado em:</span>
                       <span className="text-xs">
                         {new Date(orderDetails.log_pagamento.processed_at).toLocaleString('pt-BR')}
                       </span>
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
 
@@ -223,9 +182,7 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({ orderDetails
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          </div>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
