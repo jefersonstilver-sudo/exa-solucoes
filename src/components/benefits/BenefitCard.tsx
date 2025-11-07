@@ -50,6 +50,12 @@ const getIconEmoji = (icon: string): string => {
     'ZeDelivery': '🍺',
     'Ze Delivery': '🍺',
     'Netflix': '🎬',
+    // Mapeamentos alternativos do banco de dados
+    'Beef': '🍔',
+    'Beer': '🍺',
+    'Tv': '🎬',
+    'IceCream2': '🍦',
+    'Popcorn2': '🍿',
   };
   
   // Se o ícone já for um emoji, retorna ele

@@ -30,19 +30,42 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   const deliveryLabel = deliveryDays === 1 ? 'até 24 horas' : `até ${deliveryDays} dias úteis`;
   const isFastDelivery = deliveryDays === 1;
   
+  // Mapear ícone para emoji se for texto
+  const getIconEmoji = (icon: string): string => {
+    const iconMap: Record<string, string> = {
+      'Beef': '🍔',
+      'Beer': '🍺',
+      'Tv': '🎬',
+      'IceCream': '🍦',
+      'IceCream2': '🍦',
+      'Popcorn': '🍿',
+      'Pizza': '🍕',
+    };
+    
+    // Se já for emoji, retorna
+    if (/\p{Emoji}/u.test(icon)) {
+      return icon;
+    }
+    
+    // Caso contrário, busca no mapeamento
+    return iconMap[icon] || icon;
+  };
+
+  const displayIcon = getIconEmoji(benefitIcon);
+
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent className="max-w-lg rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
+      <AlertDialogContent className="max-w-lg rounded-3xl p-0 overflow-hidden border-0 shadow-2xl bg-white z-[100]">
         <div className="bg-gradient-to-br from-[#DC2626] to-[#991b1b] p-8">
           <AlertDialogTitle className="text-center text-3xl font-black text-white">
             Confirmar sua escolha?
           </AlertDialogTitle>
         </div>
         
-        <div className="p-8">
+        <div className="p-8 bg-white">
           <AlertDialogDescription className="text-center space-y-6">
             <div className="relative inline-block">
-              <div className="text-8xl animate-bounce">{benefitIcon}</div>
+              <div className="text-8xl animate-bounce">{displayIcon}</div>
               <div className="absolute inset-0 bg-[#DC2626]/20 rounded-full blur-3xl" />
             </div>
             
@@ -69,7 +92,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           </AlertDialogDescription>
         </div>
         
-        <AlertDialogFooter className="p-6 pt-0 gap-3 flex-col sm:flex-row">
+        <AlertDialogFooter className="p-6 pt-0 gap-3 flex-col sm:flex-row bg-white">
           <AlertDialogCancel 
             onClick={onClose}
             className="flex-1 py-6 text-base font-bold rounded-2xl border-2 border-gray-300 hover:bg-gray-50 w-full sm:w-auto"
