@@ -109,7 +109,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const handleDirectUpload = async () => {
     if (!companyInfoComplete) {
       toast.error('Complete o cadastro da empresa antes de fazer upload');
-      navigate('/advertiser/settings');
+      navigate('/anunciante/configuracoes');
       return;
     }
 
@@ -192,7 +192,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
           Para fazer upload de vídeos, você precisa completar o cadastro da empresa/marca que será divulgada.
         </p>
         <Button
-          onClick={() => navigate('/advertiser/settings')}
+          onClick={() => navigate('/anunciante/configuracoes')}
           className="bg-amber-600 hover:bg-amber-700 text-white"
         >
           Completar Cadastro Agora
