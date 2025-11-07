@@ -304,6 +304,11 @@ const AppContent = () => {
                 <AdvertiserSettings />
               </Suspense>
             } />
+            <Route path="configuracoes" element={
+              <Suspense fallback={<GlobalLoadingPage message="Carregando configurações..." />}>
+                <AdvertiserSettings />
+              </Suspense>
+            } />
           </Route>
 
           {/* Rotas de autenticação */}
