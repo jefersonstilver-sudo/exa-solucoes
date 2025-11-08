@@ -265,20 +265,21 @@ export function ModernAdminSidebar() {
     }
   };
 
-  const collapsed = state === "collapsed";
+  // CRITICAL: Forçar sidebar expandido no mobile para mostrar textos
+  const collapsed = isMobile ? false : state === "collapsed";
 
-  // Auto-close sidebar on mobile after navigation
-  React.useEffect(() => {
-    if (isMobile && open) {
-      setOpen(false);
-    }
-  }, [location.pathname, isMobile, setOpen]);
+  // Remover auto-close automático - usuário fecha manualmente ou ao clicar em link
+  // React.useEffect(() => {
+  //   if (isMobile && open) {
+  //     setOpen(false);
+  //   }
+  // }, [location.pathname, isMobile, setOpen]);
 
   return (
     <Sidebar 
       className="h-screen bg-gradient-to-b from-[#180A0A] via-[#3B1E1E] to-[#9C1E1E] border-r border-white/20 shadow-2xl"
-      collapsible="icon"
-      variant={isMobile ? "floating" : isTablet ? "sidebar" : "sidebar"}
+      collapsible={isMobile ? "offcanvas" : "icon"}
+      variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ backgroundColor: '#180A0A' }}
     >
       <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-6'} border-b border-white/20 bg-[#180A0A]`}>
@@ -363,23 +364,29 @@ export function ModernAdminSidebar() {
                    const isActive = location.pathname === item.href;
                    const Icon = item.icon;
 
-                   const linkContent = (
-                     <NavLink
-                       to={item.href}
-                       className={`flex flex-row items-center ${collapsed ? 'px-3 py-3 gap-0 justify-center' : 'px-3 py-2.5 md:py-3 gap-2 md:gap-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
-                         isActive 
-                           ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
-                           : "text-white hover:bg-white/20 hover:text-white"
-                       }`}
-                     >
-                       <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4 md:h-5 md:w-5'} flex-shrink-0 transition-transform duration-200 group-hover:scale-110`} />
-                       {!collapsed && (
-                         <span className="text-xs md:text-sm font-semibold truncate whitespace-nowrap">
-                           {item.title}
-                         </span>
-                       )}
-                     </NavLink>
-                   );
+                    const linkContent = (
+                      <NavLink
+                        to={item.href}
+                        className={`flex flex-row items-center ${collapsed ? 'px-3 py-3 gap-0 justify-center' : 'px-4 py-4 gap-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
+                          isActive 
+                            ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
+                            : "text-white hover:bg-white/20 hover:text-white"
+                        }`}
+                        onClick={() => {
+                          // Auto-fechar sidebar no mobile após clicar
+                          if (isMobile) {
+                            setOpen(false);
+                          }
+                        }}
+                      >
+                        <Icon className={`${collapsed ? 'h-5 w-5' : isMobile ? 'h-6 w-6' : 'h-5 w-5'} flex-shrink-0 transition-transform duration-200 group-hover:scale-110`} />
+                        {!collapsed && (
+                          <span className={`${isMobile ? 'text-base' : 'text-sm'} font-semibold truncate`}>
+                            {item.title}
+                          </span>
+                        )}
+                      </NavLink>
+                    );
 
                    return (
                      <SidebarMenuItem key={item.href}>
