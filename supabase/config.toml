@@ -84,3 +84,12 @@ verify_jwt = false
 
 [functions.check-email-exists]
 verify_jwt = false
+
+[functions.create-admin-account]
+verify_jwt = true
+
+[functions.delete-user-account]
+verify_jwt = true
+
+[functions.cleanup-orphan-users]
+verify_jwt = true

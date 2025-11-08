@@ -21,7 +21,9 @@ import {
   UserCog,
   UserPlus,
   Info,
-  DollarSign
+  DollarSign,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -51,6 +53,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   const { updateUserRole, loading: secureLoading } = useSecureAdmin();
 
   // Filter team members - role now comes from users_with_role view (secure)
@@ -169,6 +172,40 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
     setCreateDialogOpen(false);
   };
 
+  const handleCleanupOrphans = async () => {
+    try {
+      setCleanupLoading(true);
+      console.log('🧹 Iniciando limpeza de emails órfãos...');
+
+      const { data, error } = await supabase.functions.invoke('cleanup-orphan-users', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Limpeza concluída:', data);
+      
+      toast.success(
+        `Limpeza concluída! ${data.orphansDeleted} email(s) órfão(s) removido(s) do auth.`,
+        { duration: 5000 }
+      );
+
+      if (data.failedDeletes > 0) {
+        toast.warning(
+          `${data.failedDeletes} email(s) falharam ao deletar. Verifique os logs.`,
+          { duration: 5000 }
+        );
+      }
+
+      onRefresh();
+    } catch (error: any) {
+      console.error('❌ Erro na limpeza:', error);
+      toast.error(`Erro: ${error.message || 'Falha ao limpar emails órfãos'}`);
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <SecurityAuditBanner />
@@ -184,6 +221,15 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
           </p>
         </div>
         <div className="flex space-x-3">
+          <Button 
+            onClick={handleCleanupOrphans}
+            disabled={cleanupLoading}
+            variant="outline"
+            className="border-red-300 text-red-700 hover:bg-red-50 flex items-center"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {cleanupLoading ? 'Limpando...' : 'Limpar Órfãos'}
+          </Button>
           <Button 
             onClick={() => setCreateDialogOpen(true)}
             className="bg-indexa-purple hover:bg-indexa-purple/90 text-white flex items-center"
