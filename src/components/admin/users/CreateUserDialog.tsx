@@ -289,7 +289,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
           {/* Nome e Sobrenome */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="nome" className="text-black flex items-center gap-1">
+              <Label htmlFor="nome" className="text-black">
                 Nome <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -312,7 +312,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             </div>
 
             <div>
-              <Label htmlFor="sobrenome" className="text-black flex items-center gap-1">
+              <Label htmlFor="sobrenome" className="text-black">
                 Sobrenome <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -337,7 +337,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
 
           {/* Email */}
           <div>
-            <Label htmlFor="email" className="text-black flex items-center gap-1">
+            <Label htmlFor="email" className="text-black">
               Email <span className="text-red-500">*</span>
             </Label>
             <div className="relative">
@@ -380,11 +380,11 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
           {/* CPF/Documento */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="cpf" className="text-black flex items-center gap-1">
+              <Label htmlFor="cpf" className="text-black">
                 CPF/Documento
-                {documentoObrigatorio && <span className="text-red-500">*</span>}
+                {documentoObrigatorio && <span className="text-red-500 ml-1">*</span>}
                 {!documentoObrigatorio && (
-                  <span className="text-xs text-gray-500 font-normal">(Opcional)</span>
+                  <span className="text-xs text-gray-500 font-normal ml-1">(Opcional)</span>
                 )}
               </Label>
               <div className="flex items-center gap-2">
@@ -425,7 +425,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
 
           {/* Tipo de Conta */}
           <div>
-            <Label htmlFor="role" className="text-black flex items-center gap-1">
+            <Label htmlFor="role" className="text-black">
               Tipo de Conta <span className="text-red-500">*</span>
             </Label>
             <Select value={role} onValueChange={setRole}>
