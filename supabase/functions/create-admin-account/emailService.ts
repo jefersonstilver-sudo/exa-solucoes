@@ -14,8 +14,15 @@ export const sendAdminWelcomeEmail = async (
   try {
     console.log(`📧 [EMAIL] Enviando email de boas-vindas profissional para ${data.email}`);
     
-    const Resend = (await import('npm:resend@4.0.0')).Resend;
-    const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+    // Verificar se tem API key
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('❌ [EMAIL] RESEND_API_KEY não configurada');
+      return { success: false, error: 'RESEND_API_KEY não configurada' };
+    }
+    
+    const { Resend } = await import('npm:resend@4.0.0');
+    const resend = new Resend(resendApiKey);
     
     const siteUrl = Deno.env.get('SITE_URL') || 'https://www.examidia.com.br';
     
@@ -28,6 +35,8 @@ export const sendAdminWelcomeEmail = async (
       loginUrl: `${siteUrl}/login`
     });
     
+    console.log('📤 [EMAIL] Enviando via Resend para:', data.email);
+    
     const { data: emailData, error } = await resend.emails.send({
       // TODO: Após verificar domínio examidia.com.br no Resend, mudar para:
       // from: 'EXA Mídia Notificações <notificacoes@examidia.com.br>',
@@ -39,7 +48,7 @@ export const sendAdminWelcomeEmail = async (
 
     if (error) {
       console.error('❌ [EMAIL] Erro ao enviar email:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || String(error) };
     }
 
     console.log('✅ [EMAIL] Email profissional enviado com sucesso:', emailData);
@@ -47,6 +56,6 @@ export const sendAdminWelcomeEmail = async (
     
   } catch (error: any) {
     console.error('💥 [EMAIL] Erro crítico ao enviar email:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error?.message || String(error) };
   }
 };
