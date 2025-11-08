@@ -19,22 +19,18 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
       } as React.CSSProperties}
     >
       <div className="flex h-screen w-full bg-background overflow-hidden">
-        {/* Esconder sidebar no mobile - usar apenas MobileBottomNav */}
-        {!isMobile && (
-          <div className="relative z-30"><ModernAdminSidebar /></div>
-        )}
+        {/* Sidebar sempre renderizada, mas em modo drawer/overlay no mobile */}
+        <div className="relative z-30"><ModernAdminSidebar /></div>
         <SidebarInset className="flex flex-col w-full overflow-x-hidden">
-          {/* Header with hamburger menu - visible apenas no desktop/tablet */}
+          {/* Header with hamburger menu - sempre visível */}
           <header className={`sticky top-0 z-10 h-16 md:h-20 flex items-center border-b px-3 md:px-6 shadow-lg ${
             isMobile 
               ? 'bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-white/20' 
               : 'bg-background border-border'
           }`}>
-            {!isMobile && (
-              <SidebarTrigger className={`mr-3 md:mr-4 h-9 w-9 rounded-md transition-colors touch-target ${
-                isMobile ? 'hover:bg-white/20 text-white' : 'hover:bg-accent text-foreground'
-              }`} />
-            )}
+            <SidebarTrigger className={`mr-3 md:mr-4 h-9 w-9 rounded-md transition-colors touch-target ${
+              isMobile ? 'hover:bg-white/20 text-white' : 'hover:bg-accent text-foreground'
+            }`} />
             <ModernAdminHeader />
           </header>
           <main className={`flex-1 p-3 md:p-6 overflow-y-auto bg-background min-h-0 overflow-x-hidden ${isMobile ? 'pb-20' : ''}`}>
