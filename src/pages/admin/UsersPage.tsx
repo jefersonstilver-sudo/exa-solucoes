@@ -22,10 +22,14 @@ interface User {
   role: string;
   data_criacao: string;
   nome?: string;
-  email_confirmed_at?: string;
-  last_sign_in_at?: string;
-  raw_user_meta_data?: any;
-  banned_until?: string;
+  telefone?: string;
+  cpf?: string;
+  documento_estrangeiro?: string;
+  email_verified_at?: string;
+  avatar_url?: string;
+  tipo_documento?: string;
+  documento_frente_url?: string;
+  documento_verso_url?: string;
 }
 
 const UsersPage = () => {
@@ -43,10 +47,10 @@ const UsersPage = () => {
       setLoading(true);
       console.log('👥 [USERS_PAGE] Iniciando busca de usuários...');
 
-      // Buscar diretamente da tabela users
+      // Buscar todos os dados da tabela users
       const { data, error, status } = await supabase
         .from('users')
-        .select('id, email, role, data_criacao, nome')
+        .select('*')
         .order('data_criacao', { ascending: false });
 
       console.log('📊 [USERS_PAGE] Resposta da query:', {
@@ -307,7 +311,7 @@ const UsersPage = () => {
     total: users.length,
     indexaTeam: indexaTeam.length,
     clients: clients.length,
-    verified: users.filter((u) => u.email_confirmed_at).length,
+    verified: users.filter((u) => u.email_verified_at).length,
   };
 
   return (
