@@ -18,10 +18,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Crown, Shield, UserCheck, Loader2, DollarSign, AlertCircle } from 'lucide-react';
+import { Crown, Shield, UserCheck, Loader2, DollarSign, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useEmailCheck } from '@/hooks/useEmailCheck';
+import ExistingUserAlert from './ExistingUserAlert';
 
 // Schema de validação
 const createUserSchema = z.object({
@@ -69,6 +71,8 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   const [documentoObrigatorio, setDocumentoObrigatorio] = useState(false);
   const [creating, setCreating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showExistingAlert, setShowExistingAlert] = useState(false);
+  const { checking: checkingEmail, result: emailCheckResult, checkEmail } = useEmailCheck();
 
   // Função para formatar CPF automaticamente
   const formatCPF = (value: string) => {
@@ -121,10 +125,26 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
     }
   };
 
+  const handleEmailBlur = async () => {
+    if (email && email.includes('@')) {
+      const result = await checkEmail(email);
+      if (result.exists) {
+        setShowExistingAlert(true);
+      }
+    }
+  };
+
   const handleCreate = async () => {
     // Validar formulário
     if (!validateForm()) {
       toast.error('Por favor, corrija os erros no formulário');
+      return;
+    }
+
+    // Verificar email novamente antes de criar
+    const emailCheck = await checkEmail(email);
+    if (emailCheck.exists) {
+      setShowExistingAlert(true);
       return;
     }
 
@@ -292,21 +312,39 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             <Label htmlFor="email" className="text-black flex items-center gap-1">
               Email <span className="text-red-500">*</span>
             </Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@exemplo.com"
-              className={`bg-white border-gray-300 text-black ${
-                errors.email ? 'border-red-500' : ''
-              }`}
-              maxLength={255}
-            />
+            <div className="relative">
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={handleEmailBlur}
+                placeholder="admin@exemplo.com"
+                className={`bg-white border-gray-300 text-black ${
+                  errors.email ? 'border-red-500' : ''
+                } ${emailCheckResult?.exists ? 'border-amber-500' : ''}`}
+                maxLength={255}
+              />
+              {checkingEmail && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+              )}
+              {emailCheckResult?.exists && !checkingEmail && (
+                <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+              )}
+              {email && !emailCheckResult?.exists && !checkingEmail && email.includes('@') && (
+                <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+              )}
+            </div>
             {errors.email && (
               <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
                 {errors.email}
+              </p>
+            )}
+            {emailCheckResult?.exists && !errors.email && (
+              <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                Este email já está cadastrado. Clique para ver detalhes.
               </p>
             )}
           </div>
@@ -409,7 +447,10 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={creating}>
             Cancelar
           </Button>
-          <Button onClick={handleCreate} disabled={creating}>
+          <Button 
+            onClick={handleCreate} 
+            disabled={creating || checkingEmail || emailCheckResult?.exists}
+          >
             {creating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -421,6 +462,15 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Alert de Email Existente */}
+      <ExistingUserAlert
+        open={showExistingAlert}
+        onOpenChange={setShowExistingAlert}
+        email={email}
+        role={emailCheckResult?.role}
+        nome={emailCheckResult?.nome}
+      />
     </Dialog>
   );
 };
