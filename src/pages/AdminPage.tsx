@@ -9,12 +9,24 @@ import AdminRoutes from '@/routes/AdminRoutes';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const AdminPage = () => {
+  console.log('🏛️ [ADMIN_PAGE] Componente renderizado');
+  
   const { userProfile, isLoading, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (isLoading) return;
+    console.log('🔄 [ADMIN_PAGE] useEffect executado', {
+      isLoading,
+      isLoggedIn,
+      userRole: userProfile?.role,
+      pathname: location.pathname
+    });
+    
+    if (isLoading) {
+      console.log('⏳ [ADMIN_PAGE] Aguardando carregamento...');
+      return;
+    }
 
     const isAdminRole = ['admin', 'admin_marketing', 'admin_financeiro'].includes(userProfile?.role || '');
     const isSuperAdmin = userProfile?.role === 'super_admin';
@@ -30,7 +42,7 @@ const AdminPage = () => {
 
     // Verificação de autenticação (email confirmado é verificado no login)
     if (!isLoggedIn || (!isAdminRole && !isSuperAdmin)) {
-      console.log('🚫 AdminPage: Acesso negado');
+      console.log('🚫 AdminPage: Acesso negado - redirecionando para login');
       toast.error('Acesso restrito a administradores');
       navigate('/login?redirect=/admin', { replace: true });
       return;
@@ -42,6 +54,8 @@ const AdminPage = () => {
       navigate('/super_admin', { replace: true });
       return;
     }
+    
+    console.log('✅ [ADMIN_PAGE] Proteção aprovada, renderizando conteúdo');
 
   }, [userProfile, isLoading, isLoggedIn, location.pathname, navigate]);
 

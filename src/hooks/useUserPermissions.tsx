@@ -16,12 +16,20 @@ export const useUserPermissions = () => {
 
   // Carregar permissões customizadas do banco
   useEffect(() => {
+    console.log('🔍 [useUserPermissions] useEffect iniciado', {
+      userId: userProfile?.id,
+      userRole: userProfile?.role
+    });
+    
     const loadCustomPermissions = async () => {
       if (!userProfile?.id) {
+        console.log('⏸️ [useUserPermissions] Sem userId, pulando');
         setIsLoadingCustom(false);
         return;
       }
 
+      console.log('🔎 [useUserPermissions] Buscando permissões customizadas para:', userProfile.id);
+      
       try {
         const { data, error } = await supabase
           .from('user_custom_permissions')
@@ -30,11 +38,12 @@ export const useUserPermissions = () => {
           .maybeSingle();
 
         if (error) {
-          console.error('Erro ao carregar permissões customizadas:', error);
+          console.error('❌ [useUserPermissions] Erro ao carregar:', error);
         }
 
         // Converter snake_case do banco para camelCase do TypeScript
         if (data) {
+          console.log('✅ [useUserPermissions] Permissões customizadas encontradas:', data);
           const converted: Partial<UserPermissions> = {
             canViewDashboard: data.can_view_dashboard,
             canViewOrders: data.can_view_orders,
@@ -50,13 +59,16 @@ export const useUserPermissions = () => {
             canViewFinancialReports: data.can_view_financial_reports,
           };
           setCustomPermissions(converted);
+          console.log('🎯 [useUserPermissions] Permissões convertidas:', converted);
         } else {
+          console.log('ℹ️ [useUserPermissions] Nenhuma permissão customizada encontrada');
           setCustomPermissions(null);
         }
       } catch (err) {
-        console.error('Erro ao carregar permissões customizadas:', err);
+        console.error('❌ [useUserPermissions] Erro inesperado:', err);
       } finally {
         setIsLoadingCustom(false);
+        console.log('✅ [useUserPermissions] Carregamento finalizado');
       }
     };
 
