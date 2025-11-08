@@ -55,47 +55,57 @@ const InsertCodeModal: React.FC<InsertCodeModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Inserir Código/Link do Vale-Presente</DialogTitle>
-          <DialogDescription>
-            Insira o código ou link do vale-presente para <strong>{providerName}</strong>.
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="text-xl font-semibold">Inserir Vale-Presente</DialogTitle>
+          <DialogDescription className="text-sm">
+            Insira o código ou link para <strong>{providerName}</strong>
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              <strong>Prestador:</strong> {providerName}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              <strong>Presente escolhido:</strong> {benefitChoice}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              <strong>Prazo de entrega:</strong> Até {deliveryDays} dia{deliveryDays > 1 ? 's' : ''} útil{deliveryDays > 1 ? 'eis' : ''}
-            </p>
+        <div className="space-y-5 py-4">
+          {/* Info Card */}
+          <div className="bg-muted/30 rounded-lg p-4 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Prestador:</span>
+              <span className="font-medium">{providerName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Presente:</span>
+              <span className="font-medium">{benefitChoice}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Prazo:</span>
+              <span className="font-medium">Até {deliveryDays} dia{deliveryDays > 1 ? 's' : ''}</span>
+            </div>
           </div>
 
+          {/* Delivery Type */}
           <div className="space-y-3">
-            <Label>Tipo de Entrega</Label>
-            <RadioGroup value={deliveryType} onValueChange={(value) => setDeliveryType(value as 'code' | 'link')}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="code" id="code-type" />
-                <Label htmlFor="code-type" className="cursor-pointer font-normal">
+            <Label className="text-base font-medium">Tipo de Entrega</Label>
+            <RadioGroup 
+              value={deliveryType} 
+              onValueChange={(value) => setDeliveryType(value as 'code' | 'link')}
+              className="space-y-3"
+            >
+              <div className="flex items-center space-x-3 p-3 rounded-lg border border-input hover:bg-accent/50 transition-colors cursor-pointer">
+                <RadioGroupItem value="code" id="code-type" className="mt-0" />
+                <Label htmlFor="code-type" className="cursor-pointer font-normal flex-1 leading-tight">
                   Código do Vale-Presente
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="link" id="link-type" />
-                <Label htmlFor="link-type" className="cursor-pointer font-normal">
+              <div className="flex items-center space-x-3 p-3 rounded-lg border border-input hover:bg-accent/50 transition-colors cursor-pointer">
+                <RadioGroupItem value="link" id="link-type" className="mt-0" />
+                <Label htmlFor="link-type" className="cursor-pointer font-normal flex-1 leading-tight">
                   Link de Resgate
                 </Label>
               </div>
             </RadioGroup>
           </div>
 
+          {/* Code/Link Input */}
           <div className="space-y-2">
-            <Label htmlFor="code">
+            <Label htmlFor="code" className="text-base font-medium">
               {deliveryType === 'code' ? 'Código do Vale' : 'Link de Resgate'}
             </Label>
             <Input
@@ -103,37 +113,48 @@ const InsertCodeModal: React.FC<InsertCodeModalProps> = ({
               placeholder={deliveryType === 'code' ? 'Ex: ABCD-1234-EFGH' : 'https://exemplo.com/resgate/...'}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="font-mono"
+              className="font-mono h-12 text-base"
+              autoComplete="off"
             />
           </div>
 
+          {/* Instructions */}
           <div className="space-y-2">
-            <Label htmlFor="instructions">Instruções de Resgate</Label>
+            <Label htmlFor="instructions" className="text-base font-medium">
+              Instruções de Resgate <span className="text-muted-foreground font-normal text-sm">(opcional)</span>
+            </Label>
             <Textarea
               id="instructions"
               placeholder="Ex: Acesse o site, clique em 'Resgatar', insira o código e pronto!"
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              rows={4}
-              className="resize-none"
+              rows={3}
+              className="resize-none text-base"
             />
-            <p className="text-xs text-muted-foreground">
-              Essas instruções serão enviadas por email ao prestador junto com o código/link.
-            </p>
           </div>
 
-          <div className="bg-muted/50 p-3 rounded-lg">
-            <p className="text-xs text-muted-foreground">
-              ⚠️ Após confirmar, um email será enviado automaticamente ao prestador com todas as informações.
+          {/* Warning */}
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 p-3 rounded-lg">
+            <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+              💌 Um email será enviado automaticamente ao prestador com todas as informações após a confirmação.
             </p>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isLoading}>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            disabled={isLoading}
+            className="flex-1 sm:flex-none h-11"
+          >
             Cancelar
           </Button>
-          <Button onClick={handleConfirm} disabled={!code.trim() || isLoading}>
+          <Button 
+            onClick={handleConfirm} 
+            disabled={!code.trim() || isLoading}
+            className="flex-1 sm:flex-none h-11"
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
