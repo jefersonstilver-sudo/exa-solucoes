@@ -249,6 +249,86 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!user || !isSuperAdmin) return;
+
+    // Confirmação dupla para segurança
+    const confirmFirst = window.confirm(
+      `⚠️ ATENÇÃO: Você está prestes a DELETAR permanentemente a conta de:\n\n` +
+      `Email: ${user.email}\n` +
+      `Nome: ${editData.name || 'N/A'}\n` +
+      `Role: ${getRoleLabel(selectedRole)}\n\n` +
+      `Esta ação é IRREVERSÍVEL!\n\n` +
+      `Deseja continuar?`
+    );
+
+    if (!confirmFirst) return;
+
+    const confirmSecond = window.confirm(
+      `🚨 CONFIRMAÇÃO FINAL:\n\n` +
+      `Tem CERTEZA ABSOLUTA que deseja deletar esta conta?\n\n` +
+      `Todos os dados serão PERMANENTEMENTE removidos:\n` +
+      `• Dados de autenticação\n` +
+      `• Perfil do usuário\n` +
+      `• Histórico de atividades\n` +
+      `• Todas as relações no sistema\n\n` +
+      `Digite "DELETAR" no próximo prompt para confirmar.`
+    );
+
+    if (!confirmSecond) return;
+
+    const finalConfirm = window.prompt(
+      `Digite exatamente "DELETAR" (em maiúsculas) para confirmar a eliminação da conta ${user.email}:`
+    );
+
+    if (finalConfirm !== 'DELETAR') {
+      toast.error('Deleção cancelada', {
+        description: 'Texto de confirmação incorreto'
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      console.log('🗑️ [DELETE_ACCOUNT] Iniciando deleção:', user.email);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/delete-user-account`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify({ userId: user.id })
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao deletar conta');
+      }
+
+      toast.success('✅ Conta deletada com sucesso', {
+        description: `${user.email} foi permanentemente removido do sistema`
+      });
+
+      onOpenChange(false);
+      onUserUpdated();
+    } catch (error: any) {
+      console.error('❌ Erro ao deletar conta:', error);
+      toast.error('Erro ao deletar conta', {
+        description: error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!user) return null;
 
   // BLOQUEAR se email não confirmado
@@ -466,6 +546,47 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Zona de Perigo - SUPER ADMIN ONLY */}
+                {isSuperAdmin && (
+                  <Card className="border-2 border-red-500/50 bg-red-50/50 dark:bg-red-950/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2 text-red-700 dark:text-red-400">
+                        <AlertCircle className="h-5 w-5" />
+                        ⚠️ Zona de Perigo
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-red-700 dark:text-red-300">
+                        Ações irreversíveis que afetam permanentemente esta conta.
+                      </p>
+                      <Separator className="bg-red-200 dark:bg-red-800" />
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-red-900 dark:text-red-100">
+                          🗑️ Eliminar Conta Permanentemente
+                        </p>
+                        <p className="text-xs text-red-700 dark:text-red-300">
+                          Remove TODOS os dados do usuário do sistema de forma irreversível:
+                          autenticação, perfil, histórico, pedidos e todas as relações.
+                        </p>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleDeleteAccount}
+                          disabled={loading}
+                          className="w-full bg-red-600 hover:bg-red-700"
+                        >
+                          {loading ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4 mr-2" />
+                          )}
+                          Eliminar Conta Permanentemente
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               {/* Tab: Permissões */}

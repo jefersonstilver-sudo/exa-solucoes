@@ -30,50 +30,64 @@ interface UserActivityTimelineProps {
 }
 
 const getActivityIcon = (actionType: string) => {
-  switch (actionType) {
-    case 'login':
-      return <LogIn className="h-4 w-4 text-green-500" />;
-    case 'logout':
-      return <LogOut className="h-4 w-4 text-gray-500" />;
-    case 'permission_change':
-      return <Shield className="h-4 w-4 text-blue-500" />;
-    case 'role_change':
-      return <UserCog className="h-4 w-4 text-purple-500" />;
-    case 'password_reset':
-      return <Key className="h-4 w-4 text-orange-500" />;
-    default:
-      return <Activity className="h-4 w-4 text-gray-500" />;
-  }
+  const type = actionType.toLowerCase();
+  if (type.includes('login') || type.includes('signin')) return <LogIn className="h-4 w-4 text-green-500" />;
+  if (type.includes('logout') || type.includes('signout')) return <LogOut className="h-4 w-4 text-gray-500" />;
+  if (type.includes('permission')) return <Shield className="h-4 w-4 text-blue-500" />;
+  if (type.includes('role') || type.includes('admin')) return <UserCog className="h-4 w-4 text-purple-500" />;
+  if (type.includes('password') || type.includes('reset')) return <Key className="h-4 w-4 text-orange-500" />;
+  return <Activity className="h-4 w-4 text-gray-500" />;
 };
 
 const getActivityBadgeColor = (actionType: string) => {
-  switch (actionType) {
-    case 'login':
-      return 'bg-green-100 text-green-800 border-green-200';
-    case 'logout':
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-    case 'permission_change':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'role_change':
-      return 'bg-purple-100 text-purple-800 border-purple-200';
-    case 'password_reset':
-      return 'bg-orange-100 text-orange-800 border-orange-200';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
+  const type = actionType.toLowerCase();
+  if (type.includes('login') || type.includes('signin')) return 'bg-green-50 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300';
+  if (type.includes('logout') || type.includes('signout')) return 'bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-900 dark:text-gray-300';
+  if (type.includes('permission')) return 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300';
+  if (type.includes('role') || type.includes('admin')) return 'bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-300';
+  if (type.includes('password') || type.includes('reset')) return 'bg-orange-50 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-300';
+  if (type.includes('delete') || type.includes('remove')) return 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300';
+  if (type.includes('create') || type.includes('add')) return 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300';
+  if (type.includes('update') || type.includes('edit')) return 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300';
+  return 'bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-900 dark:text-gray-300';
 };
 
 const formatActionType = (actionType: string): string => {
   const map: Record<string, string> = {
-    'login': 'Login',
-    'logout': 'Logout',
-    'permission_change': 'Mudança de Permissão',
-    'role_change': 'Mudança de Função',
-    'password_reset': 'Reset de Senha',
-    'profile_update': 'Atualização de Perfil',
-    'account_created': 'Conta Criada'
+    'login': '🟢 Login',
+    'logout': '⚪ Logout',
+    'permission_change': '🔵 Mudança de Permissão',
+    'role_change': '🟣 Mudança de Função',
+    'password_reset': '🟠 Reset de Senha',
+    'profile_update': '🟡 Atualização de Perfil',
+    'account_created': '🟢 Conta Criada',
+    'ADMIN_ACCOUNT_DELETED': '🔴 Conta Deletada',
+    'view': '👁️ Visualização',
+    'create': '➕ Criação',
+    'update': '✏️ Atualização',
+    'delete': '🗑️ Exclusão',
+    'export': '📤 Exportação'
   };
-  return map[actionType] || actionType;
+  
+  // Se encontrar exato, retorna
+  if (map[actionType]) return map[actionType];
+  
+  // Senão, tenta por palavras-chave
+  const type = actionType.toLowerCase();
+  if (type.includes('login')) return '🟢 Login';
+  if (type.includes('logout')) return '⚪ Logout';
+  if (type.includes('permission')) return '🔵 Permissão';
+  if (type.includes('role') || type.includes('admin')) return '🟣 Função/Cargo';
+  if (type.includes('password')) return '🟠 Senha';
+  if (type.includes('delete') || type.includes('remove')) return '🔴 Exclusão';
+  if (type.includes('create') || type.includes('add')) return '➕ Criação';
+  if (type.includes('update') || type.includes('edit')) return '✏️ Atualização';
+  
+  // Formata o nome para título
+  return actionType
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 };
 
 export const UserActivityTimeline: React.FC<UserActivityTimelineProps> = ({ userId }) => {
@@ -160,35 +174,75 @@ export const UserActivityTimeline: React.FC<UserActivityTimelineProps> = ({ user
                   </div>
 
                   {/* Content */}
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge 
                         variant="outline" 
-                        className={`text-xs ${getActivityBadgeColor(activity.action_type)}`}
+                        className={`text-xs font-medium ${getActivityBadgeColor(activity.action_type)}`}
                       >
                         {formatActionType(activity.action_type)}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground font-mono">
                         {formatDate(activity.created_at)}
                       </span>
                     </div>
                     
-                    <p className="text-sm text-foreground">
+                    <p className="text-sm text-foreground font-medium leading-relaxed">
                       {activity.action_description}
                     </p>
 
-                    {activity.ip_address && (
-                      <p className="text-xs text-muted-foreground">
-                        IP: {activity.ip_address}
-                      </p>
+                    {/* Info adicional em grid */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {activity.ip_address && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <span className="font-semibold">IP:</span>
+                          <span className="font-mono">{activity.ip_address}</span>
+                        </div>
+                      )}
+                      {activity.metadata?.user_agent && (
+                        <div className="flex items-center gap-1 text-muted-foreground col-span-2">
+                          <span className="font-semibold">Navegador:</span>
+                          <span className="truncate text-xs">{activity.metadata.user_agent}</span>
+                        </div>
+                      )}
+                      {activity.metadata?.timestamp && (
+                        <div className="flex items-center gap-1 text-muted-foreground col-span-2">
+                          <span className="font-semibold">Timestamp:</span>
+                          <span className="font-mono text-xs">
+                            {new Date(activity.metadata.timestamp).toLocaleString('pt-BR')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Metadados importantes */}
+                    {activity.metadata && (
+                      <div className="space-y-1">
+                        {activity.metadata.performed_by && (
+                          <p className="text-xs text-muted-foreground">
+                            👤 <span className="font-semibold">Executado por:</span> {activity.metadata.performed_by}
+                          </p>
+                        )}
+                        {activity.metadata.deleted_account && (
+                          <div className="p-2 bg-red-50 dark:bg-red-950/30 rounded border border-red-200 dark:border-red-800 text-xs space-y-1">
+                            <p className="font-semibold text-red-700 dark:text-red-300">🗑️ Conta Deletada:</p>
+                            <p className="text-red-600 dark:text-red-400">
+                              Email: {activity.metadata.deleted_account.email}
+                            </p>
+                            <p className="text-red-600 dark:text-red-400">
+                              Role: {activity.metadata.deleted_account.role}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     )}
 
                     {activity.metadata && Object.keys(activity.metadata).length > 0 && (
-                      <details className="text-xs text-muted-foreground mt-2">
-                        <summary className="cursor-pointer hover:text-foreground">
-                          Ver detalhes
+                      <details className="text-xs text-muted-foreground">
+                        <summary className="cursor-pointer hover:text-foreground font-medium flex items-center gap-1">
+                          <span>📋</span> Ver metadados completos
                         </summary>
-                        <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-x-auto">
+                        <pre className="mt-2 p-3 bg-muted/50 rounded-md text-xs overflow-x-auto border border-border font-mono">
                           {JSON.stringify(activity.metadata, null, 2)}
                         </pre>
                       </details>
