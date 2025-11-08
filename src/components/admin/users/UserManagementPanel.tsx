@@ -41,7 +41,8 @@ import {
   Trash2,
   Edit,
   UserPlus,
-  Copy
+  Copy,
+  DollarSign
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -315,7 +316,7 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
       case 'admin_financeiro':
         return (
           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300">
-            <UserCheck className="h-3 w-3 mr-1" />
+            <DollarSign className="h-3 w-3 mr-1" />
             Admin Financeiro
           </Badge>
         );

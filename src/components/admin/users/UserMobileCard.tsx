@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Shield, UserCheck } from 'lucide-react';
+import { Crown, Shield, UserCheck, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -43,7 +43,7 @@ const UserMobileCard: React.FC<UserMobileCardProps> = ({ user }) => {
       case 'admin_financeiro':
         return (
           <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px] h-5 px-1.5">
-            <UserCheck className="h-2.5 w-2.5 mr-0.5" />
+            <DollarSign className="h-2.5 w-2.5 mr-0.5" />
             Financeiro
           </Badge>
         );

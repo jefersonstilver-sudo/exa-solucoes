@@ -23,7 +23,8 @@ import {
   AlertCircle,
   Key,
   Save,
-  X
+  X,
+  DollarSign
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -115,7 +116,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       case 'admin_financeiro':
         return (
           <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200">
-            <UserCog className="h-3 w-3 mr-1" />
+            <DollarSign className="h-3 w-3 mr-1" />
             Admin Financeiro
           </Badge>
         );
