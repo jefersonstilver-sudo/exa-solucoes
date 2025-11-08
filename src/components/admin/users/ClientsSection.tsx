@@ -195,7 +195,7 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
             Base de Clientes
           </h2>
           <p className="text-gray-600 mt-1">
-            Usuários finais e clientes do sistema INDEXA
+            Usuários finais e clientes do sistema EXA
           </p>
         </div>
         <Button 

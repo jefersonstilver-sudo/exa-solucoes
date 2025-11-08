@@ -534,6 +534,13 @@ export type Database = {
             foreignKeyName: "campanhas_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "users_with_last_access"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campanhas_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
@@ -617,6 +624,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_activity_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_last_access"
             referencedColumns: ["id"]
           },
           {
@@ -877,6 +891,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_platform_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_last_access"
             referencedColumns: ["id"]
           },
           {
@@ -2032,6 +2053,13 @@ export type Database = {
             foreignKeyName: "pedidos_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "users_with_last_access"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
@@ -2467,6 +2495,13 @@ export type Database = {
             foreignKeyName: "user_activity_logs_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "users_with_last_access"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activity_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
@@ -2809,6 +2844,13 @@ export type Database = {
             foreignKeyName: "videos_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "users_with_last_access"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "videos_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
@@ -2843,6 +2885,30 @@ export type Database = {
       }
     }
     Views: {
+      users_with_last_access: {
+        Row: {
+          avatar_url: string | null
+          cpf: string | null
+          data_criacao: string | null
+          documento_estrangeiro: string | null
+          documento_frente_url: string | null
+          documento_verso_url: string | null
+          email: string | null
+          email_confirmed_at: string | null
+          email_verified_at: string | null
+          id: string | null
+          last_access_at: string | null
+          last_sign_in_at: string | null
+          nome: string | null
+          privacy_accepted_at: string | null
+          raw_user_meta_data: Json | null
+          role: string | null
+          telefone: string | null
+          terms_accepted_at: string | null
+          tipo_documento: string | null
+        }
+        Relationships: []
+      }
       users_with_role: {
         Row: {
           avatar_url: string | null

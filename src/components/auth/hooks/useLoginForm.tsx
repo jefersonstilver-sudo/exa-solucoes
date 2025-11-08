@@ -41,58 +41,103 @@ export const useLoginForm = (redirectPath: string = '/') => {
     setError('');
 
     try {
-      console.log('🔐 LoginForm: Tentando fazer login...');
+      console.log('🔐 [LOGIN] Tentando autenticar:', email);
       
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
-        password,
+        password: password
       });
 
-      if (authError) {
-        console.error('🔐 LoginForm: Erro de autenticação:', authError);
-        throw authError;
+      if (signInError) {
+        console.error('❌ [LOGIN] Erro de autenticação:', signInError);
+        throw signInError;
       }
 
-      if (data.user && data.session) {
-        console.log('🔐 LoginForm: Login bem-sucedido, obtendo role do banco...');
-        
-        toast.success('Login realizado com sucesso!');
-        
-        // ⚠️ CRÍTICO: Buscar role DIRETAMENTE da tabela user_roles (JWT não confiável sem hook)
-        let userRole = null;
-        
-        try {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', data.user.id)
-            .single();
-          
-          userRole = roleData?.role || null;
-          console.log('✅ Role obtido do banco:', userRole);
-        } catch (roleError) {
-          console.warn('⚠️ Erro ao buscar role, tentando users table:', roleError);
-          
-          // Fallback: tentar buscar da tabela users
-          const { data: userData } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
-          
-          userRole = userData?.role || null;
-          console.log('✅ Role obtido da tabela users:', userRole);
-        }
+      if (!data.user) {
+        throw new Error('Usuário não encontrado');
+      }
 
-        // Redirecionamento baseado na role do BANCO
-        const targetPath = getRedirectPath(userRole, redirectPath);
-        console.log('🎯 Redirecionando para:', targetPath, 'baseado no role:', userRole);
+      // FASE 1: VERIFICAÇÃO DE EMAIL OBRIGATÓRIA
+      if (!data.user.email_confirmed_at) {
+        console.warn('⚠️ [LOGIN] Email não confirmado:', data.user.email);
         
+        // Fazer logout imediatamente
+        await supabase.auth.signOut();
+        
+        setError('Email não confirmado. Verifique sua caixa de entrada.');
+        toast.error('Email não confirmado', {
+          description: 'Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada e spam.',
+          duration: 8000
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('✅ [LOGIN] Autenticado com sucesso:', {
+        userId: data.user.id,
+        email: data.user.email,
+        emailConfirmed: !!data.user.email_confirmed_at
+      });
+
+      // Buscar role do usuário no banco
+      let userRole = null;
+      
+      try {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .single();
+        
+        userRole = roleData?.role || null;
+        console.log('✅ Role obtido do banco user_roles:', userRole);
+      } catch (roleError) {
+        console.warn('⚠️ Erro ao buscar role de user_roles, tentando users table:', roleError);
+        
+        // Fallback: tentar buscar da tabela users
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+        
+        userRole = userData?.role || null;
+        console.log('✅ Role obtido da tabela users:', userRole);
+      }
+
+      // Determinar caminho de redirecionamento
+      const targetPath = getRedirectPath(userRole, redirectPath);
+      console.log('🎯 [LOGIN] Redirecionando para:', targetPath);
+
+      // Toast de sucesso
+      toast.success('Login realizado com sucesso!', {
+        description: `Bem-vindo(a) de volta, ${data.user.email}`
+      });
+
+      // FASE 1: REDIRECIONAMENTO SEGURO COM FALLBACK
+      // Aguardar um pouco para garantir que o estado seja atualizado
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Tentar usar navigate primeiro
+      try {
         navigate(targetPath, { replace: true });
+        
+        // Se depois de 1 segundo ainda estiver na página de login, forçar com window.location
+        setTimeout(() => {
+          if (window.location.pathname === '/login') {
+            console.log('⚠️ [LOGIN] Navigate falhou, usando window.location.href');
+            window.location.href = targetPath;
+          }
+        }, 1000);
+      } catch (navError) {
+        console.error('❌ [LOGIN] Erro no navigate, usando window.location:', navError);
+        window.location.href = targetPath;
       }
+      
     } catch (error: any) {
-      console.error('🔐 LoginForm: Erro no login:', error);
-
+      console.error('❌ [LOGIN] Erro geral:', error);
+      
       let errorMessage = 'Erro ao fazer login';
       
       if (error.message === 'Invalid login credentials') {

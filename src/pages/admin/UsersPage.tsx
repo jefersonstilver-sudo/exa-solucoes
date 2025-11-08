@@ -48,19 +48,19 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log('👥 [USERS_PAGE] Iniciando busca de usuários...');
-
-      // Buscar todos os dados da tabela users
+      
+      console.log('📊 [USERS_PAGE] Buscando usuários da view otimizada...');
+      
+      // FASE 2: Usar view users_with_last_access que já traz último acesso
       const { data, error, status } = await supabase
-        .from('users')
+        .from('users_with_last_access')
         .select('*')
         .order('data_criacao', { ascending: false});
 
       console.log('📊 [USERS_PAGE] Resposta da query:', {
         status,
-        hasError: !!error,
-        dataLength: data?.length || 0,
-        error: error,
+        error,
+        userCount: data?.length
       });
 
       if (error) {
@@ -326,13 +326,15 @@ const UsersPage = () => {
     <div className="space-y-6">
       {/* Header Principal */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-            <Users className="h-8 w-8 mr-3 text-indexa-purple" />
-            Sistema de Gestão de Usuários
-          </h1>
-          <p className="text-gray-600 mt-2">Gestão completa da equipe EXA e base de clientes</p>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+          <Users className="mr-2 h-7 w-7 text-primary" />
+          Gestão de Usuários EXA
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Gerencie contas de administradores e clientes do sistema
+        </p>
+      </div>
       </div>
 
       {/* Estatísticas Gerais */}
@@ -354,9 +356,9 @@ const UsersPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Equipe EXA</p>
-                <p className="text-2xl font-bold text-indexa-purple">{totalStats.indexaTeam}</p>
+                <p className="text-2xl font-bold text-primary">{totalStats.indexaTeam}</p>
               </div>
-              <Crown className="h-8 w-8 text-indexa-purple" />
+              <Crown className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
