@@ -72,6 +72,8 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
   });
 
   const isSuperAdmin = userProfile?.role === 'super_admin';
+  const isAdmin = userProfile?.role === 'admin' || isSuperAdmin;
+  const canManageRoles = isAdmin || isSuperAdmin;
 
   React.useEffect(() => {
     if (user && open) {
@@ -151,7 +153,20 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
   };
 
   const handleRoleChange = async (newRole: string) => {
-    if (!user || !isSuperAdmin) return;
+    if (!user || !canManageRoles) {
+      toast.error('Sem permissão', {
+        description: 'Você não tem permissão para alterar roles'
+      });
+      return;
+    }
+
+    // Apenas super_admin pode promover para super_admin
+    if (newRole === 'super_admin' && !isSuperAdmin) {
+      toast.error('Permissão negada', {
+        description: 'Apenas Super Admins podem promover usuários a Super Admin'
+      });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -159,7 +174,8 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
       console.log('🔄 [ROLE_CHANGE] Alterando role:', {
         user: user.email,
         oldRole: user.role,
-        newRole
+        newRole,
+        changedBy: userProfile?.email
       });
 
       const { error } = await supabase
@@ -411,8 +427,8 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
             <div className="p-6 space-y-6">
               {/* Tab: Informações */}
               <TabsContent value="info" className="mt-0 space-y-6">
-                {/* Gestão de Role - SUPER ADMIN ONLY */}
-                {isSuperAdmin && (
+                {/* Gestão de Role - ADMIN E SUPER ADMIN */}
+                {canManageRoles && (
                   <Card className="border-2 border-primary/20">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base flex items-center gap-2">
