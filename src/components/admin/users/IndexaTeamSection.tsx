@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import CreateAdminDialog from './CreateAdminDialog';
+import CreateUserDialog from './CreateUserDialog';
 import UserDetailsDialog from './UserDetailsDialog';
 import { useSecureAdmin } from '@/hooks/useSecureAdmin';
 import SecurityAuditBanner from '../security/SecurityAuditBanner';
@@ -460,10 +460,10 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
       </Card>
 
       {/* Dialog de Criação de Conta */}
-      <CreateAdminDialog
+      <CreateUserDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        onAccountCreated={handleAccountCreated}
+        onSuccess={handleAccountCreated}
       />
 
       {/* Dialog de Detalhes do Usuário */}

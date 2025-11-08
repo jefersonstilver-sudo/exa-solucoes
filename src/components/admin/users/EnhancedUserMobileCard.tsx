@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Crown, Shield, UserCheck, Eye, DollarSign, Phone, FileText, CheckCircle2, XCircle, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 interface User {
   id: string;
@@ -27,6 +27,31 @@ const EnhancedUserMobileCard: React.FC<EnhancedUserMobileCardProps> = ({
   user,
   onViewDetails,
 }) => {
+  const [loading, setLoading] = React.useState(false);
+
+  const handleCardClick = async () => {
+    setLoading(true);
+    try {
+      // Buscar dados completos do usuário
+      const { data: fullUser, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      
+      // Passar dados completos para o dialog
+      onViewDetails(fullUser || user);
+    } catch (error) {
+      console.error('Erro ao carregar dados do usuário:', error);
+      // Se falhar, passar dados básicos mesmo
+      onViewDetails(user);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'super_admin':
@@ -89,7 +114,10 @@ const EnhancedUserMobileCard: React.FC<EnhancedUserMobileCardProps> = ({
   };
 
   return (
-    <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+    <Card 
+      className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="p-3.5 space-y-3">
         {/* Header com Email e Badge de Tipo */}
         <div className="space-y-2">
@@ -155,18 +183,15 @@ const EnhancedUserMobileCard: React.FC<EnhancedUserMobileCardProps> = ({
           )}
         </div>
 
-        {/* Botão de Detalhes */}
-        <div className="pt-2 border-t">
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full h-8 text-xs"
-            onClick={() => onViewDetails(user)}
-          >
-            <Eye className="h-3.5 w-3.5 mr-1.5" />
-            Ver Detalhes Completos
-          </Button>
-        </div>
+        {/* Indicador de Loading */}
+        {loading && (
+          <div className="pt-2 border-t">
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
+              Carregando detalhes...
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
