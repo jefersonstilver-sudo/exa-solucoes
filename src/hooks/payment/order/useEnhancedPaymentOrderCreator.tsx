@@ -49,6 +49,32 @@ export const useEnhancedPaymentOrderCreator = () => {
         selectedPlan
       });
 
+      // 🚨 CRITICAL: Verificar role do usuário (BLOQUEAR ADMINS)
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', sessionUser.id)
+        .single();
+
+      const userRole = roleData?.role || 'client';
+
+      console.log('🔐 [ENHANCED_ORDER_CREATOR] Role verificado:', userRole);
+
+      // 🚫 BLOQUEAR admins de fazer pedidos
+      if (userRole !== 'client') {
+        const errorMsg = `🚫 Contas administrativas não podem realizar pedidos. Role detectado: ${userRole}`;
+        console.error(errorMsg);
+        
+        logCheckoutEvent(
+          CheckoutEvent.PAYMENT_ERROR,
+          LogLevel.ERROR,
+          'Tentativa de pedido por conta administrativa bloqueada',
+          { userId: sessionUser.id, userRole, cartItemsCount: cartItems.length }
+        );
+        
+        throw new Error('Contas administrativas não podem realizar pedidos. Use uma conta de cliente.');
+      }
+
       // CRITICAL: Block duplicate submissions immediately
       if (!preventDuplicateSubmission()) {
         throw new Error('Tentativa de pagamento duplicada detectada');

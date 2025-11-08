@@ -44,13 +44,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Derivar isAdmin (backward compatibility)
   const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
 
-  // Função otimizada para extrair role do JWT
+  // 🚨 SECURITY: Função para extrair role do JWT (com admin_financeiro)
   const extractRoleFromJWT = (accessToken: string): UserRole | null => {
     try {
       const payload = JSON.parse(atob(accessToken.split('.')[1]));
       const role = payload.user_role;
-      // Validate that the role is a valid UserRole
-      if (role && ['client', 'admin', 'admin_marketing', 'super_admin', 'painel'].includes(role)) {
+      // Validate that the role is a valid UserRole (INCLUINDO admin_financeiro)
+      if (role && ['client', 'admin', 'admin_marketing', 'admin_financeiro', 'super_admin', 'painel'].includes(role)) {
         return role as UserRole;
       }
       return null;
@@ -76,19 +76,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Setup inicial otimizado
   useEffect(() => {
+    // 🚨 SECURITY FIX: Buscar role de user_roles, não do JWT apenas
+    const fetchUserProfile = async (userId: string, accessToken?: string) => {
+      try {
+        // Primeiro tentar JWT (mais rápido)
+        let role = accessToken ? extractRoleFromJWT(accessToken) : null;
+        
+        // Se não encontrou no JWT, buscar do banco
+        if (!role) {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', userId)
+            .single();
+          
+          role = roleData?.role || 'client';
+        }
+        
+        // Buscar dados completos do usuário
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id, email, nome, cpf, avatar_url')
+          .eq('id', userId)
+          .single();
+        
+        setUserProfile({
+          id: userId,
+          email: userData?.email || '',
+          nome: userData?.nome,
+          documento: userData?.cpf, // Mapear cpf para documento
+          avatar_url: userData?.avatar_url,
+          role: role
+        });
+        
+        console.log('🔐 [useAuth] Profile carregado:', { userId, role, email: userData?.email });
+      } catch (error) {
+        console.error('❌ [useAuth] Erro ao buscar profile:', error);
+        setUserProfile(null);
+      }
+    };
+
     // Listener de auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Criar userProfile mínimo quando necessário
+      // Buscar profile completo do banco (NÃO apenas JWT)
       if (session?.user) {
-        const role = session.access_token ? extractRoleFromJWT(session.access_token) : null;
-        setUserProfile({
-          id: session.user.id,
-          email: session.user.email || '',
-          role: role || 'client'
-        });
+        setTimeout(() => {
+          fetchUserProfile(session.user.id, session.access_token);
+        }, 0);
       } else {
         setUserProfile(null);
       }
@@ -102,12 +139,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        const role = session.access_token ? extractRoleFromJWT(session.access_token) : null;
-        setUserProfile({
-          id: session.user.id,
-          email: session.user.email || '',
-          role: role || 'client'
-        });
+        fetchUserProfile(session.user.id, session.access_token);
       }
       
       setIsLoading(false);

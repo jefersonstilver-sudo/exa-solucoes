@@ -2911,6 +2911,7 @@ export type Database = {
       cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_orphaned_users: { Args: never; Returns: Json }
       cleanup_unauthorized_uploads: { Args: never; Returns: Json }
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       daily_financial_reconciliation: { Args: never; Returns: Json }
       detect_duplicate_payments: {
         Args: never
@@ -3402,7 +3403,10 @@ export type Database = {
       get_user_activity_summary: { Args: { p_user_id: string }; Returns: Json }
       get_user_role:
         | { Args: never; Returns: string }
-        | { Args: { p_user_id: string }; Returns: string }
+        | {
+            Args: { _user_id: string }
+            Returns: Database["public"]["Enums"]["app_role"]
+          }
       get_user_stats: { Args: never; Returns: Json }
       get_video_current_status: { Args: { p_video_id: string }; Returns: Json }
       has_role: {

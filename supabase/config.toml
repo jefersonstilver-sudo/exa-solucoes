@@ -34,13 +34,14 @@ secure_password_change = true
 enabled = true
 uri = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/unified-email-service"
 
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
 [auth.external.google]
 enabled = false
 
 [functions.unified-email-service]
-verify_jwt = false
-
-[functions.custom-access-token-hook]
 verify_jwt = false
 
 [functions.send-confirmation-email]
