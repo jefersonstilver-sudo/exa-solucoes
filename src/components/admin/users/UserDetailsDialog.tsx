@@ -24,7 +24,9 @@ import {
   Key,
   Save,
   X,
-  DollarSign
+  DollarSign,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -56,6 +58,8 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   const { userProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [editData, setEditData] = useState({
     name: '',
     telefone: '',
@@ -205,6 +209,33 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       toast.error(`Erro: ${error.message || 'Falha ao resetar senha'}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!user || !isSuperAdmin) return;
+
+    try {
+      setDeleteLoading(true);
+      console.log('🗑️ Deletando usuário:', user.id);
+
+      const { data, error } = await supabase.functions.invoke('delete-user-account', {
+        body: { userId: user.id }
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Usuário deletado:', data);
+      toast.success(`Conta ${user.email} deletada completamente!`);
+      
+      setShowDeleteConfirm(false);
+      onOpenChange(false);
+      onUserUpdated();
+    } catch (error: any) {
+      console.error('❌ Erro ao deletar usuário:', error);
+      toast.error(error.message || 'Erro ao deletar usuário');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -384,7 +415,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                     As ações abaixo são exclusivas do Super Administrador.
                   </p>
                   
-                  <div className="flex space-x-3">
+                  <div className="flex flex-wrap gap-3">
                     <Button
                       variant="destructive"
                       size="sm"
@@ -394,6 +425,17 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                       <Key className="h-4 w-4 mr-2" />
                       Gerar Nova Senha Segura
                     </Button>
+
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      disabled={deleteLoading}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Deletar Conta Permanentemente
+                    </Button>
                   </div>
 
                   <div className="text-xs text-red-600 bg-red-100 p-3 rounded-lg">
@@ -402,6 +444,73 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                     <p>• Outras contas jamais podem ser promovidas a Super Admin sem autorização</p>
                     <p>• Senhas resetadas são geradas automaticamente de forma segura</p>
                     <p>• A nova senha será exibida apenas uma vez após a geração</p>
+                    <p>• <strong>Deletar conta é PERMANENTE e permite recriação imediata com mesmo email</strong></p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Dialog de Confirmação de Deleção */}
+          {showDeleteConfirm && (
+            <Card className="border-red-500 bg-red-50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg text-red-800 flex items-center">
+                  <AlertTriangle className="h-5 w-5 mr-2" />
+                  ⚠️ CONFIRMAÇÃO DE DELEÇÃO PERMANENTE
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="bg-red-100 p-4 rounded-lg border-2 border-red-300">
+                    <p className="text-sm font-bold text-red-900 mb-2">
+                      ATENÇÃO: Esta ação NÃO pode ser desfeita!
+                    </p>
+                    <p className="text-sm text-red-800">
+                      Você está prestes a deletar <strong>PERMANENTEMENTE</strong> a conta:
+                    </p>
+                    <div className="mt-2 p-3 bg-white rounded border border-red-200">
+                      <p className="font-mono text-sm"><strong>Email:</strong> {user.email}</p>
+                      <p className="font-mono text-sm"><strong>Role:</strong> {user.role}</p>
+                      <p className="font-mono text-sm"><strong>ID:</strong> {user.id}</p>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-red-700 space-y-1">
+                    <p><strong>O que será deletado:</strong></p>
+                    <p>✓ Registro na tabela users (banco de dados)</p>
+                    <p>✓ Conta no auth.users (autenticação Supabase)</p>
+                    <p>✓ Todos os relacionamentos (pedidos, atividades, etc)</p>
+                    <p className="mt-2"><strong>Após deleção:</strong></p>
+                    <p>✓ Você poderá criar uma nova conta com o mesmo email imediatamente</p>
+                    <p>✓ O registro será mantido nos logs de auditoria</p>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex justify-end space-x-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={deleteLoading}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDeleteUser}
+                      disabled={deleteLoading}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      {deleteLoading ? (
+                        <>Deletando...</>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          SIM, DELETAR PERMANENTEMENTE
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </CardContent>
