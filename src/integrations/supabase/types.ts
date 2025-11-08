@@ -3348,6 +3348,7 @@ export type Database = {
       get_user_role:
         | { Args: never; Returns: string }
         | { Args: { p_user_id: string }; Returns: string }
+      get_user_stats: { Args: never; Returns: Json }
       get_video_current_status: { Args: { p_video_id: string }; Returns: Json }
       has_role: {
         Args: {
