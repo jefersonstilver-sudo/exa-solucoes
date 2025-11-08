@@ -37,6 +37,7 @@ import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 import ProviderBenefitChoice from './pages/ProviderBenefitChoice';
 import DebugPermissions from './pages/DebugPermissions';
+import EmailNotConfirmed from './pages/EmailNotConfirmed';
 
 // Importações diretas para páginas principais (performance otimizada)
 import PaineisPublicitarios from './pages/PaineisPublicitarios';
@@ -315,6 +316,7 @@ const AppContent = () => {
           {/* Rotas de autenticação */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/cadastro" element={<Cadastro />} />
+          <Route path="/email-not-confirmed" element={<EmailNotConfirmed />} />
           <Route path="/termos-uso" element={<TermosUso />} />
           <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
 

@@ -27,6 +27,13 @@ export default function Login() {
     if (isLoading) return; // Wait for auth to load
     
     if (isLoggedIn && userProfile) {
+      // ⚠️ VERIFICAR EMAIL CONFIRMADO
+      if (!userProfile.email_verified_at) {
+        console.warn('⚠️ [LOGIN_PAGE] Email não confirmado, redirecionando...');
+        navigate(`/email-not-confirmed?email=${encodeURIComponent(userProfile.email)}`);
+        return;
+      }
+      
       console.log('🔐 [LOGIN_PAGE] Usuário já autenticado, redirecionando...', {
         email: userProfile.email,
         role: userProfile.role

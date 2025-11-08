@@ -64,13 +64,8 @@ export const useLoginForm = (redirectPath: string = '/') => {
         // Fazer logout imediatamente
         await supabase.auth.signOut();
         
-        setError('Email não confirmado. Verifique sua caixa de entrada.');
-        toast.error('Email não confirmado', {
-          description: 'Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada e spam.',
-          duration: 8000
-        });
-        
-        setIsLoading(false);
+        // Redirecionar para página de email não confirmado
+        navigate(`/email-not-confirmed?email=${encodeURIComponent(data.user.email)}`);
         return;
       }
 

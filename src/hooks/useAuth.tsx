@@ -35,8 +35,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Derivar isLoggedIn do session em vez de user
-  const isLoggedIn = !!session?.access_token;
+  // Derivar isLoggedIn do session E email confirmado
+  const isLoggedIn = !!session?.access_token && !!userProfile?.email_verified_at;
 
   // Derivar isSuperAdmin - APENAS verificar role, não email
   const isSuperAdmin = userProfile?.role === 'super_admin';
@@ -109,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Buscar dados completos do usuário
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('id, email, nome, cpf, avatar_url')
+          .select('id, email, nome, cpf, avatar_url, email_verified_at')
           .eq('id', userId)
           .single();
         
@@ -125,7 +125,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           nome: userData.nome,
           documento: userData.cpf,
           avatar_url: userData.avatar_url,
-          role: role
+          role: role,
+          email_verified_at: userData.email_verified_at
         };
         
         setUserProfile(profile);
