@@ -36,9 +36,8 @@ uri = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/unified-email-servi
 
 # TEMPORARILY DISABLED - Requires manual configuration in Supabase Dashboard
 # Will be re-enabled after system is stable and hook is configured manually
-# [auth.hook.custom_access_token]
-# enabled = true
-# uri = "pg-functions://postgres/public/custom_access_token_hook"
+[auth.hook.custom_access_token]
+enabled = false
 
 [auth.external.google]
 enabled = false
