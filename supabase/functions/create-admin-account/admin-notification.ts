@@ -74,27 +74,18 @@ export const sendSuperAdminNotification = async (
   data: NotificationData
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    console.log(`📧 [SUPER-ADMIN-NOTIFICATION] Enviando para ${data.superAdminEmail}`);
-    console.log(`📋 [NOTIFICATION DEBUG] Dados do novo usuário:`, JSON.stringify(data.newUser, null, 2));
-    console.log(`📋 [NOTIFICATION DEBUG] Nome do usuário: "${data.newUser.nome}"`);
-    
-    // Validação crítica: garantir que o nome não está vazio
-    if (!data.newUser.nome || data.newUser.nome.trim() === '') {
-      console.error('❌ [NOTIFICATION] ERRO CRÍTICO: Nome do usuário está vazio!');
-      console.error('📋 [NOTIFICATION] Dados completos recebidos:', JSON.stringify(data, null, 2));
-    }
+    console.log(`📧 [NOTIFICATION] Enviando para ${data.superAdminEmail}`);
+    console.log(`📋 [NOTIFICATION] Nome recebido: "${data.newUser.nome}"`);
+    console.log(`📋 [NOTIFICATION] Email: "${data.newUser.email}"`);
+    console.log(`📋 [NOTIFICATION] Role: "${data.newUser.role}"`);
     
     const roleName = getRoleName(data.newUser.role);
     const badge = getRoleBadge(data.newUser.role);
     const responsibilities = getResponsibilities(data.newUser.role);
     const siteUrl = Deno.env.get('SITE_URL') || 'https://www.examidia.com.br';
     
-    console.log(`📤 [NOTIFICATION] Enviando email com nome: "${data.newUser.nome}"`);
-    
     const { error } = await resend.emails.send({
-      // TODO: Após verificar domínio examidia.com.br no Resend, mudar para:
-      // from: 'EXA Mídia Notificações <notificacoes@examidia.com.br>',
-      from: 'EXA Mídia <onboarding@resend.dev>',
+      from: 'EXA Mídia <noreply@examidia.com.br>',
       to: [data.superAdminEmail],
       subject: `🔔 Nova Conta Administrativa Criada - ${roleName}`,
       html: `

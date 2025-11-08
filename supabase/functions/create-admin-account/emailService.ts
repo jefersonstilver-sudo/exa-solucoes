@@ -14,7 +14,7 @@ export const sendAdminWelcomeEmail = async (
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     console.log(`📧 [EMAIL] Enviando email de boas-vindas profissional para ${data.email}`);
-    console.log(`📋 [EMAIL DEBUG] Dados recebidos:`, JSON.stringify(data, null, 2));
+    console.log(`📋 [EMAIL DEBUG] Nome: "${data.nome}"`);
     
     // Verificar se tem API key
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
@@ -41,32 +41,14 @@ export const sendAdminWelcomeEmail = async (
     console.log('📤 [EMAIL] Enviando via Resend para:', data.email);
     
     const { data: emailData, error } = await resend.emails.send({
-      // TODO: Após verificar domínio examidia.com.br no Resend, mudar para:
-      // from: 'EXA Mídia Notificações <notificacoes@examidia.com.br>',
-      from: 'EXA Mídia <onboarding@resend.dev>',
+      from: 'EXA Mídia <noreply@examidia.com.br>',
       to: [data.email],
       subject: 'Bem-vindo à Equipe EXA Mídia - Acesso Administrativo',
       html: htmlContent
     });
 
     if (error) {
-      let errorMsg = `Erro Resend: ${error.message || String(error)}`;
-      
-      // Detectar erro de domínio não verificado
-      if (errorMsg.includes('not verified') || errorMsg.includes('domain') || errorMsg.includes('examidia.com.br')) {
-        errorMsg = `❌ DOMÍNIO NÃO VERIFICADO: O domínio examidia.com.br não está verificado no Resend. 
-        
-🔧 Para resolver:
-1. Acesse: https://resend.com/domains
-2. Adicione o domínio examidia.com.br
-3. Configure os registros DNS (SPF, DKIM, DMARC)
-4. Aguarde verificação (pode levar até 48h)
-
-⚠️ Enquanto isso, emails só podem ser enviados para: jefersonstilver@gmail.com
-        
-Erro original: ${error.message || String(error)}`;
-      }
-      
+      const errorMsg = `Erro Resend: ${error.message || String(error)}`;
       console.error(`❌ [EMAIL] ${errorMsg}`);
       return { success: false, error: errorMsg };
     }
