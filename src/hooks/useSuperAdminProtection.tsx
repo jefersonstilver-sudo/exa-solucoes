@@ -18,7 +18,6 @@ export const useSuperAdminProtection = () => {
 
     const isSuperAdmin = userProfile?.role === 'super_admin';
     const currentPath = location.pathname;
-    const emailConfirmed = userProfile?.email_verified_at;
 
     if (import.meta.env.DEV) {
       console.log('🛡️ PROTECTION - Verificação:', {
@@ -26,21 +25,11 @@ export const useSuperAdminProtection = () => {
         userRole: userProfile?.role,
         isSuperAdmin,
         currentPath,
-        isLoggedIn,
-        emailConfirmed
+        isLoggedIn
       });
     }
 
-    // FASE 5: BLOQUEAR SE EMAIL NÃO CONFIRMADO
-    if (isLoggedIn && userProfile && !emailConfirmed) {
-      if (import.meta.env.DEV) {
-        console.log('🚫 PROTECTION: Email não confirmado, bloqueando');
-      }
-      navigate('/login', { replace: true });
-      return;
-    }
-
-    // Proteção básica - sem redirecionamentos automáticos
+    // Proteção básica - email confirmado é verificado no momento do login
     if (currentPath.startsWith('/super_admin') && (!isLoggedIn || !isSuperAdmin)) {
       if (import.meta.env.DEV) {
         console.log('🚫 PROTECTION: Acesso negado ao super_admin');

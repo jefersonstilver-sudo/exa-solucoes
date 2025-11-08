@@ -25,21 +25,10 @@ const AdminPage = () => {
       isAdminRole,
       isSuperAdmin,
       isLoggedIn,
-      currentPath: location.pathname,
-      emailConfirmed: userProfile?.email_verified_at
+      currentPath: location.pathname
     });
 
-    // FASE 5: BLOQUEAR SE EMAIL NÃO CONFIRMADO
-    if (isLoggedIn && userProfile && !userProfile.email_verified_at) {
-      console.log('🚫 AdminPage: Email não confirmado, bloqueando acesso');
-      toast.error('Email não confirmado', {
-        description: 'Você precisa confirmar seu email antes de acessar o sistema. Verifique sua caixa de entrada.',
-        duration: 8000
-      });
-      navigate('/login', { replace: true });
-      return;
-    }
-
+    // Verificação de autenticação (email confirmado é verificado no login)
     if (!isLoggedIn || (!isAdminRole && !isSuperAdmin)) {
       console.log('🚫 AdminPage: Acesso negado');
       toast.error('Acesso restrito a administradores');

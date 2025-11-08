@@ -58,20 +58,22 @@ export const useLoginForm = (redirectPath: string = '/') => {
         throw new Error('Usuário não encontrado');
       }
 
-      // FASE 1: VERIFICAÇÃO DE EMAIL OBRIGATÓRIA
+      // 🚨 VERIFICAÇÃO CRÍTICA: EMAIL NÃO CONFIRMADO
       if (!data.user.email_confirmed_at) {
-        console.warn('⚠️ [LOGIN] Email não confirmado:', data.user.email);
+        console.warn('⚠️ [LOGIN] Email não confirmado detectado:', data.user.email);
         
         // Prevenir múltiplas execuções
         if (isRedirecting) {
-          console.log('⏸️ [LOGIN] Já está redirecionando, ignorando...');
+          console.log('⏸️ [LOGIN] Já está redirecionando, ignorando tentativa duplicada');
           return;
         }
         
         setIsRedirecting(true);
+        setIsLoading(true);
+        
+        console.log('🚪 [LOGIN] Iniciando processo de logout...');
         
         // Fazer logout COMPLETO antes de redirecionar
-        console.log('🚪 [LOGIN] Fazendo logout completo...');
         const { error: signOutError } = await supabase.auth.signOut();
         
         if (signOutError) {
@@ -80,13 +82,22 @@ export const useLoginForm = (redirectPath: string = '/') => {
           console.log('✅ [LOGIN] SignOut concluído com sucesso');
         }
         
-        // Aguardar um pouco para garantir que o logout foi processado
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Limpar estados locais
+        setEmail('');
+        setPassword('');
+        setError('');
         
-        // Usar window.location para garantir navegação limpa
+        // Aguardar para garantir que o logout foi processado
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Usar window.location.replace para navegação limpa SEM histórico
         const redirectUrl = `/email-not-confirmed?email=${encodeURIComponent(data.user.email || '')}`;
-        console.log('🎯 [LOGIN] Redirecionando para:', redirectUrl);
+        console.log('🎯 [LOGIN] Redirecionando para página de confirmação:', redirectUrl);
+        console.log('🔒 [LOGIN] Esta página NÃO permitirá volta para /admin ou /login');
+        
         window.location.replace(redirectUrl);
+        
+        // Não continuar a execução
         return;
       }
 
