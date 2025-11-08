@@ -1,4 +1,5 @@
-
+// VERSÃO CORRIGIDA - 2025-11-08 23:50 UTC
+// Fix: Incluir role obrigatório na inserção
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 interface CreateUserResult {

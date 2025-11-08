@@ -1,4 +1,5 @@
-
+// VERSÃO 2.0 - CORRIGIDA 2025-11-08 23:50 UTC
+// Correção crítica: Role obrigatório incluído na inserção
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { validateRequest } from './validation.ts';
