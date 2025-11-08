@@ -61,11 +61,23 @@ export interface UserPermissions {
 }
 
 // Permissões customizadas por usuário (sobrescrevem as padrões do role)
-export interface UserCustomPermissions extends Partial<UserPermissions> {
-  user_id: string;
-  custom_permissions: Partial<UserPermissions>;
+// Nomes no banco de dados usam snake_case
+export interface UserCustomPermissions {
+  user_id?: string;
+  can_view_dashboard?: boolean;
+  can_view_orders?: boolean;
+  can_view_crm?: boolean;
+  can_view_approvals?: boolean;
+  can_view_leads?: boolean;
+  can_manage_users?: boolean;
+  can_manage_coupons?: boolean;
+  can_view_audit?: boolean;
+  can_manage_videos?: boolean;
+  can_manage_portfolio?: boolean;
+  can_manage_provider_benefits?: boolean;
+  can_view_financial_reports?: boolean;
+  created_at?: string;
   updated_at?: string;
-  updated_by?: string;
 }
 
 // Mapa de permissões por tipo de usuário

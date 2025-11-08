@@ -1,16 +1,46 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { UserCustomPermissions } from '@/types/userTypes';
 import { UserPermissions } from '@/types/userTypes';
 import { toast } from 'sonner';
 
-interface CustomPermissionsData {
-  id: string;
-  user_id: string;
-  custom_permissions: Partial<UserPermissions>;
-  notes?: string;
-  updated_at: string;
-  updated_by?: string;
-}
+// Helper para converter snake_case do banco para camelCase do TypeScript
+const convertToTypeScript = (dbData: UserCustomPermissions | null): Partial<UserPermissions> | null => {
+  if (!dbData) return null;
+  
+  return {
+    canViewDashboard: dbData.can_view_dashboard,
+    canViewOrders: dbData.can_view_orders,
+    canViewCRM: dbData.can_view_crm,
+    canViewApprovals: dbData.can_view_approvals,
+    canViewLeads: dbData.can_view_leads,
+    canManageUsers: dbData.can_manage_users,
+    canManageCoupons: dbData.can_manage_coupons,
+    canViewAudit: dbData.can_view_audit,
+    canManageVideos: dbData.can_manage_videos,
+    canManagePortfolio: dbData.can_manage_portfolio,
+    canManageProviderBenefits: dbData.can_manage_provider_benefits,
+    canViewFinancialReports: dbData.can_view_financial_reports,
+  };
+};
+
+// Helper para converter camelCase do TypeScript para snake_case do banco
+const convertToDatabase = (tsData: Partial<UserPermissions>): Partial<UserCustomPermissions> => {
+  return {
+    can_view_dashboard: tsData.canViewDashboard,
+    can_view_orders: tsData.canViewOrders,
+    can_view_crm: tsData.canViewCRM,
+    can_view_approvals: tsData.canViewApprovals,
+    can_view_leads: tsData.canViewLeads,
+    can_manage_users: tsData.canManageUsers,
+    can_manage_coupons: tsData.canManageCoupons,
+    can_view_audit: tsData.canViewAudit,
+    can_manage_videos: tsData.canManageVideos,
+    can_manage_portfolio: tsData.canManagePortfolio,
+    can_manage_provider_benefits: tsData.canManageProviderBenefits,
+    can_view_financial_reports: tsData.canViewFinancialReports,
+  };
+};
 
 export const useCustomPermissions = (userId?: string) => {
   const [customPermissions, setCustomPermissions] = useState<Partial<UserPermissions> | null>(null);
@@ -18,7 +48,7 @@ export const useCustomPermissions = (userId?: string) => {
   const [error, setError] = useState<string | null>(null);
 
   // Carregar permissões customizadas do usuário
-  const loadCustomPermissions = async (targetUserId: string) => {
+  const loadCustomPermissions = async (targetUserId: string): Promise<Partial<UserPermissions> | null> => {
     try {
       setIsLoading(true);
       setError(null);
@@ -35,9 +65,9 @@ export const useCustomPermissions = (userId?: string) => {
         return null;
       }
 
-      const perms = data?.custom_permissions as Partial<UserPermissions> || null;
-      setCustomPermissions(perms);
-      return perms;
+      const converted = convertToTypeScript(data);
+      setCustomPermissions(converted);
+      return converted;
     } catch (err: any) {
       console.error('Erro ao carregar permissões:', err);
       setError(err.message);
@@ -50,59 +80,42 @@ export const useCustomPermissions = (userId?: string) => {
   // Salvar permissões customizadas
   const saveCustomPermissions = async (
     targetUserId: string,
-    permissions: Partial<UserPermissions>,
-    notes?: string
+    permissions: Partial<UserPermissions>
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Verificar se já existe um registro
-      const { data: existing } = await supabase
+      const dbPermissions = convertToDatabase(permissions);
+      
+      // Upsert no banco
+      const { error: upsertError } = await supabase
         .from('user_custom_permissions')
-        .select('id')
-        .eq('user_id', targetUserId)
-        .maybeSingle();
+        .upsert({
+          user_id: targetUserId,
+          ...dbPermissions,
+        }, {
+          onConflict: 'user_id'
+        });
 
-      if (existing) {
-        // Atualizar existente
-        const { error: updateError } = await supabase
-          .from('user_custom_permissions')
-          .update({
-            custom_permissions: permissions,
-            notes,
-          })
-          .eq('user_id', targetUserId);
-
-        if (updateError) {
-          console.error('Erro ao atualizar permissões:', updateError);
-          return { success: false, error: updateError.message };
-        }
-      } else {
-        // Criar novo
-        const { error: insertError } = await supabase
-          .from('user_custom_permissions')
-          .insert({
-            user_id: targetUserId,
-            custom_permissions: permissions,
-            notes,
-          });
-
-        if (insertError) {
-          console.error('Erro ao inserir permissões:', insertError);
-          return { success: false, error: insertError.message };
-        }
+      if (upsertError) {
+        console.error('Erro ao salvar permissões:', upsertError);
+        return { success: false, error: upsertError.message };
       }
 
       // Log da mudança
-      await supabase
-        .from('permission_change_logs')
-        .insert({
-          user_id: targetUserId,
-          changed_by: (await supabase.auth.getUser()).data.user?.id,
-          old_permissions: customPermissions || {},
-          new_permissions: permissions,
-          change_reason: notes || 'Atualização de permissões customizadas',
-        });
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        await supabase
+          .from('permission_change_logs')
+          .insert({
+            user_id: targetUserId,
+            changed_by: currentUser.id,
+            old_permissions: customPermissions ? JSON.parse(JSON.stringify(customPermissions)) : {},
+            new_permissions: JSON.parse(JSON.stringify(permissions)),
+            change_reason: 'Atualização de permissões customizadas',
+          });
+      }
 
-      setCustomPermissions(permissions);
+      await loadCustomPermissions(targetUserId);
       toast.success('Permissões atualizadas com sucesso');
       return { success: true };
     } catch (err: any) {
@@ -126,15 +139,19 @@ export const useCustomPermissions = (userId?: string) => {
       }
 
       // Log da mudança
-      await supabase
-        .from('permission_change_logs')
-        .insert({
-          user_id: targetUserId,
-          changed_by: (await supabase.auth.getUser()).data.user?.id,
-          old_permissions: customPermissions || {},
-          new_permissions: {},
-          change_reason: 'Reset para permissões padrão do role',
-        });
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        await supabase
+          .from('permission_change_logs')
+          .insert({
+            user_id: targetUserId,
+            changed_by: currentUser.id,
+            old_permissions: customPermissions ? JSON.parse(JSON.stringify(customPermissions)) : {},
+            new_permissions: {},
+            change_reason: 'Reset para permissões padrão do role',
+          });
+      }
 
       setCustomPermissions(null);
       toast.success('Permissões resetadas para o padrão do role');

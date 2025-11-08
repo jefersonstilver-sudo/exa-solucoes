@@ -49,10 +49,10 @@ const PERMISSION_MODULES: PermissionModule[] = [
     description: 'Visualização de painéis e métricas',
     icon: <LayoutDashboard className="h-5 w-5" />,
     permissions: [
-      { key: 'canViewDashboard', label: 'Ver Dashboard', description: 'Acesso ao painel principal' },
-      { key: 'canViewOrders', label: 'Ver Pedidos', description: 'Visualizar lista de pedidos' },
-      { key: 'canViewCRM', label: 'Ver CRM', description: 'Acesso ao sistema de CRM' },
-      { key: 'canViewApprovals', label: 'Ver Aprovações', description: 'Visualizar fluxo de aprovações' },
+      { key: 'can_view_dashboard', label: 'Ver Dashboard', description: 'Acesso ao painel principal' },
+      { key: 'can_view_orders', label: 'Ver Pedidos', description: 'Visualizar lista de pedidos' },
+      { key: 'can_view_crm', label: 'Ver CRM', description: 'Acesso ao sistema de CRM' },
+      { key: 'can_view_approvals', label: 'Ver Aprovações', description: 'Visualizar fluxo de aprovações' },
     ]
   },
   {
@@ -61,7 +61,7 @@ const PERMISSION_MODULES: PermissionModule[] = [
     description: 'Gestão de leads e relacionamento',
     icon: <UserCheck className="h-5 w-5" />,
     permissions: [
-      { key: 'canViewLeads', label: 'Ver Leads', description: 'Visualizar leads cadastrados' },
+      { key: 'can_view_leads', label: 'Ver Leads', description: 'Visualizar leads cadastrados' },
     ]
   },
   {
@@ -70,9 +70,9 @@ const PERMISSION_MODULES: PermissionModule[] = [
     description: 'Configurações e gestão de usuários',
     icon: <Settings className="h-5 w-5" />,
     permissions: [
-      { key: 'canManageUsers', label: 'Gerenciar Usuários', description: 'Criar, editar e remover contas' },
-      { key: 'canManageCoupons', label: 'Gerenciar Cupons', description: 'Criar e gerenciar cupons de desconto' },
-      { key: 'canViewAudit', label: 'Ver Auditoria', description: 'Acessar logs de atividades' },
+      { key: 'can_manage_users', label: 'Gerenciar Usuários', description: 'Criar, editar e remover contas' },
+      { key: 'can_manage_coupons', label: 'Gerenciar Cupons', description: 'Criar e gerenciar cupons de desconto' },
+      { key: 'can_view_audit', label: 'Ver Auditoria', description: 'Acessar logs de atividades' },
     ]
   },
   {
@@ -81,8 +81,8 @@ const PERMISSION_MODULES: PermissionModule[] = [
     description: 'Gestão de vídeos e portfolios',
     icon: <FileText className="h-5 w-5" />,
     permissions: [
-      { key: 'canManageVideos', label: 'Gerenciar Vídeos', description: 'Upload e edição de vídeos' },
-      { key: 'canManagePortfolio', label: 'Gerenciar Portfolio', description: 'Gerenciar cases e portfolios' },
+      { key: 'can_manage_videos', label: 'Gerenciar Vídeos', description: 'Upload e edição de vídeos' },
+      { key: 'can_manage_portfolio', label: 'Gerenciar Portfolio', description: 'Gerenciar cases e portfolios' },
     ]
   },
   {
@@ -91,8 +91,8 @@ const PERMISSION_MODULES: PermissionModule[] = [
     description: 'Gestão financeira e benefícios',
     icon: <DollarSign className="h-5 w-5" />,
     permissions: [
-      { key: 'canManageProviderBenefits', label: 'Benefícios de Prestadores', description: 'Gerenciar benefícios de fornecedores' },
-      { key: 'canViewFinancialReports', label: 'Relatórios Financeiros', description: 'Visualizar relatórios financeiros' },
+      { key: 'can_manage_provider_benefits', label: 'Benefícios de Prestadores', description: 'Gerenciar benefícios de fornecedores' },
+      { key: 'can_view_financial_reports', label: 'Relatórios Financeiros', description: 'Visualizar relatórios financeiros' },
     ]
   },
 ];
@@ -135,10 +135,26 @@ export const PermissionsMatrix: React.FC<PermissionsMatrixProps> = ({
       if (error) throw error;
 
       setPermissions(newPermissions);
-      toast.success('Permissão atualizada com sucesso');
+      
+      // 🔥 DESLOGAR O USUÁRIO AUTOMATICAMENTE quando permissões mudarem
+      console.log('🔄 [PERMISSIONS] Permissão alterada, deslogando usuário:', userId);
+      
+      try {
+        // Tentar deslogar o usuário via admin API
+        await supabase.auth.admin.signOut(userId);
+        console.log('✅ [PERMISSIONS] Usuário deslogado automaticamente');
+      } catch (signOutError) {
+        console.warn('⚠️ [PERMISSIONS] Erro ao deslogar usuário:', signOutError);
+        // Não bloqueia o fluxo se falhar
+      }
+
+      toast.success('✅ Permissão atualizada com sucesso', {
+        description: 'O usuário foi deslogado e precisará fazer login novamente com as novas permissões.'
+      });
+      
       onPermissionsChanged();
     } catch (error: any) {
-      console.error('Erro ao atualizar permissão:', error);
+      console.error('❌ [PERMISSIONS] Erro ao atualizar permissão:', error);
       toast.error('Erro ao atualizar permissão', {
         description: error.message
       });

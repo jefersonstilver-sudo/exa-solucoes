@@ -138,7 +138,7 @@ export default function PermissionsManagementPage() {
   const handleSavePermissions = async () => {
     if (!selectedUser) return;
 
-    const result = await saveCustomPermissions(selectedUser.id, permissions, notes);
+    const result = await saveCustomPermissions(selectedUser.id, permissions);
     if (result.success) {
       toast.success('Permissões salvas com sucesso');
     }

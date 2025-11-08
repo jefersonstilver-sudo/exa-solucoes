@@ -2509,30 +2509,57 @@ export type Database = {
       }
       user_custom_permissions: {
         Row: {
-          created_at: string
-          custom_permissions: Json
+          can_manage_coupons: boolean | null
+          can_manage_portfolio: boolean | null
+          can_manage_provider_benefits: boolean | null
+          can_manage_users: boolean | null
+          can_manage_videos: boolean | null
+          can_view_approvals: boolean | null
+          can_view_audit: boolean | null
+          can_view_crm: boolean | null
+          can_view_dashboard: boolean | null
+          can_view_financial_reports: boolean | null
+          can_view_leads: boolean | null
+          can_view_orders: boolean | null
+          created_at: string | null
           id: string
-          notes: string | null
-          updated_at: string
-          updated_by: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string
-          custom_permissions?: Json
+          can_manage_coupons?: boolean | null
+          can_manage_portfolio?: boolean | null
+          can_manage_provider_benefits?: boolean | null
+          can_manage_users?: boolean | null
+          can_manage_videos?: boolean | null
+          can_view_approvals?: boolean | null
+          can_view_audit?: boolean | null
+          can_view_crm?: boolean | null
+          can_view_dashboard?: boolean | null
+          can_view_financial_reports?: boolean | null
+          can_view_leads?: boolean | null
+          can_view_orders?: boolean | null
+          created_at?: string | null
           id?: string
-          notes?: string | null
-          updated_at?: string
-          updated_by?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string
-          custom_permissions?: Json
+          can_manage_coupons?: boolean | null
+          can_manage_portfolio?: boolean | null
+          can_manage_provider_benefits?: boolean | null
+          can_manage_users?: boolean | null
+          can_manage_videos?: boolean | null
+          can_view_approvals?: boolean | null
+          can_view_audit?: boolean | null
+          can_view_crm?: boolean | null
+          can_view_dashboard?: boolean | null
+          can_view_financial_reports?: boolean | null
+          can_view_leads?: boolean | null
+          can_view_orders?: boolean | null
+          created_at?: string | null
           id?: string
-          notes?: string | null
-          updated_at?: string
-          updated_by?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []

@@ -25,7 +25,7 @@ export const useUserPermissions = () => {
       try {
         const { data, error } = await supabase
           .from('user_custom_permissions')
-          .select('custom_permissions')
+          .select('*')
           .eq('user_id', userProfile.id)
           .maybeSingle();
 
@@ -33,7 +33,26 @@ export const useUserPermissions = () => {
           console.error('Erro ao carregar permissões customizadas:', error);
         }
 
-        setCustomPermissions(data?.custom_permissions as Partial<UserPermissions> || null);
+        // Converter snake_case do banco para camelCase do TypeScript
+        if (data) {
+          const converted: Partial<UserPermissions> = {
+            canViewDashboard: data.can_view_dashboard,
+            canViewOrders: data.can_view_orders,
+            canViewCRM: data.can_view_crm,
+            canViewApprovals: data.can_view_approvals,
+            canViewLeads: data.can_view_leads,
+            canManageUsers: data.can_manage_users,
+            canManageCoupons: data.can_manage_coupons,
+            canViewAudit: data.can_view_audit,
+            canManageVideos: data.can_manage_videos,
+            canManagePortfolio: data.can_manage_portfolio,
+            canManageProviderBenefits: data.can_manage_provider_benefits,
+            canViewFinancialReports: data.can_view_financial_reports,
+          };
+          setCustomPermissions(converted);
+        } else {
+          setCustomPermissions(null);
+        }
       } catch (err) {
         console.error('Erro ao carregar permissões customizadas:', err);
       } finally {
