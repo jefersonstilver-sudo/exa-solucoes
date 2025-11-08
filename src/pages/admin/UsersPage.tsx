@@ -13,6 +13,7 @@ import UserStatsCards from '@/components/admin/users/UserStatsCards';
 import EnhancedUserMobileCard from '@/components/admin/users/EnhancedUserMobileCard';
 import CreateUserDialog from '@/components/admin/users/CreateUserDialog';
 import UserDetailsDialog from '@/components/admin/users/UserDetailsDialog';
+import { UserDetailsDialogComplete } from '@/components/admin/users/UserDetailsDialogComplete';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -303,7 +304,7 @@ const UsersPage = () => {
         />
 
         {selectedUser && (
-          <UserDetailsDialog 
+          <UserDetailsDialogComplete 
             open={true}
             onOpenChange={(open) => !open && setSelectedUser(null)}
             user={selectedUser} 

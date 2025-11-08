@@ -7,12 +7,15 @@ export interface UserProfile {
   id: string;
   email: string;
   name?: string;
-  nome?: string; // Adicionar campo nome
-  documento?: string; // Adicionar campo documento
-  telefone?: string; // Adicionar campo telefone
+  nome?: string;
+  documento?: string;
+  telefone?: string;
   avatar_url?: string;
   role?: UserRole;
   data_criacao?: string;
+  email_verified_at?: string; // FASE 5: Verificação de email
+  terms_accepted_at?: string;
+  privacy_accepted_at?: string;
 }
 
 export interface UserSessionState {

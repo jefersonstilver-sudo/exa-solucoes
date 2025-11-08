@@ -29,11 +29,15 @@ import {
   AlertTriangle,
   Mail,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  ShieldCheck
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { PermissionsMatrix } from './PermissionsMatrix';
+import { UserActivityTimeline } from './UserActivityTimeline';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface User {
   id: string;
@@ -42,7 +46,9 @@ interface User {
   data_criacao: string;
   email_confirmed_at?: string;
   last_sign_in_at?: string;
+  last_access_at?: string;
   raw_user_meta_data?: any;
+  nome?: string;
 }
 
 interface UserDetailsDialogProps {
@@ -64,6 +70,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(user?.role || 'client');
   const [editData, setEditData] = useState({
     name: '',
     telefone: '',
@@ -77,10 +84,11 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   React.useEffect(() => {
     if (user && open) {
       setEditData({
-        name: user.raw_user_meta_data?.name || '',
+        name: user.nome || user.raw_user_meta_data?.name || '',
         telefone: user.raw_user_meta_data?.telefone || '',
         observacoes: user.raw_user_meta_data?.observacoes || ''
       });
+      setSelectedRole(user.role);
       setIsEditing(false);
     }
   }, [user, open]);
@@ -137,13 +145,55 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Nunca';
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(new Date(dateString));
+    try {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(dateString));
+    } catch {
+      return 'Data inválida';
+    }
+  };
+
+  const handleRoleChange = async (newRole: string) => {
+    if (!user || !isSuperAdmin) return;
+
+    try {
+      setLoading(true);
+      
+      console.log('🔄 [ROLE_CHANGE] Alterando role de', user.email, 'para', newRole);
+
+      const { error } = await supabase
+        .from('users')
+        .update({ role: newRole })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast.success(`Role atualizada para: ${getRoleLabel(newRole)}`);
+      setSelectedRole(newRole);
+      onUserUpdated();
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar role:', error);
+      toast.error('Erro ao atualizar role: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRoleLabel = (role: string): string => {
+    const labels: Record<string, string> = {
+      'super_admin': 'Super Admin',
+      'admin': 'Admin Geral',
+      'admin_marketing': 'Admin Marketing',
+      'admin_financeiro': 'Admin Financeiro',
+      'client': 'Cliente',
+      'painel': 'Painel'
+    };
+    return labels[role] || role;
   };
 
   const handleSave = async () => {
