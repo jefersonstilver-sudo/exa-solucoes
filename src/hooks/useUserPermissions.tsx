@@ -50,14 +50,25 @@ export const useUserPermissions = () => {
     
     // Se não houver permissões customizadas, retornar apenas as do role
     if (!customPermissions) {
+      console.log('🔑 Permissões do role:', userProfile?.role, rolePermissions);
       return rolePermissions;
     }
 
     // Combinar permissões: customizadas sobrescrevem as do role
-    return {
+    const combined = {
       ...rolePermissions,
       ...customPermissions,
     } as UserPermissions;
+    
+    console.log('🔑 Permissões combinadas (role + custom):', {
+      role: userProfile?.role,
+      rolePermissions,
+      customPermissions,
+      combined,
+      canManageProviderBenefits: combined.canManageProviderBenefits
+    });
+    
+    return combined;
   }, [userProfile?.role, customPermissions]);
 
   // Helper function para verificar permissão específica
