@@ -11,6 +11,8 @@ interface SindicoLead {
   endereco: string
   numeroAndares: number
   numeroUnidades: number
+  elevadoresSociais: number
+  elevadoresServico: number
   email: string
   celular: string
 }
@@ -36,12 +38,20 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json()
-    const { nomeCompleto, nomePredio, endereco, numeroAndares, numeroUnidades, email, celular }: SindicoLead = body
+    const { nomeCompleto, nomePredio, endereco, numeroAndares, numeroUnidades, elevadoresSociais, elevadoresServico, email, celular }: SindicoLead = body
 
     // Input validation
-    if (!nomeCompleto || !nomePredio || !endereco || !numeroAndares || !numeroUnidades || !email || !celular) {
+    if (!nomeCompleto || !nomePredio || !endereco || !numeroAndares || !numeroUnidades || elevadoresSociais === undefined || elevadoresServico === undefined || !email || !celular) {
       return new Response(
         JSON.stringify({ error: 'Todos os campos são obrigatórios' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Validate elevator numbers
+    if (elevadoresSociais < 0 || elevadoresServico < 0) {
+      return new Response(
+        JSON.stringify({ error: 'Número de elevadores não pode ser negativo' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -93,6 +103,8 @@ Deno.serve(async (req) => {
         endereco: endereco.trim(),
         numero_andares: parseInt(String(numeroAndares)),
         numero_unidades: parseInt(String(numeroUnidades)),
+        elevadores_sociais: parseInt(String(elevadoresSociais)),
+        elevadores_servico: parseInt(String(elevadoresServico)),
         email: email.toLowerCase().trim(),
         celular: cleanPhone,
         status: 'novo'

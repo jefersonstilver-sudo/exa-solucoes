@@ -6,6 +6,8 @@ export interface SindicoInteressado {
   endereco: string;
   numero_andares: number;
   numero_unidades: number;
+  elevadores_sociais: number;
+  elevadores_servico: number;
   email: string;
   celular: string;
   observacoes?: string;

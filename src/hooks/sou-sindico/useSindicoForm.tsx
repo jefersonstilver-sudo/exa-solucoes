@@ -12,6 +12,8 @@ export const useSindicoForm = () => {
     endereco: '',
     numeroAndares: '',
     numeroUnidades: '',
+    elevadoresSociais: '',
+    elevadoresServico: '',
     email: '',
     celular: ''
   });
@@ -28,6 +30,8 @@ export const useSindicoForm = () => {
           endereco: formData.endereco,
           numeroAndares: parseInt(formData.numeroAndares),
           numeroUnidades: parseInt(formData.numeroUnidades),
+          elevadoresSociais: parseInt(formData.elevadoresSociais),
+          elevadoresServico: parseInt(formData.elevadoresServico),
           email: formData.email,
           celular: formData.celular
         }
@@ -44,6 +48,8 @@ export const useSindicoForm = () => {
           endereco: '',
           numeroAndares: '',
           numeroUnidades: '',
+          elevadoresSociais: '',
+          elevadoresServico: '',
           email: '',
           celular: ''
         });

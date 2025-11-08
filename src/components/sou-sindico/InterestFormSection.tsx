@@ -75,6 +75,7 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
               <Input
                 placeholder="Número de andares"
                 type="number"
+                min="1"
                 value={formData.numeroAndares}
                 onChange={(e) => setFormData({...formData, numeroAndares: e.target.value})}
                 className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
@@ -84,8 +85,31 @@ const InterestFormSection: React.FC<InterestFormSectionProps> = ({
               <Input
                 placeholder="Total de unidades"
                 type="number"
+                min="1"
                 value={formData.numeroUnidades}
                 onChange={(e) => setFormData({...formData, numeroUnidades: e.target.value})}
+                className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
+                required
+              />
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              <Input
+                placeholder="Elevadores sociais"
+                type="number"
+                min="0"
+                value={formData.elevadoresSociais}
+                onChange={(e) => setFormData({...formData, elevadoresSociais: e.target.value})}
+                className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
+                required
+              />
+              
+              <Input
+                placeholder="Elevadores de serviço"
+                type="number"
+                min="0"
+                value={formData.elevadoresServico}
+                onChange={(e) => setFormData({...formData, elevadoresServico: e.target.value})}
                 className="bg-white border-purple-400/50 text-black placeholder-gray-800 shadow-sm"
                 required
               />

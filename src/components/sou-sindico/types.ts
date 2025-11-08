@@ -5,6 +5,8 @@ export interface SindicoFormData {
   endereco: string;
   numeroAndares: string;
   numeroUnidades: string;
+  elevadoresSociais: string;
+  elevadoresServico: string;
   email: string;
   celular: string;
 }
