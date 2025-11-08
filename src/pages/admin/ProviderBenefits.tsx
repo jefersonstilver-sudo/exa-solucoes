@@ -138,46 +138,59 @@ const ProviderBenefits = () => {
   // Mobile View
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#FEE2E2] to-background">
-        {/* Mobile Header */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-b border-white/20 shadow-lg">
-          <div className="p-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <Gift className="w-6 h-6 text-white" />
+      <div className="min-h-screen bg-background">
+        {/* Mobile Header - Minimalista */}
+        <div className="sticky top-0 z-10 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-b border-white/10">
+          <div className="px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
+                <Gift className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-bold text-white">
+                <h1 className="text-base font-semibold text-white tracking-tight">
                   Benefício Prestadores
                 </h1>
-                <p className="text-sm text-white/90 truncate">
+                <p className="text-xs text-white/80">
                   Gerencie presentes dos prestadores
                 </p>
               </div>
             </div>
 
-            <BenefitMobileActions
-              onNewBenefit={() => setShowForm(!showForm)}
-              onManageBenefits={() => navigate('/super_admin/gerenciar-beneficios')}
-              onPreviewEmail={() => navigate('/super_admin/preview-beneficio')}
-            />
+            <div className="mt-3 flex gap-2">
+              <Button 
+                onClick={() => setShowForm(!showForm)} 
+                size="sm"
+                className="flex-1 h-9 bg-white/10 hover:bg-white/20 text-white border-0 text-sm"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                Novo Benefício
+              </Button>
+              <Button 
+                onClick={() => navigate('/super_admin/gerenciar-beneficios')}
+                size="sm"
+                variant="ghost"
+                className="h-9 w-9 p-0 text-white hover:bg-white/10"
+              >
+                <Gift className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Mobile Form */}
+        {/* Mobile Form - Redesenhado */}
         {showForm && (
-          <div className="p-4">
-            <Card className="border-2 border-[#9C1E1E]/20">
-              <CardHeader>
-                <CardTitle className="text-lg">Criar Novo Benefício</CardTitle>
-                <CardDescription className="text-sm">
+          <div className="p-3">
+            <Card className="border shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold">Criar Novo Benefício</CardTitle>
+                <CardDescription className="text-xs">
                   Preencha os dados do prestador
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="provider_name" className="text-base font-semibold">
+              <CardContent className="pt-0">
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="provider_name" className="text-sm font-medium">
                       Nome completo *
                     </Label>
                     <Input
@@ -188,12 +201,12 @@ const ProviderBenefits = () => {
                         setFormData({ ...formData, provider_name: e.target.value })
                       }
                       placeholder="Ex: João Silva"
-                      className="h-12 text-base"
+                      className="h-10 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="provider_email" className="text-base font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="provider_email" className="text-sm font-medium">
                       E-mail *
                     </Label>
                     <Input
@@ -205,12 +218,12 @@ const ProviderBenefits = () => {
                         setFormData({ ...formData, provider_email: e.target.value })
                       }
                       placeholder="joao@email.com"
-                      className="h-12 text-base"
+                      className="h-10 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="activation_point" className="text-base font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="activation_point" className="text-sm font-medium">
                       Nome do ponto ativado
                     </Label>
                     <Input
@@ -220,12 +233,12 @@ const ProviderBenefits = () => {
                         setFormData({ ...formData, activation_point: e.target.value })
                       }
                       placeholder="Ex: Edifício Copacabana"
-                      className="h-12 text-base"
+                      className="h-10 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="observation" className="text-base font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="observation" className="text-sm font-medium">
                       Observação
                     </Label>
                     <Textarea
@@ -235,26 +248,26 @@ const ProviderBenefits = () => {
                         setFormData({ ...formData, observation: e.target.value })
                       }
                       placeholder="Notas internas"
-                      rows={3}
-                      className="text-base"
+                      rows={2}
+                      className="text-sm resize-none"
                     />
                   </div>
 
-                  <div className="space-y-2 pt-2">
+                  <div className="flex gap-2 pt-2">
                     <Button 
                       type="submit" 
                       disabled={isLoading} 
-                      className="w-full h-12 text-base bg-[#9C1E1E] hover:bg-[#7D1818]"
+                      className="flex-1 h-10 text-sm bg-[#9C1E1E] hover:bg-[#7D1818]"
                     >
                       {isLoading ? (
                         <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                           Criando...
                         </>
                       ) : (
                         <>
-                          <Mail className="mr-2 h-5 w-5" />
-                          Criar e Enviar Email
+                          <Mail className="mr-1.5 h-3.5 w-3.5" />
+                          Criar e Enviar
                         </>
                       )}
                     </Button>
@@ -262,7 +275,7 @@ const ProviderBenefits = () => {
                       type="button" 
                       variant="outline" 
                       onClick={() => setShowForm(false)}
-                      className="w-full h-12 text-base"
+                      className="h-10 text-sm px-4"
                     >
                       Cancelar
                     </Button>
@@ -273,8 +286,8 @@ const ProviderBenefits = () => {
           </div>
         )}
 
-        {/* Mobile List */}
-        <div className="p-4">
+        {/* Mobile List - Otimizado */}
+        <div className="p-3">
           <BenefitMobileList
             benefits={benefits}
             isLoading={isLoading}

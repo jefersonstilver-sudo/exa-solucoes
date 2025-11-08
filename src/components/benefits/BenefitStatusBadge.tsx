@@ -32,7 +32,7 @@ const BenefitStatusBadge: React.FC<BenefitStatusBadgeProps> = ({ status }) => {
   const config = statusConfig[status];
 
   return (
-    <Badge variant={config.variant} className={config.className}>
+    <Badge variant={config.variant} className={`${config.className} text-[10px] px-2 py-0.5 font-medium`}>
       {config.label}
     </Badge>
   );
