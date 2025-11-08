@@ -91,5 +91,8 @@ verify_jwt = true
 [functions.delete-user-account]
 verify_jwt = true
 
+[functions.fix-user-role]
+verify_jwt = true
+
 [functions.cleanup-orphan-users]
 verify_jwt = true

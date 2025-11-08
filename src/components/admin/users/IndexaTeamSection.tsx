@@ -206,6 +206,33 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
     }
   };
 
+  const handleFixJefersonRole = async () => {
+    try {
+      setCleanupLoading(true);
+      console.log('🔧 Corrigindo role de jeferson@examidia.com.br...');
+
+      const { data, error } = await supabase.functions.invoke('fix-user-role', {
+        body: {
+          email: 'jeferson@examidia.com.br',
+          role: 'admin_financeiro',
+          nome: 'Caju Sacola'
+        }
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Role corrigido:', data);
+      
+      toast.success('✅ Role corrigido com sucesso!', { duration: 5000 });
+      onRefresh();
+    } catch (error: any) {
+      console.error('❌ Erro ao corrigir role:', error);
+      toast.error(`Erro: ${error.message || 'Falha ao corrigir role'}`);
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <SecurityAuditBanner />
@@ -221,6 +248,15 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
           </p>
         </div>
         <div className="flex space-x-3">
+          <Button 
+            onClick={handleFixJefersonRole}
+            disabled={cleanupLoading}
+            variant="outline"
+            className="border-amber-300 text-amber-700 hover:bg-amber-50 flex items-center"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            {cleanupLoading ? 'Corrigindo...' : 'Corrigir Jeferson'}
+          </Button>
           <Button 
             onClick={handleCleanupOrphans}
             disabled={cleanupLoading}

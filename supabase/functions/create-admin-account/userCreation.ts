@@ -163,17 +163,37 @@ const insertUserRecord = async (
       if (insertError) {
         console.error(`❌ [CREATE-ADMIN] Erro na inserção (tentativa ${attempt}):`, insertError);
         
-        // Se for erro de chave duplicada, verificar se foi inserido por outro processo
+        // Se for erro de chave duplicada, verificar e atualizar se necessário
         if (insertError.code === '23505') {
-          console.log('🔍 [CREATE-ADMIN] Verificando se registro já existe...');
+          console.log('🔍 [CREATE-ADMIN] Verificando registro existente...');
           const { data: existingUser } = await supabase
             .from('users')
             .select('*')
             .eq('id', newUser.id)
-            .limit(1);
+            .single();
           
-          if (existingUser && existingUser.length > 0) {
-            console.log('✅ [CREATE-ADMIN] Registro já existe na tabela users');
+          if (existingUser) {
+            // Verificar se os dados estão corretos
+            const needsUpdate = existingUser.role !== adminType || 
+                               (nome && existingUser.nome !== nome) ||
+                               (cpf && existingUser.cpf !== cpf);
+            
+            if (needsUpdate) {
+              console.log('🔄 [CREATE-ADMIN] Atualizando registro existente com dados corretos...');
+              const { error: updateError } = await supabase
+                .from('users')
+                .update(userData)
+                .eq('id', newUser.id);
+              
+              if (updateError) {
+                console.error('❌ [CREATE-ADMIN] Erro ao atualizar:', updateError);
+                lastError = updateError;
+                continue;
+              }
+              console.log('✅ [CREATE-ADMIN] Registro atualizado com sucesso');
+            } else {
+              console.log('✅ [CREATE-ADMIN] Registro já existe com dados corretos');
+            }
             insertSuccess = true;
             break;
           }
