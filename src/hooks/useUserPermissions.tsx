@@ -63,9 +63,9 @@ export const useUserPermissions = () => {
   // Helper function para verificar permissão específica
   const checkPermission = useMemo(() => {
     return (permission: keyof UserPermissions): boolean => {
-      return hasPermission(permission, userProfile?.role);
+      return permissions[permission];
     };
-  }, [userProfile?.role]);
+  }, [permissions]);
 
   // Helper para verificar múltiplas permissões
   const hasAnyPermission = useMemo(() => {
