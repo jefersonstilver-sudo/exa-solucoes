@@ -26,6 +26,7 @@ export interface UserPermissions {
   // Gestão principal
   canViewDashboard: boolean;
   canViewOrders: boolean;
+  canViewCRM: boolean; // ✅ NOVA: Separado de pedidos
   canViewApprovals: boolean;
   
   // Ativos
@@ -43,6 +44,8 @@ export interface UserPermissions {
   canManageCoupons: boolean;
   canManageHomepageConfig: boolean;
   canManageSystemSettings: boolean;
+  canViewAudit: boolean; // ✅ NOVA: Auditoria
+  canViewSecurity: boolean; // ✅ NOVA: Segurança
   
   // Conteúdo
   canManageVideos: boolean;
@@ -54,11 +57,20 @@ export interface UserPermissions {
   canViewFinancialReports: boolean;
 }
 
+// Permissões customizadas por usuário (sobrescrevem as padrões do role)
+export interface UserCustomPermissions extends Partial<UserPermissions> {
+  user_id: string;
+  custom_permissions: Partial<UserPermissions>;
+  updated_at?: string;
+  updated_by?: string;
+}
+
 // Mapa de permissões por tipo de usuário
 export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
   super_admin: {
     canViewDashboard: true,
     canViewOrders: true,
+    canViewCRM: true,
     canViewApprovals: true,
     canManageBuildings: true,
     canManagePanels: true,
@@ -70,6 +82,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageCoupons: true,
     canManageHomepageConfig: true,
     canManageSystemSettings: true,
+    canViewAudit: true,
+    canViewSecurity: true,
     canManageVideos: true,
     canManagePortfolio: true,
     canManageNotifications: true,
@@ -79,6 +93,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
   admin: {
     canViewDashboard: true,
     canViewOrders: true,
+    canViewCRM: true,
     canViewApprovals: true,
     canManageBuildings: true,
     canManagePanels: true,
@@ -90,6 +105,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageCoupons: true,
     canManageHomepageConfig: false, // Reservado para marketing
     canManageSystemSettings: false, // Apenas super_admin
+    canViewAudit: false,
+    canViewSecurity: false,
     canManageVideos: true,
     canManagePortfolio: true,
     canManageNotifications: true,
@@ -98,20 +115,23 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
   },
   admin_marketing: {
     canViewDashboard: true,
-    canViewOrders: false, // Não tem acesso a pedidos financeiros
-    canViewApprovals: true, // Aprovação de conteúdo e vídeos
-    canManageBuildings: false, // Sem acesso a gestão de prédios
-    canManagePanels: false, // Sem acesso a gestão de painéis
+    canViewOrders: false,
+    canViewCRM: false, // ❌ Marketing não vê CRM de clientes
+    canViewApprovals: true,
+    canManageBuildings: false,
+    canManagePanels: false,
     canViewLeads: true,
     canViewSindicosInteressados: true,
     canViewLeadsProdutora: true,
     canViewLeadsCampanhas: true,
     canManageUsers: false,
     canManageCoupons: false,
-    canManageHomepageConfig: true, // Acesso específico para marketing
+    canManageHomepageConfig: true,
     canManageSystemSettings: false,
-    canManageVideos: true, // CORRIGIDO: Pode aprovar vídeos
-    canManagePortfolio: true, // CORRIGIDO: Pode gerenciar portfólio da produtora
+    canViewAudit: false,
+    canViewSecurity: false,
+    canManageVideos: true,
+    canManagePortfolio: true,
     canManageNotifications: true,
     canManageProviderBenefits: false,
     canViewFinancialReports: false,
@@ -119,6 +139,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
   admin_financeiro: {
     canViewDashboard: true,
     canViewOrders: true,               // ✅ Acesso TOTAL a pedidos
+    canViewCRM: false,                 // ❌ Não vê CRM (corrigido)
     canViewApprovals: false,           // ❌ Não precisa aprovar vídeos
     canManageBuildings: false,         // ❌ Não gerencia prédios
     canManagePanels: false,            // ❌ Não gerencia painéis
@@ -130,15 +151,18 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageCoupons: false,           // ❌ Pode VER mas não CRIAR cupons
     canManageHomepageConfig: false,
     canManageSystemSettings: false,
+    canViewAudit: false,
+    canViewSecurity: false,
     canManageVideos: false,
     canManagePortfolio: false,
     canManageNotifications: false,
-    canManageProviderBenefits: true,   // ✅✅ ACESSO TOTAL a benefícios
+    canManageProviderBenefits: true,   // ✅✅ ACESSO TOTAL a benefícios prestadores
     canViewFinancialReports: true,     // ✅✅ ACESSO a relatórios financeiros
   },
   client: {
     canViewDashboard: false,
     canViewOrders: false,
+    canViewCRM: false,
     canViewApprovals: false,
     canManageBuildings: false,
     canManagePanels: false,
@@ -150,6 +174,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageCoupons: false,
     canManageHomepageConfig: false,
     canManageSystemSettings: false,
+    canViewAudit: false,
+    canViewSecurity: false,
     canManageVideos: false,
     canManagePortfolio: false,
     canManageNotifications: false,
@@ -159,6 +185,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
   painel: {
     canViewDashboard: false,
     canViewOrders: false,
+    canViewCRM: false,
     canViewApprovals: false,
     canManageBuildings: false,
     canManagePanels: false,
@@ -170,6 +197,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageCoupons: false,
     canManageHomepageConfig: false,
     canManageSystemSettings: false,
+    canViewAudit: false,
+    canViewSecurity: false,
     canManageVideos: false,
     canManagePortfolio: false,
     canManageNotifications: false,

@@ -103,7 +103,7 @@ export function ModernAdminSidebar() {
           title: 'CRM Clientes',
           href: buildPath('crm'),
           icon: UsersRound,
-          permission: 'canViewOrders'
+          permission: 'canViewCRM' // ✅ CORRIGIDO: Permissão específica
         },
         {
           title: 'Aprovações',
