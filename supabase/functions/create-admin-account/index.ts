@@ -95,8 +95,13 @@ serve(async (req) => {
       }
     }
 
-    // Enviar email de boas-vindas profissional
-    console.log('📧 [CREATE-ADMIN] Enviando email de boas-vindas profissional...');
+    // 5. Enviar email de boas-vindas profissional
+    console.log('📧 [CREATE-ADMIN] Enviando email de boas-vindas...');
+    console.log(`📋 [EMAIL DEBUG] Nome para email: "${nome || email.split('@')[0]}"`);
+    console.log(`📋 [EMAIL DEBUG] Email destinatário: "${email}"`);
+    console.log(`📋 [EMAIL DEBUG] Role: "${adminType}"`);
+    console.log(`📋 [EMAIL DEBUG] Criado por: "${createdByName}"`);
+    
     const emailResult = await sendAdminWelcomeEmail({
       email,
       role: adminType,
@@ -149,10 +154,16 @@ serve(async (req) => {
       // Garantir que campos não fiquem vazios
       const nomeCompleto = nome?.trim() || email.split('@')[0] || 'Usuário';
       const cpfFormatado = cpf || 'Não informado';
+      
+      console.log(`📋 [NOTIFICATION DEBUG] Nome completo preparado: "${nomeCompleto}"`);
+      console.log(`📋 [NOTIFICATION DEBUG] CPF: "${cpfFormatado}"`);
 
       for (const admin of superAdmins) {
         try {
-          const notificationResult = await sendSuperAdminNotification({
+          console.log(`📤 [NOTIFICATION] Preparando notificação para ${admin.email}`);
+          console.log(`📋 [NOTIFICATION DEBUG] Nome a ser enviado na notificação: "${nomeCompleto}"`);
+          
+          const notificationData = {
             superAdminEmail: admin.email,
             superAdminName: admin.nome?.trim() || 'Administrador',
             newUser: {
@@ -165,7 +176,12 @@ serve(async (req) => {
             createdBy: createdByName,
             emailSentStatus: emailResult.success,
             timestamp
-          });
+          };
+          
+          console.log(`📋 [NOTIFICATION DEBUG] Objeto notificationData completo:`, JSON.stringify(notificationData, null, 2));
+          console.log(`📋 [NOTIFICATION DEBUG] newUser.nome = "${notificationData.newUser.nome}"`);
+          
+          const notificationResult = await sendSuperAdminNotification(notificationData);
 
           if (notificationResult.success) {
             notificationsSent++;
