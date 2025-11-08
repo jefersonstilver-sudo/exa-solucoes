@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Users, Shield, Plus, RefreshCw, Search, UserCheck } from 'lucide-react';
+import { Crown, Users, Shield, Plus, RefreshCw, Search, UserCheck, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import IndexaTeamSection from '@/components/admin/users/IndexaTeamSection';
@@ -314,7 +314,7 @@ const UsersPage = () => {
     );
   }
 
-  // Desktop View
+  // Desktop View - Minimalist & Professional
   const totalStats = {
     total: users.length,
     indexaTeam: indexaTeam.length,
@@ -323,92 +323,88 @@ const UsersPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Principal */}
-      <div className="flex items-center justify-between">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-          <Users className="mr-2 h-7 w-7 text-primary" />
-          Gestão de Usuários EXA
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Gerencie contas de administradores e clientes do sistema
-        </p>
-      </div>
-      </div>
-
-      {/* Estatísticas Gerais */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total de Usuários</p>
-                <p className="text-2xl font-bold">{totalStats.total}</p>
-              </div>
-              <Users className="h-8 w-8 text-gray-500" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      {/* Clean Minimalist Header */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-light text-gray-900 tracking-tight">
+                Gestão de Usuários
+              </h1>
+              <p className="text-sm text-gray-500 mt-2">
+                Administre contas e permissões do sistema
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            <Button 
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="bg-indexa-purple hover:bg-indexa-purple/90 shadow-sm"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Nova Conta
+            </Button>
+          </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Equipe EXA</p>
-                <p className="text-2xl font-bold text-primary">{totalStats.indexaTeam}</p>
-              </div>
-              <Crown className="h-8 w-8 text-primary" />
+          {/* Minimalist Stats */}
+          <div className="grid grid-cols-4 gap-8 mt-8">
+            <div className="text-center">
+              <div className="text-3xl font-light text-gray-900">{totalStats.total}</div>
+              <div className="text-xs text-gray-500 mt-1 uppercase tracking-wide">Total</div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Base de Clientes</p>
-                <p className="text-2xl font-bold text-blue-500">{totalStats.clients}</p>
-              </div>
-              <UserCheck className="h-8 w-8 text-blue-500" />
+            <div className="text-center">
+              <div className="text-3xl font-light text-indexa-purple">{totalStats.indexaTeam}</div>
+              <div className="text-xs text-gray-500 mt-1 uppercase tracking-wide">Equipe EXA</div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Verificados</p>
-                <p className="text-2xl font-bold text-green-500">{totalStats.verified}</p>
-              </div>
-              <Shield className="h-8 w-8 text-green-500" />
+            <div className="text-center">
+              <div className="text-3xl font-light text-gray-900">{totalStats.clients}</div>
+              <div className="text-xs text-gray-500 mt-1 uppercase tracking-wide">Clientes</div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-center">
+              <div className="text-3xl font-light text-green-600">{totalStats.verified}</div>
+              <div className="text-xs text-gray-500 mt-1 uppercase tracking-wide">Verificados</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Tabs para Separação */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="team" className="flex items-center space-x-2">
-            <Crown className="h-4 w-4" />
-            <span>Equipe EXA ({indexaTeam.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="clients" className="flex items-center space-x-2">
-            <Users className="h-4 w-4" />
-            <span>Base de Clientes ({clients.length})</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* Minimalist Tabs */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-white border border-gray-200 p-1 rounded-lg shadow-sm">
+            <TabsTrigger 
+              value="team" 
+              className="data-[state=active]:bg-indexa-purple data-[state=active]:text-white rounded-md px-6 py-2 text-sm font-medium transition-all"
+            >
+              <Crown className="h-4 w-4 mr-2" />
+              Equipe EXA
+              <span className="ml-2 text-xs opacity-75">({indexaTeam.length})</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="clients"
+              className="data-[state=active]:bg-indexa-purple data-[state=active]:text-white rounded-md px-6 py-2 text-sm font-medium transition-all"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Clientes
+              <span className="ml-2 text-xs opacity-75">({clients.length})</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="team" className="mt-6">
-          <IndexaTeamSection users={users} loading={loading} onRefresh={fetchUsers} />
-        </TabsContent>
+          <TabsContent value="team" className="mt-6">
+            <IndexaTeamSection users={users} loading={loading} onRefresh={fetchUsers} />
+          </TabsContent>
 
-        <TabsContent value="clients" className="mt-6">
-          <ClientsSection users={users} loading={loading} onRefresh={fetchUsers} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="clients" className="mt-6">
+            <ClientsSection users={users} loading={loading} onRefresh={fetchUsers} />
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Dialogs */}
+      <CreateUserDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSuccess={handleRefresh}
+      />
     </div>
   );
 };

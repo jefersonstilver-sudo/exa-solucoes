@@ -21,7 +21,8 @@ import {
   UserPlus,
   Info,
   DollarSign,
-  Trash2
+  Trash2,
+  Users
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -88,30 +89,26 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
     switch (role) {
       case 'super_admin':
         return (
-          <Badge className="bg-indexa-purple/10 text-indexa-purple border-indexa-purple/20">
-            <Crown className="h-3 w-3 mr-1" />
+          <Badge variant="secondary" className="bg-indexa-purple/10 text-indexa-purple border-0 font-normal text-xs">
             Super Admin
           </Badge>
         );
       case 'admin':
         return (
-          <Badge className="bg-blue-50 text-blue-600 border-blue-200">
-            <Shield className="h-3 w-3 mr-1" />
+          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-0 font-normal text-xs">
             Admin Geral
           </Badge>
         );
       case 'admin_marketing':
         return (
-          <Badge className="bg-purple-50 text-purple-600 border-purple-200">
-            <UserCog className="h-3 w-3 mr-1" />
-            Admin Marketing
+          <Badge variant="secondary" className="bg-purple-50 text-purple-700 border-0 font-normal text-xs">
+            Marketing
           </Badge>
         );
       case 'admin_financeiro':
         return (
-          <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200">
-            <DollarSign className="h-3 w-3 mr-1" />
-            Admin Financeiro
+          <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-0 font-normal text-xs">
+            Financeiro
           </Badge>
         );
       default:
@@ -132,7 +129,11 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
 
   const getStatusBadge = (user: User) => {
     if (!user.email_confirmed_at) {
-      return <Badge variant="destructive">Não Verificado</Badge>;
+      return (
+        <Badge variant="secondary" className="bg-red-50 text-red-700 border-0 font-normal text-xs">
+          Não Verificado
+        </Badge>
+      );
     }
     
     const lastSignIn = user.last_sign_in_at ? new Date(user.last_sign_in_at) : null;
@@ -140,9 +141,17 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     if (lastSignIn && lastSignIn > thirtyDaysAgo) {
-      return <Badge className="bg-green-50 text-green-600 border-green-200">Ativo</Badge>;
+      return (
+        <Badge variant="secondary" className="bg-green-50 text-green-700 border-0 font-normal text-xs">
+          Ativo
+        </Badge>
+      );
     } else {
-      return <Badge variant="secondary">Inativo</Badge>;
+      return (
+        <Badge variant="secondary" className="bg-gray-100 text-gray-600 border-0 font-normal text-xs">
+          Inativo
+        </Badge>
+      );
     }
   };
 
@@ -197,51 +206,44 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
 
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <SecurityAuditBanner />
       
-      {/* Professional Header */}
-      <div className="bg-gradient-to-br from-indexa-purple via-indexa-purple/90 to-indexa-purple/80 rounded-2xl shadow-xl p-8">
+      {/* Minimalist Action Bar */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
-              <Crown className="h-8 w-8 text-white" />
+          <div className="flex items-center space-x-4 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar por email ou nome..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 border-gray-200 focus:border-indexa-purple focus:ring-1 focus:ring-indexa-purple"
+              />
             </div>
-            <div>
-              <h2 className="text-3xl font-bold text-white flex items-center space-x-3">
-                Usuários EXA
-              </h2>
-              <p className="text-white/90 mt-2 text-base">
-                Administradores e Super Administradores do sistema
-              </p>
-            </div>
+            <Badge variant="secondary" className="text-xs">
+              {filteredTeam.length} resultado(s)
+            </Badge>
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             <Button 
               onClick={handleCleanupOrphans}
               disabled={cleanupLoading}
               variant="outline"
-              className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 transition-all duration-200"
-              size="lg"
+              size="sm"
+              className="text-gray-600 hover:text-gray-900"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              {cleanupLoading ? 'Limpando...' : 'Limpar Órfãos'}
+              {cleanupLoading ? 'Limpando...' : 'Limpar'}
             </Button>
             <Button 
-              onClick={() => setCreateDialogOpen(true)}
-              className="bg-white text-indexa-purple hover:bg-white/90 shadow-lg transition-all duration-200"
-              size="lg"
-            >
-              <UserPlus className="h-5 w-5 mr-2" />
-              Nova Conta
-            </Button>
-            <Button 
-              variant="outline" 
               onClick={onRefresh} 
               disabled={loading}
-              className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 transition-all duration-200"
-              size="lg"
+              variant="outline"
+              size="sm"
+              className="text-gray-600 hover:text-gray-900"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
@@ -249,197 +251,134 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
         </div>
       </div>
 
-      {/* Professional Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        <Card className="bg-gradient-to-br from-indexa-purple to-indexa-purple/80 text-white border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white/90">Total da Equipe</CardTitle>
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <UserCog className="h-5 w-5 text-white" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats.total}</div>
-            <p className="text-xs text-white/80 mt-2">membros ativos</p>
-          </CardContent>
-        </Card>
+      {/* Minimalist Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <UserCog className="h-5 w-5 text-gray-400" />
+          </div>
+          <div className="text-2xl font-light text-gray-900">{stats.total}</div>
+          <div className="text-xs text-gray-500 mt-1">Total</div>
+        </div>
 
-        <Card className="border-2 border-indexa-purple/20 hover:border-indexa-purple/40 hover:shadow-lg transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Super Admins</CardTitle>
-            <div className="w-10 h-10 bg-indexa-purple/10 rounded-xl flex items-center justify-center">
-              <Crown className="h-5 w-5 text-indexa-purple" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-indexa-purple">{stats.superAdmins}</div>
-            <p className="text-xs text-muted-foreground mt-2">acesso total</p>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-lg border border-indexa-purple/20 p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <Crown className="h-5 w-5 text-indexa-purple" />
+          </div>
+          <div className="text-2xl font-light text-indexa-purple">{stats.superAdmins}</div>
+          <div className="text-xs text-gray-500 mt-1">Super Admins</div>
+        </div>
 
-        <Card className="border-2 border-blue-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Admin Geral</CardTitle>
-            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-              <Shield className="h-5 w-5 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{stats.admins}</div>
-            <p className="text-xs text-muted-foreground mt-2">gestão completa</p>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-lg border border-blue-200 p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <Shield className="h-5 w-5 text-blue-600" />
+          </div>
+          <div className="text-2xl font-light text-blue-600">{stats.admins}</div>
+          <div className="text-xs text-gray-500 mt-1">Admin Geral</div>
+        </div>
 
-        <Card className="border-2 border-purple-200 hover:border-purple-300 hover:shadow-lg transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Admin Marketing</CardTitle>
-            <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-              <UserCog className="h-5 w-5 text-purple-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{stats.marketingAdmins}</div>
-            <p className="text-xs text-muted-foreground mt-2">leads e campanhas</p>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-lg border border-purple-200 p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <UserCog className="h-5 w-5 text-purple-600" />
+          </div>
+          <div className="text-2xl font-light text-purple-600">{stats.marketingAdmins}</div>
+          <div className="text-xs text-gray-500 mt-1">Marketing</div>
+        </div>
 
-        <Card className="border-2 border-emerald-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Admin Financeiro</CardTitle>
-            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-emerald-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-emerald-600">{stats.financialAdmins}</div>
-            <p className="text-xs text-muted-foreground mt-2">pedidos e benefícios</p>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-lg border border-emerald-200 p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <DollarSign className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div className="text-2xl font-light text-emerald-600">{stats.financialAdmins}</div>
+          <div className="text-xs text-gray-500 mt-1">Financeiro</div>
+        </div>
 
-        <Card className="border-2 border-green-200 hover:border-green-300 hover:shadow-lg transition-all duration-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Verificados</CardTitle>
-            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-              <Eye className="h-5 w-5 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{stats.verified}</div>
-            <p className="text-xs text-muted-foreground mt-2">emails confirmados</p>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-lg border border-green-200 p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <Eye className="h-5 w-5 text-green-600" />
+          </div>
+          <div className="text-2xl font-light text-green-600">{stats.verified}</div>
+          <div className="text-xs text-gray-500 mt-1">Verificados</div>
+        </div>
       </div>
 
-      {/* Professional Search Section */}
-      <Card className="border-2 shadow-md">
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-white">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center">
-              <div className="w-10 h-10 bg-indexa-purple/10 rounded-xl flex items-center justify-center mr-3">
-                <Search className="h-5 w-5 text-indexa-purple" />
-              </div>
-              Buscar na Equipe
-            </CardTitle>
-            <Badge variant="secondary" className="text-sm">
-              {filteredTeam.length} resultado(s)
-            </Badge>
+      {/* Clean Minimalist Table */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <RefreshCw className="h-6 w-6 animate-spin text-indexa-purple" />
+            <span className="ml-3 text-sm text-gray-600">Carregando...</span>
           </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por email, nome ou função..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-11 h-12 text-base"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Professional Team Table */}
-      <Card className="border-2 shadow-md">
-        <CardHeader className="bg-gradient-to-r from-indexa-purple/5 to-white border-b">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl flex items-center">
-                <Crown className="h-6 w-6 text-indexa-purple mr-2" />
-                Membros da Equipe EXA
-              </CardTitle>
-              <CardDescription className="mt-2 text-base">
-                {filteredTeam.length} membro(s) encontrado(s)
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-indexa-purple" />
-              <span className="ml-3 text-gray-600">Carregando equipe...</span>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="border-gray-100 hover:bg-transparent">
+                <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wider">Membro</TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wider">Função</TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wider">Último Acesso</TableHead>
+                <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTeam.length === 0 ? (
                 <TableRow>
-                  <TableHead>Membro</TableHead>
-                  <TableHead>Função</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Último Acesso</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableCell colSpan={5} className="text-center py-16">
+                    <div className="flex flex-col items-center space-y-2">
+                      <Users className="h-12 w-12 text-gray-300" />
+                      <p className="text-sm text-gray-500">
+                        {exaTeam.length === 0 ? 'Nenhum membro encontrado' : 'Nenhum resultado para sua busca'}
+                      </p>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTeam.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12 text-gray-500">
-                      {exaTeam.length === 0 ? 'Nenhum membro da equipe encontrado' : 'Nenhum membro corresponde à busca'}
+              ) : (
+                filteredTeam.map((user) => (
+                  <TableRow key={user.id} className="border-gray-100 hover:bg-gray-50/50 transition-colors">
+                    <TableCell className="py-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          {getRoleIcon(user.role) || (
+                            <span className="text-sm font-medium text-gray-600">
+                              {user.email.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{user.email}</p>
+                          <p className="text-xs text-gray-500">
+                            {(user as any).nome || user.raw_user_meta_data?.name || 'Nome não informado'}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {getRoleBadge(user.role)}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(user)}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {formatDate(user.last_sign_in_at)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewDetails(user)}
+                        className="text-gray-600 hover:text-indexa-purple hover:bg-indexa-purple/5"
+                      >
+                        <Info className="h-4 w-4 mr-1" />
+                        Detalhes
+                      </Button>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredTeam.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-indexa-purple/10 rounded-lg flex items-center justify-center">
-                            {getRoleIcon(user.role)}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{user.email}</p>
-                            <p className="text-sm text-gray-500">
-                              {(user as any).nome || user.raw_user_meta_data?.name || 'Nome não informado'}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getRoleBadge(user.role)}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(user)}
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {formatDate(user.last_sign_in_at)}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDetails(user)}
-                        >
-                          <Info className="h-3 w-3 mr-1" />
-                          Ver Detalhes
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
+      </div>
 
       {/* Dialog de Criação de Conta */}
       <CreateUserDialog
