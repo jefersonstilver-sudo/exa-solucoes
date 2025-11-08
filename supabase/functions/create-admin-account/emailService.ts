@@ -17,8 +17,9 @@ export const sendAdminWelcomeEmail = async (
     // Verificar se tem API key
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) {
-      console.error('❌ [EMAIL] RESEND_API_KEY não configurada');
-      return { success: false, error: 'RESEND_API_KEY não configurada' };
+      const errorMsg = '❌ RESEND_API_KEY não configurada! Configure em: https://resend.com/api-keys';
+      console.error(`❌ [EMAIL] ${errorMsg}`);
+      return { success: false, error: errorMsg };
     }
     
     const { Resend } = await import('npm:resend@4.0.0');
@@ -47,15 +48,17 @@ export const sendAdminWelcomeEmail = async (
     });
 
     if (error) {
-      console.error('❌ [EMAIL] Erro ao enviar email:', error);
-      return { success: false, error: error.message || String(error) };
+      const errorMsg = `Erro Resend: ${error.message || String(error)}`;
+      console.error(`❌ [EMAIL] ${errorMsg}`);
+      return { success: false, error: errorMsg };
     }
 
     console.log('✅ [EMAIL] Email profissional enviado com sucesso:', emailData);
     return { success: true };
     
   } catch (error: any) {
-    console.error('💥 [EMAIL] Erro crítico ao enviar email:', error);
-    return { success: false, error: error?.message || String(error) };
+    const errorMsg = `Erro crítico: ${error?.message || String(error)}`;
+    console.error(`💥 [EMAIL] ${errorMsg}`);
+    return { success: false, error: errorMsg };
   }
 };

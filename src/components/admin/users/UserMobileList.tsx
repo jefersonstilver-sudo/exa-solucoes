@@ -12,9 +12,10 @@ interface User {
 interface UserMobileListProps {
   users: User[];
   isLoading: boolean;
+  onUserUpdated?: () => void;
 }
 
-const UserMobileList: React.FC<UserMobileListProps> = ({ users, isLoading }) => {
+const UserMobileList: React.FC<UserMobileListProps> = ({ users, isLoading, onUserUpdated }) => {
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -52,7 +53,7 @@ const UserMobileList: React.FC<UserMobileListProps> = ({ users, isLoading }) => 
   return (
     <div className="space-y-3 pb-20">
       {users.map((user) => (
-        <UserMobileCard key={user.id} user={user} />
+        <UserMobileCard key={user.id} user={user} onUserUpdated={onUserUpdated} />
       ))}
     </div>
   );

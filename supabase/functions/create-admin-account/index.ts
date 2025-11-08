@@ -105,7 +105,25 @@ serve(async (req) => {
     });
     
     if (!emailResult.success) {
-      console.warn('⚠️ [CREATE-ADMIN] Conta criada mas email não enviado:', emailResult.error);
+      console.warn('⚠️ [CREATE-ADMIN] Conta criada mas email de boas-vindas não enviado:', emailResult.error);
+      
+      // Tentar enviar email de confirmação via unified-email-service como fallback
+      console.log('🔄 [CREATE-ADMIN] Tentando enviar email de confirmação como alternativa...');
+      try {
+        const { error: confirmError } = await supabase.functions.invoke('unified-email-service', {
+          body: {
+            type: 'resend-confirmation',
+            email: email,
+            userName: nome || email.split('@')[0]
+          }
+        });
+        
+        if (!confirmError) {
+          console.log('✅ [CREATE-ADMIN] Email de confirmação enviado como alternativa');
+        }
+      } catch (fallbackError) {
+        console.error('❌ [CREATE-ADMIN] Falha no envio do email de confirmação:', fallbackError);
+      }
     } else {
       console.log('✅ [CREATE-ADMIN] Email profissional enviado com sucesso!');
     }

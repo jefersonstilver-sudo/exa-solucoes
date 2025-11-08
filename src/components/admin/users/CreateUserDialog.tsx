@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { useEmailCheck } from '@/hooks/useEmailCheck';
 import ExistingUserAlert from './ExistingUserAlert';
+import EmailConfigWarning from './EmailConfigWarning';
 
 // Schema de validação
 const createUserSchema = z.object({
@@ -72,6 +73,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   const [creating, setCreating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showExistingAlert, setShowExistingAlert] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const { checking: checkingEmail, result: emailCheckResult, checkEmail, clearResult } = useEmailCheck();
 
   // Função para formatar CPF automaticamente
@@ -214,6 +216,18 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       // Usar senha retornada pela Edge Function
       const senhaRetornada = functionData.password || 'exa2025';
 
+      // Verificar se o email foi enviado
+      if (!functionData.emailSent) {
+        console.warn('⚠️ Email não foi enviado ao usuário');
+        setEmailError('RESEND_API_KEY não configurada! Configure em: https://resend.com/api-keys');
+        toast.warning('⚠️ Conta criada mas email não enviado', {
+          description: 'Configure o RESEND_API_KEY para enviar emails automaticamente',
+          duration: 8000,
+        });
+      } else {
+        setEmailError(null);
+      }
+
       toast.success(`✅ Conta criada com sucesso!`, {
         description: `${nomeCompleto} - ${email}`,
         duration: 6000,
@@ -265,6 +279,11 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
             Senha padrão: <span className="font-mono font-semibold">exa2025</span>
           </DialogDescription>
         </DialogHeader>
+
+        {/* Aviso de configuração de email */}
+        {emailError && (
+          <EmailConfigWarning show={true} errorMessage={emailError} />
+        )}
 
         <div className="space-y-4">
           {/* Nome e Sobrenome */}

@@ -41,13 +41,14 @@ export const createAdminUser = async (
       const { data: createResult, error: createError } = await supabaseServiceRole.auth.admin.createUser({
         email,
         password: defaultPassword,
-        email_confirm: true,
+        email_confirm: false, // Enviar email de confirmação
         user_metadata: {
           role: adminType,
           created_by_admin: true,
           creation_method: 'refactored_edge_function',
           creation_timestamp: new Date().toISOString(),
-          attempt_number: attempt
+          attempt_number: attempt,
+          name: nome || email.split('@')[0]
         }
       });
 

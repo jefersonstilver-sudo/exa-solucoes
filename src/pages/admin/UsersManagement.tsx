@@ -209,7 +209,7 @@ export default function UsersManagement() {
               encontrado{filteredUsers.length !== 1 ? 's' : ''}
             </div>
           )}
-          <UserMobileList users={filteredUsers} isLoading={loading} />
+          <UserMobileList users={filteredUsers} isLoading={loading} onUserUpdated={handleRefresh} />
         </div>
 
         {/* Create User Dialog */}
