@@ -225,15 +225,16 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       setResendingEmail(true);
       console.log('📧 Reenviando email de confirmação para:', user.email);
 
-      const { error } = await supabase.functions.invoke('unified-email-service', {
+      const { data, error } = await supabase.functions.invoke('unified-email-service', {
         body: {
-          type: 'resend-confirmation',
-          email: user.email,
-          userName: user.raw_user_meta_data?.name || user.email.split('@')[0]
+          action: 'resend',
+          email: user.email
         }
       });
 
       if (error) throw error;
+
+      console.log('✅ Resposta da edge function:', data);
 
       toast.success('✅ Email de confirmação enviado!', {
         description: `Um novo link de confirmação foi enviado para ${user.email}`

@@ -112,9 +112,8 @@ serve(async (req) => {
       try {
         const { error: confirmError } = await supabase.functions.invoke('unified-email-service', {
           body: {
-            type: 'resend-confirmation',
-            email: email,
-            userName: nome || email.split('@')[0]
+            action: 'resend',
+            email: email
           }
         });
         
