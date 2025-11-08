@@ -40,6 +40,7 @@ interface User {
   email_confirmed_at?: string;
   last_sign_in_at?: string;
   raw_user_meta_data?: any;
+  nome?: string;
 }
 
 interface IndexaTeamSectionProps {
@@ -57,11 +58,14 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
   const { updateUserRole, loading: secureLoading } = useSecureAdmin();
 
   // Filter team members - role now comes from users_with_role view (secure)
-  const indexaTeam = users.filter(user => 
-    user.role === 'super_admin' || user.role === 'admin' || user.role === 'admin_marketing'
+  const exaTeam = users.filter(user => 
+    user.role === 'super_admin' || 
+    user.role === 'admin' || 
+    user.role === 'admin_marketing' || 
+    user.role === 'admin_financeiro'
   );
   
-  const filteredTeam = indexaTeam.filter(user =>
+  const filteredTeam = exaTeam.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -158,16 +162,16 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
   };
 
   const stats = {
-    total: indexaTeam.length,
-    superAdmins: indexaTeam.filter(u => u.role === 'super_admin').length,
-    admins: indexaTeam.filter(u => u.role === 'admin').length,
-    marketingAdmins: indexaTeam.filter(u => u.role === 'admin_marketing').length,
-    financialAdmins: indexaTeam.filter(u => u.role === 'admin_financeiro').length,
-    verified: indexaTeam.filter(u => u.email_confirmed_at).length,
+    total: exaTeam.length,
+    superAdmins: exaTeam.filter(u => u.role === 'super_admin').length,
+    admins: exaTeam.filter(u => u.role === 'admin').length,
+    marketingAdmins: exaTeam.filter(u => u.role === 'admin_marketing').length,
+    financialAdmins: exaTeam.filter(u => u.role === 'admin_financeiro').length,
+    verified: exaTeam.filter(u => u.email_confirmed_at).length,
   };
 
   const handleAccountCreated = () => {
-    console.log('✅ [INDEXA TEAM] Nova conta criada, atualizando lista...');
+    console.log('✅ [EXA TEAM] Nova conta criada, atualizando lista...');
     onRefresh();
     setCreateDialogOpen(false);
   };
@@ -375,7 +379,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
       {/* Tabela da Equipe */}
       <Card className="bg-indexa-purple/5 border-indexa-purple/20">
         <CardHeader>
-          <CardTitle className="text-lg">Membros da Equipe INDEXA</CardTitle>
+          <CardTitle className="text-lg">Membros da Equipe EXA</CardTitle>
           <CardDescription>
             {filteredTeam.length} membro(s) encontrado(s)
           </CardDescription>
@@ -401,7 +405,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
                 {filteredTeam.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-12 text-gray-500">
-                      {indexaTeam.length === 0 ? 'Nenhum membro da equipe encontrado' : 'Nenhum membro corresponde à busca'}
+                      {exaTeam.length === 0 ? 'Nenhum membro da equipe encontrado' : 'Nenhum membro corresponde à busca'}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -415,7 +419,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
                           <div>
                             <p className="font-medium text-gray-900">{user.email}</p>
                             <p className="text-sm text-gray-500">
-                              {user.raw_user_meta_data?.name || 'Nome não informado'}
+                              {(user as any).nome || user.raw_user_meta_data?.name || 'Nome não informado'}
                             </p>
                           </div>
                         </div>

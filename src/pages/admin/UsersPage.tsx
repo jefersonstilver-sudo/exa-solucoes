@@ -30,6 +30,9 @@ interface User {
   tipo_documento?: string;
   documento_frente_url?: string;
   documento_verso_url?: string;
+  last_sign_in_at?: string;
+  email_confirmed_at?: string;
+  raw_user_meta_data?: any;
 }
 
 const UsersPage = () => {
@@ -51,7 +54,7 @@ const UsersPage = () => {
       const { data, error, status } = await supabase
         .from('users')
         .select('*')
-        .order('data_criacao', { ascending: false });
+        .order('data_criacao', { ascending: false});
 
       console.log('📊 [USERS_PAGE] Resposta da query:', {
         status,
