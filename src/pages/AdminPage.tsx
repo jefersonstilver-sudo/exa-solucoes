@@ -16,19 +16,19 @@ const AdminPage = () => {
   useEffect(() => {
     if (isLoading) return;
 
-    const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'admin_marketing';
+    const isAdminRole = ['admin', 'admin_marketing', 'admin_financeiro'].includes(userProfile?.role || '');
     const isSuperAdmin = userProfile?.role === 'super_admin';
 
     console.log('🛡️ AdminPage Protection:', {
       userEmail: userProfile?.email,
       userRole: userProfile?.role,
-      isAdmin,
+      isAdminRole,
       isSuperAdmin,
       isLoggedIn,
       currentPath: location.pathname
     });
 
-    if (!isLoggedIn || (!isAdmin && !isSuperAdmin)) {
+    if (!isLoggedIn || (!isAdminRole && !isSuperAdmin)) {
       console.log('🚫 AdminPage: Acesso negado');
       toast.error('Acesso restrito a administradores');
       navigate('/login?redirect=/admin', { replace: true });
@@ -52,10 +52,10 @@ const AdminPage = () => {
     );
   }
 
-  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'admin_marketing';
+  const isAdminRole = ['admin', 'admin_marketing', 'admin_financeiro'].includes(userProfile?.role || '');
   const isSuperAdmin = userProfile?.role === 'super_admin';
 
-  if (!isLoggedIn || (!isAdmin && !isSuperAdmin)) {
+  if (!isLoggedIn || (!isAdminRole && !isSuperAdmin)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

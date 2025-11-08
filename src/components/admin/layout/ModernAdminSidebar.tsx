@@ -250,6 +250,7 @@ export function ModernAdminSidebar() {
       case 'super_admin': return 'text-yellow-400';
       case 'admin': return 'text-blue-400';
       case 'admin_marketing': return 'text-orange-400';
+      case 'admin_financeiro': return 'text-green-400';
       default: return 'text-indexa-mint';
     }
   };
@@ -259,6 +260,7 @@ export function ModernAdminSidebar() {
       case 'super_admin': return 'Super Admin';
       case 'admin': return 'Admin Geral';
       case 'admin_marketing': return 'Admin Marketing';
+      case 'admin_financeiro': return 'Admin Financeiro';
       default: return 'Admin';
     }
   };

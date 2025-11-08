@@ -19,13 +19,12 @@ export const useLoginForm = (redirectPath: string = '/') => {
       case 'super_admin':
         return '/super_admin';
       case 'admin':
-        return '/admin';
       case 'admin_marketing':
+      case 'admin_financeiro':
         return '/admin';
       case 'client':
         return fallbackPath === '/paineis-digitais/loja' ? '/loja' : fallbackPath;
       default:
-        // Se não conseguir determinar o papel, usar fallback corrigido
         return fallbackPath === '/paineis-digitais/loja' ? '/loja' : fallbackPath;
     }
   };

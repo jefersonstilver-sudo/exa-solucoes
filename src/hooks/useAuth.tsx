@@ -48,13 +48,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const extractRoleFromJWT = (accessToken: string): UserRole | null => {
     try {
       const payload = JSON.parse(atob(accessToken.split('.')[1]));
-      const role = payload.user_role;
+      const role = payload.user_role || payload.role;
       // Validate that the role is a valid UserRole (INCLUINDO admin_financeiro)
       if (role && ['client', 'admin', 'admin_marketing', 'admin_financeiro', 'super_admin', 'painel'].includes(role)) {
         return role as UserRole;
       }
       return null;
-    } catch {
+    } catch (error) {
+      console.error('❌ Erro ao extrair role do JWT:', error);
       return null;
     }
   };
@@ -79,39 +80,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // 🚨 SECURITY FIX: Buscar role de user_roles, não do JWT apenas
     const fetchUserProfile = async (userId: string, accessToken?: string) => {
       try {
-        // Primeiro tentar JWT (mais rápido)
+        // Tentar obter role do JWT primeiro (mais rápido)
         let role = accessToken ? extractRoleFromJWT(accessToken) : null;
         
-        // Se não encontrou no JWT, buscar do banco
+        // ⚠️ CRÍTICO: Se não encontrou no JWT, SEMPRE buscar do banco
         if (!role) {
-          const { data: roleData } = await supabase
+          console.warn('⚠️ Role não encontrado no JWT, buscando do banco user_roles...');
+          const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
             .select('role')
             .eq('user_id', userId)
             .single();
           
-          role = roleData?.role || 'client';
+          if (roleError) {
+            console.error('❌ Erro ao buscar role da tabela user_roles:', roleError);
+            role = 'client'; // Fallback seguro
+          } else {
+            role = roleData?.role || 'client';
+            console.log('✅ Role obtido do banco:', role);
+          }
+        } else {
+          console.log('✅ Role obtido do JWT:', role);
         }
         
         // Buscar dados completos do usuário
-        const { data: userData } = await supabase
+        const { data: userData, error: userError } = await supabase
           .from('users')
           .select('id, email, nome, cpf, avatar_url')
           .eq('id', userId)
           .single();
         
-        setUserProfile({
-          id: userId,
-          email: userData?.email || '',
-          nome: userData?.nome,
-          documento: userData?.cpf, // Mapear cpf para documento
-          avatar_url: userData?.avatar_url,
-          role: role
-        });
+        if (userError) {
+          console.error('❌ Erro ao buscar dados do usuário:', userError);
+          setUserProfile(null);
+          return;
+        }
         
-        console.log('🔐 [useAuth] Profile carregado:', { userId, role, email: userData?.email });
+        const profile: UserProfile = {
+          id: userId,
+          email: userData.email,
+          nome: userData.nome,
+          documento: userData.cpf,
+          avatar_url: userData.avatar_url,
+          role: role
+        };
+        
+        setUserProfile(profile);
+        console.log('✅ Profile carregado com sucesso:', { 
+          userId,
+          email: profile.email, 
+          role: profile.role 
+        });
       } catch (error) {
-        console.error('❌ [useAuth] Erro ao buscar profile:', error);
+        console.error('❌ Erro inesperado ao buscar profile:', error);
         setUserProfile(null);
       }
     };

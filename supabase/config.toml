@@ -34,9 +34,11 @@ secure_password_change = true
 enabled = true
 uri = "https://aakenoljsycyrcrchgxj.supabase.co/functions/v1/unified-email-service"
 
-[auth.hook.custom_access_token]
-enabled = true
-uri = "pg-functions://postgres/public/custom_access_token_hook"
+# TEMPORARILY DISABLED - Requires manual configuration in Supabase Dashboard
+# Will be re-enabled after system is stable and hook is configured manually
+# [auth.hook.custom_access_token]
+# enabled = true
+# uri = "pg-functions://postgres/public/custom_access_token_hook"
 
 [auth.external.google]
 enabled = false
