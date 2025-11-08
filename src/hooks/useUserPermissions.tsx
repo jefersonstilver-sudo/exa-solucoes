@@ -1,146 +1,47 @@
-
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useAuth } from './useAuth';
-import { getUserPermissions, hasPermission, UserPermissions } from '@/types/userTypes';
+import { getUserPermissions, UserPermissions } from '@/types/userTypes';
 import type { UserRole } from '@/types/userTypes';
-import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Hook para gerenciar permissões granulares do usuário
- * Agora suporta permissões customizadas que sobrescrevem as padrões do role
+ * Hook simplificado para gerenciar permissões do usuário
+ * Baseado apenas no role do usuário (sem custom permissions)
  */
 export const useUserPermissions = () => {
   const { userProfile } = useAuth();
-  const [customPermissions, setCustomPermissions] = useState<Partial<UserPermissions> | null>(null);
-  const [isLoadingCustom, setIsLoadingCustom] = useState(true);
 
-  // Carregar permissões customizadas do banco
-  useEffect(() => {
-    console.log('🔍 [useUserPermissions] useEffect iniciado', {
-      userId: userProfile?.id,
-      userRole: userProfile?.role
-    });
-    
-    const loadCustomPermissions = async () => {
-      if (!userProfile?.id) {
-        console.log('⏸️ [useUserPermissions] Sem userId, pulando');
-        setIsLoadingCustom(false);
-        return;
-      }
+  // Obter permissões padrão baseadas no role
+  const permissions: UserPermissions = useMemo(() => {
+    const role = userProfile?.role as UserRole;
+    return getUserPermissions(role);
+  }, [userProfile?.role]);
 
-      console.log('🔎 [useUserPermissions] Buscando permissões customizadas para:', userProfile.id);
-      
-      try {
-        const { data, error } = await supabase
-          .from('user_custom_permissions')
-          .select('*')
-          .eq('user_id', userProfile.id)
-          .maybeSingle();
+  // Helper function para verificar permissão individual
+  const checkPermission = (permission: keyof UserPermissions): boolean => {
+    return permissions[permission] || false;
+  };
 
-        if (error) {
-          console.error('❌ [useUserPermissions] Erro ao carregar:', error);
-        }
+  // Helper function para verificar se tem alguma das permissões
+  const hasAnyPermission = (permissionList: (keyof UserPermissions)[]): boolean => {
+    return permissionList.some(permission => checkPermission(permission));
+  };
 
-        // Converter snake_case do banco para camelCase do TypeScript
-        if (data) {
-          console.log('✅ [useUserPermissions] Permissões customizadas encontradas:', data);
-          const converted: Partial<UserPermissions> = {
-            canViewDashboard: data.can_view_dashboard,
-            canViewOrders: data.can_view_orders,
-            canViewCRM: data.can_view_crm,
-            canViewApprovals: data.can_view_approvals,
-            canViewLeads: data.can_view_leads,
-            canManageUsers: data.can_manage_users,
-            canManageCoupons: data.can_manage_coupons,
-            canViewAudit: data.can_view_audit,
-            canManageVideos: data.can_manage_videos,
-            canManagePortfolio: data.can_manage_portfolio,
-            canManageProviderBenefits: data.can_manage_provider_benefits,
-            canViewFinancialReports: data.can_view_financial_reports,
-          };
-          setCustomPermissions(converted);
-          console.log('🎯 [useUserPermissions] Permissões convertidas:', converted);
-        } else {
-          console.log('ℹ️ [useUserPermissions] Nenhuma permissão customizada encontrada');
-          setCustomPermissions(null);
-        }
-      } catch (err) {
-        console.error('❌ [useUserPermissions] Erro inesperado:', err);
-      } finally {
-        setIsLoadingCustom(false);
-        console.log('✅ [useUserPermissions] Carregamento finalizado');
-      }
-    };
-
-    loadCustomPermissions();
-  }, [userProfile?.id]);
-
-  // Memoizar permissões combinadas (padrão do role + customizadas)
-  const permissions = useMemo(() => {
-    const rolePermissions = getUserPermissions(userProfile?.role);
-    
-    console.log('🔍 DEBUG PERMISSÕES - Role do usuário:', userProfile?.role);
-    console.log('🔍 DEBUG PERMISSÕES - Permissões base do role:', JSON.stringify(rolePermissions, null, 2));
-    console.log('🔍 DEBUG PERMISSÕES - canManageProviderBenefits base:', rolePermissions.canManageProviderBenefits);
-    
-    // Se não houver permissões customizadas, retornar apenas as do role
-    if (!customPermissions) {
-      console.log('🔑 Permissões do role (SEM custom):', userProfile?.role, rolePermissions);
-      console.log('🔍 DEBUG - canManageProviderBenefits final (sem custom):', rolePermissions.canManageProviderBenefits);
-      return rolePermissions;
-    }
-
-    // Combinar permissões: customizadas sobrescrevem as do role
-    const combined = {
-      ...rolePermissions,
-      ...customPermissions,
-    } as UserPermissions;
-    
-    console.log('🔑 Permissões combinadas (role + custom):', {
-      role: userProfile?.role,
-      rolePermissions,
-      customPermissions,
-      combined,
-      canManageProviderBenefits: combined.canManageProviderBenefits
-    });
-    console.log('🔍 DEBUG - canManageProviderBenefits final (com custom):', combined.canManageProviderBenefits);
-    
-    return combined;
-  }, [userProfile?.role, customPermissions]);
-
-  // Helper function para verificar permissão específica
-  const checkPermission = useMemo(() => {
-    return (permission: keyof UserPermissions): boolean => {
-      return permissions[permission];
-    };
-  }, [permissions]);
-
-  // Helper para verificar múltiplas permissões
-  const hasAnyPermission = useMemo(() => {
-    return (permissionList: (keyof UserPermissions)[]): boolean => {
-      return permissionList.some(permission => checkPermission(permission));
-    };
-  }, [checkPermission]);
-
-  // Helper para verificar todas as permissões
-  const hasAllPermissions = useMemo(() => {
-    return (permissionList: (keyof UserPermissions)[]): boolean => {
-      return permissionList.every(permission => checkPermission(permission));
-    };
-  }, [checkPermission]);
+  // Helper function para verificar se tem todas as permissões
+  const hasAllPermissions = (permissionList: (keyof UserPermissions)[]): boolean => {
+    return permissionList.every(permission => checkPermission(permission));
+  };
 
   // Informações do usuário
-  const userInfo = useMemo(() => {
-    return {
-      role: userProfile?.role,
-      email: userProfile?.email,
-      isAdmin: userProfile?.role === 'admin',
-      isMarketingAdmin: userProfile?.role === 'admin_marketing',
-      isFinancialAdmin: userProfile?.role === 'admin_financeiro',
-      isSuperAdmin: userProfile?.role === 'super_admin',
-      isClient: userProfile?.role === 'client'
-    };
-  }, [userProfile]);
+  const userInfo = useMemo(() => ({
+    role: userProfile?.role as UserRole,
+    email: userProfile?.email || '',
+    isSuperAdmin: userProfile?.role === 'super_admin',
+    isAdmin: userProfile?.role === 'admin',
+    isAdminMarketing: userProfile?.role === 'admin_marketing',
+    isAdminFinanceiro: userProfile?.role === 'admin_financeiro',
+    isMarketingAdmin: userProfile?.role === 'admin_marketing', // Alias
+    isFinancialAdmin: userProfile?.role === 'admin_financeiro', // Alias
+  }), [userProfile]);
 
   return {
     permissions,
@@ -148,17 +49,16 @@ export const useUserPermissions = () => {
     hasAnyPermission,
     hasAllPermissions,
     userInfo,
-    isLoadingCustom,
-    hasCustomPermissions: customPermissions !== null,
-    // Shortcuts para permissões mais comuns
-    canManageUsers: checkPermission('canManageUsers'),
-    canManageBuildings: checkPermission('canManageBuildings'),
-    canManagePanels: checkPermission('canManagePanels'),
-    canViewLeads: checkPermission('canViewLeads'),
-    canManageHomepageConfig: checkPermission('canManageHomepageConfig'),
-    canViewOrders: checkPermission('canViewOrders'),
-    canViewCRM: checkPermission('canViewCRM'),
-    canManageProviderBenefits: checkPermission('canManageProviderBenefits'),
-    canViewFinancialReports: checkPermission('canViewFinancialReports')
+    isLoadingCustom: false, // Não carrega mais custom permissions
+    
+    // Atalhos para permissões comuns
+    canViewDashboard: permissions.canViewDashboard,
+    canManageUsers: permissions.canManageUsers,
+    canViewOrders: permissions.canViewOrders,
+    canManageCoupons: permissions.canManageCoupons,
+    canViewFinancialReports: permissions.canViewFinancialReports,
+    canManageSystemSettings: permissions.canManageSystemSettings,
+    canManageHomepageConfig: permissions.canManageHomepageConfig,
+    canManageProviderBenefits: permissions.canManageProviderBenefits,
   };
 };

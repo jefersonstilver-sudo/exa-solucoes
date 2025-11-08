@@ -155,15 +155,6 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
     }
   };
 
-  const stats = {
-    total: exaTeam.length,
-    superAdmins: exaTeam.filter(u => u.role === 'super_admin').length,
-    admins: exaTeam.filter(u => u.role === 'admin').length,
-    marketingAdmins: exaTeam.filter(u => u.role === 'admin_marketing').length,
-    financialAdmins: exaTeam.filter(u => u.role === 'admin_financeiro').length,
-    verified: exaTeam.filter(u => u.email_confirmed_at).length,
-  };
-
   const handleAccountCreated = () => {
     console.log('✅ [EXA TEAM] Nova conta criada, atualizando lista...');
     onRefresh();
@@ -204,13 +195,12 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
     }
   };
 
-
   return (
     <div className="space-y-6">
       <SecurityAuditBanner />
       
-      {/* Minimalist Action Bar */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+      {/* Clean Action Bar */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4 flex-1">
             <div className="relative flex-1 max-w-md">
@@ -219,86 +209,35 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
                 placeholder="Buscar por email ou nome..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-gray-200 focus:border-indexa-purple focus:ring-1 focus:ring-indexa-purple"
+                className="pl-10 h-11 border-gray-200 focus:border-[#9C1E1E] focus:ring-2 focus:ring-[#9C1E1E]/20"
               />
             </div>
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700 px-3 py-1">
               {filteredTeam.length} resultado(s)
             </Badge>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <Button 
               onClick={handleCleanupOrphans}
               disabled={cleanupLoading}
               variant="outline"
               size="sm"
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-gray-300"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              {cleanupLoading ? 'Limpando...' : 'Limpar'}
+              {cleanupLoading ? 'Limpando...' : 'Limpar Órfãos'}
             </Button>
             <Button 
               onClick={onRefresh} 
               disabled={loading}
               variant="outline"
               size="sm"
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-gray-300"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
-        </div>
-      </div>
-
-      {/* Minimalist Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <UserCog className="h-5 w-5 text-gray-400" />
-          </div>
-          <div className="text-2xl font-light text-gray-900">{stats.total}</div>
-          <div className="text-xs text-gray-500 mt-1">Total</div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-indexa-purple/20 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <Crown className="h-5 w-5 text-indexa-purple" />
-          </div>
-          <div className="text-2xl font-light text-indexa-purple">{stats.superAdmins}</div>
-          <div className="text-xs text-gray-500 mt-1">Super Admins</div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-blue-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <Shield className="h-5 w-5 text-blue-600" />
-          </div>
-          <div className="text-2xl font-light text-blue-600">{stats.admins}</div>
-          <div className="text-xs text-gray-500 mt-1">Admin Geral</div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-purple-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <UserCog className="h-5 w-5 text-purple-600" />
-          </div>
-          <div className="text-2xl font-light text-purple-600">{stats.marketingAdmins}</div>
-          <div className="text-xs text-gray-500 mt-1">Marketing</div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-emerald-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <DollarSign className="h-5 w-5 text-emerald-600" />
-          </div>
-          <div className="text-2xl font-light text-emerald-600">{stats.financialAdmins}</div>
-          <div className="text-xs text-gray-500 mt-1">Financeiro</div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-green-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <Eye className="h-5 w-5 text-green-600" />
-          </div>
-          <div className="text-2xl font-light text-green-600">{stats.verified}</div>
-          <div className="text-xs text-gray-500 mt-1">Verificados</div>
         </div>
       </div>
 

@@ -34,7 +34,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { PermissionsMatrix } from './PermissionsMatrix';
 import { UserActivityTimeline } from './UserActivityTimeline';
 
 interface User {
@@ -589,23 +588,18 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                 )}
               </TabsContent>
 
-              {/* Tab: Permissões */}
+              {/* Tab: Permissões - Removido (simplificado para role-based apenas) */}
               <TabsContent value="permissions" className="mt-0">
-                {isSuperAdmin && !isBlocked ? (
-                  <PermissionsMatrix
-                    userId={user.id}
-                    userRole={selectedRole}
-                    onPermissionsChanged={onUserUpdated}
-                  />
-                ) : (
-                  <Card>
-                    <CardContent className="pt-6 text-center text-muted-foreground">
-                      {isBlocked 
-                        ? '🚫 Usuário bloqueado. Confirme o email primeiro.'
-                        : '⚠️ Apenas Super Admins podem gerenciar permissões'}
-                    </CardContent>
-                  </Card>
-                )}
+                <Card>
+                  <CardContent className="pt-6 text-center text-muted-foreground">
+                    <p className="text-sm">
+                      As permissões agora são gerenciadas automaticamente com base no tipo de conta (role).
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Role atual: <strong>{getRoleLabel(selectedRole)}</strong>
+                    </p>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               {/* Tab: Atividades */}

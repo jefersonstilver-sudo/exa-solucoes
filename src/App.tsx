@@ -36,7 +36,6 @@ import NaoEncontrado from './pages/NaoEncontrado';
 import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 import ProviderBenefitChoice from './pages/ProviderBenefitChoice';
-import DebugPermissions from './pages/DebugPermissions';
 import EmailNotConfirmed from './pages/EmailNotConfirmed';
 
 // Importações diretas para páginas principais (performance otimizada)
@@ -326,9 +325,6 @@ const AppContent = () => {
           {/* Rotas administrativas */}
           <Route path="/super_admin/*" element={<SuperAdminPage />} />
           <Route path="/admin/*" element={<AdminPage />} />
-          
-          {/* Página de debug de permissões */}
-          <Route path="/debug-permissions" element={<DebugPermissions />} />
           
           {/* Rota catch-all para páginas não encontradas */}
           <Route path="*" element={<NaoEncontrado />} />
