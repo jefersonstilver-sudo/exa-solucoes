@@ -70,7 +70,78 @@ serve(async (req) => {
       console.log('✅ [DELETE-USER] Usuário encontrado:', userData?.email);
     }
 
-    // 2. PRIMEIRO deletar do auth.users (ordem invertida para evitar conflitos)
+    // 2. DELETAR DADOS RELACIONADOS PRIMEIRO (para evitar constraint errors)
+    console.log('🧹 [DELETE-USER] Deletando dados relacionados...');
+    
+    const relatedTables = [
+      'user_custom_permissions',
+      'user_roles',
+      'user_sessions',
+      'permission_change_logs',
+      'role_change_audit',
+      'user_activity_logs',
+      'building_action_logs',
+      'client_activity_events',
+      'client_behavior_analytics',
+      'client_platform_activity',
+      'coupon_security_events',
+      'cupom_aplicacoes',
+      'cupom_usos',
+      'financial_audit_logs',
+      'financial_data_audit_logs',
+      'lead_data_access_logs',
+      'notifications',
+      'panel_access_logs',
+      'system_activity_feed',
+      'transaction_sessions'
+    ];
+
+    let deletedCount = 0;
+    for (const table of relatedTables) {
+      try {
+        const { error: deleteError } = await supabaseAdmin
+          .from(table)
+          .delete()
+          .eq('user_id', userId);
+        
+        if (deleteError) {
+          console.warn(`⚠️ [DELETE-USER] Erro ao deletar de ${table}:`, deleteError.message);
+        } else {
+          deletedCount++;
+          console.log(`✅ [DELETE-USER] Deletado de ${table}`);
+        }
+      } catch (err) {
+        console.warn(`⚠️ [DELETE-USER] Erro ao processar ${table}:`, err);
+      }
+    }
+
+    console.log(`✅ [DELETE-USER] Deletados dados de ${deletedCount}/${relatedTables.length} tabelas`);
+
+    // 3. DELETAR da tabela users
+    console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
+    const { error: deleteUserError } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (deleteUserError) {
+      console.error('❌ [DELETE-USER] Erro ao deletar da tabela users:', deleteUserError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Erro ao deletar usuário da tabela users',
+          code: 'USER_TABLE_DELETE_ERROR',
+          details: deleteUserError.message
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('✅ [DELETE-USER] Deletado da tabela users com sucesso');
+
+    // 4. POR ÚLTIMO deletar do auth.users
     console.log('🔐 [DELETE-USER] Deletando do auth.users...');
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
@@ -91,23 +162,7 @@ serve(async (req) => {
 
     console.log('✅ [DELETE-USER] Deletado do auth com sucesso');
 
-    // 3. DEPOIS deletar da tabela users
-    console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
-    const { error: deleteUserError } = await supabaseAdmin
-      .from('users')
-      .delete()
-      .eq('id', userId);
-
-    if (deleteUserError) {
-      console.error('❌ [DELETE-USER] Erro ao deletar da tabela users:', deleteUserError);
-      console.warn('⚠️ [DELETE-USER] Usuário deletado do auth mas falhou ao deletar do banco');
-      // Não retorna erro aqui pois o importante é ter deletado do auth
-      // O usuário pode ser recriado mesmo se ficar órfão no banco
-    } else {
-      console.log('✅ [DELETE-USER] Deletado da tabela users com sucesso');
-    }
-
-    // 4. Registrar em auditoria
+    // 5. Registrar em auditoria
     console.log('📝 [DELETE-USER] Registrando em auditoria...');
     const authHeader = req.headers.get('authorization');
     let performedById = null;
