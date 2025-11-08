@@ -135,12 +135,12 @@ const ProviderBenefits = () => {
     handleInsertCode(benefit.id);
   };
 
-  // Mobile View
+  // Mobile View - Otimizado e Minimalista
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background">
-        {/* Mobile Header - Minimalista */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-b border-white/10">
+        {/* Mobile Header - Design Minimalista Profissional */}
+        <div className="sticky top-0 z-10 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-b border-white/10 shadow-sm">
           <div className="px-4 py-3">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
