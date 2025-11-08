@@ -1,19 +1,64 @@
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { getUserPermissions, hasPermission, UserPermissions } from '@/types/userTypes';
 import type { UserRole } from '@/types/userTypes';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook para gerenciar permissões granulares do usuário
+ * Agora suporta permissões customizadas que sobrescrevem as padrões do role
  */
 export const useUserPermissions = () => {
   const { userProfile } = useAuth();
+  const [customPermissions, setCustomPermissions] = useState<Partial<UserPermissions> | null>(null);
+  const [isLoadingCustom, setIsLoadingCustom] = useState(true);
 
-  // Memoizar permissões para evitar recálculo desnecessário
+  // Carregar permissões customizadas do banco
+  useEffect(() => {
+    const loadCustomPermissions = async () => {
+      if (!userProfile?.id) {
+        setIsLoadingCustom(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('user_custom_permissions')
+          .select('custom_permissions')
+          .eq('user_id', userProfile.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Erro ao carregar permissões customizadas:', error);
+        }
+
+        setCustomPermissions(data?.custom_permissions as Partial<UserPermissions> || null);
+      } catch (err) {
+        console.error('Erro ao carregar permissões customizadas:', err);
+      } finally {
+        setIsLoadingCustom(false);
+      }
+    };
+
+    loadCustomPermissions();
+  }, [userProfile?.id]);
+
+  // Memoizar permissões combinadas (padrão do role + customizadas)
   const permissions = useMemo(() => {
-    return getUserPermissions(userProfile?.role);
-  }, [userProfile?.role]);
+    const rolePermissions = getUserPermissions(userProfile?.role);
+    
+    // Se não houver permissões customizadas, retornar apenas as do role
+    if (!customPermissions) {
+      return rolePermissions;
+    }
+
+    // Combinar permissões: customizadas sobrescrevem as do role
+    return {
+      ...rolePermissions,
+      ...customPermissions,
+    } as UserPermissions;
+  }, [userProfile?.role, customPermissions]);
 
   // Helper function para verificar permissão específica
   const checkPermission = useMemo(() => {
@@ -55,6 +100,8 @@ export const useUserPermissions = () => {
     hasAnyPermission,
     hasAllPermissions,
     userInfo,
+    isLoadingCustom,
+    hasCustomPermissions: customPermissions !== null,
     // Shortcuts para permissões mais comuns
     canManageUsers: checkPermission('canManageUsers'),
     canManageBuildings: checkPermission('canManageBuildings'),
@@ -62,6 +109,7 @@ export const useUserPermissions = () => {
     canViewLeads: checkPermission('canViewLeads'),
     canManageHomepageConfig: checkPermission('canManageHomepageConfig'),
     canViewOrders: checkPermission('canViewOrders'),
+    canViewCRM: checkPermission('canViewCRM'),
     canManageProviderBenefits: checkPermission('canManageProviderBenefits'),
     canViewFinancialReports: checkPermission('canViewFinancialReports')
   };

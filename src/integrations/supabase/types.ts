@@ -2044,6 +2044,39 @@ export type Database = {
           },
         ]
       }
+      permission_change_logs: {
+        Row: {
+          change_reason: string | null
+          changed_by: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          new_permissions: Json
+          old_permissions: Json | null
+          user_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_permissions: Json
+          old_permissions?: Json | null
+          user_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_permissions?: Json
+          old_permissions?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       portfolio_produtora: {
         Row: {
           categoria: string
@@ -2438,6 +2471,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_custom_permissions: {
+        Row: {
+          created_at: string
+          custom_permissions: Json
+          id: string
+          notes: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_permissions?: Json
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_permissions?: Json
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

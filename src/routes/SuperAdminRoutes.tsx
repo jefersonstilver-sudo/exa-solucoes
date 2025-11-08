@@ -25,6 +25,7 @@ import CRMClients from '@/pages/admin/CRMClients';
 import SecurityDashboard from '@/pages/admin/SecurityDashboard';
 import FinancialReports from '@/pages/admin/FinancialReports';
 import AuditPage from '@/pages/super_admin/AuditPage';
+import PermissionsManagementPage from '@/pages/SuperAdmin/PermissionsManagementPage';
 
 const SuperAdminRoutes = () => {
   return (
@@ -52,6 +53,7 @@ const SuperAdminRoutes = () => {
       
       {/* SISTEMA */}
       <Route path="usuarios" element={<UsersPage />} />
+      <Route path="permissoes" element={<PermissionsManagementPage />} />
       <Route path="cupons" element={<CouponsPage />} />
       <Route path="homepage-config" element={<HomepageImagesPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />

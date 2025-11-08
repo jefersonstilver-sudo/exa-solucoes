@@ -176,6 +176,13 @@ export function ModernAdminSidebar() {
           requireSuperAdmin: true
         },
         {
+          title: 'Permissões',
+          href: buildPath('permissoes'),
+          icon: Shield,
+          permission: 'canManageUsers',
+          requireSuperAdmin: true
+        },
+        {
           title: 'Auditoria',
           href: buildPath('auditoria'),
           icon: ScrollText,
