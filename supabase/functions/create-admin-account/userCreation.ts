@@ -98,7 +98,7 @@ export const createAdminUser = async (
     };
   }
 
-  // 🚨 SECURITY: Inserir role na tabela user_roles (NÃO em users.role)
+  // Inserir usuário na tabela users com o role
   const insertResult = await insertUserRecord(supabaseServiceRole, newUser, email, adminType, nome, cpf, tipo_documento);
   if (insertResult.error) {
     // Reverter criação do usuário
@@ -144,11 +144,11 @@ const insertUserRecord = async (
     console.log(`🔄 [CREATE-ADMIN] Tentativa ${attempt}/${maxRetries} de inserção na tabela users...`);
 
     try {
-      // 🚨 SECURITY FIX: NÃO inserir role em users, usar user_roles
+      // Preparar dados do usuário incluindo o role (campo obrigatório)
       const userData: any = {
         id: newUser.id,
-        email: email
-        // role: adminType ❌ REMOVIDO - usar user_roles
+        email: email,
+        role: adminType // Campo obrigatório na tabela users
       };
       
       // Adicionar campos opcionais se fornecidos
@@ -156,7 +156,13 @@ const insertUserRecord = async (
       if (cpf) userData.cpf = cpf;
       if (tipo_documento) userData.tipo_documento = tipo_documento;
       
-      console.log('💾 [CREATE-ADMIN] Inserindo dados:', { ...userData, cpf: cpf ? '***' : undefined });
+      console.log('💾 [CREATE-ADMIN] Inserindo dados:', { 
+        id: userData.id, 
+        email: userData.email, 
+        role: userData.role,
+        nome: userData.nome || 'não fornecido',
+        cpf: cpf ? '***' : undefined 
+      });
       
       const { error: insertError } = await supabase
         .from('users')
@@ -210,29 +216,7 @@ const insertUserRecord = async (
       }
 
       insertSuccess = true;
-      console.log(`✅ [CREATE-ADMIN] Usuário inserido na tabela users na tentativa ${attempt}`);
-      
-      // 🚨 CRITICAL: Inserir role na tabela user_roles
-      console.log('📝 [CREATE-ADMIN] Inserindo role em user_roles:', adminType);
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: newUser.id,
-          role: adminType,
-          granted_at: new Date().toISOString(),
-          granted_by: null
-        });
-
-      if (roleError) {
-        console.error('❌ [CREATE-ADMIN] Erro ao inserir role em user_roles:', roleError);
-        // Reverter inserção em users
-        await supabase.from('users').delete().eq('id', newUser.id);
-        lastError = roleError;
-        insertSuccess = false;
-        continue;
-      }
-      
-      console.log('✅ [CREATE-ADMIN] Role inserido em user_roles com sucesso');
+      console.log(`✅ [CREATE-ADMIN] Usuário inserido na tabela users com role ${adminType} na tentativa ${attempt}`);
       break;
 
     } catch (error) {
