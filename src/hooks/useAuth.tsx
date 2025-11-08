@@ -60,11 +60,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Função simplificada para verificar role
+  // Função simplificada para verificar role (usa userProfile, não JWT)
   const hasRole = (role: string): boolean => {
-    if (!session?.access_token) return false;
-    const userRole = extractRoleFromJWT(session.access_token);
-    return userRole === role;
+    return userProfile?.role === role;
   };
 
   // Função otimizada de logout
@@ -77,30 +75,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Setup inicial otimizado
   useEffect(() => {
-    // 🚨 SECURITY FIX: Buscar role de user_roles, não do JWT apenas
+    // 🚨 SECURITY FIX: SEMPRE buscar role de user_roles (JWT não confiável sem hook)
     const fetchUserProfile = async (userId: string, accessToken?: string) => {
       try {
-        // Tentar obter role do JWT primeiro (mais rápido)
-        let role = accessToken ? extractRoleFromJWT(accessToken) : null;
+        // ⚠️ CRÍTICO: SEMPRE buscar do banco user_roles (JWT pode estar desatualizado)
+        console.log('🔍 Buscando role do usuário:', userId);
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .single();
         
-        // ⚠️ CRÍTICO: Se não encontrou no JWT, SEMPRE buscar do banco
-        if (!role) {
-          console.warn('⚠️ Role não encontrado no JWT, buscando do banco user_roles...');
-          const { data: roleData, error: roleError } = await supabase
-            .from('user_roles')
+        let role: UserRole = 'client'; // Fallback seguro
+        
+        if (roleError) {
+          console.error('❌ Erro ao buscar role da tabela user_roles:', roleError);
+          // Fallback: tentar buscar da tabela users
+          const { data: userRoleData } = await supabase
+            .from('users')
             .select('role')
-            .eq('user_id', userId)
+            .eq('id', userId)
             .single();
           
-          if (roleError) {
-            console.error('❌ Erro ao buscar role da tabela user_roles:', roleError);
-            role = 'client'; // Fallback seguro
-          } else {
-            role = roleData?.role || 'client';
-            console.log('✅ Role obtido do banco:', role);
+          if (userRoleData?.role) {
+            role = userRoleData.role as UserRole;
+            console.log('✅ Role obtido da tabela users (fallback):', role);
           }
         } else {
-          console.log('✅ Role obtido do JWT:', role);
+          role = (roleData?.role || 'client') as UserRole;
+          console.log('✅ Role obtido da tabela user_roles:', role);
         }
         
         // Buscar dados completos do usuário
