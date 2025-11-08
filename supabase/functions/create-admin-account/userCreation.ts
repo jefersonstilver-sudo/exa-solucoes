@@ -8,7 +8,13 @@ interface CreateUserResult {
   status?: number;
 }
 
-export const createAdminUser = async (email: string, adminType: string): Promise<CreateUserResult> => {
+export const createAdminUser = async (
+  email: string, 
+  adminType: string, 
+  nome?: string,
+  cpf?: string,
+  tipo_documento?: string
+): Promise<CreateUserResult> => {
   const supabaseServiceRole = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -92,7 +98,7 @@ export const createAdminUser = async (email: string, adminType: string): Promise
   }
 
   // Inserir na tabela users
-  const insertResult = await insertUserRecord(supabaseServiceRole, newUser, email, adminType);
+  const insertResult = await insertUserRecord(supabaseServiceRole, newUser, email, adminType, nome, cpf, tipo_documento);
   if (insertResult.error) {
     // Reverter criação do usuário
     try {
@@ -116,7 +122,15 @@ export const createAdminUser = async (email: string, adminType: string): Promise
   };
 };
 
-const insertUserRecord = async (supabase: any, newUser: any, email: string, adminType: string) => {
+const insertUserRecord = async (
+  supabase: any, 
+  newUser: any, 
+  email: string, 
+  adminType: string,
+  nome?: string,
+  cpf?: string,
+  tipo_documento?: string
+) => {
   const maxRetries = 3;
   let attempt = 0;
   let insertSuccess = false;
@@ -129,13 +143,22 @@ const insertUserRecord = async (supabase: any, newUser: any, email: string, admi
     console.log(`🔄 [CREATE-ADMIN] Tentativa ${attempt}/${maxRetries} de inserção na tabela users...`);
 
     try {
+      const userData: any = {
+        id: newUser.id,
+        email: email,
+        role: adminType
+      };
+      
+      // Adicionar campos opcionais se fornecidos
+      if (nome) userData.nome = nome;
+      if (cpf) userData.cpf = cpf;
+      if (tipo_documento) userData.tipo_documento = tipo_documento;
+      
+      console.log('💾 [CREATE-ADMIN] Inserindo dados:', { ...userData, cpf: cpf ? '***' : undefined });
+      
       const { error: insertError } = await supabase
         .from('users')
-        .insert({
-          id: newUser.id,
-          email: email,
-          role: adminType
-        });
+        .insert(userData);
 
       if (insertError) {
         console.error(`❌ [CREATE-ADMIN] Erro na inserção (tentativa ${attempt}):`, insertError);

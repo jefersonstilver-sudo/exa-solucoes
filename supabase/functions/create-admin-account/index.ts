@@ -38,7 +38,7 @@ serve(async (req) => {
       );
     }
 
-    const { email, adminType } = validationResult.data;
+    const { email, adminType, nome, cpf, tipo_documento } = validationResult.data;
 
     // Verificar se usuário já existe
     const existingUserCheck = await checkExistingUser(email);
@@ -53,7 +53,7 @@ serve(async (req) => {
     }
 
     // Criar usuário administrativo
-    const createResult = await createAdminUser(email, adminType);
+    const createResult = await createAdminUser(email, adminType, nome, cpf, tipo_documento);
     if (createResult.error) {
       return new Response(
         JSON.stringify(createResult.error),
@@ -81,6 +81,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         user: createResult.user,
+        password: createResult.password,
         emailSent: emailResult.success,
         message: 'Conta administrativa criada com sucesso!'
       }),

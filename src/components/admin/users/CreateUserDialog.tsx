@@ -134,37 +134,44 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       const nomeCompleto = `${nome.trim()} ${sobrenome.trim()}`;
       const cpfLimpo = cpf.replace(/\D/g, ''); // Remove formatação
 
-      // Criar usuário no auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Preparar dados para a Edge Function
+      const requestBody: any = {
         email: email.trim(),
-        password: 'indexa2025',
-        options: {
-          data: {
-            role,
-            nome: nomeCompleto,
-          },
-        },
-      });
+        adminType: role,
+        nome: nomeCompleto,
+      };
 
-      if (authError) throw authError;
+      // Adicionar CPF se fornecido
+      if (cpfLimpo) {
+        requestBody.cpf = cpfLimpo;
+        requestBody.tipo_documento = 'cpf';
+      }
 
-      // Inserir dados completos na tabela users
-      if (authData.user) {
-        const userData: any = {
-          id: authData.user.id,
-          email: email.trim(),
-          nome: nomeCompleto,
-          role,
-          data_criacao: new Date().toISOString(),
-        };
+      console.log('📤 Enviando requisição para criar usuário:', requestBody);
 
-        // Adicionar CPF se fornecido
-        if (cpfLimpo) {
-          userData.cpf = cpfLimpo;
-          userData.tipo_documento = 'cpf';
+      // Chamar Edge Function para criar usuário administrativo
+      const { data: functionData, error: functionError } = await supabase.functions.invoke(
+        'create-admin-account',
+        {
+          body: requestBody,
         }
+      );
 
-        await supabase.from('users').upsert(userData);
+      console.log('📥 Resposta da Edge Function:', { functionData, functionError });
+
+      if (functionError) {
+        console.error('❌ Erro da Edge Function:', functionError);
+        throw new Error(functionError.message || 'Erro ao criar usuário');
+      }
+
+      if (functionData?.error) {
+        console.error('❌ Erro retornado pela função:', functionData.error);
+        throw new Error(functionData.error.error || functionData.error.message || 'Erro ao criar usuário');
+      }
+
+      if (!functionData?.user) {
+        console.error('❌ Resposta sem dados do usuário:', functionData);
+        throw new Error('Falha ao criar usuário - nenhum dado retornado');
       }
 
       const roleLabels = {
@@ -174,17 +181,20 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         super_admin: 'Super Administrador',
       };
 
-      toast.success(`Conta criada com sucesso!`, {
+      // Usar senha retornada pela Edge Function
+      const senhaRetornada = functionData.password || 'exa2025';
+
+      toast.success(`✅ Conta criada com sucesso!`, {
         description: `${nomeCompleto} - ${email}`,
         duration: 6000,
       });
 
-      const credentials = `Nome: ${nomeCompleto}\nEmail: ${email}\nSenha: indexa2025\nTipo: ${
+      const credentials = `Nome: ${nomeCompleto}\nEmail: ${email}\nSenha: ${senhaRetornada}\nTipo: ${
         roleLabels[role as keyof typeof roleLabels]
       }`;
       
-      navigator.clipboard.writeText(credentials);
-      toast.info('Credenciais copiadas para área de transferência', {
+      await navigator.clipboard.writeText(credentials);
+      toast.info('📋 Credenciais copiadas para área de transferência', {
         duration: 4000,
       });
 
@@ -213,7 +223,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="text-black">Criar Nova Conta Administrativa</DialogTitle>
           <DialogDescription className="text-gray-600">
-            Senha padrão: <span className="font-mono font-semibold">indexa2025</span>
+            Senha padrão: <span className="font-mono font-semibold">exa2025</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -379,7 +389,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-900">
               <strong>💡 Importante:</strong> A senha padrão{' '}
-              <code className="bg-blue-100 px-2 py-0.5 rounded font-mono">indexa2025</code> será
+              <code className="bg-blue-100 px-2 py-0.5 rounded font-mono">exa2025</code> será
               enviada automaticamente. O usuário deve alterá-la no primeiro acesso.
             </p>
           </div>

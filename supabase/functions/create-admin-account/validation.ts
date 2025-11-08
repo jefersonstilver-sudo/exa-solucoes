@@ -1,14 +1,20 @@
 
 interface ValidationResult {
-  data?: { email: string; adminType: string };
+  data?: { 
+    email: string; 
+    adminType: string;
+    nome?: string;
+    cpf?: string;
+    tipo_documento?: string;
+  };
   error?: any;
   status?: number;
 }
 
 export const validateRequest = async (req: Request): Promise<ValidationResult> => {
   try {
-    const { email, adminType } = await req.json();
-    console.log('📦 [CREATE-ADMIN] Dados recebidos:', { email, adminType });
+    const { email, adminType, nome, cpf, tipo_documento } = await req.json();
+    console.log('📦 [CREATE-ADMIN] Dados recebidos:', { email, adminType, nome, cpf: cpf ? '***' : undefined });
 
     // Validações básicas
     if (!email || !adminType) {
@@ -46,7 +52,15 @@ export const validateRequest = async (req: Request): Promise<ValidationResult> =
       };
     }
 
-    return { data: { email, adminType } };
+    return { 
+      data: { 
+        email, 
+        adminType,
+        nome,
+        cpf,
+        tipo_documento 
+      } 
+    };
   } catch (error) {
     console.error('❌ [VALIDATION] Erro ao processar requisição:', error);
     return {
