@@ -54,25 +54,39 @@ export const useLoginForm = (redirectPath: string = '/') => {
       }
 
       if (data.user && data.session) {
-        console.log('🔐 LoginForm: Login bem-sucedido, redirecionando imediatamente...');
+        console.log('🔐 LoginForm: Login bem-sucedido, obtendo role do banco...');
         
         toast.success('Login realizado com sucesso!');
         
-        // Extrair role diretamente da sessão para redirecionamento imediato
-        const userRole = data.session.access_token ? 
-          (() => {
-            try {
-              const payload = JSON.parse(atob(data.session.access_token.split('.')[1]));
-              return payload.user_role;
-            } catch (error) {
-              console.warn('🔐 Não foi possível extrair role do JWT, usando fallback');
-              return null;
-            }
-          })() : null;
+        // ⚠️ CRÍTICO: Buscar role DIRETAMENTE da tabela user_roles (JWT não confiável sem hook)
+        let userRole = null;
+        
+        try {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', data.user.id)
+            .single();
+          
+          userRole = roleData?.role || null;
+          console.log('✅ Role obtido do banco:', userRole);
+        } catch (roleError) {
+          console.warn('⚠️ Erro ao buscar role, tentando users table:', roleError);
+          
+          // Fallback: tentar buscar da tabela users
+          const { data: userData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+          
+          userRole = userData?.role || null;
+          console.log('✅ Role obtido da tabela users:', userRole);
+        }
 
-        // Redirecionamento IMEDIATO baseado na role
+        // Redirecionamento baseado na role do BANCO
         const targetPath = getRedirectPath(userRole, redirectPath);
-        console.log('🎯 Redirecionando IMEDIATAMENTE para:', targetPath);
+        console.log('🎯 Redirecionando para:', targetPath, 'baseado no role:', userRole);
         
         navigate(targetPath, { replace: true });
       }
