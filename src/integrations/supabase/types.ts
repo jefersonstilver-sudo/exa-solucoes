@@ -1470,45 +1470,6 @@ export type Database = {
         }
         Relationships: []
       }
-      leads_produtora: {
-        Row: {
-          agendar_cafe: boolean
-          contato_realizado: boolean
-          created_at: string
-          email: string
-          empresa: string | null
-          id: string
-          nome: string
-          objetivo: string | null
-          tipo_video: string | null
-          whatsapp: string
-        }
-        Insert: {
-          agendar_cafe?: boolean
-          contato_realizado?: boolean
-          created_at?: string
-          email: string
-          empresa?: string | null
-          id?: string
-          nome: string
-          objetivo?: string | null
-          tipo_video?: string | null
-          whatsapp: string
-        }
-        Update: {
-          agendar_cafe?: boolean
-          contato_realizado?: boolean
-          created_at?: string
-          email?: string
-          empresa?: string | null
-          id?: string
-          nome?: string
-          objetivo?: string | null
-          tipo_video?: string | null
-          whatsapp?: string
-        }
-        Relationships: []
-      }
       log_eventos_sistema: {
         Row: {
           created_at: string | null
@@ -2506,63 +2467,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_custom_permissions: {
-        Row: {
-          can_manage_coupons: boolean | null
-          can_manage_portfolio: boolean | null
-          can_manage_provider_benefits: boolean | null
-          can_manage_users: boolean | null
-          can_manage_videos: boolean | null
-          can_view_approvals: boolean | null
-          can_view_audit: boolean | null
-          can_view_crm: boolean | null
-          can_view_dashboard: boolean | null
-          can_view_financial_reports: boolean | null
-          can_view_leads: boolean | null
-          can_view_orders: boolean | null
-          created_at: string | null
-          id: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          can_manage_coupons?: boolean | null
-          can_manage_portfolio?: boolean | null
-          can_manage_provider_benefits?: boolean | null
-          can_manage_users?: boolean | null
-          can_manage_videos?: boolean | null
-          can_view_approvals?: boolean | null
-          can_view_audit?: boolean | null
-          can_view_crm?: boolean | null
-          can_view_dashboard?: boolean | null
-          can_view_financial_reports?: boolean | null
-          can_view_leads?: boolean | null
-          can_view_orders?: boolean | null
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          can_manage_coupons?: boolean | null
-          can_manage_portfolio?: boolean | null
-          can_manage_provider_benefits?: boolean | null
-          can_manage_users?: boolean | null
-          can_manage_videos?: boolean | null
-          can_view_approvals?: boolean | null
-          can_view_audit?: boolean | null
-          can_view_crm?: boolean | null
-          can_view_dashboard?: boolean | null
-          can_view_financial_reports?: boolean | null
-          can_view_leads?: boolean | null
-          can_view_orders?: boolean | null
-          created_at?: string | null
-          id?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
       }
       user_roles: {
         Row: {
