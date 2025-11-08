@@ -1,4 +1,5 @@
 import { AdminEmailTemplates } from './email-templates.ts';
+import { createAdminWelcomeHTML } from './email-templates-html.ts';
 
 interface AdminWelcomeEmailData {
   email: string;
@@ -27,7 +28,7 @@ export const sendAdminWelcomeEmail = async (
     
     const siteUrl = Deno.env.get('SITE_URL') || 'https://www.examidia.com.br';
     
-    const htmlContent = AdminEmailTemplates.createAdminWelcomeHTML({
+    const htmlContent = createAdminWelcomeHTML({
       nome: data.nome,
       email: data.email,
       role: data.role,
