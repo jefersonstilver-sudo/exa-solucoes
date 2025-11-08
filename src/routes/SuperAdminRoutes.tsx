@@ -14,7 +14,6 @@ import NotificationsPage from '@/pages/admin/NotificationsPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import VideoManagement from '@/pages/admin/VideoManagement';
 import VideosSitePage from '@/pages/admin/VideosSitePage';
-import LeadsProdutora from '@/pages/admin/LeadsProdutora';
 import LeadsLinkae from '@/pages/admin/LeadsLinkae';
 import LeadsExa from '@/pages/admin/LeadsExa';
 import LogosPage from '@/pages/admin/LogosPage';
@@ -24,8 +23,6 @@ import BenefitManagement from '@/pages/admin/BenefitManagement';
 import CRMClients from '@/pages/admin/CRMClients';
 import SecurityDashboard from '@/pages/admin/SecurityDashboard';
 import FinancialReports from '@/pages/admin/FinancialReports';
-import AuditPage from '@/pages/super_admin/AuditPage';
-import PermissionsManagementPage from '@/pages/SuperAdmin/PermissionsManagementPage';
 
 const SuperAdminRoutes = () => {
   return (
@@ -47,18 +44,15 @@ const SuperAdminRoutes = () => {
       
       {/* LEADS & CLIENTES */}
       <Route path="sindicos-interessados" element={<SindicosInteressados />} />
-      <Route path="leads-produtora" element={<LeadsProdutora />} />
-          <Route path="leads-linkae" element={<LeadsLinkae />} />
-          <Route path="leads-exa" element={<LeadsExa />} />
+      <Route path="leads-linkae" element={<LeadsLinkae />} />
+      <Route path="leads-exa" element={<LeadsExa />} />
       
       {/* SISTEMA */}
       <Route path="usuarios" element={<UsersPage />} />
-      <Route path="permissoes" element={<PermissionsManagementPage />} />
       <Route path="cupons" element={<CouponsPage />} />
       <Route path="homepage-config" element={<HomepageImagesPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
       <Route path="seguranca" element={<SecurityDashboard />} />
-      <Route path="auditoria" element={<AuditPage />} />
       
       {/* CONTEÚDO */}
       <Route path="videos" element={<VideoManagement />} />

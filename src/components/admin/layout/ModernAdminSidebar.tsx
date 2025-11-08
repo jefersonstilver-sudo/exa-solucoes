@@ -12,7 +12,6 @@ import {
   Images,
   CheckSquare,
   UserCheck,
-  Coffee,
   Ticket,
   Bell,
   Megaphone,
@@ -21,8 +20,7 @@ import {
   Film,
   Gift,
   UsersRound,
-  FileBarChart,
-  ScrollText
+  FileBarChart
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -146,12 +144,6 @@ export function ModernAdminSidebar() {
           permission: 'canViewSindicosInteressados'
         },
         {
-          title: 'Leads Produtora',
-          href: buildPath('leads-produtora'),
-          icon: Coffee,
-          permission: 'canViewLeadsProdutora'
-        },
-        {
           title: 'Leads LINKAÊ',
           href: buildPath('leads-linkae'),
           icon: Megaphone,
@@ -172,20 +164,6 @@ export function ModernAdminSidebar() {
           title: 'Usuários',
           href: buildPath('usuarios'),
           icon: Users,
-          permission: 'canManageUsers',
-          requireSuperAdmin: true
-        },
-        {
-          title: 'Permissões',
-          href: buildPath('permissoes'),
-          icon: Shield,
-          permission: 'canManageUsers',
-          requireSuperAdmin: true
-        },
-        {
-          title: 'Auditoria',
-          href: buildPath('auditoria'),
-          icon: ScrollText,
           permission: 'canManageUsers',
           requireSuperAdmin: true
         },
