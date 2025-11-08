@@ -184,50 +184,100 @@ const ProviderBenefitChoice = () => {
   }
 
   if (pageState === 'success') {
+    // Garantir que temos o benefício escolhido - usar selectedOption ou fallback para validationData
+    const chosenBenefitId = selectedOption || validationData?.benefit_choice;
+    const chosenBenefit = benefitOptions.find((opt) => opt.id === chosenBenefitId);
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full bg-white rounded-3xl p-8 sm:p-12 shadow-2xl border border-gray-200">
-          <div className="flex flex-col items-center text-center space-y-6">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-lg w-full space-y-8">
+          
+          {/* Ícone de Sucesso Minimalista */}
+          <div className="flex justify-center">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center ring-8 ring-emerald-100 shadow-xl">
-                <CheckCircle className="h-14 w-14 text-white" strokeWidth={3} />
+              <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
+                <CheckCircle className="h-11 w-11 text-white" strokeWidth={2.5} />
               </div>
-              <div className="absolute -top-2 -right-2 text-4xl animate-bounce">🎉</div>
             </div>
-            
-            <h1 className="text-4xl font-black text-gray-900">Parabéns!</h1>
-            
-            <p className="text-lg text-gray-700 font-medium">
-              Sua escolha foi registrada com sucesso!
+          </div>
+
+          {/* Título e Subtítulo */}
+          <div className="text-center space-y-3">
+            <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+              Parabéns!
+            </h1>
+            <p className="text-lg text-gray-600">
+              Sua escolha foi registrada com sucesso
             </p>
-            
-            <div className="w-full bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-8 border-2 border-emerald-200">
-              <div className="text-7xl mb-4">{getIconEmoji(selectedBenefit?.icon || '')}</div>
-              <p className="text-3xl font-black text-gray-900 mb-2">{selectedBenefit?.name}</p>
-              {selectedBenefit?.subtitle && (
-                <p className="text-base text-gray-600 font-medium">{selectedBenefit.subtitle}</p>
-              )}
-            </div>
-            
-            <div className="w-full bg-white p-6 rounded-2xl border-2 border-gray-200 space-y-4">
-              <p className="text-base text-gray-700 leading-relaxed">
-                Em breve você receberá um email com o código do seu vale-presente de <strong className="text-2xl text-emerald-600 font-black">R$ 50,00</strong>
-              </p>
+          </div>
+
+          {/* Card do Benefício Escolhido */}
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              {/* Ícone do Benefício */}
+              <div className="text-5xl">
+                {getIconEmoji(chosenBenefit?.icon || '')}
+              </div>
               
-              {selectedBenefit && (
-                <div className={`${selectedBenefit.delivery_days === 1 ? 'bg-emerald-100 border-emerald-300' : 'bg-blue-100 border-blue-300'} border-2 rounded-xl p-4`}>
-                  <p className={`text-base font-black ${selectedBenefit.delivery_days === 1 ? 'text-emerald-800' : 'text-blue-800'}`}>
-                    {selectedBenefit.delivery_days === 1 ? '⚡' : '📦'} Código enviado em até {selectedBenefit.delivery_days === 1 ? '24 horas' : '3 dias úteis'}
+              {/* Nome do Benefício */}
+              <div className="space-y-1">
+                <p className="text-2xl font-bold text-gray-900">
+                  {chosenBenefit?.name || 'Benefício escolhido'}
+                </p>
+                {chosenBenefit?.subtitle && (
+                  <p className="text-sm text-gray-500">
+                    {chosenBenefit.subtitle}
                   </p>
+                )}
+              </div>
+
+              {/* Valor */}
+              <div className="pt-2 pb-4">
+                <p className="text-3xl font-bold text-emerald-600">
+                  R$ 50,00
+                </p>
+              </div>
+
+              {/* Badge de Prazo */}
+              {chosenBenefit && (
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
+                  chosenBenefit.delivery_days === 1 
+                    ? 'bg-emerald-100 text-emerald-700' 
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {chosenBenefit.delivery_days === 1 ? '⚡' : '📦'}
+                  <span>
+                    Código em até {chosenBenefit.delivery_days === 1 ? '24 horas' : '3 dias úteis'}
+                  </span>
                 </div>
               )}
             </div>
-            
-            <div className="pt-4">
-              <p className="text-base text-gray-700 font-bold">
-                Obrigado por fazer parte da EXA MÍDIA! 🚀
-              </p>
+          </div>
+
+          {/* Próximos Passos */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="flex-1 space-y-1">
+                <p className="text-base font-medium text-gray-900">
+                  Você receberá o código por email
+                </p>
+                <p className="text-sm text-gray-500">
+                  Verifique sua caixa de entrada e pasta de spam
+                </p>
+              </div>
             </div>
+          </div>
+
+          {/* Footer */}
+          <div className="text-center pt-4">
+            <p className="text-sm text-gray-500">
+              Obrigado por fazer parte da <span className="font-semibold text-gray-700">EXA MÍDIA</span>
+            </p>
           </div>
         </div>
       </div>
