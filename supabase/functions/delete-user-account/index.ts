@@ -70,7 +70,67 @@ serve(async (req) => {
       console.log('✅ [DELETE-USER] Usuário encontrado:', userData?.email);
     }
 
-    // 2. DELETAR DADOS RELACIONADOS PRIMEIRO (para evitar constraint errors)
+    // 2. REGISTRAR AUDITORIA ANTES DE DELETAR (para manter integridade)
+    console.log('📝 [DELETE-USER] Registrando auditoria ANTES da deleção...');
+    const authHeader = req.headers.get('authorization');
+    let performedById = null;
+    let performedByEmail = 'Sistema';
+
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      
+      if (user) {
+        performedById = user.id;
+        const { data: performerProfile } = await supabaseAdmin
+          .from('users')
+          .select('email, nome')
+          .eq('id', user.id)
+          .single();
+        
+        if (performerProfile) {
+          performedByEmail = performerProfile.nome || performerProfile.email || 'Sistema';
+        }
+      }
+    }
+
+    // Registrar log ANTES de deletar
+    try {
+      if (performedById) {
+        const { error: auditError } = await supabaseAdmin
+          .from('user_activity_logs')
+          .insert({
+            user_id: performedById,
+            action_type: 'ADMIN_ACCOUNT_DELETED',
+            entity_type: 'user',
+            entity_id: userId,
+            action_description: `Conta ${userData?.role || 'usuário'} deletada: ${userData?.email || userId}`,
+            metadata: {
+              deleted_account: {
+                email: userData?.email,
+                nome: userData?.nome,
+                role: userData?.role,
+                user_id: userId
+              },
+              performed_by: performedByEmail,
+              performed_by_id: performedById,
+              ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
+              user_agent: req.headers.get('user-agent'),
+              timestamp: new Date().toISOString()
+            }
+          });
+
+        if (auditError) {
+          console.error('❌ [DELETE-USER] Erro ao registrar auditoria:', auditError);
+        } else {
+          console.log('✅ [DELETE-USER] Auditoria registrada com sucesso');
+        }
+      }
+    } catch (auditError) {
+      console.error('💥 [DELETE-USER] Erro crítico na auditoria:', auditError);
+    }
+
+    // 3. DELETAR DADOS RELACIONADOS (exceto user_activity_logs que não deletamos)
     console.log('🧹 [DELETE-USER] Deletando dados relacionados...');
     
     const relatedTables = [
@@ -79,7 +139,7 @@ serve(async (req) => {
       'user_sessions',
       'permission_change_logs',
       'role_change_audit',
-      'user_activity_logs',
+      // 'user_activity_logs', // NÃO deletar - mantemos histórico
       'building_action_logs',
       'client_activity_events',
       'client_behavior_analytics',
@@ -117,31 +177,7 @@ serve(async (req) => {
 
     console.log(`✅ [DELETE-USER] Deletados dados de ${deletedCount}/${relatedTables.length} tabelas`);
 
-    // 3. DELETAR da tabela users
-    console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
-    const { error: deleteUserError } = await supabaseAdmin
-      .from('users')
-      .delete()
-      .eq('id', userId);
-
-    if (deleteUserError) {
-      console.error('❌ [DELETE-USER] Erro ao deletar da tabela users:', deleteUserError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Erro ao deletar usuário da tabela users',
-          code: 'USER_TABLE_DELETE_ERROR',
-          details: deleteUserError.message
-        }),
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    console.log('✅ [DELETE-USER] Deletado da tabela users com sucesso');
-
-    // 4. POR ÚLTIMO deletar do auth.users
+    // 4. DELETAR do auth.users PRIMEIRO (isso pode fazer cascade em tabelas internas do Supabase)
     console.log('🔐 [DELETE-USER] Deletando do auth.users...');
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
@@ -162,61 +198,18 @@ serve(async (req) => {
 
     console.log('✅ [DELETE-USER] Deletado do auth com sucesso');
 
-    // 5. Registrar em auditoria
-    console.log('📝 [DELETE-USER] Registrando em auditoria...');
-    const authHeader = req.headers.get('authorization');
-    let performedById = null;
-    let performedByEmail = 'Sistema';
+    // 5. POR ÚLTIMO deletar da tabela users (já que auth.users foi deletado)
+    console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
+    const { error: deleteUserError } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', userId);
 
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-      
-      if (user) {
-        performedById = user.id;
-        const { data: performerProfile } = await supabaseAdmin
-          .from('users')
-          .select('email, nome')
-          .eq('id', user.id)
-          .single();
-        
-        if (performerProfile) {
-          performedByEmail = performerProfile.nome || performerProfile.email || 'Sistema';
-        }
-      }
-    }
-
-    try {
-      const { error: auditError } = await supabaseAdmin
-        .from('user_activity_logs')
-        .insert({
-          user_id: performedById,
-          action_type: 'ADMIN_ACCOUNT_DELETED',
-          entity_type: 'user',
-          entity_id: userId,
-          action_description: `Conta ${userData?.role || 'usuário'} deletada: ${userData?.email || userId}`,
-          metadata: {
-            deleted_account: {
-              email: userData?.email,
-              nome: userData?.nome,
-              role: userData?.role,
-              user_id: userId
-            },
-            performed_by: performedByEmail,
-            performed_by_id: performedById,
-            ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
-            user_agent: req.headers.get('user-agent'),
-            timestamp: new Date().toISOString()
-          }
-        });
-
-      if (auditError) {
-        console.error('❌ [DELETE-USER] Erro ao registrar auditoria:', auditError);
-      } else {
-        console.log('✅ [DELETE-USER] Auditoria registrada com sucesso');
-      }
-    } catch (auditError) {
-      console.error('💥 [DELETE-USER] Erro crítico na auditoria:', auditError);
+    if (deleteUserError) {
+      console.error('❌ [DELETE-USER] Erro ao deletar da tabela users:', deleteUserError);
+      console.warn('⚠️ [DELETE-USER] Auth deletado mas falhou ao limpar tabela users');
+    } else {
+      console.log('✅ [DELETE-USER] Deletado da tabela users com sucesso');
     }
 
     // Resposta de sucesso
