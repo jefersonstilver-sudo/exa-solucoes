@@ -48,9 +48,14 @@ export const useUserPermissions = () => {
   const permissions = useMemo(() => {
     const rolePermissions = getUserPermissions(userProfile?.role);
     
+    console.log('🔍 DEBUG PERMISSÕES - Role do usuário:', userProfile?.role);
+    console.log('🔍 DEBUG PERMISSÕES - Permissões base do role:', JSON.stringify(rolePermissions, null, 2));
+    console.log('🔍 DEBUG PERMISSÕES - canManageProviderBenefits base:', rolePermissions.canManageProviderBenefits);
+    
     // Se não houver permissões customizadas, retornar apenas as do role
     if (!customPermissions) {
-      console.log('🔑 Permissões do role:', userProfile?.role, rolePermissions);
+      console.log('🔑 Permissões do role (SEM custom):', userProfile?.role, rolePermissions);
+      console.log('🔍 DEBUG - canManageProviderBenefits final (sem custom):', rolePermissions.canManageProviderBenefits);
       return rolePermissions;
     }
 
@@ -67,6 +72,7 @@ export const useUserPermissions = () => {
       combined,
       canManageProviderBenefits: combined.canManageProviderBenefits
     });
+    console.log('🔍 DEBUG - canManageProviderBenefits final (com custom):', combined.canManageProviderBenefits);
     
     return combined;
   }, [userProfile?.role, customPermissions]);

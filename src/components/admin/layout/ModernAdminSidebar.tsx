@@ -246,8 +246,21 @@ export function ModernAdminSidebar() {
   const filteredGroups = navigationGroups.map(group => ({
     ...group,
     items: group.items.filter(item => {
-      if (item.requireSuperAdmin && !isSuperAdmin) return false;
-      if (item.permission && !permissions[item.permission as keyof typeof permissions]) return false;
+      const hasSuperAdminAccess = !item.requireSuperAdmin || isSuperAdmin;
+      const hasPermission = !item.permission || permissions[item.permission as keyof typeof permissions];
+      
+      console.log(`🔍 DEBUG SIDEBAR - Item: ${item.title}`, {
+        requireSuperAdmin: item.requireSuperAdmin,
+        isSuperAdmin,
+        hasSuperAdminAccess,
+        permission: item.permission,
+        permissionValue: item.permission ? permissions[item.permission as keyof typeof permissions] : 'N/A',
+        hasPermission,
+        willShow: hasSuperAdminAccess && hasPermission
+      });
+      
+      if (!hasSuperAdminAccess) return false;
+      if (!hasPermission) return false;
       return true;
     })
   })).filter(group => group.items.length > 0);

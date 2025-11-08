@@ -134,6 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email: profile.email, 
           role: profile.role 
         });
+        console.log('🔍 DEBUG DETALHADO - Profile completo:', JSON.stringify(profile, null, 2));
       } catch (error) {
         console.error('❌ Erro inesperado ao buscar profile:', error);
         setUserProfile(null);
