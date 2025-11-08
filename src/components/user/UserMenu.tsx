@@ -33,9 +33,12 @@ const UserMenu = () => {
     toast.success('Sessão encerrada com sucesso!');
   };
 
-  // VERIFICAÇÃO RIGOROSA DO SUPER ADMIN
+  // VERIFICAÇÃO COMPLETA DE TODOS OS ROLES
   const isSuperAdmin = user?.role === 'super_admin';
   const isAdmin = user?.role === 'admin';
+  const isAdminFinanceiro = user?.role === 'admin_financeiro';
+  const isAdminMarketing = user?.role === 'admin_marketing';
+  const isAnyAdmin = isSuperAdmin || isAdmin || isAdminFinanceiro || isAdminMarketing;
   const isClient = user?.role === 'client';
 
   // Generate avatar initials from name or email - MELHORADO
@@ -130,9 +133,11 @@ const UserMenu = () => {
                         <DropdownMenuLabel className="font-normal p-4 border-b border-gray-200">
                           <div className="flex flex-col space-y-1">
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-bold leading-none text-gray-900">{user?.name || "Usuário"}</p>
+                              <p className="text-sm font-bold leading-none text-gray-900">{user?.name || user?.nome || "Usuário"}</p>
                               {isSuperAdmin && <ShieldCheck className="h-4 w-4 text-amber-600" />}
                               {isAdmin && <ShieldCheck className="h-4 w-4 text-blue-600" />}
+                              {isAdminFinanceiro && <ShieldCheck className="h-4 w-4 text-green-600" />}
+                              {isAdminMarketing && <ShieldCheck className="h-4 w-4 text-purple-600" />}
                             </div>
                             <p className="text-xs text-gray-600 leading-none truncate">
                               {user?.email}
@@ -142,6 +147,12 @@ const UserMenu = () => {
                               </p>}
                             {isAdmin && <p className="text-xs text-blue-700 leading-none font-medium">
                                 Administrador
+                              </p>}
+                            {isAdminFinanceiro && <p className="text-xs text-green-700 leading-none font-medium">
+                                Administrador Financeiro
+                              </p>}
+                            {isAdminMarketing && <p className="text-xs text-purple-700 leading-none font-medium">
+                                Administrador de Marketing
                               </p>}
                           </div>
                         </DropdownMenuLabel>
@@ -266,6 +277,86 @@ const UserMenu = () => {
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-blue-50 text-gray-900 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                                 <Link to="/alterar-senha" className="flex items-center">
                                   <Lock className="mr-3 h-5 w-5 text-blue-600" />
+                                  <span className="font-medium">Alterar Senha</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
+                              
+                              <DropdownMenuItem onClick={handleLogout} className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-50 text-red-600 focus:bg-red-50 focus:text-red-700">
+                                <LogOut className="mr-3 h-5 w-5" />
+                                <span className="font-medium">Sair</span>
+                              </DropdownMenuItem>
+                            </>}
+
+                          {/* MENU PARA ADMIN FINANCEIRO */}
+                          {isAdminFinanceiro && <>
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-green-50 text-gray-900 hover:text-green-700 focus:bg-green-50 focus:text-green-700">
+                                <Link to="/admin" className="flex items-center">
+                                  <LayoutDashboard className="mr-3 h-5 w-5 text-green-600" />
+                                  <span className="font-medium">Painel Financeiro</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-green-50 text-gray-900 hover:text-green-700 focus:bg-green-50 focus:text-green-700">
+                                <Link to="/admin/pedidos" className="flex items-center">
+                                  <Package className="mr-3 h-5 w-5 text-green-600" />
+                                  <span className="font-medium">Pedidos</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-green-50 text-gray-900 hover:text-green-700 focus:bg-green-50 focus:text-green-700">
+                                <Link to="/admin/aprovacoes" className="flex items-center">
+                                  <CheckCircle className="mr-3 h-5 w-5 text-green-600" />
+                                  <span className="font-medium">Aprovações Financeiras</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-green-50 text-gray-900 hover:text-green-700 focus:bg-green-50 focus:text-green-700">
+                                <Link to="/alterar-senha" className="flex items-center">
+                                  <Lock className="mr-3 h-5 w-5 text-green-600" />
+                                  <span className="font-medium">Alterar Senha</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
+                              
+                              <DropdownMenuItem onClick={handleLogout} className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-red-50 text-red-600 focus:bg-red-50 focus:text-red-700">
+                                <LogOut className="mr-3 h-5 w-5" />
+                                <span className="font-medium">Sair</span>
+                              </DropdownMenuItem>
+                            </>}
+
+                          {/* MENU PARA ADMIN MARKETING */}
+                          {isAdminMarketing && <>
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-50 text-gray-900 hover:text-purple-700 focus:bg-purple-50 focus:text-purple-700">
+                                <Link to="/admin" className="flex items-center">
+                                  <LayoutDashboard className="mr-3 h-5 w-5 text-purple-600" />
+                                  <span className="font-medium">Painel de Marketing</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-50 text-gray-900 hover:text-purple-700 focus:bg-purple-50 focus:text-purple-700">
+                                <Link to="/admin/predios" className="flex items-center">
+                                  <Building className="mr-3 h-5 w-5 text-purple-600" />
+                                  <span className="font-medium">Prédios</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-50 text-gray-900 hover:text-purple-700 focus:bg-purple-50 focus:text-purple-700">
+                                <Link to="/admin/paineis" className="flex items-center">
+                                  <Monitor className="mr-3 h-5 w-5 text-purple-600" />
+                                  <span className="font-medium">Painéis Publicitários</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuSeparator className="my-2 bg-gray-200" />
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-50 text-gray-900 hover:text-purple-700 focus:bg-purple-50 focus:text-purple-700">
+                                <Link to="/alterar-senha" className="flex items-center">
+                                  <Lock className="mr-3 h-5 w-5 text-purple-600" />
                                   <span className="font-medium">Alterar Senha</span>
                                 </Link>
                               </DropdownMenuItem>
