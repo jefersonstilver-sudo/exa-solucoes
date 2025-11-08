@@ -70,20 +70,17 @@ serve(async (req) => {
       console.log('✅ [DELETE-USER] Usuário encontrado:', userData?.email);
     }
 
-    // 2. Deletar da tabela users primeiro (por causa das foreign keys)
-    console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
-    const { error: deleteUserError } = await supabaseAdmin
-      .from('users')
-      .delete()
-      .eq('id', userId);
+    // 2. PRIMEIRO deletar do auth.users (ordem invertida para evitar conflitos)
+    console.log('🔐 [DELETE-USER] Deletando do auth.users...');
+    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
-    if (deleteUserError) {
-      console.error('❌ [DELETE-USER] Erro ao deletar da tabela users:', deleteUserError);
+    if (deleteAuthError) {
+      console.error('❌ [DELETE-USER] Erro ao deletar do auth:', deleteAuthError);
       return new Response(
         JSON.stringify({ 
-          error: 'Erro ao deletar usuário do banco de dados',
-          code: 'DATABASE_DELETE_ERROR',
-          details: deleteUserError.message
+          error: 'Erro ao deletar usuário do auth',
+          code: 'AUTH_DELETE_ERROR',
+          details: deleteAuthError.message
         }),
         { 
           status: 500,
@@ -92,19 +89,22 @@ serve(async (req) => {
       );
     }
 
-    console.log('✅ [DELETE-USER] Deletado da tabela users com sucesso');
+    console.log('✅ [DELETE-USER] Deletado do auth com sucesso');
 
-    // 3. Deletar do auth.users
-    console.log('🔐 [DELETE-USER] Deletando do auth.users...');
-    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    // 3. DEPOIS deletar da tabela users
+    console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
+    const { error: deleteUserError } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', userId);
 
-    if (deleteAuthError) {
-      console.error('❌ [DELETE-USER] Erro ao deletar do auth:', deleteAuthError);
-      // Mesmo com erro no auth, consideramos sucesso se deletou do banco
-      // pois isso permite recriação imediata
-      console.warn('⚠️ [DELETE-USER] Usuário deletado do banco mas pode ter falhado no auth');
+    if (deleteUserError) {
+      console.error('❌ [DELETE-USER] Erro ao deletar da tabela users:', deleteUserError);
+      console.warn('⚠️ [DELETE-USER] Usuário deletado do auth mas falhou ao deletar do banco');
+      // Não retorna erro aqui pois o importante é ter deletado do auth
+      // O usuário pode ser recriado mesmo se ficar órfão no banco
     } else {
-      console.log('✅ [DELETE-USER] Deletado do auth com sucesso');
+      console.log('✅ [DELETE-USER] Deletado da tabela users com sucesso');
     }
 
     // 4. Registrar em auditoria
