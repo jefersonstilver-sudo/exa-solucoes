@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Settings, Lock, LogOut, LogIn, UserPlus, User as UserIcon, ShieldCheck, LayoutDashboard, Users, Package, Building, Monitor, CheckCircle, ClipboardList, ListOrdered } from 'lucide-react';
+import { Settings, Lock, LogOut, LogIn, UserPlus, User as UserIcon, ShieldCheck, LayoutDashboard, Users, Package, Building, Monitor, CheckCircle, ClipboardList, ListOrdered, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -306,9 +306,16 @@ const UserMenu = () => {
                               </DropdownMenuItem>
                               
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-green-50 text-gray-900 hover:text-green-700 focus:bg-green-50 focus:text-green-700">
-                                <Link to="/admin/aprovacoes" className="flex items-center">
+                                <Link to="/admin/beneficio-prestadores" className="flex items-center">
+                                  <Gift className="mr-3 h-5 w-5 text-green-600" />
+                                  <span className="font-medium">Benefícios Prestadores</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-green-50 text-gray-900 hover:text-green-700 focus:bg-green-50 focus:text-green-700">
+                                <Link to="/admin/relatorios-financeiros" className="flex items-center">
                                   <CheckCircle className="mr-3 h-5 w-5 text-green-600" />
-                                  <span className="font-medium">Aprovações Financeiras</span>
+                                  <span className="font-medium">Relatórios Financeiros</span>
                                 </Link>
                               </DropdownMenuItem>
                               

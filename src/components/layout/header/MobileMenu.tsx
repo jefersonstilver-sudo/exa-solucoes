@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { X, LayoutDashboard, Package, Building, Monitor, CheckCircle, ShieldCheck } from 'lucide-react';
+import { X, LayoutDashboard, Package, Building, Monitor, CheckCircle, ShieldCheck, Gift } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
 
 interface MobileMenuProps {
@@ -122,6 +122,30 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
                 </Link>
               )}
 
+              {/* Benefícios Prestadores - Para Admin Financeiro */}
+              {(isAdmin || isAdminFinanceiro || isSuperAdmin) && (
+                <Link 
+                  to="/admin/beneficio-prestadores" 
+                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
+                  onClick={onClose}
+                >
+                  <Gift className="h-5 w-5" />
+                  <span>Benefícios Prestadores</span>
+                </Link>
+              )}
+
+              {/* Relatórios Financeiros - Para Admin Financeiro */}
+              {(isAdmin || isAdminFinanceiro || isSuperAdmin) && (
+                <Link 
+                  to="/admin/relatorios-financeiros" 
+                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
+                  onClick={onClose}
+                >
+                  <LayoutDashboard className="h-5 w-5" />
+                  <span>Relatórios Financeiros</span>
+                </Link>
+              )}
+
               {/* Prédios - Para Admin e Admin Marketing */}
               {(isAdmin || isAdminMarketing || isSuperAdmin) && (
                 <Link 
@@ -146,8 +170,8 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
                 </Link>
               )}
 
-              {/* Aprovações - Para todos os admins */}
-              {isAnyAdmin && (
+              {/* Aprovações - Para admin e super_admin apenas */}
+              {(isAdmin || isSuperAdmin) && (
                 <Link 
                   to="/admin/aprovacoes" 
                   className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
