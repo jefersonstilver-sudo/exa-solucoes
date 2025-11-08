@@ -83,10 +83,10 @@ const BenefitStatsCards: React.FC<BenefitStatsCardsProps> = ({ stats, loading })
                 <Icon className="w-4 h-4" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-muted-foreground font-medium truncate">
+                <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-wide truncate">
                   {card.title}
                 </p>
-                <p className="text-xl font-bold text-foreground mt-0.5">
+                <p className="text-xl font-bold text-gray-900 mt-0.5">
                   {card.value}
                 </p>
               </div>

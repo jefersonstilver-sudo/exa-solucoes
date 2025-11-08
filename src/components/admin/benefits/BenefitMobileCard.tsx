@@ -61,24 +61,24 @@ const BenefitMobileCard: React.FC<BenefitMobileCardProps> = ({
       <div className={`p-3 space-y-2.5 ${requiresAction ? 'bg-amber-50/30' : ''}`}>
         {/* Email */}
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
-            <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+          <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <Mail className="w-3.5 h-3.5 text-gray-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Email</p>
-            <p className="text-xs font-medium text-foreground truncate">{benefit.provider_email}</p>
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Email</p>
+            <p className="text-xs font-medium text-gray-900 truncate">{benefit.provider_email}</p>
           </div>
         </div>
 
         {/* Ponto de Ativação */}
         {benefit.activation_point && (
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <MapPin className="w-3.5 h-3.5 text-gray-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Ponto de Ativação</p>
-              <p className="text-xs font-medium text-foreground truncate">{benefit.activation_point}</p>
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Ponto de Ativação</p>
+              <p className="text-xs font-medium text-gray-900 truncate">{benefit.activation_point}</p>
             </div>
           </div>
         )}
@@ -86,12 +86,12 @@ const BenefitMobileCard: React.FC<BenefitMobileCardProps> = ({
         {/* Presente Escolhido */}
         {benefit.benefit_choice && (
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
-              <Gift className="w-3.5 h-3.5 text-muted-foreground" />
+            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <Gift className="w-3.5 h-3.5 text-gray-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Presente Escolhido</p>
-              <p className="text-xs font-semibold text-foreground truncate">{selectedBenefitOption?.name || benefit.benefit_choice}</p>
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Presente Escolhido</p>
+              <p className="text-xs font-semibold text-gray-900 truncate">{selectedBenefitOption?.name || benefit.benefit_choice}</p>
               {requiresAction && (
                 <p className="text-[10px] text-amber-700 font-medium mt-0.5">
                   ⚡ Entrega {deliveryTime}
@@ -103,12 +103,12 @@ const BenefitMobileCard: React.FC<BenefitMobileCardProps> = ({
 
         {/* Data de Criação */}
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
-            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+          <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <Calendar className="w-3.5 h-3.5 text-gray-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Criado em</p>
-            <p className="text-xs font-medium text-foreground">
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Criado em</p>
+            <p className="text-xs font-medium text-gray-900">
               {format(new Date(benefit.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
             </p>
           </div>

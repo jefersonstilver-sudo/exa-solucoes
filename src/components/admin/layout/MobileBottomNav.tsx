@@ -53,8 +53,11 @@ const MobileBottomNav = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg backdrop-blur-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="flex items-center justify-around h-16 max-w-screen-xl mx-auto bg-background">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-t border-white/20 shadow-2xl" 
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="flex items-center justify-around h-16 max-w-screen-xl mx-auto">
         {navItems.map((item) => {
           const active = isActive(item.path);
           const Icon = item.icon;
@@ -64,31 +67,34 @@ const MobileBottomNav = () => {
               key={item.path}
               to={item.path}
               className={cn(
-                'flex flex-col items-center justify-center flex-1 h-full',
-                'transition-colors duration-200 relative touch-target',
+                'flex flex-col items-center justify-center flex-1 h-full gap-1',
+                'transition-all duration-200 relative touch-target rounded-lg',
                 active
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
               )}
             >
               <div className="relative">
-                <Icon className={cn('h-6 w-6', active && 'scale-110')} />
+                <Icon className={cn(
+                  'h-7 w-7 transition-all',
+                  active && 'scale-110 text-[#00FFAB]'
+                )} />
                 {item.badge && item.badge > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#00FFAB] text-gray-900 text-[10px] font-bold flex items-center justify-center shadow-lg">
                     {item.badge > 9 ? '9+' : item.badge}
                   </span>
                 )}
               </div>
               <span
                 className={cn(
-                  'text-[10px] font-medium mt-1',
-                  active && 'font-bold'
+                  'text-[11px] font-semibold',
+                  active ? 'text-white' : 'text-white/90'
                 )}
               >
                 {item.label}
               </span>
               {active && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-b-full" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-[#00FFAB] rounded-b-full shadow-lg" />
               )}
             </NavLink>
           );

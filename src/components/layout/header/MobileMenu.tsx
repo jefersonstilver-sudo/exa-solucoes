@@ -83,11 +83,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
                 <>
                   <Link 
                     to="/super_admin" 
-                    className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
+                    className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-semibold font-montserrat py-4 px-4 rounded-lg border-b border-white/10"
                     onClick={onClose}
                   >
-                    <LayoutDashboard className="h-5 w-5" />
-                    <span>Master Control Panel</span>
+                    <LayoutDashboard className="h-6 w-6" />
+                    <span className="text-base">Master Control Panel</span>
                   </Link>
                 </>
               )}
@@ -97,11 +97,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
                 <>
                   <Link 
                     to="/admin" 
-                    className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
+                    className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-semibold font-montserrat py-4 px-4 rounded-lg border-b border-white/10"
                     onClick={onClose}
                   >
-                    <LayoutDashboard className="h-5 w-5" />
-                    <span>
+                    <LayoutDashboard className="h-6 w-6" />
+                    <span className="text-base">
                       {isAdminFinanceiro ? 'Painel Financeiro' : 
                        isAdminMarketing ? 'Painel Marketing' : 
                        'Dashboard Admin'}
@@ -114,11 +114,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               {(isAdmin || isAdminFinanceiro || isSuperAdmin) && (
                 <Link 
                   to="/admin/pedidos" 
-                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
+                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-semibold font-montserrat py-4 px-4 rounded-lg border-b border-white/10"
                   onClick={onClose}
                 >
-                  <Package className="h-5 w-5" />
-                  <span>Gerenciar Pedidos</span>
+                  <Package className="h-6 w-6" />
+                  <span className="text-base">Gerenciar Pedidos</span>
                 </Link>
               )}
 
@@ -126,11 +126,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               {(isAdmin || isAdminFinanceiro || isSuperAdmin) && (
                 <Link 
                   to="/admin/beneficio-prestadores" 
-                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
+                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-semibold font-montserrat py-4 px-4 rounded-lg border-b border-white/10"
                   onClick={onClose}
                 >
-                  <Gift className="h-5 w-5" />
-                  <span>Benefícios Prestadores</span>
+                  <Gift className="h-6 w-6" />
+                  <span className="text-base">Benefícios Prestadores</span>
                 </Link>
               )}
 
@@ -138,11 +138,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               {(isAdmin || isAdminFinanceiro || isSuperAdmin) && (
                 <Link 
                   to="/admin/relatorios-financeiros" 
-                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
+                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-semibold font-montserrat py-4 px-4 rounded-lg border-b border-white/10"
                   onClick={onClose}
                 >
-                  <LayoutDashboard className="h-5 w-5" />
-                  <span>Relatórios Financeiros</span>
+                  <LayoutDashboard className="h-6 w-6" />
+                  <span className="text-base">Relatórios Financeiros</span>
                 </Link>
               )}
 
@@ -150,11 +150,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               {(isAdmin || isAdminMarketing || isSuperAdmin) && (
                 <Link 
                   to="/admin/predios" 
-                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
+                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-semibold font-montserrat py-4 px-4 rounded-lg border-b border-white/10"
                   onClick={onClose}
                 >
-                  <Building className="h-5 w-5" />
-                  <span>Gerenciar Prédios</span>
+                  <Building className="h-6 w-6" />
+                  <span className="text-base">Gerenciar Prédios</span>
                 </Link>
               )}
 
@@ -162,11 +162,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               {(isAdmin || isAdminMarketing || isSuperAdmin) && (
                 <Link 
                   to="/admin/paineis" 
-                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
+                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-semibold font-montserrat py-4 px-4 rounded-lg border-b border-white/10"
                   onClick={onClose}
                 >
-                  <Monitor className="h-5 w-5" />
-                  <span>Gerenciar Painéis</span>
+                  <Monitor className="h-6 w-6" />
+                  <span className="text-base">Gerenciar Painéis</span>
                 </Link>
               )}
 
@@ -174,11 +174,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               {(isAdmin || isSuperAdmin) && (
                 <Link 
                   to="/admin/aprovacoes" 
-                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-medium font-montserrat py-3 px-3 rounded-lg"
+                  className="flex items-center gap-3 text-white hover:text-exa-yellow hover:bg-white/10 transition-all duration-200 font-semibold font-montserrat py-4 px-4 rounded-lg border-b border-white/10"
                   onClick={onClose}
                 >
-                  <CheckCircle className="h-5 w-5" />
-                  <span>Aprovações</span>
+                  <CheckCircle className="h-6 w-6" />
+                  <span className="text-base">Aprovações</span>
                 </Link>
               )}
             </>
