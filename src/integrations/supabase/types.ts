@@ -2911,7 +2911,6 @@ export type Database = {
       cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_orphaned_users: { Args: never; Returns: Json }
       cleanup_unauthorized_uploads: { Args: never; Returns: Json }
-      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       daily_financial_reconciliation: { Args: never; Returns: Json }
       detect_duplicate_payments: {
         Args: never
