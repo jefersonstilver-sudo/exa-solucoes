@@ -166,6 +166,16 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
 
       if (functionData?.error) {
         console.error('❌ Erro retornado pela função:', functionData.error);
+        
+        // Tratamento especial para email duplicado
+        if (functionData.error.code === 'EMAIL_EXISTS') {
+          toast.error('⚠️ Email já existe no sistema', {
+            description: 'Este email já está registrado. Verifique a lista de usuários ou use outro email.',
+            duration: 6000,
+          });
+          return;
+        }
+        
         throw new Error(functionData.error.error || functionData.error.message || 'Erro ao criar usuário');
       }
 

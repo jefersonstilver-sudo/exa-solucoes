@@ -35,13 +35,24 @@ export const checkExistingUser = async (email: string): Promise<CheckResult> => 
       };
     }
 
-    const emailExistsAuth = authUsers.users.some(user => user.email === email);
-    if (emailExistsAuth) {
+    const existingUser = authUsers.users.find(user => user.email === email);
+    if (existingUser) {
       console.log('⚠️ [CREATE-ADMIN] Email já existe em auth.users');
+      
+      // Buscar role do usuário na tabela users
+      const { data: userData } = await supabaseServiceRole
+        .from('users')
+        .select('role')
+        .eq('email', email)
+        .single();
+      
+      const userRole = userData?.role || 'desconhecido';
+      
       return {
         error: { 
-          error: 'Este email já possui uma conta no sistema',
-          code: 'EMAIL_EXISTS'
+          error: `Este email já possui uma conta no sistema (tipo: ${userRole})`,
+          code: 'EMAIL_EXISTS',
+          existingRole: userRole
         },
         status: 409
       };
