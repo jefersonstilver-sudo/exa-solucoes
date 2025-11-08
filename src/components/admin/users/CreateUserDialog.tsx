@@ -72,7 +72,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   const [creating, setCreating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showExistingAlert, setShowExistingAlert] = useState(false);
-  const { checking: checkingEmail, result: emailCheckResult, checkEmail } = useEmailCheck();
+  const { checking: checkingEmail, result: emailCheckResult, checkEmail, clearResult } = useEmailCheck();
 
   // Função para formatar CPF automaticamente
   const formatCPF = (value: string) => {
@@ -479,6 +479,10 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         email={email}
         role={emailCheckResult?.role}
         nome={emailCheckResult?.nome}
+        onDeleted={() => {
+          setShowExistingAlert(false);
+          clearResult();
+        }}
       />
     </Dialog>
   );

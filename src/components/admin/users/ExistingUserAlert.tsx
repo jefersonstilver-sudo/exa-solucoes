@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -9,7 +9,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Crown, Shield, UserCheck, DollarSign, User } from 'lucide-react';
+import { AlertTriangle, Crown, Shield, UserCheck, DollarSign, User, Trash2, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ExistingUserAlertProps {
   open: boolean;
@@ -17,6 +19,7 @@ interface ExistingUserAlertProps {
   email: string;
   role?: string;
   nome?: string;
+  onDeleted?: () => void;
 }
 
 const getRoleInfo = (role: string) => {
@@ -67,9 +70,48 @@ const ExistingUserAlert: React.FC<ExistingUserAlertProps> = ({
   email,
   role,
   nome,
+  onDeleted,
 }) => {
   const roleInfo = getRoleInfo(role || '');
   const Icon = roleInfo.icon;
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    try {
+      setDeleting(true);
+      console.log('🗑️ Deletando conta:', email);
+
+      // Buscar ID do usuário
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (userError || !userData) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      // Chamar edge function para deletar
+      const { error: deleteError } = await supabase.functions.invoke('delete-user-account', {
+        body: { userId: userData.id }
+      });
+
+      if (deleteError) throw deleteError;
+
+      toast.success('✅ Conta deletada! Agora você pode criar novamente.', { duration: 5000 });
+      onOpenChange(false);
+      
+      if (onDeleted) {
+        onDeleted();
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao deletar:', error);
+      toast.error(`Erro: ${error.message || 'Falha ao deletar conta'}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -136,15 +178,40 @@ const ExistingUserAlert: React.FC<ExistingUserAlertProps> = ({
             <ul className="text-sm text-blue-800 mt-2 space-y-1 ml-4 list-disc">
               <li>Use um email diferente para criar a nova conta</li>
               <li>Ou edite a conta existente para alterar o tipo</li>
-              <li>Se necessário, exclua a conta existente primeiro</li>
+              {role === 'client' && (
+                <li className="text-red-700 font-semibold">
+                  Ou delete esta conta e recrie com o tipo correto
+                </li>
+              )}
             </ul>
           </div>
         </div>
 
-        <AlertDialogFooter>
+        <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+          {role === 'client' && (
+            <Button
+              onClick={handleDelete}
+              disabled={deleting}
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-50 w-full sm:w-auto"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deletando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Deletar e Recriar
+                </>
+              )}
+            </Button>
+          )}
           <Button
             onClick={() => onOpenChange(false)}
-            className="w-full bg-primary hover:bg-primary/90"
+            disabled={deleting}
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90"
           >
             Entendi
           </Button>
