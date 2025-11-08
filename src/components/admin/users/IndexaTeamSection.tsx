@@ -15,15 +15,13 @@ import {
   Crown, 
   Shield, 
   Search, 
-  Settings,
   Eye,
   RefreshCw,
   UserCog,
   UserPlus,
   Info,
   DollarSign,
-  Trash2,
-  AlertTriangle
+  Trash2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -197,179 +195,183 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
     }
   };
 
-  const handleFixJefersonRole = async () => {
-    try {
-      setCleanupLoading(true);
-      console.log('🔧 Corrigindo role de jeferson@examidia.com.br...');
-
-      const { data, error } = await supabase.functions.invoke('fix-user-role', {
-        body: {
-          email: 'jeferson@examidia.com.br',
-          role: 'admin_financeiro',
-          nome: 'Caju Sacola'
-        }
-      });
-
-      if (error) throw error;
-
-      console.log('✅ Role corrigido:', data);
-      
-      toast.success('✅ Role corrigido com sucesso!', { duration: 5000 });
-      onRefresh();
-    } catch (error: any) {
-      console.error('❌ Erro ao corrigir role:', error);
-      toast.error(`Erro: ${error.message || 'Falha ao corrigir role'}`);
-    } finally {
-      setCleanupLoading(false);
-    }
-  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <SecurityAuditBanner />
-      {/* Header da Seção */}
-      <div className="flex items-center justify-between">
-        <div>
-            <h2 className="text-xl font-bold text-gray-900 flex items-center">
-              <Crown className="h-6 w-6 mr-2 text-indexa-purple" />
-              Usuários EXA
-            </h2>
-          <p className="text-gray-600 mt-1">
-            Administradores e Super Administradores do sistema
-          </p>
-        </div>
-        <div className="flex space-x-3">
-          <Button 
-            onClick={handleFixJefersonRole}
-            disabled={cleanupLoading}
-            variant="outline"
-            className="border-amber-300 text-amber-700 hover:bg-amber-50 flex items-center"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            {cleanupLoading ? 'Corrigindo...' : 'Corrigir Jeferson'}
-          </Button>
-          <Button 
-            onClick={handleCleanupOrphans}
-            disabled={cleanupLoading}
-            variant="outline"
-            className="border-red-300 text-red-700 hover:bg-red-50 flex items-center"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            {cleanupLoading ? 'Limpando...' : 'Limpar Órfãos'}
-          </Button>
-          <Button 
-            onClick={() => setCreateDialogOpen(true)}
-            className="bg-indexa-purple hover:bg-indexa-purple/90 text-white flex items-center"
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Criar Nova Conta
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={onRefresh} 
-            disabled={loading}
-            className="flex items-center"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
+      
+      {/* Professional Header */}
+      <div className="bg-gradient-to-br from-indexa-purple via-indexa-purple/90 to-indexa-purple/80 rounded-2xl shadow-xl p-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+              <Crown className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-white flex items-center space-x-3">
+                Usuários EXA
+              </h2>
+              <p className="text-white/90 mt-2 text-base">
+                Administradores e Super Administradores do sistema
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <Button 
+              onClick={handleCleanupOrphans}
+              disabled={cleanupLoading}
+              variant="outline"
+              className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 transition-all duration-200"
+              size="lg"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {cleanupLoading ? 'Limpando...' : 'Limpar Órfãos'}
+            </Button>
+            <Button 
+              onClick={() => setCreateDialogOpen(true)}
+              className="bg-white text-indexa-purple hover:bg-white/90 shadow-lg transition-all duration-200"
+              size="lg"
+            >
+              <UserPlus className="h-5 w-5 mr-2" />
+              Nova Conta
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={onRefresh} 
+              disabled={loading}
+              className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 transition-all duration-200"
+              size="lg"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Estatísticas da Equipe */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <Card className="bg-indexa-purple/5 border-indexa-purple/20">
+      {/* Professional Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        <Card className="bg-gradient-to-br from-indexa-purple to-indexa-purple/80 text-white border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total da Equipe</CardTitle>
-            <UserCog className="h-4 w-4 text-indexa-purple" />
+            <CardTitle className="text-sm font-medium text-white/90">Total da Equipe</CardTitle>
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <UserCog className="h-5 w-5 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indexa-purple">{stats.total}</div>
-            <p className="text-xs text-gray-500 mt-1">membros da equipe</p>
+            <div className="text-3xl font-bold">{stats.total}</div>
+            <p className="text-xs text-white/80 mt-2">membros ativos</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-2 border-indexa-purple/20 hover:border-indexa-purple/40 hover:shadow-lg transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Super Admins</CardTitle>
-            <Crown className="h-4 w-4 text-indexa-purple" />
+            <div className="w-10 h-10 bg-indexa-purple/10 rounded-xl flex items-center justify-center">
+              <Crown className="h-5 w-5 text-indexa-purple" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indexa-purple">{stats.superAdmins}</div>
-            <p className="text-xs text-gray-500 mt-1">acesso total</p>
+            <div className="text-3xl font-bold text-indexa-purple">{stats.superAdmins}</div>
+            <p className="text-xs text-muted-foreground mt-2">acesso total</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-2 border-blue-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Admin Geral</CardTitle>
-            <Shield className="h-4 w-4 text-blue-500" />
+            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+              <Shield className="h-5 w-5 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">{stats.admins}</div>
-            <p className="text-xs text-gray-500 mt-1">gestão completa</p>
+            <div className="text-3xl font-bold text-blue-600">{stats.admins}</div>
+            <p className="text-xs text-muted-foreground mt-2">gestão completa</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-2 border-purple-200 hover:border-purple-300 hover:shadow-lg transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Admin Marketing</CardTitle>
-            <UserCog className="h-4 w-4 text-purple-500" />
+            <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+              <UserCog className="h-5 w-5 text-purple-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-500">{stats.marketingAdmins}</div>
-            <p className="text-xs text-gray-500 mt-1">leads e campanhas</p>
+            <div className="text-3xl font-bold text-purple-600">{stats.marketingAdmins}</div>
+            <p className="text-xs text-muted-foreground mt-2">leads e campanhas</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-2 border-emerald-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Admin Financeiro</CardTitle>
-            <UserCog className="h-4 w-4 text-emerald-500" />
+            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-emerald-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-500">{stats.financialAdmins}</div>
-            <p className="text-xs text-gray-500 mt-1">pedidos e benefícios</p>
+            <div className="text-3xl font-bold text-emerald-600">{stats.financialAdmins}</div>
+            <p className="text-xs text-muted-foreground mt-2">pedidos e benefícios</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-2 border-green-200 hover:border-green-300 hover:shadow-lg transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Verificados</CardTitle>
-            <Eye className="h-4 w-4 text-green-500" />
+            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+              <Eye className="h-5 w-5 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">{stats.verified}</div>
-            <p className="text-xs text-gray-500 mt-1">emails confirmados</p>
+            <div className="text-3xl font-bold text-green-600">{stats.verified}</div>
+            <p className="text-xs text-muted-foreground mt-2">emails confirmados</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Busca */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center">
-            <Search className="h-5 w-5 mr-2" />
-            Buscar na Equipe
-          </CardTitle>
+      {/* Professional Search Section */}
+      <Card className="border-2 shadow-md">
+        <CardHeader className="bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center">
+              <div className="w-10 h-10 bg-indexa-purple/10 rounded-xl flex items-center justify-center mr-3">
+                <Search className="h-5 w-5 text-indexa-purple" />
+              </div>
+              Buscar na Equipe
+            </CardTitle>
+            <Badge variant="secondary" className="text-sm">
+              {filteredTeam.length} resultado(s)
+            </Badge>
+          </div>
         </CardHeader>
-        <CardContent>
-          <Input
-            placeholder="Buscar por email ou função..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-md"
-          />
+        <CardContent className="pt-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por email, nome ou função..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-11 h-12 text-base"
+            />
+          </div>
         </CardContent>
       </Card>
 
-      {/* Tabela da Equipe */}
-      <Card className="bg-indexa-purple/5 border-indexa-purple/20">
-        <CardHeader>
-          <CardTitle className="text-lg">Membros da Equipe EXA</CardTitle>
-          <CardDescription>
-            {filteredTeam.length} membro(s) encontrado(s)
-          </CardDescription>
+      {/* Professional Team Table */}
+      <Card className="border-2 shadow-md">
+        <CardHeader className="bg-gradient-to-r from-indexa-purple/5 to-white border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl flex items-center">
+                <Crown className="h-6 w-6 text-indexa-purple mr-2" />
+                Membros da Equipe EXA
+              </CardTitle>
+              <CardDescription className="mt-2 text-base">
+                {filteredTeam.length} membro(s) encontrado(s)
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
