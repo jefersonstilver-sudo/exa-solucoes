@@ -66,6 +66,34 @@ serve(async (req) => {
       );
     }
 
+    // Buscar usuário autenticado que está criando a conta
+    const authHeader = req.headers.get('authorization');
+    let createdByName = 'Sistema';
+    let createdById = null;
+
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      
+      if (user) {
+        createdById = user.id;
+        const { data: userProfile } = await supabaseAdmin
+          .from('users')
+          .select('nome, email')
+          .eq('id', user.id)
+          .single();
+        
+        if (userProfile) {
+          createdByName = userProfile.nome || userProfile.email || 'Sistema';
+        }
+      }
+    }
+
     // Enviar email de boas-vindas profissional
     console.log('📧 [CREATE-ADMIN] Enviando email de boas-vindas profissional...');
     const emailResult = await sendAdminWelcomeEmail({
@@ -73,7 +101,7 @@ serve(async (req) => {
       role: adminType,
       password: createResult.password || 'exa2025',
       nome: nome || email.split('@')[0],
-      createdBy: 'Sistema'
+      createdBy: createdByName
     });
     
     if (!emailResult.success) {
@@ -99,25 +127,25 @@ serve(async (req) => {
       console.log(`📬 [CREATE-ADMIN] Encontrados ${superAdmins.length} super admins`);
       
       const timestamp = new Date().toISOString();
-      const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'N/A';
-      const userAgent = req.headers.get('user-agent') || 'N/A';
+      
+      // Garantir que campos não fiquem vazios
+      const nomeCompleto = nome?.trim() || email.split('@')[0] || 'Usuário';
+      const cpfFormatado = cpf || 'Não informado';
 
       for (const admin of superAdmins) {
         try {
           const notificationResult = await sendSuperAdminNotification({
             superAdminEmail: admin.email,
-            superAdminName: admin.nome || 'Super Admin',
+            superAdminName: admin.nome?.trim() || 'Administrador',
             newUser: {
-              nome: nome || email.split('@')[0],
+              nome: nomeCompleto,
               email,
               role: adminType,
-              cpf,
-              tipo_documento
+              cpf: cpfFormatado,
+              tipo_documento: tipo_documento || 'Não informado'
             },
-            createdBy: 'Sistema',
+            createdBy: createdByName,
             emailSentStatus: emailResult.success,
-            ipAddress,
-            userAgent,
             timestamp
           });
 

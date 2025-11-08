@@ -200,14 +200,13 @@ export class AdminEmailTemplates {
           }
           .role-badge {
             display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.25);
             padding: 12px 24px;
             border-radius: 30px;
             margin-top: 20px;
             font-size: 18px;
             font-weight: 600;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.4);
           }
           .content { 
             padding: 40px 30px;
@@ -450,6 +449,9 @@ export class AdminEmailTemplates {
       <body>
         <div class="email-container">
           <div class="header">
+            <img src="https://www.examidia.com.br/logo-exa-branco.png" 
+                 alt="EXA Mídia" 
+                 style="max-width: 180px; height: auto; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
             <h1>🎉 Bem-vindo à EXA Mídia!</h1>
             <p>Sua conta administrativa foi criada com sucesso</p>
             <div class="role-badge">

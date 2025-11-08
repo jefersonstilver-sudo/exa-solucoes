@@ -29,6 +29,8 @@ export const sendAdminWelcomeEmail = async (
     });
     
     const { data: emailData, error } = await resend.emails.send({
+      // TODO: Após verificar domínio examidia.com.br no Resend, mudar para:
+      // from: 'EXA Mídia Notificações <notificacoes@examidia.com.br>',
       from: 'EXA Mídia <onboarding@resend.dev>',
       to: [data.email],
       subject: 'Bem-vindo à Equipe EXA Mídia - Acesso Administrativo',

@@ -17,8 +17,6 @@ interface NotificationData {
   newUser: NewUserData;
   createdBy: string;
   emailSentStatus: boolean;
-  ipAddress?: string;
-  userAgent?: string;
   timestamp: string;
 }
 
@@ -84,6 +82,8 @@ export const sendSuperAdminNotification = async (
     const siteUrl = Deno.env.get('SITE_URL') || 'https://www.examidia.com.br';
     
     const { error } = await resend.emails.send({
+      // TODO: Após verificar domínio examidia.com.br no Resend, mudar para:
+      // from: 'EXA Mídia Notificações <notificacoes@examidia.com.br>',
       from: 'EXA Mídia <onboarding@resend.dev>',
       to: [data.superAdminEmail],
       subject: `🔔 Nova Conta Administrativa Criada - ${roleName}`,
@@ -312,6 +312,9 @@ export const sendSuperAdminNotification = async (
         <body>
           <div class="email-container">
             <div class="header">
+              <img src="https://www.examidia.com.br/logo-exa-branco.png" 
+                   alt="EXA Mídia" 
+                   style="max-width: 180px; height: auto; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
               <h1>🔔 Nova Conta Administrativa Criada</h1>
               <p>Notificação do Sistema de Gerenciamento</p>
             </div>
@@ -369,10 +372,22 @@ export const sendSuperAdminNotification = async (
                 
                 <div class="info-row">
                   <span class="info-label">Data e Hora</span>
-                  <span class="info-value">${new Date(data.timestamp).toLocaleString('pt-BR', {
-                    dateStyle: 'short',
-                    timeStyle: 'short'
-                  })}</span>
+                  <span class="info-value">${(() => {
+                    try {
+                      const date = new Date(data.timestamp);
+                      if (isNaN(date.getTime())) return 'Data indisponível';
+                      return date.toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        timeZone: 'America/Sao_Paulo'
+                      });
+                    } catch {
+                      return 'Data indisponível';
+                    }
+                  })()}</span>
                 </div>
               </div>
 
@@ -429,27 +444,6 @@ export const sendSuperAdminNotification = async (
                   <div class="alert-item">Revisar logs de auditoria nas próximas 48h</div>
                 </div>
               </div>
-
-              ${data.ipAddress || data.userAgent ? `
-                <div class="metadata-box">
-                  <strong style="font-size: 13px; color: #374151; display: block; margin-bottom: 8px;">
-                    📊 Metadados da Criação
-                  </strong>
-                  ${data.ipAddress ? `
-                    <div class="metadata-row">
-                      <strong>IP de Origem:</strong> ${data.ipAddress}
-                    </div>
-                  ` : ''}
-                  ${data.userAgent ? `
-                    <div class="metadata-row">
-                      <strong>User Agent:</strong> ${data.userAgent}
-                    </div>
-                  ` : ''}
-                  <div class="metadata-row">
-                    <strong>Timestamp:</strong> ${data.timestamp}
-                  </div>
-                </div>
-              ` : ''}
 
               <div class="divider"></div>
 
