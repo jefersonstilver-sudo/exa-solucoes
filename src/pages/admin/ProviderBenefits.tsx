@@ -21,7 +21,7 @@ import InsertCodeModal from '@/components/benefits/InsertCodeModal';
 import DeleteConfirmationDialog from '@/components/benefits/DeleteConfirmationDialog';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { benefitOptions } from '@/data/benefitOptions';
+import { useBenefitOptions } from '@/hooks/useBenefitOptions';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import BenefitMobileList from '@/components/admin/benefits/BenefitMobileList';
 import BenefitMobileActions from '@/components/admin/benefits/BenefitMobileActions';
@@ -32,6 +32,9 @@ const ProviderBenefits = () => {
   const { canManageProviderBenefits } = useUserPermissions();
   const navigate = useNavigate();
   const { isMobile } = useAdvancedResponsive();
+  
+  // Hook para carregar opções de benefícios do banco de dados
+  const { benefits: benefitOptions, isLoading: isLoadingOptions } = useBenefitOptions();
   
   if (!canManageProviderBenefits) {
     return <Navigate to="/login" replace />;
@@ -49,6 +52,7 @@ const ProviderBenefits = () => {
   } = useBenefitManagement();
 
   console.log('🎁 Benefits state:', { benefits, isLoading });
+  console.log('🎁 Benefit options:', { benefitOptions, isLoadingOptions });
 
   const [formData, setFormData] = useState({
     provider_name: '',
@@ -277,6 +281,7 @@ const ProviderBenefits = () => {
             onViewDetails={handleViewDetails}
             onCopyLink={handleCopyLinkMobile}
             onInsertCode={handleInsertCodeMobile}
+            benefitOptions={benefitOptions}
           />
         </div>
 

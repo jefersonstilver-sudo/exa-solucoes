@@ -5,14 +5,14 @@ import BenefitStatusBadge from '@/components/benefits/BenefitStatusBadge';
 import { Mail, MapPin, Gift, Calendar, Eye, Link2, Code } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ProviderBenefit } from '@/types/providerBenefits';
-import { benefitOptions } from '@/data/benefitOptions';
+import { ProviderBenefit, BenefitOption } from '@/types/providerBenefits';
 
 interface BenefitMobileCardProps {
   benefit: ProviderBenefit;
   onViewDetails: (benefit: ProviderBenefit) => void;
   onCopyLink: (benefit: ProviderBenefit) => void;
   onInsertCode: (benefit: ProviderBenefit) => void;
+  benefitOptions: BenefitOption[];
 }
 
 const BenefitMobileCard: React.FC<BenefitMobileCardProps> = ({
@@ -20,6 +20,7 @@ const BenefitMobileCard: React.FC<BenefitMobileCardProps> = ({
   onViewDetails,
   onCopyLink,
   onInsertCode,
+  benefitOptions,
 }) => {
   const requiresAction = benefit.benefit_choice && !benefit.gift_code && benefit.status !== 'cancelled';
   const selectedBenefitOption = benefit.benefit_choice 

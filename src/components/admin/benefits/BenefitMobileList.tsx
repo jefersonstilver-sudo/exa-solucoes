@@ -1,6 +1,6 @@
 import React from 'react';
 import BenefitMobileCard from './BenefitMobileCard';
-import { ProviderBenefit } from '@/types/providerBenefits';
+import { ProviderBenefit, BenefitOption } from '@/types/providerBenefits';
 import { Gift } from 'lucide-react';
 
 interface BenefitMobileListProps {
@@ -9,6 +9,7 @@ interface BenefitMobileListProps {
   onViewDetails: (benefit: ProviderBenefit) => void;
   onCopyLink: (benefit: ProviderBenefit) => void;
   onInsertCode: (benefit: ProviderBenefit) => void;
+  benefitOptions: BenefitOption[];
 }
 
 const BenefitMobileList: React.FC<BenefitMobileListProps> = ({
@@ -17,6 +18,7 @@ const BenefitMobileList: React.FC<BenefitMobileListProps> = ({
   onViewDetails,
   onCopyLink,
   onInsertCode,
+  benefitOptions,
 }) => {
   if (isLoading) {
     return (
@@ -63,6 +65,7 @@ const BenefitMobileList: React.FC<BenefitMobileListProps> = ({
           onViewDetails={onViewDetails}
           onCopyLink={onCopyLink}
           onInsertCode={onInsertCode}
+          benefitOptions={benefitOptions}
         />
       ))}
     </div>
