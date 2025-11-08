@@ -24,6 +24,7 @@ import BenefitManagement from '@/pages/admin/BenefitManagement';
 import CRMClients from '@/pages/admin/CRMClients';
 import SecurityDashboard from '@/pages/admin/SecurityDashboard';
 import FinancialReports from '@/pages/admin/FinancialReports';
+import AuditPage from '@/pages/super_admin/AuditPage';
 
 const SuperAdminRoutes = () => {
   return (
@@ -55,6 +56,7 @@ const SuperAdminRoutes = () => {
       <Route path="homepage-config" element={<HomepageImagesPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
       <Route path="seguranca" element={<SecurityDashboard />} />
+      <Route path="auditoria" element={<AuditPage />} />
       
       {/* CONTEÚDO */}
       <Route path="videos" element={<VideoManagement />} />

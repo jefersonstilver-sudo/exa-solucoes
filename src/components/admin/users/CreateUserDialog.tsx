@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Crown, Shield, UserCheck, Loader2 } from 'lucide-react';
+import { Crown, Shield, UserCheck, Loader2, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -69,6 +69,7 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       const roleLabels = {
         admin: 'Administrador Geral',
         admin_marketing: 'Administrador Marketing',
+        admin_financeiro: 'Administrador Financeiro',
         super_admin: 'Super Administrador',
       };
 
@@ -136,6 +137,12 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
                   <div className="flex items-center space-x-2">
                     <UserCheck className="h-4 w-4 text-purple-500" />
                     <span>Administrador Marketing</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="admin_financeiro">
+                  <div className="flex items-center space-x-2">
+                    <DollarSign className="h-4 w-4 text-green-500" />
+                    <span>Administrador Financeiro</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="super_admin">

@@ -21,7 +21,8 @@ import {
   Film,
   Gift,
   UsersRound,
-  FileBarChart
+  FileBarChart,
+  ScrollText
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -171,6 +172,13 @@ export function ModernAdminSidebar() {
           title: 'Usuários',
           href: buildPath('usuarios'),
           icon: Users,
+          permission: 'canManageUsers',
+          requireSuperAdmin: true
+        },
+        {
+          title: 'Auditoria',
+          href: buildPath('auditoria'),
+          icon: ScrollText,
           permission: 'canManageUsers',
           requireSuperAdmin: true
         },
