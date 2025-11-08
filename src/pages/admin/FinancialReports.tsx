@@ -2,13 +2,22 @@ import React from 'react';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileBarChart, TrendingUp, DollarSign, Users, Gift } from 'lucide-react';
+import { FileBarChart, TrendingUp, DollarSign, Users, Gift, Loader2 } from 'lucide-react';
 
 const FinancialReports = () => {
-  const { canViewFinancialReports } = useUserPermissions();
+  const { canViewFinancialReports, isLoadingCustom } = useUserPermissions();
+  
+  // 🔒 CRITICAL: Wait for permissions to load before checking
+  if (isLoadingCustom) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
   
   if (!canViewFinancialReports) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   return (

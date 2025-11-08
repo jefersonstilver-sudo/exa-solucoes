@@ -32,7 +32,7 @@ import MonthSelector from '@/components/admin/dashboard/MonthSelector';
 
 const ProviderBenefits = () => {
   console.log('🎁 ProviderBenefits component rendering...');
-  const { canManageProviderBenefits } = useUserPermissions();
+  const { canManageProviderBenefits, isLoadingCustom } = useUserPermissions();
   const navigate = useNavigate();
   const { isMobile } = useAdvancedResponsive();
   
@@ -42,8 +42,20 @@ const ProviderBenefits = () => {
   // Hook para estatísticas mensais
   const { stats, loading: loadingStats, selectedMonth, handleMonthChange } = useBenefitStats();
   
+  // 🔒 CRITICAL: Wait for permissions to load before checking
+  console.log('🔒 Permission check:', { canManageProviderBenefits, isLoadingCustom });
+  
+  if (isLoadingCustom) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+  
   if (!canManageProviderBenefits) {
-    return <Navigate to="/login" replace />;
+    console.log('❌ Access denied - redirecting to dashboard');
+    return <Navigate to="/admin" replace />;
   }
   
   const {
