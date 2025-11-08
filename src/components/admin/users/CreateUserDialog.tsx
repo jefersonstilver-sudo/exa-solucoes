@@ -223,10 +223,19 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
         roleLabels[role as keyof typeof roleLabels]
       }`;
       
-      await navigator.clipboard.writeText(credentials);
-      toast.info('📋 Credenciais copiadas para área de transferência', {
-        duration: 4000,
-      });
+      // Tentar copiar para clipboard (pode falhar em ambientes de preview)
+      try {
+        await navigator.clipboard.writeText(credentials);
+        toast.info('📋 Credenciais copiadas para área de transferência', {
+          duration: 4000,
+        });
+      } catch (clipboardError) {
+        console.warn('⚠️ Não foi possível copiar para clipboard (normal em preview):', clipboardError);
+        toast.info('ℹ️ Anote as credenciais', {
+          description: `Senha: ${senhaRetornada}`,
+          duration: 8000,
+        });
+      }
 
       // Limpar formulário
       setEmail('');
