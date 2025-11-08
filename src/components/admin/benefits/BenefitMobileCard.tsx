@@ -88,7 +88,7 @@ const BenefitMobileCard: React.FC<BenefitMobileCardProps> = ({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Presente Escolhido</p>
-              <p className="text-base font-bold text-foreground">{benefit.benefit_choice}</p>
+              <p className="text-base font-bold text-foreground">{selectedBenefitOption?.name || benefit.benefit_choice}</p>
               {requiresAction && (
                 <p className="text-xs text-amber-700 font-semibold mt-1 flex items-center gap-1">
                   <span>⚡</span> Entrega {deliveryTime}
