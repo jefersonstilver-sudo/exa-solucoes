@@ -3259,6 +3259,10 @@ export type Database = {
           video_url: string
         }[]
       }
+      get_provider_benefits_stats_by_month: {
+        Args: { p_month: number; p_year: number }
+        Returns: Json
+      }
       get_real_approval_stats: {
         Args: never
         Returns: {

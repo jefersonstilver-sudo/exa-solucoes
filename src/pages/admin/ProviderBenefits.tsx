@@ -26,6 +26,9 @@ import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import BenefitMobileList from '@/components/admin/benefits/BenefitMobileList';
 import BenefitMobileActions from '@/components/admin/benefits/BenefitMobileActions';
 import { ProviderBenefit } from '@/types/providerBenefits';
+import { useBenefitStats } from '@/hooks/useBenefitStats';
+import BenefitStatsCards from '@/components/admin/benefits/BenefitStatsCards';
+import MonthSelector from '@/components/admin/dashboard/MonthSelector';
 
 const ProviderBenefits = () => {
   console.log('🎁 ProviderBenefits component rendering...');
@@ -35,6 +38,9 @@ const ProviderBenefits = () => {
   
   // Hook para carregar opções de benefícios do banco de dados
   const { benefits: benefitOptions, isLoading: isLoadingOptions } = useBenefitOptions();
+  
+  // Hook para estatísticas mensais
+  const { stats, loading: loadingStats, selectedMonth, handleMonthChange } = useBenefitStats();
   
   if (!canManageProviderBenefits) {
     return <Navigate to="/login" replace />;
@@ -138,10 +144,10 @@ const ProviderBenefits = () => {
   // Mobile View - Otimizado e Minimalista
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-background">
-        {/* Mobile Header - Design Minimalista Profissional */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-b border-white/10 shadow-sm">
-          <div className="px-4 py-3">
+      <div className="min-h-screen bg-gray-50">
+        {/* Mobile Header - Fixo no topo sem sticky */}
+        <div className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-b border-white/10">
+          <div className="px-4 py-4">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
                 <Gift className="w-4 h-4 text-white" />
@@ -156,6 +162,16 @@ const ProviderBenefits = () => {
               </div>
             </div>
 
+            {/* Month Selector no header */}
+            <div className="mt-3">
+              <MonthSelector
+                selectedMonth={selectedMonth}
+                onMonthChange={handleMonthChange}
+                variant="onColor"
+              />
+            </div>
+
+            {/* Botões de ação */}
             <div className="mt-3 flex gap-2">
               <Button 
                 onClick={() => setShowForm(!showForm)} 
@@ -177,9 +193,14 @@ const ProviderBenefits = () => {
           </div>
         </div>
 
-        {/* Mobile Form - Redesenhado */}
+        {/* Dashboard de Estatísticas */}
+        <div className="px-4 py-4 bg-white border-b">
+          <BenefitStatsCards stats={stats} loading={loadingStats} />
+        </div>
+
+        {/* Mobile Form */}
         {showForm && (
-          <div className="p-3">
+          <div className="px-4 py-3 bg-gray-50">
             <Card className="border shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold">Criar Novo Benefício</CardTitle>
@@ -286,8 +307,8 @@ const ProviderBenefits = () => {
           </div>
         )}
 
-        {/* Mobile List - Otimizado */}
-        <div className="p-3">
+        {/* Mobile List */}
+        <div className="px-4 py-3 bg-gray-50">
           <BenefitMobileList
             benefits={benefits}
             isLoading={isLoading}

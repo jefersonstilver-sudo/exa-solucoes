@@ -6,9 +6,10 @@ import { Calendar, ChevronDown } from 'lucide-react';
 interface MonthSelectorProps {
   selectedMonth: string;
   onMonthChange: (month: string) => void;
+  variant?: 'default' | 'onColor'; // Novo: variante para usar em fundos coloridos
 }
 
-const MonthSelector = ({ selectedMonth, onMonthChange }: MonthSelectorProps) => {
+const MonthSelector = ({ selectedMonth, onMonthChange, variant = 'default' }: MonthSelectorProps) => {
   // Gerar os últimos 12 meses
   const generateMonthOptions = () => {
     const options = [];
@@ -36,14 +37,25 @@ const MonthSelector = ({ selectedMonth, onMonthChange }: MonthSelectorProps) => 
 
   const monthOptions = generateMonthOptions();
 
+  // Estilos dinâmicos baseados na variante
+  const containerClasses = variant === 'onColor'
+    ? "flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 px-3 py-2"
+    : "flex items-center space-x-3 bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm";
+
+  const iconClasses = variant === 'onColor' ? "h-4 w-4 text-white" : "h-5 w-5 text-indexa-purple";
+  const labelClasses = variant === 'onColor' ? "text-xs font-medium text-white" : "text-sm font-medium text-gray-700";
+  const triggerClasses = variant === 'onColor'
+    ? "w-36 border-0 bg-transparent focus:ring-0 text-white font-semibold text-xs"
+    : "w-48 border-0 bg-transparent focus:ring-0 text-gray-900 font-semibold";
+
   return (
-    <div className="flex items-center space-x-3 bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
-      <Calendar className="h-5 w-5 text-indexa-purple" />
-      <span className="text-sm font-medium text-gray-700">Período:</span>
+    <div className={containerClasses}>
+      <Calendar className={iconClasses} />
+      <span className={labelClasses}>Período:</span>
       <Select value={selectedMonth} onValueChange={onMonthChange}>
-        <SelectTrigger className="w-48 border-0 bg-transparent focus:ring-0 text-gray-900 font-semibold">
+        <SelectTrigger className={triggerClasses}>
           <SelectValue placeholder="Selecionar mês" />
-          <ChevronDown className="h-4 w-4 text-gray-400" />
+          <ChevronDown className={variant === 'onColor' ? "h-3.5 w-3.5 text-white/80" : "h-4 w-4 text-gray-400"} />
         </SelectTrigger>
         <SelectContent>
           {monthOptions.map((option) => (
