@@ -22,13 +22,18 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
       } as React.CSSProperties}
     >
       <div className="flex h-screen w-full bg-background overflow-hidden">
-        <div className="relative z-30">
-          <ModernAdminSidebar />
-        </div>
+        {/* Esconder sidebar no mobile - usar apenas MobileBottomNav */}
+        {!isMobile && (
+          <div className="relative z-30">
+            <ModernAdminSidebar />
+          </div>
+        )}
         <SidebarInset className="flex flex-col w-full overflow-x-hidden">
-          {/* Header with hamburger menu - always visible */}
+          {/* Header with hamburger menu - visible apenas no desktop/tablet */}
           <header className="sticky top-0 z-10 h-14 md:h-16 flex items-center border-b border-border px-3 md:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <SidebarTrigger className="mr-3 md:mr-4 h-9 w-9 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors touch-target" />
+            {!isMobile && (
+              <SidebarTrigger className="mr-3 md:mr-4 h-9 w-9 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors touch-target" />
+            )}
             <ModernAdminHeader />
           </header>
           <main className={`flex-1 p-3 md:p-6 overflow-y-auto bg-background min-h-0 overflow-x-hidden ${isMobile ? 'pb-20' : ''}`}>

@@ -55,11 +55,27 @@ const SuperAdminPage = () => {
 
     if (!isSuperAdmin) {
       console.log('🚫 ACESSO NEGADO: Não é super admin');
-      toast.error('Acesso negado. Área restrita ao Super Administrador.', {
-        duration: 5000
-      });
       
-      navigate('/login', { replace: true });
+      const currentRole = userProfile?.role;
+      
+      // Se é um admin (mas não super_admin), redirecionar para /admin com mensagem específica
+      if (currentRole === 'admin_financeiro' || currentRole === 'admin_marketing' || currentRole === 'admin') {
+        toast.error('Você não tem permissão para acessar esta área. Redirecionando para seu painel...', {
+          duration: 3000
+        });
+        navigate('/admin', { replace: true });
+      } else {
+        // Para usuários não-admin, redirecionar para login
+        toast.error('Acesso negado. Área restrita ao Super Administrador.', {
+          duration: 5000,
+          action: {
+            label: 'Fazer Login',
+            onClick: () => navigate('/login')
+          }
+        });
+        navigate('/login', { replace: true });
+      }
+      
       setHasChecked(true);
       return;
     }
