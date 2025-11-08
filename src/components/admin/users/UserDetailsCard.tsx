@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Crown, Shield, UserCheck, Activity, Clock, Eye, X, DollarSign, Phone, FileText, Mail, CheckCircle2, XCircle, Calendar, User } from 'lucide-react';
+import { Crown, Shield, UserCheck, Activity, Clock, Eye, X, DollarSign, Phone, FileText, Mail, CheckCircle2, XCircle, Calendar, User, Trash2, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { Separator } from '@/components/ui/separator';
 
 interface User {
   id: string;
@@ -27,6 +30,7 @@ interface User {
 interface UserDetailsCardProps {
   user: User;
   onClose: () => void;
+  onUserUpdated?: () => void;
 }
 
 interface ActivitySummary {
@@ -39,9 +43,16 @@ interface ActivitySummary {
   }>;
 }
 
-const UserDetailsCard: React.FC<UserDetailsCardProps> = ({ user, onClose }) => {
+const UserDetailsCard: React.FC<UserDetailsCardProps> = ({ user, onClose, onUserUpdated }) => {
+  const { userProfile } = useAuth();
   const [activity, setActivity] = useState<ActivitySummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Verificar se é super admin
+  const isSuperAdmin = userProfile?.role === 'super_admin' && 
+                      userProfile?.email === 'jefersonstilver@gmail.com';
 
   useEffect(() => {
     loadActivity();
@@ -108,6 +119,37 @@ const UserDetailsCard: React.FC<UserDetailsCardProps> = ({ user, onClose }) => {
   const maskCPF = (cpf?: string) => {
     if (!cpf) return null;
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '***.***.$3-$4');
+  };
+
+  const handleDeleteUser = async () => {
+    if (!user || !isSuperAdmin) return;
+
+    try {
+      setDeleteLoading(true);
+      console.log('🗑️ [MOBILE] Deletando usuário:', user.id);
+
+      const { data, error } = await supabase.functions.invoke('delete-user-account', {
+        body: { userId: user.id }
+      });
+
+      if (error) throw error;
+
+      console.log('✅ [MOBILE] Usuário deletado:', data);
+      toast.success(`Conta ${user.email} deletada completamente!`);
+      
+      setShowDeleteConfirm(false);
+      onClose();
+      
+      // Atualizar lista
+      if (onUserUpdated) {
+        onUserUpdated();
+      }
+    } catch (error: any) {
+      console.error('❌ [MOBILE] Erro ao deletar usuário:', error);
+      toast.error(error.message || 'Erro ao deletar usuário');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const roleInfo = getRoleInfo(user.role);
@@ -295,6 +337,80 @@ const UserDetailsCard: React.FC<UserDetailsCardProps> = ({ user, onClose }) => {
               </div>
             )}
           </Card>
+
+          {/* Ações Administrativas - Apenas Super Admin */}
+          {isSuperAdmin && !showDeleteConfirm && (
+            <Card className="p-4 border-red-200 bg-red-50">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-red-800">
+                <AlertTriangle className="h-4 w-4" />
+                Ações de Super Admin
+              </h3>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={deleteLoading}
+                className="w-full bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Deletar Conta Permanentemente
+              </Button>
+            </Card>
+          )}
+
+          {/* Dialog de Confirmação de Deleção */}
+          {showDeleteConfirm && (
+            <Card className="p-4 border-2 border-red-500 bg-red-50">
+              <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-red-800">
+                <AlertTriangle className="h-5 w-5" />
+                ⚠️ CONFIRMAÇÃO DE DELEÇÃO
+              </h3>
+              
+              <div className="space-y-3">
+                <div className="bg-red-100 p-3 rounded-lg border border-red-300">
+                  <p className="text-xs font-bold text-red-900 mb-2">
+                    ATENÇÃO: Esta ação NÃO pode ser desfeita!
+                  </p>
+                  <div className="space-y-1 text-xs text-red-800">
+                    <p><strong>Email:</strong> {user.email}</p>
+                    <p><strong>Role:</strong> {roleInfo.label}</p>
+                    <p className="mt-2 font-semibold">Será deletado:</p>
+                    <p>✓ Conta do banco de dados</p>
+                    <p>✓ Conta de autenticação</p>
+                    <p>✓ Todos os relacionamentos</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleteLoading}
+                    className="w-full"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteUser}
+                    disabled={deleteLoading}
+                    className="w-full bg-red-600 hover:bg-red-700"
+                  >
+                    {deleteLoading ? (
+                      <>Deletando...</>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        SIM, DELETAR AGORA
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
       </DialogContent>
     </Dialog>

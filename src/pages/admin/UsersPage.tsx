@@ -300,7 +300,11 @@ const UsersPage = () => {
         />
 
         {selectedUser && (
-          <UserDetailsCard user={selectedUser} onClose={() => setSelectedUser(null)} />
+          <UserDetailsCard 
+            user={selectedUser} 
+            onClose={() => setSelectedUser(null)} 
+            onUserUpdated={handleRefresh}
+          />
         )}
       </div>
     );
