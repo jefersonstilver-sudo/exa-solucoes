@@ -22,18 +22,11 @@ export default function Login() {
   const searchParams = new URLSearchParams(location.search);
   const redirectPath = searchParams.get('redirect') || '/loja';
   
-  // CRITICAL FIX: Redirect authenticated users away from login page
+  // Redirect authenticated users away from login page
   React.useEffect(() => {
     if (isLoading) return; // Wait for auth to load
     
     if (isLoggedIn && userProfile) {
-      // ⚠️ VERIFICAR EMAIL CONFIRMADO
-      if (!userProfile.email_verified_at) {
-        console.warn('⚠️ [LOGIN_PAGE] Email não confirmado, redirecionando...');
-        navigate(`/email-not-confirmed?email=${encodeURIComponent(userProfile.email)}`);
-        return;
-      }
-      
       console.log('🔐 [LOGIN_PAGE] Usuário já autenticado, redirecionando...', {
         email: userProfile.email,
         role: userProfile.role

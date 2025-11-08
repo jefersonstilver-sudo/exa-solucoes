@@ -9,6 +9,7 @@ export const useLoginForm = (redirectPath: string = '/') => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const navigate = useNavigate();
 
   // Função para determinar rota baseada no papel do usuário
@@ -61,11 +62,31 @@ export const useLoginForm = (redirectPath: string = '/') => {
       if (!data.user.email_confirmed_at) {
         console.warn('⚠️ [LOGIN] Email não confirmado:', data.user.email);
         
-        // Fazer logout imediatamente
-        await supabase.auth.signOut();
+        // Prevenir múltiplas execuções
+        if (isRedirecting) {
+          console.log('⏸️ [LOGIN] Já está redirecionando, ignorando...');
+          return;
+        }
         
-        // Redirecionar para página de email não confirmado
-        navigate(`/email-not-confirmed?email=${encodeURIComponent(data.user.email)}`);
+        setIsRedirecting(true);
+        
+        // Fazer logout COMPLETO antes de redirecionar
+        console.log('🚪 [LOGIN] Fazendo logout completo...');
+        const { error: signOutError } = await supabase.auth.signOut();
+        
+        if (signOutError) {
+          console.error('❌ [LOGIN] Erro ao fazer signOut:', signOutError);
+        } else {
+          console.log('✅ [LOGIN] SignOut concluído com sucesso');
+        }
+        
+        // Aguardar um pouco para garantir que o logout foi processado
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Usar window.location para garantir navegação limpa
+        const redirectUrl = `/email-not-confirmed?email=${encodeURIComponent(data.user.email || '')}`;
+        console.log('🎯 [LOGIN] Redirecionando para:', redirectUrl);
+        window.location.replace(redirectUrl);
         return;
       }
 

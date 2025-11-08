@@ -35,8 +35,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Derivar isLoggedIn do session E email confirmado
-  const isLoggedIn = !!session?.access_token && !!userProfile?.email_verified_at;
+  // Derivar isLoggedIn do session e userProfile (email_verified_at verificado no login)
+  const isLoggedIn = !!session?.access_token && !!userProfile;
 
   // Derivar isSuperAdmin - APENAS verificar role, não email
   const isSuperAdmin = userProfile?.role === 'super_admin';
