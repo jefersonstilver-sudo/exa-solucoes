@@ -17,9 +17,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Crown, Shield, UserCheck, Loader2, DollarSign } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Crown, Shield, UserCheck, Loader2, DollarSign, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { z } from 'zod';
+
+// Schema de validação
+const createUserSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email({ message: 'Email inválido' })
+    .max(255, { message: 'Email muito longo' }),
+  nome: z
+    .string()
+    .trim()
+    .min(2, { message: 'Nome deve ter pelo menos 2 caracteres' })
+    .max(100, { message: 'Nome muito longo' }),
+  sobrenome: z
+    .string()
+    .trim()
+    .min(2, { message: 'Sobrenome deve ter pelo menos 2 caracteres' })
+    .max(100, { message: 'Sobrenome muito longo' }),
+  cpf: z
+    .string()
+    .trim()
+    .regex(/^(\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2}|)$/, {
+      message: 'CPF inválido (digite apenas números ou formato XXX.XXX.XXX-XX)',
+    })
+    .optional(),
+  role: z.enum(['admin', 'admin_marketing', 'admin_financeiro', 'super_admin']),
+});
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -33,37 +62,109 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   onSuccess,
 }) => {
   const [email, setEmail] = useState('');
+  const [nome, setNome] = useState('');
+  const [sobrenome, setSobrenome] = useState('');
+  const [cpf, setCpf] = useState('');
   const [role, setRole] = useState('admin');
+  const [documentoObrigatorio, setDocumentoObrigatorio] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Função para formatar CPF automaticamente
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      return numbers
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    }
+    return numbers.slice(0, 11);
+  };
+
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCPF(e.target.value);
+    setCpf(formatted);
+  };
+
+  const validateForm = () => {
+    try {
+      // Validar com schema base
+      const formData = {
+        email: email.trim(),
+        nome: nome.trim(),
+        sobrenome: sobrenome.trim(),
+        cpf: cpf.replace(/\D/g, ''), // Remove formatação para validação
+        role: role as 'admin' | 'admin_marketing' | 'admin_financeiro' | 'super_admin',
+      };
+
+      // Se documento é obrigatório, adicionar validação extra
+      if (documentoObrigatorio && !formData.cpf) {
+        setErrors({ cpf: 'CPF é obrigatório quando marcado como obrigatório' });
+        return false;
+      }
+
+      createUserSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            newErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
 
   const handleCreate = async () => {
-    if (!email.trim()) {
-      toast.error('Email é obrigatório');
+    // Validar formulário
+    if (!validateForm()) {
+      toast.error('Por favor, corrija os erros no formulário');
       return;
     }
 
     try {
       setCreating(true);
 
+      const nomeCompleto = `${nome.trim()} ${sobrenome.trim()}`;
+      const cpfLimpo = cpf.replace(/\D/g, ''); // Remove formatação
+
+      // Criar usuário no auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password: 'indexa2025',
         options: {
           data: {
             role,
+            nome: nomeCompleto,
           },
         },
       });
 
       if (authError) throw authError;
 
+      // Inserir dados completos na tabela users
       if (authData.user) {
-        await supabase.from('users').upsert({
+        const userData: any = {
           id: authData.user.id,
-          email,
+          email: email.trim(),
+          nome: nomeCompleto,
           role,
           data_criacao: new Date().toISOString(),
-        });
+        };
+
+        // Adicionar CPF se fornecido
+        if (cpfLimpo) {
+          userData.cpf = cpfLimpo;
+          userData.tipo_documento = 'cpf';
+        }
+
+        await supabase.from('users').upsert(userData);
       }
 
       const roleLabels = {
@@ -74,17 +175,28 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       };
 
       toast.success(`Conta criada com sucesso!`, {
-        description: `Email: ${email} | Senha: indexa2025`,
+        description: `${nomeCompleto} - ${email}`,
+        duration: 6000,
       });
 
-      const credentials = `Email: ${email}\nSenha: indexa2025\nTipo: ${
+      const credentials = `Nome: ${nomeCompleto}\nEmail: ${email}\nSenha: indexa2025\nTipo: ${
         roleLabels[role as keyof typeof roleLabels]
       }`;
+      
       navigator.clipboard.writeText(credentials);
-      toast.info('Credenciais copiadas');
+      toast.info('Credenciais copiadas para área de transferência', {
+        duration: 4000,
+      });
 
+      // Limpar formulário
       setEmail('');
+      setNome('');
+      setSobrenome('');
+      setCpf('');
       setRole('admin');
+      setDocumentoObrigatorio(false);
+      setErrors({});
+      
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -97,17 +209,68 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white">
+      <DialogContent className="bg-white max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-black">Criar Nova Conta</DialogTitle>
+          <DialogTitle className="text-black">Criar Nova Conta Administrativa</DialogTitle>
           <DialogDescription className="text-gray-600">
-            Senha padrão: indexa2025
+            Senha padrão: <span className="font-mono font-semibold">indexa2025</span>
           </DialogDescription>
         </DialogHeader>
+
         <div className="space-y-4">
+          {/* Nome e Sobrenome */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="nome" className="text-black flex items-center gap-1">
+                Nome <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="nome"
+                type="text"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="João"
+                className={`bg-white border-gray-300 text-black ${
+                  errors.nome ? 'border-red-500' : ''
+                }`}
+                maxLength={100}
+              />
+              {errors.nome && (
+                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.nome}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="sobrenome" className="text-black flex items-center gap-1">
+                Sobrenome <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="sobrenome"
+                type="text"
+                value={sobrenome}
+                onChange={(e) => setSobrenome(e.target.value)}
+                placeholder="Silva"
+                className={`bg-white border-gray-300 text-black ${
+                  errors.sobrenome ? 'border-red-500' : ''
+                }`}
+                maxLength={100}
+              />
+              {errors.sobrenome && (
+                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.sobrenome}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Email */}
           <div>
-            <Label htmlFor="email" className="text-black">
-              Email
+            <Label htmlFor="email" className="text-black flex items-center gap-1">
+              Email <span className="text-red-500">*</span>
             </Label>
             <Input
               id="email"
@@ -115,12 +278,69 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@exemplo.com"
-              className="bg-white border-gray-300 text-black"
+              className={`bg-white border-gray-300 text-black ${
+                errors.email ? 'border-red-500' : ''
+              }`}
+              maxLength={255}
             />
+            {errors.email && (
+              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.email}
+              </p>
+            )}
           </div>
+
+          {/* CPF/Documento */}
           <div>
-            <Label htmlFor="role" className="text-black">
-              Tipo
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="cpf" className="text-black flex items-center gap-1">
+                CPF/Documento
+                {documentoObrigatorio && <span className="text-red-500">*</span>}
+                {!documentoObrigatorio && (
+                  <span className="text-xs text-gray-500 font-normal">(Opcional)</span>
+                )}
+              </Label>
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="documento-obrigatorio"
+                  checked={documentoObrigatorio}
+                  onCheckedChange={setDocumentoObrigatorio}
+                />
+                <Label
+                  htmlFor="documento-obrigatorio"
+                  className="text-xs text-gray-700 cursor-pointer"
+                >
+                  Tornar obrigatório
+                </Label>
+              </div>
+            </div>
+            <Input
+              id="cpf"
+              type="text"
+              value={cpf}
+              onChange={handleCPFChange}
+              placeholder="000.000.000-00"
+              className={`bg-white border-gray-300 text-black font-mono ${
+                errors.cpf ? 'border-red-500' : ''
+              }`}
+              maxLength={14}
+            />
+            {errors.cpf && (
+              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.cpf}
+              </p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Digite apenas números, a formatação será aplicada automaticamente
+            </p>
+          </div>
+
+          {/* Tipo de Conta */}
+          <div>
+            <Label htmlFor="role" className="text-black flex items-center gap-1">
+              Tipo de Conta <span className="text-red-500">*</span>
             </Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger className="bg-white border-gray-300 text-black">
@@ -154,9 +374,19 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Aviso de Senha */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-900">
+              <strong>💡 Importante:</strong> A senha padrão{' '}
+              <code className="bg-blue-100 px-2 py-0.5 rounded font-mono">indexa2025</code> será
+              enviada automaticamente. O usuário deve alterá-la no primeiro acesso.
+            </p>
+          </div>
         </div>
+
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={creating}>
             Cancelar
           </Button>
           <Button onClick={handleCreate} disabled={creating}>
