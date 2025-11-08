@@ -28,8 +28,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import CreateUserDialog from './CreateUserDialog';
-import UserDetailsDialog from './UserDetailsDialog';
-import { useSecureAdmin } from '@/hooks/useSecureAdmin';
+import { UserDetailsDialogComplete } from './UserDetailsDialogComplete';
 import SecurityAuditBanner from '../security/SecurityAuditBanner';
 
 interface User {
@@ -55,7 +54,6 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [cleanupLoading, setCleanupLoading] = useState(false);
-  const { updateUserRole, loading: secureLoading } = useSecureAdmin();
 
   // Filter team members - role now comes from users_with_role view (secure)
   const exaTeam = users.filter(user => 
@@ -69,17 +67,6 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleRoleChange = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === 'admin' ? 'super_admin' : 'admin';
-    
-    const result = await updateUserRole(userId, newRole);
-    if (result.success) {
-      toast.success(`Role alterada para ${newRole} com sucesso`);
-      onRefresh();
-    }
-    // Error handling is done inside useSecureAdmin hook
-  };
 
   const handleViewDetails = (user: User) => {
     setSelectedUser(user);
@@ -280,7 +267,7 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
           <Button 
             variant="outline" 
             onClick={onRefresh} 
-            disabled={loading || secureLoading}
+            disabled={loading}
             className="flex items-center"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -434,25 +421,14 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
                         {formatDate(user.last_sign_in_at)}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewDetails(user)}
-                          >
-                            <Info className="h-3 w-3 mr-1" />
-                            Ver Detalhes
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRoleChange(user.id, user.role)}
-                            disabled={user.role === 'super_admin'}
-                          >
-                            <Settings className="h-3 w-3 mr-1" />
-                            {user.role === 'admin' ? 'Promover' : 'Alterar'}
-                          </Button>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(user)}
+                        >
+                          <Info className="h-3 w-3 mr-1" />
+                          Ver Detalhes
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -471,12 +447,14 @@ const IndexaTeamSection: React.FC<IndexaTeamSectionProps> = ({ users, loading, o
       />
 
       {/* Dialog de Detalhes do Usuário */}
-      <UserDetailsDialog
-        open={detailsDialogOpen}
-        onOpenChange={setDetailsDialogOpen}
-        user={selectedUser}
-        onUserUpdated={onRefresh}
-      />
+      {selectedUser && (
+        <UserDetailsDialogComplete
+          open={detailsDialogOpen}
+          onOpenChange={setDetailsDialogOpen}
+          user={selectedUser}
+          onUserUpdated={onRefresh}
+        />
+      )}
     </div>
   );
 };

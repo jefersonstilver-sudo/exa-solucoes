@@ -256,7 +256,7 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
         {/* Header Premium */}
         <div className="sticky top-0 bg-gradient-to-br from-primary to-primary/90 p-6 text-white z-10">
           <div className="flex items-start justify-between mb-3">
