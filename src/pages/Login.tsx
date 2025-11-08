@@ -9,6 +9,7 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { PasswordResetForm } from '@/components/auth/PasswordResetForm';
 import { ResetSuccessMessage } from '@/components/auth/ResetSuccessMessage';
 import { LoginFooter } from '@/components/auth/LoginFooter';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -16,13 +17,36 @@ export default function Login() {
   const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { isLoggedIn, userProfile, isLoading } = useAuth();
   
-  // FIXED: Redirect path correto - será sobrescrito pela lógica baseada em papel
   const searchParams = new URLSearchParams(location.search);
   const redirectPath = searchParams.get('redirect') || '/loja';
   
-  // REMOVED: Duplicate session check that was causing white screen flashing
-  // The useAuth hook now handles all authentication state management
+  // CRITICAL FIX: Redirect authenticated users away from login page
+  React.useEffect(() => {
+    if (isLoading) return; // Wait for auth to load
+    
+    if (isLoggedIn && userProfile) {
+      console.log('🔐 [LOGIN_PAGE] Usuário já autenticado, redirecionando...', {
+        email: userProfile.email,
+        role: userProfile.role
+      });
+      
+      // Determine redirect based on role
+      let targetPath = redirectPath;
+      
+      if (userProfile.role === 'super_admin') {
+        targetPath = '/super_admin';
+      } else if (['admin', 'admin_marketing', 'admin_financeiro'].includes(userProfile.role)) {
+        targetPath = '/admin';
+      } else if (userProfile.role === 'client') {
+        targetPath = redirectPath === '/loja' ? '/loja' : redirectPath;
+      }
+      
+      console.log('🎯 [LOGIN_PAGE] Redirecionando para:', targetPath);
+      navigate(targetPath, { replace: true });
+    }
+  }, [isLoggedIn, userProfile, isLoading, navigate, redirectPath]);
   
   return (
     <Layout>
