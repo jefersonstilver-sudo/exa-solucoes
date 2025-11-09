@@ -47,6 +47,7 @@ const SouSindico = lazy(() => import('./pages/SouSindico'));
 const Contato = lazy(() => import('./pages/Contato'));
 const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
 const QuemSomos = lazy(() => import('./pages/QuemSomos'));
+const BuildingDisplayPanel = lazy(() => import('./pages/public/BuildingDisplayPanel'));
 
 // Blog pages
 const BlogIndex = lazy(() => import('./pages/blog/Index'));
@@ -152,6 +153,13 @@ const AppContent = () => {
           {/* Rotas principais */}
           <Route path="/" element={<Exa />} />
           <Route path="/coming-soon" element={<ComingSoonPage />} />
+          
+          {/* Painel Público de Exibição - SEM AUTENTICAÇÃO */}
+          <Route path="/painel/:buildingId" element={
+            <Suspense fallback={<GlobalLoadingPage />}>
+              <BuildingDisplayPanel />
+            </Suspense>
+          } />
           
           {/* CORREÇÃO: Rotas da loja unificadas */}
           <Route path="/loja" element={<BuildingStore />} />
