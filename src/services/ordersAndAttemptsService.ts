@@ -57,7 +57,7 @@ export const enrichOrdersWithEmails = async (pedidos: any[]) => {
     .in('id', clientIds);
 
   const userMap = new Map();
-  if (!usersError && users) {
+  if (!usersError && users && users.length > 0) {
     // Call edge function to get extended user data (server-side admin API calls)
     const { data: extendedData, error: extendedError } = await supabase.functions.invoke('get-users-extended', {
       body: { userIds: users.map(u => u.id) }
@@ -109,7 +109,7 @@ export const enrichAttemptsWithEmails = async (tentativas: any[]) => {
     .in('id', userIds);
 
   const userMap = new Map();
-  if (!usersError && users) {
+  if (!usersError && users && users.length > 0) {
     // Call edge function to get extended user data (server-side admin API calls)
     const { data: extendedData, error: extendedError } = await supabase.functions.invoke('get-users-extended', {
       body: { userIds: users.map(u => u.id) }
