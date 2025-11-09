@@ -18,7 +18,7 @@ import LeadsLinkae from '@/pages/admin/LeadsLinkae';
 import LeadsExa from '@/pages/admin/LeadsExa';
 import LogosPage from '@/pages/admin/LogosPage';
 import ProviderBenefits from '@/pages/admin/ProviderBenefits';
-import BenefitPreview from '@/pages/admin/BenefitPreview';
+import BenefitPurchaseInstructions from '@/pages/admin/BenefitPurchaseInstructions';
 import BenefitManagement from '@/pages/admin/BenefitManagement';
 import CRMClients from '@/pages/admin/CRMClients';
 import SecurityDashboard from '@/pages/admin/SecurityDashboard';
@@ -34,7 +34,7 @@ const SuperAdminRoutes = () => {
       <Route path="crm" element={<CRMClients />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />
       <Route path="beneficio-prestadores" element={<ProviderBenefits />} />
-      <Route path="preview-beneficio" element={<BenefitPreview />} />
+      <Route path="instrucoes-compra-vales" element={<BenefitPurchaseInstructions />} />
       <Route path="gerenciar-beneficios" element={<BenefitManagement />} />
       <Route path="relatorios-financeiros" element={<FinancialReports />} />
       

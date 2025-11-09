@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Gift, Mail, Copy, Loader2, Plus, Trash2, Eye, Zap, RefreshCw } from 'lucide-react';
+import { Gift, Mail, Copy, Loader2, Plus, Trash2, BookOpen, Zap, RefreshCw, FileText } from 'lucide-react';
 import { useBenefitManagement } from '@/hooks/useBenefitManagement';
 import BenefitStatusBadge from '@/components/benefits/BenefitStatusBadge';
 import InsertCodeModal from '@/components/benefits/InsertCodeModal';
@@ -422,12 +422,12 @@ const ProviderBenefits = () => {
             Gerenciar
           </Button>
           <Button 
-            onClick={() => navigate(buildPath('preview-beneficio'))} 
+            onClick={() => navigate(buildPath('instrucoes-compra-vales'))} 
             size="lg"
             variant="outline"
           >
-            <Eye className="h-4 w-4 mr-2" />
-            Visualizar Preview
+            <BookOpen className="h-4 w-4 mr-2" />
+            Como Comprar os Vales
           </Button>
           <Button onClick={() => setShowForm(!showForm)} size="lg">
             <Plus className="h-4 w-4 mr-2" />
@@ -650,7 +650,7 @@ const ProviderBenefits = () => {
                             title="Ver detalhes"
                             className="h-8"
                           >
-                            <Eye className="h-4 w-4" />
+                            <FileText className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
