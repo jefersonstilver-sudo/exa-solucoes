@@ -42,11 +42,26 @@ export function useEmailStats(days: number = 30) {
     try {
       setLoading(true);
 
+      // Primeiro, sincronizar com Resend API
+      try {
+        console.log('Syncing with Resend API...');
+        const { data: syncData, error: syncError } = await supabase.functions.invoke('fetch-resend-emails');
+        
+        if (syncError) {
+          console.error('Error syncing with Resend:', syncError);
+        } else {
+          console.log('Resend sync successful:', syncData);
+        }
+      } catch (syncError) {
+        console.error('Failed to sync with Resend:', syncError);
+        // Continuar mesmo se falhar a sincronização
+      }
+
       // Calcular data de início
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      // Buscar logs dos últimos X dias
+      // Buscar logs dos últimos X dias (agora com dados do Resend)
       const { data: logs, error } = await supabase
         .from('email_logs')
         .select('*')
