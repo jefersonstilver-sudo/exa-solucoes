@@ -61,28 +61,28 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.notify-video-toggle]
-verify_jwt = false
+verify_jwt = true
 
 [functions.video-schedule-sync]
-verify_jwt = false
+verify_jwt = true
 
 [functions.campaign-scheduler]
-verify_jwt = false
+verify_jwt = true
 
 [functions.validate-order]
 verify_jwt = true
 
 [functions.track-client-behavior]
-verify_jwt = false
+verify_jwt = true
 
 [functions.analyze-user-behavior]
 verify_jwt = true
 
 [functions.update-platform-metrics]
-verify_jwt = false
+verify_jwt = true
 
 [functions.video-notification-service]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-email-exists]
 verify_jwt = true
