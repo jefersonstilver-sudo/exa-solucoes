@@ -38,6 +38,11 @@ export function ClientDetailModal({ clientId, open, onClose }: ClientDetailModal
   const fetchClientData = async () => {
     try {
       setLoading(true);
+      
+      // Registrar visualização do perfil
+      const { logClientProfileView } = await import('@/services/crmService');
+      await logClientProfileView(clientId);
+      
       const clientData = await getUnifiedClientData(clientId);
       setData(clientData);
       

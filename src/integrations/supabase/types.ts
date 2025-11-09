@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_sessions_monitor: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          device_type: string | null
+          ended_at: string | null
+          id: string
+          ip_address: string
+          is_active: boolean | null
+          last_activity: string | null
+          os: string | null
+          session_token: string
+          started_at: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          ended_at?: string | null
+          id?: string
+          ip_address: string
+          is_active?: boolean | null
+          last_activity?: string | null
+          os?: string | null
+          session_token: string
+          started_at?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          ended_at?: string | null
+          id?: string
+          ip_address?: string
+          is_active?: boolean | null
+          last_activity?: string | null
+          os?: string | null
+          session_token?: string
+          started_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_sessions_monitor_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "active_sessions_monitor_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_rate_limits: {
         Row: {
           created_at: string | null
@@ -40,6 +106,72 @@ export type Database = {
           window_start?: string | null
         }
         Relationships: []
+      }
+      auth_detailed_logs: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          device_type: string | null
+          email: string
+          event_type: string
+          failure_reason: string | null
+          id: string
+          ip_address: string
+          os: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          email: string
+          event_type: string
+          failure_reason?: string | null
+          id?: string
+          ip_address: string
+          os?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          email?: string
+          event_type?: string
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string
+          os?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auth_detailed_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auth_detailed_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       available_benefits: {
         Row: {
@@ -975,6 +1107,142 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_action_logs: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          client_id: string
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          performed_by: string
+          user_agent: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          performed_by: string
+          user_agent?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          performed_by?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_action_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_action_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_action_logs_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_action_logs_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_ai_analysis_history: {
+        Row: {
+          analysis_data: Json
+          analyzed_by: string | null
+          churn_risk: string
+          conversion_probability: string
+          created_at: string | null
+          id: string
+          interest_level: string
+          interest_score: number
+          ip_address: string | null
+          recommended_actions: Json | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          analysis_data: Json
+          analyzed_by?: string | null
+          churn_risk: string
+          conversion_probability: string
+          created_at?: string | null
+          id?: string
+          interest_level: string
+          interest_score: number
+          ip_address?: string | null
+          recommended_actions?: Json | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          analysis_data?: Json
+          analyzed_by?: string | null
+          churn_risk?: string
+          conversion_probability?: string
+          created_at?: string | null
+          id?: string
+          interest_level?: string
+          interest_score?: number
+          ip_address?: string | null
+          recommended_actions?: Json | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_ai_analysis_history_analyzed_by_fkey"
+            columns: ["analyzed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_ai_analysis_history_analyzed_by_fkey"
+            columns: ["analyzed_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_ai_analysis_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_ai_analysis_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cron_job_logs: {
         Row: {
           details: Json | null
@@ -1310,6 +1578,60 @@ export type Database = {
           version_number?: number
         }
         Relationships: []
+      }
+      financial_access_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          data_accessed: Json | null
+          id: string
+          ip_address: string | null
+          resource_id: string | null
+          resource_type: string
+          session_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          data_accessed?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          data_accessed?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_access_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_access_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       financial_audit_logs: {
         Row: {

@@ -132,6 +132,29 @@ export const analyzeUserBehavior = async (userId: string): Promise<AIAnalysis> =
       throw new Error(data.error || 'Analysis failed');
     }
 
+    // Salvar análise no histórico
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && data.analysis) {
+      await supabase.from('crm_ai_analysis_history').insert([{
+        user_id: userId,
+        analyzed_by: user.id,
+        analysis_data: data.analysis,
+        interest_score: data.analysis.interest_score || 0,
+        interest_level: data.analysis.interest_level || 'low',
+        conversion_probability: data.analysis.conversion_probability || 'low',
+        churn_risk: data.analysis.churn_risk || 'low',
+        recommended_actions: data.analysis.recommended_actions || [],
+      }]);
+
+      // Registrar ação no log
+      await supabase.from('crm_action_logs').insert([{
+        client_id: userId,
+        performed_by: user.id,
+        action_type: 'analyze_ai',
+        action_details: { analysis_id: data.analysis.analyzed_at },
+      }]);
+    }
+
     return data.analysis as AIAnalysis;
   } catch (error) {
     console.error('Error in analyzeUserBehavior:', error);
@@ -168,10 +191,37 @@ export const addCRMNote = async (
       throw error;
     }
 
+    // Registrar ação no log
+    await supabase.from('crm_action_logs').insert([{
+      client_id: clientId,
+      performed_by: user.id,
+      action_type: 'add_note',
+      action_details: { note_type: noteType, is_important: isImportant },
+    }]);
+
     return { success: true };
   } catch (error) {
     console.error('Error in addCRMNote:', error);
     throw error;
+  }
+};
+
+/**
+ * Registra visualização de perfil do cliente
+ */
+export const logClientProfileView = async (clientId: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('crm_action_logs').insert([{
+      client_id: clientId,
+      performed_by: user.id,
+      action_type: 'view_profile',
+      action_details: { timestamp: new Date().toISOString() },
+    }]);
+  } catch (error) {
+    console.error('Error logging profile view:', error);
   }
 };
 
