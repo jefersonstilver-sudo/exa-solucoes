@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Gift, Mail, Copy, Loader2, Plus, Trash2, Eye } from 'lucide-react';
+import { Gift, Mail, Copy, Loader2, Plus, Trash2, Eye, Zap } from 'lucide-react';
 import { useBenefitManagement } from '@/hooks/useBenefitManagement';
 import BenefitStatusBadge from '@/components/benefits/BenefitStatusBadge';
 import InsertCodeModal from '@/components/benefits/InsertCodeModal';
@@ -30,6 +30,7 @@ import { ProviderBenefit } from '@/types/providerBenefits';
 import { useBenefitStats } from '@/hooks/useBenefitStats';
 import BenefitStatsCards from '@/components/admin/benefits/BenefitStatsCards';
 import MonthSelector from '@/components/admin/dashboard/MonthSelector';
+import BenefitDetailsDialog from '@/components/admin/benefits/BenefitDetailsDialog';
 
 const ProviderBenefits = () => {
   console.log('🎁 ProviderBenefits component rendering...');
@@ -86,6 +87,10 @@ const ProviderBenefits = () => {
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [benefitToCancel, setBenefitToCancel] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  // Novo estado para o dialog de detalhes
+  const [selectedBenefitForDetails, setSelectedBenefitForDetails] = useState<ProviderBenefit | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
   useEffect(() => {
     console.log('🎁 useEffect: Loading benefits...');
@@ -143,8 +148,8 @@ const ProviderBenefits = () => {
   const benefitToCancelData = benefits.find((b) => b.id === benefitToCancel);
 
   const handleViewDetails = (benefit: ProviderBenefit) => {
-    setSelectedBenefit(benefit.id);
-    setIsCodeModalOpen(true);
+    setSelectedBenefitForDetails(benefit);
+    setIsDetailsDialogOpen(true);
   };
 
   const handleCopyLinkMobile = (benefit: ProviderBenefit) => {
@@ -514,23 +519,17 @@ const ProviderBenefits = () => {
               <p>Nenhum benefício criado ainda</p>
             </div>
           ) : (
-            <div className="relative">
-              {/* Indicador de scroll horizontal */}
-              <div className="absolute top-0 right-0 z-10 bg-gradient-to-l from-white via-white to-transparent w-12 h-full pointer-events-none" />
-              
+            <div className="relative">              
               {/* Container com scroll horizontal melhorado */}
-              <div className="overflow-x-auto overflow-y-visible pb-2 cursor-grab active:cursor-grabbing scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
-                <Table className="min-w-[1200px]">
+              <div className="overflow-x-auto overflow-y-visible pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+                <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Prestador</TableHead>
-                    <TableHead>E-mail</TableHead>
-                    <TableHead>Ponto Ativado</TableHead>
-                    <TableHead>Presente Escolhido</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Data Criação</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="w-[200px]">Prestador</TableHead>
+                    <TableHead className="w-[250px]">Presente Escolhido</TableHead>
+                    <TableHead className="w-[180px]">Status</TableHead>
+                    <TableHead className="w-[120px]">Data</TableHead>
+                    <TableHead className="text-center w-[100px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -539,14 +538,16 @@ const ProviderBenefits = () => {
                     const selectedBenefitOption = benefit.benefit_choice 
                       ? benefitOptions.find(b => b.id === benefit.benefit_choice) 
                       : null;
-                    const deliveryTime = selectedBenefitOption?.delivery_days === 1 
-                      ? 'em até 24 horas' 
-                      : `em até ${selectedBenefitOption?.delivery_days || 3} dias`;
 
                     return (
                       <TableRow 
                         key={benefit.id}
-                        className={requiresAction ? 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100' : ''}
+                        className={`cursor-pointer transition-colors ${
+                          requiresAction 
+                            ? 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100' 
+                            : 'hover:bg-muted/50'
+                        }`}
+                        onClick={() => handleViewDetails(benefit)}
                       >
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
@@ -556,98 +557,50 @@ const ProviderBenefits = () => {
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                               </span>
                             )}
-                            {benefit.provider_name}
+                            <div>
+                              <div className="font-medium">{benefit.provider_name}</div>
+                              <div className="text-xs text-muted-foreground">{benefit.provider_email}</div>
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell>{benefit.provider_email}</TableCell>
                         <TableCell>
-                          {benefit.activation_point || (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {benefit.benefit_choice ? (
+                          {selectedBenefitOption ? (
                             <div className="flex flex-col gap-1">
-                              <span className="font-medium">{getBenefitName(benefit.benefit_choice)}</span>
+                              <span className="font-medium">{selectedBenefitOption.icon} {selectedBenefitOption.name}</span>
                               {requiresAction && (
                                 <span className="text-xs text-amber-700 font-semibold flex items-center gap-1">
-                                  <span>⚡</span> Entrega {deliveryTime}
+                                  <Zap className="h-3 w-3" />
+                                  Aguardando código
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">Aguardando</span>
+                            <span className="text-muted-foreground text-sm">Aguardando escolha</span>
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-col gap-1">
                             <BenefitStatusBadge status={benefit.status} />
                             {requiresAction && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-amber-500 text-white animate-pulse">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white">
                                 AÇÃO NECESSÁRIA
                               </span>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          {benefit.gift_code ? (
-                            <code className="text-xs bg-muted px-2 py-1 rounded">
-                              {benefit.gift_code}
-                            </code>
-                          ) : requiresAction ? (
-                            <span className="text-amber-700 font-semibold text-xs">Aguardando código</span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          {format(new Date(benefit.created_at), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
-                        <TableCell>
-                          {format(new Date(benefit.created_at), 'dd/MM/yyyy', {
-                            locale: ptBR,
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right space-x-1">
-                          {benefit.status !== 'cancelled' && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => copyBenefitLink(benefit.access_token)}
-                                title="Copiar link"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                              {benefit.status === 'pending' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => resendInvitation(benefit.id)}
-                                  title="Reenviar email"
-                                >
-                                  <Mail className="h-3 w-3" />
-                                </Button>
-                              )}
-                              {requiresAction && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleInsertCode(benefit.id)}
-                                  title="Inserir código"
-                                  className="bg-amber-500 hover:bg-amber-600 text-white animate-pulse"
-                                >
-                                  <Gift className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </>
-                          )}
-                          {benefit.status !== 'cancelled' && benefit.status !== 'code_sent' && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleCancelBenefit(benefit.id)}
-                              title="Cancelar benefício"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          )}
+                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleViewDetails(benefit)}
+                            title="Ver detalhes"
+                            className="h-8"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
@@ -659,6 +612,21 @@ const ProviderBenefits = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog de Detalhes Completos */}
+      <BenefitDetailsDialog
+        benefit={selectedBenefitForDetails}
+        benefitOptions={benefitOptions}
+        open={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
+        onCopyLink={(benefitId) => {
+          const benefit = benefits.find(b => b.id === benefitId);
+          if (benefit) copyBenefitLink(benefit.access_token);
+        }}
+        onResendEmail={(benefitId) => resendInvitation(benefitId)}
+        onInsertCode={(benefitId, code) => insertGiftCode(benefitId, code, 'code', '')}
+        onCancelBenefit={(benefitId) => cancelBenefit(benefitId)}
+      />
 
       {/* Insert Code Modal */}
       {selectedBenefitData && (
