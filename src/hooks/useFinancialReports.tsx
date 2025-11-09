@@ -43,7 +43,7 @@ export function useFinancialReports(startDate?: Date, endDate?: Date) {
 
   useEffect(() => {
     fetchFinancialData();
-  }, [startDate, endDate]);
+  }, [startDate?.toISOString(), endDate?.toISOString()]);
 
   const fetchFinancialData = async () => {
     try {

@@ -7,13 +7,16 @@ import { useFinancialReports } from '@/hooks/useFinancialReports';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { toast } from 'sonner';
 
 const FinancialReports = () => {
   const { canViewFinancialReports, isLoadingCustom } = useUserPermissions();
   const [periodFilter, setPeriodFilter] = useState<'7' | '30' | '90' | 'all'>('30');
   
   const getDateRange = () => {
-    if (periodFilter === 'all') return { start: undefined, end: undefined };
+    if (periodFilter === 'all') {
+      return { start: undefined, end: undefined };
+    }
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - parseInt(periodFilter));
@@ -58,8 +61,14 @@ const FinancialReports = () => {
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          <Select value={periodFilter} onValueChange={(v: any) => setPeriodFilter(v)}>
-            <SelectTrigger className="w-[180px]">
+          <Select 
+            value={periodFilter} 
+            onValueChange={(v: any) => {
+              setPeriodFilter(v);
+              toast.success(v === 'all' ? '📊 Mostrando todos os dados' : `Período alterado para ${v} dias`);
+            }}
+          >
+            <SelectTrigger className="w-[200px]">
               <Calendar className="h-4 w-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
@@ -67,7 +76,7 @@ const FinancialReports = () => {
               <SelectItem value="7">Últimos 7 dias</SelectItem>
               <SelectItem value="30">Últimos 30 dias</SelectItem>
               <SelectItem value="90">Últimos 90 dias</SelectItem>
-              <SelectItem value="all">📊 Tudo</SelectItem>
+              <SelectItem value="all" className="font-bold text-primary">📊 Tudo (Desde o Início)</SelectItem>
             </SelectContent>
           </Select>
 
