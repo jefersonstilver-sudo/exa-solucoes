@@ -2,16 +2,63 @@
 // DADOS DE EXEMPLO PARA PREVIEW DE TEMPLATES
 // ============================================
 
-import type {
-  ConfirmationEmailData,
-  PasswordRecoveryEmailData,
-  AdminWelcomeEmailData,
-  VideoSubmittedEmailData,
-  VideoApprovedEmailData,
-  VideoRejectedEmailData,
-  BenefitInvitationEmailData,
-  BenefitGiftCodeEmailData,
-} from '@/integrations/supabase/types';
+// Tipos dos templates (baseados nos tipos do edge function)
+interface EmailBaseData {
+  userName: string;
+  userEmail: string;
+}
+
+interface ConfirmationEmailData extends EmailBaseData {
+  confirmationUrl: string;
+}
+
+interface PasswordRecoveryEmailData extends EmailBaseData {
+  recoveryUrl: string;
+}
+
+interface AdminWelcomeEmailData extends EmailBaseData {
+  nome: string;
+  email: string;
+  role: 'super_admin' | 'admin' | 'admin_marketing' | 'admin_financeiro';
+  password: string;
+  createdBy: string;
+  loginUrl: string;
+}
+
+interface VideoSubmittedEmailData extends EmailBaseData {
+  videoTitle: string;
+  orderId: string;
+}
+
+interface VideoApprovedEmailData extends EmailBaseData {
+  videoTitle: string;
+  buildings: string[];
+  startDate: string;
+  endDate: string;
+  orderId: string;
+}
+
+interface VideoRejectedEmailData extends EmailBaseData {
+  videoTitle: string;
+  rejectionReason: string;
+  orderId: string;
+}
+
+interface BenefitInvitationEmailData {
+  providerName: string;
+  providerEmail: string;
+  presentLink: string;
+  activationPoint?: string;
+}
+
+interface BenefitGiftCodeEmailData {
+  providerName: string;
+  providerEmail: string;
+  benefitChoice: string;
+  giftCode: string;
+  deliveryType?: 'code' | 'link';
+  redemptionInstructions?: string;
+}
 
 export const emailTemplateSamples = {
   confirmation: {

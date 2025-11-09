@@ -50,7 +50,7 @@ export function useEmailStats(days: number = 30) {
       const { data: logs, error } = await supabase
         .from('email_logs')
         .select('*')
-        .gte('sent_at', startDate.toISOString());
+        .gte('sent_at', startDate.toISOString()) as any;
 
       if (error) throw error;
 
