@@ -29,7 +29,7 @@ const DesignExperienciaSection = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 lg:gap-8 max-w-5xl mx-auto">
           {pillars.map((pillar, index) => (
             <div key={index} className="text-center space-y-4">
               <div className="bg-gradient-to-br from-exa-purple to-exa-blue rounded-full w-20 h-20 flex items-center justify-center mx-auto">
