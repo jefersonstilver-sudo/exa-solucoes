@@ -3,8 +3,10 @@ import React, { useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Video, Play, User, Calendar, DollarSign, Eye, ExternalLink } from 'lucide-react';
+import { Video, Play, User, Calendar, DollarSign, Eye, ExternalLink, TvMinimal, Sparkles } from 'lucide-react';
 import { useBuildingActiveCampaigns } from '@/hooks/useBuildingActiveCampaigns';
+import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
+import { VideoScheduleTooltip } from '../VideoScheduleTooltip';
 import ModernSkeleton from '@/components/ui/ModernSkeleton';
 
 interface BuildingActiveCampaignsTabProps {
@@ -17,6 +19,7 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
   buildingName
 }) => {
   const { campaigns, loading, error, refetch } = useBuildingActiveCampaigns(buildingId);
+  const { videos: activeVideos, loading: videosLoading } = useBuildingActiveVideos(buildingId);
 
   console.log('🎬 [CAMPAIGNS TAB] Renderizando para prédio:', buildingName, {
     buildingId,
@@ -155,15 +158,180 @@ const BuildingActiveCampaignsTab: React.FC<BuildingActiveCampaignsTabProps> = ({
     }));
   }, [campaigns, getDaysRemaining]);
 
+  // Estatísticas dos vídeos ativos
+  const stats = useMemo(() => {
+    const total = activeVideos.length;
+    const scheduled = activeVideos.filter(v => v.is_scheduled).length;
+    const base = activeVideos.filter(v => !v.is_scheduled).length;
+    const activeNow = activeVideos.filter(v => v.is_currently_active).length;
+    const totalCampaigns = new Set(activeVideos.map(v => v.pedido_id)).size;
+    const totalClients = new Set(activeVideos.map(v => v.client_email)).size;
+    const totalValue = activeVideos.reduce((sum, v) => sum + v.valor_total, 0);
+    
+    return { total, scheduled, base, activeNow, totalCampaigns, totalClients, totalValue };
+  }, [activeVideos]);
+
   return (
     <div className="space-y-6">
+      {/* Seção de Vídeos em Exibição AGORA */}
+      {activeVideos.length > 0 && (
+        <Card className="border-green-500 border-2 bg-gradient-to-br from-green-50 to-emerald-50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500 rounded-lg">
+                  <TvMinimal className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">Vídeos em Exibição</CardTitle>
+                  <CardDescription>Playlist atual rodando nas telas deste prédio</CardDescription>
+                </div>
+              </div>
+              <Badge className="bg-green-500 text-white text-lg px-4 py-2">
+                🎬 {stats.total} vídeos
+              </Badge>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            {/* Estatísticas */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Campanhas</p>
+                      <p className="text-2xl font-bold text-green-600">{stats.totalCampaigns}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Clientes</p>
+                      <p className="text-2xl font-bold text-blue-600">{stats.totalClients}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-emerald-600" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Valor Total</p>
+                      <p className="text-lg font-bold text-emerald-600">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalValue)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Play className="h-5 w-5 text-purple-600" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">No AR Agora</p>
+                      <p className="text-2xl font-bold text-purple-600">{stats.activeNow}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Badges de Tipo */}
+            <div className="flex gap-2">
+              <Badge variant="outline" className="bg-white">
+                📺 Base: {stats.base}
+              </Badge>
+              <Badge variant="outline" className="bg-white">
+                ⏰ Agendados: {stats.scheduled}
+              </Badge>
+            </div>
+
+            {/* Lista de Vídeos */}
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm text-gray-700">Playlist Completa ({stats.total} vídeos):</h4>
+              <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                {activeVideos.map((video, index) => (
+                  <VideoScheduleTooltip
+                    key={video.video_id}
+                    scheduleRules={video.schedule_rules}
+                    isCurrentlyActive={video.is_currently_active || false}
+                  >
+                    <Card className={`transition-all hover:shadow-md cursor-help ${
+                      video.is_currently_active ? 'border-green-400 bg-green-50' : 'bg-white'
+                    }`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                              {index + 1}
+                            </div>
+                            
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-sm">{video.video_name}</p>
+                                {video.is_currently_active ? (
+                                  <Badge className="bg-green-500 text-white">🟢 No AR agora</Badge>
+                                ) : video.is_scheduled ? (
+                                  <Badge variant="outline" className="border-yellow-500 text-yellow-700">⏸️ Agendado</Badge>
+                                ) : (
+                                  <Badge variant="secondary">🎯 Base</Badge>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  {video.client_name}
+                                </span>
+                                <span>•</span>
+                                <span>Slot {video.slot_position}</span>
+                                <span>•</span>
+                                <span>{video.video_duracao}s</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            {video.video_url && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => window.open(video.video_url, '_blank')}
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </VideoScheduleTooltip>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Seção de Campanhas (mantida como estava) */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            Programação em {buildingName}
+            Todas as Campanhas em {buildingName}
           </h3>
           <p className="text-sm text-gray-600">
-            Lista de vídeos atualmente programados e em exibição para este prédio.
+            Lista detalhada de todos os pedidos e campanhas deste prédio.
           </p>
         </div>
         <Button onClick={refetch} variant="outline" size="sm">
