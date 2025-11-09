@@ -3471,6 +3471,30 @@ export type Database = {
             Returns: Database["public"]["Enums"]["app_role"]
           }
       get_user_stats: { Args: never; Returns: Json }
+      get_user_with_last_access: {
+        Args: { target_user_id?: string }
+        Returns: {
+          avatar_url: string
+          cpf: string
+          data_criacao: string
+          documento_estrangeiro: string
+          documento_frente_url: string
+          documento_verso_url: string
+          email: string
+          email_confirmed_at: string
+          email_verified_at: string
+          id: string
+          last_access_at: string
+          last_sign_in_at: string
+          nome: string
+          privacy_accepted_at: string
+          raw_user_meta_data: Json
+          role: string
+          telefone: string
+          terms_accepted_at: string
+          tipo_documento: string
+        }[]
+      }
       get_video_current_status: { Args: { p_video_id: string }; Returns: Json }
       has_role: {
         Args: {
