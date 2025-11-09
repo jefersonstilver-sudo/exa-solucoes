@@ -215,7 +215,7 @@ export function ModernAdminSidebar() {
           title: 'Emails',
           href: buildPath('comunicacoes'),
           icon: Mail,
-          permission: 'canManageHomepageImages'
+          permission: 'canManageEmails'
         }
       ]
     }

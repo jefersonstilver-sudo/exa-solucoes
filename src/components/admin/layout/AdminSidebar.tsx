@@ -209,7 +209,7 @@ const AdminSidebar = () => {
       href: buildPath('comunicacoes'),
       requireSuperAdmin: false,
       section: 'content',
-      permission: 'canManageHomepageImages'
+      permission: 'canManageEmails'
     }
   ];
 

@@ -56,6 +56,7 @@ export interface UserPermissions {
   canManageVideos: boolean;
   canManagePortfolio: boolean;
   canManageNotifications: boolean;
+  canManageEmails: boolean;
   
   // Financeiro
   canManageProviderBenefits: boolean;
@@ -106,6 +107,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: true,
     canManagePortfolio: true,
     canManageNotifications: true,
+    canManageEmails: true,
     canManageProviderBenefits: true,
     canViewFinancialReports: true,
   },
@@ -131,6 +133,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: true,
     canManagePortfolio: true,
     canManageNotifications: true,
+    canManageEmails: true,
     canManageProviderBenefits: true,
     canViewFinancialReports: true,
   },
@@ -156,6 +159,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: true,
     canManagePortfolio: true,
     canManageNotifications: true,
+    canManageEmails: true,
     canManageProviderBenefits: false,
     canViewFinancialReports: false,
   },
@@ -181,6 +185,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: false,
     canManagePortfolio: false,
     canManageNotifications: false,
+    canManageEmails: false,
     canManageProviderBenefits: true,   // ✅✅ ACESSO TOTAL a benefícios prestadores
     canViewFinancialReports: true,     // ✅✅ ACESSO a relatórios financeiros
   },
@@ -206,6 +211,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: false,
     canManagePortfolio: false,
     canManageNotifications: false,
+    canManageEmails: false,
     canManageProviderBenefits: false,
     canViewFinancialReports: false,
   },
@@ -231,6 +237,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageVideos: false,
     canManagePortfolio: false,
     canManageNotifications: false,
+    canManageEmails: false,
     canManageProviderBenefits: false,
     canViewFinancialReports: false,
   },
