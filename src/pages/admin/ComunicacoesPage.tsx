@@ -18,10 +18,13 @@ import {
   Video,
   Shield,
   Gift,
-  Download
+  Download,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useEmailStats } from '@/hooks/useEmailStats';
+import EmailTemplatePreviewDialog from '@/components/admin/emails/EmailTemplatePreviewDialog';
 
 interface EmailTemplate {
   id: string;
@@ -41,6 +44,20 @@ interface EmailStats {
 const ComunicacoesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [previewDialog, setPreviewDialog] = useState<{
+    open: boolean;
+    templateId: string;
+    templateName: string;
+    templateCategory: string;
+  }>({
+    open: false,
+    templateId: '',
+    templateName: '',
+    templateCategory: '',
+  });
+
+  // Buscar estatísticas reais
+  const { stats, loading: statsLoading } = useEmailStats(30);
 
   // Templates disponíveis
   const templates: EmailTemplate[] = [
@@ -109,12 +126,13 @@ const ComunicacoesPage = () => {
     }
   ];
 
-  // Estatísticas simuladas (pode ser conectado ao banco depois)
-  const stats: EmailStats = {
-    total: 1247,
-    sent: 1189,
-    opened: 892,
-    clicked: 456
+  const openPreview = (template: EmailTemplate) => {
+    setPreviewDialog({
+      open: true,
+      templateId: template.id,
+      templateName: template.name,
+      templateCategory: template.category,
+    });
   };
 
   const categoryColors: Record<string, string> = {
@@ -156,7 +174,9 @@ const ComunicacoesPage = () => {
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total.toLocaleString('pt-BR')}</div>
+            <div className="text-2xl font-bold">
+              {statsLoading ? '...' : stats.total.toLocaleString('pt-BR')}
+            </div>
             <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
           </CardContent>
         </Card>
@@ -167,9 +187,11 @@ const ComunicacoesPage = () => {
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.sent.toLocaleString('pt-BR')}</div>
+            <div className="text-2xl font-bold">
+              {statsLoading ? '...' : stats.sent.toLocaleString('pt-BR')}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {((stats.sent / stats.total) * 100).toFixed(1)}% do total
+              {statsLoading ? '...' : `${stats.deliveryRate.toFixed(1)}% do total`}
             </p>
           </CardContent>
         </Card>
@@ -181,10 +203,10 @@ const ComunicacoesPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {((stats.opened / stats.sent) * 100).toFixed(1)}%
+              {statsLoading ? '...' : `${stats.openRate.toFixed(1)}%`}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.opened.toLocaleString('pt-BR')} abertos
+              {statsLoading ? '...' : `${stats.opened.toLocaleString('pt-BR')} abertos`}
             </p>
           </CardContent>
         </Card>
@@ -196,10 +218,10 @@ const ComunicacoesPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {((stats.clicked / stats.sent) * 100).toFixed(1)}%
+              {statsLoading ? '...' : `${stats.clickRate.toFixed(1)}%`}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.clicked.toLocaleString('pt-BR')} cliques
+              {statsLoading ? '...' : `${stats.clicked.toLocaleString('pt-BR')} cliques`}
             </p>
           </CardContent>
         </Card>
@@ -290,9 +312,13 @@ const ComunicacoesPage = () => {
                         <Badge variant="outline" className={categoryColors[template.category]}>
                           {categoryNames[template.category]}
                         </Badge>
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Ver
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => openPreview(template)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Visualizar
                         </Button>
                       </div>
                     </CardContent>
@@ -384,6 +410,15 @@ const ComunicacoesPage = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Preview Dialog */}
+      <EmailTemplatePreviewDialog
+        open={previewDialog.open}
+        onOpenChange={(open) => setPreviewDialog({ ...previewDialog, open })}
+        templateId={previewDialog.templateId}
+        templateName={previewDialog.templateName}
+        templateCategory={previewDialog.templateCategory}
+      />
     </div>
   );
 };
