@@ -51,16 +51,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user is super_admin
-    const { data: userRole, error: roleError } = await supabaseClient
-      .from('user_roles')
+    // Check if user has admin privileges
+    const { data: userData, error: roleError } = await supabaseClient
+      .from('users')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
-    if (roleError || userRole?.role !== 'super_admin') {
+    const allowedRoles = ['super_admin', 'admin', 'admin_financeiro', 'admin_marketing'];
+    
+    if (roleError || !userData || !allowedRoles.includes(userData.role)) {
+      console.error('Access denied:', { roleError, userRole: userData?.role });
       return new Response(
-        JSON.stringify({ error: 'Forbidden - Super admin access required' }),
+        JSON.stringify({ error: 'Forbidden - Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
