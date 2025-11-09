@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,7 @@ const FinancialReports = () => {
   const { canViewFinancialReports, isLoadingCustom } = useUserPermissions();
   const [periodFilter, setPeriodFilter] = useState<'7' | '30' | '90' | 'all'>('30');
   
-  const getDateRange = () => {
+  const { start, end } = useMemo(() => {
     if (periodFilter === 'all') {
       return { start: undefined, end: undefined };
     }
@@ -21,9 +21,8 @@ const FinancialReports = () => {
     const start = new Date();
     start.setDate(start.getDate() - parseInt(periodFilter));
     return { start, end };
-  };
+  }, [periodFilter]);
 
-  const { start, end } = getDateRange();
   const { metrics, revenueByMonth, topClients, loading, refetch } = useFinancialReports(start, end);
   
   // 🔒 CRITICAL: Wait for permissions to load before checking

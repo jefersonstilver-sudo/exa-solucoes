@@ -43,7 +43,8 @@ export function useFinancialReports(startDate?: Date, endDate?: Date) {
 
   useEffect(() => {
     fetchFinancialData();
-  }, [startDate?.toISOString(), endDate?.toISOString()]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate?.getTime(), endDate?.getTime()]);
 
   const fetchFinancialData = async () => {
     try {
