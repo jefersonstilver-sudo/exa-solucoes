@@ -97,20 +97,30 @@ const ProviderBenefitChoice = () => {
     if (!selectedOption || !token) return;
 
     setIsSubmitting(true);
+    
     try {
       const response = await registerChoice(token, selectedOption);
 
       if (response.success) {
+        // Fechar modal primeiro para evitar travamento no mobile
+        setIsConfirmModalOpen(false);
+        setIsSubmitting(false);
+        
+        // Aguardar um momento para garantir que o modal foi fechado
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Então mudar o estado da página
         setPageState('success');
       } else {
+        setIsSubmitting(false);
+        setIsConfirmModalOpen(false);
         alert('Erro ao registrar escolha. Por favor, tente novamente.');
       }
     } catch (error) {
       console.error('Erro ao confirmar escolha:', error);
-      alert('Erro ao processar sua escolha. Por favor, tente novamente.');
-    } finally {
       setIsSubmitting(false);
       setIsConfirmModalOpen(false);
+      alert('Erro ao processar sua escolha. Por favor, tente novamente.');
     }
   };
 
@@ -190,30 +200,28 @@ const ProviderBenefitChoice = () => {
     
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-lg w-full space-y-8">
+        <div className="max-w-lg w-full space-y-6">
           
-          {/* Ícone de Sucesso Minimalista */}
+          {/* Ícone de Sucesso Simplificado */}
           <div className="flex justify-center">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
-                <CheckCircle className="h-11 w-11 text-white" strokeWidth={2.5} />
-              </div>
+            <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
+              <CheckCircle className="h-11 w-11 text-white" strokeWidth={2.5} />
             </div>
           </div>
 
           {/* Título e Subtítulo */}
-          <div className="text-center space-y-3">
-            <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold text-gray-900">
               Parabéns!
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-base text-gray-600">
               Sua escolha foi registrada com sucesso
             </p>
           </div>
 
-          {/* Card do Benefício Escolhido */}
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
-            <div className="flex flex-col items-center text-center space-y-4">
+          {/* Card do Benefício Escolhido - Simplificado */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <div className="flex flex-col items-center text-center space-y-3">
               {/* Ícone do Benefício */}
               <div className="text-5xl">
                 {getIconEmoji(chosenBenefit?.icon || '')}
@@ -221,7 +229,7 @@ const ProviderBenefitChoice = () => {
               
               {/* Nome do Benefício */}
               <div className="space-y-1">
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-xl font-bold text-gray-900">
                   {chosenBenefit?.name || 'Benefício escolhido'}
                 </p>
                 {chosenBenefit?.subtitle && (
@@ -232,13 +240,13 @@ const ProviderBenefitChoice = () => {
               </div>
 
               {/* Valor */}
-              <div className="pt-2 pb-4">
-                <p className="text-3xl font-bold text-emerald-600">
+              <div className="py-2">
+                <p className="text-2xl font-bold text-emerald-600">
                   R$ 50,00
                 </p>
               </div>
 
-              {/* Badge de Prazo */}
+              {/* Badge de Prazo - Simplificado */}
               {chosenBenefit && (
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
                   chosenBenefit.delivery_days === 1 
@@ -254,19 +262,19 @@ const ProviderBenefitChoice = () => {
             </div>
           </div>
 
-          {/* Próximos Passos */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {/* Próximos Passos - Simplificado */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
-              <div className="flex-1 space-y-1">
-                <p className="text-base font-medium text-gray-900">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
                   Você receberá o código por email
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs text-gray-500 mt-1">
                   Verifique sua caixa de entrada e pasta de spam
                 </p>
               </div>
@@ -274,8 +282,8 @@ const ProviderBenefitChoice = () => {
           </div>
 
           {/* Footer */}
-          <div className="text-center pt-4">
-            <p className="text-sm text-gray-500">
+          <div className="text-center pt-2">
+            <p className="text-xs text-gray-500">
               Obrigado por fazer parte da <span className="font-semibold text-gray-700">EXA MÍDIA</span>
             </p>
           </div>
