@@ -388,34 +388,26 @@ const ProviderBenefits = () => {
 
   // Desktop View
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <Gift className="h-8 w-8 text-primary" />
-            Benefício Prestadores
-          </h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold">Benefício Prestadores</h1>
+          <p className="text-muted-foreground">
             Presenteie os prestadores que ajudaram na ativação de pontos EXA
           </p>
         </div>
         <div className="flex gap-2">
           <Button
-            onClick={() => {
-              listBenefits();
-            }}
-            size="lg"
+            onClick={() => listBenefits()}
             variant="outline"
             disabled={isLoading}
-            title="Atualizar lista"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
           <Button
             onClick={() => navigate(buildPath('gerenciar-beneficios'))}
-            size="lg"
             variant="outline"
           >
             <Gift className="h-4 w-4 mr-2" />
@@ -423,40 +415,27 @@ const ProviderBenefits = () => {
           </Button>
           <Button 
             onClick={() => navigate(buildPath('instrucoes-compra-vales'))} 
-            size="lg"
             variant="outline"
           >
             <BookOpen className="h-4 w-4 mr-2" />
-            Como Comprar os Vales
+            Como Comprar
           </Button>
-          <Button onClick={() => setShowForm(!showForm)} size="lg">
+          <Button onClick={() => setShowForm(!showForm)}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Benefício
           </Button>
         </div>
       </div>
 
-      {/* Dashboard de Controle Financeiro */}
-      <Card className="border-2 border-primary/20">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl font-bold">Dashboard de Controle</CardTitle>
-              <CardDescription>
-                Métricas e estatísticas do período selecionado
-              </CardDescription>
-            </div>
-            <MonthSelector
-              selectedMonth={selectedMonth}
-              onMonthChange={handleMonthChange}
-              variant="default"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <BenefitStatsCards stats={stats} loading={loadingStats} />
-        </CardContent>
-      </Card>
+      {/* Estatísticas */}
+      <div className="flex items-center justify-between mb-4">
+        <MonthSelector
+          selectedMonth={selectedMonth}
+          onMonthChange={handleMonthChange}
+          variant="default"
+        />
+      </div>
+      <BenefitStatsCards stats={stats} loading={loadingStats} />
 
       {/* Form */}
       {showForm && (

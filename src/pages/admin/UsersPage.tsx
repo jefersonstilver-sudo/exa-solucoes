@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Crown, Users, Shield, Plus, RefreshCw, Search, UserCheck, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -314,140 +314,92 @@ const UsersPage = () => {
 
   // Desktop View - Professional & Elegant
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-white">
-      {/* Professional Header with Elegant Stats */}
-      <div className="relative bg-gradient-to-r from-[#9C1E1E] via-[#B91C1C] to-[#9C1E1E] border-b-4 border-[#7A1616]">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
-        
-        <div className="relative max-w-7xl mx-auto px-6 py-10">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-white tracking-tight">
-                  Gestão de Usuários
-                </h1>
-                <p className="text-sm text-white/80 mt-1">
-                  Administre contas e permissões do sistema INDEXA
-                </p>
-              </div>
-            </div>
-            <Button 
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-white text-[#9C1E1E] hover:bg-gray-100 shadow-lg font-semibold"
-              size="lg"
-            >
-              <UserPlus className="h-5 w-5 mr-2" />
-              Nova Conta
-            </Button>
-          </div>
-
-          {/* Elegant Stats Cards */}
-          <div className="grid grid-cols-4 gap-4">
-            <Card className="border-0 bg-white/95 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                    <Users className="h-5 w-5 text-gray-700" />
-                  </div>
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">
-                  {stats?.total_users || users.length}
-                </div>
-                <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">
-                  Total de Usuários
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <Crown className="h-5 w-5 text-white" />
-                  </div>
-                </div>
-                <div className="text-3xl font-bold text-purple-900 mb-1">
-                  {stats?.admins_count || indexaTeam.length}
-                </div>
-                <div className="text-xs font-medium text-purple-700 uppercase tracking-wide">
-                  Equipe EXA
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <UserCheck className="h-5 w-5 text-white" />
-                  </div>
-                </div>
-                <div className="text-3xl font-bold text-blue-900 mb-1">
-                  {stats?.clients_count || clients.length}
-                </div>
-                <div className="text-xs font-medium text-blue-700 uppercase tracking-wide">
-                  Clientes Ativos
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                    <Shield className="h-5 w-5 text-white" />
-                  </div>
-                </div>
-                <div className="text-3xl font-bold text-green-900 mb-1">
-                  {stats?.verified_users || users.filter((u) => u.email_verified_at).length}
-                </div>
-                <div className="text-xs font-medium text-green-700 uppercase tracking-wide">
-                  Verificados
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Gestão de Usuários</h1>
+          <p className="text-muted-foreground">
+            Administre contas e permissões do sistema
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleRefresh}
+            variant="outline"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Nova Conta
+          </Button>
         </div>
       </div>
 
-      {/* Elegant Tabs */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-white border-2 border-gray-200 p-1.5 rounded-xl shadow-md h-14">
-            <TabsTrigger 
-              value="team" 
-              className="group data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#B91C1C] data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-gray-100 rounded-lg px-8 py-3 text-sm font-semibold transition-all duration-200 shadow-sm"
-            >
-              <Crown className="h-4 w-4 mr-2" />
-              Equipe EXA
-              <Badge variant="secondary" className="ml-3 bg-white/20 text-white group-data-[state=inactive]:bg-gray-200 group-data-[state=inactive]:text-gray-900 border-0">
-                {indexaTeam.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="clients"
-              className="group data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#B91C1C] data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-gray-100 rounded-lg px-8 py-3 text-sm font-semibold transition-all duration-200 shadow-sm"
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Clientes
-              <Badge variant="secondary" className="ml-3 bg-white/20 text-white group-data-[state=inactive]:bg-gray-200 group-data-[state=inactive]:text-gray-900 border-0">
-                {clients.length}
-              </Badge>
-            </TabsTrigger>
-          </TabsList>
+      {/* Stats Cards */}
+      <UserStatsCards stats={stats} loading={loadingStats} />
 
-          <TabsContent value="team" className="mt-6">
-            <IndexaTeamSection users={users} loading={loading} onRefresh={fetchUsers} />
-          </TabsContent>
+      {/* Main Content */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Usuários do Sistema</CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="relative w-72">
+                <Input
+                  type="text"
+                  placeholder="Buscar por email ou nome..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="team">
+                <Crown className="h-4 w-4 mr-2" />
+                Equipe ({filteredTeam.length})
+              </TabsTrigger>
+              <TabsTrigger value="clients">
+                <UserCheck className="h-4 w-4 mr-2" />
+                Clientes ({filteredClients.length})
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="clients" className="mt-6">
-            <ClientsSection users={users} loading={loading} onRefresh={fetchUsers} />
-          </TabsContent>
-        </Tabs>
-      </div>
+            <TabsContent value="team" className="mt-4">
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <IndexaTeamSection users={filteredTeam} loading={loading} onRefresh={handleRefresh} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="clients" className="mt-4">
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <ClientsSection users={filteredClients} loading={loading} onRefresh={handleRefresh} />
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Dialogs */}
       <CreateUserDialog
@@ -455,6 +407,15 @@ const UsersPage = () => {
         onOpenChange={setIsCreateDialogOpen}
         onSuccess={handleRefresh}
       />
+
+      {selectedUser && (
+        <UserDetailsDialogComplete 
+          open={true}
+          onOpenChange={(open) => !open && setSelectedUser(null)}
+          user={selectedUser} 
+          onUserUpdated={handleRefresh}
+        />
+      )}
     </div>
   );
 };

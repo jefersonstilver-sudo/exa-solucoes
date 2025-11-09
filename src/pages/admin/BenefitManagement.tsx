@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -189,30 +190,36 @@ const BenefitManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a0000] via-[#2d0a0a] to-[#1a0000] p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate(buildPath('beneficio-prestadores'))}
-              className="text-white hover:bg-white/10"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
-            <h1 className="text-4xl font-bold text-white">Gerenciar Benefícios</h1>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Gerenciar Benefícios</h1>
+          <p className="text-muted-foreground">
+            Configure os benefícios disponíveis para os prestadores
+          </p>
+        </div>
+        <div className="flex gap-2">
           <Button
-            onClick={() => handleOpenDialog()}
-            className="bg-gradient-to-r from-[#DC2626] to-[#991b1b] hover:from-[#991b1b] hover:to-[#DC2626]"
+            variant="outline"
+            onClick={() => navigate(buildPath('beneficio-prestadores'))}
           >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar
+          </Button>
+          <Button onClick={() => handleOpenDialog()}>
             <Plus className="mr-2 h-4 w-4" />
             Novo Benefício
           </Button>
         </div>
+      </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+      {/* Lista de Benefícios */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Benefícios Cadastrados</CardTitle>
+        </CardHeader>
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
@@ -268,8 +275,8 @@ const BenefitManagement = () => {
               Nenhum benefício cadastrado ainda
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
