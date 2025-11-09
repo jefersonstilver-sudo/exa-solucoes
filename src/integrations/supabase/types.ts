@@ -1278,6 +1278,39 @@ export type Database = {
         }
         Relationships: []
       }
+      email_template_history: {
+        Row: {
+          change_description: string | null
+          created_at: string | null
+          custom_html: string
+          custom_subject: string | null
+          id: string
+          saved_by: string | null
+          template_id: string
+          version_number: number
+        }
+        Insert: {
+          change_description?: string | null
+          created_at?: string | null
+          custom_html: string
+          custom_subject?: string | null
+          id?: string
+          saved_by?: string | null
+          template_id: string
+          version_number: number
+        }
+        Update: {
+          change_description?: string | null
+          created_at?: string | null
+          custom_html?: string
+          custom_subject?: string | null
+          id?: string
+          saved_by?: string | null
+          template_id?: string
+          version_number?: number
+        }
+        Relationships: []
+      }
       financial_audit_logs: {
         Row: {
           access_timestamp: string | null

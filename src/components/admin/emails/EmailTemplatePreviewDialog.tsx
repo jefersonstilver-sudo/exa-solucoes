@@ -6,14 +6,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Code, Eye, Send, Save, RotateCcw } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Code, Eye, Send, Save, RotateCcw, History } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getTemplateSample } from '@/lib/email-template-samples';
+import EmailTemplateHistoryPanel from './EmailTemplateHistoryPanel';
 
 interface EmailTemplatePreviewDialogProps {
   open: boolean;
@@ -39,13 +52,42 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [hasCustomization, setHasCustomization] = useState(false);
   const [customizationId, setCustomizationId] = useState<string | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [currentVersionNumber, setCurrentVersionNumber] = useState<number | undefined>();
+  const [changeDescription, setChangeDescription] = useState('');
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (open && templateId) {
       loadTemplate();
+      loadHistory();
+    } else if (!open) {
+      // Reset states when closing
+      setChangeDescription('');
+      setShowHistoryPanel(false);
     }
   }, [open, templateId]);
+
+  const loadHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('email_template_history')
+        .select('*')
+        .eq('template_id', templateId)
+        .order('version_number', { ascending: false });
+
+      if (error) throw error;
+      setHistory(data || []);
+    } catch (error: any) {
+      console.error('Error loading history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const loadTemplate = async () => {
     setLoading(true);
@@ -122,6 +164,31 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
         throw new Error('Usuário não autenticado');
       }
 
+      // Get next version number
+      const { data: maxVersionData } = await supabase
+        .from('email_template_history')
+        .select('version_number')
+        .eq('template_id', templateId)
+        .order('version_number', { ascending: false })
+        .limit(1)
+        .single();
+
+      const nextVersion = (maxVersionData?.version_number || 0) + 1;
+
+      // Save to history first
+      const { error: historyError } = await supabase
+        .from('email_template_history')
+        .insert({
+          template_id: templateId,
+          custom_html: editedHtml,
+          version_number: nextVersion,
+          saved_by: user.id,
+          change_description: changeDescription || undefined,
+        });
+
+      if (historyError) throw historyError;
+
+      // Update or create customization
       const customizationData = {
         template_id: templateId,
         custom_html: editedHtml,
@@ -130,7 +197,6 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
       };
 
       if (customizationId) {
-        // Atualizar customização existente
         const { error } = await supabase
           .from('email_template_customizations')
           .update(customizationData)
@@ -138,7 +204,6 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
 
         if (error) throw error;
       } else {
-        // Criar nova customização
         const { data, error } = await supabase
           .from('email_template_customizations')
           .upsert(customizationData, {
@@ -155,10 +220,15 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
       setHtml(editedHtml);
       setHasChanges(false);
       setHasCustomization(true);
+      setCurrentVersionNumber(nextVersion);
+      setChangeDescription('');
+
+      // Reload history
+      await loadHistory();
 
       toast({
         title: '✅ Customização salva!',
-        description: 'Todos os próximos emails deste tipo usarão esta versão customizada',
+        description: `Versão ${nextVersion} criada com sucesso`,
       });
     } catch (error: any) {
       console.error('Error saving customization:', error);
@@ -236,6 +306,38 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
     });
   };
 
+  const handleRestoreVersion = async (version: any) => {
+    const confirmed = window.confirm(
+      `Restaurar versão ${version.version_number}? As alterações não salvas serão perdidas.`
+    );
+
+    if (!confirmed) return;
+
+    setEditedHtml(version.custom_html);
+    setHtml(version.custom_html);
+    setOriginalHtml(version.custom_html);
+    setHasChanges(false);
+    setCurrentVersionNumber(version.version_number);
+
+    toast({
+      title: 'Versão restaurada',
+      description: `Versão ${version.version_number} foi restaurada com sucesso`,
+    });
+  };
+
+  const handleClose = () => {
+    if (hasChanges) {
+      setShowCloseConfirm(true);
+    } else {
+      onOpenChange(false);
+    }
+  };
+
+  const confirmClose = () => {
+    setShowCloseConfirm(false);
+    onOpenChange(false);
+  };
+
   const categoryColors: Record<string, string> = {
     auth: 'bg-blue-500/10 text-blue-700 border-blue-200',
     admin: 'bg-purple-500/10 text-purple-700 border-purple-200',
@@ -251,8 +353,9 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-[95vh] flex flex-col p-0">
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-[95vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -275,16 +378,28 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col min-h-0 px-6">
-          <TabsList className="grid w-full grid-cols-2 my-4">
-            <TabsTrigger value="preview" className="flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              Preview
-            </TabsTrigger>
-            <TabsTrigger value="code" className="flex items-center gap-2">
-              <Code className="h-4 w-4" />
-              Editar HTML
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between my-4">
+            <TabsList className="grid grid-cols-2 w-auto">
+              <TabsTrigger value="preview" className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                Preview
+              </TabsTrigger>
+              <TabsTrigger value="code" className="flex items-center gap-2">
+                <Code className="h-4 w-4" />
+                Editar HTML
+              </TabsTrigger>
+            </TabsList>
+            {activeTab === 'code' && (
+              <Button
+                variant={showHistoryPanel ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowHistoryPanel(!showHistoryPanel)}
+              >
+                <History className="h-4 w-4 mr-2" />
+                {showHistoryPanel ? 'Ocultar' : 'Mostrar'} Histórico
+              </Button>
+            )}
+          </div>
 
           <div className="flex-1 min-h-0 overflow-hidden pb-4">
             <TabsContent value="preview" className="h-full m-0">
@@ -304,59 +419,87 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
               )}
             </TabsContent>
 
-            <TabsContent value="code" className="h-full m-0 flex flex-col gap-3">
+            <TabsContent value="code" className="h-full m-0 flex gap-3">
               {loading ? (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex items-center justify-center h-full w-full">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : (
                 <>
-                  {hasChanges && (
-                    <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 bg-amber-500 rounded-full animate-pulse" />
-                        <p className="text-sm font-medium text-amber-900">
-                          Você tem alterações não aplicadas
-                        </p>
+                  <div className={`flex flex-col gap-3 transition-all ${showHistoryPanel ? 'w-2/3' : 'w-full'}`}>
+                    {hasChanges && (
+                      <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 bg-amber-500 rounded-full animate-pulse" />
+                          <p className="text-sm font-medium text-amber-900">
+                            Você tem alterações não aplicadas
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={resetChanges}
+                            className="border-amber-300 hover:bg-amber-100"
+                          >
+                            <RotateCcw className="h-3 w-3 mr-1" />
+                            Descartar
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={applyChanges}
+                            className="bg-amber-600 hover:bg-amber-700"
+                          >
+                            <Save className="h-3 w-3 mr-1" />
+                            Aplicar ao Preview
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={resetChanges}
-                          className="border-amber-300 hover:bg-amber-100"
-                        >
-                          <RotateCcw className="h-3 w-3 mr-1" />
-                          Descartar
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={applyChanges}
-                          className="bg-amber-600 hover:bg-amber-700"
-                        >
-                          <Save className="h-3 w-3 mr-1" />
-                          Aplicar ao Preview
-                        </Button>
-                      </div>
+                    )}
+                    
+                    <div className="flex-1 min-h-0 border-2 rounded-lg overflow-hidden">
+                      <Textarea
+                        value={editedHtml}
+                        onChange={(e) => handleHtmlChange(e.target.value)}
+                        className="h-full font-mono text-xs resize-none border-0 focus-visible:ring-0 p-4"
+                        placeholder="Cole ou edite o HTML do email aqui..."
+                      />
                     </div>
-                  )}
-                  
-                  <div className="flex-1 min-h-0 border-2 rounded-lg overflow-hidden">
-                    <Textarea
-                      value={editedHtml}
-                      onChange={(e) => handleHtmlChange(e.target.value)}
-                      className="h-full font-mono text-xs resize-none border-0 focus-visible:ring-0 p-4"
-                      placeholder="Cole ou edite o HTML do email aqui..."
-                    />
+
+                    {hasChanges && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <Label htmlFor="change-description" className="text-sm font-medium text-blue-900 mb-2 block">
+                          Descrição das alterações (opcional)
+                        </Label>
+                        <Input
+                          id="change-description"
+                          value={changeDescription}
+                          onChange={(e) => setChangeDescription(e.target.value)}
+                          placeholder="Ex: Ajustado layout do header, corrigido cores..."
+                          className="bg-white"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
+                      <div className="flex items-center gap-4">
+                        <span>Linhas: {editedHtml.split('\n').length}</span>
+                        <span>Caracteres: {editedHtml.length.toLocaleString()}</span>
+                      </div>
+                      <span>Edite o código e clique em "Aplicar ao Preview" para ver as mudanças</span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
-                    <div className="flex items-center gap-4">
-                      <span>Linhas: {editedHtml.split('\n').length}</span>
-                      <span>Caracteres: {editedHtml.length.toLocaleString()}</span>
+                  {showHistoryPanel && (
+                    <div className="w-1/3 h-full">
+                      <EmailTemplateHistoryPanel
+                        history={history}
+                        loading={loadingHistory}
+                        onRestore={handleRestoreVersion}
+                        currentVersion={currentVersionNumber}
+                      />
                     </div>
-                    <span>Edite o código e clique em "Aplicar ao Preview" para ver as mudanças</span>
-                  </div>
+                  )}
                 </>
               )}
             </TabsContent>
@@ -397,7 +540,7 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
                 Salvar Customização
               </Button>
             )}
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={handleClose}>
               Fechar
             </Button>
             <Button variant="default" disabled>
@@ -408,6 +551,25 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
         </div>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Alterações não salvas</AlertDialogTitle>
+          <AlertDialogDescription>
+            Você tem alterações que ainda não foram salvas. Se fechar agora, essas alterações serão perdidas.
+            Tem certeza que deseja continuar?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmClose} className="bg-destructive hover:bg-destructive/90">
+            Fechar sem Salvar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 };
 
