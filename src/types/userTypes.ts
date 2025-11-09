@@ -41,6 +41,8 @@ export interface UserPermissions {
   canViewSindicosInteressados: boolean;
   canViewLeadsProdutora: boolean;
   canViewLeadsCampanhas: boolean;
+  canViewLeadsLinkae: boolean; // ✅ NOVA
+  canViewLeadsExa: boolean;    // ✅ NOVA
   
   // Sistema
   canManageUsers: boolean;
@@ -93,6 +95,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewSindicosInteressados: true,
     canViewLeadsProdutora: true,
     canViewLeadsCampanhas: true,
+    canViewLeadsLinkae: true,
+    canViewLeadsExa: true,
     canManageUsers: true,
     canManageCoupons: true,
     canManageHomepageConfig: true,
@@ -116,6 +120,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewSindicosInteressados: true,
     canViewLeadsProdutora: true,
     canViewLeadsCampanhas: true,
+    canViewLeadsLinkae: true,
+    canViewLeadsExa: true,
     canManageUsers: false, // Apenas super_admin pode criar usuários
     canManageCoupons: true,
     canManageHomepageConfig: false, // Reservado para marketing
@@ -139,6 +145,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewSindicosInteressados: true,
     canViewLeadsProdutora: true,
     canViewLeadsCampanhas: true,
+    canViewLeadsLinkae: true,
+    canViewLeadsExa: true,
     canManageUsers: false,
     canManageCoupons: false,
     canManageHomepageConfig: true,
@@ -162,6 +170,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewSindicosInteressados: false,
     canViewLeadsProdutora: false,
     canViewLeadsCampanhas: false,
+    canViewLeadsLinkae: false,
+    canViewLeadsExa: false,
     canManageUsers: false,             // ❌ Não cria usuários
     canManageCoupons: false,           // ❌ Pode VER mas não CRIAR cupons
     canManageHomepageConfig: false,
@@ -185,6 +195,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewSindicosInteressados: false,
     canViewLeadsProdutora: false,
     canViewLeadsCampanhas: false,
+    canViewLeadsLinkae: false,
+    canViewLeadsExa: false,
     canManageUsers: false,
     canManageCoupons: false,
     canManageHomepageConfig: false,
@@ -208,6 +220,8 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewSindicosInteressados: false,
     canViewLeadsProdutora: false,
     canViewLeadsCampanhas: false,
+    canViewLeadsLinkae: false,
+    canViewLeadsExa: false,
     canManageUsers: false,
     canManageCoupons: false,
     canManageHomepageConfig: false,

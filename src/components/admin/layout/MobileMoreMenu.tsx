@@ -10,7 +10,10 @@ import {
   Video,
   Film,
   Images,
-  ScrollText
+  ScrollText,
+  ShoppingBag,
+  Gift,
+  FileBarChart
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
@@ -54,6 +57,30 @@ export const MobileMoreMenu: React.FC<MobileMoreMenuProps> = ({ trigger }) => {
   };
 
   const menuItems = [
+    // Gestão Principal (NOVO - para Admin Financeiro)
+    {
+      section: 'Gestão',
+      items: [
+        {
+          icon: ShoppingBag,
+          label: 'Pedidos',
+          path: buildPath('pedidos'),
+          show: permissions.canViewOrders
+        },
+        {
+          icon: Gift,
+          label: 'Benefício Prestadores',
+          path: buildPath('beneficio-prestadores'),
+          show: permissions.canManageProviderBenefits
+        },
+        {
+          icon: FileBarChart,
+          label: 'Relatórios Financeiros',
+          path: buildPath('relatorios-financeiros'),
+          show: permissions.canViewFinancialReports
+        }
+      ].filter(item => item.show)
+    },
     // Sistema
     {
       section: 'Sistema',
