@@ -116,14 +116,19 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                       onClick={() => {
                         const url = `${window.location.origin}/painel/${building.id}`;
                         navigator.clipboard.writeText(url);
-                        alert('Link do painel copiado!');
+                        import('sonner').then(({ toast }) => {
+                          toast.success('Link copiado!', {
+                            description: `Painel de ${building.nome}`,
+                            duration: 3000,
+                          });
+                        });
                       }}
-                      className="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 rounded border border-slate-200 transition-colors font-medium"
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white rounded-lg shadow-sm hover:shadow-md transition-all font-semibold group"
                     >
-                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      <svg className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                       </svg>
-                      Copiar Link
+                      Copiar Link do Painel
                     </button>
                   </>
                 ) : (

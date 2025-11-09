@@ -155,6 +155,21 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
         >
           📺 Playlist
         </Button>
+        <Button
+          onClick={() => {
+            const url = `${window.location.origin}/painel/${building.id}`;
+            navigator.clipboard.writeText(url);
+            import('sonner').then(({ toast }) => {
+              toast.success('Link copiado!', {
+                description: `Painel de ${building.nome}`,
+                duration: 3000,
+              });
+            });
+          }}
+          className="w-full col-span-2 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white"
+        >
+          🔗 Copiar Link do Painel
+        </Button>
       </div>
     </div>
   );
