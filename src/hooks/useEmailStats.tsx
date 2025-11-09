@@ -20,7 +20,7 @@ export interface TemplateStats {
   failed: number;
 }
 
-export function useEmailStats(days: number = 30) {
+export function useEmailStats(days: number = 30, fetchAll: boolean = false) {
   const [stats, setStats] = useState<EmailStats>({
     total: 0,
     sent: 0,
@@ -36,7 +36,7 @@ export function useEmailStats(days: number = 30) {
 
   useEffect(() => {
     fetchStats();
-  }, [days]);
+  }, [days, fetchAll]);
 
   const fetchStats = async () => {
     try {
@@ -57,15 +57,16 @@ export function useEmailStats(days: number = 30) {
         // Continuar mesmo se falhar a sincronização
       }
 
-      // Calcular data de início
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
+      // Buscar logs dos últimos X dias (agora com dados do Resend) ou todos
+      let query = supabase.from('email_logs').select('*');
+      
+      if (!fetchAll) {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        query = query.gte('sent_at', startDate.toISOString());
+      }
 
-      // Buscar logs dos últimos X dias (agora com dados do Resend)
-      const { data: logs, error } = await supabase
-        .from('email_logs')
-        .select('*')
-        .gte('sent_at', startDate.toISOString()) as any;
+      const { data: logs, error } = await query as any;
 
       if (error) throw error;
 

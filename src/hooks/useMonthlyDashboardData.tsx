@@ -113,6 +113,69 @@ export const useMonthlyDashboardData = () => {
       setLoading(true);
       setError(null);
       
+      // Se for "all", buscar dados de todos os tempos
+      if (monthStr === 'all') {
+        console.log(`🔍 Buscando dados de TODOS OS TEMPOS`);
+        
+        // Buscar histórico completo
+        const { data: historyData, error: historyError } = await supabase
+          .rpc('get_last_12_months_stats');
+        
+        if (historyError) {
+          console.error('❌ Erro ao buscar histórico:', historyError);
+          throw historyError;
+        }
+        
+        const typedHistoryData = convertToMonthlyStatsArray(historyData);
+        
+        // Agregar todos os dados
+        const aggregatedStats: MonthlyDashboardStats = {
+          total_users: typedHistoryData.length > 0 ? Math.max(...typedHistoryData.map(m => m.total_users_accumulated)) : 0,
+          total_users_accumulated: typedHistoryData.length > 0 ? Math.max(...typedHistoryData.map(m => m.total_users_accumulated)) : 0,
+          total_buildings: typedHistoryData.length > 0 ? Math.max(...typedHistoryData.map(m => m.total_buildings_accumulated)) : 0,
+          total_buildings_accumulated: typedHistoryData.length > 0 ? Math.max(...typedHistoryData.map(m => m.total_buildings_accumulated)) : 0,
+          total_orders: typedHistoryData.reduce((sum, m) => sum + m.total_orders, 0),
+          total_panels: typedHistoryData.length > 0 ? Math.max(...typedHistoryData.map(m => m.total_panels_accumulated)) : 0,
+          total_panels_accumulated: typedHistoryData.length > 0 ? Math.max(...typedHistoryData.map(m => m.total_panels_accumulated)) : 0,
+          monthly_revenue: typedHistoryData.reduce((sum, m) => sum + m.monthly_revenue, 0),
+          active_orders: typedHistoryData.length > 0 ? typedHistoryData[typedHistoryData.length - 1].active_orders : 0,
+          pending_orders: typedHistoryData.length > 0 ? typedHistoryData[typedHistoryData.length - 1].pending_orders : 0,
+          online_panels: typedHistoryData.length > 0 ? typedHistoryData[typedHistoryData.length - 1].online_panels : 0,
+          month_year: 'Todos os Tempos'
+        };
+        
+        setStats(aggregatedStats);
+        setComparison(null); // Sem comparação para "todos os tempos"
+        
+        setChartData({
+          revenueData: typedHistoryData.map((month: MonthlyDashboardStats) => ({
+            month: month.month_year,
+            revenue: Number(month.monthly_revenue) || 0
+          })).reverse(),
+          
+          orderStatusData: [
+            { name: 'Ativos', value: aggregatedStats.active_orders, color: '#10b981' },
+            { name: 'Pendentes', value: aggregatedStats.pending_orders, color: '#f97316' },
+            { name: 'Total', value: aggregatedStats.total_orders, color: '#6366f1' }
+          ].filter(item => item.value > 0),
+          
+          userGrowthData: typedHistoryData.map((month: MonthlyDashboardStats) => ({
+            month: month.month_year,
+            users: month.total_users_accumulated || 0
+          })).reverse(),
+          
+          panelStatusData: [
+            { status: 'Online', count: aggregatedStats.online_panels },
+            { status: 'Offline', count: Math.max(0, aggregatedStats.total_panels_accumulated - aggregatedStats.online_panels) }
+          ].filter(item => item.count > 0),
+          
+          last12Months: typedHistoryData
+        });
+        
+        setLoading(false);
+        return;
+      }
+      
       const { year, month } = parseMonthYear(monthStr);
       
       console.log(`🔍 Buscando dados para: ${year}-${month}`);

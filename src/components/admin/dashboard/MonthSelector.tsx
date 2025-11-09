@@ -10,10 +10,18 @@ interface MonthSelectorProps {
 }
 
 const MonthSelector = ({ selectedMonth, onMonthChange, variant = 'default' }: MonthSelectorProps) => {
-  // Gerar os últimos 12 meses
+  // Gerar os últimos 12 meses + opção "Tudo"
   const generateMonthOptions = () => {
     const options = [];
     const now = new Date();
+    
+    // Adicionar opção "Tudo" no início
+    options.push({ 
+      value: 'all', 
+      label: '📊 Tudo (Desde o Início)', 
+      isCurrent: false,
+      isAll: true 
+    });
     
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -29,7 +37,7 @@ const MonthSelector = ({ selectedMonth, onMonthChange, variant = 'default' }: Mo
       const label = `${monthNames[date.getMonth()]} ${year}`;
       const isCurrent = i === 0;
       
-      options.push({ value, label, isCurrent });
+      options.push({ value, label, isCurrent, isAll: false });
     }
     
     return options;
@@ -58,10 +66,10 @@ const MonthSelector = ({ selectedMonth, onMonthChange, variant = 'default' }: Mo
           <ChevronDown className={variant === 'onColor' ? "h-3.5 w-3.5 text-white/80" : "h-4 w-4 text-gray-400"} />
         </SelectTrigger>
         <SelectContent>
-          {monthOptions.map((option) => (
+          {monthOptions.map((option: any) => (
             <SelectItem key={option.value} value={option.value}>
               <div className="flex items-center justify-between w-full">
-                <span>{option.label}</span>
+                <span className={option.isAll ? 'font-semibold' : ''}>{option.label}</span>
                 {option.isCurrent && (
                   <span className="ml-2 px-2 py-1 bg-indexa-purple/10 text-indexa-purple text-xs rounded-full">
                     Atual

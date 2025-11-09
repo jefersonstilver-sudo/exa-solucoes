@@ -20,12 +20,15 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   onCustomStartDateChange,
   onCustomEndDateChange,
 }) => {
-  // Gerar opções de período (últimos 12 meses + opção personalizada)
+  // Gerar opções de período (Tudo + últimos 12 meses + opção personalizada)
   const generatePeriodOptions = () => {
     const options = [];
     const now = new Date();
     
-    // Mês atual
+    // Opção "Tudo" no início
+    options.push({ value: 'all', label: '📊 Tudo (Desde o Início)', isCurrent: false, isAll: true });
+    
+    // Mês atual e anteriores
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const year = date.getFullYear();
@@ -40,11 +43,11 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
       const label = `${monthNames[date.getMonth()]} ${year}`;
       const isCurrent = i === 0;
       
-      options.push({ value, label, isCurrent });
+      options.push({ value, label, isCurrent, isAll: false });
     }
     
     // Opção personalizada
-    options.push({ value: 'custom', label: 'Período Personalizado', isCurrent: false });
+    options.push({ value: 'custom', label: 'Período Personalizado', isCurrent: false, isAll: false });
     
     return options;
   };
@@ -61,10 +64,10 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
             <SelectValue placeholder="Selecionar período" />
           </SelectTrigger>
           <SelectContent>
-            {periodOptions.map((option) => (
+            {periodOptions.map((option: any) => (
               <SelectItem key={option.value} value={option.value}>
                 <div className="flex items-center justify-between w-full">
-                  <span>{option.label}</span>
+                  <span className={option.isAll ? 'font-semibold' : ''}>{option.label}</span>
                   {option.isCurrent && (
                     <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
                       Atual

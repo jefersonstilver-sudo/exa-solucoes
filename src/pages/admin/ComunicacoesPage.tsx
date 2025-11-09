@@ -44,6 +44,7 @@ interface EmailStats {
 const ComunicacoesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [periodFilter, setPeriodFilter] = useState<'7' | '30' | '90' | 'all'>('30');
   const [previewDialog, setPreviewDialog] = useState<{
     open: boolean;
     templateId: string;
@@ -56,8 +57,9 @@ const ComunicacoesPage = () => {
     templateCategory: '',
   });
 
-  // Buscar estatísticas reais
-  const { stats, loading: statsLoading } = useEmailStats(30);
+  // Buscar estatísticas reais com base no filtro de período
+  const days = periodFilter === 'all' ? 365 * 10 : parseInt(periodFilter); // 10 anos para "all"
+  const { stats, loading: statsLoading } = useEmailStats(days, periodFilter === 'all');
 
   // Templates disponíveis
   const templates: EmailTemplate[] = [
@@ -159,11 +161,28 @@ const ComunicacoesPage = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Comunicações</h1>
-        <p className="text-muted-foreground mt-1">
-          Gerenciamento de templates e envio de emails
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Comunicações</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerenciamento de templates e envio de emails
+          </p>
+        </div>
+        
+        {/* Filtro de Período */}
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-muted-foreground" />
+          <select
+            value={periodFilter}
+            onChange={(e) => setPeriodFilter(e.target.value as '7' | '30' | '90' | 'all')}
+            className="border rounded-md px-3 py-2 text-sm bg-background"
+          >
+            <option value="7">📅 Últimos 7 dias</option>
+            <option value="30">📆 Últimos 30 dias</option>
+            <option value="90">📊 Últimos 90 dias</option>
+            <option value="all">📊 Tudo (Desde o Início)</option>
+          </select>
+        </div>
       </div>
 
       {/* Estatísticas */}
@@ -177,7 +196,9 @@ const ComunicacoesPage = () => {
             <div className="text-2xl font-bold">
               {statsLoading ? '...' : stats.total.toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
+            <p className="text-xs text-muted-foreground">
+              {periodFilter === 'all' ? 'Desde o início' : `Últimos ${periodFilter} dias`}
+            </p>
           </CardContent>
         </Card>
 
