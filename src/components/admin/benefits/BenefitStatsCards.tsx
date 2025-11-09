@@ -1,5 +1,5 @@
 import React from 'react';
-import { Gift, Clock, AlertCircle, CheckCircle, DollarSign, TrendingUp, Package } from 'lucide-react';
+import { Gift, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 interface BenefitStats {
@@ -62,33 +62,12 @@ const BenefitStatsCards: React.FC<BenefitStatsCardsProps> = ({ stats, loading })
       bgColor: 'bg-green-50',
       borderColor: 'border-green-200',
     },
-    {
-      title: 'Taxa de Conclusão',
-      value: stats.total_benefits > 0 
-        ? `${Math.round((stats.code_sent_count / stats.total_benefits) * 100)}%`
-        : '0%',
-      subtitle: `${stats.code_sent_count} de ${stats.total_benefits}`,
-      icon: TrendingUp,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200',
-      isPercentage: true,
-    },
-    {
-      title: 'Cancelados',
-      value: stats.cancelled_count,
-      subtitle: stats.cancelled_count > 0 ? `${stats.cancelled_count} cancelamento(s)` : 'Nenhum',
-      icon: Package,
-      color: 'text-gray-600',
-      bgColor: 'bg-gray-50',
-      borderColor: 'border-gray-200',
-    },
   ];
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="p-4 animate-pulse">
             <div className="h-20 bg-gray-200 rounded" />
           </Card>
@@ -98,7 +77,7 @@ const BenefitStatsCards: React.FC<BenefitStatsCardsProps> = ({ stats, loading })
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (
@@ -123,7 +102,7 @@ const BenefitStatsCards: React.FC<BenefitStatsCardsProps> = ({ stats, loading })
                 <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">
                   {card.title}
                 </p>
-                <p className={`text-2xl font-bold text-gray-900 mt-1 ${card.isPercentage ? 'tabular-nums' : ''}`}>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
                   {card.value}
                 </p>
                 <p className="text-xs text-gray-500 mt-1 font-medium">
