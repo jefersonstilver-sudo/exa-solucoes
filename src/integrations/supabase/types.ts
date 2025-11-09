@@ -3340,11 +3340,15 @@ export type Database = {
       get_pedidos_com_status_correto: {
         Args: never
         Returns: {
+          client_cpf: string
           client_email: string
           client_id: string
           client_name: string
+          client_phone: string
           correct_status: string
+          coupon_code: string
           created_at: string
+          cupom_id: string
           data_fim: string
           data_inicio: string
           id: string
