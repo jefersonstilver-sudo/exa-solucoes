@@ -152,6 +152,7 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
       }
 
       setOriginalHtml(editedHtml);
+      setHtml(editedHtml);
       setHasChanges(false);
       setHasCustomization(true);
 
