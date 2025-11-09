@@ -144,12 +144,6 @@ export function ModernAdminSidebar() {
           permission: 'canViewSindicosInteressados'
         },
         {
-          title: 'Leads LINKAÊ',
-          href: buildPath('leads-linkae'),
-          icon: Megaphone,
-          permission: 'canViewLeadsLinkae'
-        },
-        {
           title: 'Leads EXA',
           href: buildPath('leads-exa'),
           icon: Zap,

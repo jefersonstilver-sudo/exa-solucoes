@@ -12,7 +12,6 @@ import HomepageImagesPage from '@/pages/admin/HomepageImagesPage';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
 import VideoManagement from '@/pages/admin/VideoManagement';
 import VideosSitePage from '@/pages/admin/VideosSitePage';
-import LeadsLinkae from '@/pages/admin/LeadsLinkae';
 import LeadsExa from '@/pages/admin/LeadsExa';
 import LogosAdmin from '@/components/admin/LogosAdmin';
 import ProviderBenefits from '@/pages/admin/ProviderBenefits';
@@ -42,7 +41,6 @@ const AdminRoutes = () => {
       
       {/* LEADS & CLIENTES */}
       <Route path="sindicos-interessados" element={<SindicosInteressados />} />
-      <Route path="leads-linkae" element={<LeadsLinkae />} />
       <Route path="leads-exa" element={<LeadsExa />} />
       
       {/* SISTEMA - Filtrado para regular admins */}

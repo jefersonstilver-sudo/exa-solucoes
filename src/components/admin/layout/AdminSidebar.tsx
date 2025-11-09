@@ -127,14 +127,6 @@ const AdminSidebar = () => {
       permission: 'canViewLeadsProdutora'
     },
     {
-      label: 'Leads LINKAÊ',
-      icon: <Megaphone className="h-5 w-5" />,
-      href: buildPath('leads-linkae'),
-      requireSuperAdmin: false,
-      section: 'leads',
-      permission: 'canViewLeadsLinkae'
-    },
-    {
       label: 'Leads EXA',
       icon: <Zap className="h-5 w-5" />,
       href: buildPath('leads-exa'),
