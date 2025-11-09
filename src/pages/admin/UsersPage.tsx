@@ -423,7 +423,7 @@ const UsersPage = () => {
             >
               <Crown className="h-4 w-4 mr-2" />
               Equipe EXA
-              <Badge variant="secondary" className="ml-3 bg-white/20 text-white data-[state=inactive]:bg-gray-200 data-[state=inactive]:text-gray-700 border-0">
+              <Badge variant="secondary" className="ml-3 bg-white/20 text-white data-[state=inactive]:bg-gray-200 data-[state=inactive]:text-gray-900 border-0">
                 {indexaTeam.length}
               </Badge>
             </TabsTrigger>
@@ -433,7 +433,7 @@ const UsersPage = () => {
             >
               <Users className="h-4 w-4 mr-2" />
               Clientes
-              <Badge variant="secondary" className="ml-3 bg-white/20 text-white data-[state=inactive]:bg-gray-200 data-[state=inactive]:text-gray-700 border-0">
+              <Badge variant="secondary" className="ml-3 bg-white/20 text-white data-[state=inactive]:bg-gray-200 data-[state=inactive]:text-gray-900 border-0">
                 {clients.length}
               </Badge>
             </TabsTrigger>
