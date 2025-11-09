@@ -170,11 +170,11 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
               
               <!-- HEADER -->
               <tr>
-                <td style="background: linear-gradient(135deg, #9C1E1E 0%, #DC2626 100%); padding: 40px 20px; text-align: center;">
+                <td style="background: linear-gradient(135deg, #7D1818 0%, #9C1E1E 100%); padding: 40px 20px; text-align: center;">
                   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                     <tr>
                       <td style="text-align: center; padding-bottom: 20px;">
-                        <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" alt="EXA Mídia" width="180" style="display: block; margin: 0 auto; max-width: 180px; height: auto;" />
+                        <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Exa%20sozinha.png" alt="EXA Mídia" width="180" style="display: block; margin: 0 auto; max-width: 180px; height: auto;" />
                       </td>
                     </tr>
                     <tr>
@@ -223,7 +223,7 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
                         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); border-left: 5px solid #9C1E1E; border-radius: 8px; overflow: hidden;">
                           <tr>
                             <td style="padding: 25px 20px;">
-                              <p style="margin: 0 0 15px 0; padding: 0; color: #9C1E1E; font-size: 18px; font-weight: 700;">
+                              <p style="margin: 0 0 15px 0; padding: 0; color: #7D1818; font-size: 18px; font-weight: 700;">
                                 🔐 Suas Credenciais de Acesso
                               </p>
                               
@@ -283,7 +283,7 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
                       <td style="text-align: center; padding-bottom: 30px;">
                         <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
                           <tr>
-                            <td style="background: linear-gradient(135deg, #9C1E1E 0%, #7D1818 100%); border-radius: 8px; box-shadow: 0 4px 15px rgba(156, 30, 30, 0.3);">
+                            <td style="background: linear-gradient(135deg, #7D1818 0%, #9C1E1E 100%); border-radius: 8px; box-shadow: 0 4px 15px rgba(125, 24, 24, 0.4);">
                               <a href="${data.loginUrl}" style="display: inline-block; padding: 16px 40px; text-decoration: none; color: #ffffff; font-weight: 600; font-size: 16px;">
                                 🚀 Fazer Login Agora
                               </a>
@@ -308,7 +308,7 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
                         </p>
                         ${roleInfo.responsibilities.map(resp => `
                           <p style="margin: 0; padding: 10px 0; border-bottom: 1px solid #e5e7eb; font-size: 14px; color: #4b5563;">
-                            <span style="color: #9C1E1E; font-weight: bold; margin-right: 8px;">•</span>
+                            <span style="color: #7D1818; font-weight: bold; margin-right: 8px;">•</span>
                             ${resp}
                           </p>
                         `).join('')}
@@ -325,12 +325,12 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
                           <tr>
                             <td style="padding: 20px;">
                               ${roleInfo.firstSteps.map((step, index) => `
-                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: #ffffff; border-left: 3px solid #9C1E1E; border-radius: 6px; margin-bottom: ${index < roleInfo.firstSteps.length - 1 ? '8px' : '0'};">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: #ffffff; border-left: 3px solid #7D1818; border-radius: 6px; margin-bottom: ${index < roleInfo.firstSteps.length - 1 ? '8px' : '0'};">
                                   <tr>
                                     <td style="padding: 12px;">
                                       <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                                         <tr>
-                                          <td style="width: 24px; height: 24px; background: #9C1E1E; color: #ffffff; border-radius: 50%; text-align: center; vertical-align: middle; font-size: 12px; font-weight: 600;">
+                                          <td style="width: 24px; height: 24px; background: #7D1818; color: #ffffff; border-radius: 50%; text-align: center; vertical-align: middle; font-size: 12px; font-weight: 600;">
                                             ${index + 1}
                                           </td>
                                           <td style="padding-left: 10px; font-size: 14px; color: #374151;">
@@ -360,7 +360,7 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
                               <td style="padding: 15px 20px;">
                                 <a href="${data.loginUrl.replace('/login', link.url)}" style="text-decoration: none; color: #374151; font-weight: 500; font-size: 14px; display: block;">
                                   ${link.label}
-                                  <span style="float: right; color: #9C1E1E; font-weight: bold;">→</span>
+                                  <span style="float: right; color: #7D1818; font-weight: bold;">→</span>
                                 </a>
                               </td>
                             </tr>
@@ -433,7 +433,7 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
                         </p>
                         <p style="margin: 0; padding: 0; font-size: 15px; color: #374151;">
                           Atenciosamente,<br>
-                          <strong style="color: #9C1E1E;">Equipe EXA Mídia</strong>
+                          <strong style="color: #7D1818;">Equipe EXA Mídia</strong>
                         </p>
                       </td>
                     </tr>
@@ -451,7 +451,7 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
                   <p style="margin: 8px 0 0 0; padding: 0; color: #6b7280; font-size: 13px;">
                     Em caso de dúvidas, entre em contato com o suporte técnico.
                   </p>
-                  <p style="margin: 15px 0 0 0; padding: 0; color: #9C1E1E; font-size: 13px; font-weight: 700;">
+                  <p style="margin: 15px 0 0 0; padding: 0; color: #7D1818; font-size: 13px; font-weight: 700;">
                     © ${currentYear} EXA Mídia. Todos os direitos reservados.
                   </p>
                 </td>
