@@ -54,15 +54,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    const now = Date.now();
+    const nowTimestamp = Date.now();
     
     // ⚡ OTIMIZAÇÃO 5: Retornar cache se ainda válido
-    if (lastCheck && (now - lastCheck.timestamp) < CACHE_TTL) {
+    if (lastCheck && (nowTimestamp - lastCheck.timestamp) < CACHE_TTL) {
       log.info('[SCHEDULER] Using cached data (cache hit)');
       return new Response(JSON.stringify({
         ...lastCheck.result,
         cached: true,
-        cache_age_ms: now - lastCheck.timestamp
+        cache_age_ms: nowTimestamp - lastCheck.timestamp
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
