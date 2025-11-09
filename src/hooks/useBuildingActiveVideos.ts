@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface ScheduleRule {
+  days_of_week: number[];
+  start_time: string;
+  end_time: string;
+  is_active: boolean;
+  is_all_day?: boolean;
+}
+
 export interface BuildingActiveVideo {
   video_id: string;
   video_name: string;
@@ -13,6 +21,8 @@ export interface BuildingActiveVideo {
   is_scheduled: boolean;
   priority_type: 'scheduled' | 'base';
   slot_position: number;
+  schedule_rules?: ScheduleRule[];
+  is_currently_active?: boolean;
 }
 
 export interface UseBuildingActiveVideosResult {
@@ -113,7 +123,62 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         pedidoVideosData.data?.map(pv => [`${pv.pedido_id}_${pv.video_id}`, pv]) || []
       );
 
-      // 6. Montar resultado final
+      // 6. Buscar schedule rules para vídeos agendados
+      const scheduledVideoIds = currentVideosData
+        .filter(v => v.is_scheduled)
+        .map(v => v.video_id);
+      
+      let scheduleRulesMap = new Map<string, ScheduleRule[]>();
+      
+      if (scheduledVideoIds.length > 0) {
+        const { data: scheduleRulesData } = await supabase
+          .from('campaign_schedule_rules')
+          .select(`
+            days_of_week,
+            start_time,
+            end_time,
+            is_active,
+            is_all_day,
+            campaign_video_schedules!inner (
+              video_id
+            )
+          `)
+          .in('campaign_video_schedules.video_id', scheduledVideoIds)
+          .eq('is_active', true);
+        
+        // Agrupar rules por video_id
+        scheduleRulesData?.forEach((rule: any) => {
+          const videoId = rule.campaign_video_schedules?.video_id;
+          if (!videoId) return;
+          
+          const existing = scheduleRulesMap.get(videoId) || [];
+          existing.push({
+            days_of_week: rule.days_of_week,
+            start_time: rule.start_time,
+            end_time: rule.end_time,
+            is_active: rule.is_active,
+            is_all_day: rule.is_all_day
+          });
+          scheduleRulesMap.set(videoId, existing);
+        });
+      }
+
+      // 7. Verificar status atual baseado em horário
+      const now = new Date();
+      const currentDay = now.getDay();
+      const currentTime = now.toTimeString().slice(0, 5);
+      
+      const isVideoActiveNow = (videoId: string, scheduleRules?: ScheduleRule[]) => {
+        if (!scheduleRules || scheduleRules.length === 0) return true;
+        
+        return scheduleRules.some(rule => {
+          if (!rule.days_of_week.includes(currentDay)) return false;
+          if (rule.is_all_day) return true;
+          return currentTime >= rule.start_time && currentTime <= rule.end_time;
+        });
+      };
+
+      // 8. Montar resultado final
       const activeVideos: BuildingActiveVideo[] = [];
 
       for (const videoInfo of currentVideosData) {
@@ -128,6 +193,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         const clientName = clientEmail.split('@')[0] || 'Cliente';
 
         const pedidoVideo = pedidoVideosMap.get(`${pedido.id}_${videoInfo.video_id}`);
+        const scheduleRules = scheduleRulesMap.get(videoInfo.video_id);
 
         activeVideos.push({
           video_id: videoInfo.video_id,
@@ -140,7 +206,9 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           valor_total: pedido.valor_total || 0,
           is_scheduled: videoInfo.is_scheduled || false,
           priority_type: (videoInfo.priority_type === 'scheduled' ? 'scheduled' : 'base') as 'scheduled' | 'base',
-          slot_position: pedidoVideo?.slot_position || 1
+          slot_position: pedidoVideo?.slot_position || 1,
+          schedule_rules: scheduleRules,
+          is_currently_active: isVideoActiveNow(videoInfo.video_id, scheduleRules)
         });
       }
 

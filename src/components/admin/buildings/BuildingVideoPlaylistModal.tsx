@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Play, Pause, SkipForward, SkipBack, Clock, User, DollarSign, RefreshCw } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Clock, User, DollarSign, RefreshCw, Users } from 'lucide-react';
 import { useBuildingActiveVideos, BuildingActiveVideo } from '@/hooks/useBuildingActiveVideos';
 import { VideoPlayerCore } from '@/components/video-management/VideoPlayerCore';
+import { VideoScheduleTooltip } from './VideoScheduleTooltip';
 import { useRef, useEffect } from 'react';
 
 interface BuildingVideoPlaylistModalProps {
@@ -27,6 +28,24 @@ export const BuildingVideoPlaylistModal: React.FC<BuildingVideoPlaylistModalProp
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const currentVideo = videos[currentVideoIndex];
+
+  // Calcular estatísticas dos vídeos
+  const stats = useMemo(() => {
+    const uniquePedidos = new Set(videos.map(v => v.pedido_id));
+    const uniqueClients = new Set(videos.map(v => v.client_email));
+    const totalValue = videos.reduce((sum, v) => sum + v.valor_total, 0);
+    const scheduledCount = videos.filter(v => v.is_scheduled).length;
+    const activeNow = videos.filter(v => v.is_currently_active).length;
+    
+    return {
+      totalCampaigns: uniquePedidos.size,
+      totalClients: uniqueClients.size,
+      totalValue,
+      scheduledCount,
+      baseCount: videos.length - scheduledCount,
+      activeNow
+    };
+  }, [videos]);
 
   useEffect(() => {
     if (videos.length > 0 && currentVideoIndex >= videos.length) {
@@ -89,16 +108,9 @@ export const BuildingVideoPlaylistModal: React.FC<BuildingVideoPlaylistModalProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>Playlist - {buildingName}</span>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">
-                {videos.length} vídeos
-              </Badge>
-              <Badge variant="outline">
-                <Clock className="w-3 h-3 mr-1" />
-                {formatDuration(getTotalDuration())}
-              </Badge>
+          <DialogTitle className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span>Playlist - {buildingName}</span>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -107,6 +119,53 @@ export const BuildingVideoPlaylistModal: React.FC<BuildingVideoPlaylistModalProp
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
+            </div>
+            
+            {/* Stats badges */}
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <Badge variant="outline" className="font-normal">
+                {videos.length} vídeos
+              </Badge>
+              <Badge variant="outline" className="font-normal">
+                <Clock className="w-3 h-3 mr-1" />
+                {formatDuration(getTotalDuration())}
+              </Badge>
+              <Badge variant="outline" className="font-normal bg-blue-50">
+                <Users className="w-3 h-3 mr-1" />
+                {stats.totalCampaigns} {stats.totalCampaigns === 1 ? 'campanha' : 'campanhas'}
+              </Badge>
+              <Badge variant="outline" className="font-normal bg-purple-50">
+                {stats.totalClients} {stats.totalClients === 1 ? 'cliente' : 'clientes'}
+              </Badge>
+              <Badge variant="outline" className="font-normal bg-green-50">
+                <DollarSign className="w-3 h-3 mr-1" />
+                {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0
+                }).format(stats.totalValue)}
+              </Badge>
+            </div>
+
+            {/* Video type breakdown */}
+            <div className="flex gap-2 text-xs">
+              {stats.scheduledCount > 0 && (
+                <Badge variant="secondary" className="font-normal">
+                  {stats.scheduledCount} agendado{stats.scheduledCount > 1 ? 's' : ''}
+                </Badge>
+              )}
+              {stats.baseCount > 0 && (
+                <Badge variant="secondary" className="font-normal">
+                  {stats.baseCount} base
+                </Badge>
+              )}
+              <Badge 
+                variant="default" 
+                className="font-normal bg-green-500"
+              >
+                {stats.activeNow} no ar agora
+              </Badge>
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -211,10 +270,24 @@ export const BuildingVideoPlaylistModal: React.FC<BuildingVideoPlaylistModalProp
                       </span>
                     </div>
                   </div>
-                  <div className="mt-2 flex gap-2">
-                    <Badge variant={currentVideo.priority_type === 'scheduled' ? 'default' : 'secondary'}>
-                      {currentVideo.priority_type === 'scheduled' ? '⏰ Agendado' : '🎯 Base'}
-                    </Badge>
+                  <div className="mt-2 flex gap-2 flex-wrap">
+                    {currentVideo.priority_type === 'scheduled' ? (
+                      <VideoScheduleTooltip
+                        scheduleRules={currentVideo.schedule_rules}
+                        isCurrentlyActive={currentVideo.is_currently_active || false}
+                      >
+                        <Badge 
+                          variant="default" 
+                          className={`cursor-help ${currentVideo.is_currently_active ? 'bg-green-500' : 'bg-orange-500'}`}
+                        >
+                          {currentVideo.is_currently_active ? '🟢 No AR' : '⏸️ Agendado'}
+                        </Badge>
+                      </VideoScheduleTooltip>
+                    ) : (
+                      <Badge variant="secondary">
+                        🎯 Base
+                      </Badge>
+                    )}
                     <Badge variant="outline">
                       Slot {currentVideo.slot_position}
                     </Badge>
@@ -261,12 +334,23 @@ export const BuildingVideoPlaylistModal: React.FC<BuildingVideoPlaylistModalProp
                           {index === currentVideoIndex && (
                             <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                           )}
-                          <Badge 
-                            variant={video.priority_type === 'scheduled' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {video.priority_type === 'scheduled' ? '⏰' : '🎯'}
-                          </Badge>
+                          {video.priority_type === 'scheduled' ? (
+                            <VideoScheduleTooltip
+                              scheduleRules={video.schedule_rules}
+                              isCurrentlyActive={video.is_currently_active || false}
+                            >
+                              <Badge 
+                                variant="default"
+                                className={`text-xs cursor-help ${video.is_currently_active ? 'bg-green-500' : 'bg-orange-500'}`}
+                              >
+                                {video.is_currently_active ? '🟢' : '⏸️'}
+                              </Badge>
+                            </VideoScheduleTooltip>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              🎯
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
