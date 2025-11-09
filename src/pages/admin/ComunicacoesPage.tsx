@@ -294,11 +294,11 @@ const ComunicacoesPage = () => {
                   <Card key={template.id} className="hover:shadow-md transition-shadow">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-1">
                           <div className={`p-2 rounded-lg ${categoryColors[template.category]}`}>
                             {template.icon}
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <CardTitle className="text-base">{template.name}</CardTitle>
                           </div>
                         </div>
@@ -391,6 +391,19 @@ const ComunicacoesPage = () => {
                   <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-200">
                     Verificado
                   </Badge>
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-4 space-y-2">
+                <div>
+                  <h4 className="font-medium mb-2">Sistema de Customização</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Você pode personalizar o HTML de qualquer template clicando em "Visualizar" e depois em "Editar HTML". 
+                    As customizações salvas serão aplicadas automaticamente em todos os envios futuros.
+                  </p>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900">
+                    <strong>💡 Dica:</strong> Templates customizados aparecem com badge "✓ Customizado" e podem ser restaurados ao original a qualquer momento.
+                  </div>
                 </div>
               </div>
 

@@ -1242,6 +1242,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_template_customizations: {
+        Row: {
+          created_at: string | null
+          custom_colors: Json | null
+          custom_html: string | null
+          custom_subject: string | null
+          id: string
+          is_active: boolean | null
+          template_id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_colors?: Json | null
+          custom_html?: string | null
+          custom_subject?: string | null
+          id?: string
+          is_active?: boolean | null
+          template_id: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_colors?: Json | null
+          custom_html?: string | null
+          custom_subject?: string | null
+          id?: string
+          is_active?: boolean | null
+          template_id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       financial_audit_logs: {
         Row: {
           access_timestamp: string | null

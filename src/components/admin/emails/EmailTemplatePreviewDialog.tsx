@@ -31,11 +31,14 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
   templateCategory,
 }) => {
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [html, setHtml] = useState<string>('');
   const [originalHtml, setOriginalHtml] = useState<string>('');
   const [editedHtml, setEditedHtml] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [hasChanges, setHasChanges] = useState(false);
+  const [hasCustomization, setHasCustomization] = useState(false);
+  const [customizationId, setCustomizationId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -47,36 +50,57 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
   const loadTemplate = async () => {
     setLoading(true);
     try {
-      // Buscar dados de exemplo para o template
-      const sampleData = getTemplateSample(templateId as any);
-      
-      if (!sampleData) {
-        toast({
-          title: 'Erro',
-          description: 'Dados de exemplo não encontrados para este template',
-          variant: 'destructive',
-        });
-        return;
-      }
+      // Primeiro, verificar se há customização salva
+      const { data: customization, error: customError } = await supabase
+        .from('email_template_customizations')
+        .select('*')
+        .eq('template_id', templateId)
+        .eq('is_active', true)
+        .single();
 
-      // Renderizar template via edge function
-      const { data, error } = await supabase.functions.invoke('render-email-template', {
-        body: {
-          templateId,
-          data: sampleData,
-        },
-      });
+      let htmlToUse = '';
 
-      if (error) throw error;
-
-      if (data?.html) {
-        setHtml(data.html);
-        setOriginalHtml(data.html);
-        setEditedHtml(data.html);
-        setHasChanges(false);
+      if (customization && customization.custom_html) {
+        // Usar customização salva
+        htmlToUse = customization.custom_html;
+        setHasCustomization(true);
+        setCustomizationId(customization.id);
       } else {
-        throw new Error('HTML não retornado pela função');
+        // Buscar template padrão
+        const sampleData = getTemplateSample(templateId as any);
+        
+        if (!sampleData) {
+          toast({
+            title: 'Erro',
+            description: 'Dados de exemplo não encontrados para este template',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Renderizar template via edge function
+        const { data, error } = await supabase.functions.invoke('render-email-template', {
+          body: {
+            templateId,
+            data: sampleData,
+          },
+        });
+
+        if (error) throw error;
+
+        if (data?.html) {
+          htmlToUse = data.html;
+          setHasCustomization(false);
+          setCustomizationId(null);
+        } else {
+          throw new Error('HTML não retornado pela função');
+        }
       }
+
+      setHtml(htmlToUse);
+      setOriginalHtml(htmlToUse);
+      setEditedHtml(htmlToUse);
+      setHasChanges(false);
     } catch (error: any) {
       console.error('Error loading template:', error);
       toast({
@@ -86,6 +110,103 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveCustomization = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const customizationData = {
+        template_id: templateId,
+        custom_html: editedHtml,
+        is_active: true,
+        updated_by: user.id,
+      };
+
+      if (customizationId) {
+        // Atualizar customização existente
+        const { error } = await supabase
+          .from('email_template_customizations')
+          .update(customizationData)
+          .eq('id', customizationId);
+
+        if (error) throw error;
+      } else {
+        // Criar nova customização
+        const { data, error } = await supabase
+          .from('email_template_customizations')
+          .upsert(customizationData, {
+            onConflict: 'template_id',
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        if (data) setCustomizationId(data.id);
+      }
+
+      setOriginalHtml(editedHtml);
+      setHasChanges(false);
+      setHasCustomization(true);
+
+      toast({
+        title: '✅ Customização salva!',
+        description: 'Todos os próximos emails deste tipo usarão esta versão customizada',
+      });
+    } catch (error: any) {
+      console.error('Error saving customization:', error);
+      toast({
+        title: 'Erro ao salvar',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const restoreDefault = async () => {
+    if (!hasCustomization) return;
+
+    const confirmed = window.confirm(
+      'Tem certeza que deseja restaurar o template original? A customização será desativada.'
+    );
+
+    if (!confirmed) return;
+
+    setSaving(true);
+    try {
+      if (customizationId) {
+        const { error } = await supabase
+          .from('email_template_customizations')
+          .update({ is_active: false })
+          .eq('id', customizationId);
+
+        if (error) throw error;
+      }
+
+      // Recarregar template padrão
+      await loadTemplate();
+
+      toast({
+        title: 'Template restaurado',
+        description: 'O template voltou para a versão original',
+      });
+    } catch (error: any) {
+      console.error('Error restoring default:', error);
+      toast({
+        title: 'Erro ao restaurar',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -133,8 +254,15 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
       <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-[95vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-2xl">{templateName}</DialogTitle>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <DialogTitle className="text-2xl">{templateName}</DialogTitle>
+                {hasCustomization && (
+                  <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-200">
+                    ✓ Customizado
+                  </Badge>
+                )}
+              </div>
               <DialogDescription className="mt-2">
                 Preview e edição do template de email com dados de exemplo
               </DialogDescription>
@@ -235,10 +363,39 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
         </Tabs>
 
         <div className="flex justify-between items-center px-6 py-4 border-t bg-muted/30">
-          <p className="text-sm text-muted-foreground">
-            💡 Este preview usa dados de exemplo para demonstração
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-muted-foreground">
+              💡 {hasCustomization 
+                ? 'Template customizado - será usado nos envios reais' 
+                : 'Este preview usa dados de exemplo'}
+            </p>
+            {hasCustomization && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={restoreDefault}
+                disabled={saving}
+              >
+                <RotateCcw className="h-3 w-3 mr-1" />
+                Restaurar Original
+              </Button>
+            )}
+          </div>
           <div className="flex gap-2">
+            {hasChanges && (
+              <Button 
+                onClick={saveCustomization}
+                disabled={saving}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Salvar Customização
+              </Button>
+            )}
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Fechar
             </Button>
