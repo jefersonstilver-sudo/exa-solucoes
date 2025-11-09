@@ -526,20 +526,18 @@ const EmailTemplatePreviewDialog: React.FC<EmailTemplatePreviewDialogProps> = ({
             )}
           </div>
           <div className="flex gap-2">
-            {hasChanges && (
-              <Button 
-                onClick={saveCustomization}
-                disabled={saving}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {saving ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                Salvar Customização
-              </Button>
-            )}
+            <Button 
+              onClick={saveCustomization}
+              disabled={saving || !editedHtml}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Salvar Customização
+            </Button>
             <Button variant="outline" onClick={handleClose}>
               Fechar
             </Button>
