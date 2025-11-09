@@ -534,13 +534,6 @@ export type Database = {
             foreignKeyName: "campanhas_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "users_with_last_access"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campanhas_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
@@ -624,13 +617,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_activity_events_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users_with_last_access"
             referencedColumns: ["id"]
           },
           {
@@ -891,13 +877,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_platform_activity_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users_with_last_access"
             referencedColumns: ["id"]
           },
           {
@@ -2014,13 +1993,6 @@ export type Database = {
             foreignKeyName: "pedidos_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "users_with_last_access"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pedidos_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
@@ -2456,13 +2428,6 @@ export type Database = {
             foreignKeyName: "user_activity_logs_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users_with_last_access"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_activity_logs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
@@ -2775,13 +2740,6 @@ export type Database = {
             foreignKeyName: "videos_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "users_with_last_access"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "videos_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "users_with_role"
             referencedColumns: ["id"]
           },
@@ -2816,30 +2774,6 @@ export type Database = {
       }
     }
     Views: {
-      users_with_last_access: {
-        Row: {
-          avatar_url: string | null
-          cpf: string | null
-          data_criacao: string | null
-          documento_estrangeiro: string | null
-          documento_frente_url: string | null
-          documento_verso_url: string | null
-          email: string | null
-          email_confirmed_at: string | null
-          email_verified_at: string | null
-          id: string | null
-          last_access_at: string | null
-          last_sign_in_at: string | null
-          nome: string | null
-          privacy_accepted_at: string | null
-          raw_user_meta_data: Json | null
-          role: string | null
-          telefone: string | null
-          terms_accepted_at: string | null
-          tipo_documento: string | null
-        }
-        Relationships: []
-      }
       users_with_role: {
         Row: {
           avatar_url: string | null
@@ -3473,6 +3407,30 @@ export type Database = {
       get_user_stats: { Args: never; Returns: Json }
       get_user_with_last_access: {
         Args: { target_user_id?: string }
+        Returns: {
+          avatar_url: string
+          cpf: string
+          data_criacao: string
+          documento_estrangeiro: string
+          documento_frente_url: string
+          documento_verso_url: string
+          email: string
+          email_confirmed_at: string
+          email_verified_at: string
+          id: string
+          last_access_at: string
+          last_sign_in_at: string
+          nome: string
+          privacy_accepted_at: string
+          raw_user_meta_data: Json
+          role: string
+          telefone: string
+          terms_accepted_at: string
+          tipo_documento: string
+        }[]
+      }
+      get_users_with_last_access: {
+        Args: never
         Returns: {
           avatar_url: string
           cpf: string

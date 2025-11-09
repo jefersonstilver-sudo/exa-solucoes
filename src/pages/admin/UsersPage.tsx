@@ -49,13 +49,11 @@ const UsersPage = () => {
     try {
       setLoading(true);
       
-      console.log('📊 [USERS_PAGE] Buscando usuários da view otimizada...');
+      console.log('📊 [USERS_PAGE] Buscando usuários da função otimizada...');
       
-      // FASE 2: Usar view users_with_last_access que já traz último acesso
+      // Usar função get_users_with_last_access que usa SECURITY DEFINER
       const { data, error, status } = await supabase
-        .from('users_with_last_access')
-        .select('*')
-        .order('data_criacao', { ascending: false});
+        .rpc('get_users_with_last_access');
 
       console.log('📊 [USERS_PAGE] Resposta da query:', {
         status,
