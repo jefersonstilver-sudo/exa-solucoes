@@ -60,5 +60,6 @@ export const useUserPermissions = () => {
     canManageSystemSettings: permissions.canManageSystemSettings,
     canManageHomepageConfig: permissions.canManageHomepageConfig,
     canManageProviderBenefits: permissions.canManageProviderBenefits,
+    canManageEmails: permissions.canManageEmails,
   };
 };
