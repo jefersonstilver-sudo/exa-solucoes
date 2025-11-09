@@ -154,6 +154,9 @@ const getRoleInfo = (role: string): RoleInfo => {
 export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
   const roleInfo = getRoleInfo(data.role);
   const currentYear = new Date().getFullYear();
+  
+  // Logo da EXA - usando a mesma URL do site
+  const EXA_LOGO = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png';
 
   return `
     <!DOCTYPE html>
@@ -174,7 +177,7 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
                   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                     <tr>
                       <td style="text-align: center; padding-bottom: 20px;">
-                        <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Exa%20sozinha.png" alt="EXA Mídia" width="180" style="display: block; margin: 0 auto; max-width: 180px; height: auto;" />
+                        <img src="${EXA_LOGO}" alt="EXA Mídia" width="200" style="display: block; margin: 0 auto; max-width: 200px; height: auto;" />
                       </td>
                     </tr>
                     <tr>
@@ -220,7 +223,7 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
                     <!-- CREDENCIAIS -->
                     <tr>
                       <td style="padding-bottom: 30px;">
-                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); border-left: 5px solid #9C1E1E; border-radius: 8px; overflow: hidden;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); border-left: 5px solid #7D1818; border-radius: 8px; overflow: hidden;">
                           <tr>
                             <td style="padding: 25px 20px;">
                               <p style="margin: 0 0 15px 0; padding: 0; color: #7D1818; font-size: 18px; font-weight: 700;">
