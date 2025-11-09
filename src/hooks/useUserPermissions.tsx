@@ -8,7 +8,7 @@ import type { UserRole } from '@/types/userTypes';
  * Baseado apenas no role do usuário (sem custom permissions)
  */
 export const useUserPermissions = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, isLoading } = useAuth();
 
   // Obter permissões padrão baseadas no role
   const permissions: UserPermissions = useMemo(() => {
@@ -49,7 +49,7 @@ export const useUserPermissions = () => {
     hasAnyPermission,
     hasAllPermissions,
     userInfo,
-    isLoadingCustom: false, // Não carrega mais custom permissions
+    isLoadingCustom: isLoading, // ✅ CORREÇÃO: Usar isLoading do useAuth
     
     // Atalhos para permissões comuns
     canViewDashboard: permissions.canViewDashboard,

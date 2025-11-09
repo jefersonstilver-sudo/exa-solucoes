@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { RefreshCw, Gift, Download, Search, Filter } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { RefreshCw, Gift, Download, Search, Filter, Loader2 } from 'lucide-react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 import OrdersStatsCards from '@/components/admin/orders/OrdersStatsCards';
 import OrdersTabs from '@/components/admin/orders/OrdersTabs';
 import OrdersPageHeader from '@/components/admin/orders/OrdersPageHeader';
@@ -18,13 +19,28 @@ import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
 const OrdersPage = () => {
   const navigate = useNavigate();
   const { isMobile } = useAdvancedResponsive();
+  const { canViewOrders, isLoadingCustom } = useUserPermissions();
   const { ordersAndAttempts, stats, loading, refetch } = useOrdersWithAttemptsRefactored();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [couponFilter, setCouponFilter] = useState('all');
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('current_month');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  
+  // 🔒 CRITICAL: Wait for permissions to load before checking
+  if (isLoadingCustom) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+  
+  if (!canViewOrders) {
+    return <Navigate to="/admin" replace />;
+  }
 
   // Aplicar filtro de período primeiro
   const periodFilteredItems = useMemo(() => {
