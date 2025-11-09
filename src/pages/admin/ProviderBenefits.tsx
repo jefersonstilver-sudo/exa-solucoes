@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Gift, Mail, Copy, Loader2, Plus, Trash2, Eye, Zap } from 'lucide-react';
+import { Gift, Mail, Copy, Loader2, Plus, Trash2, Eye, Zap, RefreshCw } from 'lucide-react';
 import { useBenefitManagement } from '@/hooks/useBenefitManagement';
 import BenefitStatusBadge from '@/components/benefits/BenefitStatusBadge';
 import InsertCodeModal from '@/components/benefits/InsertCodeModal';
@@ -192,6 +192,16 @@ const ProviderBenefits = () => {
 
             {/* Botões de ação */}
             <div className="mt-3 flex gap-2">
+              <Button 
+                onClick={() => listBenefits()}
+                size="sm"
+                variant="ghost"
+                disabled={isLoading}
+                className="h-9 w-9 p-0 text-white hover:bg-white/10"
+                title="Atualizar"
+              >
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
               <Button 
                 onClick={() => setShowForm(!showForm)} 
                 size="sm"
@@ -392,6 +402,18 @@ const ProviderBenefits = () => {
         </div>
         <div className="flex gap-2">
           <Button
+            onClick={() => {
+              listBenefits();
+            }}
+            size="lg"
+            variant="outline"
+            disabled={isLoading}
+            title="Atualizar lista"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          <Button
             onClick={() => navigate(buildPath('gerenciar-beneficios'))}
             size="lg"
             variant="outline"
@@ -413,6 +435,28 @@ const ProviderBenefits = () => {
           </Button>
         </div>
       </div>
+
+      {/* Dashboard de Controle Financeiro */}
+      <Card className="border-2 border-primary/20">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-bold">Dashboard de Controle</CardTitle>
+              <CardDescription>
+                Métricas e estatísticas do período selecionado
+              </CardDescription>
+            </div>
+            <MonthSelector
+              selectedMonth={selectedMonth}
+              onMonthChange={handleMonthChange}
+              variant="default"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <BenefitStatsCards stats={stats} loading={loadingStats} />
+        </CardContent>
+      </Card>
 
       {/* Form */}
       {showForm && (
@@ -505,8 +549,15 @@ const ProviderBenefits = () => {
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Benefícios Criados</CardTitle>
-          <CardDescription>Gerencie os benefícios enviados aos prestadores</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Benefícios Criados</CardTitle>
+              <CardDescription>Gerencie os benefícios enviados aos prestadores</CardDescription>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Total: <span className="font-semibold text-foreground">{benefits.length}</span> benefícios
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading && benefits.length === 0 ? (

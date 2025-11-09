@@ -1,5 +1,5 @@
 import React from 'react';
-import { Gift, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { Gift, Clock, AlertCircle, CheckCircle, DollarSign, TrendingUp, Package } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 interface BenefitStats {
@@ -18,44 +18,79 @@ interface BenefitStatsCardsProps {
 }
 
 const BenefitStatsCards: React.FC<BenefitStatsCardsProps> = ({ stats, loading }) => {
+  // Valor fixo por benefício: R$ 50,00
+  const valuePerBenefit = 50;
+  const totalInvested = stats.total_benefits * valuePerBenefit;
+  const pendingValue = stats.pending_count * valuePerBenefit;
+  const completedValue = stats.code_sent_count * valuePerBenefit;
+
   const cards = [
     {
-      title: 'Total',
+      title: 'Total Criados',
       value: stats.total_benefits,
+      subtitle: `R$ ${totalInvested.toFixed(2)}`,
       icon: Gift,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
     },
     {
-      title: 'Aguardando',
+      title: 'Aguardando Escolha',
       value: stats.pending_count,
+      subtitle: `R$ ${pendingValue.toFixed(2)} pendente`,
       icon: Clock,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50',
+      borderColor: 'border-amber-200',
     },
     {
       title: 'Requer Código',
       value: stats.choice_made_count,
+      subtitle: stats.choice_made_count > 0 ? 'Ação Necessária!' : 'Tudo OK',
       icon: AlertCircle,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
-      badge: stats.choice_made_count > 0 ? 'AÇÃO' : null,
+      borderColor: 'border-orange-200',
+      badge: stats.choice_made_count > 0 ? 'URGENTE' : null,
     },
     {
       title: 'Finalizados',
       value: stats.code_sent_count,
+      subtitle: `R$ ${completedValue.toFixed(2)} processado`,
       icon: CheckCircle,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
+    },
+    {
+      title: 'Taxa de Conclusão',
+      value: stats.total_benefits > 0 
+        ? `${Math.round((stats.code_sent_count / stats.total_benefits) * 100)}%`
+        : '0%',
+      subtitle: `${stats.code_sent_count} de ${stats.total_benefits}`,
+      icon: TrendingUp,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200',
+      isPercentage: true,
+    },
+    {
+      title: 'Cancelados',
+      value: stats.cancelled_count,
+      subtitle: stats.cancelled_count > 0 ? `${stats.cancelled_count} cancelamento(s)` : 'Nenhum',
+      icon: Package,
+      color: 'text-gray-600',
+      bgColor: 'bg-gray-50',
+      borderColor: 'border-gray-200',
     },
   ];
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="p-3 animate-pulse">
-            <div className="h-14 bg-gray-200 rounded" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Card key={i} className="p-4 animate-pulse">
+            <div className="h-20 bg-gray-200 rounded" />
           </Card>
         ))}
       </div>
@@ -63,31 +98,36 @@ const BenefitStatsCards: React.FC<BenefitStatsCardsProps> = ({ stats, loading })
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (
           <Card
             key={index}
-            className="relative overflow-hidden p-3 border shadow-sm hover:shadow-md transition-shadow"
+            className={`relative overflow-hidden p-4 border-2 ${card.borderColor} shadow-sm hover:shadow-md transition-all hover:scale-[1.02]`}
           >
             {card.badge && (
-              <div className="absolute top-1 right-1">
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-500 text-white">
+              <div className="absolute top-2 right-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500 text-white animate-pulse">
                   {card.badge}
                 </span>
               </div>
             )}
-            <div className="flex items-start gap-2.5">
-              <div className={`${card.bgColor} ${card.color} p-2 rounded-lg`}>
-                <Icon className="w-4 h-4" />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-start justify-between">
+                <div className={`${card.bgColor} ${card.color} p-2.5 rounded-xl`}>
+                  <Icon className="w-5 h-5" />
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-wide truncate">
+              <div>
+                <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">
                   {card.title}
                 </p>
-                <p className="text-xl font-bold text-gray-900 mt-0.5">
+                <p className={`text-2xl font-bold text-gray-900 mt-1 ${card.isPercentage ? 'tabular-nums' : ''}`}>
                   {card.value}
+                </p>
+                <p className="text-xs text-gray-500 mt-1 font-medium">
+                  {card.subtitle}
                 </p>
               </div>
             </div>
