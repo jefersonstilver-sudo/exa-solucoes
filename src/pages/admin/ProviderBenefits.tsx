@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import {
   Table,
   TableBody,
@@ -33,6 +34,7 @@ import MonthSelector from '@/components/admin/dashboard/MonthSelector';
 const ProviderBenefits = () => {
   console.log('🎁 ProviderBenefits component rendering...');
   const { canManageProviderBenefits, isLoadingCustom } = useUserPermissions();
+  const { buildPath } = useAdminBasePath();
   const navigate = useNavigate();
   const { isMobile } = useAdvancedResponsive();
   
@@ -194,7 +196,7 @@ const ProviderBenefits = () => {
                 Novo Benefício
               </Button>
               <Button 
-                onClick={() => navigate('/super_admin/gerenciar-beneficios')}
+                onClick={() => navigate(buildPath('gerenciar-beneficios'))}
                 size="sm"
                 variant="ghost"
                 className="h-9 w-9 p-0 text-white hover:bg-white/10"
@@ -385,7 +387,7 @@ const ProviderBenefits = () => {
         </div>
         <div className="flex gap-2">
           <Button
-            onClick={() => navigate('/super_admin/gerenciar-beneficios')}
+            onClick={() => navigate(buildPath('gerenciar-beneficios'))}
             size="lg"
             variant="outline"
           >
@@ -393,7 +395,7 @@ const ProviderBenefits = () => {
             Gerenciar
           </Button>
           <Button 
-            onClick={() => navigate('/super_admin/preview-beneficio')} 
+            onClick={() => navigate(buildPath('preview-beneficio'))} 
             size="lg"
             variant="outline"
           >
@@ -512,8 +514,13 @@ const ProviderBenefits = () => {
               <p>Nenhum benefício criado ainda</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="relative">
+              {/* Indicador de scroll horizontal */}
+              <div className="absolute top-0 right-0 z-10 bg-gradient-to-l from-white via-white to-transparent w-12 h-full pointer-events-none" />
+              
+              {/* Container com scroll horizontal melhorado */}
+              <div className="overflow-x-auto overflow-y-visible pb-2 cursor-grab active:cursor-grabbing scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+                <Table className="min-w-[1200px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Prestador</TableHead>
@@ -647,6 +654,7 @@ const ProviderBenefits = () => {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>

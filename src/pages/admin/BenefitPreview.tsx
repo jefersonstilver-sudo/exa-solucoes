@@ -8,11 +8,13 @@ import { useNavigate } from 'react-router-dom';
 import BenefitCard from '@/components/benefits/BenefitCard';
 import ConfirmationModal from '@/components/benefits/ConfirmationModal';
 import { useBenefitOptions } from '@/hooks/useBenefitOptions';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 
 const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
 
 const BenefitPreview = () => {
   const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   const { benefits: benefitOptions, isLoading } = useBenefitOptions();
   
   const [previewData, setPreviewData] = useState({
@@ -57,7 +59,7 @@ const BenefitPreview = () => {
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
-              onClick={() => navigate('/super_admin/beneficio-prestadores')}
+              onClick={() => navigate(buildPath('beneficio-prestadores'))}
               className="text-white hover:bg-white/10 font-bold"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />

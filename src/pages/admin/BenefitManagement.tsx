@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import {
   Table,
   TableBody,
@@ -34,6 +35,7 @@ import type { BenefitOption } from '@/types/providerBenefits';
 
 const BenefitManagement = () => {
   const navigate = useNavigate();
+  const { buildPath } = useAdminBasePath();
   const [benefits, setBenefits] = useState<BenefitOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -193,7 +195,7 @@ const BenefitManagement = () => {
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => navigate('/super_admin/beneficio-prestadores')}
+              onClick={() => navigate(buildPath('beneficio-prestadores'))}
               className="text-white hover:bg-white/10"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
