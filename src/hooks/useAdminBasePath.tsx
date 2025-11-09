@@ -11,13 +11,15 @@ export const useAdminBasePath = () => {
       return '/super_admin';
     }
     
-    // admin e admin_marketing usam /admin
-    if (userProfile?.role === 'admin' || userProfile?.role === 'admin_marketing') {
+    // admin, admin_marketing e admin_financeiro usam /admin
+    if (userProfile?.role === 'admin' || 
+        userProfile?.role === 'admin_marketing' || 
+        userProfile?.role === 'admin_financeiro') {
       return '/admin';
     }
     
-    // Fallback para super_admin caso não consiga determinar
-    return '/super_admin';
+    // Fallback para /admin (mais seguro que super_admin)
+    return '/admin';
   }, [userProfile]);
 
   const buildPath = (relativePath: string) => {
@@ -31,6 +33,8 @@ export const useAdminBasePath = () => {
     basePath,
     buildPath,
     isSuperAdmin: userProfile?.role === 'super_admin',
-    isRegularAdmin: userProfile?.role === 'admin' || userProfile?.role === 'admin_marketing'
+    isRegularAdmin: userProfile?.role === 'admin' || 
+                     userProfile?.role === 'admin_marketing' || 
+                     userProfile?.role === 'admin_financeiro'
   };
 };
