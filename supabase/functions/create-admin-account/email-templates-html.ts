@@ -174,7 +174,7 @@ export const createAdminWelcomeHTML = (data: AdminWelcomeData): string => {
                   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                     <tr>
                       <td style="text-align: center; padding-bottom: 20px;">
-                        <img src="https://www.examidia.com.br/logo-exa-branco.png" alt="EXA Mídia" width="180" style="display: block; margin: 0 auto; max-width: 180px; height: auto;" />
+                        <img src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0" alt="EXA Mídia" width="180" style="display: block; margin: 0 auto; max-width: 180px; height: auto;" />
                       </td>
                     </tr>
                     <tr>
