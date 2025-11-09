@@ -419,21 +419,21 @@ const UsersPage = () => {
           <TabsList className="bg-white border-2 border-gray-200 p-1.5 rounded-xl shadow-md h-14">
             <TabsTrigger 
               value="team" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#B91C1C] data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-gray-100 rounded-lg px-8 py-3 text-sm font-semibold transition-all duration-200 shadow-sm"
+              className="group data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#B91C1C] data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-gray-100 rounded-lg px-8 py-3 text-sm font-semibold transition-all duration-200 shadow-sm"
             >
               <Crown className="h-4 w-4 mr-2" />
               Equipe EXA
-              <Badge variant="secondary" className="ml-3 bg-white/20 text-white data-[state=inactive]:bg-gray-200 data-[state=inactive]:text-gray-900 border-0">
+              <Badge variant="secondary" className="ml-3 bg-white/20 text-white group-data-[state=inactive]:bg-gray-200 group-data-[state=inactive]:text-gray-900 border-0">
                 {indexaTeam.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger 
               value="clients"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#B91C1C] data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-gray-100 rounded-lg px-8 py-3 text-sm font-semibold transition-all duration-200 shadow-sm"
+              className="group data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#B91C1C] data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-gray-100 rounded-lg px-8 py-3 text-sm font-semibold transition-all duration-200 shadow-sm"
             >
               <Users className="h-4 w-4 mr-2" />
               Clientes
-              <Badge variant="secondary" className="ml-3 bg-white/20 text-white data-[state=inactive]:bg-gray-200 data-[state=inactive]:text-gray-900 border-0">
+              <Badge variant="secondary" className="ml-3 bg-white/20 text-white group-data-[state=inactive]:bg-gray-200 group-data-[state=inactive]:text-gray-900 border-0">
                 {clients.length}
               </Badge>
             </TabsTrigger>
