@@ -24,19 +24,28 @@ export default function EmailNotConfirmed() {
     try {
       setResending(true);
       
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email
+      console.log('🔄 Reenviando email via unified-email-service para:', email);
+      
+      // ✅ CORREÇÃO: Usar edge function unificada
+      const { data, error } = await supabase.functions.invoke('unified-email-service', {
+        body: { 
+          action: 'resend', 
+          email 
+        }
       });
 
       if (error) throw error;
 
-      toast.success('Email de confirmação reenviado!', {
-        description: `Verifique sua caixa de entrada em ${email}`
-      });
+      if (data?.success) {
+        toast.success('Email de confirmação reenviado!', {
+          description: `Verifique sua caixa de entrada em ${email}`
+        });
+      } else {
+        throw new Error(data?.error || 'Erro ao reenviar');
+      }
     } catch (error: any) {
-      console.error('Erro ao reenviar email:', error);
-      toast.error('Erro ao enviar email', {
+      console.error('❌ Erro ao reenviar:', error);
+      toast.error('Erro ao reenviar email', {
         description: error.message
       });
     } finally {

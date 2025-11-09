@@ -35,6 +35,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { UserActivityTimeline } from './UserActivityTimeline';
+import { updateUserRoleInDB } from '@/services/userRoleService';
 
 interface User {
   id: string;
@@ -178,12 +179,12 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
         changedBy: userProfile?.email
       });
 
-      const { error } = await supabase
-        .from('users')
-        .update({ role: newRole })
-        .eq('id', user.id);
+      // ✅ CORREÇÃO: Usar função de serviço que atualiza via user_roles
+      const { success, error } = await updateUserRoleInDB(user.id, newRole as any);
 
-      if (error) throw error;
+      if (!success || error) {
+        throw error || new Error('Falha ao atualizar role');
+      }
 
       toast.success(`Role atualizada com sucesso!`, {
         description: `${user.email} agora é ${getRoleLabel(newRole)}`
@@ -219,16 +220,25 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
     try {
       setResendingEmail(true);
       
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: user.email
+      console.log('📧 Reenviando email via unified-email-service para:', user.email);
+      
+      // ✅ CORREÇÃO: Usar edge function unificada que considera o role
+      const { data, error } = await supabase.functions.invoke('unified-email-service', {
+        body: { 
+          action: 'resend', 
+          email: user.email 
+        }
       });
 
       if (error) throw error;
 
-      toast.success('Email de confirmação enviado!', {
-        description: `Um novo link foi enviado para ${user.email}`
-      });
+      if (data?.success) {
+        toast.success('Email de confirmação enviado!', {
+          description: `Um novo link foi enviado para ${user.email}`
+        });
+      } else {
+        throw new Error(data?.error || 'Erro ao enviar email');
+      }
     } catch (error: any) {
       console.error('❌ Erro ao reenviar email:', error);
       toast.error('Erro ao enviar email', {
