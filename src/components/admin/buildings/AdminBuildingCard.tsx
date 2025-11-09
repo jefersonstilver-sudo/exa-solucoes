@@ -97,18 +97,27 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
             </div>
             {typeof videoCount === 'number' && (
               <div className="mt-2 space-y-1">
-                <div className="flex items-center text-sm text-gray-700">
-                  <Video className="h-4 w-4 mr-1 text-green-600" />
-                  <span>Em exibição: {videoCount}</span>
-                </div>
-                {videoCount > 0 && onViewPlaylist && (
-                  <button
-                    onClick={() => onViewPlaylist(building)}
-                    className="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs bg-green-50 hover:bg-green-100 text-green-700 rounded border border-green-200 transition-colors"
-                  >
-                    <Play className="h-3 w-3" />
-                    Ver Playlist
-                  </button>
+                {videoCount > 0 ? (
+                  <>
+                    <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-white text-xs font-semibold">
+                      <Video className="h-4 w-4 animate-pulse" />
+                      <span>{videoCount} vídeo{videoCount > 1 ? 's' : ''} no AR</span>
+                    </div>
+                    {onViewPlaylist && (
+                      <button
+                        onClick={() => onViewPlaylist(building)}
+                        className="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs bg-green-50 hover:bg-green-100 text-green-700 rounded border border-green-200 transition-colors font-medium"
+                      >
+                        <Play className="h-3 w-3" />
+                        Ver Programação
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-gray-600 text-xs">
+                    <Video className="h-3 w-3" />
+                    <span>Sem vídeos no momento</span>
+                  </div>
                 )}
               </div>
             )}

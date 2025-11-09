@@ -1,11 +1,12 @@
 import React from 'react';
-import { Building2, MapPin, Tv, Users } from 'lucide-react';
+import { Building2, MapPin, Tv, Users, Video } from 'lucide-react';
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 interface BuildingMobileCardProps {
   building: any;
+  videoCount?: number;
   onView: (building: any) => void;
   onEdit: (building: any) => void;
   onImageManager: (building: any) => void;
@@ -14,6 +15,7 @@ interface BuildingMobileCardProps {
 
 export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
   building,
+  videoCount,
   onView,
   onEdit,
   onImageManager,
@@ -44,7 +46,7 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
           {building.bairro}, {building.cidade}
         </span>
       </div>
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex items-center gap-4 text-sm flex-wrap">
         {building.quantidade_telas && (
           <div className="flex items-center gap-1">
             <Tv className="h-4 w-4 text-[#9C1E1E]" />
@@ -55,6 +57,12 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4 text-[#9C1E1E]" />
             <span className="font-medium">{building.publico_estimado.toLocaleString()}</span>
+          </div>
+        )}
+        {typeof videoCount === 'number' && videoCount > 0 && (
+          <div className="flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full text-white">
+            <Video className="h-3 w-3 animate-pulse" />
+            <span className="font-semibold text-xs">{videoCount} no AR</span>
           </div>
         )}
       </div>

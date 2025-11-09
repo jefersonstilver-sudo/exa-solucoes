@@ -2,6 +2,7 @@ import React from 'react';
 import { BuildingMobileCard } from './BuildingMobileCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Building2 } from 'lucide-react';
+import { useBuildingsVideoCount } from '@/hooks/useBuildingsVideoCount';
 
 interface BuildingMobileListProps {
   buildings: any[];
@@ -20,6 +21,8 @@ export const BuildingMobileList: React.FC<BuildingMobileListProps> = ({
   onImageManager,
   onViewPlaylist,
 }) => {
+  const buildingIds = buildings.map(b => b.id);
+  const { counts: videoCounts } = useBuildingsVideoCount(buildingIds);
   if (loading) {
     return (
       <div className="space-y-3">
@@ -48,6 +51,7 @@ export const BuildingMobileList: React.FC<BuildingMobileListProps> = ({
         <BuildingMobileCard
           key={building.id}
           building={building}
+          videoCount={videoCounts[building.id]}
           onView={onView}
           onEdit={onEdit}
           onImageManager={onImageManager}

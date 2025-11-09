@@ -50,6 +50,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       console.log('🎬 [BUILDING ACTIVE VIDEOS] Buscando vídeos para prédio:', buildingId);
 
       // 1. Buscar pedidos ativos para este prédio
+      // CORREÇÃO: Usar filtro correto para array de UUIDs
       const { data: pedidos, error: pedidosError } = await supabase
         .from('pedidos')
         .select(`
@@ -61,8 +62,8 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           data_fim,
           lista_predios
         `)
-        .contains('lista_predios', [buildingId])
-        .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago']);
+        .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
+        .filter('lista_predios', 'cs', `{${buildingId}}`);
 
       if (pedidosError) {
         throw new Error(`Erro ao buscar pedidos: ${pedidosError.message}`);
