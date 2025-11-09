@@ -212,7 +212,7 @@ export function ModernAdminSidebar() {
           permission: 'canManageNotifications'
         },
         {
-          title: 'Comunicações',
+          title: 'Emails',
           href: buildPath('comunicacoes'),
           icon: Mail,
           permission: 'canManageHomepageImages'

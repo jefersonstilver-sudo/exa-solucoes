@@ -204,7 +204,7 @@ const AdminSidebar = () => {
       permission: 'canManageNotifications'
     },
     {
-      label: 'Comunicações',
+      label: 'Emails',
       icon: <Mail className="h-5 w-5" />,
       href: buildPath('comunicacoes'),
       requireSuperAdmin: false,
