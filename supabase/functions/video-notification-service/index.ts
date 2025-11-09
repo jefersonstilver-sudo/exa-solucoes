@@ -18,6 +18,35 @@ serve(async (req: Request) => {
   }
 
   try {
+    // Get authenticated user from JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ 
+        error: 'Não autorizado',
+        success: false 
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseAuth = createClient(supabaseUrl, supabaseKey);
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+    if (authError || !user) {
+      console.error('❌ [VIDEO-NOTIFICATION] Auth error:', authError);
+      return new Response(JSON.stringify({ 
+        error: 'Não autorizado',
+        success: false 
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
     const { action, pedido_id, video_title, rejection_reason } = await req.json();
     
     console.log('📦 [VIDEO-NOTIFICATION] Dados recebidos:', { 
@@ -48,13 +77,20 @@ serve(async (req: Request) => {
       });
     }
 
-    // Inicializar cliente Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Check if user has permission for this order (must be client or admin)
+    const { data: userRole } = await supabaseAuth
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
 
-    // Buscar dados do pedido
+    const isAdmin = userRole && ['admin', 'super_admin'].includes(userRole.role);
+
+    // Buscar dados do pedido - validate ownership
     console.log('🔍 [VIDEO-NOTIFICATION] Buscando dados do pedido...');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
       .select('client_id, lista_paineis, plano_meses, created_at')
@@ -64,6 +100,18 @@ serve(async (req: Request) => {
     if (pedidoError || !pedido) {
       console.error('❌ [VIDEO-NOTIFICATION] Pedido não encontrado:', pedidoError);
       throw new Error('Pedido não encontrado');
+    }
+
+    // Validate ownership - user must own the order or be admin
+    if (!isAdmin && pedido.client_id !== user.id) {
+      console.error('❌ [VIDEO-NOTIFICATION] Forbidden: user does not own this order');
+      return new Response(JSON.stringify({ 
+        error: 'Acesso negado - você não tem permissão para acessar este pedido',
+        success: false 
+      }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
     }
 
     // Buscar dados do cliente

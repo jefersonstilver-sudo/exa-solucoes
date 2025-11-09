@@ -25,6 +25,40 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Get authenticated user from JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.49.4');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error('❌ [WEBHOOK] Auth error:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Check if user has permission (admin or owns the buildings being toggled)
+    const { data: userRole } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const isAdmin = userRole && ['admin', 'super_admin'].includes(userRole.role);
+
     const body = await req.json().catch(() => ({}));
     const actions = Array.isArray(body?.actions) ? body.actions : [];
 
@@ -36,6 +70,33 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ ok: false, message: 'No actions provided' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
+    }
+
+    // Validate building ownership for non-admins
+    if (!isAdmin) {
+      const buildingIds = actions
+        .map((a: any) => a?.predio_id ?? a?.predioId ?? a?.building_id)
+        .filter(Boolean);
+
+      if (buildingIds.length > 0) {
+        const { data: userOrders } = await supabase
+          .from('pedidos')
+          .select('lista_predios')
+          .eq('client_id', user.id);
+
+        const userBuildingIds = new Set(
+          userOrders?.flatMap((o: any) => o.lista_predios || []) || []
+        );
+
+        const unauthorized = buildingIds.some((id: string) => !userBuildingIds.has(id));
+        if (unauthorized) {
+          console.error('❌ [WEBHOOK] Forbidden: user does not own all buildings');
+          return new Response(
+            JSON.stringify({ ok: false, message: 'Acesso negado - você não possui todos os prédios especificados' }),
+            { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
+        }
+      }
     }
 
     // Execute all POSTs in parallel with single-target routing per status

@@ -17,10 +17,29 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Get authenticated user from JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return new Response(
+        JSON.stringify({ success: false, message: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const body = await req.json();
     
@@ -47,7 +66,7 @@ Deno.serve(async (req) => {
     // Limpar CPF (remover pontos e traços)
     const cleanCpf = cpf.replace(/[.-]/g, '');
 
-    // Buscar pedido com informações do cliente
+    // Buscar pedido com informações do cliente - ONLY for authenticated user's orders
     const { data: order, error: orderError } = await supabaseClient
       .from('pedidos')
       .select(`
@@ -58,6 +77,7 @@ Deno.serve(async (req) => {
         plano_meses,
         data_inicio,
         data_fim,
+        client_id,
         clientes!inner (
           nome,
           email,
@@ -65,6 +85,7 @@ Deno.serve(async (req) => {
         )
       `)
       .eq('id', order_id)
+      .eq('client_id', user.id)
       .single();
 
     if (orderError || !order) {

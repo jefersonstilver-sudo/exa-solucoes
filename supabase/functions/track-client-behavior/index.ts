@@ -26,10 +26,29 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Get authenticated user from JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error('❌ Auth error:', authError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const body = await req.json();
     
@@ -39,20 +58,23 @@ Deno.serve(async (req) => {
     
     console.log('📊 Tracking event received:', event.event_type);
 
-    // Se não tem user_id, não rastrear (usuário anônimo)
-    if (!event.user_id) {
-      console.log('⏭️ Skipping anonymous user tracking');
+    // Validate that user_id matches authenticated user
+    if (event.user_id && event.user_id !== user.id) {
+      console.error('❌ Forbidden: user_id mismatch', { provided: event.user_id, authenticated: user.id });
       return new Response(
-        JSON.stringify({ success: true, message: 'Anonymous user, skipped' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Forbidden - Cannot track other users' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Use authenticated user's ID
+    const trackingUserId = user.id;
 
     // Buscar ou criar registro de analytics
     const { data: existingAnalytics, error: fetchError } = await supabase
       .from('client_behavior_analytics')
       .select('*')
-      .eq('user_id', event.user_id)
+      .eq('user_id', trackingUserId)
       .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -61,7 +83,7 @@ Deno.serve(async (req) => {
     }
 
     let updatedData: any = {
-      user_id: event.user_id,
+      user_id: trackingUserId,
       session_id: event.session_id,
       last_visit: new Date().toISOString(),
       device_type: event.data.device_type || 'desktop',
@@ -160,7 +182,7 @@ Deno.serve(async (req) => {
       const { error: updateError } = await supabase
         .from('client_behavior_analytics')
         .update(updatedData)
-        .eq('user_id', event.user_id);
+        .eq('user_id', trackingUserId);
 
       if (updateError) {
         console.error('❌ Error updating analytics:', updateError);

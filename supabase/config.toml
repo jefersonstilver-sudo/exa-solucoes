@@ -64,10 +64,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.video-schedule-sync]
-verify_jwt = true
+verify_jwt = false
 
 [functions.campaign-scheduler]
-verify_jwt = true
+verify_jwt = false
 
 [functions.validate-order]
 verify_jwt = true
@@ -79,7 +79,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.update-platform-metrics]
-verify_jwt = true
+verify_jwt = false
 
 [functions.video-notification-service]
 verify_jwt = true
