@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useEmailStats } from '@/hooks/useEmailStats';
 import EmailTemplatePreviewDialog from '@/components/admin/emails/EmailTemplatePreviewDialog';
+import AdminPeriodSelector, { PeriodType, getPeriodDates } from '@/components/admin/common/AdminPeriodSelector';
 
 interface EmailTemplate {
   id: string;
@@ -44,7 +45,9 @@ interface EmailStats {
 const ComunicacoesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [periodFilter, setPeriodFilter] = useState<'7' | '30' | '90' | 'all'>('30');
+  const [periodFilter, setPeriodFilter] = useState<PeriodType>('current_month');
+  const [customStartDate, setCustomStartDate] = useState<Date>();
+  const [customEndDate, setCustomEndDate] = useState<Date>();
   const [previewDialog, setPreviewDialog] = useState<{
     open: boolean;
     templateId: string;
@@ -57,9 +60,24 @@ const ComunicacoesPage = () => {
     templateCategory: '',
   });
 
-  // Buscar estatísticas reais com base no filtro de período
-  const days = periodFilter === 'all' ? 365 * 10 : parseInt(periodFilter); // 10 anos para "all"
-  const { stats, loading: statsLoading } = useEmailStats(days, periodFilter === 'all');
+  const { start, end } = getPeriodDates(periodFilter, customStartDate, customEndDate);
+  
+  // Calcular dias para fetchAll
+  const days = start && end 
+    ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    : 365 * 10;
+  const fetchAll = periodFilter === 'all';
+  
+  const { stats, loading: statsLoading } = useEmailStats(days, fetchAll);
+
+  const handlePeriodChange = (period: PeriodType) => {
+    setPeriodFilter(period);
+  };
+
+  const handleCustomDateChange = (start: Date | undefined, end: Date | undefined) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+  };
 
   // Templates disponíveis
   const templates: EmailTemplate[] = [
@@ -169,20 +187,13 @@ const ComunicacoesPage = () => {
           </p>
         </div>
         
-        {/* Filtro de Período */}
-        <div className="flex items-center gap-2">
-          <Mail className="h-4 w-4 text-muted-foreground" />
-          <select
-            value={periodFilter}
-            onChange={(e) => setPeriodFilter(e.target.value as '7' | '30' | '90' | 'all')}
-            className="border rounded-md px-3 py-2 text-sm bg-background"
-          >
-            <option value="7">📅 Últimos 7 dias</option>
-            <option value="30">📆 Últimos 30 dias</option>
-            <option value="90">📊 Últimos 90 dias</option>
-            <option value="all">📊 Tudo (Desde o Início)</option>
-          </select>
-        </div>
+        <AdminPeriodSelector
+          value={periodFilter}
+          onChange={handlePeriodChange}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomDateChange={handleCustomDateChange}
+        />
       </div>
 
       {/* Estatísticas */}

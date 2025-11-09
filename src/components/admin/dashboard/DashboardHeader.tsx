@@ -1,22 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Crown, RefreshCw, Download } from 'lucide-react';
-import MonthSelector from './MonthSelector';
+import AdminPeriodSelector, { PeriodType } from '@/components/admin/common/AdminPeriodSelector';
 import DashboardBreadcrumb from './DashboardBreadcrumb';
 import { toast } from 'sonner';
+
 interface DashboardHeaderProps {
-  selectedMonth: string;
-  onMonthChange: (month: string) => void;
+  periodFilter: PeriodType;
+  onPeriodChange: (period: PeriodType) => void;
+  customStartDate?: Date;
+  customEndDate?: Date;
+  onCustomDateChange?: (start: Date | undefined, end: Date | undefined) => void;
   onRefetch: () => void;
 }
+
 const DashboardHeader = ({
-  selectedMonth,
-  onMonthChange,
+  periodFilter,
+  onPeriodChange,
+  customStartDate,
+  customEndDate,
+  onCustomDateChange,
   onRefetch
 }: DashboardHeaderProps) => {
   const handleExportReport = () => {
     toast.info('Funcionalidade de exportação será implementada em breve');
   };
+
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div className="flex-1">
@@ -29,11 +38,17 @@ const DashboardHeader = ({
           </div>
         </div>
         
-        <DashboardBreadcrumb selectedMonth={selectedMonth} />
+        <DashboardBreadcrumb periodFilter={periodFilter} />
       </div>
       
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-        <MonthSelector selectedMonth={selectedMonth} onMonthChange={onMonthChange} />
+        <AdminPeriodSelector
+          value={periodFilter}
+          onChange={onPeriodChange}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomDateChange={onCustomDateChange}
+        />
         
         <div className="flex gap-2">
           <Button variant="outline" onClick={onRefetch} className="shadow-sm flex-1 sm:flex-none touch-target">
@@ -49,4 +64,5 @@ const DashboardHeader = ({
     </div>
   );
 };
+
 export default DashboardHeader;

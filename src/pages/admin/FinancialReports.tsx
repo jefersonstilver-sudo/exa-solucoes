@@ -2,28 +2,32 @@ import React, { useState, useMemo } from 'react';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileBarChart, TrendingUp, DollarSign, Users, Gift, Loader2, Calendar, Download } from 'lucide-react';
+import { TrendingUp, DollarSign, Users, Gift, Loader2, Download } from 'lucide-react';
 import { useFinancialReports } from '@/hooks/useFinancialReports';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { toast } from 'sonner';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import AdminPeriodSelector, { PeriodType, getPeriodDates } from '@/components/admin/common/AdminPeriodSelector';
 
 const FinancialReports = () => {
   const { canViewFinancialReports, isLoadingCustom } = useUserPermissions();
-  const [periodFilter, setPeriodFilter] = useState<'7' | '30' | '90' | 'all'>('30');
+  const [periodFilter, setPeriodFilter] = useState<PeriodType>('current_month');
+  const [customStartDate, setCustomStartDate] = useState<Date>();
+  const [customEndDate, setCustomEndDate] = useState<Date>();
   
   const { start, end } = useMemo(() => {
-    if (periodFilter === 'all') {
-      return { start: undefined, end: undefined };
-    }
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - parseInt(periodFilter));
-    return { start, end };
-  }, [periodFilter]);
+    return getPeriodDates(periodFilter, customStartDate, customEndDate);
+  }, [periodFilter, customStartDate, customEndDate]);
 
   const { metrics, revenueByMonth, topClients, loading, refetch } = useFinancialReports(start, end);
+
+  const handlePeriodChange = (period: PeriodType) => {
+    setPeriodFilter(period);
+  };
+
+  const handleCustomDateChange = (start: Date | undefined, end: Date | undefined) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+  };
   
   // 🔒 CRITICAL: Wait for permissions to load before checking
   if (isLoadingCustom) {
@@ -52,7 +56,7 @@ const FinancialReports = () => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-            📊 Relatórios Financeiros
+            Relatórios Financeiros
           </h1>
           <p className="text-sm md:text-base text-muted-foreground">
             Análise completa de vendas, pedidos e benefícios
@@ -60,24 +64,13 @@ const FinancialReports = () => {
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          <Select 
-            value={periodFilter} 
-            onValueChange={(v: any) => {
-              setPeriodFilter(v);
-              toast.success(v === 'all' ? '📊 Mostrando todos os dados' : `Período alterado para ${v} dias`);
-            }}
-          >
-            <SelectTrigger className="w-[200px]">
-              <Calendar className="h-4 w-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-              <SelectItem value="all" className="font-bold text-primary">📊 Tudo (Desde o Início)</SelectItem>
-            </SelectContent>
-          </Select>
+          <AdminPeriodSelector
+            value={periodFilter}
+            onChange={handlePeriodChange}
+            customStartDate={customStartDate}
+            customEndDate={customEndDate}
+            onCustomDateChange={handleCustomDateChange}
+          />
 
           <Button variant="outline" onClick={refetch}>
             <Download className="h-4 w-4 mr-2" />
@@ -91,7 +84,6 @@ const FinancialReports = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -106,7 +98,6 @@ const FinancialReports = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pedidos Ativos</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{metrics.activeOrders}</div>
@@ -117,7 +108,6 @@ const FinancialReports = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Benefícios Pendentes</CardTitle>
-            <Gift className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{metrics.pendingBenefits}</div>
@@ -128,7 +118,6 @@ const FinancialReports = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
-            <Users className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">{metrics.activeClients}</div>

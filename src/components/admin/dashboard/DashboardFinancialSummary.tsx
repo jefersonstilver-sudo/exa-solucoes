@@ -3,16 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign } from 'lucide-react';
 import GrowthIndicator from './GrowthIndicator';
 import { MonthlyDashboardStats } from '@/hooks/useMonthlyDashboardData';
+import { PeriodType } from '@/components/admin/common/AdminPeriodSelector';
+
 interface DashboardFinancialSummaryProps {
   stats: MonthlyDashboardStats;
-  selectedMonth: string;
+  periodFilter: PeriodType;
   growthData: {
     revenue: number;
   } | null;
 }
+
 const DashboardFinancialSummary = ({
   stats,
-  selectedMonth,
+  periodFilter,
   growthData
 }: DashboardFinancialSummaryProps) => {
   const formatCurrency = (value: number) => {
@@ -26,4 +29,5 @@ const DashboardFinancialSummary = ({
       
     </Card>;
 };
+
 export default DashboardFinancialSummary;

@@ -40,7 +40,6 @@ export interface MonthlyChartData {
   last12Months: MonthlyDashboardStats[];
 }
 
-// Helper function to safely convert JSON to MonthlyDashboardStats
 const convertToMonthlyStats = (data: any): MonthlyDashboardStats => {
   return {
     total_users: Number(data?.total_users) || 0,
@@ -54,11 +53,10 @@ const convertToMonthlyStats = (data: any): MonthlyDashboardStats => {
     active_orders: Number(data?.active_orders) || 0,
     pending_orders: Number(data?.pending_orders) || 0,
     online_panels: Number(data?.online_panels) || 0,
-    month_year: String(data?.month_year) || ''
+    month_year: data?.month_year || 'N/A',
   };
 };
 
-// Helper function to safely convert JSON to MonthlyComparison
 const convertToMonthlyComparison = (data: any): MonthlyComparison => {
   return {
     current: {
@@ -76,21 +74,14 @@ const convertToMonthlyComparison = (data: any): MonthlyComparison => {
   };
 };
 
-// Helper function to safely convert JSON array to MonthlyDashboardStats array
 const convertToMonthlyStatsArray = (data: any): MonthlyDashboardStats[] => {
   if (!data?.months || !Array.isArray(data.months)) {
     return [];
   }
-  
   return data.months.map((month: any) => convertToMonthlyStats(month));
 };
 
-export const useMonthlyDashboardData = () => {
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-  });
-  
+export const useMonthlyDashboardData = (startDate?: Date, endDate?: Date) => {
   const [stats, setStats] = useState<MonthlyDashboardStats | null>(null);
   const [comparison, setComparison] = useState<MonthlyComparison | null>(null);
   const [chartData, setChartData] = useState<MonthlyChartData>({
@@ -103,21 +94,15 @@ export const useMonthlyDashboardData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const parseMonthYear = (monthStr: string) => {
-    const [year, month] = monthStr.split('-').map(Number);
-    return { year, month };
-  };
-
-  const fetchMonthlyStats = useCallback(async (monthStr: string) => {
+  const fetchMonthlyStats = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Se for "all", buscar dados de todos os tempos
-      if (monthStr === 'all') {
+      // Se não houver datas, buscar dados de todos os tempos
+      if (!startDate && !endDate) {
         console.log(`🔍 Buscando dados de TODOS OS TEMPOS`);
         
-        // Buscar histórico completo
         const { data: historyData, error: historyError } = await supabase
           .rpc('get_last_12_months_stats');
         
@@ -128,7 +113,6 @@ export const useMonthlyDashboardData = () => {
         
         const typedHistoryData = convertToMonthlyStatsArray(historyData);
         
-        // Agregar todos os dados
         const aggregatedStats: MonthlyDashboardStats = {
           total_users: typedHistoryData.length > 0 ? Math.max(...typedHistoryData.map(m => m.total_users_accumulated)) : 0,
           total_users_accumulated: typedHistoryData.length > 0 ? Math.max(...typedHistoryData.map(m => m.total_users_accumulated)) : 0,
@@ -141,34 +125,30 @@ export const useMonthlyDashboardData = () => {
           active_orders: typedHistoryData.length > 0 ? typedHistoryData[typedHistoryData.length - 1].active_orders : 0,
           pending_orders: typedHistoryData.length > 0 ? typedHistoryData[typedHistoryData.length - 1].pending_orders : 0,
           online_panels: typedHistoryData.length > 0 ? typedHistoryData[typedHistoryData.length - 1].online_panels : 0,
-          month_year: 'Todos os Tempos'
+          month_year: 'Todos os Períodos'
         };
         
         setStats(aggregatedStats);
-        setComparison(null); // Sem comparação para "todos os tempos"
+        setComparison(null);
         
         setChartData({
           revenueData: typedHistoryData.map((month: MonthlyDashboardStats) => ({
             month: month.month_year,
             revenue: Number(month.monthly_revenue) || 0
           })).reverse(),
-          
           orderStatusData: [
             { name: 'Ativos', value: aggregatedStats.active_orders, color: '#10b981' },
             { name: 'Pendentes', value: aggregatedStats.pending_orders, color: '#f97316' },
             { name: 'Total', value: aggregatedStats.total_orders, color: '#6366f1' }
           ].filter(item => item.value > 0),
-          
           userGrowthData: typedHistoryData.map((month: MonthlyDashboardStats) => ({
             month: month.month_year,
             users: month.total_users_accumulated || 0
           })).reverse(),
-          
           panelStatusData: [
             { status: 'Online', count: aggregatedStats.online_panels },
             { status: 'Offline', count: Math.max(0, aggregatedStats.total_panels_accumulated - aggregatedStats.online_panels) }
           ].filter(item => item.count > 0),
-          
           last12Months: typedHistoryData
         });
         
@@ -176,11 +156,13 @@ export const useMonthlyDashboardData = () => {
         return;
       }
       
-      const { year, month } = parseMonthYear(monthStr);
+      // Se há uma data específica (mesmo para o mês atual)
+      const targetDate = startDate || new Date();
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth() + 1;
       
       console.log(`🔍 Buscando dados para: ${year}-${month}`);
       
-      // Buscar dados do mês selecionado
       const { data: monthlyData, error: monthlyError } = await supabase
         .rpc('get_dashboard_stats_by_month', { p_year: year, p_month: month });
       
@@ -189,9 +171,6 @@ export const useMonthlyDashboardData = () => {
         throw monthlyError;
       }
       
-      console.log('📊 Dados mensais recebidos:', monthlyData);
-      
-      // Buscar comparação com mês anterior
       const { data: comparisonData, error: comparisonError } = await supabase
         .rpc('get_monthly_comparison', { p_year: year, p_month: month });
       
@@ -200,9 +179,6 @@ export const useMonthlyDashboardData = () => {
         throw comparisonError;
       }
       
-      console.log('📈 Dados de comparação recebidos:', comparisonData);
-      
-      // Buscar histórico dos últimos 12 meses
       const { data: historyData, error: historyError } = await supabase
         .rpc('get_last_12_months_stats');
       
@@ -211,9 +187,6 @@ export const useMonthlyDashboardData = () => {
         throw historyError;
       }
       
-      console.log('📅 Histórico de 12 meses recebido:', historyData);
-      
-      // Conversão segura dos dados com validação
       const typedMonthlyData = convertToMonthlyStats(monthlyData);
       const typedComparisonData = convertToMonthlyComparison(comparisonData);
       const typedHistoryData = convertToMonthlyStatsArray(historyData);
@@ -221,115 +194,66 @@ export const useMonthlyDashboardData = () => {
       setStats(typedMonthlyData);
       setComparison(typedComparisonData);
       
-      // Processar dados para gráficos usando os últimos 12 meses
       if (typedHistoryData && typedHistoryData.length > 0) {
-        console.log('📊 Processando dados para gráficos:', typedHistoryData);
-        
         setChartData({
           revenueData: typedHistoryData.map((month: MonthlyDashboardStats) => ({
             month: month.month_year,
             revenue: Number(month.monthly_revenue) || 0
-          })).reverse(), // Ordenar cronologicamente
-          
+          })).reverse(),
           orderStatusData: [
             { name: 'Ativos', value: typedMonthlyData.active_orders, color: '#10b981' },
             { name: 'Pendentes', value: typedMonthlyData.pending_orders, color: '#f97316' },
             { name: 'Total', value: typedMonthlyData.total_orders, color: '#6366f1' }
           ].filter(item => item.value > 0),
-          
           userGrowthData: typedHistoryData.map((month: MonthlyDashboardStats) => ({
             month: month.month_year,
             users: month.total_users_accumulated || 0
           })).reverse(),
-          
           panelStatusData: [
             { status: 'Online', count: typedMonthlyData.online_panels },
             { status: 'Offline', count: Math.max(0, typedMonthlyData.total_panels_accumulated - typedMonthlyData.online_panels) }
           ].filter(item => item.count > 0),
-          
           last12Months: typedHistoryData
-        });
-      } else {
-        console.warn('⚠️ Dados de histórico não encontrados ou formato inválido');
-        setChartData({
-          revenueData: [],
-          orderStatusData: [],
-          userGrowthData: [],
-          panelStatusData: [],
-          last12Months: []
         });
       }
       
     } catch (err) {
-      console.error('💥 Erro crítico ao buscar dados mensais:', err);
+      console.error('💥 Erro crítico ao buscar dados:', err);
       setError('Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [startDate?.getTime(), endDate?.getTime()]);
 
-  const handleMonthChange = useCallback((newMonth: string) => {
-    console.log(`📅 Alterando mês selecionado para: ${newMonth}`);
-    setSelectedMonth(newMonth);
-    // Salvar no localStorage para persistir seleção
-    localStorage.setItem('dashboard-selected-month', newMonth);
-  }, []);
-
-  // Carregar mês selecionado do localStorage na inicialização
   useEffect(() => {
-    const savedMonth = localStorage.getItem('dashboard-selected-month');
-    if (savedMonth && savedMonth !== selectedMonth) {
-      console.log(`💾 Carregando mês salvo: ${savedMonth}`);
-      setSelectedMonth(savedMonth);
-    }
-  }, []);
+    fetchMonthlyStats();
+  }, [fetchMonthlyStats]);
 
-  // Buscar dados quando o mês selecionado muda
-  useEffect(() => {
-    console.log(`🔄 Recarregando dados para o mês: ${selectedMonth}`);
-    fetchMonthlyStats(selectedMonth);
-  }, [selectedMonth, fetchMonthlyStats]);
+  const refetch = useCallback(() => {
+    fetchMonthlyStats();
+  }, [fetchMonthlyStats]);
 
-  const calculateGrowthPercentage = (current: number, previous: number): number => {
-    if (previous === 0) return current > 0 ? 100 : 0;
-    return ((current - previous) / previous) * 100;
-  };
-
-  const getGrowthData = useCallback(() => {
-    if (!comparison) return null;
-    
-    const growthData = {
-      users: calculateGrowthPercentage(
-        comparison.current.total_users, 
-        comparison.previous.total_users
-      ),
-      revenue: calculateGrowthPercentage(
-        comparison.current.monthly_revenue, 
-        comparison.previous.monthly_revenue
-      ),
-      orders: calculateGrowthPercentage(
-        comparison.current.total_orders, 
-        comparison.previous.total_orders
-      ),
-      buildings: calculateGrowthPercentage(
-        comparison.current.total_buildings, 
-        comparison.previous.total_buildings
-      )
-    };
-    
-    console.log('📈 Dados de crescimento calculados:', growthData);
-    return growthData;
-  }, [comparison]);
+  const growthData = comparison ? {
+    users: comparison.previous.total_users > 0 
+      ? ((comparison.current.total_users - comparison.previous.total_users) / comparison.previous.total_users) * 100 
+      : 0,
+    revenue: comparison.previous.monthly_revenue > 0 
+      ? ((comparison.current.monthly_revenue - comparison.previous.monthly_revenue) / comparison.previous.monthly_revenue) * 100 
+      : 0,
+    orders: comparison.previous.total_orders > 0 
+      ? ((comparison.current.total_orders - comparison.previous.total_orders) / comparison.previous.total_orders) * 100 
+      : 0,
+    buildings: comparison.previous.total_buildings > 0 
+      ? ((comparison.current.total_buildings - comparison.previous.total_buildings) / comparison.previous.total_buildings) * 100 
+      : 0,
+  } : null;
 
   return {
-    selectedMonth,
     stats,
-    comparison,
     chartData,
     loading,
     error,
-    handleMonthChange,
-    refetch: () => fetchMonthlyStats(selectedMonth),
-    growthData: getGrowthData()
+    refetch,
+    growthData
   };
 };

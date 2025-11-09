@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Video, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
@@ -7,15 +7,33 @@ import RealPaidOrdersSection from '@/components/admin/approvals/RealPaidOrdersSe
 import RealPendingVideosSection from '@/components/admin/approvals/RealPendingVideosSection';
 import RealApprovedVideosSection from '@/components/admin/approvals/RealApprovedVideosSection';
 import RealRejectedVideosSection from '@/components/admin/approvals/RealRejectedVideosSection';
+import AdminPeriodSelector, { PeriodType, getPeriodDates } from '@/components/admin/common/AdminPeriodSelector';
 
 const ApprovalsPage = () => {
   const [activeTab, setActiveTab] = useState('pending-orders');
+  const [periodFilter, setPeriodFilter] = useState<PeriodType>('current_month');
+  const [customStartDate, setCustomStartDate] = useState<Date>();
+  const [customEndDate, setCustomEndDate] = useState<Date>();
+
+  const { start, end } = useMemo(() => {
+    return getPeriodDates(periodFilter, customStartDate, customEndDate);
+  }, [periodFilter, customStartDate, customEndDate]);
+
   const { stats, loading, refetch } = useRealApprovalsData();
+
+  const handlePeriodChange = (period: PeriodType) => {
+    setPeriodFilter(period);
+  };
+
+  const handleCustomDateChange = (start: Date | undefined, end: Date | undefined) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+  };
 
   return (
     <div className="space-y-6">
       {/* Header Principal */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center">
             <Video className="h-8 w-8 mr-3 text-primary" />
@@ -25,6 +43,14 @@ const ApprovalsPage = () => {
             Gestão completa de vídeos enviados pelos clientes - Conformidade CONAR
           </p>
         </div>
+
+        <AdminPeriodSelector
+          value={periodFilter}
+          onChange={handlePeriodChange}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomDateChange={handleCustomDateChange}
+        />
       </div>
 
       {/* Estatísticas Gerais */}

@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useMonthlyDashboardData } from '@/hooks/useMonthlyDashboardData';
 import DashboardCharts from '@/components/admin/charts/DashboardCharts';
 import DashboardHeader from '@/components/admin/dashboard/DashboardHeader';
@@ -9,26 +8,42 @@ import DashboardQuickActions from '@/components/admin/dashboard/DashboardQuickAc
 import DashboardFinancialSummary from '@/components/admin/dashboard/DashboardFinancialSummary';
 import DashboardErrorState from '@/components/admin/dashboard/DashboardErrorState';
 import DashboardLoadingState from '@/components/admin/dashboard/DashboardLoadingState';
+import { PeriodType, getPeriodDates } from '@/components/admin/common/AdminPeriodSelector';
 
 const Dashboard = () => {
   console.log('🎯 [DASHBOARD] Componente renderizado');
   
+  const [periodFilter, setPeriodFilter] = useState<PeriodType>('current_month');
+  const [customStartDate, setCustomStartDate] = useState<Date>();
+  const [customEndDate, setCustomEndDate] = useState<Date>();
+
+  const { start, end } = useMemo(() => {
+    return getPeriodDates(periodFilter, customStartDate, customEndDate);
+  }, [periodFilter, customStartDate, customEndDate]);
+
   const { 
-    selectedMonth, 
     stats, 
     chartData, 
     loading, 
     error,
-    handleMonthChange,
     refetch,
     growthData
-  } = useMonthlyDashboardData();
+  } = useMonthlyDashboardData(start, end);
+
+  const handlePeriodChange = (period: PeriodType) => {
+    setPeriodFilter(period);
+  };
+
+  const handleCustomDateChange = (start: Date | undefined, end: Date | undefined) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+  };
 
   console.log('🎯 [DASHBOARD] Estado atual:', {
     loading,
     hasError: !!error,
     hasStats: !!stats,
-    selectedMonth
+    periodFilter
   });
 
   if (error) {
@@ -51,8 +66,11 @@ const Dashboard = () => {
   return (
     <div className="space-y-6 md:space-y-8 p-3 md:p-6 bg-gray-50 min-h-screen">
       <DashboardHeader 
-        selectedMonth={selectedMonth}
-        onMonthChange={handleMonthChange}
+        periodFilter={periodFilter}
+        onPeriodChange={handlePeriodChange}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomDateChange={handleCustomDateChange}
         onRefetch={refetch}
       />
 
@@ -70,7 +88,7 @@ const Dashboard = () => {
 
       <DashboardFinancialSummary 
         stats={stats}
-        selectedMonth={selectedMonth}
+        periodFilter={periodFilter}
         growthData={growthData}
       />
     </div>
