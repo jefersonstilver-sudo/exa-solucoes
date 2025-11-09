@@ -218,6 +218,23 @@ const insertUserRecord = async (
 
       insertSuccess = true;
       console.log(`✅ [CREATE-ADMIN] Usuário inserido na tabela users com role ${adminType} na tentativa ${attempt}`);
+      
+      // ✅ SECURITY: Inserir role na tabela user_roles (secure)
+      console.log('🔐 [CREATE-ADMIN] Inserindo role na tabela user_roles...');
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: newUser.id,
+          role: adminType
+        });
+      
+      if (roleError) {
+        console.error('⚠️ [CREATE-ADMIN] Erro ao inserir role em user_roles:', roleError);
+        // Não falhar a operação toda, pois o trigger deve sincronizar
+      } else {
+        console.log('✅ [CREATE-ADMIN] Role inserido na tabela user_roles com sucesso');
+      }
+      
       break;
 
     } catch (error) {

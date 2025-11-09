@@ -58,23 +58,25 @@ export const hasUserRole = (
 };
 
 /**
- * Updates a user's role in the database
+ * Updates a user's role in the database (SECURE VERSION - uses user_roles table)
  * @param userId The ID of the user to update
  * @param role The new role to assign
  * @returns Success status and any error
  */
 export const updateUserRoleInDB = async (userId: string, role: UserRole): Promise<{success: boolean, error?: any}> => {
   try {
+    // ✅ SECURITY: Update role in user_roles table (secure)
     const { error } = await supabase
-      .from('users')
+      .from('user_roles')
       .update({ role })
-      .eq('id', userId);
+      .eq('user_id', userId);
       
     if (error) {
-      console.error('Error updating role in users table:', error);
+      console.error('Error updating role in user_roles table:', error);
       return { success: false, error };
     }
     
+    // The trigger will automatically sync to users table
     return { success: true };
   } catch (error) {
     console.error('Exception updating user role:', error);

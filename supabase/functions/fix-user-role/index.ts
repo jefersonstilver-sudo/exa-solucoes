@@ -26,20 +26,39 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Atualizar na tabela users
+    // ✅ SECURITY: Atualizar na tabela user_roles (secure)
+    const { data: roleData, error: roleError } = await supabaseServiceRole
+      .from('user_roles')
+      .update({ role })
+      .eq('user_id', (
+        await supabaseServiceRole
+          .from('users')
+          .select('id')
+          .eq('email', email)
+          .single()
+      ).data?.id)
+      .select()
+      .single();
+
+    if (roleError) {
+      console.error('❌ [FIX-ROLE] Erro ao atualizar user_roles:', roleError);
+      throw roleError;
+    }
+
+    // Atualizar nome na tabela users (não crítico para segurança)
     const { data, error } = await supabaseServiceRole
       .from('users')
-      .update({ role, nome })
+      .update({ nome })
       .eq('email', email)
       .select()
       .single();
 
     if (error) {
-      console.error('❌ [FIX-ROLE] Erro:', error);
+      console.error('❌ [FIX-ROLE] Erro ao atualizar users:', error);
       throw error;
     }
 
-    console.log('✅ [FIX-ROLE] Role corrigido com sucesso:', data);
+    console.log('✅ [FIX-ROLE] Role corrigido com sucesso:', { role: roleData, user: data });
 
     return new Response(
       JSON.stringify({ success: true, user: data }),
