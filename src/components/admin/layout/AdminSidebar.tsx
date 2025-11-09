@@ -16,6 +16,7 @@ import {
   Coffee,
   Ticket,
   Bell,
+  Mail,
   Megaphone,
   LogOut,
   Zap,
@@ -201,6 +202,14 @@ const AdminSidebar = () => {
       requireSuperAdmin: false,
       section: 'content',
       permission: 'canManageNotifications'
+    },
+    {
+      label: 'Comunicações',
+      icon: <Mail className="h-5 w-5" />,
+      href: buildPath('comunicacoes'),
+      requireSuperAdmin: false,
+      section: 'content',
+      permission: 'canManageHomepageImages'
     }
   ];
 

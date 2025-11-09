@@ -14,6 +14,7 @@ import {
   UserCheck,
   Ticket,
   Bell,
+  Mail,
   Megaphone,
   LogOut,
   Zap,
@@ -209,6 +210,12 @@ export function ModernAdminSidebar() {
           href: buildPath('notificacoes'),
           icon: Bell,
           permission: 'canManageNotifications'
+        },
+        {
+          title: 'Comunicações',
+          href: buildPath('comunicacoes'),
+          icon: Mail,
+          permission: 'canManageHomepageImages'
         }
       ]
     }
@@ -218,12 +225,8 @@ export function ModernAdminSidebar() {
   const filteredGroups = navigationGroups.map(group => ({
     ...group,
     items: group.items.filter(item => {
-      const hasSuperAdminAccess = !item.requireSuperAdmin || isSuperAdmin;
       const hasPermission = !item.permission || permissions[item.permission as keyof typeof permissions];
-      
-      if (!hasSuperAdminAccess) return false;
-      if (!hasPermission) return false;
-      return true;
+      return hasPermission;
     })
   })).filter(group => group.items.length > 0);
 

@@ -10,6 +10,7 @@ import SindicosInteressados from '@/pages/admin/SindicosInteressados';
 import CouponsPage from '@/pages/admin/CouponsPage';
 import HomepageImagesPage from '@/pages/admin/HomepageImagesPage';
 import NotificationsPage from '@/pages/admin/NotificationsPage';
+import ComunicacoesPage from '@/pages/admin/ComunicacoesPage';
 import VideoManagement from '@/pages/admin/VideoManagement';
 import VideosSitePage from '@/pages/admin/VideosSitePage';
 import LeadsExa from '@/pages/admin/LeadsExa';
@@ -56,6 +57,7 @@ const AdminRoutes = () => {
         <Route path="logos" element={<LogosAdmin />} />
       )}
       <Route path="notificacoes" element={<NotificationsPage />} />
+      <Route path="comunicacoes" element={<ComunicacoesPage />} />
     </Routes>
   );
 };
