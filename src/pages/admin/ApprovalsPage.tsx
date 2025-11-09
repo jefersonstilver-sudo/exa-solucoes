@@ -17,73 +17,81 @@ const ApprovalsPage = () => {
       {/* Header Principal */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-black flex items-center">
-            <Video className="h-8 w-8 mr-3 text-[#FF6B35]" />
+          <h1 className="text-3xl font-bold text-foreground flex items-center">
+            <Video className="h-8 w-8 mr-3 text-primary" />
             Sistema de Aprovações de Vídeos
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-muted-foreground mt-2">
             Gestão completa de vídeos enviados pelos clientes - Conformidade CONAR
           </p>
         </div>
       </div>
 
       {/* Estatísticas Gerais */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-blue-200 to-blue-100 border-blue-300">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="border-border bg-card hover:shadow-md transition-shadow">
           <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <Clock className="h-6 w-6 text-blue-600" />
-              <div>
-                <h3 className="font-semibold text-black">Aguardando Vídeo</h3>
-                <p className="text-2xl font-bold text-blue-800">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Aguardando Vídeo</p>
+                <p className="text-3xl font-bold text-foreground">
                   {stats.paidWithoutVideo}
                 </p>
-                <p className="text-gray-600 text-sm">pedidos pagos</p>
+                <p className="text-xs text-muted-foreground">pedidos pagos</p>
+              </div>
+              <div className="rounded-full bg-muted p-3">
+                <Clock className="h-6 w-6 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-yellow-100 to-yellow-50 border-yellow-200">
+        <Card className="border-border bg-card hover:shadow-md transition-shadow">
           <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <AlertTriangle className="h-6 w-6 text-yellow-600" />
-              <div>
-                <h3 className="font-semibold text-black">Para Aprovação</h3>
-                <p className="text-2xl font-bold text-yellow-600">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Para Aprovação</p>
+                <p className="text-3xl font-bold text-foreground">
                   {stats.pendingApproval}
                 </p>
-                <p className="text-gray-600 text-sm">vídeos enviados</p>
+                <p className="text-xs text-muted-foreground">vídeos enviados</p>
+              </div>
+              <div className="rounded-full bg-muted p-3">
+                <AlertTriangle className="h-6 w-6 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-100 to-green-50 border-green-200">
+        <Card className="border-border bg-card hover:shadow-md transition-shadow">
           <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-              <div>
-                <h3 className="font-semibold text-black">Aprovados</h3>
-                <p className="text-2xl font-bold text-green-600">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Aprovados</p>
+                <p className="text-3xl font-bold text-foreground">
                   {stats.approved}
                 </p>
-                <p className="text-gray-600 text-sm">vídeos ativos</p>
+                <p className="text-xs text-muted-foreground">vídeos ativos</p>
+              </div>
+              <div className="rounded-full bg-muted p-3">
+                <CheckCircle className="h-6 w-6 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-100 to-red-50 border-red-200">
+        <Card className="border-border bg-card hover:shadow-md transition-shadow">
           <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <XCircle className="h-6 w-6 text-red-600" />
-              <div>
-                <h3 className="font-semibold text-black">Rejeitados</h3>
-                <p className="text-2xl font-bold text-red-600">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Rejeitados</p>
+                <p className="text-3xl font-bold text-foreground">
                   {stats.rejected}
                 </p>
-                <p className="text-gray-600 text-sm">vídeos rejeitados</p>
+                <p className="text-xs text-muted-foreground">vídeos rejeitados</p>
+              </div>
+              <div className="rounded-full bg-muted p-3">
+                <XCircle className="h-6 w-6 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
@@ -92,31 +100,31 @@ const ApprovalsPage = () => {
 
       {/* Tabs para Separação */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-100 border border-gray-200">
+        <TabsList className="grid w-full grid-cols-4 bg-muted">
           <TabsTrigger 
             value="pending-orders" 
-            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-black text-gray-600"
+            className="flex items-center space-x-2"
           >
             <Clock className="h-4 w-4" />
             <span>Aguardando Vídeo ({stats.paidWithoutVideo})</span>
           </TabsTrigger>
           <TabsTrigger 
             value="pending-videos" 
-            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-black text-gray-600"
+            className="flex items-center space-x-2"
           >
             <AlertTriangle className="h-4 w-4" />
             <span>Para Aprovação ({stats.pendingApproval})</span>
           </TabsTrigger>
           <TabsTrigger 
             value="approved-videos" 
-            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-black text-gray-600"
+            className="flex items-center space-x-2"
           >
             <CheckCircle className="h-4 w-4" />
             <span>Aprovados ({stats.approved})</span>
           </TabsTrigger>
           <TabsTrigger 
             value="rejected-videos" 
-            className="flex items-center space-x-2 data-[state=active]:bg-[#00FFAB] data-[state=active]:text-black text-gray-600"
+            className="flex items-center space-x-2"
           >
             <XCircle className="h-4 w-4" />
             <span>Rejeitados ({stats.rejected})</span>
