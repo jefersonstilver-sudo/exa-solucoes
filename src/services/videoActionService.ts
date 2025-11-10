@@ -180,6 +180,39 @@ export const removeVideo = async (
       return false;
     }
 
+    // 🆕 FASE 5: Deletar da AWS ANTES de deletar do Supabase
+    if (videoToRemove.video_id) {
+      console.log('🌐 [VIDEO_ACTION] Deletando vídeo da AWS em todos os prédios...');
+      
+      try {
+        // Buscar pedido_id do slot
+        const { data: slotData } = await supabase
+          .from('pedido_videos')
+          .select('pedido_id')
+          .eq('id', slotId)
+          .single();
+
+        if (slotData?.pedido_id) {
+          const { data, error } = await supabase.functions.invoke('delete-video-from-external-api', {
+            body: {
+              video_id: videoToRemove.video_id,
+              pedido_id: slotData.pedido_id
+            }
+          });
+
+          if (error) {
+            console.warn('⚠️ [VIDEO_ACTION] Falha ao deletar vídeo da AWS:', error);
+            // NÃO bloquear - continuar com deleção local
+          } else {
+            console.log('✅ [VIDEO_ACTION] Vídeo deletado da AWS:', data);
+          }
+        }
+      } catch (awsError) {
+        console.warn('⚠️ [VIDEO_ACTION] Erro ao chamar API AWS:', awsError);
+        // NÃO bloquear - continuar com deleção local
+      }
+    }
+
     // Deletar arquivo do storage se existir
     if (videoToRemove.video_data?.url && videoToRemove.video_data.url !== 'pending_upload') {
       await deleteVideoFromStorage(videoToRemove.video_data.url);
