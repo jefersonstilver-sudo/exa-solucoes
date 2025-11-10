@@ -83,16 +83,14 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       
       console.log('🔄 [VIDEO HERO] Vídeo finalizado, avançando para o próximo...');
       
-      // ✅ NOVO: Verificar mudança de vídeo programado ao fim da playlist
-      if (nextVideoIndex === 0) {
-        console.log('🔄 [VIDEO HERO] Playlist completa - verificando mudança de vídeo programado...');
-        window.location.reload(); // Força reload para buscar vídeos atualizados
-        return;
-      }
-      
       // Aguardar frame antes de trocar para evitar flicker
       requestAnimationFrame(() => {
         setCurrentIndex(nextVideoIndex);
+        
+        // ✅ MELHORIA: Ao fim da playlist, apenas refetch via polling (não reload)
+        if (nextVideoIndex === 0) {
+          console.log('🔄 [VIDEO HERO] Playlist completa - ciclo reiniciado');
+        }
       });
     };
 

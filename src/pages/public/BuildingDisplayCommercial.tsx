@@ -257,16 +257,18 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
             </div>
           </div>
 
-          {/* ⏰🌤️ Relógio e Clima - grid responsivo (25-40% da altura) */}
-          <div className="flex-[35] md:flex-[30] lg:flex-[25] min-h-0 w-full grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
-            {/* Relógio */}
-            <div className="h-full min-h-0">
-              <LiveClock />
-            </div>
+          {/* ⏰🌤️ Relógio e Clima - grid responsivo */}
+          <div className="flex-[35] md:flex-[30] lg:flex-[25] min-h-0 w-full">
+            <div className="h-full w-full grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
+              {/* Relógio */}
+              <div className="h-full min-h-0 w-full">
+                <LiveClock />
+              </div>
 
-            {/* Clima */}
-            <div className="h-full min-h-0">
-              <WeatherFooter buildingName={buildingName} />
+              {/* Clima */}
+              <div className="h-full min-h-0 w-full">
+                <WeatherFooter buildingName={buildingName} />
+              </div>
             </div>
           </div>
         </div>
