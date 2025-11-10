@@ -125,6 +125,28 @@ export const setBaseVideo = async (slotId: string): Promise<{
       }
 
       console.log('✅ [VIDEO_BASE] Fallback: Banco atualizado com sucesso');
+
+      // Chamar Edge Function também no caminho de fallback
+      if (listaPredios && listaPredios.length > 0) {
+        try {
+          const buildingUuid = listaPredios[0];
+          const clientId = String(buildingUuid).substring(0, 4);
+          console.log('📦 [VIDEO_BASE][FB] Invocando notify-active', { clientId, buildingUuid });
+          const { data: fnData, error: fnError } = await supabase.functions.invoke('notify-active', {
+            body: { clientId, buildingUuid }
+          });
+          if (fnError) {
+            console.error('❌ [VIDEO_BASE][FB] notify-active erro:', fnError);
+          } else {
+            console.log('✅ [VIDEO_BASE][FB] notify-active ok:', fnData);
+          }
+        } catch (e) {
+          console.error('⚠️ [VIDEO_BASE][FB] Erro ao invocar edge function:', e);
+        }
+      } else {
+        console.warn('⚠️ [VIDEO_BASE][FB] Nenhum prédio encontrado na lista_predios');
+      }
+
       console.log('✅ [VIDEO_BASE] Fallback direto concluído com sucesso');
       return {
         success: true,
