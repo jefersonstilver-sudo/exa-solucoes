@@ -127,7 +127,7 @@ serve(async (req: Request) => {
     console.log('👤 [VIDEO-NOTIFICATION] Buscando dados do cliente...');
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('email, name')
+      .select('email, nome')
       .eq('id', pedido.client_id)
       .single();
 
@@ -137,7 +137,7 @@ serve(async (req: Request) => {
     }
 
     const userEmail = userData.email;
-    const userName = userData.name || userData.email?.split('@')[0] || 'Cliente';
+    const userName = userData.nome || userData.email?.split('@')[0] || 'Cliente';
     const videoTitleFinal = video_title || 'Seu Vídeo';
 
     console.log('✅ [VIDEO-NOTIFICATION] Dados coletados:', {
