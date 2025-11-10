@@ -85,11 +85,14 @@ serve(async (req: Request) => {
 
     // Check if user has permission for this order (must be client or admin)
     // Usar service role para consultar role do usuário (evita problemas de RLS)
-    const { data: userRole } = await supabase
+    console.log('🔍 [VIDEO-NOTIFICATION] Verificando role do usuário:', user.id);
+    const { data: userRole, error: roleError } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single();
+
+    console.log('📊 [VIDEO-NOTIFICATION] Resultado da query de role:', { userRole, roleError });
 
     const isAdmin = userRole && ['admin', 'super_admin'].includes(userRole.role);
     console.log('🔐 [VIDEO-NOTIFICATION] Usuário é admin?', isAdmin, 'Role:', userRole?.role);
