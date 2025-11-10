@@ -10,7 +10,7 @@ import PixPaymentButton from '@/components/checkout/summary/PixPaymentButton';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import CreditCardPaymentButton from '@/components/checkout/summary/CreditCardPaymentButton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CreditCard, Shield, Lock } from 'lucide-react';
+import { ArrowLeft, CreditCard, Shield, Lock, Smartphone } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
 import { useSimplifiedPixCheckout } from '@/hooks/useSimplifiedPixCheckout';
@@ -111,19 +111,20 @@ const CheckoutSummary = () => {
     ? baseTotal - (baseTotal * couponDiscount / 100)
     : baseTotal;
   
-  // CRÍTICO: Garantir valor mínimo de R$ 0,05
+  // CRÍTICO: Garantir valor mínimo de R$ 0,05 - SEMPRE gera PIX
   const finalTotal = Math.max(totalAfterCoupon, MINIMUM_ORDER_VALUE);
 
-  // Detectar se é pedido gratuito (cupom 100%)
-  const isFreeOrder = finalTotal === MINIMUM_ORDER_VALUE && couponDiscount === 100;
+  // TODOS os pedidos geram PIX, mesmo com cupom 100%
+  const isPedidoComValorMinimo = finalTotal === MINIMUM_ORDER_VALUE && totalAfterCoupon < MINIMUM_ORDER_VALUE;
   
   console.log('[CheckoutSummary] TOTAL FINAL COM MÍNIMO:', {
     baseTotal,
     totalAfterCoupon,
     finalTotal,
     MINIMUM_ORDER_VALUE,
-    isFreeOrder,
-    appliedMinimum: totalAfterCoupon < MINIMUM_ORDER_VALUE
+    isPedidoComValorMinimo,
+    appliedMinimum: totalAfterCoupon < MINIMUM_ORDER_VALUE,
+    todosGeramPix: true
   });
   const handleBack = () => {
     navigate('/checkout/cupom');
@@ -231,16 +232,16 @@ const CheckoutSummary = () => {
             {/* Right Column - Payment (Sticky) */}
             <div className="lg:sticky lg:top-24 space-y-4 h-fit">
               {/* Payment Method Selector */}
-              {isFreeOrder ? (
+              {isPedidoComValorMinimo ? (
                 <div className="bg-white rounded-lg shadow-sm border p-4">
                   <h3 className="text-lg font-semibold mb-3">Forma de Pagamento</h3>
                   <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                     <div className="flex-1">
-                      <p className="font-medium text-green-800 text-sm">Pedido Gratuito - Cupom 100%</p>
-                      <p className="text-xs text-green-600">Acesso liberado imediatamente</p>
+                      <p className="font-medium text-green-800 text-sm">Cupom 100% - Valor Mínimo</p>
+                      <p className="text-xs text-green-600">PIX de R$ 0,05 (valor simbólico de ativação)</p>
                     </div>
-                    <p className="font-bold text-green-700">R$ 0,00</p>
+                    <p className="font-bold text-green-700">R$ 0,05</p>
                   </div>
                 </div>
               ) : (
@@ -262,13 +263,23 @@ const CheckoutSummary = () => {
 
               {/* Payment Buttons - Integrado */}
               <div className="space-y-3">
-                {isFreeOrder ? (
+                {isPedidoComValorMinimo ? (
                   <button 
                     onClick={handlePixPayment} 
                     disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {isPixProcessing ? 'Processando...' : 'Finalizar Pedido Gratuito'}
+                    {isPixProcessing ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Gerando QR Code...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Smartphone className="h-5 w-5" />
+                        <span>Gerar QR Code PIX (R$ 0,05)</span>
+                      </>
+                    )}
                   </button>
                 ) : (
                   paymentMethod === 'pix' ? (

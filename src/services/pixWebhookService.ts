@@ -17,8 +17,10 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       throw new Error("ID do cliente é obrigatório");
     }
 
-    if (!data.valor_total || parseFloat(data.valor_total) <= 0) {
-      throw new Error("Valor do pedido deve ser maior que zero");
+    // CRÍTICO: Aceitar valor mínimo de R$ 0,05 para pedidos com cupom 100%
+    const valorTotal = parseFloat(data.valor_total);
+    if (!data.valor_total || isNaN(valorTotal) || valorTotal < 0.05) {
+      throw new Error("Valor do pedido deve ser no mínimo R$ 0,05");
     }
 
     if (!data.predios_selecionados || data.predios_selecionados.length === 0) {

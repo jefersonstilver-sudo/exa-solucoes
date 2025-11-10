@@ -97,6 +97,15 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
           </span>
         </div>
 
+        {/* Mensagem de Valor Mínimo */}
+        {totalAfterCoupon < MINIMUM_ORDER_VALUE && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-xs text-blue-800">
+              <strong>Valor mínimo:</strong> R$ 0,05 é o valor simbólico de ativação do sistema. Pagamento via PIX necessário.
+            </p>
+          </div>
+        )}
+
         {/* Economia Total */}
         {totalSavings > 0 && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
