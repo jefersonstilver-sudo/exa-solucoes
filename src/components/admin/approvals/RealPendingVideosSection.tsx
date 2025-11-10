@@ -204,6 +204,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
             toast.error(`Erro ao aprovar: ${errorMsg}. Aprovação foi revertida.`);
           }
           
+          await new Promise(resolve => setTimeout(resolve, 300));
           onRefresh();
           fetchPendingVideos();
           return; // Bloquear continuação
@@ -211,6 +212,9 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
         console.log('✅ [APPROVE] Vídeo enviado para API externa com sucesso:', externalApiData);
         toast.success(`✅ Vídeo de ${clientName} aprovado e sincronizado!`);
+        
+        // Aguardar commit da transação antes do refetch
+        await new Promise(resolve => setTimeout(resolve, 500));
         
       } catch (externalError: any) {
         console.error('💥 [APPROVE] Erro ao processar API externa:', externalError);
@@ -228,6 +232,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         }
         
         toast.error(`Erro crítico: ${externalError.message}`);
+        await new Promise(resolve => setTimeout(resolve, 300));
         onRefresh();
         fetchPendingVideos();
         return; // Bloquear continuação
