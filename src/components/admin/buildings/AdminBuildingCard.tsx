@@ -304,7 +304,16 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               size="sm" 
               onClick={() => {
                 const buildingCode = building.codigo_predio || '000';
-                const url = `${window.location.origin}${generateCommercialPath(building.nome, buildingCode)}`;
+                const buildingName = building.nome || 'predio';
+                console.log('🔗 [LINK COMERCIAL] Dados do prédio:', {
+                  nome: buildingName,
+                  nome_original: building.nome,
+                  codigo: buildingCode,
+                  codigo_original: building.codigo_predio,
+                  building_id: building.id
+                });
+                const url = `${window.location.origin}${generateCommercialPath(buildingName, buildingCode)}`;
+                console.log('🌐 [LINK COMERCIAL] URL final gerada:', url);
                 navigator.clipboard.writeText(url);
                 import('sonner').then(({ toast }) => {
                   toast.success('Link Comercial Copiado!', {

@@ -9,12 +9,14 @@
  */
 export const generateBuildingSlug = (name: string): string => {
   return name
+    .trim() // Remove espaços extras do início e fim
     .toLowerCase()
     .normalize('NFD') // Decompose accented characters
     .replace(/[\u0300-\u036f]/g, '') // Remove accents
     .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
     .replace(/\s+/g, '-') // Replace spaces with hyphens
     .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, '') // Remove hyphens from start and end
     .trim();
 };
 
