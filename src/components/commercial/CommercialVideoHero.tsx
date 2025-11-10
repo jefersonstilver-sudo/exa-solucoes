@@ -176,23 +176,6 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
         
         {/* Overlay com gradiente sutil */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none z-40" />
-        
-        {/* Indicadores de progresso */}
-        {videos.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-[60]">
-            {videos.map((_, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-300",
-                  index === currentIndex 
-                    ? "w-8 bg-white" 
-                    : "w-1.5 bg-white/40"
-                )}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Preload próximo vídeo */}
