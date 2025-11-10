@@ -14,6 +14,26 @@ export const setBaseVideo = async (slotId: string): Promise<{
     console.log('⭐ [VIDEO_BASE] Definindo vídeo base:', slotId);
     videoLogger.setContext({ slotId });
 
+    // Buscar dados do pedido e prédio
+    const { data: pvData, error: pvError } = await supabase
+      .from('pedido_videos')
+      .select(`
+        pedido_id,
+        video_id,
+        pedidos!inner (
+          lista_predios
+        )
+      `)
+      .eq('id', slotId)
+      .maybeSingle();
+
+    if (pvError) {
+      console.error('❌ [VIDEO_BASE] Erro ao buscar dados:', pvError);
+    }
+
+    const listaPredios = pvData?.pedidos?.lista_predios;
+    console.log('🏢 [VIDEO_BASE] Lista de prédios:', listaPredios);
+
     // Helper fallback direto no banco quando RPCs falharem
     const fallbackDirectUpdate = async () => {
       console.warn('🛟 [VIDEO_BASE] Iniciando fallback direto no banco para set base video');
@@ -186,6 +206,33 @@ export const setBaseVideo = async (slotId: string): Promise<{
     }
 
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
+    
+    // Chamar API externa com os 4 primeiros dígitos do UUID do prédio
+    if (listaPredios && listaPredios.length > 0) {
+      try {
+        const primeiroPrediUUID = listaPredios[0];
+        const clientId = primeiroPrediUUID.substring(0, 4);
+        const apiUrl = `http://15.228.8.3:8000/ativo/${clientId}`;
+        
+        console.log('📞 [VIDEO_BASE] Chamando API externa:');
+        console.log('  - Prédio UUID:', primeiroPrediUUID);
+        console.log('  - Client ID (4 dígitos):', clientId);
+        console.log('  - URL:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
+          method: 'PATCH'
+        });
+        
+        console.log('✅ [VIDEO_BASE] API externa respondeu:', {
+          status: response.status,
+          statusText: response.statusText
+        });
+      } catch (apiError) {
+        console.error('⚠️ [VIDEO_BASE] Erro ao chamar API externa (não bloqueante):', apiError);
+      }
+    } else {
+      console.warn('⚠️ [VIDEO_BASE] Nenhum prédio encontrado na lista_predios');
+    }
     
     videoLogger.logProcessEnd('SET_BASE_VIDEO', true);
     videoLogger.clearContext();
