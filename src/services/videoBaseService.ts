@@ -3,11 +3,13 @@ import { videoLogger } from './logger/VideoActionLogger';
 
 /**
  * Extrai o nome do arquivo sem extensão de uma URL
+ * Remove TODAS as extensões de vídeo comuns
  */
 const getFileNameWithoutExtension = (url: string): string => {
   const parts = url.split('/');
   const fileName = parts[parts.length - 1];
-  return fileName.replace(/\.mp4$/i, '');
+  // Remove qualquer extensão de vídeo comum
+  return fileName.replace(/\.(mp4|mov|avi|mkv|wmv|flv|webm)$/i, '');
 };
 
 /**
@@ -376,34 +378,43 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
 
       console.log('✅ [VIDEO_BASE] Fallback: Banco atualizado com sucesso');
 
-      // 7) 🔄 Sincronizar com API externa
+      // 7) 🔥 Sincronizar com API externa
       if (buildingIds.length > 0) {
         try {
-          console.log('🌐 [VIDEO_BASE] Fallback: Sincronizando com API externa...');
+          console.log('🌐🔥 [VIDEO_BASE] Fallback: === SINCRONIZANDO COM API EXTERNA ===');
           
           // PRIMEIRO: Desativar TODOS os outros vídeos na API externa
           if (allVideos && allVideos.length > 0) {
+            console.log(`🔄 [VIDEO_BASE] Fallback: Processando ${allVideos.length} vídeos para desativação...`);
             for (const video of allVideos) {
               if (video.id !== slotId) {
                 const videoUrl = (video.videos as any)?.url || '';
                 const videoFileName = videoUrl ? getFileNameWithoutExtension(videoUrl) : 'video';
-                console.log(`🔄 [VIDEO_BASE] Fallback: Desativando vídeo na API: ${videoFileName}`);
+                console.log(`⚫ [VIDEO_BASE] Fallback: Desativando "${videoFileName}" (${video.id})`);
+                console.log(`📡 [VIDEO_BASE] Fallback: Chamando API para DESATIVAR: ${videoFileName}`);
                 await syncVideoWithExternalAPI(buildingIds, videoFileName, false);
+                console.log(`✅ [VIDEO_BASE] Fallback: ${videoFileName} desativado com sucesso`);
               }
             }
+          } else {
+            console.log('ℹ️ [VIDEO_BASE] Fallback: Nenhum outro vídeo para desativar');
           }
           
           // DEPOIS: Ativar o vídeo selecionado na API externa
           const selectedVideoUrl = (pv.videos as any)?.url || '';
           const selectedVideoFileName = selectedVideoUrl ? getFileNameWithoutExtension(selectedVideoUrl) : 'video';
-          console.log(`🔄 [VIDEO_BASE] Fallback: Ativando vídeo na API: ${selectedVideoFileName}`);
+          console.log(`🟢 [VIDEO_BASE] Fallback: Ativando vídeo selecionado: "${selectedVideoFileName}"`);
+          console.log(`📡 [VIDEO_BASE] Fallback: Chamando API para ATIVAR: ${selectedVideoFileName}`);
           await syncVideoWithExternalAPI(buildingIds, selectedVideoFileName, true);
+          console.log(`✅ [VIDEO_BASE] Fallback: ${selectedVideoFileName} ativado com sucesso`);
           
-          console.log('✅ [VIDEO_BASE] Fallback: Sincronização com API externa concluída');
+          console.log('🎉 [VIDEO_BASE] Fallback: === SINCRONIZAÇÃO COM API CONCLUÍDA ===');
         } catch (apiError) {
-          console.error('💥 [VIDEO_BASE] Fallback: Erro na API externa:', apiError);
+          console.error('💥 [VIDEO_BASE] Fallback: ERRO NA API EXTERNA:', apiError);
           // Não falhar a operação por causa de erro na API externa
         }
+      } else {
+        console.warn('⚠️ [VIDEO_BASE] Fallback: Lista de prédios vazia, API não será chamada');
       }
 
       console.log('✅ [VIDEO_BASE] Fallback direto concluído com sucesso');
@@ -483,11 +494,13 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
 
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
 
-    // 🔄 NOVA LÓGICA: Sincronizar com API externa
+    // 🔄 🔥 CRÍTICO: Sincronizar com API externa
+    console.log('🌐🔥 [VIDEO_BASE] === INICIANDO SINCRONIZAÇÃO COM API EXTERNA ===');
+    console.log('🔥 [VIDEO_BASE] slotId:', slotId);
+    
     try {
-      console.log('🌐 [VIDEO_BASE] Iniciando sincronização com API externa...');
-      
       // 1. Buscar informações do slot selecionado
+      console.log('🔍 [VIDEO_BASE] PASSO 1: Buscando informações do slot selecionado...');
       videoLogger.log('debug', 'DATA_FETCH', 'Fetching selected slot info', { slotId });
       
       const { data: selectedSlot, error: slotError } = await supabase
@@ -504,17 +517,28 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         .eq('id', slotId)
         .single();
       
+      console.log('📦 [VIDEO_BASE] Resultado da busca do slot:', { selectedSlot, slotError });
       videoLogger.logDataFetch('Selected Slot', `slot_id=${slotId}`, selectedSlot);
       
       if (slotError || !selectedSlot) {
-        console.error('❌ [VIDEO_BASE] Erro ao buscar slot selecionado:', slotError);
+        console.error('❌ [VIDEO_BASE] ERRO ao buscar slot selecionado:', slotError);
         videoLogger.log('error', 'DATA_FETCH', 'Failed to fetch selected slot', { slotError });
-        return true; // Não falhar a operação principal por causa disso
+        console.error('🚨 [VIDEO_BASE] NÃO FOI POSSÍVEL CHAMAR API EXTERNA - Dados do slot não encontrados');
+        return true;
       }
+      
+      console.log('✅ [VIDEO_BASE] Slot encontrado:', {
+        pedido_id: selectedSlot.pedido_id,
+        video_id: selectedSlot.video_id,
+        video_url: (selectedSlot.videos as any)?.url
+      });
       
       const selectedVideoUrl = (selectedSlot.videos as any)?.url || '';
       const selectedVideoFileName = selectedVideoUrl ? getFileNameWithoutExtension(selectedVideoUrl) : 'video';
-      console.log('📹 [VIDEO_BASE] Vídeo selecionado (arquivo):', selectedVideoFileName);
+      console.log('📹 [VIDEO_BASE] Vídeo selecionado:', {
+        url: selectedVideoUrl,
+        arquivoSemExtensao: selectedVideoFileName
+      });
       videoLogger.setContext({
         videoId: selectedSlot.video_id,
         videoTitle: selectedVideoFileName,
@@ -522,6 +546,7 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       });
       
       // 2. Buscar lista de prédios do pedido
+      console.log('🔍 [VIDEO_BASE] PASSO 2: Buscando lista de prédios do pedido...');
       videoLogger.log('debug', 'DATA_FETCH', 'Fetching building list', { pedidoId: selectedSlot.pedido_id });
       
       const { data: pedido, error: pedidoError } = await supabase
@@ -530,19 +555,25 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         .eq('id', selectedSlot.pedido_id)
         .single();
       
+      console.log('📦 [VIDEO_BASE] Resultado da busca de prédios:', { pedido, pedidoError });
       videoLogger.logDataFetch('Buildings List', `pedido_id=${selectedSlot.pedido_id}`, pedido);
       
       if (pedidoError || !pedido?.lista_predios || pedido.lista_predios.length === 0) {
-        console.warn('⚠️ [VIDEO_BASE] Lista de prédios não encontrada:', pedidoError);
+        console.error('❌ [VIDEO_BASE] ERRO: Lista de prédios não encontrada:', pedidoError);
         videoLogger.log('warn', 'DATA_FETCH', 'No buildings found', { pedidoError });
-        return true; // Não falhar a operação principal
+        console.error('🚨 [VIDEO_BASE] NÃO FOI POSSÍVEL CHAMAR API EXTERNA - Lista de prédios vazia');
+        return true;
       }
       
       const buildingIds = pedido.lista_predios as string[];
-      console.log('🏢 [VIDEO_BASE] Prédios do pedido:', buildingIds);
+      console.log('✅ [VIDEO_BASE] Prédios encontrados:', {
+        total: buildingIds.length,
+        ids: buildingIds
+      });
       videoLogger.setContext({ buildingIds });
       
       // 3. Buscar TODOS os vídeos do pedido (para desativar os outros)
+      console.log('🔍 [VIDEO_BASE] PASSO 3: Buscando TODOS os vídeos do pedido...');
       videoLogger.log('debug', 'DATA_FETCH', 'Fetching all order videos', { pedidoId: selectedSlot.pedido_id });
       
       const { data: allVideos, error: allVideosError } = await supabase
@@ -558,49 +589,64 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         `)
         .eq('pedido_id', selectedSlot.pedido_id);
       
+      console.log('📦 [VIDEO_BASE] Resultado da busca de todos os vídeos:', {
+        total: allVideos?.length || 0,
+        videos: allVideos,
+        error: allVideosError
+      });
       videoLogger.logDataFetch('All Order Videos', `pedido_id=${selectedSlot.pedido_id}`, allVideos);
       
       if (allVideosError) {
-        console.error('❌ [VIDEO_BASE] Erro ao buscar todos os vídeos:', allVideosError);
+        console.error('❌ [VIDEO_BASE] ERRO ao buscar todos os vídeos:', allVideosError);
         videoLogger.log('error', 'DATA_FETCH', 'Failed to fetch all videos', { allVideosError });
-        return true; // Não falhar a operação principal
+        console.warn('⚠️ [VIDEO_BASE] Continuando apenas com vídeo selecionado...');
       }
       
       console.log(`📊 [VIDEO_BASE] Total de vídeos no pedido: ${allVideos?.length || 0}`);
       videoLogger.log('info', 'DATA_SUMMARY', 'Videos count', { total: allVideos?.length || 0 });
       
-      // 4. PRIMEIRO: Desativar todos os outros vídeos
+      // 4. 🔥 PRIMEIRO: Desativar TODOS os outros vídeos
+      console.log('🔥 [VIDEO_BASE] === FASE 1: DESATIVANDO TODOS OS OUTROS VÍDEOS ===');
       videoLogger.log('info', 'API_SYNC_PHASE', 'Starting deactivation phase', { 
         totalVideos: allVideos?.length || 0,
         videosToDeactivate: (allVideos?.length || 0) - 1
       });
       
       if (allVideos && allVideos.length > 0) {
+        console.log(`🔄 [VIDEO_BASE] Processando ${allVideos.length} vídeos para desativação...`);
         for (const video of allVideos) {
-          if (video.id !== slotId) { // Não processar o vídeo selecionado ainda
+          if (video.id !== slotId) {
             const videoUrl = (video.videos as any)?.url || '';
             const videoFileName = videoUrl ? getFileNameWithoutExtension(videoUrl) : 'video';
-            console.log(`🔄 [VIDEO_BASE] Desativando vídeo: ${videoFileName}`);
+            console.log(`⚫ [VIDEO_BASE] Desativando vídeo "${videoFileName}" (${video.id})`);
             videoLogger.log('info', 'API_SYNC', 'Deactivating video', { 
               videoId: video.id,
               videoFileName,
               buildingCount: buildingIds.length
             });
+            
+            console.log(`📡 [VIDEO_BASE] Chamando API externa para DESATIVAR: ${videoFileName}`);
             await syncVideoWithExternalAPI(buildingIds, videoFileName, false);
+            console.log(`✅ [VIDEO_BASE] Vídeo ${videoFileName} desativado com sucesso`);
           }
         }
+      } else {
+        console.log('ℹ️ [VIDEO_BASE] Nenhum outro vídeo para desativar');
       }
       
-      // 5. DEPOIS: Ativar o vídeo selecionado
+      // 5. 🔥 DEPOIS: Ativar APENAS o vídeo selecionado
+      console.log('🔥 [VIDEO_BASE] === FASE 2: ATIVANDO NOVO VÍDEO PRINCIPAL ===');
       videoLogger.log('info', 'API_SYNC_PHASE', 'Starting activation phase', { 
         videoFileName: selectedVideoFileName,
         buildingCount: buildingIds.length
       });
       
-      console.log(`🔄 [VIDEO_BASE] Ativando vídeo selecionado: ${selectedVideoFileName}`);
+      console.log(`🟢 [VIDEO_BASE] Ativando vídeo selecionado: "${selectedVideoFileName}"`);
+      console.log(`📡 [VIDEO_BASE] Chamando API externa para ATIVAR: ${selectedVideoFileName}`);
       await syncVideoWithExternalAPI(buildingIds, selectedVideoFileName, true);
+      console.log(`✅ [VIDEO_BASE] Vídeo ${selectedVideoFileName} ativado com sucesso`);
       
-      console.log('✅ [VIDEO_BASE] Sincronização com API externa concluída');
+      console.log('🎉 [VIDEO_BASE] === SINCRONIZAÇÃO COM API EXTERNA CONCLUÍDA COM SUCESSO ===');
       videoLogger.log('info', 'API_SYNC_PHASE', 'Sync completed successfully', {});
     } catch (apiError) {
       console.error('💥 [VIDEO_BASE] Erro na sincronização com API externa:', apiError);
