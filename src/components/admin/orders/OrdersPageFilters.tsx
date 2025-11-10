@@ -7,9 +7,12 @@ import { Search, Filter, TrendingUp } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
 interface OrdersPageFiltersProps {
   searchTerm: string;
@@ -61,33 +64,68 @@ const OrdersPageFilters: React.FC<OrdersPageFiltersProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-white border-gray-200">
-              <DropdownMenuItem onClick={() => setStatusFilter('all')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                Todos
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('pendente')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                ⏳ Aguardando Pagamento
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('tentativa')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                ❌ Tentativas Abandonadas
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('pago_pendente_video')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                📹 Aguardando Vídeo
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('video_enviado')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                📤 Vídeo Enviado
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('video_aprovado')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                ✅ Vídeo Aprovado
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('ativo')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                🟢 Ativos
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('cancelado')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                🚫 Cancelados
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('expirado')} className="text-gray-900 hover:bg-gray-100 font-medium">
-                ⏰ Expirados
-              </DropdownMenuItem>
+              <DropdownMenuRadioGroup value={statusFilter} onValueChange={setStatusFilter}>
+                <DropdownMenuRadioItem value="all">Todos os Status</DropdownMenuRadioItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Status Inteligentes</DropdownMenuLabel>
+                <DropdownMenuRadioItem value="em_exibicao">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>🟢 Em Exibição</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="aguardando_video">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span>📹 Aguardando Vídeo</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="aguardando_aprovacao">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                    <span>📤 Aguardando Aprovação</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="aguardando_pagamento">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-orange-500" />
+                    <span>⏳ Aguardando Pagamento</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Status do Sistema</DropdownMenuLabel>
+                <DropdownMenuRadioItem value="pago">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span>✅ Pago</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="cancelado">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    <span>🚫 Cancelado</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="cancelado_automaticamente">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-700" />
+                    <span>⏰ Cancelado Automaticamente</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="bloqueado">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    <span>🔒 Bloqueado</span>
+                  </div>
+                </DropdownMenuRadioItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioItem value="tentativa">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-500" />
+                    <span>📝 Tentativas</span>
+                  </div>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

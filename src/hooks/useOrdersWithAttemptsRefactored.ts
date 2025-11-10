@@ -31,11 +31,11 @@ export const useOrdersWithAttemptsRefactored = () => {
     try {
       setLoading(true);
       
-      // Usar a função SQL corrigida para pedidos (com correct_status)
-      const { data: pedidosComStatus, error: pedidosError } = await supabase.rpc('get_pedidos_com_status_correto');
+      // Usar a função SQL NOVA para pedidos com status inteligente
+      const { data: pedidosComStatus, error: pedidosError } = await supabase.rpc('get_pedidos_com_status_inteligente');
       
       if (pedidosError) {
-        console.error('❌ Erro ao buscar pedidos com status correto:', pedidosError);
+        console.error('❌ Erro ao buscar pedidos com status inteligente:', pedidosError);
         throw pedidosError;
       }
       
@@ -54,20 +54,20 @@ export const useOrdersWithAttemptsRefactored = () => {
         type: 'order' as const,
         created_at: pedido.created_at,
         status: pedido.status,
-        correct_status: pedido.correct_status, // IMPORTANTE: incluir correct_status
+        correct_status: pedido.correct_status, // IMPORTANTE: incluir correct_status calculado pela RPC
         valor_total: pedido.valor_total,
         lista_paineis: pedido.lista_paineis,
         plano_meses: pedido.plano_meses,
         data_inicio: pedido.data_inicio,
         data_fim: pedido.data_fim,
         client_id: pedido.client_id,
-        client_email: pedido.client_email, // Agora enriquecido
-        client_name: pedido.client_name, // Agora enriquecido
-        client_phone: pedido.client_phone, // Novo
-        client_cpf: pedido.client_cpf, // Novo
+        client_email: pedido.client_email,
+        client_name: pedido.client_name,
+        client_phone: pedido.client_phone,
+        client_cpf: pedido.client_cpf,
         video_status: pedido.video_status,
-        cupom_id: pedido.cupom_id, // Campo de cupom
-        coupon_code: pedido.coupon_code // Código do cupom
+        cupom_id: pedido.cupom_id,
+        coupon_code: pedido.coupon_code
       })) || [];
       
       const tentativasFormatadas = formatAttemptsData(tentativasComEmails);
@@ -94,36 +94,39 @@ export const useOrdersWithAttemptsRefactored = () => {
   };
 
   useEffect(() => {
+    console.log('🔧 Setting up real-time listeners for orders and attempts...');
     fetchData();
 
-    // Configurar escuta em tempo real para mudanças
     const channel = supabase
       .channel('orders-and-attempts-changes')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'pedidos' 
-        }, 
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pedidos' },
         (payload) => {
-          console.log('🔄 Mudança detectada em pedidos:', payload);
+          console.log('🔄 Pedidos change detected:', payload);
           fetchData();
         }
       )
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'tentativas_compra' 
-        }, 
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tentativas_compra' },
         (payload) => {
-          console.log('🔄 Mudança detectada em tentativas:', payload);
+          console.log('🔄 Tentativas change detected:', payload);
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pedido_videos' },
+        (payload) => {
+          console.log('🎥 Pedido videos change detected:', payload);
           fetchData();
         }
       )
       .subscribe();
 
     return () => {
+      console.log('🧹 Cleaning up real-time listeners');
       supabase.removeChannel(channel);
     };
   }, []);
