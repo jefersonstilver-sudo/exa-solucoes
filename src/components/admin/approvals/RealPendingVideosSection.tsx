@@ -143,7 +143,15 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         throw error;
       }
       
-      console.log('✅ [APPROVE] RPC executada com sucesso:', data);
+      console.log('✅ [APPROVE] RPC retornou:', data);
+      
+      // CRÍTICO: Verificar se a aprovação foi bem-sucedida
+      if (data !== true) {
+        console.error('💥 [APPROVE] Aprovação falhou - RPC retornou false');
+        throw new Error('Vídeo não pôde ser aprovado. Pode já estar aprovado ou não encontrado. Verifique os logs do banco de dados.');
+      }
+      
+      console.log('✅ [APPROVE] Vídeo aprovado com sucesso no banco!');
 
       // Buscar dados do vídeo para enviar email
       const { data: videoData } = await supabase
