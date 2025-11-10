@@ -31,7 +31,7 @@ const Exa = () => {
   }, []);
 
   return (
-    <Layout className="bg-white">
+    <Layout className="bg-white pt-16">
       <SEO
         title="EXA | Publicidade Inteligente em Elevadores - Painéis Digitais Foz do Iguaçu"
         description="Transforme elevadores em mídia premium. Painéis digitais 21&quot; em prédios de alto padrão em Foz do Iguaçu. Teste GRÁTIS por 30 dias. Alcance 10.000+ moradores diariamente."
@@ -45,11 +45,11 @@ const Exa = () => {
           createFAQSchema(homeFAQs)
         ]}
       />
-      <div className="relative overflow-x-hidden w-full">
+      <div className="relative overflow-x-hidden w-full -mt-16">
         <HeroSection />
         
-        {/* Logo Ticker - Full Width */}
-        <div className="w-full">
+        {/* Logo Ticker - Full Width - sem espaçamento negativo */}
+        <div className="w-full -mt-12 md:-mt-8 lg:-mt-4">
           <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
         </div>
         

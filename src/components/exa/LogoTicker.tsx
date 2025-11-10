@@ -124,7 +124,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       <TickerLogoItem
         key={logo.id}
         logo={logo}
-        className="h-14 lg:h-14 md:h-12 sm:h-10 transition-all duration-300 ease-out hover:scale-110"
+        className="h-10 md:h-12 lg:h-14 transition-all duration-300 ease-out hover:scale-110"
         onImageLoad={handleLogoLoad}
         onImageError={handleLogoError}
       />
@@ -186,11 +186,11 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
       <section 
         id="home-logo-ticker" 
         aria-label="Marcas parceiras"
-        className="relative w-full -mt-4 md:-mt-6"
+        className="relative w-full mt-0"
       >
         <div 
           ref={containerRef}
-          className="ticker h-20 md:h-20 sm:h-16 relative overflow-hidden bg-[#9C1E1E]"
+          className="ticker h-16 md:h-18 lg:h-20 relative overflow-hidden bg-[#9C1E1E]"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onTouchStart={handleTouchStart}
@@ -225,7 +225,7 @@ const LogoTicker: React.FC<LogoTickerProps> = ({
           <div 
             ref={trackRef}
             id="ticker-track"
-            className="ticker-track absolute inset-0 flex items-center gap-16 lg:gap-20 md:gap-12 sm:gap-8 px-24 lg:px-28 whitespace-nowrap"
+            className="ticker-track absolute inset-0 flex items-center gap-8 md:gap-12 lg:gap-16 px-16 md:px-20 lg:px-24 whitespace-nowrap"
             style={{ 
               willChange: 'transform',
               width: 'max-content'
