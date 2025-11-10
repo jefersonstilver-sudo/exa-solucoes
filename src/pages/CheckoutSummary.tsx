@@ -16,6 +16,7 @@ import { useCheckout } from '@/hooks/useCheckout';
 import { useSimplifiedPixCheckout } from '@/hooks/useSimplifiedPixCheckout';
 import { useCardCheckout } from '@/hooks/useCardCheckout';
 import { toast } from 'sonner';
+import { MINIMUM_ORDER_VALUE } from '@/utils/priceCalculator';
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const {
@@ -101,14 +102,29 @@ const CheckoutSummary = () => {
     baseTotal,
     couponValid,
     couponDiscount,
-    paymentMethod
+    paymentMethod,
+    MINIMUM_ORDER_VALUE
   });
   
-  // SEM desconto PIX - mesmo preço para ambos métodos
-  const finalTotal = Math.max(0, baseTotal);
+  // Aplicar cupom se válido
+  const totalAfterCoupon = couponValid && couponDiscount > 0 
+    ? baseTotal - (baseTotal * couponDiscount / 100)
+    : baseTotal;
+  
+  // CRÍTICO: Garantir valor mínimo de R$ 0,05
+  const finalTotal = Math.max(totalAfterCoupon, MINIMUM_ORDER_VALUE);
 
   // Detectar se é pedido gratuito (cupom 100%)
-  const isFreeOrder = finalTotal <= 0;
+  const isFreeOrder = finalTotal === MINIMUM_ORDER_VALUE && couponDiscount === 100;
+  
+  console.log('[CheckoutSummary] TOTAL FINAL COM MÍNIMO:', {
+    baseTotal,
+    totalAfterCoupon,
+    finalTotal,
+    MINIMUM_ORDER_VALUE,
+    isFreeOrder,
+    appliedMinimum: totalAfterCoupon < MINIMUM_ORDER_VALUE
+  });
   const handleBack = () => {
     navigate('/checkout/cupom');
   };

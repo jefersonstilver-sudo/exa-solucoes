@@ -5,6 +5,7 @@ import { Calculator, Tag, Smartphone, TrendingDown } from 'lucide-react';
 import { CartItem } from '@/types/cart';
 import { PlanKey } from '@/types/checkout';
 import { calculateTotalPrice, calculateCartSubtotal } from '@/utils/checkoutUtils';
+import { MINIMUM_ORDER_VALUE } from '@/utils/priceCalculator';
 interface PricingBreakdownProps {
   cartItems: CartItem[];
   selectedPlan: PlanKey | null;
@@ -39,9 +40,18 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   const couponDiscountAmount = couponValid && couponDiscount > 0 ? baseTotal * couponDiscount / 100 : 0;
   const totalAfterCoupon = baseTotal - couponDiscountAmount;
 
-  // CRÍTICO: Total final SEM desconto PIX
-  const finalTotal = Math.max(0, totalAfterCoupon);
+  // CRÍTICO: Total final COM valor mínimo de R$ 0,05
+  const finalTotal = Math.max(totalAfterCoupon, MINIMUM_ORDER_VALUE);
   const totalSavings = couponDiscountAmount;
+
+  console.log('💰 [PricingBreakdown] CÁLCULO COM VALOR MÍNIMO:', {
+    baseTotal,
+    couponDiscountAmount,
+    totalAfterCoupon,
+    MINIMUM_ORDER_VALUE,
+    finalTotal,
+    appliedMinimum: totalAfterCoupon < MINIMUM_ORDER_VALUE
+  });
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
