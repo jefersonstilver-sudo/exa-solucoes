@@ -156,7 +156,8 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         // Continuar sem tentativas se houver erro
       }
 
-      // ✅ CORREÇÃO: Filtrar tentativas que têm pedidos correspondentes (independente do status)
+      // ✅ CORREÇÃO AGRESSIVA: Remover TODAS as tentativas que têm pedido correspondente
+      // (independente do tempo - pode ser antes OU depois)
       const validAttempts = processedAttempts.filter(attempt => {
         // Filtrar tentativas com valor inválido (menor ou igual a zero)
         if (attempt.valor_total <= 0) {
@@ -164,20 +165,20 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
           return false;
         }
         
-        // ✅ CORREÇÃO: Verificar se existe pedido com mesmo valor (QUALQUER STATUS, inclusive pendente)
+        // ✅ CRÍTICO: Verificar se existe QUALQUER pedido com mesmo valor e mesmo usuário
+        // Não importa quando foi criado - se existe pedido, tentativa deve ser removida
         const hasMatchingOrder = processedOrders.some(order => {
           // Mesmo valor (com tolerância de centavos)
-          if (Math.abs(order.valor_total - attempt.valor_total) > 0.01) {
+          const sameValue = Math.abs(order.valor_total - attempt.valor_total) < 0.01;
+          
+          if (!sameValue) {
             return false;
           }
           
-          // Data próxima (máximo 5 minutos para ser mais preciso)
-          const orderDate = new Date(order.created_at);
-          const attemptDate = new Date(attempt.created_at);
-          const timeDiff = Math.abs(orderDate.getTime() - attemptDate.getTime());
-          const maxTimeDiff = 5 * 60 * 1000; // 5 minutos
-          
-          return timeDiff <= maxTimeDiff;
+          // ✅ NOVO: Se tem o mesmo valor, remover a tentativa
+          // Não importa a diferença de tempo - pode ser criada antes ou depois
+          console.log(`🔍 Tentativa ${attempt.id} tem pedido correspondente ${order.id} (Valor: R$ ${order.valor_total})`);
+          return true;
         });
         
         if (hasMatchingOrder) {

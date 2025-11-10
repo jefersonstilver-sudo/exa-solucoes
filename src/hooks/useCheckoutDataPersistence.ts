@@ -58,7 +58,34 @@ export const useCheckoutDataPersistence = () => {
     totalPrice: number
   ) => {
     try {
-      console.log('💾 [CHECKOUT_PERSISTENCE] Salvando tentativa de compra...');
+      console.log('💾 [CHECKOUT_PERSISTENCE] Verificando se já existe pedido antes de salvar tentativa...');
+      
+      // ✅ CRÍTICO: Verificar se JÁ EXISTE um pedido pago com o mesmo valor
+      // Isso evita criar tentativas retroativas depois do pagamento
+      const { data: existingOrders, error: checkError } = await supabase
+        .from('pedidos')
+        .select('id, status, created_at, valor_total')
+        .eq('client_id', userId)
+        .eq('valor_total', totalPrice)
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()); // Últimas 24h
+      
+      if (checkError) {
+        console.warn('⚠️ [CHECKOUT_PERSISTENCE] Erro ao verificar pedidos existentes:', checkError);
+      }
+      
+      if (existingOrders && existingOrders.length > 0) {
+        console.log('🚫 [CHECKOUT_PERSISTENCE] JÁ EXISTE PEDIDO com mesmo valor - NÃO criando tentativa:', {
+          existingOrdersCount: existingOrders.length,
+          orders: existingOrders.map(o => ({
+            id: o.id,
+            status: o.status,
+            created_at: o.created_at
+          }))
+        });
+        return null; // Não criar tentativa se já existe pedido
+      }
+      
+      console.log('✅ [CHECKOUT_PERSISTENCE] Nenhum pedido existente encontrado, prosseguindo com tentativa');
       
       // Extrair dados dos items do carrinho
       const panelIds = cartItems.map(item => {
