@@ -42,10 +42,10 @@ const WeatherFooter: React.FC<WeatherFooterProps> = ({ buildingName }) => {
                   </div>
                 </div>
 
-                {/* Previsão próximos dias */}
+                {/* Previsão próximos dias - Hoje, Amanhã, Depois de Amanhã */}
                 <div className="flex items-center gap-3 ml-auto flex-wrap">
-                  {weatherData.forecast.map((day) => (
-                    <div key={day.date} className="text-center p-2 bg-white/5 rounded-lg">
+                  {weatherData.forecast.slice(0, 3).map((day) => (
+                    <div key={day.date} className="text-center p-2 bg-white/5 rounded-lg min-w-[80px]">
                       <div className="text-white/80 text-xs mb-1 capitalize font-medium">
                         {day.dayName}
                       </div>

@@ -195,25 +195,31 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       </header>
 
       {/* Conteúdo principal */}
-      <main className="pt-16 md:pt-20 px-4 md:px-8 pb-4">
-        <div className="container mx-auto max-w-7xl space-y-6">
-          {/* Painel do vídeo */}
-          <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/10 p-4 md:p-6">
-            <CommercialVideoHero 
-              videos={activeVideos.map(v => ({
-                id: v.video_id || '',
-                video_url: v.video_url,
-                video_nome: v.video_name || ''
-              }))}
-              className="rounded-xl overflow-hidden"
-            />
+      <main className="pt-16 md:pt-20 pb-4">
+        <div className="container mx-auto max-w-[1920px] space-y-4">
+          {/* Painel do vídeo - Maior */}
+          <div className="px-2 md:px-4">
+            <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/10 p-2 md:p-4">
+              <CommercialVideoHero 
+                videos={activeVideos.map(v => ({
+                  id: v.video_id || '',
+                  video_url: v.video_url,
+                  video_nome: v.video_name || ''
+                }))}
+                className="rounded-xl overflow-hidden"
+              />
+            </div>
           </div>
 
           {/* Relógio e data ao vivo */}
-          <LiveClock />
+          <div className="px-2 md:px-4">
+            <LiveClock />
+          </div>
 
           {/* Previsão do tempo */}
-          <WeatherFooter buildingName={buildingName} />
+          <div className="px-2 md:px-4">
+            <WeatherFooter buildingName={buildingName} />
+          </div>
         </div>
       </main>
     </div>
