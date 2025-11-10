@@ -167,8 +167,8 @@ serve(async (req) => {
 
     console.log('📦 [UPLOAD_EXTERNAL_API] Metadados preparados:', metadataJson);
 
-    // 5. Baixar arquivo do vídeo do Supabase Storage
-    console.log('⬇️ [UPLOAD_EXTERNAL_API] Baixando vídeo do Storage:', pedidoVideo.videos.url);
+    // 5. Baixar arquivo do vídeo do Supabase Storage COMPLETO
+    console.log('⬇️ [UPLOAD_EXTERNAL_API] Baixando vídeo COMPLETO do Storage:', pedidoVideo.videos.url);
     
     const videoResponse = await fetch(pedidoVideo.videos.url);
     if (!videoResponse.ok) {
@@ -179,35 +179,57 @@ serve(async (req) => {
       throw new Error(`Erro ao baixar vídeo do Storage: ${videoResponse.statusText}`);
     }
 
-    const videoBlob = await videoResponse.blob();
-    console.log('✅ [UPLOAD_EXTERNAL_API] Vídeo baixado:', {
-      size: videoBlob.size,
-      type: videoBlob.type
-    });
+    // CRÍTICO: Usar arrayBuffer() diretamente para garantir download completo
+    console.log('📥 [UPLOAD_EXTERNAL_API] Baixando ArrayBuffer completo...');
+    const arrayBuffer = await videoResponse.arrayBuffer();
     
     // Verificar se o arquivo não está vazio
-    if (videoBlob.size === 0) {
-      throw new Error('❌ Arquivo de vídeo está vazio após download do Storage');
+    if (arrayBuffer.byteLength === 0) {
+      throw new Error('❌ Arquivo de vídeo está VAZIO após download do Storage');
     }
     
-    // Verificar assinatura do arquivo (primeiros bytes para validar que é realmente um vídeo)
-    const arrayBuffer = await videoBlob.arrayBuffer();
+    console.log('✅ [UPLOAD_EXTERNAL_API] ArrayBuffer baixado:', {
+      size: arrayBuffer.byteLength,
+      sizeMB: (arrayBuffer.byteLength / (1024 * 1024)).toFixed(2)
+    });
+    
+    // Verificar assinatura do arquivo (primeiros bytes para validar que é MP4)
     const uint8Array = new Uint8Array(arrayBuffer);
     const firstBytes = Array.from(uint8Array.slice(0, 12)).map(b => b.toString(16).padStart(2, '0')).join(' ');
-    console.log('🔍 [UPLOAD_EXTERNAL_API] Primeiros bytes do arquivo (assinatura):', firstBytes);
+    console.log('🔍 [UPLOAD_EXTERNAL_API] Assinatura do arquivo (primeiros 12 bytes):', firstBytes);
     
-    // Recriar blob a partir do arrayBuffer para garantir integridade
-    const verifiedBlob = new Blob([arrayBuffer], { type: videoBlob.type || 'video/mp4' });
+    // Verificar últimos bytes para confirmar integridade
+    const lastBytes = Array.from(uint8Array.slice(-8)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    console.log('🔍 [UPLOAD_EXTERNAL_API] Últimos 8 bytes:', lastBytes);
+    
+    // GARANTIR que o nome do arquivo tenha extensão .mp4
+    let finalFileName = storageFileName;
+    if (!finalFileName.toLowerCase().endsWith('.mp4')) {
+      finalFileName = `${finalFileName}.mp4`;
+      console.log('⚠️ [UPLOAD_EXTERNAL_API] Adicionando extensão .mp4 ao arquivo:', finalFileName);
+    }
+    
+    // CRÍTICO: Criar Blob com tipo explícito video/mp4 a partir do ArrayBuffer COMPLETO
+    const videoFile = new Blob([arrayBuffer], { type: 'video/mp4' });
+    
+    console.log('✅ [UPLOAD_EXTERNAL_API] Arquivo MP4 preparado:', {
+      fileName: finalFileName,
+      size: videoFile.size,
+      sizeMB: (videoFile.size / (1024 * 1024)).toFixed(2),
+      type: videoFile.type,
+      isComplete: videoFile.size === arrayBuffer.byteLength
+    });
 
-    // 6. Preparar form-data
+    // 6. Preparar form-data com arquivo COMPLETO
     const formData = new FormData();
-    formData.append('files', verifiedBlob, storageFileName);
+    formData.append('files', videoFile, finalFileName);
     formData.append('metadados', JSON.stringify(metadataJson));
 
-    console.log('📦 [UPLOAD_EXTERNAL_API] FormData preparado:', {
-      fileName: storageFileName,
-      fileSize: verifiedBlob.size,
-      fileType: verifiedBlob.type,
+    console.log('📦 [UPLOAD_EXTERNAL_API] FormData preparado para envio:', {
+      fileName: finalFileName,
+      fileSize: videoFile.size,
+      fileType: videoFile.type,
+      hasExtension: finalFileName.endsWith('.mp4'),
       metadataKeys: Object.keys(metadataJson)
     });
 
