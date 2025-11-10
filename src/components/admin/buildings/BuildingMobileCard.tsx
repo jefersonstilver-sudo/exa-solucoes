@@ -32,96 +32,98 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
   };
 
   const preview = (
-    <>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-[#9C1E1E] flex-shrink-0" />
-          <span className="font-semibold text-foreground truncate">{building.nome}</span>
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          <Building2 className="h-5 w-5 text-[#9C1E1E] flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-foreground text-base truncate">{building.nome}</h3>
+            <div className="flex items-center gap-1 mt-1">
+              <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+              <span className="text-xs text-muted-foreground truncate">
+                {building.bairro}, {building.cidade}
+              </span>
+            </div>
+          </div>
         </div>
-        <Badge className={`${getStatusColor(building.status)} border`}>
+        <Badge className={`${getStatusColor(building.status)} border flex-shrink-0`}>
           {getStatusText(building.status)}
         </Badge>
       </div>
-      <div className="flex items-center gap-2">
-        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        <span className="text-sm text-muted-foreground truncate">
-          {building.bairro}, {building.cidade}
-        </span>
-      </div>
-      <div className="flex items-center gap-4 text-sm flex-wrap">
+      
+      <div className="flex items-center gap-3 flex-wrap">
         {building.quantidade_telas && (
-          <div className="flex items-center gap-1">
-            <Tv className="h-4 w-4 text-[#9C1E1E]" />
-            <span className="font-medium">{building.quantidade_telas} painéis</span>
+          <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded">
+            <Tv className="h-3 w-3 text-[#9C1E1E]" />
+            <span className="text-xs font-medium">{building.quantidade_telas} painéis</span>
           </div>
         )}
         {building.publico_estimado && (
-          <div className="flex items-center gap-1">
-            <Users className="h-4 w-4 text-[#9C1E1E]" />
-            <span className="font-medium">{building.publico_estimado.toLocaleString()}</span>
+          <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded">
+            <Users className="h-3 w-3 text-[#9C1E1E]" />
+            <span className="text-xs font-medium">{building.publico_estimado.toLocaleString()}</span>
           </div>
         )}
         {typeof videoCount === 'number' && videoCount > 0 && (
-          <div className="flex items-center gap-1 px-2 py-0.5 bg-green-50 border border-green-200 rounded text-green-700">
+          <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700">
             <Video className="h-3 w-3" />
             <span className="font-medium text-xs">{videoCount} no AR</span>
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 
   const expandedContent = (
-    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+    <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
       {/* Building Details */}
-      <div className="space-y-2">
-        <div>
-          <p className="text-xs text-muted-foreground">Endereço Completo</p>
-          <p className="text-sm text-foreground">{building.endereco}</p>
-          <p className="text-sm text-muted-foreground">
-            {building.bairro} - {building.cidade}/{building.estado}
+      <div className="space-y-3">
+        <div className="bg-muted/30 rounded-lg p-3">
+          <p className="text-xs font-medium text-muted-foreground mb-1">Endereço</p>
+          <p className="text-sm text-foreground font-medium">{building.endereco}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {building.bairro} - {building.cidade}/{building.estado} • CEP: {building.cep}
           </p>
-          <p className="text-sm text-muted-foreground">CEP: {building.cep}</p>
         </div>
 
         {building.codigo_predio && (
-          <div>
-            <p className="text-xs text-muted-foreground">Código do Prédio</p>
-            <p className="font-mono font-semibold text-foreground">{building.codigo_predio}</p>
+          <div className="bg-muted/30 rounded-lg p-3">
+            <p className="text-xs font-medium text-muted-foreground mb-1">Código do Prédio</p>
+            <p className="font-mono font-semibold text-foreground text-sm">{building.codigo_predio}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {building.quantidade_telas && (
-            <div>
+            <div className="bg-muted/30 rounded-lg p-3">
               <p className="text-xs text-muted-foreground">Painéis</p>
-              <p className="font-semibold text-foreground">{building.quantidade_telas}</p>
+              <p className="font-semibold text-foreground text-lg">{building.quantidade_telas}</p>
             </div>
           )}
           {building.numero_elevadores && (
-            <div>
+            <div className="bg-muted/30 rounded-lg p-3">
               <p className="text-xs text-muted-foreground">Elevadores</p>
-              <p className="font-semibold text-foreground">{building.numero_elevadores}</p>
+              <p className="font-semibold text-foreground text-lg">{building.numero_elevadores}</p>
             </div>
           )}
           {building.towers && (
-            <div>
+            <div className="bg-muted/30 rounded-lg p-3">
               <p className="text-xs text-muted-foreground">Torres</p>
-              <p className="font-semibold text-foreground">{building.towers}</p>
+              <p className="font-semibold text-foreground text-lg">{building.towers}</p>
             </div>
           )}
           {building.apartments && (
-            <div>
+            <div className="bg-muted/30 rounded-lg p-3">
               <p className="text-xs text-muted-foreground">Apartamentos</p>
-              <p className="font-semibold text-foreground">{building.apartments}</p>
+              <p className="font-semibold text-foreground text-lg">{building.apartments}</p>
             </div>
           )}
         </div>
 
         {building.publico_estimado && (
-          <div>
-            <p className="text-xs text-muted-foreground">Público Estimado (mensal)</p>
-            <p className="font-semibold text-foreground">
+          <div className="bg-muted/30 rounded-lg p-3">
+            <p className="text-xs font-medium text-muted-foreground mb-1">Público Estimado (mensal)</p>
+            <p className="font-semibold text-foreground text-lg">
               {building.publico_estimado.toLocaleString()} pessoas
             </p>
           </div>
@@ -129,13 +131,13 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
       </div>
 
       {/* Actions */}
-      <div className="pt-3 border-t space-y-2">
+      <div className="pt-2 border-t space-y-2">
         <div className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => onView(building)}
-            className="w-full text-xs"
+            className="w-full text-xs h-9"
           >
             Ver Detalhes
           </Button>
@@ -143,47 +145,53 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
             variant="outline"
             size="sm"
             onClick={() => onEdit(building)}
-            className="w-full text-xs"
+            className="w-full text-xs h-9"
           >
-            Editar
+            Editar Prédio
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onImageManager(building)}
-            className="w-full text-xs"
-          >
-            Imagens
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => onViewPlaylist(building)}
-            className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white text-xs"
-          >
-            Ver Playlist
-          </Button>
-        </div>
+        
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
-          onClick={() => {
-            const buildingCode = building.codigo_predio || '000';
-            const url = generatePublicUrl(generatePanelPath(building.nome, buildingCode));
-            navigator.clipboard.writeText(url);
-            import('sonner').then(({ toast }) => {
-              toast.success('Link copiado!', {
-                description: `Painel de ${building.nome}`,
-                duration: 3000,
-              });
-            });
-          }}
-          className="w-full text-xs"
+          onClick={() => onImageManager(building)}
+          className="w-full text-xs h-9"
         >
-          Copiar Link do Painel
+          Gerenciar Imagens
         </Button>
+        
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => onViewPlaylist(building)}
+          className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white text-xs h-9"
+        >
+          Ver Playlist de Vídeos
+        </Button>
+        
+        <div className="pt-2 border-t">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Links de Acesso</p>
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const buildingCode = building.codigo_predio || '000';
+                const url = generatePublicUrl(generatePanelPath(building.nome, buildingCode));
+                navigator.clipboard.writeText(url);
+                import('sonner').then(({ toast }) => {
+                  toast.success('Link copiado!', {
+                    description: 'Link do painel copiado',
+                    duration: 3000,
+                  });
+                });
+              }}
+              className="w-full text-xs h-9"
+            >
+              📋 Copiar Link do Painel
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
