@@ -7,6 +7,8 @@ import { Wifi, WifiOff } from 'lucide-react';
 import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
 import { CommercialVideoHero } from '@/components/commercial/CommercialVideoHero';
 import { useVideoProtection } from '@/hooks/useVideoProtection';
+import WeatherFooter from '@/components/public/WeatherFooter';
+import { LiveClock } from '@/components/commercial/LiveClock';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -117,7 +119,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   return (
     <div 
       ref={protectionRef} 
-      className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col"
+      className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
       style={{
         userSelect: 'none',
         WebkitUserSelect: 'none',
@@ -130,7 +132,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       onDragStart={(e) => e.preventDefault()}
       onDrop={(e) => e.preventDefault()}
     >
-      {/* Header elegante e minimalista */}
+      {/* Header elegante */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900/95 via-red-800/95 to-red-900/95 backdrop-blur-md shadow-2xl border-b border-white/10">
         <div className="container mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
           {/* Logo EXA */}
@@ -145,7 +147,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
             </div>
           </div>
 
-          {/* Nome do prédio - centralizado */}
+          {/* Nome do prédio */}
           {buildingName && (
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
               <h1 className="text-white text-lg md:text-2xl font-bold tracking-wide drop-shadow-2xl">
@@ -154,14 +156,12 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
             </div>
           )}
 
-          {/* Status de conexão minimalista */}
+          {/* Status de conexão */}
           <div className="flex items-center gap-2">
             {networkStatus.isOnline ? (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 rounded-full border border-green-500/30">
                 <Wifi className="h-4 w-4 text-green-400" />
-                <span className="hidden md:inline text-green-400 text-xs font-medium">
-                  Online
-                </span>
+                <span className="hidden md:inline text-green-400 text-xs font-medium">Online</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 rounded-full border border-red-500/30 animate-pulse">
@@ -173,29 +173,28 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
         </div>
       </header>
 
-      {/* Conteúdo principal - Vídeo fullscreen elegante */}
-      <main className="flex-1 flex items-center justify-center pt-16 md:pt-20 p-4 md:p-8">
-        <div className="w-full max-w-7xl">
-          <CommercialVideoHero 
-            videos={activeVideos.map(v => ({
-              id: v.video_id || '',
-              video_url: v.video_url,
-              video_nome: v.video_name || ''
-            }))}
-            className="shadow-2xl"
-          />
+      {/* Conteúdo principal */}
+      <main className="pt-16 md:pt-20 px-4 md:px-8 pb-4">
+        <div className="container mx-auto max-w-7xl space-y-6">
+          {/* Painel do vídeo */}
+          <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/10 p-4 md:p-6">
+            <CommercialVideoHero 
+              videos={activeVideos.map(v => ({
+                id: v.video_id || '',
+                video_url: v.video_url,
+                video_nome: v.video_name || ''
+              }))}
+              className="rounded-xl overflow-hidden"
+            />
+          </div>
+
+          {/* Relógio e data ao vivo */}
+          <LiveClock />
+
+          {/* Previsão do tempo */}
+          <WeatherFooter buildingName={buildingName} />
         </div>
       </main>
-
-      {/* Footer minimalista com informação sutil */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-slate-950/90 via-slate-900/90 to-slate-950/90 backdrop-blur-md border-t border-white/5">
-        <div className="container mx-auto px-6 py-3">
-          <div className="flex items-center justify-between text-white/40 text-xs">
-            <p>Exibição em tempo real</p>
-            <p className="font-mono">{new Date().toLocaleDateString('pt-BR')}</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

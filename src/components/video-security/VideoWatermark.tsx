@@ -23,13 +23,6 @@ export const VideoWatermark: React.FC<VideoWatermarkProps> = ({ className = '' }
       <div className="absolute inset-0 pointer-events-none z-30">
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/[0.01] to-transparent" />
       </div>
-      
-      {/* Texto de proteção discreto no canto inferior */}
-      <div className="absolute bottom-4 right-4 pointer-events-none z-50">
-        <p className="text-white/20 text-xs font-bold tracking-widest select-none">
-          PROTEGIDO © EXA MÍDIA
-        </p>
-      </div>
     </>
   );
 };
