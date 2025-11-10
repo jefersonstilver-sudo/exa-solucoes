@@ -2004,6 +2004,7 @@ export type Database = {
           descricao: string | null
           id: string
           ip: string | null
+          metadata: Json | null
           tipo_evento: string
           user_agent: string | null
         }
@@ -2012,6 +2013,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           ip?: string | null
+          metadata?: Json | null
           tipo_evento: string
           user_agent?: string | null
         }
@@ -2020,6 +2022,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           ip?: string | null
+          metadata?: Json | null
           tipo_evento?: string
           user_agent?: string | null
         }
@@ -4095,6 +4098,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      insert_system_log: {
+        Args: {
+          p_descricao: string
+          p_ip?: string
+          p_metadata?: Json
+          p_tipo_evento: string
+          p_user_agent?: string
+        }
+        Returns: string
       }
       investigate_missing_transaction: {
         Args: { p_amount: number; p_email: string }
