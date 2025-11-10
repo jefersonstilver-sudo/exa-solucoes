@@ -90,71 +90,49 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Image Section */}
           <div className="lg:col-span-3">
-            <div className="aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
+            <div className="aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden relative group">
               {building.imagem_principal ? <img src={getImageUrl(building.imagem_principal)} alt={building.nome} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-400">
                   <Image className="h-8 w-8" />
                 </div>}
-            </div>
-            {typeof videoCount === 'number' && (
-              <div className="mt-2 space-y-1">
-                {videoCount > 0 ? (
-                  <>
-                    <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-white text-xs font-semibold">
-                      <Video className="h-4 w-4 animate-pulse" />
-                      <span>{videoCount} vídeo{videoCount > 1 ? 's' : ''} no AR</span>
+              
+              {/* Indicador de vídeos em exibição - Overlay na imagem */}
+              {typeof videoCount === 'number' && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3">
+                  {videoCount > 0 ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Video className="h-5 w-5 text-white" />
+                          <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
+                        </div>
+                        <div className="text-white">
+                          <div className="text-xs font-semibold leading-tight">
+                            {videoCount} em exibição
+                          </div>
+                          <div className="text-[10px] text-gray-300 leading-tight">
+                            Ao vivo agora
+                          </div>
+                        </div>
+                      </div>
+                      {onViewPlaylist && (
+                        <button
+                          onClick={() => onViewPlaylist(building)}
+                          className="flex items-center gap-1 px-2 py-1 text-[10px] bg-white/20 hover:bg-white/30 text-white rounded border border-white/30 transition-colors font-medium backdrop-blur-sm"
+                        >
+                          <Play className="h-3 w-3" />
+                          Ver
+                        </button>
+                      )}
                     </div>
-                    {onViewPlaylist && (
-                      <button
-                        onClick={() => onViewPlaylist(building)}
-                        className="w-full flex items-center justify-center gap-1 px-2 py-1 text-xs bg-green-50 hover:bg-green-100 text-green-700 rounded border border-green-200 transition-colors font-medium"
-                      >
-                        <Play className="h-3 w-3" />
-                        Ver Programação
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        const url = `${window.location.origin}/painel/${building.id}`;
-                        navigator.clipboard.writeText(url);
-                        import('sonner').then(({ toast }) => {
-                          toast.success('Link Limpo copiado!', {
-                            description: `Painel fullscreen`,
-                            duration: 3000,
-                          });
-                        });
-                      }}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white rounded-lg shadow-sm hover:shadow-md transition-all font-semibold group"
-                    >
-                      <svg className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                      Link Limpo
-                    </button>
-                    <button
-                      onClick={() => {
-                        const url = `${window.location.origin}/painel-comercial/${building.id}`;
-                        navigator.clipboard.writeText(url);
-                        import('sonner').then(({ toast }) => {
-                          toast.success('Link Comercial copiado!', {
-                            description: `Painel com UI`,
-                            duration: 3000,
-                          });
-                        });
-                      }}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg shadow-sm hover:shadow-md transition-all font-semibold group"
-                    >
-                      <Monitor className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
-                      Link Comercial
-                    </button>
-                  </>
-                ) : (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-gray-600 text-xs">
-                    <Video className="h-3 w-3" />
-                    <span>Sem vídeos no momento</span>
-                  </div>
-                )}
-              </div>
-            )}
+                  ) : (
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <Video className="h-4 w-4" />
+                      <span className="text-xs">Sem vídeos</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Info Section */}
