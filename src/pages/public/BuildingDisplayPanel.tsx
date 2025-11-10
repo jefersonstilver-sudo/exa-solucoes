@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
 import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
-import { VideoWatermark } from '@/components/video-security/VideoWatermark';
 import { useVideoProtection } from '@/hooks/useVideoProtection';
 
 interface BuildingDisplayPanelProps {
@@ -171,12 +170,9 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
               Seu navegador não suporta vídeo.
             </video>
             
-            {/* MARCA D'ÁGUA - PROTEÇÃO ANTI-PIRATARIA */}
-            <VideoWatermark />
-            
-            {/* Overlay de proteção invisível */}
+            {/* Overlay de proteção invisível - SEM marca d'água visível */}
             <div 
-              className="absolute inset-0 z-50" 
+              className="absolute inset-0 z-50"
               style={{ 
                 background: 'transparent',
                 pointerEvents: 'auto',
