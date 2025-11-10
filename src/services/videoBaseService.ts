@@ -73,6 +73,97 @@ const syncVideoWithExternalAPI = async (
   }
 };
 
+/**
+ * Sincroniza o status de um vídeo base com a API externa
+ * Desativa todos os vídeos do pedido e ativa apenas o selecionado
+ */
+const performExternalAPISync = async (slotId: string): Promise<void> => {
+  try {
+    console.log('🌐 [EXTERNAL_API_SYNC] Iniciando sincronização completa para slot:', slotId);
+    
+    // 1. Buscar informações do slot selecionado
+    const { data: selectedSlot, error: slotError } = await supabase
+      .from('pedido_videos')
+      .select(`
+        pedido_id,
+        video_id,
+        videos (
+          id,
+          nome,
+          url
+        )
+      `)
+      .eq('id', slotId)
+      .single();
+    
+    if (slotError || !selectedSlot) {
+      console.error('❌ [EXTERNAL_API_SYNC] Erro ao buscar slot:', slotError);
+      return;
+    }
+    
+    const selectedVideoUrl = (selectedSlot.videos as any)?.url || '';
+    const selectedVideoFileName = selectedVideoUrl ? getFileNameWithoutExtension(selectedVideoUrl) : 'video';
+    console.log('📹 [EXTERNAL_API_SYNC] Vídeo selecionado:', selectedVideoFileName);
+    
+    // 2. Buscar lista de prédios do pedido
+    const { data: pedido, error: pedidoError } = await supabase
+      .from('pedidos')
+      .select('lista_predios')
+      .eq('id', selectedSlot.pedido_id)
+      .single();
+    
+    if (pedidoError || !pedido?.lista_predios || pedido.lista_predios.length === 0) {
+      console.warn('⚠️ [EXTERNAL_API_SYNC] Lista de prédios não encontrada');
+      return;
+    }
+    
+    const buildingIds = pedido.lista_predios as string[];
+    console.log('🏢 [EXTERNAL_API_SYNC] Prédios do pedido:', buildingIds);
+    
+    // 3. Buscar TODOS os vídeos do pedido
+    const { data: allVideos, error: allVideosError } = await supabase
+      .from('pedido_videos')
+      .select(`
+        id,
+        video_id,
+        videos (
+          id,
+          nome,
+          url
+        )
+      `)
+      .eq('pedido_id', selectedSlot.pedido_id);
+    
+    if (allVideosError) {
+      console.error('❌ [EXTERNAL_API_SYNC] Erro ao buscar todos os vídeos:', allVideosError);
+      return;
+    }
+    
+    console.log(`📊 [EXTERNAL_API_SYNC] Total de vídeos no pedido: ${allVideos?.length || 0}`);
+    
+    // 4. PRIMEIRO: Desativar todos os outros vídeos (SÍNCRONO)
+    if (allVideos && allVideos.length > 0) {
+      for (const video of allVideos) {
+        if (video.id !== slotId) {
+          const videoUrl = (video.videos as any)?.url || '';
+          const videoFileName = videoUrl ? getFileNameWithoutExtension(videoUrl) : 'video';
+          console.log(`🔄 [EXTERNAL_API_SYNC] Desativando vídeo: ${videoFileName}`);
+          await syncVideoWithExternalAPI(buildingIds, videoFileName, false);
+        }
+      }
+    }
+    
+    // 5. DEPOIS: Ativar o vídeo selecionado (SÍNCRONO)
+    console.log(`🔄 [EXTERNAL_API_SYNC] Ativando vídeo selecionado: ${selectedVideoFileName}`);
+    await syncVideoWithExternalAPI(buildingIds, selectedVideoFileName, true);
+    
+    console.log('✅ [EXTERNAL_API_SYNC] Sincronização completa concluída');
+  } catch (error) {
+    console.error('💥 [EXTERNAL_API_SYNC] Erro na sincronização:', error);
+    // Não falhar a operação principal por causa disso
+  }
+};
+
 export const setBaseVideo = async (slotId: string): Promise<boolean> => {
   videoLogger.logProcessStart('SET_BASE_VIDEO', { slotId });
   
@@ -247,6 +338,10 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
 
         if (legacyData === true) {
           console.warn('⚠️ [VIDEO_BASE] Usando fallback set_base_video devido a falha na enhanced', { isReadOnly });
+          // 🔥 CRÍTICO: Sincronizar com API externa mesmo no fallback legacy
+          console.log('🔄 [VIDEO_BASE] Sincronizando com API externa após fallback legacy...');
+          await performExternalAPISync(slotId);
+          console.log('✅ [VIDEO_BASE] Fallback legacy + API externa concluído');
           return true;
         }
 
