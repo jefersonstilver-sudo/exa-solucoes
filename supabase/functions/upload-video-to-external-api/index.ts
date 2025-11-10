@@ -172,6 +172,10 @@ serve(async (req) => {
     
     const videoResponse = await fetch(pedidoVideo.videos.url);
     if (!videoResponse.ok) {
+      console.error('❌ [UPLOAD_EXTERNAL_API] Erro ao baixar vídeo:', {
+        status: videoResponse.status,
+        statusText: videoResponse.statusText
+      });
       throw new Error(`Erro ao baixar vídeo do Storage: ${videoResponse.statusText}`);
     }
 
@@ -180,15 +184,37 @@ serve(async (req) => {
       size: videoBlob.size,
       type: videoBlob.type
     });
+    
+    // Verificar se o arquivo não está vazio
+    if (videoBlob.size === 0) {
+      throw new Error('❌ Arquivo de vídeo está vazio após download do Storage');
+    }
+    
+    // Verificar assinatura do arquivo (primeiros bytes para validar que é realmente um vídeo)
+    const arrayBuffer = await videoBlob.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const firstBytes = Array.from(uint8Array.slice(0, 12)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    console.log('🔍 [UPLOAD_EXTERNAL_API] Primeiros bytes do arquivo (assinatura):', firstBytes);
+    
+    // Recriar blob a partir do arrayBuffer para garantir integridade
+    const verifiedBlob = new Blob([arrayBuffer], { type: videoBlob.type || 'video/mp4' });
 
     // 6. Preparar form-data
     const formData = new FormData();
-    formData.append('files', videoBlob, storageFileName);
+    formData.append('files', verifiedBlob, storageFileName);
     formData.append('metadados', JSON.stringify(metadataJson));
+
+    console.log('📦 [UPLOAD_EXTERNAL_API] FormData preparado:', {
+      fileName: storageFileName,
+      fileSize: verifiedBlob.size,
+      fileType: verifiedBlob.type,
+      metadataKeys: Object.keys(metadataJson)
+    });
 
     console.log('📤 [UPLOAD_EXTERNAL_API] Enviando para API externa:', {
       url: `http://15.228.8.3:8000/propagandas/upload-propagandas/${clientId}`,
       fileName: storageFileName,
+      fileSize: verifiedBlob.size,
       clientId
     });
 

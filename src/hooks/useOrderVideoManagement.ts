@@ -364,9 +364,11 @@ export const useOrderVideoManagement = (orderId: string) => {
 
   const setBaseVideo = async (slotId: string) => {
     try {
-      console.log('🔄 [ORDER_VIDEO] Definindo vídeo como principal (com slots):', { slotId, orderId });
+      console.log('🔄 [ORDER_VIDEO] === INÍCIO setBaseVideo ===');
+      console.log('🔄 [ORDER_VIDEO] Parâmetros:', { slotId, orderId });
 
       // 1) Capturar estado ANTES da mudança: vídeo base atual (com slot)
+      console.log('📊 [ORDER_VIDEO] Buscando vídeo base atual...');
       const { data: currentBase, error: currentBaseErr } = await supabase
         .from('pedido_videos')
         .select('video_id, slot_position')
@@ -384,23 +386,40 @@ export const useOrderVideoManagement = (orderId: string) => {
       }
 
       // 2) Capturar dados do NOVO vídeo (slot clicado)
+      console.log('📊 [ORDER_VIDEO] Buscando dados do novo vídeo...');
       const { data: newPv, error: newPvErr } = await supabase
         .from('pedido_videos')
-        .select('video_id, slot_position')
+        .select('video_id, slot_position, approval_status')
         .eq('id', slotId)
         .single();
 
-      if (newPvErr) throw newPvErr;
+      if (newPvErr) {
+        console.error('❌ [ORDER_VIDEO] Erro ao buscar novo vídeo:', newPvErr);
+        throw newPvErr;
+      }
+      
+      console.log('📊 [ORDER_VIDEO] Novo vídeo encontrado:', newPv);
+      
+      if (newPv?.approval_status !== 'approved') {
+        console.error('❌ [ORDER_VIDEO] Vídeo não está aprovado:', newPv?.approval_status);
+        toast.error('❌ Vídeo precisa estar aprovado para ser definido como principal');
+        return;
+      }
+      
       const newVideoId: string | undefined = newPv?.video_id as string | undefined;
       const newSlot: number | undefined = newPv?.slot_position as number | undefined;
 
       // 3) Buscar prédios do pedido
+      console.log('📊 [ORDER_VIDEO] Buscando prédios do pedido...');
       const { data: pedidoData, error: pedidoErr } = await supabase
         .from('pedidos')
         .select('lista_predios')
         .eq('id', orderId)
         .single();
-      if (pedidoErr) throw pedidoErr;
+      if (pedidoErr) {
+        console.error('❌ [ORDER_VIDEO] Erro ao buscar pedido:', pedidoErr);
+        throw pedidoErr;
+      }
       const buildingIds = (pedidoData?.lista_predios || []) as string[];
 
       console.log('📊 [WEBHOOK] Contexto capturado antes da mudança:', {
@@ -412,6 +431,7 @@ export const useOrderVideoManagement = (orderId: string) => {
       });
 
       // 4) Resolver nomes para montar títulos (em paralelo)
+      console.log('📊 [ORDER_VIDEO] Buscando nomes dos vídeos...');
       const fetchVideoName = async (videoId?: string) => {
         if (!videoId) return undefined;
         const { data, error } = await supabase
@@ -440,12 +460,13 @@ export const useOrderVideoManagement = (orderId: string) => {
       });
 
       // 5) Executar a mudança no banco
+      console.log('⏳ [ORDER_VIDEO] Importando e chamando setBaseVideoService...');
       const { setBaseVideo: setBaseVideoService } = await import('@/services/videoBaseService');
-      console.log('⏳ [ORDER_VIDEO] Chamando setBaseVideoService...');
       const success = await setBaseVideoService(slotId);
-      console.log('📊 [ORDER_VIDEO] Resultado do setBaseVideoService:', success);
+      console.log('📊 [ORDER_VIDEO] Resultado do setBaseVideoService:', { success, tipo: typeof success });
 
-      if (success) {
+      if (success === true) {
+        console.log('✅ [ORDER_VIDEO] setBaseVideoService retornou TRUE');
         // 6) Enviar webhooks SEMPRE com desativação do antigo (se existir) e ativação do novo, incluindo slot
         if (buildingIds.length) {
           console.log('🚀 [WEBHOOK] Enviando webhooks (com slots):', {
@@ -471,11 +492,12 @@ export const useOrderVideoManagement = (orderId: string) => {
         refreshSlots();
         toast.success('✅ Vídeo definido como principal!');
       } else {
-        console.error('❌ [ORDER_VIDEO] setBaseVideoService retornou false');
+        console.error('❌ [ORDER_VIDEO] setBaseVideoService retornou:', success);
         toast.error('❌ Não foi possível definir o vídeo como principal');
       }
     } catch (error) {
       console.error('💥 [ORDER_VIDEO] Erro ao definir vídeo base:', error);
+      console.error('💥 [ORDER_VIDEO] Stack:', (error as Error)?.stack);
       toast.error('❌ Erro ao definir vídeo principal');
     }
   };
