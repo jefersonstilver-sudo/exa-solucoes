@@ -128,8 +128,16 @@ serve(async (req) => {
     }
 
     // 4. Preparar metadados
-    const videoFileName = pedidoVideo.videos.nome;
-    const videoTitle = videoFileName.replace(/\.[^/.]+$/, ''); // Remove extensão
+    // IMPORTANTE: Extrair nome do arquivo do Storage URL (não o nome dado pelo usuário)
+    const storageUrl = pedidoVideo.videos.url;
+    const storageFileName = storageUrl.split('/').pop() || pedidoVideo.videos.nome;
+    const videoTitle = storageFileName.replace(/\.[^/.]+$/, ''); // Remove extensão
+
+    console.log('📝 [UPLOAD_EXTERNAL_API] Nome do arquivo extraído:', {
+      nome_usuario: pedidoVideo.videos.nome,
+      nome_storage: storageFileName,
+      titulo_enviado: videoTitle
+    });
 
     const metadata: VideoMetadata = {
       titulo: videoTitle,
@@ -139,7 +147,7 @@ serve(async (req) => {
     };
 
     const metadataJson = {
-      [videoFileName]: metadata
+      [storageFileName]: metadata
     };
 
     console.log('📦 [UPLOAD_EXTERNAL_API] Metadados preparados:', metadataJson);
@@ -160,12 +168,12 @@ serve(async (req) => {
 
     // 6. Preparar form-data
     const formData = new FormData();
-    formData.append('files', videoBlob, videoFileName);
+    formData.append('files', videoBlob, storageFileName);
     formData.append('metadados', JSON.stringify(metadataJson));
 
     console.log('📤 [UPLOAD_EXTERNAL_API] Enviando para API externa:', {
       url: `http://15.228.8.3:8000/propagandas/upload-propagandas/${clientId}`,
-      fileName: videoFileName,
+      fileName: storageFileName,
       clientId
     });
 
@@ -202,7 +210,7 @@ serve(async (req) => {
           success: true,
           message: 'Vídeo enviado para API externa com sucesso',
           clientId,
-          videoFileName
+          videoFileName: storageFileName
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
