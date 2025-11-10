@@ -15,6 +15,7 @@ interface OrderData {
   log_pagamento?: any;
   cupom_id?: string;
   termos_aceitos?: boolean;
+  lista_predios?: string[];
 }
 
 interface PanelData {
@@ -52,6 +53,18 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   panels,
   videos
 }) => {
+  console.log('📋 [PROFESSIONAL REPORT] Renderizando relatório');
+  console.log('📋 [PROFESSIONAL REPORT] Panels recebidos:', panels?.length || 0);
+  console.log('📋 [PROFESSIONAL REPORT] Panels data:', panels);
+  console.log('📋 [PROFESSIONAL REPORT] Videos recebidos:', videos?.length || 0);
+  
+  // Ordenar vídeos: em exibição primeiro
+  const sortedVideos = [...videos].sort((a, b) => {
+    if (a.selected_for_display && !b.selected_for_display) return -1;
+    if (!a.selected_for_display && b.selected_for_display) return 1;
+    return a.slot_position - b.slot_position;
+  });
+  
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -349,14 +362,33 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             </div>
           </section>
         ) : (
-          <section className="border border-gray-200 rounded">
-            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Prédios Contratados</h2>
+          <section className="border border-red-200 rounded bg-red-50">
+            <div className="bg-red-100 px-4 py-2 border-b border-red-200">
+              <h2 className="text-sm font-bold text-red-900 uppercase tracking-wide flex items-center gap-2">
+                <span>⚠️</span> Prédios Contratados
+              </h2>
             </div>
             <div className="p-8 text-center">
-              <MapPin className="h-10 w-10 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-600 mb-1">Nenhum prédio contratado</p>
-              <p className="text-xs text-gray-500">Os prédios aparecerão aqui quando forem selecionados.</p>
+              <MapPin className="h-10 w-10 text-red-400 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-red-700 mb-1">Nenhum prédio válido encontrado</p>
+              <p className="text-xs text-red-600 mb-2">
+                Este pedido tem IDs de prédios registrados, mas eles não existem mais no sistema.
+              </p>
+              {order.lista_predios && order.lista_predios.length > 0 && (
+                <div className="mt-3 p-3 bg-white rounded border border-red-200 max-w-md mx-auto">
+                  <p className="text-xs text-gray-600 mb-1 font-semibold">IDs registrados no pedido:</p>
+                  <div className="space-y-1">
+                    {order.lista_predios.map((id: string) => (
+                      <p key={id} className="text-xs font-mono text-gray-700">
+                        • {id}
+                      </p>
+                    ))}
+                  </div>
+                  <p className="text-xs text-red-600 mt-2 font-semibold">
+                    ⚠️ Estes prédios podem ter sido removidos do sistema
+                  </p>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -380,120 +412,146 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             </div>
           ) : (
             <div className="p-4 space-y-4">
-              {videos.map((video) => (
-                <div 
-                  key={video.id}
-                  className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow"
-                >
-                  <div className="grid grid-cols-12 gap-4">
-                    {/* Preview do Vídeo */}
-                    <div className="col-span-3">
-                      <div className="aspect-video bg-gray-900 relative group">
-                        {video.video_data?.url ? (
-                          <>
-                            <video 
-                              src={video.video_data.url} 
-                              className="w-full h-full object-contain"
-                              controls
-                              preload="metadata"
-                            />
-                            <div className="absolute top-2 left-2">
-                              <span className="bg-black/80 text-white px-2 py-1 rounded text-xs font-semibold">
-                                Slot {video.slot_position}
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-500">
-                            <Video className="h-8 w-8" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Informações do Vídeo */}
-                    <div className="col-span-9 p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="font-semibold text-gray-900 text-base mb-1">
-                            {video.video_data?.nome || 'Nome não disponível'}
-                          </h3>
-                          <div className="flex items-center gap-3 text-xs text-gray-600">
-                            <span>{video.video_data?.duracao != null ? `${video.video_data.duracao}s` : 'N/A'}</span>
-                            <span>•</span>
-                            <span className="capitalize">{video.video_data?.orientacao || 'N/A'}</span>
-                            <span>•</span>
-                            <span>
-                              Enviado em {video.uploaded_at ? formatDate(video.uploaded_at) : 
-                              video.created_at ? formatDate(video.created_at) : 'N/A'}
-                            </span>
-                          </div>
+              {sortedVideos.map((video, videoIndex) => {
+                const isInDisplay = video.selected_for_display;
+                return (
+                  <div 
+                    key={video.id}
+                    className={`border rounded-lg overflow-hidden transition-all ${
+                      isInDisplay 
+                        ? 'bg-blue-50 border-blue-300 shadow-lg ring-2 ring-blue-200' 
+                        : 'bg-white border-gray-200 hover:shadow-md'
+                    }`}
+                  >
+                    {isInDisplay && (
+                      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-1.5 text-xs font-bold flex items-center gap-2">
+                        <div className="relative flex items-center">
+                          <div className="absolute inset-0 bg-white rounded-full animate-ping opacity-75" />
+                          <div className="relative w-2 h-2 bg-white rounded-full" />
                         </div>
-                        
-                        {/* Status Badges */}
-                        <div className="flex items-center gap-2">
-                          {video.approval_status === 'approved' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-semibold">
-                              <CheckCircle2 className="h-3 w-3" />
-                              Aprovado
-                            </span>
-                          )}
-                          {video.approval_status === 'rejected' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs font-semibold">
-                              <XCircle className="h-3 w-3" />
-                              Rejeitado
-                            </span>
-                          )}
-                          {video.approval_status === 'pending' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-semibold">
-                              <Clock className="h-3 w-3" />
-                              Pendente
-                            </span>
+                        🔴 EM EXIBIÇÃO AGORA
+                      </div>
+                    )}
+                    <div className="grid grid-cols-12 gap-4">
+                      {/* Preview do Vídeo */}
+                      <div className="col-span-3">
+                        <div className="aspect-video bg-gray-900 relative group">
+                          {video.video_data?.url ? (
+                            <>
+                              <video 
+                                src={video.video_data.url} 
+                                className="w-full h-full object-contain"
+                                controls
+                                preload="metadata"
+                              />
+                              <div className="absolute top-2 left-2">
+                                <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                  isInDisplay 
+                                    ? 'bg-blue-600 text-white' 
+                                    : 'bg-black/80 text-white'
+                                }`}>
+                                  Slot {video.slot_position}
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-500">
+                              <Video className="h-8 w-8" />
+                            </div>
                           )}
                         </div>
                       </div>
                       
-                      {/* Status de Exibição */}
-                      <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-200">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${video.is_active ? 'bg-green-500' : 'bg-gray-300'}`} />
-                          <span className="text-xs text-gray-600">
-                            {video.is_active ? (
-                              <span className="font-semibold text-green-700">Ativo</span>
-                            ) : (
-                              <span className="text-gray-500">Inativo</span>
+                      {/* Informações do Vídeo */}
+                      <div className="col-span-9 p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className={`font-semibold text-base mb-1 ${
+                              isInDisplay ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
+                              {video.video_data?.nome || 'Nome não disponível'}
+                            </h3>
+                            <div className="flex items-center gap-3 text-xs text-gray-600">
+                              <span>{video.video_data?.duracao != null ? `${video.video_data.duracao}s` : 'N/A'}</span>
+                              <span>•</span>
+                              <span className="capitalize">{video.video_data?.orientacao || 'N/A'}</span>
+                              <span>•</span>
+                              <span>
+                                Enviado em {video.uploaded_at ? formatDate(video.uploaded_at) : 
+                                video.created_at ? formatDate(video.created_at) : 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Status Badges */}
+                          <div className="flex items-center gap-2">
+                            {video.approval_status === 'approved' && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-semibold">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Aprovado
+                              </span>
                             )}
-                          </span>
+                            {video.approval_status === 'rejected' && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs font-semibold">
+                                <XCircle className="h-3 w-3" />
+                                Rejeitado
+                              </span>
+                            )}
+                            {video.approval_status === 'pending' && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-semibold">
+                                <Clock className="h-3 w-3" />
+                                Pendente
+                              </span>
+                            )}
+                          </div>
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                          {video.selected_for_display ? (
-                            <>
-                              <div className="relative">
-                                <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75" />
-                                <div className="relative w-2 h-2 bg-blue-500 rounded-full" />
-                              </div>
-                              <span className="text-xs font-semibold text-blue-700">EM EXIBIÇÃO</span>
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-2 h-2 bg-gray-300 rounded-full" />
-                              <span className="text-xs text-gray-500">Na lista de programação</span>
-                            </>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-2 justify-end">
-                          <span className="text-xs text-gray-500">Slot</span>
-                          <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-700 text-white text-xs font-bold rounded">
-                            {video.slot_position}
-                          </span>
+                        {/* Status de Exibição */}
+                        <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-200">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${video.is_active ? 'bg-green-500' : 'bg-gray-300'}`} />
+                            <span className="text-xs text-gray-600">
+                              {video.is_active ? (
+                                <span className="font-semibold text-green-700">Ativo</span>
+                              ) : (
+                                <span className="text-gray-500">Inativo</span>
+                              )}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            {isInDisplay ? (
+                              <>
+                                <div className="relative">
+                                  <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75" />
+                                  <div className="relative w-2 h-2 bg-blue-500 rounded-full" />
+                                </div>
+                                <span className="text-xs font-bold text-blue-700">EM EXIBIÇÃO</span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-2 h-2 bg-gray-300 rounded-full" />
+                                <span className="text-xs text-gray-500">Na lista de programação</span>
+                              </>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2 justify-end">
+                            <span className="text-xs text-gray-500">Slot</span>
+                            <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded ${
+                              isInDisplay 
+                                ? 'bg-blue-600 text-white' 
+                                : 'bg-gray-700 text-white'
+                            }`}>
+                              {video.slot_position}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>

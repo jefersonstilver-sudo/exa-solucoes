@@ -126,6 +126,12 @@ export const useRealOrderDetails = (orderId: string) => {
           transaction_id: order.transaction_id
         };
 
+        console.log('📦 [ORDER DETAILS] Order montado:', {
+          id: orderWithClient.id.slice(0, 8),
+          lista_predios_count: orderWithClient.lista_predios?.length || 0,
+          lista_predios: orderWithClient.lista_predios
+        });
+
         setOrderDetails(orderWithClient);
 
         // Buscar vídeos do pedido
