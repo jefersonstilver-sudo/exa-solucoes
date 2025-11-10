@@ -5,14 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video, Play, Code, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { generateCommercialPath, generatePanelPath, generateEmbedPath } from '@/utils/buildingSlugUtils';
+import { Building } from '@/services/buildingsDataService';
+
 interface AdminBuildingCardProps {
-  building: any;
-  onView: (building: any) => void;
-  onEdit: (building: any) => void;
-  onImageManager: (building: any) => void;
-  onDelete: (building: any) => void;
-  onViewCampaigns?: (building: any) => void;
-  onViewPlaylist?: (building: any) => void;
+  building: Building;
+  onView: (building: Building) => void;
+  onEdit: (building: Building) => void;
+  onImageManager: (building: Building) => void;
+  onDelete: (building: Building) => void;
+  onViewCampaigns?: (building: Building) => void;
+  onViewPlaylist?: (building: Building) => void;
   videoCount?: number;
 }
 const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({

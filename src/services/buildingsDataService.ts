@@ -13,6 +13,9 @@ export interface Building {
   latitude: number;
   longitude: number;
   numero_unidades: number;
+  numero_andares: number;
+  numero_elevadores: number;
+  numero_blocos: number;
   publico_estimado: number;
   preco_base: number;
   image_urls: string[];
@@ -26,6 +29,8 @@ export interface Building {
   imagem_4: string;
   caracteristicas: string[];
   created_at: string;
+  codigo_predio: string; // Código único do prédio para URLs públicas
+  vendas_mes_atual: number;
   nome_sindico: string;
   contato_sindico: string;
   nome_vice_sindico: string;

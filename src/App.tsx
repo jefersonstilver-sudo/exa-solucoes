@@ -41,6 +41,7 @@ import EmailNotConfirmed from './pages/EmailNotConfirmed';
 // Importações diretas para páginas principais (performance otimizada)
 import PaineisPublicitarios from './pages/PaineisPublicitarios';
 import Exa from './pages/Exa';
+import TestLinks from './pages/TestLinks';
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
@@ -374,6 +375,9 @@ const AppContent = () => {
 
           {/* Rota pública de escolha de benefício prestadores */}
           <Route path="/presente" element={<ProviderBenefitChoice />} />
+
+          {/* Página de teste de links */}
+          <Route path="/test-links" element={<TestLinks />} />
 
           {/* Rotas administrativas */}
           <Route path="/super_admin/*" element={<SuperAdminPage />} />
