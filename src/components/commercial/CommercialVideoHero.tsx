@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { VideoWatermark } from '@/components/video-security/VideoWatermark';
+import { useVideoProtection } from '@/hooks/useVideoProtection';
 
 interface Video {
   id: string;
@@ -20,6 +22,12 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
+  const { containerRef } = useVideoProtection({
+    preventDownload: true,
+    preventPrint: true,
+    preventDevTools: true,
+    preventScreenCapture: true
+  });
 
   const currentVideo = videos[currentIndex];
   const nextVideo = videos[(currentIndex + 1) % videos.length];
@@ -61,16 +69,17 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   }
 
   return (
-    <div className={cn("relative w-full", className)}>
-      {/* Video Container - Responsivo */}
+    <div ref={containerRef} className={cn("relative w-full", className)}>
+      {/* Video Container - Responsivo com Proteção */}
       <div 
-        className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl"
+        className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl select-none"
         style={{
           aspectRatio: '16/9',
           maxHeight: '60vh'
         }}
+        onContextMenu={(e) => e.preventDefault()}
       >
-        {/* Vídeo atual */}
+        {/* Vídeo atual com proteção */}
         {currentVideo && (
           <div className={cn(
             "w-full h-full transition-opacity duration-150",
@@ -85,16 +94,36 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
               muted
               playsInline
               preload="auto"
+              controlsList="nodownload noplaybackrate"
+              disablePictureInPicture
+              disableRemotePlayback
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ pointerEvents: 'none' }}
             />
           </div>
         )}
         
+        {/* MARCA D'ÁGUA - PROTEÇÃO ANTI-PIRATARIA */}
+        <VideoWatermark />
+        
+        {/* Overlay de proteção invisível - bloqueia extensões */}
+        <div 
+          className="absolute inset-0 z-50" 
+          style={{ 
+            background: 'transparent',
+            pointerEvents: 'auto',
+            userSelect: 'none'
+          }}
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
+        />
+        
         {/* Overlay com gradiente sutil */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none z-40" />
         
         {/* Indicadores de progresso */}
         {videos.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-[60]">
             {videos.map((_, index) => (
               <div
                 key={index}

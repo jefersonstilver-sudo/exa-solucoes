@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
+import { VideoWatermark } from '@/components/video-security/VideoWatermark';
+import { useVideoProtection } from '@/hooks/useVideoProtection';
 
 /**
  * Embed player - versão totalmente limpa para embed em outros sistemas
@@ -22,6 +24,12 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   const nextVideoRef = useRef<HTMLVideoElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastVideoCountRef = useRef(0);
+  const { containerRef: protectionRef } = useVideoProtection({
+    preventDownload: true,
+    preventPrint: true,
+    preventDevTools: true,
+    preventScreenCapture: true
+  });
 
   // Preload próximo vídeo
   const nextVideoIndex = (selectedVideoIndex + 1) % activeVideos.length;
@@ -94,21 +102,47 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   }
 
   return (
-    <div className="w-full h-full bg-black" style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
+    <div 
+      ref={protectionRef}
+      className="w-full h-full bg-black select-none" 
+      style={{ margin: 0, padding: 0, overflow: 'hidden' }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       {selectedVideo && (
-        <video
-          ref={videoRef}
-          key={selectedVideo.video_url}
-          src={selectedVideo.video_url}
-          className="w-full h-full object-contain"
-          style={{ margin: 0, padding: 0, display: 'block' }}
-          autoPlay
-          muted
-          playsInline
-          preload="auto"
-        >
-          Seu navegador não suporta vídeo.
-        </video>
+        <div className="relative w-full h-full">
+          <video
+            ref={videoRef}
+            key={selectedVideo.video_url}
+            src={selectedVideo.video_url}
+            className="w-full h-full object-contain select-none"
+            style={{ margin: 0, padding: 0, display: 'block', pointerEvents: 'none' }}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            controlsList="nodownload noplaybackrate"
+            disablePictureInPicture
+            disableRemotePlayback
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            Seu navegador não suporta vídeo.
+          </video>
+          
+          {/* MARCA D'ÁGUA - PROTEÇÃO ANTI-PIRATARIA */}
+          <VideoWatermark />
+          
+          {/* Overlay de proteção invisível */}
+          <div 
+            className="absolute inset-0 z-50" 
+            style={{ 
+              background: 'transparent',
+              pointerEvents: 'auto',
+              userSelect: 'none'
+            }}
+            onContextMenu={(e) => e.preventDefault()}
+            onDragStart={(e) => e.preventDefault()}
+          />
+        </div>
       )}
       
       {/* Preload do próximo vídeo (invisível) */}

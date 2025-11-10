@@ -12,6 +12,7 @@ import { BuildingNoticesCard } from '@/components/commercial/BuildingNoticesCard
 import { NewsWithQRPanel } from '@/components/commercial/NewsWithQRPanel';
 import { BuildingPhotoDateCard } from '@/components/commercial/BuildingPhotoDateCard';
 import { CurrencyTickerBar } from '@/components/commercial/CurrencyTickerBar';
+import { useVideoProtection } from '@/hooks/useVideoProtection';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -26,6 +27,12 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const networkStatus = useNetworkMonitor();
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastVideoCountRef = useRef(0);
+  const { containerRef: protectionRef } = useVideoProtection({
+    preventDownload: true,
+    preventPrint: true,
+    preventDevTools: true,
+    preventScreenCapture: true
+  });
 
   // Buscar dados do prédio
   useEffect(() => {
@@ -92,7 +99,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div ref={protectionRef} className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 select-none">
       {/* Header premium com logo EXA */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900 via-red-700 to-black shadow-2xl border-b border-white/10">
         <div className="container mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
