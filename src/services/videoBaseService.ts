@@ -14,20 +14,31 @@ export const setBaseVideo = async (slotId: string): Promise<{
     console.log('⭐ [VIDEO_BASE] Definindo vídeo base (RPC):', slotId);
     videoLogger.setContext({ slotId });
 
-    // Buscar o client_id do pedido
+    // Buscar o client_id do pedido e dados do vídeo
     const { data: pvData, error: pvError } = await supabase
       .from('pedido_videos')
       .select(`
         pedido_id,
+        video_id,
         pedidos!inner (
           client_id
+        ),
+        videos!inner (
+          nome
         )
       `)
       .eq('id', slotId)
       .single();
 
     const clientId = pvData?.pedidos?.client_id;
+    const videoNome = pvData?.videos?.nome;
+    
+    // Remover extensão .mp4 do nome do vídeo
+    const tituloSemExtensao = videoNome?.replace(/\.mp4$/i, '').trim();
+    
     console.log('🔍 [VIDEO_BASE] Client ID encontrado:', clientId);
+    console.log('🔍 [VIDEO_BASE] Nome do vídeo:', videoNome);
+    console.log('🔍 [VIDEO_BASE] Título sem extensão:', tituloSemExtensao);
 
     // Helper fallback direto no banco quando RPCs falharem
     const fallbackDirectUpdate = async () => {
@@ -203,13 +214,30 @@ export const setBaseVideo = async (slotId: string): Promise<{
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
     
     // Chamar API externa com o client_id
-    if (clientId) {
+    if (clientId && tituloSemExtensao) {
       try {
+        const body = {
+          titulo: tituloSemExtensao,
+          ativo: true
+        };
+        
         console.log('📞 [VIDEO_BASE] Chamando API externa (PATCH):', `http://15.228.8.3:8000/ativo/${clientId}`);
+        console.log('📦 [VIDEO_BASE] Body da requisição:', body);
+        
         const response = await fetch(`http://15.228.8.3:8000/ativo/${clientId}`, {
           method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
         });
+        
         console.log('✅ [VIDEO_BASE] Resposta da API externa:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('⚠️ [VIDEO_BASE] Erro na resposta da API:', errorText);
+        }
       } catch (apiError) {
         console.error('⚠️ [VIDEO_BASE] Erro ao chamar API externa (não bloqueante):', apiError);
       }
