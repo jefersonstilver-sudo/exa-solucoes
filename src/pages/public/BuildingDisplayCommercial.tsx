@@ -68,19 +68,19 @@ const BuildingDisplayCommercial = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Header fixo premium com logo EXA */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 shadow-2xl">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900 via-red-700 to-black shadow-2xl">
         <div className="container mx-auto px-8 h-20 flex items-center justify-between">
           {/* Logo EXA real */}
           <div className="flex items-center gap-4">
             <div className="relative h-12 w-auto">
               {/* Glow background */}
-              <div className="absolute inset-0 blur-xl bg-white/40 rounded-full scale-150" />
+              <div className="absolute inset-0 blur-xl bg-red-500/40 rounded-full scale-150" />
               
               {/* Logo real da EXA */}
               <img 
                 src={exaLogo} 
                 alt="EXA" 
-                className="h-12 w-auto relative z-10 drop-shadow-2xl"
+                className="h-12 w-auto relative z-10 drop-shadow-2xl brightness-110"
               />
             </div>
           </div>
@@ -97,7 +97,7 @@ const BuildingDisplayCommercial = () => {
       </header>
 
       {/* Conteúdo principal com painel centralizado */}
-      <main className="min-h-screen pt-20 flex items-center justify-center p-8">
+      <main className="min-h-screen pt-20 pb-24 flex items-center justify-center p-8">
         <div className="w-full max-w-6xl">
           {/* Container do painel - simula monitor/TV físico */}
           <div className="relative">
@@ -141,12 +141,20 @@ const BuildingDisplayCommercial = () => {
         </div>
       </main>
 
-      {/* Footer discreto */}
-      <footer className="fixed bottom-0 left-0 right-0 py-4 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
-        <div className="text-center">
-          <p className="text-white/40 text-xs font-light tracking-[0.3em] uppercase">
-            Powered by EXA Mídia
-          </p>
+      {/* Footer elegante com texto personalizado */}
+      <footer className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black via-zinc-900 to-transparent backdrop-blur-sm">
+        <div className="container mx-auto px-8 py-6">
+          <div className="text-center">
+            <p className="text-white/90 text-sm font-light tracking-wide">
+              Exibição ao vivo da lista de programação em exibição {buildingName ? `do ${buildingName}` : ''}
+            </p>
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-red-400 text-xs font-medium tracking-wider uppercase">
+                Ao Vivo
+              </span>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
