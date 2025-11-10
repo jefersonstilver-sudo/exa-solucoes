@@ -72,12 +72,19 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       return true;
     };
 
+    console.log('📞 [VIDEO_BASE] Chamando RPC set_base_video_enhanced:', { slotId });
     const { data, error } = await supabase.rpc('set_base_video_enhanced', {
       p_pedido_video_id: slotId
     });
+    console.log('📦 [VIDEO_BASE] Resposta RPC:', { data, error });
 
     if (error) {
-      console.error('❌ [VIDEO_BASE] RPC erro (enhanced):', error);
+      console.error('❌ [VIDEO_BASE] RPC erro (enhanced):', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
 
       // Fallback: tentar função antiga (compatibilidade) em caso de erro (ex: read-only)
       const isReadOnly = (error as any)?.message && /read[- ]?only/i.test((error as any).message);
@@ -107,11 +114,23 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
     }
 
     const result = data as any;
+    console.log('🔍 [VIDEO_BASE] Analisando resultado:', { 
+      result, 
+      success: result?.success,
+      type: typeof result,
+      isArray: Array.isArray(result)
+    });
 
     if (!result?.success) {
-      console.error('❌ [VIDEO_BASE] Falha lógica na RPC:', result);
+      console.error('❌ [VIDEO_BASE] Falha lógica na RPC:', { 
+        result,
+        error: result?.error,
+        detalhes_completos: JSON.stringify(result)
+      });
       // Tentar fallback direto para garantir troca
+      console.log('🛟 [VIDEO_BASE] Tentando fallback direto...');
       const ok = await fallbackDirectUpdate();
+      console.log('📊 [VIDEO_BASE] Resultado do fallback:', ok);
       if (ok) return true;
       return false;
     }
