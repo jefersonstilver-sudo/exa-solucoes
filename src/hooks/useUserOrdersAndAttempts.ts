@@ -156,7 +156,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         // Continuar sem tentativas se houver erro
       }
 
-      // Filtrar tentativas órfãs antes de combinar
+      // ✅ CORREÇÃO: Filtrar tentativas que têm pedidos correspondentes (independente do status)
       const validAttempts = processedAttempts.filter(attempt => {
         // Filtrar tentativas com valor inválido (menor ou igual a zero)
         if (attempt.valor_total <= 0) {
@@ -164,29 +164,24 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
           return false;
         }
         
-        // Verificar se existe pedido pago com mesmo valor e data próxima
+        // ✅ CORREÇÃO: Verificar se existe pedido com mesmo valor (QUALQUER STATUS, inclusive pendente)
         const hasMatchingOrder = processedOrders.some(order => {
-          // Verificar se é um pedido pago
-          if (!['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(order.status)) {
+          // Mesmo valor (com tolerância de centavos)
+          if (Math.abs(order.valor_total - attempt.valor_total) > 0.01) {
             return false;
           }
           
-          // Mesmo valor
-          if (order.valor_total !== attempt.valor_total) {
-            return false;
-          }
-          
-          // Data próxima (máximo 24 horas de diferença)
+          // Data próxima (máximo 5 minutos para ser mais preciso)
           const orderDate = new Date(order.created_at);
           const attemptDate = new Date(attempt.created_at);
           const timeDiff = Math.abs(orderDate.getTime() - attemptDate.getTime());
-          const maxTimeDiff = 24 * 60 * 60 * 1000; // 24 horas
+          const maxTimeDiff = 5 * 60 * 1000; // 5 minutos
           
           return timeDiff <= maxTimeDiff;
         });
         
         if (hasMatchingOrder) {
-          console.log(`🚫 Tentativa órfã removida da visualização do usuário: ${attempt.id} (Valor: R$ ${attempt.valor_total})`);
+          console.log(`🚫 Tentativa removida (pedido correspondente existe): ${attempt.id} (Valor: R$ ${attempt.valor_total})`);
           return false;
         }
         

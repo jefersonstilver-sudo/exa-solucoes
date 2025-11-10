@@ -56,10 +56,12 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       signal: AbortSignal.timeout(30000)
     });
     
-    console.log('[PixWebhookService] Resposta recebida:', {
+    console.log('[PixWebhookService] 🔍 DETALHES DA RESPOSTA:', {
       status: response.status,
       statusText: response.statusText,
-      ok: response.ok
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries()),
+      url: PIX_WEBHOOK_URL
     });
     
     if (!response.ok) {

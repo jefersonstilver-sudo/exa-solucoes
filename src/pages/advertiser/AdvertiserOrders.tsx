@@ -207,8 +207,9 @@ const AdvertiserOrders = () => {
                     variant={statusInfo.action.variant} 
                     size="sm"
                     onClick={statusInfo.action.onClick}
+                    className="flex items-center space-x-1"
                   >
-                    Video em Exibição
+                    {statusInfo.action.label}
                   </Button>
                 )}
                 

@@ -127,17 +127,11 @@ export const useEnhancedPaymentOrderCreator = () => {
       // Generate unique transaction ID to prevent duplicates
       const transactionId = generateUniqueTransactionId(sessionUser.id, Date.now());
 
-      // ENHANCED: Tentar capturar tentativa primeiro e usar como source_tentativa_id
+      // ✅ CORREÇÃO: Removido salvamento duplicado de tentativas
+      // A tentativa já é criada em outro lugar do fluxo (checkout hook)
+      // Evita duplicação de registros
       let sourceTentativaId = null;
-      try {
-        const savedAttempt = await saveCompletePurchaseAttempt(sessionUser.id, cartItems, totalPrice);
-        if (savedAttempt?.id) {
-          sourceTentativaId = savedAttempt.id;
-          console.log('✅ [ENHANCED_ORDER_CREATOR] Tentativa de compra salva e vinculada:', sourceTentativaId);
-        }
-      } catch (attemptError) {
-        console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Erro ao salvar tentativa (continuando sem vincular):', attemptError);
-      }
+      console.log('ℹ️ [ENHANCED_ORDER_CREATOR] Tentativa não é salva aqui para evitar duplicação');
 
       // ENHANCED: Extract panel and building IDs with detailed logging
       const panelIds = cartItems.map(item => {
