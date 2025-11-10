@@ -100,7 +100,7 @@ serve(async (req: Request) => {
         throw new Error('Email e token são obrigatórios');
       }
 
-      const recoveryUrl = `${baseUrl}/auth/confirm?token_hash=${email_data.token_hash}&type=recovery&next=/reset-password`;
+      const recoveryUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=recovery&redirect_to=${encodeURIComponent(`${baseUrl}/reset-password`)}`;
       const userName = user?.user_metadata?.name || userEmail.split('@')[0];
       
       const { data: emailData, error: emailError } = await emailService.sendPasswordRecoveryEmail(
