@@ -111,9 +111,30 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     );
   }
 
-  // Sem vídeos
+  // Sem vídeos - mostrar mensagem informativa
   if (activeVideos.length === 0) {
-    return <div className="min-h-screen bg-black" />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="relative h-20 w-auto mb-6 inline-block">
+            <img 
+              src={exaLogo} 
+              alt="EXA Mídia" 
+              className="h-20 w-auto drop-shadow-2xl brightness-110"
+            />
+          </div>
+          <h2 className="text-white text-2xl font-bold mb-3">
+            {buildingName || 'Display Comercial'}
+          </h2>
+          <p className="text-gray-300 text-lg">
+            Nenhum conteúdo disponível no momento
+          </p>
+          <p className="text-gray-400 text-sm mt-2">
+            Em breve novos vídeos estarão disponíveis
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

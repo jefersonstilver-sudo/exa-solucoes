@@ -75,7 +75,7 @@ const BuildingsManagement = () => {
       }}
     >
       <LoadingOverlay isLoading={operationLoading} message="Processando operação...">
-        <div className="space-y-8">
+        <div className="space-y-6 pb-8">
           <BuildingHeader
             loading={loading}
             onRefresh={refetch}

@@ -41,24 +41,30 @@ const AdminBuildingsList: React.FC<AdminBuildingsListProps> = ({
   const inactiveBuildings = buildings.filter(b => b.status === 'inativo');
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Prédios Cadastrados ({buildings.length})</CardTitle>
-        <CardDescription>
-          Sistema administrativo completo - {activeBuildings.length} ativos, {maintenanceBuildings.length} em manutenção, {installationBuildings.length} em instalação, {inactiveBuildings.length} inativos
-        </CardDescription>
+    <Card className="shadow-sm">
+      <CardHeader className="border-b bg-gray-50/50">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-xl">Prédios Cadastrados</CardTitle>
+            <CardDescription className="mt-1">
+              {buildings.length} {buildings.length === 1 ? 'prédio' : 'prédios'} • {activeBuildings.length} {activeBuildings.length === 1 ? 'ativo' : 'ativos'} • {inactiveBuildings.length} {inactiveBuildings.length === 1 ? 'inativo' : 'inativos'}
+            </CardDescription>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
         {buildings.length === 0 ? (
-          <div className="text-center py-12">
-            <Building2 className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum prédio encontrado</h3>
-            <p className="text-gray-500">
-              Tente ajustar os filtros de busca ou comece criando seu primeiro prédio.
+          <div className="text-center py-16">
+            <div className="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4">
+              <Building2 className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum prédio encontrado</h3>
+            <p className="text-gray-500 text-sm max-w-sm mx-auto">
+              Ajuste os filtros de busca ou cadastre o primeiro prédio do sistema.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="space-y-4">
             {buildings.map((building) => (
               <AdminBuildingCard
                 key={building.id}
