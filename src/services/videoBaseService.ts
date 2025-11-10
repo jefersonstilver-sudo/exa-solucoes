@@ -22,6 +22,9 @@ export const setBaseVideo = async (slotId: string): Promise<{
         video_id,
         pedidos!inner (
           lista_predios
+        ),
+        videos!inner (
+          nome
         )
       `)
       .eq('id', slotId)
@@ -32,16 +35,32 @@ export const setBaseVideo = async (slotId: string): Promise<{
     }
 
     const listaPredios = pvData?.pedidos?.lista_predios;
+    const videoNome = pvData?.videos?.nome;
+    
+    // Remover extensão do nome do vídeo
+    const tituloSemExtensao = videoNome?.replace(/\.[^.]+$/, '').trim();
+    
     console.log('🏢 [VIDEO_BASE] Lista de prédios:', listaPredios);
+    console.log('🎬 [VIDEO_BASE] Nome do vídeo:', videoNome);
+    console.log('📝 [VIDEO_BASE] Título sem extensão:', tituloSemExtensao);
 
     // 🔥 SEMPRE chamar API externa primeiro, independente de sucesso/falha posterior
-    if (listaPredios && listaPredios.length > 0) {
+    if (listaPredios && listaPredios.length > 0 && tituloSemExtensao) {
       try {
         const buildingUuid = listaPredios[0];
         const clientId = String(buildingUuid).substring(0, 4);
-        console.log('📦 [VIDEO_BASE] Invocando notify-active ANTES de qualquer validação', { clientId, buildingUuid });
+        console.log('📦 [VIDEO_BASE] Invocando notify-active ANTES de qualquer validação', { 
+          clientId, 
+          buildingUuid,
+          titulo: tituloSemExtensao
+        });
         const { data: fnData, error: fnError } = await supabase.functions.invoke('notify-active', {
-          body: { clientId, buildingUuid }
+          body: { 
+            clientId, 
+            buildingUuid,
+            titulo: tituloSemExtensao,
+            ativo: true
+          }
         });
         if (fnError) {
           console.error('❌ [VIDEO_BASE] notify-active erro:', fnError);
@@ -52,7 +71,10 @@ export const setBaseVideo = async (slotId: string): Promise<{
         console.error('⚠️ [VIDEO_BASE] Erro ao invocar edge function:', apiError);
       }
     } else {
-      console.warn('⚠️ [VIDEO_BASE] Nenhum prédio encontrado - API externa NÃO será chamada');
+      console.warn('⚠️ [VIDEO_BASE] Dados insuficientes para chamar API externa:', {
+        temPredios: !!listaPredios?.length,
+        temTitulo: !!tituloSemExtensao
+      });
     }
 
     // Helper fallback direto no banco quando RPCs falharem

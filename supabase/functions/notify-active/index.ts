@@ -14,7 +14,12 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { clientId, buildingUuid } = await req.json().catch(() => ({ clientId: null, buildingUuid: null }));
+    const { clientId, buildingUuid, titulo, ativo } = await req.json().catch(() => ({ 
+      clientId: null, 
+      buildingUuid: null,
+      titulo: null,
+      ativo: true
+    }));
 
     if (!clientId || typeof clientId !== 'string' || clientId.length < 1) {
       return new Response(JSON.stringify({ ok: false, error: 'clientId inválido ou ausente' }), {
@@ -23,16 +28,43 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    const url = `http://15.228.8.3:8000/ativo/${clientId}`;
-    console.log('[notify-active] PATCH', { url, buildingUuid, clientId });
+    if (!titulo || typeof titulo !== 'string') {
+      return new Response(JSON.stringify({ ok: false, error: 'titulo inválido ou ausente' }), {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
 
-    const res = await fetch(url, { method: 'PATCH' });
+    const url = `http://15.228.8.3:8000/ativo/${clientId}`;
+    const body = {
+      titulo,
+      ativo: ativo === true
+    };
+
+    console.log('[notify-active] PATCH', { url, buildingUuid, clientId, body });
+
+    const res = await fetch(url, { 
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    
     const text = await res.text().catch(() => '');
 
-    console.log('[notify-active] response', { status: res.status, statusText: res.statusText });
+    console.log('[notify-active] response', { status: res.status, statusText: res.statusText, responseBody: text });
 
     return new Response(
-      JSON.stringify({ ok: res.ok, status: res.status, statusText: res.statusText, url, buildingUuid, body: text }),
+      JSON.stringify({ 
+        ok: res.ok, 
+        status: res.status, 
+        statusText: res.statusText, 
+        url, 
+        buildingUuid, 
+        requestBody: body,
+        responseBody: text 
+      }),
       { status: 200, headers: corsHeaders }
     );
   } catch (e: any) {
@@ -43,3 +75,4 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 });
+
