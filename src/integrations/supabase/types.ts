@@ -3484,6 +3484,7 @@ export type Database = {
       }
       diagnose_user_system: { Args: never; Returns: Json }
       emergency_financial_audit_and_fix: { Args: never; Returns: Json }
+      ensure_pedido_has_base_video: { Args: never; Returns: undefined }
       ensure_video_consistency: { Args: { p_pedido_id: string }; Returns: Json }
       extract_compliance_data: { Args: { payment_data: Json }; Returns: Json }
       generate_coupon_code: { Args: { prefix?: string }; Returns: string }
