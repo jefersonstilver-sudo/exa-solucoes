@@ -39,6 +39,31 @@ const extractTitulo = (videoPathOrName?: string | null): string | null => {
   return cleaned || null;
 };
 
+// 🔍 Busca todos os slots com vídeo de um pedido específico
+const fetchAllPedidoSlots = async (pedidoId: string) => {
+  console.log("🔍 [FETCH_SLOTS] Buscando todos os slots do pedido:", pedidoId);
+  
+  const { data, error } = await supabase
+    .from('pedido_videos')
+    .select(`
+      id,
+      video_id,
+      slot_position,
+      pedidos!inner ( lista_predios ),
+      videos ( nome, url )
+    `)
+    .eq('pedido_id', pedidoId)
+    .not('video_id', 'is', null); // Apenas slots com vídeo
+
+  if (error) {
+    console.error("❌ [FETCH_SLOTS] Erro ao buscar slots:", error);
+    return { data: null, error };
+  }
+
+  console.log(`✅ [FETCH_SLOTS] Encontrados ${data?.length || 0} slots com vídeo`);
+  return { data, error: null };
+};
+
 const safeInvokeNotifyActive = async (buildingUuid: string, titulo: string, ativo = true) => {
   try {
     const clientId = String(buildingUuid).substring(0, 4);
@@ -185,6 +210,7 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
     }
 
     const listaPredios = pvData?.pedidos?.lista_predios || [];
+    const pedidoId = pvData?.pedido_id;
     const videoNome = pvData?.videos?.nome || null;
     const videoUrl = pvData?.videos?.url || null;
 
@@ -193,23 +219,50 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
     const tituloSemExtensao = tituloFromUrl || tituloFromNome;
 
     console.log("🏢 [VIDEO_BASE] Lista de prédios:", listaPredios);
+    console.log("📦 [VIDEO_BASE] Pedido ID:", pedidoId);
     console.log("🎬 [VIDEO_BASE] Nome do vídeo:", videoNome);
     console.log("🔗 [VIDEO_BASE] URL do vídeo:", videoUrl);
     console.log("📝 [VIDEO_BASE] Título escolhido (prioridade URL):", tituloSemExtensao);
 
-    // 🔥 SEMPRE: tentar notificar API externa primeiro (mas não falha o fluxo)
-    if (listaPredios.length > 0 && tituloSemExtensao) {
-      // optar por notificar todos os prédios (ou só o primeiro se preferir)
-      for (const buildingUuid of listaPredios) {
-        const notifyRes = await safeInvokeNotifyActive(buildingUuid, tituloSemExtensao, true);
-        if (!notifyRes.success) {
-          // logs já feitos internamente; prosseguir com a execução
-          console.warn("[VIDEO_BASE] notify-active falhou para", buildingUuid);
+    // 🔄 SINCRONIZAÇÃO: Desativar TODOS os slots primeiro, depois ativar apenas o selecionado
+    console.log("🔄 [VIDEO_BASE] Iniciando sincronização de status ativo...");
+    
+    if (listaPredios.length > 0 && pedidoId) {
+      // 1️⃣ Buscar todos os slots do pedido
+      const { data: allSlots, error: slotsError } = await fetchAllPedidoSlots(pedidoId);
+      
+      if (!slotsError && allSlots && allSlots.length > 0) {
+        console.log(`🚫 [VIDEO_BASE] Desativando ${allSlots.length} slot(s)...`);
+        
+        // 2️⃣ DESATIVAR TODOS os slots (síncrono)
+        for (const slot of allSlots) {
+          const slotTituloUrl = extractTitulo(slot.videos?.url);
+          const slotTituloNome = extractTitulo(slot.videos?.nome);
+          const slotTitulo = slotTituloUrl || slotTituloNome;
+          
+          if (slotTitulo) {
+            console.log(`  🚫 Desativando slot #${slot.slot_position}: ${slotTitulo}`);
+            for (const buildingUuid of listaPredios) {
+              await safeInvokeNotifyActive(buildingUuid, slotTitulo, false); // ❌ DESATIVAR
+            }
+          }
         }
+        
+        console.log("✅ [VIDEO_BASE] Todos os slots desativados!");
+      }
+      
+      // 3️⃣ ATIVAR apenas o slot selecionado
+      if (tituloSemExtensao) {
+        console.log(`✅ [VIDEO_BASE] Ativando slot selecionado: ${tituloSemExtensao}`);
+        for (const buildingUuid of listaPredios) {
+          await safeInvokeNotifyActive(buildingUuid, tituloSemExtensao, true); // ✅ ATIVAR
+        }
+        console.log("🎯 [VIDEO_BASE] Sincronização concluída!");
       }
     } else {
-      console.warn("[VIDEO_BASE] Dados insuficientes para chamar API externa", {
+      console.warn("[VIDEO_BASE] Dados insuficientes para sincronização", {
         temPredios: listaPredios.length > 0,
+        temPedidoId: !!pedidoId,
         temTitulo: !!tituloSemExtensao,
       });
     }
