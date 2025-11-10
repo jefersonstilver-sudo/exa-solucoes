@@ -24,9 +24,9 @@ const HeroSection = () => {
       <div className="absolute top-20 right-20 w-96 h-96 bg-exa-blue/20 rounded-full blur-3xl animate-pulse-soft" />
       <div className="absolute bottom-20 left-20 w-96 h-96 bg-exa-yellow/10 rounded-full blur-3xl animate-pulse-soft" />
 
-      <div ref={ref} className={`relative z-10 w-full flex flex-col lg:grid lg:grid-cols-2 gap-8 md:gap-10 lg:gap-12 items-center transition-all duration-1000 pb-20 md:pb-8 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        {/* Left side - Player de vídeo posicionado */}
-        <div className="relative group order-2 lg:order-1 w-full max-w-[240px] md:max-w-[260px] lg:max-w-[280px] mx-auto lg:ml-0 lg:mr-auto mb-8 md:mb-0 lg:mt-8">
+      <div ref={ref} className={`relative z-10 w-full flex flex-col lg:grid lg:grid-cols-2 gap-8 md:gap-10 lg:gap-12 items-center transition-all duration-1000 pb-12 md:pb-8 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        {/* Left side - Player de vídeo posicionado levemente à direita */}
+        <div className="relative group order-2 lg:order-1 w-full max-w-[240px] md:max-w-[260px] lg:max-w-[280px] mx-auto lg:ml-8 lg:mr-auto mb-8 md:mb-0 lg:mt-8">
           <div className="bg-gradient-to-b from-zinc-300 via-zinc-200 to-zinc-100 p-2 md:p-2.5 lg:p-3 rounded-3xl shadow-2xl border border-white/90 hover:scale-105 transition-transform duration-300">
             <div className="bg-black rounded-2xl overflow-hidden shadow-inner aspect-[9/16]">
               {!loading && <video autoPlay loop muted playsInline controls className="w-full h-full object-cover" key={displayVideoUrl}>

@@ -37,19 +37,14 @@ const getWeatherInfo = (code: number): { description: string; icon: string } => 
   return { description: 'Desconhecido', icon: 'clear' };
 };
 
-const getDayName = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+const getDayName = (dateStr: string, index: number): string => {
+  // Usar índice diretamente para garantir precisão
+  if (index === 0) return 'Hoje';
+  if (index === 1) return 'Amanhã';
+  if (index === 2) return 'Depois de Amanhã';
   
-  const dateOnly = date.toDateString();
-  const todayOnly = today.toDateString();
-  const tomorrowOnly = tomorrow.toDateString();
-  
-  if (dateOnly === todayOnly) return 'Hoje';
-  if (dateOnly === tomorrowOnly) return 'Amanhã';
-  
+  // Fallback para outros dias (não usado no contexto atual)
+  const date = new Date(dateStr + 'T12:00:00');
   return date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
 };
 
@@ -79,7 +74,7 @@ export const fetchWeatherData = async (): Promise<WeatherData> => {
       const weatherInfo = getWeatherInfo(data.daily.weather_code[index]);
       return {
         date,
-        dayName: getDayName(date),
+        dayName: getDayName(date, index),
         maxTemp: Math.round(data.daily.temperature_2m_max[index]),
         minTemp: Math.round(data.daily.temperature_2m_min[index]),
         weatherCode: data.daily.weather_code[index],
