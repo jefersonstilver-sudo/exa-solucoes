@@ -17,11 +17,22 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Prevenir context menu (botão direito)
-  const preventContextMenu = useCallback((e: Event) => {
+  // Prevenir context menu (botão direito) - MÁXIMA PRIORIDADE
+  const preventContextMenu = useCallback((e: MouseEvent | Event) => {
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
     return false;
+  }, []);
+
+  // Prevenir mouse direito em QUALQUER lugar
+  const preventRightClick = useCallback((e: MouseEvent) => {
+    if (e.button === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
   }, []);
 
   // Prevenir teclas de atalho perigosas
@@ -197,10 +208,19 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Aplicar todas as proteções
+    // Aplicar todas as proteções com MÁXIMA PRIORIDADE
     if (preventDownload) {
-      container.addEventListener('contextmenu', preventContextMenu);
-      document.addEventListener('keydown', preventKeyboardShortcuts);
+      // Context menu com capture phase
+      container.addEventListener('contextmenu', preventContextMenu, { capture: true });
+      document.addEventListener('contextmenu', preventContextMenu, { capture: true });
+      
+      // Mouse events com capture phase
+      container.addEventListener('mousedown', preventRightClick as any, { capture: true });
+      document.addEventListener('mousedown', preventRightClick as any, { capture: true });
+      
+      // Keyboard shortcuts
+      document.addEventListener('keydown', preventKeyboardShortcuts, { capture: true });
+      
       addProtectionOverlay();
       disableInspection();
     }
@@ -223,8 +243,11 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
 
     // Cleanup
     return () => {
-      container.removeEventListener('contextmenu', preventContextMenu);
-      document.removeEventListener('keydown', preventKeyboardShortcuts);
+      container.removeEventListener('contextmenu', preventContextMenu as any, { capture: true } as any);
+      document.removeEventListener('contextmenu', preventContextMenu as any, { capture: true } as any);
+      container.removeEventListener('mousedown', preventRightClick as any, { capture: true } as any);
+      document.removeEventListener('mousedown', preventRightClick as any, { capture: true } as any);
+      document.removeEventListener('keydown', preventKeyboardShortcuts as any, { capture: true } as any);
       document.removeEventListener('dragstart', preventDragDrop);
       document.removeEventListener('drop', preventDragDrop);
     };
@@ -234,6 +257,7 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
     preventDevTools,
     preventScreenCapture,
     preventContextMenu,
+    preventRightClick,
     preventKeyboardShortcuts,
     preventDragDrop,
     addProtectionOverlay,

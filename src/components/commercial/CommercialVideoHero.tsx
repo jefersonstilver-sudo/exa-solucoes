@@ -22,12 +22,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
-  const { containerRef } = useVideoProtection({
-    preventDownload: true,
-    preventPrint: true,
-    preventDevTools: true,
-    preventScreenCapture: true
-  });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const currentVideo = videos[currentIndex];
   const nextVideo = videos[(currentIndex + 1) % videos.length];
@@ -69,15 +64,46 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   }
 
   return (
-    <div ref={containerRef} className={cn("relative w-full", className)}>
+    <div 
+      ref={containerRef} 
+      className={cn("relative w-full", className)}
+      style={{
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        msUserSelect: 'none',
+        MozUserSelect: 'none',
+        WebkitTouchCallout: 'none'
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }}
+      onDragStart={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }}
+    >
       {/* Video Container - Responsivo com Proteção */}
       <div 
-        className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl select-none"
+        className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl"
         style={{
           aspectRatio: '16/9',
-          maxHeight: '60vh'
+          maxHeight: '60vh',
+          userSelect: 'none',
+          WebkitUserSelect: 'none'
         }}
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }}
       >
         {/* Vídeo atual com proteção */}
         {currentVideo && (
@@ -94,11 +120,24 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
               muted
               playsInline
               preload="auto"
-              controlsList="nodownload noplaybackrate"
+              controlsList="nodownload noplaybackrate nofullscreen"
               disablePictureInPicture
               disableRemotePlayback
-              onContextMenu={(e) => e.preventDefault()}
-              style={{ pointerEvents: 'none' }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+              }}
+              onDragStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+              }}
+              style={{ 
+                pointerEvents: 'none',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
+              }}
             />
           </div>
         )}
@@ -106,16 +145,33 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
         {/* MARCA D'ÁGUA - PROTEÇÃO ANTI-PIRATARIA */}
         <VideoWatermark />
         
-        {/* Overlay de proteção invisível - bloqueia extensões */}
+        {/* Overlay de proteção invisível - bloqueia TUDO */}
         <div 
-          className="absolute inset-0 z-50" 
+          className="absolute inset-0 z-[100]" 
           style={{ 
             background: 'transparent',
             pointerEvents: 'auto',
-            userSelect: 'none'
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            cursor: 'default'
           }}
-          onContextMenu={(e) => e.preventDefault()}
-          onDragStart={(e) => e.preventDefault()}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }}
+          onDragStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }}
+          onMouseDown={(e) => {
+            if (e.button === 2) { // Botão direito
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }
+          }}
         />
         
         {/* Overlay com gradiente sutil */}

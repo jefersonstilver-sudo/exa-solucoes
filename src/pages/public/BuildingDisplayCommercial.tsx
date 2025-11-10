@@ -99,7 +99,21 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   }
 
   return (
-    <div ref={protectionRef} className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 select-none">
+    <div 
+      ref={protectionRef} 
+      className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
+      style={{
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        msUserSelect: 'none',
+        MozUserSelect: 'none',
+        WebkitTouchCallout: 'none',
+        pointerEvents: 'auto'
+      }}
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+      onDrop={(e) => e.preventDefault()}
+    >
       {/* Header premium com logo EXA */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900 via-red-700 to-black shadow-2xl border-b border-white/10">
         <div className="container mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
