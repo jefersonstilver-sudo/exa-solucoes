@@ -33,7 +33,15 @@ export const setBaseVideo = async (slotId: string): Promise<{
         )
       `)
       .eq('id', slotId)
-      .single();
+      .maybeSingle();
+
+    if (pvError) {
+      console.error('❌ [VIDEO_BASE] Erro ao buscar dados:', pvError);
+    }
+
+    if (!pvData) {
+      console.error('❌ [VIDEO_BASE] Nenhum dado encontrado para slotId:', slotId);
+    }
 
     const clientId = pvData?.pedidos?.client_id;
     const videoNome = pvData?.videos?.nome;
@@ -65,7 +73,7 @@ export const setBaseVideo = async (slotId: string): Promise<{
           )
         `)
         .eq('id', slotId)
-        .single();
+        .maybeSingle();
 
       if (pvErr || !pv) {
         console.error('❌ [VIDEO_BASE] Fallback: erro ao buscar slot:', pvErr);
@@ -236,9 +244,17 @@ export const setBaseVideo = async (slotId: string): Promise<{
         };
         
         console.log('✅ [VIDEO_BASE] Resposta da API externa:', response.status);
+        console.log('📊 [VIDEO_BASE] apiCallInfo:', apiCallInfo);
       } catch (apiError) {
         console.error('⚠️ [VIDEO_BASE] Erro ao chamar API externa (não bloqueante):', apiError);
+        apiCallInfo = {
+          url: `http://15.228.8.3:8000/ativo/${clientId}`,
+          status: 0,
+          statusText: `Erro: ${apiError.message || 'Falha na requisição'}`
+        };
       }
+    } else {
+      console.warn('⚠️ [VIDEO_BASE] client_id não encontrado, API externa não será chamada');
     }
     
     videoLogger.logProcessEnd('SET_BASE_VIDEO', true);

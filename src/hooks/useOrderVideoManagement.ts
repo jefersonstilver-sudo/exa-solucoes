@@ -306,9 +306,11 @@ export const useOrderVideoManagement = (orderId: string) => {
       }
 
       console.log('✅ [ORDER_VIDEO] Vídeo base definido com sucesso');
+      console.log('📊 [ORDER_VIDEO] Result completo:', JSON.stringify(result, null, 2));
 
       // Mostrar popup com informações da API externa se disponível
       if (result.apiCallInfo) {
+        console.log('🎉 [ORDER_VIDEO] Mostrando toast com apiCallInfo:', result.apiCallInfo);
         toast.success(
           `🌐 API Externa Chamada\n\nURL: ${result.apiCallInfo.url}\n\nStatus: ${result.apiCallInfo.status} ${result.apiCallInfo.statusText}`,
           {
@@ -320,6 +322,9 @@ export const useOrderVideoManagement = (orderId: string) => {
             }
           }
         );
+      } else {
+        console.warn('⚠️ [ORDER_VIDEO] apiCallInfo não encontrado no result');
+        toast.info('✅ Vídeo definido como principal (sem info da API externa)');
       }
 
       console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
