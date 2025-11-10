@@ -3430,6 +3430,10 @@ export type Database = {
         Args: { p_pedido_id: string }
         Returns: boolean
       }
+      can_remove_video: {
+        Args: { p_pedido_video_id: string }
+        Returns: boolean
+      }
       cancel_expired_orders: { Args: never; Returns: Json }
       check_panel_availability: {
         Args: { p_end_date: string; p_panel_id: string; p_start_date: string }
