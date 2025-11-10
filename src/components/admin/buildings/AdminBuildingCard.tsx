@@ -90,26 +90,31 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Image Section */}
           <div className="lg:col-span-3">
-            <div className="aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden relative group">
+            <div className="aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
               {building.imagem_principal ? <img src={getImageUrl(building.imagem_principal)} alt={building.nome} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-400">
                   <Image className="h-8 w-8" />
                 </div>}
-              
-              {/* Indicador de vídeos em exibição - Overlay na imagem */}
-              {typeof videoCount === 'number' && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3">
-                  {videoCount > 0 ? (
+            </div>
+            
+            {/* Indicador de vídeos em exibição - EMBAIXO da foto */}
+            {typeof videoCount === 'number' && (
+              <div className="mt-3">
+                {videoCount > 0 ? (
+                  <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg p-3 border border-slate-600 shadow-lg">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <Video className="h-5 w-5 text-white" />
-                          <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                        </div>
-                        <div className="text-white">
-                          <div className="text-xs font-semibold leading-tight">
-                            {videoCount} em exibição
+                      <div className="flex items-center gap-2.5">
+                        <div className="relative flex-shrink-0">
+                          <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping" />
+                          <div className="relative flex items-center justify-center w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-full">
+                            <Video className="h-4 w-4 text-white" />
                           </div>
-                          <div className="text-[10px] text-gray-300 leading-tight">
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-semibold text-sm leading-tight">
+                            {videoCount} {videoCount === 1 ? 'vídeo' : 'vídeos'}
+                          </div>
+                          <div className="text-slate-300 text-xs leading-tight flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                             Ao vivo agora
                           </div>
                         </div>
@@ -117,22 +122,24 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                       {onViewPlaylist && (
                         <button
                           onClick={() => onViewPlaylist(building)}
-                          className="flex items-center gap-1 px-2 py-1 text-[10px] bg-white/20 hover:bg-white/30 text-white rounded border border-white/30 transition-colors font-medium backdrop-blur-sm"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 text-white rounded-md border border-white/20 transition-all font-medium backdrop-blur-sm hover:scale-105"
                         >
-                          <Play className="h-3 w-3" />
+                          <Play className="h-3.5 w-3.5" />
                           Ver
                         </button>
                       )}
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-gray-400">
+                  </div>
+                ) : (
+                  <div className="bg-gray-100 rounded-lg p-3 border border-gray-200">
+                    <div className="flex items-center gap-2 text-gray-500">
                       <Video className="h-4 w-4" />
-                      <span className="text-xs">Sem vídeos</span>
+                      <span className="text-xs font-medium">Sem vídeos no momento</span>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           {/* Info Section */}

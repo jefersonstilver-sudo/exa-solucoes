@@ -29,23 +29,36 @@ export function useBuildingsVideoCount(buildingIds: string[] | undefined): UseBu
     try {
       setLoading(true);
       console.log('🔄 [VIDEO COUNT] Buscando contagem para', uniqueIds.length, 'prédios');
+      console.log('🔍 [VIDEO COUNT] IDs:', uniqueIds.map(id => id.slice(0, 8)).join(', '));
       
       const { data, error } = await supabase.rpc('get_buildings_current_video_count', {
         p_building_ids: uniqueIds,
       });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('💥 [VIDEO COUNT] Erro na RPC:', error);
+        throw error;
+      }
+
+      console.log('📦 [VIDEO COUNT] Dados recebidos da RPC:', data?.length || 0, 'registros');
 
       const map: Record<string, number> = {};
       // Initialize with zeros to ensure all buildings are present
       for (const id of uniqueIds) map[id] = 0;
+      
       (data || []).forEach((row: { building_id: string; current_videos_count: number }) => {
         if (row?.building_id) {
           map[row.building_id] = row.current_videos_count || 0;
-          console.log('📊 [VIDEO COUNT] Prédio', row.building_id.slice(0, 8), '→', row.current_videos_count, 'vídeos');
+          if (row.current_videos_count > 0) {
+            console.log('📊 [VIDEO COUNT] ✅', row.building_id.slice(0, 8), '→', row.current_videos_count, 'vídeos');
+          }
         }
       });
+      
       setCounts(map);
-      console.log('✅ [VIDEO COUNT] Total de prédios com vídeos:', Object.keys(map).filter(k => map[k] > 0).length);
+      const activeBuildings = Object.keys(map).filter(k => map[k] > 0);
+      console.log('✅ [VIDEO COUNT] Prédios com vídeos:', activeBuildings.length, 'de', uniqueIds.length);
+      console.log('📈 [VIDEO COUNT] Total de vídeos em exibição:', Object.values(map).reduce((a, b) => a + b, 0));
     } catch (err) {
       console.error('💥 [VIDEO COUNT] Erro ao buscar contagem de vídeos por prédio:', err);
     } finally {

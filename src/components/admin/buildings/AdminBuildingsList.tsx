@@ -23,7 +23,17 @@ const AdminBuildingsList: React.FC<AdminBuildingsListProps> = ({
   onViewCampaigns
 }) => {
   const buildingIds = buildings.map(b => b.id);
+  
+  console.log('🏗️ [ADMIN BUILDINGS LIST] Total de prédios:', buildings.length);
+  console.log('🏗️ [ADMIN BUILDINGS LIST] Building IDs:', buildingIds.map(id => id.slice(0, 8)).join(', '));
+  
   const { counts: videoCounts, loading: videoCountsLoading } = useBuildingsVideoCount(buildingIds);
+  
+  console.log('📊 [ADMIN BUILDINGS LIST] Video counts recebidos:', Object.keys(videoCounts).length, 'prédios');
+  const prediosComVideo = Object.entries(videoCounts).filter(([_, count]) => count > 0);
+  if (prediosComVideo.length > 0) {
+    console.log('✅ [ADMIN BUILDINGS LIST] Prédios com vídeos:', prediosComVideo.map(([id, count]) => `${id.slice(0, 8)} (${count})`).join(', '));
+  }
   
   const activeBuildings = buildings.filter(b => b.status === 'ativo');
   const maintenanceBuildings = buildings.filter(b => b.status === 'manutenção');
