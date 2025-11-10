@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { generateCommercialPath, generatePanelPath, generateEmbedPath } from '@/utils/buildingSlugUtils';
 import { generatePublicUrl } from '@/config/domain';
 import { Building } from '@/services/buildingsDataService';
+import { BuildingVideoPlaylistPreview } from './BuildingVideoPlaylistPreview';
 
 interface AdminBuildingCardProps {
   building: Building;
@@ -28,6 +29,8 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
   onViewPlaylist,
   videoCount
 }) => {
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  
   console.log('🏢 [ADMIN BUILDING CARD] Renderizando prédio:', building.nome, 'Status:', building.status);
   console.log('📊 [ADMIN BUILDING CARD] Dados do prédio:', {
     id: building.id,
@@ -67,7 +70,17 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
     numero_telas: building.numero_elevadores || 0, // Número de telas definido no cadastro
     vendas_mes_atual: building.vendas_mes_atual || 0
   };
-  return <Card className={`transition-all duration-200 hover:shadow-lg ${building.status === 'manutenção' ? 'border-orange-200 bg-orange-50/30' : building.status === 'instalação' ? 'border-blue-200 bg-blue-50/30' : building.status === 'inativo' ? 'border-gray-200 bg-gray-50/30' : 'border-gray-200'}`}>
+  return (
+    <>
+      <BuildingVideoPlaylistPreview
+        buildingId={building.id}
+        buildingName={building.nome}
+        buildingCode={building.codigo_predio || '000'}
+        isOpen={isPlaylistModalOpen}
+        onClose={() => setIsPlaylistModalOpen(false)}
+      />
+      
+      <Card className={`transition-all duration-200 hover:shadow-lg ${building.status === 'manutenção' ? 'border-orange-200 bg-orange-50/30' : building.status === 'instalação' ? 'border-blue-200 bg-blue-50/30' : building.status === 'inativo' ? 'border-gray-200 bg-gray-50/30' : 'border-gray-200'}`}>
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
@@ -117,10 +130,8 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      if (onViewPlaylist) {
-                        console.log('[ADMIN BUILDING CARD] Opening playlist for:', building.nome);
-                        onViewPlaylist(building);
-                      }
+                      console.log('[ADMIN BUILDING CARD] Opening playlist for:', building.nome);
+                      setIsPlaylistModalOpen(true);
                     }}
                     className="w-full bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 rounded-lg p-3 border border-slate-600 shadow-lg hover:from-slate-700 hover:via-slate-600 hover:to-slate-700 transition-all cursor-pointer"
                   >
@@ -369,6 +380,8 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
           </div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+    </>
+  );
 };
 export default AdminBuildingCard;

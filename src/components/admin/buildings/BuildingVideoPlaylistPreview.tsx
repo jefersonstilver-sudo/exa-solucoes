@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Play, Pause, Clock, User, DollarSign, Video, ExternalLink } from 'lucide-react';
+import { Play, Pause, Clock, User, DollarSign, Video, ExternalLink, Calendar } from 'lucide-react';
 import { useBuildingActiveVideos, BuildingActiveVideo } from '@/hooks/useBuildingActiveVideos';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import ModernSkeleton from '@/components/ui/ModernSkeleton';
 import { generateCommercialPath } from '@/utils/buildingSlugUtils';
 import { generatePublicUrl } from '@/config/domain';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface BuildingVideoPlaylistPreviewProps {
   buildingId: string;
@@ -137,7 +139,7 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
                   <h3 className="text-white font-bold text-lg mb-3">
                     {selectedVideo.video_name}
                   </h3>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-2 text-slate-400">
                       <Clock className="h-4 w-4" />
                       <span className="text-sm">{formatDuration(selectedVideo.video_duracao)}</span>
@@ -150,6 +152,17 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
                       <DollarSign className="h-4 w-4" />
                       <span className="text-sm">{formatCurrency(selectedVideo.valor_total)}</span>
                     </div>
+                    {selectedVideo.created_at && (
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <Calendar className="h-4 w-4" />
+                        <span className="text-sm">
+                          {formatDistanceToNow(new Date(selectedVideo.created_at), { 
+                            addSuffix: true, 
+                            locale: ptBR 
+                          })}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   {selectedVideo.schedule_rules && selectedVideo.schedule_rules.length > 0 && (
@@ -205,10 +218,19 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
                             <p className="text-white font-medium text-sm truncate mb-1">
                               {video.video_name}
                             </p>
-                            <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
                               <Clock className="h-3 w-3" />
                               {formatDuration(video.video_duracao)}
                             </div>
+                            {video.created_at && (
+                              <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                                <Calendar className="h-2.5 w-2.5" />
+                                {formatDistanceToNow(new Date(video.created_at), { 
+                                  addSuffix: true, 
+                                  locale: ptBR 
+                                })}
+                              </div>
+                            )}
                             <div className="flex gap-1 mt-2">
                               {video.priority_type === 'base' && (
                                 <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-green-500/30 text-green-400">

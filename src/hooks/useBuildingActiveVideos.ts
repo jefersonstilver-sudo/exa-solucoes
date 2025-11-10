@@ -23,6 +23,7 @@ export interface BuildingActiveVideo {
   slot_position: number;
   schedule_rules?: ScheduleRule[];
   is_currently_active?: boolean;
+  created_at?: string;
 }
 
 export interface UseBuildingActiveVideosResult {
@@ -91,6 +92,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           is_base_video,
           selected_for_display,
           is_active,
+          created_at,
           videos!inner (
             id,
             nome,
@@ -100,7 +102,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         `)
         .in('pedido_id', pedidoIds)
         .eq('is_active', true)
-        .order('slot_position', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (videosError) {
         console.error('❌ [BUILDING ACTIVE VIDEOS] Erro ao buscar vídeos:', videosError);
@@ -214,15 +216,16 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           priority_type: (pedidoVideo.is_base_video ? 'base' : 'scheduled') as 'scheduled' | 'base',
           slot_position: pedidoVideo.slot_position || 1,
           schedule_rules: scheduleRules,
-          is_currently_active: isVideoActiveNow(pedidoVideo.video_id, scheduleRules)
+          is_currently_active: isVideoActiveNow(pedidoVideo.video_id, scheduleRules),
+          created_at: (pedidoVideo as any).created_at
         });
       }
 
-      // Ordenar: vídeos base primeiro, depois agendados, depois por slot_position
+      // Ordenar: mais recentes primeiro (enviados por último)
       activeVideos.sort((a, b) => {
-        if (a.priority_type === 'base' && b.priority_type !== 'base') return -1;
-        if (a.priority_type !== 'base' && b.priority_type === 'base') return 1;
-        return a.slot_position - b.slot_position;
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA; // Descendente (mais recente primeiro)
       });
 
       const endTime = performance.now();
