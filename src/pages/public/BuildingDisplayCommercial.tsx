@@ -1,34 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
-import { supabase } from '@/integrations/supabase/client';
 
 const BuildingDisplayCommercial = () => {
   const { buildingId } = useParams<{ buildingId: string }>();
   const { videos: activeVideos, loading } = useBuildingActiveVideos(buildingId || '');
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
-  const [buildingName, setBuildingName] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // Buscar nome do prédio
-  useEffect(() => {
-    const fetchBuildingName = async () => {
-      if (!buildingId) return;
-      
-      const { data, error } = await supabase
-        .from('buildings')
-        .select('nome')
-        .eq('id', buildingId)
-        .single();
-      
-      if (data && !error) {
-        setBuildingName(data.nome);
-      }
-    };
-
-    fetchBuildingName();
-  }, [buildingId]);
 
   // Auto-avançar com transição suave
   useEffect(() => {
@@ -66,37 +45,74 @@ const BuildingDisplayCommercial = () => {
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Moldura do painel - simula hardware físico */}
-      <div className="absolute inset-0">
-        {/* Borda superior - simula moldura do painel */}
-        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-zinc-900 to-transparent z-10" />
-        
-        {/* Borda inferior - simula moldura do painel */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-900 to-transparent z-10" />
-        
-        {/* Bordas laterais */}
-        <div className="absolute top-0 left-0 bottom-0 w-8 bg-gradient-to-r from-zinc-900 to-transparent z-10" />
-        <div className="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l from-zinc-900 to-transparent z-10" />
-      </div>
-
-      {/* Logo EXA - posicionamento profissional */}
-      <div className="absolute bottom-8 right-8 z-20">
-        <div className="backdrop-blur-sm bg-black/30 px-6 py-3 rounded-lg border border-white/10">
-          <svg viewBox="0 0 120 40" className="h-8 w-auto">
-            <text x="10" y="28" fill="white" fontSize="28" fontWeight="700" fontFamily="'Inter', sans-serif" letterSpacing="2">
-              EXA
-            </text>
-            <text x="10" y="36" fill="white" fontSize="7" fontWeight="300" fontFamily="'Inter', sans-serif" letterSpacing="3" opacity="0.6">
-              MÍDIA
-            </text>
-          </svg>
+      {/* Header premium com logo EXA e gradiente */}
+      <div className="absolute top-0 left-0 right-0 z-30">
+        <div className="relative h-20 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 shadow-xl">
+          {/* Glow effect superior */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
+          
+          {/* Logo EXA com efeito brilhante */}
+          <div className="absolute left-8 top-1/2 -translate-y-1/2 flex items-center gap-3">
+            <div className="relative">
+              {/* Glow background */}
+              <div className="absolute inset-0 blur-xl bg-white/30 rounded-full scale-150" />
+              
+              {/* Logo */}
+              <svg viewBox="0 0 100 35" className="h-10 w-auto relative z-10">
+                <defs>
+                  <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 1 }} />
+                    <stop offset="50%" style={{ stopColor: '#ffffff', stopOpacity: 0.95 }} />
+                    <stop offset="100%" style={{ stopColor: '#ffffff', stopOpacity: 1 }} />
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <text 
+                  x="10" 
+                  y="24" 
+                  fill="url(#logoGradient)" 
+                  fontSize="28" 
+                  fontWeight="800" 
+                  fontFamily="'Inter', 'Poppins', sans-serif" 
+                  letterSpacing="3"
+                  filter="url(#glow)"
+                >
+                  EXA
+                </text>
+              </svg>
+            </div>
+            
+            {/* Divisor */}
+            <div className="w-px h-8 bg-white/30" />
+            
+            {/* Subtitle */}
+            <span className="text-white/90 text-sm font-light tracking-[0.2em] uppercase">
+              Digital Signage
+            </span>
+          </div>
         </div>
+        
+        {/* Shadow do header */}
+        <div className="h-4 bg-gradient-to-b from-black/40 to-transparent" />
       </div>
 
-      {/* Vídeo player - sem controles, transição suave */}
-      <div className="min-h-screen flex items-center justify-center">
+      {/* Moldura lateral sutil - simula hardware físico */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 bottom-0 w-4 bg-gradient-to-r from-black/60 to-transparent z-20" />
+        <div className="absolute top-0 right-0 bottom-0 w-4 bg-gradient-to-l from-black/60 to-transparent z-20" />
+        <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-black/60 to-transparent z-20" />
+      </div>
+
+      {/* Vídeo player - área principal */}
+      <div className="min-h-screen pt-20 flex items-center justify-center bg-black">
         {selectedVideo && (
-          <div className={`w-full h-screen transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+          <div className={`w-full h-full transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
             <video
               ref={videoRef}
               key={selectedVideo.video_url}
@@ -113,8 +129,8 @@ const BuildingDisplayCommercial = () => {
         )}
       </div>
 
-      {/* Reflexo sutil na tela - simula vidro do painel */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none z-10" />
+      {/* Reflexo sutil simulando vidro do painel */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] via-transparent to-transparent pointer-events-none z-10" />
     </div>
   );
 };
