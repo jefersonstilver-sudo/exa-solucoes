@@ -5,7 +5,7 @@ import { useBuildingsPageHandlers } from '@/hooks/useBuildingsPageHandlers';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import BuildingsPageLoader from '@/components/admin/buildings/BuildingsPageLoader';
 import AdminBuildingsPageContent from '@/components/admin/buildings/AdminBuildingsPageContent';
-import { BuildingVideoPlaylistModal } from '@/components/admin/buildings/BuildingVideoPlaylistModal';
+import { BuildingVideoPlaylistPreview } from '@/components/admin/buildings/BuildingVideoPlaylistPreview';
 import { BuildingMobileList } from '@/components/admin/buildings/BuildingMobileList';
 import { MobileActionMenu } from '@/components/admin/shared/MobileActionMenu';
 import { Button } from '@/components/ui/button';
@@ -132,11 +132,12 @@ const BuildingsPage = () => {
           </Button>
         </div>
 
-        <BuildingVideoPlaylistModal
-          open={!!playlistBuilding}
-          onOpenChange={(open) => !open && setPlaylistBuilding(null)}
+        <BuildingVideoPlaylistPreview
+          isOpen={!!playlistBuilding}
+          onClose={() => setPlaylistBuilding(null)}
           buildingId={playlistBuilding?.id || ''}
           buildingName={playlistBuilding?.nome || ''}
+          buildingCode={playlistBuilding?.codigo_predio || ''}
         />
       </>
     );
@@ -163,11 +164,12 @@ const BuildingsPage = () => {
         onViewPlaylist={handleViewPlaylist}
       />
       
-      <BuildingVideoPlaylistModal
-        open={!!playlistBuilding}
-        onOpenChange={(open) => !open && setPlaylistBuilding(null)}
+      <BuildingVideoPlaylistPreview
+        isOpen={!!playlistBuilding}
+        onClose={() => setPlaylistBuilding(null)}
         buildingId={playlistBuilding?.id || ''}
         buildingName={playlistBuilding?.nome || ''}
+        buildingCode={playlistBuilding?.codigo_predio || ''}
       />
     </>
   );
