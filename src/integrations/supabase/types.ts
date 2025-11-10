@@ -2376,6 +2376,7 @@ export type Database = {
           status: string
           termos_aceitos: boolean | null
           transaction_id: string | null
+          updated_at: string | null
           valor_total: number | null
         }
         Insert: {
@@ -2403,6 +2404,7 @@ export type Database = {
           status?: string
           termos_aceitos?: boolean | null
           transaction_id?: string | null
+          updated_at?: string | null
           valor_total?: number | null
         }
         Update: {
@@ -2430,6 +2432,7 @@ export type Database = {
           status?: string
           termos_aceitos?: boolean | null
           transaction_id?: string | null
+          updated_at?: string | null
           valor_total?: number | null
         }
         Relationships: [
