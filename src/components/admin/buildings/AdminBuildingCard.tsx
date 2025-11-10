@@ -117,8 +117,8 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                         const url = `${window.location.origin}/painel/${building.id}`;
                         navigator.clipboard.writeText(url);
                         import('sonner').then(({ toast }) => {
-                          toast.success('Link copiado!', {
-                            description: `Painel de ${building.nome}`,
+                          toast.success('Link Limpo copiado!', {
+                            description: `Painel fullscreen`,
                             duration: 3000,
                           });
                         });
@@ -128,7 +128,23 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                       <svg className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                       </svg>
-                      Copiar Link do Painel
+                      Link Limpo
+                    </button>
+                    <button
+                      onClick={() => {
+                        const url = `${window.location.origin}/painel-comercial/${building.id}`;
+                        navigator.clipboard.writeText(url);
+                        import('sonner').then(({ toast }) => {
+                          toast.success('Link Comercial copiado!', {
+                            description: `Painel com UI`,
+                            duration: 3000,
+                          });
+                        });
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg shadow-sm hover:shadow-md transition-all font-semibold group"
+                    >
+                      <Monitor className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+                      Link Comercial
                     </button>
                   </>
                 ) : (
@@ -256,8 +272,8 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                 navigator.clipboard.writeText(url);
                 import('@/hooks/use-toast').then(({ toast }) => {
                   toast({
-                    title: "Link copiado!",
-                    description: `Painel de ${building.nome}`,
+                    title: "Link Limpo copiado!",
+                    description: `Painel fullscreen de ${building.nome}`,
                   });
                 });
               }}
@@ -266,12 +282,25 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
-              Copiar Link do Painel
+              Link Limpo
             </Button>
             
-            <Button variant="destructive" size="sm" onClick={() => onDelete(building)} className="flex items-center gap-1">
-              <Trash2 className="h-4 w-4" />
-              Excluir
+            <Button 
+              size="sm" 
+              onClick={() => {
+                const url = `${window.location.origin}/painel-comercial/${building.id}`;
+                navigator.clipboard.writeText(url);
+                import('@/hooks/use-toast').then(({ toast }) => {
+                  toast({
+                    title: "Link Comercial copiado!",
+                    description: `Painel com UI de ${building.nome}`,
+                  });
+                });
+              }}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+            >
+              <Monitor className="h-4 w-4" />
+              Link Comercial
             </Button>
           </div>
         </div>
