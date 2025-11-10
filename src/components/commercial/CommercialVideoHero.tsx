@@ -92,10 +92,8 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     >
       {/* Video Container - Responsivo com Proteção */}
       <div 
-        className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl"
+        className="relative w-full h-full bg-black rounded-lg overflow-hidden shadow-2xl"
         style={{
-          aspectRatio: '16/9',
-          maxHeight: '60vh',
           userSelect: 'none',
           WebkitUserSelect: 'none'
         }}
