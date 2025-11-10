@@ -154,7 +154,9 @@ export const useRealOrderDetails = (orderId: string) => {
               orientacao
             )
           `)
-          .eq('pedido_id', orderId);
+          .eq('pedido_id', orderId)
+          .order('selected_for_display', { ascending: false })
+          .order('slot_position', { ascending: true });
 
         if (videosError) throw videosError;
 

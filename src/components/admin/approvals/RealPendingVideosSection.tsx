@@ -130,13 +130,20 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
     try {
       setActionLoading(true);
       
+      console.log('✅ [APPROVE] Aprovando vídeo:', videoId);
+      
       const { data: userData } = await supabase.auth.getUser();
-      const { error } = await supabase.rpc('approve_video', {
+      const { data, error } = await supabase.rpc('approve_video', {
         p_pedido_video_id: videoId,
         p_approved_by: userData.user?.id
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('💥 [APPROVE] Erro na RPC:', error);
+        throw error;
+      }
+      
+      console.log('✅ [APPROVE] RPC executada com sucesso:', data);
 
       // Enviar automaticamente para o webhook após aprovação
       try {
@@ -144,20 +151,20 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         const webhookSuccess = await sendVideoApprovalToWebhook(videoId);
         
         if (webhookSuccess) {
-          toast.success(`Vídeo de ${clientName} aprovado e programação ativada automaticamente!`);
+          toast.success(`✅ Vídeo de ${clientName} aprovado e programação ativada!`);
         } else {
-          toast.success(`Vídeo de ${clientName} aprovado! (Erro ao ativar programação - verificar logs)`);
+          toast.success(`✅ Vídeo de ${clientName} aprovado!`);
         }
       } catch (webhookError) {
-        console.error('Erro ao enviar webhook:', webhookError);
-        toast.success(`Vídeo de ${clientName} aprovado! (Erro ao ativar programação automática)`);
+        console.error('⚠️ [APPROVE] Erro ao enviar webhook:', webhookError);
+        toast.success(`✅ Vídeo de ${clientName} aprovado!`);
       }
 
       onRefresh();
       fetchPendingVideos();
-    } catch (error) {
-      console.error('Erro ao aprovar vídeo:', error);
-      toast.error('Erro ao aprovar vídeo');
+    } catch (error: any) {
+      console.error('💥 [APPROVE] Erro ao aprovar vídeo:', error);
+      toast.error(`Erro ao aprovar vídeo: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setActionLoading(false);
     }
