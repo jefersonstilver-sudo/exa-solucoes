@@ -30,6 +30,7 @@ import { BlockedOrderAlert } from '@/components/order/BlockedOrderAlert';
 import { OrderNameEdit } from '@/components/order/OrderNameEdit';
 import { useSelectedBuildingsDetails } from '@/hooks/useSelectedBuildingsDetails';
 import { FloatingDebugButton } from '@/components/debug/FloatingDebugButton';
+import { ApiResponseDialog } from '@/components/video-management/ApiResponseDialog';
 
 interface OrderDetails {
   id: string;
@@ -61,6 +62,15 @@ const OrderDetails = () => {
   const { trackVideoUpload, trackVideoSwap } = useVideoActivityTracking();
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [apiResponseDialog, setApiResponseDialog] = useState<{
+    isOpen: boolean;
+    response: any;
+    operationType: string;
+  }>({
+    isOpen: false,
+    response: null,
+    operationType: ''
+  });
 
   // Hook para verificar status do contrato - usando orderDetails como parâmetro
   const contractStatus = useContractStatus(orderDetails || {
@@ -234,6 +244,17 @@ const OrderDetails = () => {
 
   const handleVideoDownload = (videoUrl: string, fileName: string) => {
     window.open(videoUrl, '_blank');
+  };
+
+  const handleSetBaseVideo = async (slotId: string) => {
+    const result = await setBaseVideo(slotId);
+    if (result.response) {
+      setApiResponseDialog({
+        isOpen: true,
+        response: result.response,
+        operationType: 'Definir Vídeo Principal'
+      });
+    }
   };
 
   // Enquanto verifica autenticação, não mostrar nada
@@ -421,7 +442,7 @@ const OrderDetails = () => {
               onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
               onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
               onDownload={handleVideoDownload}
-              onSetBaseVideo={(slotId) => handleVideoAction(() => setBaseVideo(slotId))}
+              onSetBaseVideo={(slotId) => handleVideoAction(() => handleSetBaseVideo(slotId))}
               onRefreshSlots={refreshSlots}
               orderId={id || ''}
             />
@@ -458,6 +479,14 @@ const OrderDetails = () => {
 
       {/* Botão de Debug - Logs de Vídeo */}
       <FloatingDebugButton />
+
+      {/* Dialog de Resposta da API */}
+      <ApiResponseDialog
+        isOpen={apiResponseDialog.isOpen}
+        onClose={() => setApiResponseDialog({ isOpen: false, response: null, operationType: '' })}
+        response={apiResponseDialog.response}
+        operationType={apiResponseDialog.operationType}
+      />
     </>
   );
 };

@@ -333,7 +333,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     refreshSlots();
   }, [orderId]);
 
-  const setBaseVideo = async (slotId: string) => {
+  const setBaseVideo = async (slotId: string): Promise<{success: boolean, response: any}> => {
     try {
       console.log('🔄 [ORDER_VIDEO] === INÍCIO setBaseVideo ===');
       console.log('🔄 [ORDER_VIDEO] Parâmetros:', { slotId, orderId });
@@ -374,7 +374,7 @@ export const useOrderVideoManagement = (orderId: string) => {
       if (newPv?.approval_status !== 'approved') {
         console.error('❌ [ORDER_VIDEO] Vídeo não está aprovado:', newPv?.approval_status);
         toast.error('❌ Vídeo precisa estar aprovado para ser definido como principal');
-        return;
+        return { success: false, response: { error: 'Vídeo não aprovado', approval_status: newPv?.approval_status } };
       }
       
       const newVideoId: string | undefined = newPv?.video_id as string | undefined;
@@ -430,46 +430,81 @@ export const useOrderVideoManagement = (orderId: string) => {
         toActivateTitle,
       });
 
-      // 5) Executar a mudança no banco
-      console.log('⏳ [ORDER_VIDEO] Importando e chamando setBaseVideoService...');
-      const { setBaseVideo: setBaseVideoService } = await import('@/services/videoBaseService');
-      const success = await setBaseVideoService(slotId);
-      console.log('📊 [ORDER_VIDEO] Resultado do setBaseVideoService:', { success, tipo: typeof success });
+      // 5) Executar a mudança no banco E capturar resposta da RPC
+      console.log('⏳ [ORDER_VIDEO] Chamando RPC set_base_video_enhanced...');
+      const { data: rpcData, error: rpcError } = await supabase.rpc('set_base_video_enhanced', {
+        p_pedido_video_id: slotId
+      });
 
-      if (success === true) {
-        console.log('✅ [ORDER_VIDEO] setBaseVideoService retornou TRUE');
-        // 6) Enviar webhooks SEMPRE com desativação do antigo (se existir) e ativação do novo, incluindo slot
-        if (buildingIds.length) {
-          console.log('🚀 [WEBHOOK] Enviando webhooks (com slots):', {
-            buildingIdsCount: buildingIds.length,
-            toDeactivateTitle,
-            toActivateTitle,
-            oldSlot,
-            newSlot,
-          });
+      console.log('📊 [ORDER_VIDEO] Resposta da RPC:', { rpcData, rpcError });
 
-          await toggleForBuildings({
-            buildingIds,
-            toDeactivateTitle,
-            toActivateTitle,
-            toDeactivateSlot: oldSlot,
-            toActivateSlot: newSlot,
-          });
-        } else {
-          console.warn('⚠️ [WEBHOOK] Lista de prédios vazia, pulando envio de webhooks');
-        }
+      // Type casting para o formato esperado
+      const rpcResult = rpcData as any;
 
-        console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
-        refreshSlots();
-        toast.success('✅ Vídeo definido como principal!');
-      } else {
-        console.error('❌ [ORDER_VIDEO] setBaseVideoService retornou:', success);
+      // Criar objeto de resposta detalhado
+      const apiResponse: any = {
+        success: rpcResult?.success || false,
+        timestamp: new Date().toISOString(),
+        pedido_video_id: slotId,
+        video_id: newVideoId,
+        video_name: newVideoName,
+        old_base_video_id: oldVideoId,
+        old_slot: oldSlot,
+        new_slot: newSlot,
+        buildings_synced: buildingIds.length,
+        error: rpcError?.message || rpcResult?.error,
+        rpc_response: rpcData,
+        rpc_error: rpcError
+      };
+
+      if (rpcError || !rpcResult?.success) {
+        console.error('❌ [ORDER_VIDEO] Falha na RPC:', { rpcData, rpcError });
         toast.error('❌ Não foi possível definir o vídeo como principal');
+        return { success: false, response: apiResponse };
       }
+
+      console.log('✅ [ORDER_VIDEO] RPC executada com sucesso');
+      
+      // 6) Enviar webhooks SEMPRE com desativação do antigo (se existir) e ativação do novo, incluindo slot
+      if (buildingIds.length) {
+        console.log('🚀 [WEBHOOK] Enviando webhooks (com slots):', {
+          buildingIdsCount: buildingIds.length,
+          toDeactivateTitle,
+          toActivateTitle,
+          oldSlot,
+          newSlot,
+        });
+
+        await toggleForBuildings({
+          buildingIds,
+          toDeactivateTitle,
+          toActivateTitle,
+          toDeactivateSlot: oldSlot,
+          toActivateSlot: newSlot,
+        });
+        
+        apiResponse.external_api_calls = buildingIds.length * 2; // Desativar + Ativar
+      } else {
+        console.warn('⚠️ [WEBHOOK] Lista de prédios vazia, pulando envio de webhooks');
+      }
+
+      console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
+      refreshSlots();
+      toast.success('✅ Vídeo definido como principal!');
+      
+      return { success: true, response: apiResponse };
     } catch (error) {
       console.error('💥 [ORDER_VIDEO] Erro ao definir vídeo base:', error);
       console.error('💥 [ORDER_VIDEO] Stack:', (error as Error)?.stack);
       toast.error('❌ Erro ao definir vídeo principal');
+      
+      return { 
+        success: false, 
+        response: { 
+          error: (error as Error)?.message || 'Erro desconhecido',
+          timestamp: new Date().toISOString()
+        } 
+      };
     }
   };
   return {
