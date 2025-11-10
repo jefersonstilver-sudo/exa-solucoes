@@ -118,6 +118,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
               className="w-full h-full object-contain"
               autoPlay
               muted
+              loop={videos.length === 1}
               playsInline
               preload="auto"
               controlsList="nodownload noplaybackrate nofullscreen"
