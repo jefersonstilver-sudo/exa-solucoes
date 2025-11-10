@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     // Find orders that are pending and older than 48 hours
     const { data: pendingOrders, error: fetchError } = await supabase
       .from('pedidos')
-      .select('id, created_at, user_id, valor_total')
+      .select('id, created_at, client_id, valor_total')
       .eq('status', 'pendente')
       .lt('created_at', cutoffIso);
 
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
               record_id: order.id,
               old_data: { status: 'pendente' },
               new_data: { status: 'cancelado_automaticamente' },
-              user_id: order.user_id,
+              user_id: order.client_id,
               metadata: {
                 reason: 'Pedido não pago em 48 horas',
                 cancelled_at: new Date().toISOString(),

@@ -3814,23 +3814,25 @@ export type Database = {
       get_pedidos_com_status_inteligente: {
         Args: never
         Returns: {
+          client_id: string
           correct_status: string
           created_at: string
           cupom_id: string
           data_fim: string
           data_inicio: string
+          email: string
           has_active_video: boolean
           has_any_video: boolean
           has_approved_video: boolean
           id: string
           lista_paineis: string[]
           lista_predios: string[]
+          nome_pedido: string
           plano_meses: number
           status: string
+          transaction_id: string
           updated_at: string
-          user_id: string
           valor_total: number
-          video_status: string
         }[]
       }
       get_pending_approval_videos: {
