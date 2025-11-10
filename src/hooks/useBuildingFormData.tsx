@@ -153,18 +153,13 @@ export const useBuildingFormData = (building: any, open: boolean) => {
 
         if (error) throw error;
 
-        await supabase.rpc('log_building_action', {
-          p_building_id: data.id,
-          p_action_type: 'create',
-          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${payload.venue_type}`,
-          p_new_values: payload,
-        });
-
-        // Enviar para webhook (não bloquear criação se falhar)
+        // Chamar API externa para criar cliente - SE FALHAR, CANCELA TUDO
         try {
           const clienteId = data.id.replace(/-/g, '').substring(0, 4);
           
-          await fetch('https://stilver.app.n8n.cloud/webhook/CRIAR_CONTA_PREDIO_CLIENTE', {
+          console.log('[API EXTERNA] Criando cliente externo:', { clienteId, nome: formData.nome });
+          
+          const apiResponse = await fetch('http://15.228.8.3:8000/criar-cliente', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -174,9 +169,36 @@ export const useBuildingFormData = (building: any, open: boolean) => {
               cliente_name: formData.nome
             }),
           });
-        } catch (webhookError) {
-          console.warn('Erro no webhook (não crítico):', webhookError);
+
+          if (!apiResponse.ok) {
+            const errorText = await apiResponse.text();
+            throw new Error(`API externa falhou (${apiResponse.status}): ${errorText}`);
+          }
+
+          const responseData = await apiResponse.json();
+          console.log('[API EXTERNA] Cliente criado com sucesso:', responseData);
+
+        } catch (apiError: any) {
+          console.error('[API EXTERNA] ERRO CRÍTICO ao criar cliente:', apiError);
+          
+          // ROLLBACK: Deletar o prédio criado
+          await supabase
+            .from('buildings')
+            .delete()
+            .eq('id', data.id);
+          
+          console.error('[ROLLBACK] Prédio deletado devido a falha na API externa');
+          
+          // Mostrar erro ao usuário
+          throw new Error(`Falha ao criar cliente externo: ${apiError.message}`);
         }
+
+        await supabase.rpc('log_building_action', {
+          p_building_id: data.id,
+          p_action_type: 'create',
+          p_description: `Novo prédio "${formData.nome}" criado - Tipo: ${payload.venue_type}`,
+          p_new_values: payload,
+        });
 
         toast.success('Prédio criado com sucesso!');
       }

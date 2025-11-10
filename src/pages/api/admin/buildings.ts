@@ -100,17 +100,47 @@ async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
       console.error('Error updating codigo_predio:', updateError);
     }
     
-    // Chamar edge function para criar cliente externo
+    // Chamar API externa para criar cliente - SE FALHAR, CANCELA TUDO
     try {
-      await supabase.functions.invoke('create-external-client', {
-        body: {
-          buildingId: data.id,
-          buildingName: nome
-        }
+      const clienteId = data.id.replace(/-/g, '').substring(0, 4);
+      
+      console.log('[API EXTERNA] Criando cliente externo:', { clienteId, nome });
+      
+      const apiResponse = await fetch('http://15.228.8.3:8000/criar-cliente', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cliente_id: clienteId,
+          cliente_name: nome
+        }),
       });
-    } catch (webhookError) {
-      console.error('Error calling create-external-client webhook:', webhookError);
-      // Não falhar a criação do prédio se o webhook falhar
+
+      if (!apiResponse.ok) {
+        const errorText = await apiResponse.text();
+        throw new Error(`API externa falhou (${apiResponse.status}): ${errorText}`);
+      }
+
+      const responseData = await apiResponse.json();
+      console.log('[API EXTERNA] Cliente criado com sucesso:', responseData);
+
+    } catch (apiError: any) {
+      console.error('[API EXTERNA] ERRO CRÍTICO ao criar cliente:', apiError);
+      
+      // ROLLBACK: Deletar o prédio criado
+      await supabase
+        .from('buildings')
+        .delete()
+        .eq('id', data.id);
+      
+      console.error('[ROLLBACK] Prédio deletado devido a falha na API externa');
+      
+      // Retornar erro para o cliente
+      return res.status(500).json({ 
+        error: 'Falha ao criar cliente externo. Criação do prédio cancelada.',
+        details: apiError.message 
+      });
     }
     
     // Log action
