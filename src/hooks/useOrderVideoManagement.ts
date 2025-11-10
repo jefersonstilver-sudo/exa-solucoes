@@ -297,7 +297,6 @@ export const useOrderVideoManagement = (orderId: string) => {
       console.log('⏳ [ORDER_VIDEO] Chamando setBaseVideo do videoBaseService...');
       const result = await setBaseVideoService(slotId);
 
-      // result agora é um objeto com: success, timestamp, message, api_sync_report, etc
       console.log('📦 [ORDER_VIDEO] Resultado do setBaseVideoService:', result);
 
       if (!result.success) {
@@ -306,8 +305,7 @@ export const useOrderVideoManagement = (orderId: string) => {
         return { success: false, response: result };
       }
 
-      console.log('✅ [ORDER_VIDEO] Vídeo base definido com sucesso e API externa sincronizada');
-      console.log('📊 [ORDER_VIDEO] Relatório da API:', result.api_sync_report);
+      console.log('✅ [ORDER_VIDEO] Vídeo base definido com sucesso');
 
       console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
       refreshSlots();
