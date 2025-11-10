@@ -211,15 +211,15 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
             </div>
           </div>
 
-          {/* Relógio e Previsão do Tempo - Grid lado a lado no desktop */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Relógio */}
-            <div>
+          {/* Relógio e Previsão do Tempo - Grid lado a lado com espaçamento adequado */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            {/* Relógio - Alinhamento e padding aprimorados */}
+            <div className="flex items-stretch">
               <LiveClock />
             </div>
 
-            {/* Previsão do tempo */}
-            <div>
+            {/* Previsão do tempo - Alinhamento e padding aprimorados */}
+            <div className="flex items-stretch">
               <WeatherFooter buildingName={buildingName} />
             </div>
           </div>
