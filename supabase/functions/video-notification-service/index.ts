@@ -157,41 +157,46 @@ serve(async (req: Request) => {
 
     console.log('✅ Dados coletados:', { userEmail, userName, action });
 
-    // Preparar payload para unified-email-service
-    let emailPayload: any = {
-      action,
-      recipient_email: userEmail,
-      recipient_name: userName,
-      video_title: videoTitleFinal,
-      pedido_id,
-      user_id: pedido.client_id,
-      video_id: video_id || null,
-    };
+    // Buscar nomes dos prédios
+    console.log('🏢 Buscando prédios...');
+    const buildingIds = pedido.lista_predios || [];
+    let buildingNames: string[] = [];
+    
+    if (buildingIds.length > 0) {
+      const { data: buildings } = await supabase
+        .from('buildings')
+        .select('nome')
+        .in('id', buildingIds);
 
-    // Dados específicos por ação
-    if (action === 'video_approved') {
-      console.log('🎉 Aprovação - buscando prédios...');
-      
-      const buildingIds = pedido.lista_predios || [];
-      let buildingNames: string[] = [];
-      
-      if (buildingIds.length > 0) {
-        const { data: buildings } = await supabase
-          .from('buildings')
-          .select('nome')
-          .in('id', buildingIds);
-
-        buildingNames = buildings?.map((b: any) => b.nome) || [];
-        console.log('✅ Prédios:', buildingNames.length);
-      }
-
-      emailPayload.buildings = buildingNames;
-      emailPayload.start_date = pedido.data_inicio || new Date().toISOString().split('T')[0];
-      emailPayload.end_date = pedido.data_fim || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    } else if (action === 'video_rejected') {
-      emailPayload.rejection_reason = rejection_reason || 'Não especificado';
+      buildingNames = buildings?.map((b: any) => b.nome) || [];
+      console.log('✅ Prédios encontrados:', buildingNames.length);
     }
 
+    // Preparar payload para unified-email-service NO FORMATO CORRETO
+    const emailPayload = {
+      action,
+      user: {
+        email: userEmail,
+        user_metadata: {
+          name: userName
+        }
+      },
+      video_data: {
+        video_title: videoTitleFinal,
+        order_id: pedido_id,
+        buildings: buildingNames,
+        start_date: pedido.data_inicio || new Date().toISOString().split('T')[0],
+        end_date: pedido.data_fim || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        ...(rejection_reason && { rejection_reason: rejection_reason || 'Não especificado' })
+      }
+    };
+
+    console.log('📧 Payload preparado:', {
+      action,
+      user_email: userEmail,
+      video_title: videoTitleFinal,
+      buildings_count: buildingNames.length
+    });
     console.log('📧 Chamando unified-email-service...');
 
     // Chamar unified-email-service COM RETRY
