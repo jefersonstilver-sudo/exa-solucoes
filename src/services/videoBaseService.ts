@@ -14,6 +14,21 @@ export const setBaseVideo = async (slotId: string): Promise<{
     console.log('⭐ [VIDEO_BASE] Definindo vídeo base (RPC):', slotId);
     videoLogger.setContext({ slotId });
 
+    // Buscar o client_id do pedido
+    const { data: pvData, error: pvError } = await supabase
+      .from('pedido_videos')
+      .select(`
+        pedido_id,
+        pedidos!inner (
+          client_id
+        )
+      `)
+      .eq('id', slotId)
+      .single();
+
+    const clientId = pvData?.pedidos?.client_id;
+    console.log('🔍 [VIDEO_BASE] Client ID encontrado:', clientId);
+
     // Helper fallback direto no banco quando RPCs falharem
     const fallbackDirectUpdate = async () => {
       console.warn('🛟 [VIDEO_BASE] Iniciando fallback direto no banco para set base video');
@@ -186,6 +201,20 @@ export const setBaseVideo = async (slotId: string): Promise<{
     }
 
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
+    
+    // Chamar API externa com o client_id
+    if (clientId) {
+      try {
+        console.log('📞 [VIDEO_BASE] Chamando API externa:', `http://15.228.8.3:8000/ativo/${clientId}`);
+        const response = await fetch(`http://15.228.8.3:8000/ativo/${clientId}`, {
+          method: 'GET',
+        });
+        console.log('✅ [VIDEO_BASE] Resposta da API externa:', response.status);
+      } catch (apiError) {
+        console.error('⚠️ [VIDEO_BASE] Erro ao chamar API externa (não bloqueante):', apiError);
+      }
+    }
+    
     videoLogger.logProcessEnd('SET_BASE_VIDEO', true);
     videoLogger.clearContext();
     return {
