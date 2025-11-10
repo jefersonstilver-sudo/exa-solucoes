@@ -1,5 +1,49 @@
 import { supabase } from '@/integrations/supabase/client';
 
+/**
+ * Sincroniza o status de exibição de um vídeo com a API externa
+ */
+const syncVideoWithExternalAPI = async (
+  buildingIds: string[],
+  videoTitle: string,
+  isActive: boolean
+): Promise<void> => {
+  const API_BASE_URL = 'http://15.228.8.3:8000';
+  
+  console.log(`🔄 [EXTERNAL_API] Sincronizando vídeo "${videoTitle}" (ativo: ${isActive})`);
+  
+  for (const buildingId of buildingIds) {
+    try {
+      // Extrair os 4 primeiros dígitos do UUID do prédio
+      const clientId = buildingId.slice(0, 4);
+      const url = `${API_BASE_URL}/ativo/${clientId}`;
+      
+      const payload = {
+        titulo: videoTitle,
+        ativo: isActive
+      };
+      
+      console.log(`📤 [EXTERNAL_API] POST ${url}`, payload);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        console.error(`❌ [EXTERNAL_API] Erro ao sincronizar para prédio ${buildingId}:`, response.status, response.statusText);
+      } else {
+        console.log(`✅ [EXTERNAL_API] Vídeo sincronizado com sucesso para prédio ${buildingId}`);
+      }
+    } catch (error) {
+      console.error(`💥 [EXTERNAL_API] Erro ao chamar API para prédio ${buildingId}:`, error);
+    }
+  }
+};
+
 export const setBaseVideo = async (slotId: string): Promise<boolean> => {
   try {
     console.log('⭐ [VIDEO_BASE] Definindo vídeo base (RPC):', slotId);
@@ -136,6 +180,88 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
     }
 
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
+
+    // 🔄 NOVA LÓGICA: Sincronizar com API externa
+    try {
+      console.log('🌐 [VIDEO_BASE] Iniciando sincronização com API externa...');
+      
+      // 1. Buscar informações do slot selecionado
+      const { data: selectedSlot, error: slotError } = await supabase
+        .from('pedido_videos')
+        .select(`
+          pedido_id,
+          video_id,
+          videos (
+            id,
+            nome
+          )
+        `)
+        .eq('id', slotId)
+        .single();
+      
+      if (slotError || !selectedSlot) {
+        console.error('❌ [VIDEO_BASE] Erro ao buscar slot selecionado:', slotError);
+        return true; // Não falhar a operação principal por causa disso
+      }
+      
+      const selectedVideoTitle = (selectedSlot.videos as any)?.nome || 'Video sem titulo';
+      console.log('📹 [VIDEO_BASE] Vídeo selecionado:', selectedVideoTitle);
+      
+      // 2. Buscar lista de prédios do pedido
+      const { data: pedido, error: pedidoError } = await supabase
+        .from('pedidos')
+        .select('lista_predios')
+        .eq('id', selectedSlot.pedido_id)
+        .single();
+      
+      if (pedidoError || !pedido?.lista_predios || pedido.lista_predios.length === 0) {
+        console.warn('⚠️ [VIDEO_BASE] Lista de prédios não encontrada:', pedidoError);
+        return true; // Não falhar a operação principal
+      }
+      
+      const buildingIds = pedido.lista_predios as string[];
+      console.log('🏢 [VIDEO_BASE] Prédios do pedido:', buildingIds);
+      
+      // 3. Buscar TODOS os vídeos do pedido (para desativar os outros)
+      const { data: allVideos, error: allVideosError } = await supabase
+        .from('pedido_videos')
+        .select(`
+          id,
+          video_id,
+          videos (
+            id,
+            nome
+          )
+        `)
+        .eq('pedido_id', selectedSlot.pedido_id);
+      
+      if (allVideosError) {
+        console.error('❌ [VIDEO_BASE] Erro ao buscar todos os vídeos:', allVideosError);
+        return true; // Não falhar a operação principal
+      }
+      
+      console.log(`📊 [VIDEO_BASE] Total de vídeos no pedido: ${allVideos?.length || 0}`);
+      
+      // 4. PRIMEIRO: Desativar todos os outros vídeos
+      if (allVideos && allVideos.length > 0) {
+        for (const video of allVideos) {
+          if (video.id !== slotId) { // Não processar o vídeo selecionado ainda
+            const videoTitle = (video.videos as any)?.nome || 'Video sem titulo';
+            console.log(`🔄 [VIDEO_BASE] Desativando vídeo: ${videoTitle}`);
+            await syncVideoWithExternalAPI(buildingIds, videoTitle, false);
+          }
+        }
+      }
+      
+      // 5. DEPOIS: Ativar o vídeo selecionado
+      console.log(`🔄 [VIDEO_BASE] Ativando vídeo selecionado: ${selectedVideoTitle}`);
+      await syncVideoWithExternalAPI(buildingIds, selectedVideoTitle, true);
+      
+      console.log('✅ [VIDEO_BASE] Sincronização com API externa concluída');
+    } catch (apiError) {
+      console.error('💥 [VIDEO_BASE] Erro na sincronização com API externa:', apiError);
+      // Não falhar a operação principal por causa de erro na API externa
+    }
 
     return true;
   } catch (error) {
