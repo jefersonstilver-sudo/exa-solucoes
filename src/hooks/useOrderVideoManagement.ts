@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { useSuccessPopup } from './useSuccessPopup';
 import { useConflictModal } from './useConflictModal';
 import { supabase } from '@/integrations/supabase/client';
-import { toggleForBuildings, normalizeTitle } from '@/services/videoToggleWebhookService';
+// Removed n8n integration
 
 export const useOrderVideoManagement = (orderId: string) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
@@ -67,88 +67,7 @@ export const useOrderVideoManagement = (orderId: string) => {
     }
   };
 
-  // Envia webhooks assim que o usuário clica em "Vídeo Principal"
-  const sendVideoWebhooks = async (slotId: string) => {
-    try {
-      // 1) Buscar prédios do pedido
-      const { data: pedidoResult, error: pedidoError } = await supabase
-        .from('pedidos')
-        .select('lista_predios')
-        .eq('id', orderId)
-        .single();
-      if (pedidoError) throw pedidoError;
-
-      const buildingIds = (pedidoResult?.lista_predios || []) as string[];
-      if (!buildingIds.length) {
-        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada para set_base_video');
-        return;
-      }
-
-      // 2) Buscar vídeo atualmente em exibição via RPC (fonte de verdade no servidor)
-      const { data: currentData, error: currentError } = await supabase
-        .rpc('get_current_display_video', { p_pedido_id: orderId });
-      if (currentError) {
-        console.warn('⚠️ [WEBHOOK] Falha ao buscar vídeo atual via RPC:', currentError);
-      }
-      const currentVideoId: string | undefined =
-        Array.isArray(currentData) && currentData[0]?.video_id
-          ? (currentData[0].video_id as string)
-          : undefined;
-
-      // 3) Resolver o novo vídeo a partir do slot clicado
-      const localSlot = videoSlots.find(s => s.id === slotId);
-      let newVideoId: string | undefined = localSlot?.video_data?.id || localSlot?.video_id;
-      if (!newVideoId) {
-        const { data: pvRow } = await supabase
-          .from('pedido_videos')
-          .select('video_id')
-          .eq('id', slotId)
-          .single();
-        newVideoId = pvRow?.video_id as string | undefined;
-      }
-
-      // 4) Helper para obter o nome do vídeo
-      const fetchVideoName = async (videoId?: string) => {
-        if (!videoId) return undefined;
-        const { data, error } = await supabase
-          .from('videos')
-          .select('nome')
-          .eq('id', videoId)
-          .single();
-        if (error) {
-          console.warn('⚠️ [WEBHOOK] Falha ao obter nome do vídeo:', { videoId, error });
-          return undefined;
-        }
-        return data?.nome as string | undefined;
-      };
-
-      const [oldVideoName, newVideoName] = await Promise.all([
-        currentVideoId && currentVideoId !== newVideoId ? fetchVideoName(currentVideoId) : Promise.resolve(undefined),
-        fetchVideoName(newVideoId)
-      ]);
-
-      const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
-      const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
-
-      console.log('🚀 [WEBHOOK] Enviando webhooks para set_base_video:', {
-        buildingIdsCount: buildingIds.length,
-        oldTitle,
-        newTitle,
-        orderId,
-        slotId,
-        newVideoId
-      });
-
-      // Enviar desativação do antigo (se houver) e ativação do novo
-      await toggleForBuildings({
-        buildingIds,
-        toActivateTitle: newTitle,
-        toDeactivateTitle: oldTitle && oldTitle !== newTitle ? oldTitle : undefined,
-      });
-    } catch (error) {
-      console.error('❌ [WEBHOOK] Erro ao enviar webhooks set_base_video:', error);
-    }
-  };
+  // Removed n8n webhook integration - API sync is handled by videoBaseService.ts
 
   const selectVideoForDisplay = async (slotId: string) => {
     console.log('⭐ [ORDER_VIDEO] Selecionando vídeo para exibição:', slotId);
@@ -347,13 +266,10 @@ export const useOrderVideoManagement = (orderId: string) => {
         .eq('is_base_video', true)
         .single();
 
-      const oldVideoId: string | undefined = currentBase?.video_id as string | undefined;
-      const oldSlot: number | undefined = currentBase?.slot_position as number | undefined;
-
       if (currentBaseErr) {
-        console.warn('⚠️ [WEBHOOK] Não foi possível obter o vídeo base atual:', currentBaseErr);
+        console.warn('⚠️ Não foi possível obter o vídeo base atual:', currentBaseErr);
       } else {
-        console.log('✅ [WEBHOOK] Vídeo base atual:', { oldVideoId, oldSlot });
+        console.log('✅ Vídeo base atual:', { video_id: currentBase?.video_id });
       }
 
       // 2) Capturar dados do NOVO vídeo (slot clicado)
@@ -376,61 +292,8 @@ export const useOrderVideoManagement = (orderId: string) => {
         toast.error('❌ Vídeo precisa estar aprovado para ser definido como principal');
         return { success: false, response: { error: 'Vídeo não aprovado', approval_status: newPv?.approval_status } };
       }
-      
-      const newVideoId: string | undefined = newPv?.video_id as string | undefined;
-      const newSlot: number | undefined = newPv?.slot_position as number | undefined;
 
-      // 3) Buscar prédios do pedido
-      console.log('📊 [ORDER_VIDEO] Buscando prédios do pedido...');
-      const { data: pedidoData, error: pedidoErr } = await supabase
-        .from('pedidos')
-        .select('lista_predios')
-        .eq('id', orderId)
-        .single();
-      if (pedidoErr) {
-        console.error('❌ [ORDER_VIDEO] Erro ao buscar pedido:', pedidoErr);
-        throw pedidoErr;
-      }
-      const buildingIds = (pedidoData?.lista_predios || []) as string[];
-
-      console.log('📊 [WEBHOOK] Contexto capturado antes da mudança:', {
-        buildingIdsCount: buildingIds.length,
-        oldVideoId,
-        oldSlot,
-        newVideoId,
-        newSlot,
-      });
-
-      // 4) Resolver nomes para montar títulos (em paralelo)
-      console.log('📊 [ORDER_VIDEO] Buscando nomes dos vídeos...');
-      const fetchVideoName = async (videoId?: string) => {
-        if (!videoId) return undefined;
-        const { data, error } = await supabase
-          .from('videos')
-          .select('nome')
-          .eq('id', videoId)
-          .single();
-        if (error) {
-          console.warn('⚠️ [WEBHOOK] Falha ao obter nome do vídeo:', { videoId, error });
-          return undefined;
-        }
-        return data?.nome as string | undefined;
-      };
-
-      const [oldVideoName, newVideoName] = await Promise.all([
-        fetchVideoName(oldVideoId),
-        fetchVideoName(newVideoId),
-      ]);
-
-      const toDeactivateTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
-      const toActivateTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
-
-      console.log('📝 [WEBHOOK] Títulos normalizados:', {
-        toDeactivateTitle,
-        toActivateTitle,
-      });
-
-      // 5) Executar a mudança no banco E capturar resposta da RPC
+      // 3) Executar a mudança no banco E capturar resposta da RPC
       console.log('⏳ [ORDER_VIDEO] Chamando RPC set_base_video_enhanced...');
       const { data: rpcData, error: rpcError } = await supabase.rpc('set_base_video_enhanced', {
         p_pedido_video_id: slotId
@@ -446,12 +309,7 @@ export const useOrderVideoManagement = (orderId: string) => {
         success: rpcResult?.success || false,
         timestamp: new Date().toISOString(),
         pedido_video_id: slotId,
-        video_id: newVideoId,
-        video_name: newVideoName,
-        old_base_video_id: oldVideoId,
-        old_slot: oldSlot,
-        new_slot: newSlot,
-        buildings_synced: buildingIds.length,
+        video_id: newPv?.video_id,
         error: rpcError?.message || rpcResult?.error,
         rpc_response: rpcData,
         rpc_error: rpcError
@@ -465,28 +323,8 @@ export const useOrderVideoManagement = (orderId: string) => {
 
       console.log('✅ [ORDER_VIDEO] RPC executada com sucesso');
       
-      // 6) Enviar webhooks SEMPRE com desativação do antigo (se existir) e ativação do novo, incluindo slot
-      if (buildingIds.length) {
-        console.log('🚀 [WEBHOOK] Enviando webhooks (com slots):', {
-          buildingIdsCount: buildingIds.length,
-          toDeactivateTitle,
-          toActivateTitle,
-          oldSlot,
-          newSlot,
-        });
-
-        await toggleForBuildings({
-          buildingIds,
-          toDeactivateTitle,
-          toActivateTitle,
-          toDeactivateSlot: oldSlot,
-          toActivateSlot: newSlot,
-        });
-        
-        apiResponse.external_api_calls = buildingIds.length * 2; // Desativar + Ativar
-      } else {
-        console.warn('⚠️ [WEBHOOK] Lista de prédios vazia, pulando envio de webhooks');
-      }
+      // 4) API externa será sincronizada automaticamente pelo videoBaseService.ts
+      console.log('✅ [ORDER_VIDEO] API externa será sincronizada automaticamente');
 
       console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
       refreshSlots();

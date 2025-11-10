@@ -7,7 +7,7 @@ import { validateVideoUploadPermission } from '@/services/videoUploadSecuritySer
 import { VideoSlot } from '@/types/videoManagement';
 import { loadVideoSlots } from '@/services/videoSlotService';
 import { setBaseVideo } from '@/services/videoBaseService';
-import { normalizeTitle, toggleForBuildings } from '@/services/videoToggleWebhookService';
+// Removed n8n integration
 
 interface UseVideoManagementProps {
   orderId: string;
@@ -185,32 +185,10 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
           return data?.nome as string | undefined;
         };
 
-        const [oldVideoName, newVideoName] = await Promise.all([
-          oldVideoId ? fetchVideoName(oldVideoId) : Promise.resolve(undefined),
-          newVideoId ? fetchVideoName(newVideoId) : Promise.resolve(undefined)
-        ]);
-        
-        const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
-        const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
-        
-        console.log('🚀 [WEBHOOK] Enviando webhooks de seleção:', { 
-          buildingIdsCount: buildingIds.length, 
-          oldTitle,
-          newTitle,
-          orderId,
-          slotId
-        });
-        
-        // Enviar desativação do antigo (se existir e diferente) e ativação do novo
-        toggleForBuildings({
-          buildingIds,
-          toActivateTitle: newTitle,
-          toDeactivateTitle: (oldVideoId && oldVideoId !== newVideoId && oldTitle) ? oldTitle : undefined
-        }).catch(error => {
-          console.error('❌ [WEBHOOK] Erro ao enviar webhooks de seleção:', error);
-        });
+        // API externa será sincronizada automaticamente pelo videoBaseService.ts
+        console.log('✅ API externa será sincronizada automaticamente');
       } else {
-        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada');
+        console.warn('⚠️ Lista de prédios não encontrada');
       }
 
       toast.success('Vídeo selecionado para exibição!');
@@ -243,85 +221,7 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
     window.open(videoUrl, '_blank');
   };
 
-  // Função auxiliar para enviar webhooks
-  const sendVideoWebhooks = async (slotId: string, actionType: string) => {
-    try {
-      // 1) Buscar prédios do pedido
-      const { data: pedidoResult, error: pedidoError } = await supabase
-        .from('pedidos')
-        .select('lista_predios')
-        .eq('id', orderId)
-        .single();
-
-      if (pedidoError) throw pedidoError;
-
-      const buildingIds = (pedidoResult?.lista_predios || []) as string[];
-      if (!buildingIds.length) {
-        console.warn(`⚠️ [WEBHOOK] Lista de prédios não encontrada para ${actionType}`);
-        return;
-      }
-
-      // 2) Buscar vídeo atualmente em exibição via RPC
-      const { data: currentData, error: currentError } = await supabase
-        .rpc('get_current_display_video', { p_pedido_id: orderId });
-      if (currentError) {
-        console.warn('⚠️ [WEBHOOK] Falha ao buscar vídeo atual via RPC:', currentError);
-      }
-      const currentVideoId: string | undefined =
-        Array.isArray(currentData) && currentData[0]?.video_id
-          ? (currentData[0].video_id as string)
-          : undefined;
-
-      // 3) Obter o vídeo do slot informado
-      const { data: pvRow } = await supabase
-        .from('pedido_videos')
-        .select('video_id')
-        .eq('id', slotId)
-        .single();
-      const newVideoId: string | undefined = pvRow?.video_id as string | undefined;
-
-      // 4) Helper para buscar nomes
-      const fetchVideoName = async (videoId?: string) => {
-        if (!videoId) return undefined;
-        const { data, error } = await supabase
-          .from('videos')
-          .select('nome')
-          .eq('id', videoId)
-          .single();
-        if (error) {
-          console.warn('⚠️ [WEBHOOK] Falha ao obter nome do vídeo:', { videoId, error });
-          return undefined;
-        }
-        return data?.nome as string | undefined;
-      };
-
-      const [oldVideoName, newVideoName] = await Promise.all([
-        currentVideoId && currentVideoId !== newVideoId ? fetchVideoName(currentVideoId) : Promise.resolve(undefined),
-        fetchVideoName(newVideoId)
-      ]);
-
-      const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
-      const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
-
-      console.log(`🚀 [WEBHOOK] Enviando webhooks para ${actionType} (fonte: RPC):`, {
-        buildingIdsCount: buildingIds.length,
-        oldTitle,
-        newTitle,
-        orderId,
-        slotId,
-        currentVideoId,
-        newVideoId
-      });
-
-      await toggleForBuildings({
-        buildingIds,
-        toDeactivateTitle: oldTitle,
-        toActivateTitle: newTitle
-      });
-    } catch (error) {
-      console.error(`❌ [WEBHOOK] Erro ao processar webhooks de ${actionType}:`, error);
-    }
-  };
+  // Removed n8n webhook integration - API sync is handled by videoBaseService.ts
 
   // Definir vídeo base
   const handleSetBaseVideo = async (slotId: string) => {
@@ -388,78 +288,8 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         willActivate: !!newVideoId
       });
 
-      // 4) BUSCAR NOMES DOS VÍDEOS EM PARALELO
-      const fetchVideoName = async (videoId?: string) => {
-        if (!videoId) return undefined;
-        const { data, error } = await supabase
-          .from('videos')
-          .select('nome')
-          .eq('id', videoId)
-          .single();
-        if (error) {
-          console.warn('⚠️ [WEBHOOK] Falha ao obter nome do vídeo:', { videoId, error });
-          return undefined;
-        }
-        return data?.nome as string | undefined;
-      };
-
-      console.log('🔄 [WEBHOOK] Buscando nomes dos vídeos...');
-      const [oldVideoName, newVideoName] = await Promise.all([
-        oldVideoId ? fetchVideoName(oldVideoId) : Promise.resolve(undefined),
-        newVideoId ? fetchVideoName(newVideoId) : Promise.resolve(undefined)
-      ]);
-
-      // 5) NORMALIZAR TÍTULOS
-      const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
-      const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
-
-      console.log('📝 [WEBHOOK] Títulos normalizados:', {
-        oldVideoName,
-        newVideoName,
-        oldTitle,
-        newTitle,
-        sameTitle: oldTitle === newTitle
-      });
-
-      // 6) ENVIAR WEBHOOKS EM PARALELO (SEMPRE DESATIVAR O ANTIGO SE EXISTIR)
-      console.log('🚀 [WEBHOOK] Preparando envio de webhooks...');
-
-      if (buildingIds.length === 0) {
-        console.warn('⚠️ [WEBHOOK] Lista de prédios vazia, pulando webhooks');
-        toast.success('Vídeo definido como principal e selecionado para exibição!');
-        const slots = await loadVideoSlots(orderId);
-        setVideoSlots(slots);
-        return;
-      }
-
-      // SEMPRE desativar o antigo se existir, independente se é o mesmo título
-      const toDeactivateTitle = oldVideoId && oldTitle ? oldTitle : undefined;
-      const toActivateTitle = newTitle;
-
-      console.log('📤 [WEBHOOK] Enviando webhooks (FORÇANDO DESATIVAÇÃO):', {
-        buildingIdsCount: buildingIds.length,
-        toDeactivateTitle,
-        toActivateTitle,
-        oldVideoId,
-        oldSlot,
-        newVideoId,
-        newSlot,
-        oldTitle,
-        newTitle,
-        forceDeactivate: !!toDeactivateTitle,
-        expectedActions: (toDeactivateTitle ? 1 : 0) + (toActivateTitle ? 1 : 0)
-      });
-
-      // Enviar webhooks com informação de slot
-      toggleForBuildings({
-        buildingIds,
-        toDeactivateTitle,
-        toActivateTitle,
-        toDeactivateSlot: oldSlot,
-        toActivateSlot: newSlot
-      }).catch(error => {
-        console.error('❌ [WEBHOOK] Erro ao enviar webhooks de troca:', error);
-      });
+      // 4) API externa será sincronizada automaticamente pelo videoBaseService.ts
+      console.log('✅ API externa será sincronizada automaticamente');
 
       toast.success('Vídeo definido como principal e selecionado para exibição!');
       

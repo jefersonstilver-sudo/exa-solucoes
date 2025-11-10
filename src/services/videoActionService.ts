@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { deleteVideoFromStorage } from '@/services/videoStorageService';
 import { VideoSlot } from '@/types/videoManagement';
-import { normalizeTitle, toggleForBuildings, postToggleTitles } from '@/services/videoToggleWebhookService';
+// Removed n8n integration
 
 export const selectVideoForDisplay = async (
   slotId: string, 
@@ -88,39 +88,9 @@ export const selectVideoForDisplay = async (
         .single();
 
       const newVideoName = newVideoInfo?.video_data?.nome;
-      const oldVideoName = currentSelectedVideo?.video_data?.nome;
       
-      // Enviar webhooks se temos lista de prédios
-      if (pedidoData?.lista_predios && Array.isArray(pedidoData.lista_predios) && pedidoData.lista_predios.length > 0) {
-        const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
-        const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
-        
-        // Sempre confirmar ativação do vídeo selecionado (mesmo se for o mesmo)
-        const buildingIds = pedidoData.lista_predios as string[];
-        console.log('🚀 [WEBHOOK] Preparando envio:', { buildingIdsCount: buildingIds.length, oldTitle, newTitle });
-        
-        if (newTitle || oldTitle) {
-          toggleForBuildings({
-            buildingIds,
-            toActivateTitle: newTitle,
-            toDeactivateTitle: oldTitle && newTitle && oldTitle !== newTitle ? oldTitle : undefined,
-          }).catch(error => {
-            console.error('❌ [WEBHOOK] Erro ao enviar webhooks (ativação/desativação):', error);
-          });
-        }
-      } else {
-        console.warn('⚠️ [WEBHOOK] Lista de prédios não encontrada ou vazia - utilizando POST fallback');
-        const oldTitle = oldVideoName ? normalizeTitle(oldVideoName) : undefined;
-        const newTitle = newVideoName ? normalizeTitle(newVideoName) : undefined;
-        try {
-          await postToggleTitles({
-            toActivateTitle: newTitle,
-            toDeactivateTitle: oldTitle && newTitle && oldTitle !== newTitle ? oldTitle : undefined
-          });
-        } catch (err) {
-          console.error('❌ [WEBHOOK][POST][FALLBACK] Erro ao enviar POST(s):', err);
-        }
-      }
+      // API externa será sincronizada automaticamente pelo videoBaseService.ts
+      console.log('✅ [VIDEO_ACTION] API externa será sincronizada automaticamente');
       
       // Chamar callback de sucesso se fornecido
       if (onSuccess) {
