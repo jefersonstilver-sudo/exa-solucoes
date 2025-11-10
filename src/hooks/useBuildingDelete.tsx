@@ -24,31 +24,26 @@ export const useBuildingDelete = () => {
 
       const clienteId = building.codigo_predio || building.id.replace(/-/g, '').substring(0, 4);
 
-      // Chamar Edge Function (proxy) para deletar cliente externo
-      try {
-        console.log('[DELETE BUILDING] Deletando cliente externo via Edge Function:', { clienteId });
+      // Chamar Edge Function (proxy) para deletar cliente externo - CRÍTICO
+      console.log('[DELETE BUILDING] Deletando cliente externo via Edge Function:', { clienteId });
 
-        const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('delete-building-client', {
-          body: {
-            cliente_id: clienteId
-          }
-        });
-
-        if (edgeFunctionError) {
-          console.error('[DELETE BUILDING] Erro na Edge Function:', edgeFunctionError);
-          // Não falhar a deleção - a API externa pode estar offline ou o cliente já deletado
+      const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('delete-building-client', {
+        body: {
+          cliente_id: clienteId
         }
+      });
 
-        if (edgeFunctionData && !edgeFunctionData.success) {
-          console.warn('[DELETE BUILDING] Aviso ao deletar cliente externo:', edgeFunctionData.error);
-          // Continuar mesmo com erro - o cliente pode já ter sido deletado
-        }
-
-        console.log('[DELETE BUILDING] Cliente externo deletado (ou já inexistente)');
-      } catch (apiError) {
-        console.error('[DELETE BUILDING] Erro ao chamar API externa (não crítico):', apiError);
-        // Continuar com a deleção do prédio mesmo se a API externa falhar
+      if (edgeFunctionError) {
+        console.error('[DELETE BUILDING] Erro na Edge Function:', edgeFunctionError);
+        throw new Error(`Falha ao deletar cliente externo: ${edgeFunctionError.message}`);
       }
+
+      if (edgeFunctionData && !edgeFunctionData.success) {
+        console.error('[DELETE BUILDING] Erro ao deletar cliente externo:', edgeFunctionData.error);
+        throw new Error(`Falha ao deletar cliente externo: ${edgeFunctionData.error}`);
+      }
+
+      console.log('[DELETE BUILDING] Cliente externo deletado com sucesso');
 
       // Deletar o prédio do banco de dados
       const { error: deleteError } = await supabase
