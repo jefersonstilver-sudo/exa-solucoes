@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { EmailService } from "./email-service.ts";
 import { URLValidator } from "./url-validator.ts";
@@ -10,9 +9,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Main Handler
 serve(async (req: Request) => {
-  console.log('🚀 [UNIFIED-EMAIL] Requisição recebida:', req.method);
+  console.log('📧 [UNIFIED-EMAIL] === INÍCIO ===');
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -31,65 +29,41 @@ serve(async (req: Request) => {
     
     const { action, email, user, email_data } = validatedData;
     
-    console.log('📦 [UNIFIED-EMAIL] Dados recebidos:', { action, email: email || user?.email });
+    console.log('📦 Ação:', action, 'Email:', email || user?.email);
 
-    // Verificar API key do Resend
+    // Verificar configurações
     const resendKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendKey) {
-      console.error('❌ [UNIFIED-EMAIL] RESEND_API_KEY não configurada');
-      return new Response(JSON.stringify({ 
-        error: 'RESEND_API_KEY não configurada',
-        success: false 
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-    }
-
-    const emailService = new EmailService(resendKey);
-    
-    // ✅ Priorizar SITE_URL da env
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://examidia.com.br';
-    let baseUrl = siteUrl;
-    
-    // Fallback secundário se não houver SITE_URL
-    if (!Deno.env.get('SITE_URL')) {
-      const currentUrl = new URL(req.url);
-      baseUrl = URLValidator.validateAndCorrectUrl(`${currentUrl.protocol}//${currentUrl.host}`);
-      console.log('⚠️ [UNIFIED-EMAIL] SITE_URL não definida, usando detecção dinâmica:', baseUrl);
-    }
-    
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://aakenoljsycyrcrchgxj.supabase.co';
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
+    if (!resendKey) {
+      throw new Error('RESEND_API_KEY não configurada');
+    }
+
     if (!serviceRoleKey) {
-      console.error('❌ [UNIFIED-EMAIL] SUPABASE_SERVICE_ROLE_KEY não configurada');
-      return new Response(JSON.stringify({ 
-        error: 'SUPABASE_SERVICE_ROLE_KEY não configurada',
-        success: false 
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY não configurada');
+    }
+
+    const emailService = new EmailService(resendKey, supabaseUrl, serviceRoleKey);
+    
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://examidia.com.br';
+    let baseUrl = siteUrl;
+    
+    if (!Deno.env.get('SITE_URL')) {
+      const currentUrl = new URL(req.url);
+      baseUrl = URLValidator.validateAndCorrectUrl(`${currentUrl.protocol}//${currentUrl.host}`);
     }
 
     // Roteamento baseado na ação
     if (action === 'resend') {
-      // REENVIO DE EMAIL DE CONFIRMAÇÃO
+      // REENVIO DE CONFIRMAÇÃO
       if (!email) {
-        return new Response(JSON.stringify({ 
-          error: 'Email é obrigatório para reenvio',
-          success: false 
-        }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
+        throw new Error('Email é obrigatório');
       }
 
-      // Rate limiting
       if (!RateLimiter.checkLimit(email)) {
         return new Response(JSON.stringify({ 
-          error: 'Muitas tentativas. Aguarde alguns minutos.',
+          error: 'Muitas tentativas. Aguarde.',
           success: false 
         }), {
           status: 429,
@@ -97,28 +71,20 @@ serve(async (req: Request) => {
         });
       }
 
-      console.log('🔄 [UNIFIED-EMAIL] Reenviando confirmação para:', email);
-
       const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
-      // Para reenvios, sempre gerar um novo token (não usar token original)
       const confirmationUrl = await linkGenerator.generateConfirmationLink(email);
-
       const userName = email.split('@')[0];
+      
       const { data: emailData, error: emailError } = await emailService.sendResendConfirmationEmail(
         email, 
         userName, 
         URLValidator.validateAndCorrectUrl(confirmationUrl)
       );
 
-      if (emailError) {
-        console.error('❌ [UNIFIED-EMAIL] Erro ao reenviar:', emailError);
-        throw emailError;
-      }
-
-      console.log('✅ [UNIFIED-EMAIL] Email reenviado com sucesso!');
+      if (emailError) throw emailError;
 
       return new Response(JSON.stringify({ 
-        message: 'Email reenviado com sucesso!',
+        message: 'Email reenviado',
         email_id: emailData?.id,
         success: true
       }), {
@@ -130,47 +96,23 @@ serve(async (req: Request) => {
       // RECUPERAÇÃO DE SENHA
       const userEmail = user?.email || email;
       
-      if (!userEmail) {
-        return new Response(JSON.stringify({ 
-          error: 'Email é obrigatório para recuperação',
-          success: false 
-        }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
+      if (!userEmail || !email_data?.token_hash) {
+        throw new Error('Email e token são obrigatórios');
       }
 
-      if (!email_data?.token_hash) {
-        return new Response(JSON.stringify({ 
-          error: 'Token de recuperação não encontrado',
-          success: false 
-        }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
-      }
-
-      console.log('🔒 [UNIFIED-EMAIL] Enviando email de recuperação para:', userEmail);
-
-      // Construir URL de recuperação
       const recoveryUrl = `${baseUrl}/auth/confirm?token_hash=${email_data.token_hash}&type=recovery&next=/reset-password`;
-      
       const userName = user?.user_metadata?.name || userEmail.split('@')[0];
+      
       const { data: emailData, error: emailError } = await emailService.sendPasswordRecoveryEmail(
         userEmail, 
         userName, 
         URLValidator.validateAndCorrectUrl(recoveryUrl)
       );
 
-      if (emailError) {
-        console.error('❌ [UNIFIED-EMAIL] Erro ao enviar recuperação:', emailError);
-        throw emailError;
-      }
-
-      console.log('✅ [UNIFIED-EMAIL] Email de recuperação enviado com sucesso!');
+      if (emailError) throw emailError;
 
       return new Response(JSON.stringify({ 
-        message: 'Email de recuperação enviado com sucesso',
+        message: 'Email de recuperação enviado',
         email_id: emailData?.id,
         success: true
       }), {
@@ -179,23 +121,19 @@ serve(async (req: Request) => {
       });
 
     } else if (action === 'video_submitted' || action === 'video_approved' || action === 'video_rejected') {
-      // NOTIFICAÇÕES DE VÍDEO
-      const userEmail = user?.email;
-      const userName = user?.user_metadata?.name || userEmail?.split('@')[0] || 'Cliente';
-      const videoTitle = validatedData.video_data?.video_title || 'Seu Vídeo';
-      const orderId = validatedData.video_data?.order_id;
+      // NOTIFICAÇÕES DE VÍDEO (novo formato com logging)
+      const userEmail = validatedData.recipient_email || user?.email;
+      const userName = validatedData.recipient_name || user?.user_metadata?.name || userEmail?.split('@')[0] || 'Cliente';
+      const videoTitle = validatedData.video_title || validatedData.video_data?.video_title || 'Seu Vídeo';
+      const orderId = validatedData.pedido_id || validatedData.video_data?.order_id;
+      const userId = validatedData.user_id;
+      const videoId = validatedData.video_id;
 
       if (!userEmail) {
-        return new Response(JSON.stringify({ 
-          error: 'Email do usuário é obrigatório',
-          success: false 
-        }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
+        throw new Error('Email do usuário é obrigatório');
       }
 
-      console.log(`📧 [UNIFIED-EMAIL] Enviando notificação de vídeo (${action}) para:`, userEmail);
+      console.log(`📧 Notificação (${action}):`, userEmail);
 
       let emailData, emailError;
 
@@ -204,12 +142,14 @@ serve(async (req: Request) => {
           userEmail,
           userName,
           videoTitle,
-          orderId
+          orderId,
+          userId,
+          videoId
         ));
       } else if (action === 'video_approved') {
-        const buildings = validatedData.video_data?.buildings || [];
-        const startDate = validatedData.video_data?.start_date || new Date().toLocaleDateString('pt-BR');
-        const endDate = validatedData.video_data?.end_date || new Date().toLocaleDateString('pt-BR');
+        const buildings = validatedData.buildings || validatedData.video_data?.buildings || [];
+        const startDate = validatedData.start_date || validatedData.video_data?.start_date || new Date().toLocaleDateString('pt-BR');
+        const endDate = validatedData.end_date || validatedData.video_data?.end_date || new Date().toLocaleDateString('pt-BR');
         
         ({ data: emailData, error: emailError } = await emailService.sendVideoApprovedEmail(
           userEmail,
@@ -218,29 +158,30 @@ serve(async (req: Request) => {
           buildings,
           startDate,
           endDate,
-          orderId
+          orderId,
+          userId,
+          videoId
         ));
       } else if (action === 'video_rejected') {
-        const rejectionReason = validatedData.video_data?.rejection_reason || 'Não especificado';
+        const rejectionReason = validatedData.rejection_reason || validatedData.video_data?.rejection_reason || 'Não especificado';
         
         ({ data: emailData, error: emailError } = await emailService.sendVideoRejectedEmail(
           userEmail,
           userName,
           videoTitle,
           rejectionReason,
-          orderId
+          orderId,
+          userId,
+          videoId
         ));
       }
 
-      if (emailError) {
-        console.error(`❌ [UNIFIED-EMAIL] Erro ao enviar notificação de vídeo (${action}):`, emailError);
-        throw emailError;
-      }
+      if (emailError) throw emailError;
 
-      console.log(`✅ [UNIFIED-EMAIL] Notificação de vídeo (${action}) enviada com sucesso!`);
+      console.log(`✅ ${action} enviado!`);
 
       return new Response(JSON.stringify({ 
-        message: `Email de ${action} enviado com sucesso`,
+        message: `Email de ${action} enviado`,
         email_id: emailData?.id,
         success: true
       }), {
@@ -249,20 +190,14 @@ serve(async (req: Request) => {
       });
 
     } else {
-      // EMAIL DE CONFIRMAÇÃO INICIAL (webhook do Supabase)
-      if (!user?.email) {
-        throw new Error('User email not found');
+      // EMAIL DE CONFIRMAÇÃO INICIAL (webhook)
+      if (!user?.email || !email_data?.token_hash) {
+        throw new Error('User email e token são obrigatórios');
       }
       
-      if (!email_data?.token_hash) {
-        throw new Error('Token hash not found');
-      }
-
-      // Processar apenas eventos de signup
       if (email_data.email_action_type !== 'signup') {
-        console.log('⚠️ [UNIFIED-EMAIL] Ignorando evento:', email_data.email_action_type);
         return new Response(JSON.stringify({ 
-          message: 'Event ignored - not a signup confirmation',
+          message: 'Event ignored',
           success: true 
         }), {
           status: 200,
@@ -270,45 +205,18 @@ serve(async (req: Request) => {
         });
       }
 
-      console.log('📧 [UNIFIED-EMAIL] Enviando confirmação inicial para:', user.email);
-
-      // ESTRATÉGIA HÍBRIDA: Usar LinkGenerator para links mais duráveis
       const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
       const redirectUrl = `${baseUrl}/confirmacao`;
-      console.log('🎯 [UNIFIED-EMAIL] URL de redirect definida:', redirectUrl);
-      
-      // Tentar extrair token original do webhook se disponível
       const originalToken = email_data?.access_token || email_data?.confirmation_url?.match(/access_token=([^&]+)/)?.[1];
-      console.log('🔍 [UNIFIED-EMAIL] Token original detectado:', !!originalToken);
       
       let confirmationUrl;
       try {
-        // Usar LinkGenerator que é mais robusto contra expiração
         confirmationUrl = await linkGenerator.generateConfirmationLink(user.email, originalToken);
-        console.log('✅ [UNIFIED-EMAIL] URL de confirmação construída via LinkGenerator:', {
-          baseUrl,
-          redirectTo: redirectUrl,
-          hasOriginalToken: !!originalToken,
-          fullUrl: confirmationUrl
-        });
       } catch (linkGenError) {
-        console.warn('⚠️ [UNIFIED-EMAIL] LinkGenerator falhou, usando método tradicional:', linkGenError);
-        // Fallback para método tradicional se LinkGenerator falhar
-        console.log('🌐 [UNIFIED-EMAIL] URL base detectada para fallback:', baseUrl);
         confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
-        
-        console.log('✅ [UNIFIED-EMAIL] URL de confirmação construída via fallback:', {
-          baseUrl,
-          redirectTo: redirectUrl,
-          tokenHashLength: email_data.token_hash?.length || 0,
-          fullUrl: confirmationUrl
-        });
       }
       
       const validatedUrl = URLValidator.validateAndCorrectUrl(confirmationUrl);
-      
-      console.log('🔗 [UNIFIED-EMAIL] URL final de confirmação:', validatedUrl);
-
       const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';
 
       const { data: emailData, error: emailError } = await emailService.sendConfirmationEmail(
@@ -317,15 +225,10 @@ serve(async (req: Request) => {
         validatedUrl
       );
 
-      if (emailError) {
-        console.error('❌ [UNIFIED-EMAIL] Erro ao enviar:', emailError);
-        throw emailError;
-      }
-
-      console.log('✅ [UNIFIED-EMAIL] Email inicial enviado com sucesso!');
+      if (emailError) throw emailError;
 
       return new Response(JSON.stringify({ 
-        message: 'Email de confirmação enviado com sucesso',
+        message: 'Email de confirmação enviado',
         email_id: emailData?.id,
         recipient: user.email,
         success: true
@@ -336,7 +239,7 @@ serve(async (req: Request) => {
     }
 
   } catch (error: any) {
-    console.error('💥 [UNIFIED-EMAIL] Erro:', error);
+    console.error('💥 ERRO:', error);
     
     return new Response(JSON.stringify({ 
       error: 'Erro ao processar email',

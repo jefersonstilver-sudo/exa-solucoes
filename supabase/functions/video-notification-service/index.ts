@@ -7,7 +7,8 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
-  console.log('🔔 [VIDEO-NOTIFICATION] Requisição recebida:', req.method);
+  console.log('🔔 [VIDEO-NOTIFICATION] === INÍCIO ===');
+  const startTime = Date.now();
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -18,7 +19,6 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Get authenticated user from JWT
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ 
@@ -35,15 +35,12 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
-    // Cliente com service role para operações privilegiadas
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Cliente com anon key apenas para validar o JWT
     const supabaseAuth = createClient(supabaseUrl, supabaseKey);
 
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
     if (authError || !user) {
-      console.error('❌ [VIDEO-NOTIFICATION] Auth error:', authError);
+      console.error('❌ Auth error:', authError);
       return new Response(JSON.stringify({ 
         error: 'Não autorizado',
         success: false 
@@ -53,13 +50,9 @@ serve(async (req: Request) => {
       });
     }
 
-    const { action, pedido_id, video_title, rejection_reason } = await req.json();
+    const { action, pedido_id, video_id, video_title, rejection_reason } = await req.json();
     
-    console.log('📦 [VIDEO-NOTIFICATION] Dados recebidos:', { 
-      action, 
-      pedido_id: pedido_id?.substring(0, 8), 
-      video_title 
-    });
+    console.log('📦 Payload:', { action, pedido_id: pedido_id?.substring(0, 8), video_id: video_id?.substring(0, 8) });
 
     if (!action || !pedido_id) {
       return new Response(JSON.stringify({ 
@@ -71,7 +64,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Validar ações permitidas
     const validActions = ['video_submitted', 'video_approved', 'video_rejected'];
     if (!validActions.includes(action)) {
       return new Response(JSON.stringify({ 
@@ -83,39 +75,48 @@ serve(async (req: Request) => {
       });
     }
 
-    // Check if user has permission for this order (must be client or admin)
-    // Usar service role para consultar role do usuário (evita problemas de RLS)
-    console.log('🔍 [VIDEO-NOTIFICATION] Verificando role do usuário:', user.id);
-    const { data: userRole, error: roleError } = await supabase
+    // Check user role
+    console.log('🔍 Verificando permissões...');
+    const { data: userRole } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    console.log('📊 [VIDEO-NOTIFICATION] Resultado da query de role:', { userRole, roleError });
-
     const isAdmin = userRole && ['admin', 'super_admin'].includes(userRole.role);
-    console.log('🔐 [VIDEO-NOTIFICATION] Usuário é admin?', isAdmin, 'Role:', userRole?.role);
 
-    // Buscar dados do pedido - validate ownership
-    console.log('🔍 [VIDEO-NOTIFICATION] Buscando dados do pedido...');
-    
-    const { data: pedido, error: pedidoError } = await supabase
-      .from('pedidos')
-      .select('client_id, lista_paineis, plano_meses, created_at')
-      .eq('id', pedido_id)
-      .single();
+    // Buscar pedido COM RETRY
+    console.log('🔍 Buscando pedido...');
+    let pedido: any = null;
+    let retryCount = 0;
+    const maxRetries = 3;
 
-    if (pedidoError || !pedido) {
-      console.error('❌ [VIDEO-NOTIFICATION] Pedido não encontrado:', pedidoError);
-      throw new Error('Pedido não encontrado');
+    while (!pedido && retryCount < maxRetries) {
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select('id, client_id, lista_predios, data_inicio, data_fim, status, plano_meses')
+        .eq('id', pedido_id)
+        .single();
+
+      if (error) {
+        console.error(`❌ Erro buscar pedido (tentativa ${retryCount + 1}):`, error);
+        retryCount++;
+        if (retryCount < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      } else {
+        pedido = data;
+      }
     }
 
-    // Validate ownership - user must own the order or be admin
+    if (!pedido) {
+      throw new Error('Pedido não encontrado após múltiplas tentativas');
+    }
+
+    // Validate ownership
     if (!isAdmin && pedido.client_id !== user.id) {
-      console.error('❌ [VIDEO-NOTIFICATION] Forbidden: user does not own this order');
       return new Response(JSON.stringify({ 
-        error: 'Acesso negado - você não tem permissão para acessar este pedido',
+        error: 'Acesso negado',
         success: false 
       }), {
         status: 403,
@@ -123,87 +124,106 @@ serve(async (req: Request) => {
       });
     }
 
-    // Buscar dados do cliente
-    console.log('👤 [VIDEO-NOTIFICATION] Buscando dados do cliente...');
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('email, nome')
-      .eq('id', pedido.client_id)
-      .single();
+    // Buscar usuário COM RETRY
+    console.log('👤 Buscando cliente...');
+    let userData: any = null;
+    retryCount = 0;
 
-    if (userError || !userData) {
-      console.error('❌ [VIDEO-NOTIFICATION] Usuário não encontrado:', userError);
-      throw new Error('Usuário não encontrado');
+    while (!userData && retryCount < maxRetries) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('email, nome')
+        .eq('id', pedido.client_id)
+        .single();
+
+      if (error) {
+        console.error(`❌ Erro buscar usuário (tentativa ${retryCount + 1}):`, error);
+        retryCount++;
+        if (retryCount < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      } else {
+        userData = data;
+      }
+    }
+
+    if (!userData) {
+      throw new Error('Usuário não encontrado após múltiplas tentativas');
     }
 
     const userEmail = userData.email;
     const userName = userData.nome || userData.email?.split('@')[0] || 'Cliente';
     const videoTitleFinal = video_title || 'Seu Vídeo';
 
-    console.log('✅ [VIDEO-NOTIFICATION] Dados coletados:', {
-      userEmail,
-      userName,
-      videoTitle: videoTitleFinal,
-      action
-    });
+    console.log('✅ Dados coletados:', { userEmail, userName, action });
 
-    // Preparar dados para o email service
-    let emailData: any = {
+    // Preparar payload para unified-email-service
+    let emailPayload: any = {
       action,
-      user: {
-        email: userEmail,
-        user_metadata: {
-          name: userName
-        }
-      },
-      video_data: {
-        video_title: videoTitleFinal,
-        order_id: pedido_id
-      }
+      recipient_email: userEmail,
+      recipient_name: userName,
+      video_title: videoTitleFinal,
+      pedido_id,
+      user_id: pedido.client_id,
+      video_id: video_id || null,
     };
 
-    // Adicionar dados específicos por tipo de ação
+    // Dados específicos por ação
     if (action === 'video_approved') {
-      const buildings = pedido.lista_paineis || [];
-      const startDate = new Date().toLocaleDateString('pt-BR');
-      const endDate = new Date(Date.now() + (pedido.plano_meses || 1) * 30 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR');
+      console.log('🎉 Aprovação - buscando prédios...');
       
-      emailData.video_data.buildings = buildings;
-      emailData.video_data.start_date = startDate;
-      emailData.video_data.end_date = endDate;
+      const buildingIds = pedido.lista_predios || [];
+      let buildingNames: string[] = [];
       
-      console.log('✅ [VIDEO-NOTIFICATION] Dados de aprovação:', {
-        buildings: buildings.length,
-        startDate,
-        endDate
-      });
+      if (buildingIds.length > 0) {
+        const { data: buildings } = await supabase
+          .from('buildings')
+          .select('nome')
+          .in('id', buildingIds);
+
+        buildingNames = buildings?.map((b: any) => b.nome) || [];
+        console.log('✅ Prédios:', buildingNames.length);
+      }
+
+      emailPayload.buildings = buildingNames;
+      emailPayload.start_date = pedido.data_inicio || new Date().toISOString().split('T')[0];
+      emailPayload.end_date = pedido.data_fim || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     } else if (action === 'video_rejected') {
-      emailData.video_data.rejection_reason = rejection_reason || 'Não especificado';
-      
-      console.log('⚠️ [VIDEO-NOTIFICATION] Motivo da rejeição:', rejection_reason);
+      emailPayload.rejection_reason = rejection_reason || 'Não especificado';
     }
 
-    // Chamar unified-email-service
-    console.log('📧 [VIDEO-NOTIFICATION] Chamando unified-email-service...');
-    const emailResponse = await fetch(`${supabaseUrl}/functions/v1/unified-email-service`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`
-      },
-      body: JSON.stringify(emailData)
-    });
+    console.log('📧 Chamando unified-email-service...');
 
-    const emailResult = await emailResponse.json();
-    
-    if (!emailResponse.ok) {
-      console.error('❌ [VIDEO-NOTIFICATION] Erro ao enviar email:', emailResult);
-      throw new Error(`Erro ao enviar email: ${emailResult.error || 'Desconhecido'}`);
+    // Chamar unified-email-service COM RETRY
+    retryCount = 0;
+    let emailResult: any = null;
+
+    while (!emailResult && retryCount < maxRetries) {
+      try {
+        const response = await supabase.functions.invoke('unified-email-service', {
+          body: emailPayload,
+        });
+
+        if (response.error) {
+          console.error(`❌ Erro email (tentativa ${retryCount + 1}):`, response.error);
+          retryCount++;
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+          }
+        } else {
+          emailResult = response.data;
+          console.log('✅ Email enviado!');
+        }
+      } catch (error) {
+        console.error(`❌ Exceção (tentativa ${retryCount + 1}):`, error);
+        retryCount++;
+        if (retryCount < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+        }
+      }
     }
 
-    console.log('✅ [VIDEO-NOTIFICATION] Email enviado com sucesso!', emailResult);
-
-    // Registrar notificação no banco
+    // Criar notificação in-app
     const notificationType = action === 'video_submitted' ? 'video_enviado' :
                             action === 'video_approved' ? 'video_aprovado' :
                             'video_rejeitado';
@@ -215,7 +235,7 @@ serve(async (req: Request) => {
     const notificationMessage = action === 'video_submitted' 
       ? `Seu vídeo "${videoTitleFinal}" foi recebido e está em análise.`
       : action === 'video_approved'
-      ? `Seu vídeo "${videoTitleFinal}" foi aprovado e está em exibição!`
+      ? `Seu vídeo "${videoTitleFinal}" foi aprovado e entrará em exibição em até 20 minutos!`
       : `Seu vídeo "${videoTitleFinal}" precisa de ajustes: ${rejection_reason || 'Verifique o email para detalhes.'}`;
 
     const { error: notifError } = await supabase
@@ -233,14 +253,19 @@ serve(async (req: Request) => {
       });
 
     if (notifError) {
-      console.warn('⚠️ [VIDEO-NOTIFICATION] Erro ao criar notificação:', notifError);
-    } else {
-      console.log('✅ [VIDEO-NOTIFICATION] Notificação criada no banco');
+      console.warn('⚠️ Erro criar notificação:', notifError);
     }
 
+    const duration = Date.now() - startTime;
+    console.log(`⏱️ Tempo: ${duration}ms`);
+    console.log('🔔 === FIM ===');
+
     return new Response(JSON.stringify({ 
-      message: 'Email e notificação enviados com sucesso',
-      email_result: emailResult,
+      message: 'Notificação processada',
+      email_sent: !!emailResult,
+      notification_created: !notifError,
+      duration_ms: duration,
+      retries: retryCount,
       success: true
     }), {
       status: 200,
@@ -248,10 +273,10 @@ serve(async (req: Request) => {
     });
 
   } catch (error: any) {
-    console.error('💥 [VIDEO-NOTIFICATION] Erro:', error);
+    console.error('💥 ERRO FATAL:', error);
     
     return new Response(JSON.stringify({ 
-      error: 'Erro ao processar notificação de vídeo',
+      error: 'Erro ao processar notificação',
       message: error.message,
       success: false
     }), {

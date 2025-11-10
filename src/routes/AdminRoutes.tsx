@@ -19,6 +19,7 @@ import ProviderBenefits from '@/pages/admin/ProviderBenefits';
 import BenefitPurchaseInstructions from '@/pages/admin/BenefitPurchaseInstructions';
 import BenefitManagement from '@/pages/admin/BenefitManagement';
 import FinancialReports from '@/pages/admin/FinancialReports';
+import EmailLogs from '@/pages/admin/EmailLogs';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 const AdminRoutes = () => {
@@ -58,6 +59,7 @@ const AdminRoutes = () => {
       )}
       <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="comunicacoes" element={<ComunicacoesPage />} />
+      <Route path="email-logs" element={<EmailLogs />} />
     </Routes>
   );
 };

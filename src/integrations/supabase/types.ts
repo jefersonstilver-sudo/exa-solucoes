@@ -1450,6 +1450,54 @@ export type Database = {
         }
         Relationships: []
       }
+      email_audit_log: {
+        Row: {
+          created_at: string | null
+          email_type: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          pedido_id: string | null
+          recipient_email: string
+          recipient_id: string | null
+          recipient_name: string | null
+          resend_email_id: string | null
+          retry_count: number | null
+          status: string
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_type: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          pedido_id?: string | null
+          recipient_email: string
+          recipient_id?: string | null
+          recipient_name?: string | null
+          resend_email_id?: string | null
+          retry_count?: number | null
+          status?: string
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          pedido_id?: string | null
+          recipient_email?: string
+          recipient_id?: string | null
+          recipient_name?: string | null
+          resend_email_id?: string | null
+          retry_count?: number | null
+          status?: string
+          video_id?: string | null
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           bounced_at: string | null
@@ -3484,6 +3532,21 @@ export type Database = {
           valor_total: number
           video_id: string
           video_name: string
+        }[]
+      }
+      get_building_active_campaigns: {
+        Args: { p_building_id: string }
+        Returns: {
+          client_email: string
+          client_id: string
+          client_name: string
+          data_fim: string
+          data_inicio: string
+          pedido_id: string
+          plano_meses: number
+          status: string
+          valor_total: number
+          video_count: number
         }[]
       }
       get_building_contact_info: {

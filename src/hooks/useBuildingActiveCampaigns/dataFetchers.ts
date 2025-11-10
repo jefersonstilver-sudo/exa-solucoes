@@ -18,7 +18,7 @@ export const fetchActivePedidos = async (buildingId: string) => {
       lista_predios
     `)
     .contains('lista_predios', [buildingId])
-    .in('status', ['video_aprovado', 'pago_pendente_video', 'video_enviado'])
+    .in('status', ['ativo', 'pago', 'video_aprovado', 'pago_pendente_video', 'video_enviado'])
     .gte('data_fim', new Date().toISOString().split('T')[0]);
 
   if (pedidosError) {
@@ -109,7 +109,7 @@ export const fetchAllCampaignData = async (buildingId: string) => {
         )
       `)
       .contains('pedidos.lista_predios', [buildingId])
-      .in('pedidos.status', ['video_aprovado', 'pago_pendente_video', 'video_enviado'])
+      .in('pedidos.status', ['ativo', 'pago', 'video_aprovado', 'pago_pendente_video', 'video_enviado'])
       .gte('pedidos.data_fim', new Date().toISOString().split('T')[0])
   ]);
 
