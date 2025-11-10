@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { videoLogger } from './logger/VideoActionLogger';
 
 /**
  * Sincroniza o status de exibição de um vídeo com a API externa
@@ -24,6 +25,12 @@ const syncVideoWithExternalAPI = async (
       };
       
       console.log(`📤 [EXTERNAL_API] POST ${url}`, payload);
+      videoLogger.log('debug', 'EXTERNAL_API', 'Sending request', {
+        buildingId,
+        clientId,
+        url,
+        payload
+      });
       
       const response = await fetch(url, {
         method: 'POST',
@@ -33,13 +40,21 @@ const syncVideoWithExternalAPI = async (
         body: JSON.stringify(payload)
       });
       
+      const responseBody = await response.text();
+      
+      videoLogger.logAPICall(clientId, url, payload, {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        body: responseBody
+      });
+      
       if (!response.ok) {
-        const errorBody = await response.text();
         console.error(`❌ [EXTERNAL_API] Erro ao sincronizar para prédio ${buildingId}:`);
         console.error(`   Status: ${response.status} ${response.statusText}`);
         console.error(`   URL: ${url}`);
         console.error(`   Payload enviado:`, JSON.stringify(payload, null, 2));
-        console.error(`   Response body:`, errorBody);
+        console.error(`   Response body:`, responseBody);
       } else {
         console.log(`✅ [EXTERNAL_API] Vídeo sincronizado com sucesso para prédio ${buildingId}`);
       }
@@ -50,8 +65,11 @@ const syncVideoWithExternalAPI = async (
 };
 
 export const setBaseVideo = async (slotId: string): Promise<boolean> => {
+  videoLogger.logProcessStart('SET_BASE_VIDEO', { slotId });
+  
   try {
     console.log('⭐ [VIDEO_BASE] Definindo vídeo base (RPC):', slotId);
+    videoLogger.setContext({ slotId });
 
     // Helper fallback direto no banco quando RPCs falharem
     const fallbackDirectUpdate = async (): Promise<boolean> => {
@@ -122,10 +140,14 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
     };
 
     console.log('📞 [VIDEO_BASE] Chamando RPC set_base_video_enhanced:', { slotId });
+    videoLogger.log('debug', 'RPC_CALL', 'Calling set_base_video_enhanced', { slotId });
+    
     const { data, error } = await supabase.rpc('set_base_video_enhanced', {
       p_pedido_video_id: slotId
     });
+    
     console.log('📦 [VIDEO_BASE] Resposta RPC:', { data, error });
+    videoLogger.logRPC('set_base_video_enhanced', { slotId }, data, error);
 
     if (error) {
       console.error('❌ [VIDEO_BASE] RPC erro (enhanced):', {
@@ -191,6 +213,8 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       console.log('🌐 [VIDEO_BASE] Iniciando sincronização com API externa...');
       
       // 1. Buscar informações do slot selecionado
+      videoLogger.log('debug', 'DATA_FETCH', 'Fetching selected slot info', { slotId });
+      
       const { data: selectedSlot, error: slotError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -204,30 +228,46 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         .eq('id', slotId)
         .single();
       
+      videoLogger.logDataFetch('Selected Slot', `slot_id=${slotId}`, selectedSlot);
+      
       if (slotError || !selectedSlot) {
         console.error('❌ [VIDEO_BASE] Erro ao buscar slot selecionado:', slotError);
+        videoLogger.log('error', 'DATA_FETCH', 'Failed to fetch selected slot', { slotError });
         return true; // Não falhar a operação principal por causa disso
       }
       
       const selectedVideoTitle = (selectedSlot.videos as any)?.nome || 'Video sem titulo';
       console.log('📹 [VIDEO_BASE] Vídeo selecionado:', selectedVideoTitle);
+      videoLogger.setContext({
+        videoId: selectedSlot.video_id,
+        videoTitle: selectedVideoTitle,
+        orderId: selectedSlot.pedido_id
+      });
       
       // 2. Buscar lista de prédios do pedido
+      videoLogger.log('debug', 'DATA_FETCH', 'Fetching building list', { pedidoId: selectedSlot.pedido_id });
+      
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
         .select('lista_predios')
         .eq('id', selectedSlot.pedido_id)
         .single();
       
+      videoLogger.logDataFetch('Buildings List', `pedido_id=${selectedSlot.pedido_id}`, pedido);
+      
       if (pedidoError || !pedido?.lista_predios || pedido.lista_predios.length === 0) {
         console.warn('⚠️ [VIDEO_BASE] Lista de prédios não encontrada:', pedidoError);
+        videoLogger.log('warn', 'DATA_FETCH', 'No buildings found', { pedidoError });
         return true; // Não falhar a operação principal
       }
       
       const buildingIds = pedido.lista_predios as string[];
       console.log('🏢 [VIDEO_BASE] Prédios do pedido:', buildingIds);
+      videoLogger.setContext({ buildingIds });
       
       // 3. Buscar TODOS os vídeos do pedido (para desativar os outros)
+      videoLogger.log('debug', 'DATA_FETCH', 'Fetching all order videos', { pedidoId: selectedSlot.pedido_id });
+      
       const { data: allVideos, error: allVideosError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -240,37 +280,62 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         `)
         .eq('pedido_id', selectedSlot.pedido_id);
       
+      videoLogger.logDataFetch('All Order Videos', `pedido_id=${selectedSlot.pedido_id}`, allVideos);
+      
       if (allVideosError) {
         console.error('❌ [VIDEO_BASE] Erro ao buscar todos os vídeos:', allVideosError);
+        videoLogger.log('error', 'DATA_FETCH', 'Failed to fetch all videos', { allVideosError });
         return true; // Não falhar a operação principal
       }
       
       console.log(`📊 [VIDEO_BASE] Total de vídeos no pedido: ${allVideos?.length || 0}`);
+      videoLogger.log('info', 'DATA_SUMMARY', 'Videos count', { total: allVideos?.length || 0 });
       
       // 4. PRIMEIRO: Desativar todos os outros vídeos
+      videoLogger.log('info', 'API_SYNC_PHASE', 'Starting deactivation phase', { 
+        totalVideos: allVideos?.length || 0,
+        videosToDeactivate: (allVideos?.length || 0) - 1
+      });
+      
       if (allVideos && allVideos.length > 0) {
         for (const video of allVideos) {
           if (video.id !== slotId) { // Não processar o vídeo selecionado ainda
             const videoTitle = (video.videos as any)?.nome || 'Video sem titulo';
             console.log(`🔄 [VIDEO_BASE] Desativando vídeo: ${videoTitle}`);
+            videoLogger.log('info', 'API_SYNC', 'Deactivating video', { 
+              videoId: video.id,
+              videoTitle,
+              buildingCount: buildingIds.length
+            });
             await syncVideoWithExternalAPI(buildingIds, videoTitle, false);
           }
         }
       }
       
       // 5. DEPOIS: Ativar o vídeo selecionado
+      videoLogger.log('info', 'API_SYNC_PHASE', 'Starting activation phase', { 
+        videoTitle: selectedVideoTitle,
+        buildingCount: buildingIds.length
+      });
+      
       console.log(`🔄 [VIDEO_BASE] Ativando vídeo selecionado: ${selectedVideoTitle}`);
       await syncVideoWithExternalAPI(buildingIds, selectedVideoTitle, true);
       
       console.log('✅ [VIDEO_BASE] Sincronização com API externa concluída');
+      videoLogger.log('info', 'API_SYNC_PHASE', 'Sync completed successfully', {});
     } catch (apiError) {
       console.error('💥 [VIDEO_BASE] Erro na sincronização com API externa:', apiError);
+      videoLogger.log('error', 'API_SYNC', 'Sync failed with exception', { apiError });
       // Não falhar a operação principal por causa de erro na API externa
     }
 
+    videoLogger.logProcessEnd('SET_BASE_VIDEO', true);
+    videoLogger.clearContext();
     return true;
   } catch (error) {
     console.error('💥 [VIDEO_BASE] Erro geral:', error);
+    videoLogger.logProcessEnd('SET_BASE_VIDEO', false, null, error);
+    videoLogger.clearContext();
     return false;
   }
 };

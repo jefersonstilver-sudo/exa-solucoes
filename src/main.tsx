@@ -5,6 +5,7 @@ import App from './App'
 import './index.css'
 import './styles/responsive-optimizations.css'
 import { ThemeProvider } from './components/ui/theme-provider'
+import './utils/debugHelpers' // Carrega helpers de debug globalmente
 
 console.log('🚀 Starting application...');
 

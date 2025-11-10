@@ -22,6 +22,7 @@ import {
 import { toast } from 'sonner';
 import { VideoScheduleDetailsModal } from './VideoScheduleDetailsModal';
 import { SlotVideoScheduleModal } from './SlotVideoScheduleModal';
+import { videoLogger } from '@/services/logger/VideoActionLogger';
 
 interface VideoSlot {
   id?: string;
@@ -83,12 +84,29 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
   const isRejected = slot.approval_status === 'rejected';
 
   const handleSelectForDisplay = () => {
+    // 📘 LOG: Capturar clique do usuário
+    videoLogger.logUserClick(slot.id || 'unknown', slot.video_data?.nome || 'unknown', {
+      slotPosition: slot.slot_position,
+      approvalStatus: slot.approval_status,
+      isBaseVideo: slot.is_base_video,
+      selectedForDisplay: slot.selected_for_display,
+      orderId
+    });
+
     if (!isApproved) {
+      videoLogger.log('warn', 'UI_USER_ACTION', 'Video not approved - blocking action', {
+        slotId: slot.id,
+        approvalStatus: slot.approval_status
+      });
       setShowApprovalAlert(true);
       return;
     }
     
     if (slot.id) {
+      videoLogger.log('info', 'UI_USER_ACTION', 'Calling onSelectForDisplay', {
+        slotId: slot.id,
+        videoTitle: slot.video_data?.nome
+      });
       onSelectForDisplay(slot.id);
     }
   };
