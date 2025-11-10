@@ -32,7 +32,13 @@ serve(async (req: Request) => {
 
     const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    // Cliente com service role para operações privilegiadas
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Cliente com anon key apenas para validar o JWT
     const supabaseAuth = createClient(supabaseUrl, supabaseKey);
 
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
@@ -78,18 +84,18 @@ serve(async (req: Request) => {
     }
 
     // Check if user has permission for this order (must be client or admin)
-    const { data: userRole } = await supabaseAuth
+    // Usar service role para consultar role do usuário (evita problemas de RLS)
+    const { data: userRole } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single();
 
     const isAdmin = userRole && ['admin', 'super_admin'].includes(userRole.role);
+    console.log('🔐 [VIDEO-NOTIFICATION] Usuário é admin?', isAdmin, 'Role:', userRole?.role);
 
     // Buscar dados do pedido - validate ownership
     console.log('🔍 [VIDEO-NOTIFICATION] Buscando dados do pedido...');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
