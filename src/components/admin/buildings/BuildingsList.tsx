@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2 } from 'lucide-react';
 import BuildingCard from './BuildingCard';
+import { useBuildingsVideoCount } from '@/hooks/useBuildingsVideoCount';
 
 interface BuildingsListProps {
   buildings: any[];
@@ -19,6 +20,9 @@ const BuildingsList: React.FC<BuildingsListProps> = ({
   onImageManager,
   onDelete
 }) => {
+  const buildingIds = buildings.map(b => b.id);
+  const { counts: videoCounts } = useBuildingsVideoCount(buildingIds);
+
   return (
     <Card>
       <CardHeader>
@@ -46,6 +50,7 @@ const BuildingsList: React.FC<BuildingsListProps> = ({
                 onEdit={onEdit}
                 onImageManager={onImageManager}
                 onDelete={onDelete}
+                videoCount={videoCounts[building.id] ?? 0}
               />
             ))}
           </div>

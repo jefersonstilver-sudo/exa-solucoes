@@ -12,6 +12,7 @@ interface BuildingInfoSectionProps {
   onEdit: (building: any) => void;
   onImageManager: (building: any) => void;
   onDelete: (building: any) => void;
+  videoCount?: number;
 }
 
 const BuildingInfoSection: React.FC<BuildingInfoSectionProps> = ({
@@ -19,7 +20,8 @@ const BuildingInfoSection: React.FC<BuildingInfoSectionProps> = ({
   onView,
   onEdit,
   onImageManager,
-  onDelete
+  onDelete,
+  videoCount
 }) => {
   // Calcular estatísticas dos painéis (simulado - seria buscado do backend)
   const getPanelStats = () => {
@@ -51,6 +53,7 @@ const BuildingInfoSection: React.FC<BuildingInfoSectionProps> = ({
           onEdit={onEdit}
           onImageManager={onImageManager}
           onDelete={onDelete}
+          videoCount={videoCount}
         />
       </div>
     </div>

@@ -11,6 +11,7 @@ interface BuildingCardProps {
   onEdit: (building: any) => void;
   onImageManager: (building: any) => void;
   onDelete: (building: any) => void;
+  videoCount?: number;
 }
 
 const BuildingCard: React.FC<BuildingCardProps> = ({
@@ -18,7 +19,8 @@ const BuildingCard: React.FC<BuildingCardProps> = ({
   onView,
   onEdit,
   onImageManager,
-  onDelete
+  onDelete,
+  videoCount
 }) => {
   console.log('🏢 [BUILDING CARD] Renderizando card:', building?.nome || 'Nome não disponível');
 
@@ -99,6 +101,7 @@ const BuildingCard: React.FC<BuildingCardProps> = ({
             onEdit={handleEdit}
             onImageManager={handleImageManager}
             onDelete={handleDelete}
+            videoCount={videoCount}
           />
         </div>
       </CardContent>

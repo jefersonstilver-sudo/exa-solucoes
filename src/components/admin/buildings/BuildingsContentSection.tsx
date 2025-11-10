@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import BuildingCard from './BuildingCard';
 import BuildingsEmptyState from './BuildingsEmptyState';
+import { useBuildingsVideoCount } from '@/hooks/useBuildingsVideoCount';
 
 interface BuildingsContentSectionProps {
   buildings: any[];
@@ -29,6 +30,9 @@ const BuildingsContentSection: React.FC<BuildingsContentSectionProps> = ({
     building.bairro.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const buildingIds = filteredBuildings.map(b => b.id);
+  const { counts: videoCounts } = useBuildingsVideoCount(buildingIds);
+
   return (
     <Card>
       <CardHeader>
@@ -54,6 +58,7 @@ const BuildingsContentSection: React.FC<BuildingsContentSectionProps> = ({
                 onEdit={onEdit}
                 onImageManager={onImageManager}
                 onDelete={onDelete}
+                videoCount={videoCounts[building.id] ?? 0}
               />
             ))
           )}
