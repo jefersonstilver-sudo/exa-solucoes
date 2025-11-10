@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Eye, Edit, Camera, Trash2, Monitor, Video } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import VideosPopover from '../VideosPopover';
+import { generateCommercialPath, generatePanelPath } from '@/utils/buildingSlugUtils';
 
 interface BuildingActionsProps {
   building: any;
@@ -40,11 +41,12 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    const url = `${window.location.origin}/painel/${building.id}`;
+                    const buildingCode = building.codigo_predio || '000';
+                    const url = `${window.location.origin}${generatePanelPath(building.nome, buildingCode)}`;
                     navigator.clipboard.writeText(url);
                     toast({
                       title: "Link Limpo copiado!",
-                      description: `Painel fullscreen de ${building.nome}`,
+                      description: `${url}`,
                     });
                   }}
                   className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white rounded transition-all font-semibold"
@@ -56,11 +58,12 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    const url = `${window.location.origin}/painel-comercial/${building.id}`;
+                    const buildingCode = building.codigo_predio || '000';
+                    const url = `${window.location.origin}${generateCommercialPath(building.nome, buildingCode)}`;
                     navigator.clipboard.writeText(url);
                     toast({
                       title: "Link Comercial copiado!",
-                      description: `Painel com UI de ${building.nome}`,
+                      description: `${url}`,
                     });
                   }}
                   className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded transition-all font-semibold"

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { generateCommercialPath, generatePanelPath } from '@/utils/buildingSlugUtils';
 interface AdminBuildingCardProps {
   building: any;
   onView: (building: any) => void;
@@ -253,12 +254,13 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
             <Button 
               size="sm" 
               onClick={() => {
-                const url = `${window.location.origin}/painel/${building.id}`;
+                const buildingCode = building.codigo_predio || '000';
+                const url = `${window.location.origin}${generatePanelPath(building.nome, buildingCode)}`;
                 navigator.clipboard.writeText(url);
                 import('@/hooks/use-toast').then(({ toast }) => {
                   toast({
                     title: "Link Limpo copiado!",
-                    description: `Painel fullscreen de ${building.nome}`,
+                    description: `${url}`,
                   });
                 });
               }}
@@ -273,12 +275,13 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
             <Button 
               size="sm" 
               onClick={() => {
-                const url = `${window.location.origin}/painel-comercial/${building.id}`;
+                const buildingCode = building.codigo_predio || '000';
+                const url = `${window.location.origin}${generateCommercialPath(building.nome, buildingCode)}`;
                 navigator.clipboard.writeText(url);
                 import('@/hooks/use-toast').then(({ toast }) => {
                   toast({
                     title: "Link Comercial copiado!",
-                    description: `Painel com UI de ${building.nome}`,
+                    description: `${url}`,
                   });
                 });
               }}
