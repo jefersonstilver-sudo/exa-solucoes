@@ -1,5 +1,6 @@
 import { AdminEmailTemplates } from './email-templates.ts';
 import { createAdminWelcomeHTML } from './email-templates-html.ts';
+import { EmailLogger } from '../_shared/email-logger.ts';
 
 interface AdminWelcomeEmailData {
   email: string;
@@ -12,6 +13,8 @@ interface AdminWelcomeEmailData {
 export const sendAdminWelcomeEmail = async (
   data: AdminWelcomeEmailData
 ): Promise<{ success: boolean; error?: string }> => {
+  const emailLogger = new EmailLogger();
+  
   try {
     console.log(`📧 [EMAIL] Enviando email de boas-vindas profissional para ${data.email}`);
     console.log(`📋 [EMAIL DEBUG] Nome: "${data.nome}"`);
@@ -21,6 +24,16 @@ export const sendAdminWelcomeEmail = async (
     if (!resendApiKey) {
       const errorMsg = '❌ RESEND_API_KEY não configurada! Configure em: https://resend.com/api-keys';
       console.error(`❌ [EMAIL] ${errorMsg}`);
+      
+      await emailLogger.logFailure(
+        'admin_welcome',
+        data.email,
+        'Bem-vindo à Equipe EXA Mídia - Acesso Administrativo',
+        errorMsg,
+        data.nome,
+        { role: data.role, createdBy: data.createdBy }
+      );
+      
       return { success: false, error: errorMsg };
     }
     
@@ -50,15 +63,46 @@ export const sendAdminWelcomeEmail = async (
     if (error) {
       const errorMsg = `Erro Resend: ${error.message || String(error)}`;
       console.error(`❌ [EMAIL] ${errorMsg}`);
+      
+      await emailLogger.logFailure(
+        'admin_welcome',
+        data.email,
+        'Bem-vindo à Equipe EXA Mídia - Acesso Administrativo',
+        errorMsg,
+        data.nome,
+        { role: data.role, createdBy: data.createdBy }
+      );
+      
       return { success: false, error: errorMsg };
     }
 
     console.log('✅ [EMAIL] Email profissional enviado com sucesso:', emailData);
+    
+    // Registrar no log
+    await emailLogger.logSuccess(
+      'admin_welcome',
+      data.email,
+      'Bem-vindo à Equipe EXA Mídia - Acesso Administrativo',
+      emailData?.id || 'unknown',
+      data.nome,
+      { role: data.role, createdBy: data.createdBy }
+    );
+    
     return { success: true };
     
   } catch (error: any) {
     const errorMsg = `Erro crítico: ${error?.message || String(error)}`;
     console.error(`💥 [EMAIL] ${errorMsg}`);
+    
+    await emailLogger.logFailure(
+      'admin_welcome',
+      data.email,
+      'Bem-vindo à Equipe EXA Mídia - Acesso Administrativo',
+      errorMsg,
+      data.nome,
+      { role: data.role, createdBy: data.createdBy }
+    );
+    
     return { success: false, error: errorMsg };
   }
 };

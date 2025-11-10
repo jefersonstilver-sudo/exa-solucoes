@@ -107,3 +107,6 @@ verify_jwt = true
 
 [functions.auto-activate-first-video]
 verify_jwt = true
+
+[functions.fetch-resend-emails]
+verify_jwt = false

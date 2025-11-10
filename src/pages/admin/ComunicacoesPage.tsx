@@ -19,11 +19,15 @@ import {
   Shield,
   Gift,
   Download,
-  Eye
+  Eye,
+  RefreshCw,
+  ExternalLink,
+  XCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useEmailStats } from '@/hooks/useEmailStats';
+import { useEmailHistory } from '@/hooks/useEmailHistory';
 import EmailTemplatePreviewDialog from '@/components/admin/emails/EmailTemplatePreviewDialog';
 import AdminPeriodSelector, { PeriodType, getPeriodDates } from '@/components/admin/common/AdminPeriodSelector';
 
@@ -68,7 +72,8 @@ const ComunicacoesPage = () => {
     : 365 * 10;
   const fetchAll = periodFilter === 'all';
   
-  const { stats, loading: statsLoading } = useEmailStats(days, fetchAll);
+  const { stats, loading: statsLoading, refetch: refetchStats } = useEmailStats(days, fetchAll);
+  const { emails, loading: historyLoading, totalCount, refetch: refetchHistory } = useEmailHistory(days, fetchAll);
 
   const handlePeriodChange = (period: PeriodType) => {
     setPeriodFilter(period);
@@ -197,62 +202,86 @@ const ComunicacoesPage = () => {
       </div>
 
       {/* Estatísticas */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Emails</CardTitle>
-            <Mail className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <Mail className="h-4 w-4 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsLoading ? '...' : stats.total.toLocaleString('pt-BR')}
+              {statsLoading ? (
+                <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+              ) : (
+                stats.total.toLocaleString('pt-BR')
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {periodFilter === 'all' ? 'Desde o início' : `Últimos ${periodFilter} dias`}
+            <p className="text-xs text-muted-foreground mt-1">
+              {periodFilter === 'all' ? 'Desde o início' : `Últimos ${periodFilter === 'current_month' ? 'mês' : periodFilter} dias`}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Enviados</CardTitle>
-            <Send className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-green-500/10">
+              <Send className="h-4 w-4 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsLoading ? '...' : stats.sent.toLocaleString('pt-BR')}
+              {statsLoading ? (
+                <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+              ) : (
+                stats.sent.toLocaleString('pt-BR')
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               {statsLoading ? '...' : `${stats.deliveryRate.toFixed(1)}% do total`}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Taxa de Abertura</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-purple-500/10">
+              <TrendingUp className="h-4 w-4 text-purple-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsLoading ? '...' : `${stats.openRate.toFixed(1)}%`}
+              {statsLoading ? (
+                <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+              ) : (
+                `${stats.openRate.toFixed(1)}%`
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               {statsLoading ? '...' : `${stats.opened.toLocaleString('pt-BR')} abertos`}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Taxa de Cliques</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-orange-500/10">
+              <TrendingUp className="h-4 w-4 text-orange-600" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsLoading ? '...' : `${stats.clickRate.toFixed(1)}%`}
+              {statsLoading ? (
+                <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+              ) : (
+                `${stats.clickRate.toFixed(1)}%`
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               {statsLoading ? '...' : `${stats.clicked.toLocaleString('pt-BR')} cliques`}
             </p>
           </CardContent>
@@ -321,26 +350,26 @@ const ComunicacoesPage = () => {
               </div>
 
               {/* Lista de Templates */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredTemplates.map((template) => (
-                  <Card key={template.id} className="hover:shadow-md transition-shadow">
+                  <Card key={template.id} className="hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3 flex-1">
-                          <div className={`p-2 rounded-lg ${categoryColors[template.category]}`}>
+                          <div className={`p-2.5 rounded-lg ${categoryColors[template.category]}`}>
                             {template.icon}
                           </div>
-                          <div className="flex-1">
-                            <CardTitle className="text-base">{template.name}</CardTitle>
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-base truncate">{template.name}</CardTitle>
                           </div>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground line-clamp-2">
+                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
                         {template.description}
                       </p>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between pt-2">
                         <Badge variant="outline" className={categoryColors[template.category]}>
                           {categoryNames[template.category]}
                         </Badge>
@@ -348,6 +377,7 @@ const ComunicacoesPage = () => {
                           variant="ghost" 
                           size="sm"
                           onClick={() => openPreview(template)}
+                          className="hover:bg-primary/10"
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Visualizar
@@ -375,19 +405,104 @@ const ComunicacoesPage = () => {
         <TabsContent value="historico" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Histórico de Envios</CardTitle>
-              <CardDescription>
-                Registro de todos os emails enviados pelo sistema
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Histórico de Envios</CardTitle>
+                  <CardDescription>
+                    {totalCount.toLocaleString('pt-BR')} emails registrados • Atualização automática a cada 2 minutos
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    refetchHistory();
+                    refetchStats();
+                  }}
+                  disabled={historyLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${historyLoading ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Em breve</h3>
-                <p className="text-muted-foreground">
-                  O histórico detalhado de envios estará disponível em breve
-                </p>
-              </div>
+              {historyLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-3 text-muted-foreground">Carregando histórico...</span>
+                </div>
+              ) : emails.length === 0 ? (
+                <div className="text-center py-12">
+                  <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Nenhum email encontrado</h3>
+                  <p className="text-muted-foreground">
+                    Não há emails registrados para o período selecionado
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {emails.map((email) => {
+                    const statusConfig = {
+                      delivered: { color: 'bg-green-500/10 text-green-700 border-green-200', icon: CheckCircle2, label: 'Entregue' },
+                      sent: { color: 'bg-blue-500/10 text-blue-700 border-blue-200', icon: Send, label: 'Enviado' },
+                      opened: { color: 'bg-purple-500/10 text-purple-700 border-purple-200', icon: Eye, label: 'Aberto' },
+                      clicked: { color: 'bg-orange-500/10 text-orange-700 border-orange-200', icon: ExternalLink, label: 'Clicado' },
+                      bounced: { color: 'bg-red-500/10 text-red-700 border-red-200', icon: AlertCircle, label: 'Rejeitado' },
+                      failed: { color: 'bg-red-500/10 text-red-700 border-red-200', icon: XCircle, label: 'Falhou' },
+                    };
+                    
+                    const config = statusConfig[email.status as keyof typeof statusConfig] || statusConfig.sent;
+                    const StatusIcon = config.icon;
+                    
+                    return (
+                      <div
+                        key={email.id}
+                        className="rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-start gap-3">
+                              <div className={`p-2 rounded-lg ${config.color} flex-shrink-0`}>
+                                <StatusIcon className="h-4 w-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm truncate">{email.subject}</h4>
+                                <p className="text-sm text-muted-foreground truncate">
+                                  Para: {email.recipient_name || email.recipient_email}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground ml-[52px]">
+                              <span>📅 {format(new Date(email.sent_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
+                              {email.opened_at && (
+                                <span>• 👁️ Aberto {format(new Date(email.opened_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                              )}
+                              {email.clicked_at && (
+                                <span>• 🖱️ Clicado {format(new Date(email.clicked_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                              )}
+                              {email.resend_id && (
+                                <span className="font-mono">• ID: {email.resend_id.slice(0, 8)}...</span>
+                              )}
+                            </div>
+                            
+                            {email.error_message && (
+                              <div className="ml-[52px] mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                <strong>Erro:</strong> {email.error_message}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <Badge variant="outline" className={`${config.color} flex-shrink-0`}>
+                            {config.label}
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
