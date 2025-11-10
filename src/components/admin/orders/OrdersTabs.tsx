@@ -23,34 +23,48 @@ interface OrdersTabsProps {
   onViewOrderDetails: (orderId: string) => void;
 }
 
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: string, correctStatus?: string) => {
+  const targetStatus = correctStatus || status;
   const statusMap: Record<string, string> = {
-    'pendente': 'bg-yellow-100 text-yellow-800',
-    'pago': 'bg-green-100 text-green-800',
-    'pago_pendente_video': 'bg-blue-100 text-blue-800',
-    'video_enviado': 'bg-purple-100 text-purple-800',
-    'video_aprovado': 'bg-emerald-100 text-emerald-800',
-    'cancelado': 'bg-red-100 text-red-800',
-    'cancelado_automaticamente': 'bg-red-100 text-red-800',
-    'tentativa': 'bg-gray-100 text-gray-800',
-    'bloqueado': 'bg-red-200 text-red-900'
+    // Novos status inteligentes
+    'em_exibicao': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    'aguardando_video': 'bg-blue-100 text-blue-800 border-blue-300',
+    'aguardando_aprovacao': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+    'aguardando_pagamento': 'bg-orange-100 text-orange-800 border-orange-300',
+    // Status legados (mantidos para compatibilidade)
+    'pendente': 'bg-orange-100 text-orange-800 border-orange-300',
+    'pago': 'bg-green-100 text-green-800 border-green-300',
+    'pago_pendente_video': 'bg-blue-100 text-blue-800 border-blue-300',
+    'video_enviado': 'bg-purple-100 text-purple-800 border-purple-300',
+    'video_aprovado': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    'cancelado': 'bg-red-100 text-red-800 border-red-300',
+    'cancelado_automaticamente': 'bg-red-200 text-red-900 border-red-400',
+    'tentativa': 'bg-gray-100 text-gray-800 border-gray-300',
+    'bloqueado': 'bg-red-200 text-red-900 border-red-400'
   };
-  return statusMap[status] || 'bg-gray-100 text-gray-800';
+  return statusMap[targetStatus] || 'bg-gray-100 text-gray-800 border-gray-300';
 };
 
-const getStatusText = (status: string) => {
+const getStatusText = (status: string, correctStatus?: string) => {
+  const targetStatus = correctStatus || status;
   const statusMap: Record<string, string> = {
-    'pendente': 'Aguardando Pagamento',
-    'pago': 'Pago',
-    'pago_pendente_video': 'Pago - Aguardando Vídeo',
-    'video_enviado': 'Vídeo Enviado',
-    'video_aprovado': 'Em Exibição',
-    'cancelado': 'Cancelado',
-    'cancelado_automaticamente': 'Cancelado Automaticamente',
-    'tentativa': 'Tentativa Abandonada',
-    'bloqueado': 'Bloqueado'
+    // Novos status inteligentes com emojis
+    'em_exibicao': '🟢 Em Exibição',
+    'aguardando_video': '📹 Aguardando Vídeo',
+    'aguardando_aprovacao': '📤 Aguardando Aprovação',
+    'aguardando_pagamento': '⏳ Aguardando Pagamento',
+    // Status legados
+    'pendente': '⏳ Aguardando Pagamento',
+    'pago': '✅ Pago',
+    'pago_pendente_video': '📹 Aguardando Vídeo',
+    'video_enviado': '📤 Vídeo Enviado',
+    'video_aprovado': '🟢 Em Exibição',
+    'cancelado': '🚫 Cancelado',
+    'cancelado_automaticamente': '⏰ Cancelado Automaticamente',
+    'tentativa': '📝 Tentativa Abandonada',
+    'bloqueado': '🔒 Bloqueado'
   };
-  return statusMap[status] || status;
+  return statusMap[targetStatus] || targetStatus;
 };
 
 const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
@@ -64,23 +78,40 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   const [selectedOrderForBlocking, setSelectedOrderForBlocking] = useState<string | null>(null);
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
 
+  // ORDENAÇÃO GARANTIDA: Sempre DESC por created_at
+  const sortByNewest = (items: any[]) => 
+    [...items].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
   // NOVA LÓGICA: Consolidar "Aguardando Pagamento" (pendentes + tentativas)
-  const pendingOrders = ordersAndAttempts.filter(item => 
-    (item.type === 'order' && item.status === 'pendente') || 
-    (item.type === 'attempt')
+  const pendingOrders = sortByNewest(
+    ordersAndAttempts.filter(item => 
+      (item.type === 'order' && (item.status === 'pendente' || item.correct_status === 'aguardando_pagamento')) || 
+      (item.type === 'attempt')
+    )
   );
 
-  const activeOrders = ordersAndAttempts.filter(item => 
-    item.type === 'order' && ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status)
+  const activeOrders = sortByNewest(
+    ordersAndAttempts.filter(item => 
+      item.type === 'order' && (
+        ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status) ||
+        ['em_exibicao', 'aguardando_video', 'aguardando_aprovacao'].includes(item.correct_status || '')
+      )
+    )
   );
 
   // Abandonados agora só inclui pedidos cancelados 
-  const abandonedItems = ordersAndAttempts.filter(item => 
-    item.type === 'order' && ['cancelado', 'cancelado_automaticamente'].includes(item.status)
+  const abandonedItems = sortByNewest(
+    ordersAndAttempts.filter(item => 
+      item.type === 'order' && ['cancelado', 'cancelado_automaticamente'].includes(item.status)
+    )
   );
 
-  const blockedOrders = ordersAndAttempts.filter(item => 
-    item.type === 'order' && item.status === 'bloqueado'
+  const blockedOrders = sortByNewest(
+    ordersAndAttempts.filter(item => 
+      item.type === 'order' && item.status === 'bloqueado'
+    )
   );
 
   const handleSelectItem = (itemId: string, checked: boolean) => {

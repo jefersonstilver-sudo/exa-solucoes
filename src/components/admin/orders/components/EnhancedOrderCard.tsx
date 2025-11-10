@@ -19,33 +19,47 @@ interface EnhancedOrderCardProps {
   isBlocking?: boolean;
   isUnblocking?: boolean;
 }
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: string, correctStatus?: string) => {
+  const targetStatus = correctStatus || status;
   const statusMap: Record<string, string> = {
-    'pendente': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+    // Novos status inteligentes
+    'em_exibicao': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    'aguardando_video': 'bg-blue-100 text-blue-800 border-blue-300',
+    'aguardando_aprovacao': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+    'aguardando_pagamento': 'bg-orange-100 text-orange-800 border-orange-300',
+    // Status legados
+    'pendente': 'bg-orange-100 text-orange-800 border-orange-300',
     'pago': 'bg-green-100 text-green-800 border-green-300',
     'pago_pendente_video': 'bg-blue-100 text-blue-800 border-blue-300',
     'video_enviado': 'bg-purple-100 text-purple-800 border-purple-300',
     'video_aprovado': 'bg-emerald-100 text-emerald-800 border-emerald-300',
     'cancelado': 'bg-red-100 text-red-800 border-red-300',
-    'cancelado_automaticamente': 'bg-red-100 text-red-800 border-red-300',
-    'tentativa': 'bg-orange-100 text-orange-800 border-orange-300',
+    'cancelado_automaticamente': 'bg-red-200 text-red-900 border-red-400',
+    'tentativa': 'bg-gray-100 text-gray-800 border-gray-300',
     'bloqueado': 'bg-red-200 text-red-900 border-red-400'
   };
-  return statusMap[status] || 'bg-gray-100 text-gray-800 border-gray-300';
+  return statusMap[targetStatus] || 'bg-gray-100 text-gray-800 border-gray-300';
 };
-const getStatusText = (status: string) => {
+const getStatusText = (status: string, correctStatus?: string) => {
+  const targetStatus = correctStatus || status;
   const statusMap: Record<string, string> = {
-    'pendente': 'Aguardando Pagamento',
-    'pago': 'Pago',
-    'pago_pendente_video': 'Pago - Aguardando Vídeo',
-    'video_enviado': 'Vídeo Enviado',
-    'video_aprovado': 'Em Exibição',
-    'cancelado': 'Cancelado',
-    'cancelado_automaticamente': 'Cancelado Automaticamente',
-    'tentativa': 'Tentativa Abandonada',
-    'bloqueado': 'Bloqueado'
+    // Novos status inteligentes com emojis
+    'em_exibicao': '🟢 Em Exibição',
+    'aguardando_video': '📹 Aguardando Vídeo',
+    'aguardando_aprovacao': '📤 Aguardando Aprovação',
+    'aguardando_pagamento': '⏳ Aguardando Pagamento',
+    // Status legados
+    'pendente': '⏳ Aguardando Pagamento',
+    'pago': '✅ Pago',
+    'pago_pendente_video': '📹 Aguardando Vídeo',
+    'video_enviado': '📤 Vídeo Enviado',
+    'video_aprovado': '🟢 Em Exibição',
+    'cancelado': '🚫 Cancelado',
+    'cancelado_automaticamente': '⏰ Cancelado Automaticamente',
+    'tentativa': '📝 Tentativa Abandonada',
+    'bloqueado': '🔒 Bloqueado'
   };
-  return statusMap[status] || status;
+  return statusMap[targetStatus] || targetStatus;
 };
 const getTimeIndicator = (createdAt: string) => {
   const now = new Date();
@@ -144,8 +158,8 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                   {item.type === 'order' ? `Pedido #${item.id.substring(0, 8)}` : `Cotação #${item.id.substring(0, 8)}`}
                 </CardTitle>
                 {item.coupon_code && <CouponBadge couponCode={item.coupon_code} size="md" />}
-                <Badge className={getStatusColor(item.status)}>
-                  {getStatusText(item.status)}
+                <Badge className={getStatusColor(item.status, item.correct_status)}>
+                  {getStatusText(item.status, item.correct_status)}
                 </Badge>
                 <div className={`flex items-center gap-1 text-xs ${urgencyClass}`}>
                   <Clock className="w-3 h-3" />

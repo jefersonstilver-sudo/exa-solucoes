@@ -14,6 +14,7 @@ import { MobileActionMenu } from '@/components/admin/shared/MobileActionMenu';
 import { MobileFilterSheet } from '@/components/admin/shared/MobileFilterSheet';
 import { FilterChips } from '@/components/admin/shared/FilterChips';
 import { OrderPeriodFilter, filterByPeriod, PeriodFilter } from '@/components/admin/orders/OrderPeriodFilter';
+import { RealtimeOrderNotification } from '@/components/admin/orders/RealtimeOrderNotification';
 import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
 
 const OrdersPage = () => {
@@ -315,7 +316,10 @@ const OrdersPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <OrdersPageHeader onRefresh={refetch} loading={loading} />
+        <div className="flex items-center justify-between">
+          <OrdersPageHeader onRefresh={refetch} loading={loading} />
+          <RealtimeOrderNotification />
+        </div>
         <div className="mt-2">
           <OrdersPageAlerts ordersAndAttempts={filteredItems} />
         </div>

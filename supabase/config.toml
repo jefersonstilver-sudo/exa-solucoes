@@ -98,3 +98,6 @@ verify_jwt = true
 
 [functions.cleanup-orphan-users]
 verify_jwt = true
+
+[functions.auto-cancel-orders]
+verify_jwt = false
