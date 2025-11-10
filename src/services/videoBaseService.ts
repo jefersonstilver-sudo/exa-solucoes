@@ -7,13 +7,6 @@ export const setBaseVideo = async (slotId: string): Promise<{
   pedido_video_id?: string;
   video_id?: string;
   message: string;
-  apiCallInfo?: {
-    url: string;
-    status: number;
-    statusText: string;
-    requestBody: any;
-    responseBody: string;
-  };
 }> => {
   videoLogger.logProcessStart('SET_BASE_VIDEO', { slotId });
   
@@ -52,7 +45,6 @@ export const setBaseVideo = async (slotId: string): Promise<{
     console.log('📝 [VIDEO_BASE] Título sem extensão:', tituloSemExtensao);
 
     // 🔥 SEMPRE chamar API externa primeiro, independente de sucesso/falha posterior
-    let apiCallInfo;
     if (listaPredios && listaPredios.length > 0 && tituloSemExtensao) {
       try {
         const buildingUuid = listaPredios[0];
@@ -74,16 +66,6 @@ export const setBaseVideo = async (slotId: string): Promise<{
           console.error('❌ [VIDEO_BASE] notify-active erro:', fnError);
         } else {
           console.log('✅ [VIDEO_BASE] notify-active sucesso:', fnData);
-          // Capturar informações da chamada para exibir no popup
-          if (fnData) {
-            apiCallInfo = {
-              url: fnData.url || `http://15.228.8.3:8000/ativo/${clientId}`,
-              status: fnData.status || 0,
-              statusText: fnData.statusText || 'Unknown',
-              requestBody: fnData.requestBody || { titulo: tituloSemExtensao, ativo: true },
-              responseBody: fnData.responseBody || ''
-            };
-          }
         }
       } catch (apiError) {
         console.error('⚠️ [VIDEO_BASE] Erro ao invocar edge function:', apiError);
@@ -275,8 +257,7 @@ export const setBaseVideo = async (slotId: string): Promise<{
       timestamp: new Date().toISOString(),
       pedido_video_id: result.pedido_video_id || slotId,
       video_id: result.video_id || null,
-      message: 'Vídeo definido como principal',
-      apiCallInfo
+      message: 'Vídeo definido como principal'
     };
   } catch (error) {
     console.error('💥 [VIDEO_BASE] Erro geral:', error);
