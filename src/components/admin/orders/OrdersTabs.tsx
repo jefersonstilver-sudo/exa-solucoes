@@ -251,6 +251,42 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
     setSelectedOrderForBlocking(null);
   };
 
+  const handleDebugLog = () => {
+    const selectedPedidos = selectedItems.filter(id => 
+      ordersAndAttempts.find(item => item.id === id && item.type === 'order')
+    );
+    
+    const selectedTentativas = selectedItems.filter(id => 
+      ordersAndAttempts.find(item => item.id === id && item.type === 'attempt')
+    );
+
+    const selectedPedidosData = selectedPedidos.map(id => 
+      ordersAndAttempts.find(item => item.id === id)
+    );
+
+    console.log('🔍 ======= DEBUG LOG - DELEÇÃO DE PEDIDOS =======');
+    console.log('📊 Informações do Usuário:', {
+      userProfile,
+      isSuperAdmin,
+      userId: userProfile?.id,
+      role: userProfile?.role
+    });
+    console.log('📦 Itens Selecionados:', {
+      total: selectedItems.length,
+      pedidos: selectedPedidos.length,
+      tentativas: selectedTentativas.length,
+      ids: selectedItems
+    });
+    console.log('📋 Dados dos Pedidos Selecionados:', selectedPedidosData);
+    console.log('🔧 Funções Disponíveis:', {
+      bulkDeletePedidos: typeof bulkDeletePedidos,
+      superAdminBulkDeletePedidos: typeof superAdminBulkDeletePedidos
+    });
+    console.log('=====================================');
+
+    toast.info('Log de debug enviado para o console (F12)');
+  };
+
   const renderItemCard = (item: any) => (
     <EnhancedOrderCard
       key={item.id}
@@ -278,59 +314,84 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
           </div>
           
           {selectedItems.length > 0 && (
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="destructive" size="sm">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Excluir Selecionados ({selectedItems.length})
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-red-500" />
-                    Confirmar Exclusão
-                  </DialogTitle>
-                </DialogHeader>
-                
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Esta ação não pode ser desfeita. {selectedItems.length} item(s) será(ão) permanentemente excluído(s).
-                  </AlertDescription>
-                </Alert>
-                
-                <div className="space-y-2">
-                  <label htmlFor="justification" className="text-sm font-medium">
-                    Justificativa (obrigatória):
-                  </label>
-                  <Textarea
-                    id="justification"
-                    value={deleteJustification}
-                    onChange={(e) => setDeleteJustification(e.target.value)}
-                    placeholder="Descreva o motivo da exclusão..."
-                    className="min-h-[80px]"
-                  />
-                </div>
-                
-                <DialogFooter>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsDeleteDialogOpen(false)}
-                    disabled={isDeleting}
-                  >
-                    Cancelar
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleDebugLog}
+                className="border-blue-500 text-blue-600 hover:bg-blue-50"
+              >
+                🔍 Log Debug
+              </Button>
+              
+              <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir Selecionados ({selectedItems.length})
                   </Button>
-                  <Button 
-                    variant="destructive" 
-                    onClick={handleBulkDelete}
-                    disabled={isDeleting || !deleteJustification.trim()}
-                  >
-                    {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-red-500" />
+                      Confirmar Exclusão
+                      {isSuperAdmin && (
+                        <Badge variant="destructive" className="ml-2">
+                          Super Admin - Deleção Completa
+                        </Badge>
+                      )}
+                    </DialogTitle>
+                  </DialogHeader>
+                  
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      {isSuperAdmin ? (
+                        <>
+                          <strong>Modo Super Admin:</strong> Esta ação irá deletar COMPLETAMENTE {selectedItems.length} item(s), incluindo todos os vídeos associados. 
+                          Um histórico será salvo para auditoria.
+                        </>
+                      ) : (
+                        <>
+                          Esta ação não pode ser desfeita. {selectedItems.length} item(s) será(ão) permanentemente excluído(s).
+                        </>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="justification" className="text-sm font-medium">
+                      Justificativa (obrigatória):
+                    </label>
+                    <Textarea
+                      id="justification"
+                      value={deleteJustification}
+                      onChange={(e) => setDeleteJustification(e.target.value)}
+                      placeholder="Descreva o motivo da exclusão..."
+                      className="min-h-[80px]"
+                    />
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsDeleteDialogOpen(false)}
+                      disabled={isDeleting}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleBulkDelete}
+                      disabled={isDeleting || !deleteJustification.trim()}
+                    >
+                      {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           )}
         </div>
       )}
