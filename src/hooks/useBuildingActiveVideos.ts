@@ -221,8 +221,13 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         });
       }
 
+      // FILTRAR APENAS VÍDEOS EM EXIBIÇÃO (não programados)
+      const videosEmExibicao = activeVideos.filter(v => v.is_currently_active === true);
+      
+      console.log(`📊 [BUILDING ACTIVE VIDEOS] Total de vídeos: ${activeVideos.length}, Em exibição: ${videosEmExibicao.length}, Programados: ${activeVideos.length - videosEmExibicao.length}`);
+      
       // Ordenar: mais recentes primeiro (enviados por último)
-      activeVideos.sort((a, b) => {
+      videosEmExibicao.sort((a, b) => {
         const dateA = new Date(a.created_at || 0).getTime();
         const dateB = new Date(b.created_at || 0).getTime();
         return dateB - dateA; // Descendente (mais recente primeiro)
@@ -231,8 +236,8 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       const endTime = performance.now();
       const totalTime = (endTime - startTime).toFixed(0);
       
-      setVideos(activeVideos);
-      console.log(`🎉 [BUILDING ACTIVE VIDEOS] Total de ${activeVideos.length} vídeos ativos encontrados em ${totalTime}ms (otimizado)`);
+      setVideos(videosEmExibicao);
+      console.log(`🎉 [BUILDING ACTIVE VIDEOS] ${videosEmExibicao.length} vídeos EM EXIBIÇÃO encontrados em ${totalTime}ms`);
 
     } catch (error: any) {
       console.error('💥 [BUILDING ACTIVE VIDEOS] Erro geral:', error);
