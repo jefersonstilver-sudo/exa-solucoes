@@ -197,9 +197,9 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       {/* Conteúdo principal */}
       <main className="pt-16 md:pt-20 pb-4">
         <div className="container mx-auto max-w-[1920px] space-y-4">
-          {/* Painel do vídeo - Maior */}
+          {/* Painel do vídeo - Maior, no desktop menor e à esquerda */}
           <div className="px-2 md:px-4">
-            <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/10 p-2 md:p-4">
+            <div className="md:max-w-[70%] bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/10 p-2 md:p-4">
               <CommercialVideoHero 
                 videos={activeVideos.map(v => ({
                   id: v.video_id || '',
