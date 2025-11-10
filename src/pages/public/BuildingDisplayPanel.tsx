@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
+import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
 
 const BuildingDisplayPanel = () => {
   const { buildingId } = useParams<{ buildingId: string }>();
@@ -9,8 +10,14 @@ const BuildingDisplayPanel = () => {
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
+  const nextVideoRef = useRef<HTMLVideoElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastVideoCountRef = useRef(0);
+  const networkStatus = useNetworkMonitor();
+
+  // Preload próximo vídeo
+  const nextVideoIndex = (selectedVideoIndex + 1) % activeVideos.length;
+  const nextVideo = activeVideos[nextVideoIndex];
 
   // Buscar nome do prédio
   useEffect(() => {
@@ -120,6 +127,18 @@ const BuildingDisplayPanel = () => {
           >
             Seu navegador não suporta vídeo.
           </video>
+        )}
+        
+        {/* Preload do próximo vídeo (invisível) */}
+        {nextVideo && (
+          <video
+            ref={nextVideoRef}
+            src={nextVideo.video_url}
+            preload="auto"
+            muted
+            playsInline
+            className="hidden"
+          />
         )}
       </div>
     </div>

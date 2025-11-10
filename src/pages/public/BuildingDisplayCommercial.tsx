@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import exaLogo from '@/assets/exa-logo.png';
 import WeatherFooter from '@/components/public/WeatherFooter';
 import { Wifi, WifiOff } from 'lucide-react';
+import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
 
 const BuildingDisplayCommercial = () => {
   const { buildingId } = useParams<{ buildingId: string }>();
@@ -12,10 +13,15 @@ const BuildingDisplayCommercial = () => {
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
+  const nextVideoRef = useRef<HTMLVideoElement>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isConnected, setIsConnected] = useState(true);
+  const networkStatus = useNetworkMonitor();
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastVideoCountRef = useRef(0);
+
+  // Preload próximo vídeo
+  const nextVideoIndex = (selectedVideoIndex + 1) % activeVideos.length;
+  const nextVideo = activeVideos[nextVideoIndex];
 
   // Buscar nome do prédio
   useEffect(() => {
@@ -43,7 +49,6 @@ const BuildingDisplayCommercial = () => {
     pollingIntervalRef.current = setInterval(async () => {
       try {
         console.log('🔄 [DISPLAY COMMERCIAL] Verificando atualizações...');
-        setIsConnected(true);
         await refetch();
         
         // Detectar mudanças na playlist
@@ -53,7 +58,6 @@ const BuildingDisplayCommercial = () => {
         }
       } catch (error) {
         console.error('❌ [DISPLAY COMMERCIAL] Erro ao verificar atualizações:', error);
-        setIsConnected(false);
       }
     }, 10000); // Verificar a cada 10 segundos
 
@@ -138,15 +142,17 @@ const BuildingDisplayCommercial = () => {
             </div>
           )}
 
-          {/* Status de conexão */}
+          {/* Status de conexão em tempo real */}
           <div className="flex items-center gap-2">
-            {isConnected ? (
+            {networkStatus.isOnline ? (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 rounded-full border border-green-500/30">
-                <Wifi className="h-3.5 w-3.5 text-green-400" />
-                <span className="text-green-400 text-xs font-medium">Conectado</span>
+                <Wifi className="h-3.5 w-3.5 text-green-400 animate-pulse" />
+                <span className="text-green-400 text-xs font-medium">
+                  Conectado {networkStatus.downlink > 0 && `• ${networkStatus.downlink} Mbps`}
+                </span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 rounded-full border border-red-500/30">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 rounded-full border border-red-500/30 animate-pulse">
                 <WifiOff className="h-3.5 w-3.5 text-red-400" />
                 <span className="text-red-400 text-xs font-medium">Offline</span>
               </div>
@@ -155,23 +161,29 @@ const BuildingDisplayCommercial = () => {
         </div>
       </header>
 
-      {/* Conteúdo principal com player horizontal */}
+      {/* Conteúdo principal com player horizontal REDUZIDO */}
       <main className="min-h-screen pt-16 pb-48 flex items-center justify-center p-6">
-        <div className="w-full max-w-7xl">
-          {/* Container do painel horizontal - simula monitor horizontal */}
+        <div className="w-full max-w-5xl">
+          {/* Container do painel horizontal - simula monitor horizontal MENOR */}
           <div className="relative">
             {/* Moldura externa */}
-            <div className="absolute -inset-6 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black rounded-3xl shadow-2xl" />
+            <div className="absolute -inset-4 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black rounded-2xl shadow-2xl" />
             
             {/* Moldura interna */}
-            <div className="absolute -inset-3 bg-gradient-to-br from-zinc-900 to-black rounded-2xl shadow-inner" />
+            <div className="absolute -inset-2 bg-gradient-to-br from-zinc-900 to-black rounded-xl shadow-inner" />
             
-            {/* Tela do painel - HORIZONTAL (16:9) */}
-            <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
+            {/* Tela do painel - HORIZONTAL (16:9) COM ALTURA MÁXIMA REDUZIDA */}
+            <div 
+              className="relative bg-black rounded-lg overflow-hidden shadow-2xl" 
+              style={{ 
+                aspectRatio: '16/9',
+                maxHeight: '60vh' // ALTURA MÁXIMA REDUZIDA
+              }}
+            >
               {/* Brilho da tela */}
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none z-20" />
               
-              {/* Vídeo */}
+              {/* Vídeo atual */}
               {selectedVideo && (
                 <div className={`w-full h-full transition-opacity duration-150 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                   <video
@@ -194,11 +206,23 @@ const BuildingDisplayCommercial = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.01] to-transparent pointer-events-none z-10" />
             </div>
 
-            {/* Suporte/base do monitor */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-4 bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-t-lg shadow-lg" />
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-48 h-2 bg-gradient-to-b from-zinc-900 to-black rounded-full shadow-xl" />
+            {/* Suporte/base do monitor - menor */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-24 h-3 bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-t-lg shadow-lg" />
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-36 h-2 bg-gradient-to-b from-zinc-900 to-black rounded-full shadow-xl" />
           </div>
         </div>
+        
+        {/* Preload do próximo vídeo (invisível) */}
+        {nextVideo && (
+          <video
+            ref={nextVideoRef}
+            src={nextVideo.video_url}
+            preload="auto"
+            muted
+            playsInline
+            className="hidden"
+          />
+        )}
       </main>
 
       {/* Footer com meteorologia e status */}
