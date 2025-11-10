@@ -7,51 +7,12 @@ export const setBaseVideo = async (slotId: string): Promise<{
   pedido_video_id?: string;
   video_id?: string;
   message: string;
-  apiCallInfo?: {
-    url: string;
-    status: number;
-    statusText: string;
-  };
 }> => {
   videoLogger.logProcessStart('SET_BASE_VIDEO', { slotId });
   
   try {
-    console.log('⭐ [VIDEO_BASE] Definindo vídeo base (RPC):', slotId);
+    console.log('⭐ [VIDEO_BASE] Definindo vídeo base:', slotId);
     videoLogger.setContext({ slotId });
-
-    // Buscar o client_id do pedido e dados do vídeo
-    const { data: pvData, error: pvError } = await supabase
-      .from('pedido_videos')
-      .select(`
-        pedido_id,
-        video_id,
-        pedidos!inner (
-          client_id
-        ),
-        videos!inner (
-          nome
-        )
-      `)
-      .eq('id', slotId)
-      .maybeSingle();
-
-    if (pvError) {
-      console.error('❌ [VIDEO_BASE] Erro ao buscar dados:', pvError);
-    }
-
-    if (!pvData) {
-      console.error('❌ [VIDEO_BASE] Nenhum dado encontrado para slotId:', slotId);
-    }
-
-    const clientId = pvData?.pedidos?.client_id;
-    const videoNome = pvData?.videos?.nome;
-    
-    // Remover extensão .mp4 do nome do vídeo
-    const tituloSemExtensao = videoNome?.replace(/\.mp4$/i, '').trim();
-    
-    console.log('🔍 [VIDEO_BASE] Client ID encontrado:', clientId);
-    console.log('🔍 [VIDEO_BASE] Nome do vídeo:', videoNome);
-    console.log('🔍 [VIDEO_BASE] Título sem extensão:', tituloSemExtensao);
 
     // Helper fallback direto no banco quando RPCs falharem
     const fallbackDirectUpdate = async () => {
@@ -226,37 +187,6 @@ export const setBaseVideo = async (slotId: string): Promise<{
 
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
     
-    // Chamar API externa com o client_id (simples, sem body)
-    let apiCallInfo;
-    if (clientId) {
-      try {
-        const apiUrl = `http://15.228.8.3:8000/ativo/${clientId}`;
-        console.log('📞 [VIDEO_BASE] Chamando API externa (PATCH):', apiUrl);
-        
-        const response = await fetch(apiUrl, {
-          method: 'PATCH',
-        });
-        
-        apiCallInfo = {
-          url: apiUrl,
-          status: response.status,
-          statusText: response.statusText
-        };
-        
-        console.log('✅ [VIDEO_BASE] Resposta da API externa:', response.status);
-        console.log('📊 [VIDEO_BASE] apiCallInfo:', apiCallInfo);
-      } catch (apiError) {
-        console.error('⚠️ [VIDEO_BASE] Erro ao chamar API externa (não bloqueante):', apiError);
-        apiCallInfo = {
-          url: `http://15.228.8.3:8000/ativo/${clientId}`,
-          status: 0,
-          statusText: `Erro: ${apiError.message || 'Falha na requisição'}`
-        };
-      }
-    } else {
-      console.warn('⚠️ [VIDEO_BASE] client_id não encontrado, API externa não será chamada');
-    }
-    
     videoLogger.logProcessEnd('SET_BASE_VIDEO', true);
     videoLogger.clearContext();
     return {
@@ -264,8 +194,7 @@ export const setBaseVideo = async (slotId: string): Promise<{
       timestamp: new Date().toISOString(),
       pedido_video_id: result.pedido_video_id || slotId,
       video_id: result.video_id || null,
-      message: 'Vídeo definido como principal',
-      apiCallInfo
+      message: 'Vídeo definido como principal'
     };
   } catch (error) {
     console.error('💥 [VIDEO_BASE] Erro geral:', error);

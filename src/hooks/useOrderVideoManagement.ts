@@ -293,11 +293,11 @@ export const useOrderVideoManagement = (orderId: string) => {
         return { success: false, response: { error: 'Vídeo não aprovado', approval_status: newPv?.approval_status } };
       }
 
-      // 3) Usar videoBaseService que contém toda lógica de fallback e sync com API externa
+      // 3) Usar videoBaseService que contém toda lógica de fallback
       console.log('⏳ [ORDER_VIDEO] Chamando setBaseVideo do videoBaseService...');
       const result = await setBaseVideoService(slotId);
 
-      console.log('📦 [ORDER_VIDEO] Resultado do setBaseVideoService:', result);
+      console.log('📦 [ORDER_VIDEO] Resultado:', result);
 
       if (!result.success) {
         console.error('❌ [ORDER_VIDEO] Falha ao definir vídeo base:', result);
@@ -306,32 +306,9 @@ export const useOrderVideoManagement = (orderId: string) => {
       }
 
       console.log('✅ [ORDER_VIDEO] Vídeo base definido com sucesso');
-      console.log('📊 [ORDER_VIDEO] Result completo:', JSON.stringify(result, null, 2));
-
-      // Mostrar popup com informações da API externa se disponível
-      if (result.apiCallInfo) {
-        console.log('🎉 [ORDER_VIDEO] Mostrando toast com apiCallInfo:', result.apiCallInfo);
-        toast.success(
-          `🌐 API Externa Chamada\n\nURL: ${result.apiCallInfo.url}\n\nStatus: ${result.apiCallInfo.status} ${result.apiCallInfo.statusText}`,
-          {
-            duration: 8000,
-            style: {
-              whiteSpace: 'pre-line',
-              fontFamily: 'monospace',
-              fontSize: '12px'
-            }
-          }
-        );
-      } else {
-        console.warn('⚠️ [ORDER_VIDEO] apiCallInfo não encontrado no result');
-        toast.info('✅ Vídeo definido como principal (sem info da API externa)');
-      }
-
-      console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
       refreshSlots();
       toast.success('✅ Vídeo definido como principal!');
       
-      // Retornar o resultado completo com relatório da API
       return { success: true, response: result };
     } catch (error) {
       console.error('💥 [ORDER_VIDEO] Erro ao definir vídeo base:', error);
