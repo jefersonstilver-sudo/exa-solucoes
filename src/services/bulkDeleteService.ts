@@ -78,6 +78,82 @@ export const bulkDeletePedidos = async (
   }
 };
 
+/**
+ * Deleção completa de pedidos (super admin apenas)
+ * Remove pedidos completamente, incluindo todos os vídeos
+ * Salva histórico completo antes de deletar
+ */
+export const superAdminBulkDeletePedidos = async (
+  pedidoIds: string[],
+  justificativa: string
+): Promise<BulkDeleteResult> => {
+  try {
+    // Obter informações do navegador para auditoria
+    const userAgent = navigator.userAgent;
+    const ipAddress = 'client-side';
+
+    console.log('🗑️ [SUPER_ADMIN_DELETE] Iniciando deleção completa de', pedidoIds.length, 'pedidos');
+
+    const { data, error } = await supabase.rpc('super_admin_bulk_delete_pedidos', {
+      p_pedido_ids: pedidoIds,
+      p_justification: justificativa,
+      p_ip_address: ipAddress,
+      p_user_agent: userAgent
+    });
+
+    if (error) {
+      console.error('❌ [SUPER_ADMIN_DELETE] Erro na exclusão:', error);
+      toast.error('Erro ao excluir pedidos: ' + error.message);
+      return {
+        success: false,
+        deleted_count: 0,
+        total_requested: pedidoIds.length,
+        error: error.message
+      };
+    }
+
+    const result = data as any;
+
+    if (!result.success) {
+      const errorMsg = result.error || 'Erro desconhecido';
+      toast.error('Erro: ' + errorMsg);
+      return {
+        success: false,
+        deleted_count: result.deleted_count || 0,
+        total_requested: result.total_requested || pedidoIds.length,
+        error: errorMsg
+      };
+    }
+
+    // Sucesso
+    const deletedCount = result.deleted_count || 0;
+    console.log('✅ [SUPER_ADMIN_DELETE] Sucesso:', deletedCount, 'pedidos deletados');
+    
+    toast.success(
+      `${deletedCount} pedido${deletedCount !== 1 ? 's' : ''} deletado${deletedCount !== 1 ? 's' : ''} completamente com sucesso`,
+      {
+        description: 'Histórico salvo para auditoria'
+      }
+    );
+
+    return {
+      success: true,
+      deleted_count: deletedCount,
+      total_requested: result.total_requested || pedidoIds.length
+    };
+
+  } catch (error) {
+    console.error('💥 [SUPER_ADMIN_DELETE] Erro inesperado:', error);
+    toast.error('Erro inesperado ao excluir pedidos');
+    return {
+      success: false,
+      deleted_count: 0,
+      total_requested: pedidoIds.length,
+      error: 'Erro inesperado'
+    };
+  }
+};
+
 // Função para exclusão em massa de tentativas
 export const bulkDeleteTentativas = async (
   tentativaIds: string[],

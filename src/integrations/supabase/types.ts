@@ -2557,6 +2557,45 @@ export type Database = {
           },
         ]
       }
+      pedidos_deletion_history: {
+        Row: {
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          ip_address: string | null
+          justification: string | null
+          metadata: Json | null
+          pedido_data: Json
+          pedido_id: string
+          user_agent: string | null
+          videos_deleted: Json | null
+        }
+        Insert: {
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          ip_address?: string | null
+          justification?: string | null
+          metadata?: Json | null
+          pedido_data: Json
+          pedido_id: string
+          user_agent?: string | null
+          videos_deleted?: Json | null
+        }
+        Update: {
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          ip_address?: string | null
+          justification?: string | null
+          metadata?: Json | null
+          pedido_data?: Json
+          pedido_id?: string
+          user_agent?: string | null
+          videos_deleted?: Json | null
+        }
+        Relationships: []
+      }
       permission_change_logs: {
         Row: {
           change_reason: string | null
@@ -4062,6 +4101,7 @@ export type Database = {
         Returns: Json
       }
       is_admin_user: { Args: never; Returns: boolean }
+      is_current_user_super_admin: { Args: never; Returns: boolean }
       is_emergency_mode: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_secure: { Args: never; Returns: boolean }
@@ -4227,6 +4267,24 @@ export type Database = {
           p_objetivo?: string
           p_tipo_video?: string
           p_whatsapp: string
+        }
+        Returns: Json
+      }
+      super_admin_bulk_delete_pedidos: {
+        Args: {
+          p_ip_address?: string
+          p_justification: string
+          p_pedido_ids: string[]
+          p_user_agent?: string
+        }
+        Returns: Json
+      }
+      super_admin_delete_pedido_complete: {
+        Args: {
+          p_ip_address?: string
+          p_justification: string
+          p_pedido_id: string
+          p_user_agent?: string
         }
         Returns: Json
       }

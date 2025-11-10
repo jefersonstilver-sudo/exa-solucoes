@@ -10,13 +10,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import { useOrderBlocking } from '@/hooks/useOrderBlocking';
+import { useAuth } from '@/hooks/useAuth';
 import { BlockOrderModal } from '@/components/admin/orders/BlockOrderModal';
 import { formatCurrency } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Eye, Trash2, AlertTriangle, Building, DollarSign, Calendar, User, Mail, Shield, ShieldOff } from 'lucide-react';
 import { EnhancedOrderCard } from './components/EnhancedOrderCard';
-import { bulkDeletePedidos, bulkDeleteTentativas } from '@/services/bulkDeleteService';
+import { bulkDeletePedidos, bulkDeleteTentativas, superAdminBulkDeletePedidos } from '@/services/bulkDeleteService';
 import { toast } from 'sonner';
 
 interface OrdersTabsProps {
@@ -70,6 +71,7 @@ const getStatusText = (status: string, correctStatus?: string) => {
 const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   const { ordersAndAttempts, loading, refetch } = useOrdersWithAttemptsRefactored();
   const { blockOrder, unblockOrder, isBlocking, isUnblocking } = useOrderBlocking();
+  const { userProfile } = useAuth();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteJustification, setDeleteJustification] = useState('');
@@ -77,6 +79,8 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [selectedOrderForBlocking, setSelectedOrderForBlocking] = useState<string | null>(null);
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
+  
+  const isSuperAdmin = userProfile?.role === 'super_admin';
 
   // ORDENAÇÃO GARANTIDA: Sempre DESC por created_at
   const sortByNewest = (items: any[]) => 
@@ -157,12 +161,28 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
       let totalDeleted = 0;
       const errors: string[] = [];
 
-      // Deletar pedidos usando a função segura
+      // Deletar pedidos usando a função adequada baseado no role
       if (selectedPedidos.length > 0) {
-        const pedidosResult = await bulkDeletePedidos(selectedPedidos, deleteJustification);
-        totalDeleted += pedidosResult.deleted_count;
-        if (!pedidosResult.success && pedidosResult.error) {
-          errors.push(`Pedidos: ${pedidosResult.error}`);
+        console.log('🗑️ [ORDERS_TAB] Deletando pedidos:', {
+          count: selectedPedidos.length,
+          isSuperAdmin,
+          ids: selectedPedidos
+        });
+        
+        // Se for super admin, usar a função completa que remove tudo
+        if (isSuperAdmin) {
+          const pedidosResult = await superAdminBulkDeletePedidos(selectedPedidos, deleteJustification);
+          totalDeleted += pedidosResult.deleted_count;
+          if (!pedidosResult.success && pedidosResult.error) {
+            errors.push(`Pedidos: ${pedidosResult.error}`);
+          }
+        } else {
+          // Para não-super-admins, usar a função padrão com validações
+          const pedidosResult = await bulkDeletePedidos(selectedPedidos, deleteJustification);
+          totalDeleted += pedidosResult.deleted_count;
+          if (!pedidosResult.success && pedidosResult.error) {
+            errors.push(`Pedidos: ${pedidosResult.error}`);
+          }
         }
       }
 
