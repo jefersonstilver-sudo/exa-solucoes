@@ -196,29 +196,32 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
 
       {/* Conteúdo principal */}
       <main className="pt-16 md:pt-20 pb-4">
-        <div className="container mx-auto max-w-[1920px] space-y-4 md:space-y-6">
-          {/* Painel do vídeo - Destaque no desktop */}
-          <div className="px-2 md:px-6">
-            <div className="md:max-w-[75%] bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-md rounded-3xl shadow-2xl border border-white/10 p-3 md:p-6">
+        <div className="container mx-auto max-w-7xl px-3 md:px-6 space-y-4">
+          {/* Painel do vídeo - Centralizado e elegante */}
+          <div className="w-full flex justify-center">
+            <div className="w-full md:max-w-5xl bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/5 p-3 md:p-4">
               <CommercialVideoHero 
                 videos={activeVideos.map(v => ({
                   id: v.video_id || '',
                   video_url: v.video_url,
                   video_nome: v.video_name || ''
                 }))}
-                className="rounded-2xl overflow-hidden"
+                className="rounded-xl overflow-hidden"
               />
             </div>
           </div>
 
-          {/* Relógio e data ao vivo */}
-          <div className="px-2 md:px-6">
-            <LiveClock />
-          </div>
+          {/* Relógio e Previsão do Tempo - Grid lado a lado no desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Relógio */}
+            <div>
+              <LiveClock />
+            </div>
 
-          {/* Previsão do tempo */}
-          <div className="px-2 md:px-6">
-            <WeatherFooter buildingName={buildingName} />
+            {/* Previsão do tempo */}
+            <div>
+              <WeatherFooter buildingName={buildingName} />
+            </div>
           </div>
         </div>
       </main>
