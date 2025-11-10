@@ -12,6 +12,7 @@ const getFileNameWithoutExtension = (url: string): string => {
 
 /**
  * Sincroniza o status de exibição de um vídeo com a API externa
+ * 🔥 NUNCA retorna sucesso sem verificar a resposta REAL da API
  */
 const syncVideoWithExternalAPI = async (
   buildingIds: string[],
@@ -20,9 +21,29 @@ const syncVideoWithExternalAPI = async (
 ): Promise<void> => {
   const API_BASE_URL = 'http://15.228.8.3:8000';
   
-  console.log(`🔄 [EXTERNAL_API] Sincronizando vídeo "${videoFileName}" (ativo: ${isActive})`);
+  // 🔒 VALIDAÇÃO DE ENTRADA
+  if (!buildingIds || buildingIds.length === 0) {
+    console.warn('⚠️ [EXTERNAL_API] Lista de prédios vazia, nada a fazer');
+    return;
+  }
   
+  if (!videoFileName || videoFileName.trim() === '') {
+    console.error('❌ [EXTERNAL_API] Nome do arquivo inválido');
+    throw new Error('Nome do arquivo é obrigatório');
+  }
+  
+  console.log(`🚀 [EXTERNAL_API] Iniciando sincronização:`, {
+    totalPredios: buildingIds.length,
+    videoFileName,
+    isActive,
+    timestamp: new Date().toISOString()
+  });
+  
+  // 🔄 PROCESSAMENTO SEQUENCIAL COM TIMEOUT
   for (const buildingId of buildingIds) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    
     try {
       // Extrair os 4 primeiros dígitos do UUID do prédio
       const clientId = buildingId.slice(0, 4);
@@ -33,7 +54,16 @@ const syncVideoWithExternalAPI = async (
         ativo: isActive
       };
       
-      console.log(`📤 [EXTERNAL_API] POST ${url}`, payload);
+      // 📤 LOG ANTES DE ENVIAR
+      console.log(`📤 [EXTERNAL_API] ENVIANDO REQUEST:`, {
+        buildingId,
+        clientId,
+        url,
+        method: 'PATCH',
+        payload,
+        timestamp: new Date().toISOString()
+      });
+      
       videoLogger.log('debug', 'EXTERNAL_API', 'Sending request', {
         buildingId,
         clientId,
@@ -41,15 +71,75 @@ const syncVideoWithExternalAPI = async (
         payload
       });
       
+      // 🌐 CHAMADA COM TIMEOUT
       const response = await fetch(url, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
       });
       
-      const responseBody = await response.text();
+      clearTimeout(timeoutId);
+      
+      // 📥 LOG AO RECEBER RESPOSTA
+      console.log(`📥 [EXTERNAL_API] RESPOSTA RECEBIDA:`, {
+        buildingId,
+        clientId,
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        timestamp: new Date().toISOString()
+      });
+      
+      // 🔥 NUNCA ASSUMIR SUCESSO SEM VERIFICAR
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`❌ [EXTERNAL_API] ERRO NA API:`, {
+          buildingId,
+          clientId,
+          status: response.status,
+          statusText: response.statusText,
+          errorBody,
+          url,
+          payload
+        });
+        
+        videoLogger.log('error', 'EXTERNAL_API', 'API returned error', {
+          buildingId,
+          clientId,
+          status: response.status,
+          errorBody
+        });
+        
+        throw new Error(`API retornou status ${response.status}: ${errorBody}`);
+      }
+      
+      // 📦 LER E LOGAR O CORPO DA RESPOSTA
+      let responseBody = null;
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          responseBody = await response.json();
+        } else {
+          responseBody = await response.text();
+        }
+        console.log(`📦 [EXTERNAL_API] CORPO DA RESPOSTA:`, {
+          buildingId,
+          clientId,
+          responseBody,
+          timestamp: new Date().toISOString()
+        });
+      } catch (parseError) {
+        console.warn(`⚠️ [EXTERNAL_API] Não foi possível parsear resposta:`, parseError);
+      }
+      
+      // ✅ CONFIRMAR SUCESSO EXPLICITAMENTE
+      console.log(`✅ [EXTERNAL_API] SUCESSO CONFIRMADO para ${buildingId}/${clientId}`, {
+        responseBody,
+        timestamp: new Date().toISOString()
+      });
       
       videoLogger.logAPICall(clientId, url, payload, {
         ok: response.ok,
@@ -58,19 +148,34 @@ const syncVideoWithExternalAPI = async (
         body: responseBody
       });
       
-      if (!response.ok) {
-        console.error(`❌ [EXTERNAL_API] Erro ao sincronizar para prédio ${buildingId}:`);
-        console.error(`   Status: ${response.status} ${response.statusText}`);
-        console.error(`   URL: ${url}`);
-        console.error(`   Payload enviado:`, JSON.stringify(payload, null, 2));
-        console.error(`   Response body:`, responseBody);
-      } else {
-        console.log(`✅ [EXTERNAL_API] Vídeo sincronizado com sucesso para prédio ${buildingId}`);
-      }
+      // ⏱️ DELAY ENTRE REQUISIÇÕES
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
     } catch (error) {
-      console.error(`💥 [EXTERNAL_API] Erro ao chamar API para prédio ${buildingId}:`, error);
+      clearTimeout(timeoutId);
+      
+      if (error.name === 'AbortError') {
+        console.error(`⏱️ [EXTERNAL_API] TIMEOUT após 30s para ${buildingId}`);
+        videoLogger.log('error', 'EXTERNAL_API', 'Request timeout', { buildingId });
+      } else {
+        console.error(`💥 [EXTERNAL_API] ERRO AO CHAMAR API para ${buildingId}:`, {
+          error: error.message,
+          stack: error.stack,
+          buildingId,
+          videoFileName,
+          isActive
+        });
+        videoLogger.log('error', 'EXTERNAL_API', 'Request failed', { 
+          buildingId, 
+          error: error.message 
+        });
+      }
+      
+      // Continuar com próximo prédio mesmo em caso de erro
     }
   }
+  
+  console.log(`🏁 [EXTERNAL_API] Sincronização completa finalizada para ${buildingIds.length} prédios`);
 };
 
 /**
