@@ -18,80 +18,104 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   className 
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [nextIndex, setNextIndex] = useState(1);
-  const [activePlayer, setActivePlayer] = useState<1 | 2>(1);
-  const video1Ref = useRef<HTMLVideoElement>(null);
-  const video2Ref = useRef<HTMLVideoElement>(null);
-  const preloadCheckRef = useRef<NodeJS.Timeout | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const nextVideoRef = useRef<HTMLVideoElement>(null);
+  const hasEndedRef = useRef(false);
+  const isTransitioningRef = useRef(false);
 
   const currentVideo = videos[currentIndex];
-  const nextVideo = videos[nextIndex] || videos[0];
+  const nextVideoIndex = (currentIndex + 1) % videos.length;
+  const nextVideo = videos[nextVideoIndex];
 
-  // 🔄 Atualizar índices quando playlist mudar
+  // 🔄 Reset quando playlist mudar
   useEffect(() => {
-    console.log('🎬 [VIDEO HERO] Playlist atualizada:', videos.length, 'vídeos');
+    console.log('🎬 [VIDEO HERO] Playlist:', videos.length, 'vídeos');
     if (videos.length > 0 && currentIndex >= videos.length) {
       setCurrentIndex(0);
-      setNextIndex(1 % videos.length);
     }
-  }, [videos, currentIndex]);
+  }, [videos.length]);
 
-  // 🎯 Sistema de pre-loading inteligente
+  // 🎯 Gerenciar reprodução do vídeo atual
   useEffect(() => {
-    const activeVideo = activePlayer === 1 ? video1Ref.current : video2Ref.current;
-    const nextVideoEl = activePlayer === 1 ? video2Ref.current : video1Ref.current;
-    
-    if (!activeVideo || !nextVideoEl || videos.length === 0) return;
+    const video = videoRef.current;
+    if (!video || !currentVideo) return;
 
-    const checkAndPreload = () => {
-      const timeRemaining = activeVideo.duration - activeVideo.currentTime;
-      
-      // 🔥 Quando faltar 3 segundos, garantir que o próximo vídeo está pronto
-      if (timeRemaining <= 3 && timeRemaining > 0) {
-        if (nextVideoEl.readyState < 3) {
-          console.log('⚡ [VIDEO HERO] Forçando pre-load do próximo vídeo');
-          nextVideoEl.load();
-        }
+    hasEndedRef.current = false;
+    isTransitioningRef.current = false;
+    setIsReady(false);
+
+    console.log(`▶️ [VIDEO HERO] Carregando vídeo ${currentIndex + 1}/${videos.length}:`, currentVideo.video_nome);
+
+    const handleLoadedData = () => {
+      console.log('✅ [VIDEO HERO] Vídeo carregado e pronto');
+      setIsReady(true);
+    };
+
+    const handleCanPlay = () => {
+      if (!isReady) {
+        video.play().catch(err => 
+          console.warn('⚠️ [VIDEO HERO] Autoplay bloqueado:', err)
+        );
       }
     };
 
     const handleTimeUpdate = () => {
-      checkAndPreload();
+      if (!video || isTransitioningRef.current) return;
+      
+      const timeRemaining = video.duration - video.currentTime;
+      
+      // Pre-carregar próximo vídeo quando faltar 5 segundos
+      if (timeRemaining <= 5 && timeRemaining > 4.5 && nextVideoRef.current) {
+        console.log('⏭️ [VIDEO HERO] Pre-carregando próximo vídeo');
+        nextVideoRef.current.load();
+      }
     };
 
-    const handleVideoEnd = () => {
-      console.log('✅ [VIDEO HERO] Vídeo finalizado, trocando...');
+    const handleEnded = () => {
+      if (hasEndedRef.current || isTransitioningRef.current) {
+        console.log('⚠️ [VIDEO HERO] Evento "ended" duplicado ignorado');
+        return;
+      }
+
+      hasEndedRef.current = true;
+      isTransitioningRef.current = true;
       
-      // Trocar para o próximo vídeo INSTANTANEAMENTE
-      const newCurrentIndex = nextIndex;
-      const newNextIndex = (nextIndex + 1) % videos.length;
+      console.log('🔄 [VIDEO HERO] Vídeo finalizado, avançando para o próximo...');
       
-      setCurrentIndex(newCurrentIndex);
-      setNextIndex(newNextIndex);
-      setActivePlayer(activePlayer === 1 ? 2 : 1);
-      
-      // Iniciar próximo vídeo imediatamente
-      nextVideoEl.currentTime = 0;
-      nextVideoEl.play().catch(err => 
-        console.warn('⚠️ [VIDEO HERO] Erro ao iniciar próximo vídeo:', err)
-      );
+      // Aguardar frame antes de trocar para evitar flicker
+      requestAnimationFrame(() => {
+        setCurrentIndex(nextVideoIndex);
+      });
     };
 
-    activeVideo.addEventListener('timeupdate', handleTimeUpdate);
-    activeVideo.addEventListener('ended', handleVideoEnd);
-    
-    // Iniciar reprodução se necessário
-    if (activeVideo.paused) {
-      activeVideo.play().catch(err => 
-        console.warn('⚠️ [VIDEO HERO] Autoplay bloqueado:', err)
-      );
-    }
+    const handleError = (e: Event) => {
+      console.error('❌ [VIDEO HERO] Erro ao carregar vídeo:', e);
+      // Tentar próximo vídeo após erro
+      setTimeout(() => {
+        if (!isTransitioningRef.current) {
+          setCurrentIndex(nextVideoIndex);
+        }
+      }, 1000);
+    };
+
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('ended', handleEnded);
+    video.addEventListener('error', handleError);
+
+    // Forçar load
+    video.load();
 
     return () => {
-      activeVideo.removeEventListener('timeupdate', handleTimeUpdate);
-      activeVideo.removeEventListener('ended', handleVideoEnd);
+      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('error', handleError);
     };
-  }, [currentIndex, nextIndex, activePlayer, videos.length]);
+  }, [currentIndex, currentVideo, nextVideoIndex, videos.length]);
 
   if (videos.length === 0) {
     return (
@@ -114,17 +138,17 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
-      {/* 🎬 Player 1 - Alternância suave */}
-      <div 
-        className={cn(
-          "absolute inset-0 w-full h-full bg-black rounded-lg overflow-hidden transition-opacity duration-300",
-          activePlayer === 1 ? "opacity-100 z-10" : "opacity-0 z-0"
-        )}
-      >
+      {/* Container principal do vídeo */}
+      <div className="absolute inset-0 w-full h-full bg-black rounded-lg overflow-hidden">
+        {/* Vídeo principal */}
         <video
-          ref={video1Ref}
-          src={currentVideo?.video_url}
-          className="w-full h-full object-cover"
+          key={`video-${currentIndex}-${currentVideo.id}`}
+          ref={videoRef}
+          src={currentVideo.video_url}
+          className={cn(
+            "w-full h-full object-cover transition-opacity duration-200",
+            isReady ? "opacity-100" : "opacity-0"
+          )}
           autoPlay
           muted
           playsInline
@@ -138,47 +162,41 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
           }}
           onContextMenu={(e) => e.preventDefault()}
         />
-      </div>
 
-      {/* 🎬 Player 2 - Alternância suave */}
-      <div 
-        className={cn(
-          "absolute inset-0 w-full h-full bg-black rounded-lg overflow-hidden transition-opacity duration-300",
-          activePlayer === 2 ? "opacity-100 z-10" : "opacity-0 z-0"
+        {/* Loading placeholder */}
+        {!isReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+            <div className="text-white text-sm">Carregando...</div>
+          </div>
         )}
-      >
-        <video
-          ref={video2Ref}
-          src={nextVideo?.video_url}
-          className="w-full h-full object-cover"
-          muted
-          playsInline
-          preload="auto"
-          controlsList="nodownload noplaybackrate nofullscreen"
-          disablePictureInPicture
-          disableRemotePlayback
+
+        {/* MARCA D'ÁGUA */}
+        <VideoWatermark />
+        
+        {/* Proteção invisível */}
+        <div 
+          className="absolute inset-0 z-[100]" 
           style={{ 
-            pointerEvents: 'none',
-            userSelect: 'none'
+            background: 'transparent',
+            pointerEvents: 'auto',
+            cursor: 'default'
           }}
           onContextMenu={(e) => e.preventDefault()}
+          onMouseDown={(e) => e.button === 2 && e.preventDefault()}
         />
       </div>
 
-      {/* MARCA D'ÁGUA */}
-      <VideoWatermark />
-      
-      {/* Proteção invisível */}
-      <div 
-        className="absolute inset-0 z-[100]" 
-        style={{ 
-          background: 'transparent',
-          pointerEvents: 'auto',
-          cursor: 'default'
-        }}
-        onContextMenu={(e) => e.preventDefault()}
-        onMouseDown={(e) => e.button === 2 && e.preventDefault()}
-      />
+      {/* Pre-load próximo vídeo (invisível) */}
+      {nextVideo && (
+        <video
+          ref={nextVideoRef}
+          src={nextVideo.video_url}
+          className="hidden"
+          preload="auto"
+          muted
+          playsInline
+        />
+      )}
     </div>
   );
 };
