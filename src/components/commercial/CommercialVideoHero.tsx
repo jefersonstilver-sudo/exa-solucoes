@@ -28,14 +28,32 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   const currentVideo = videos[currentIndex];
   const nextVideo = videos[(currentIndex + 1) % videos.length];
 
+  // Debug: resetar index quando videos mudar
+  useEffect(() => {
+    console.log('[COMMERCIAL HERO] Videos array updated:', videos.length, 'videos');
+    console.log('[COMMERCIAL HERO] Video names:', videos.map(v => v.video_nome));
+    
+    // Resetar para primeiro video quando array mudar
+    if (videos.length > 0 && currentIndex >= videos.length) {
+      console.log('[COMMERCIAL HERO] Resetting index to 0');
+      setCurrentIndex(0);
+    }
+  }, [videos, currentIndex]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video || videos.length === 0) return;
 
+    console.log('[COMMERCIAL HERO] Total videos in playlist:', videos.length);
+
     const handleVideoEnd = () => {
+      console.log('[COMMERCIAL HERO] Video ended, advancing to next...');
+      const nextIndex = (currentIndex + 1) % videos.length;
+      console.log('[COMMERCIAL HERO] Next index:', nextIndex);
+      
       setIsTransitioning(true);
       setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % videos.length);
+        setCurrentIndex(nextIndex);
         setIsTransitioning(false);
         setVideoError(false);
       }, 150);
@@ -64,6 +82,9 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     };
   }, [currentIndex, videos.length]);
 
+  // Renderizar key único baseado em URL E index para forçar re-render
+  const videoKey = `${currentVideo?.video_url}-${currentIndex}`;
+
   if (videos.length === 0) {
     return (
       <div className={cn(
@@ -74,6 +95,8 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       </div>
     );
   }
+
+  console.log('[COMMERCIAL HERO] Rendering video', currentIndex + 1, 'of', videos.length, ':', currentVideo?.video_nome);
 
   return (
     <div 
@@ -123,12 +146,11 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
           )}>
             <video
               ref={videoRef}
-              key={currentVideo.video_url}
+              key={videoKey}
               src={currentVideo.video_url}
               className="w-full h-full object-contain"
               autoPlay
               muted
-              loop
               playsInline
               preload="auto"
               controlsList="nodownload noplaybackrate nofullscreen"

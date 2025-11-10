@@ -42,13 +42,19 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
           {videoCount > 0 ? (
             <>
               <div className="flex items-center gap-2 text-sm">
-                <div 
-                  onClick={() => setIsModalOpen(true)}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsModalOpen(true);
+                    console.log('Opening modal for building:', building.nome);
+                  }}
                   className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 text-xs font-medium cursor-pointer hover:bg-green-100 transition-colors"
                 >
                   <Video className="h-3 w-3" />
                   <span>{videoCount} vídeo{videoCount > 1 ? 's' : ''} no AR</span>
-                </div>
+                </button>
               </div>
               <div className="flex gap-2">
                 <button

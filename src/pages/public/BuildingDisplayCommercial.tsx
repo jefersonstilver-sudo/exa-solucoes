@@ -116,8 +116,11 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   useEffect(() => {
     if (activeVideos.length === 0) {
       setVideosWithCache([]);
+      console.log('[DISPLAY COMMERCIAL] No active videos');
       return;
     }
+
+    console.log('[DISPLAY COMMERCIAL] Loading', activeVideos.length, 'videos with cache');
 
     const loadVideosWithCache = async () => {
       const videos = await Promise.all(
@@ -131,7 +134,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
         })
       );
       setVideosWithCache(videos);
-      console.log('[DISPLAY COMMERCIAL]', videos.length, 'videos carregados com cache');
+      console.log('[DISPLAY COMMERCIAL]', videos.length, 'videos loaded:', videos.map(v => v.video_nome));
     };
 
     loadVideosWithCache();
