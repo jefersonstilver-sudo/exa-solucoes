@@ -87,16 +87,18 @@ export const superAdminBulkDeletePedidos = async (
   pedidoIds: string[],
   justificativa: string
 ): Promise<BulkDeleteResult> => {
+  const getTimestamp = () => new Date().toISOString();
+  
   try {
     // Obter informações do navegador para auditoria
     const userAgent = navigator.userAgent;
     const ipAddress = 'client-side';
 
-    console.log('🗑️ [SUPER_ADMIN_DELETE] Iniciando deleção completa de', pedidoIds.length, 'pedidos');
-    console.log('📋 [SUPER_ADMIN_DELETE] Justificativa:', justificativa);
-    console.log('🎯 [SUPER_ADMIN_DELETE] IDs:', pedidoIds);
+    console.log(`🗑️ [${getTimestamp()}] [SUPER_ADMIN_DELETE] Iniciando deleção completa de ${pedidoIds.length} pedidos`);
+    console.log(`📋 [${getTimestamp()}] [SUPER_ADMIN_DELETE] Justificativa:`, justificativa);
+    console.log(`🎯 [${getTimestamp()}] [SUPER_ADMIN_DELETE] IDs:`, pedidoIds);
 
-    console.log('📞 [SUPER_ADMIN_DELETE] Chamando RPC super_admin_bulk_delete_pedidos...');
+    console.log(`📞 [${getTimestamp()}] [SUPER_ADMIN_DELETE] Chamando RPC super_admin_bulk_delete_pedidos...`);
     
     const { data, error } = await supabase.rpc('super_admin_bulk_delete_pedidos', {
       p_pedido_ids: pedidoIds,
@@ -105,10 +107,10 @@ export const superAdminBulkDeletePedidos = async (
       p_user_agent: userAgent
     });
 
-    console.log('📦 [SUPER_ADMIN_DELETE] Resposta da RPC:', { data, error });
+    console.log(`📦 [${getTimestamp()}] [SUPER_ADMIN_DELETE] Resposta da RPC:`, { data, error });
 
     if (error) {
-      console.error('❌ [SUPER_ADMIN_DELETE] Erro na RPC:', {
+      console.error(`❌ [${getTimestamp()}] [SUPER_ADMIN_DELETE] Erro na RPC:`, {
         message: error.message,
         details: error.details,
         hint: error.hint,
@@ -125,11 +127,11 @@ export const superAdminBulkDeletePedidos = async (
     }
 
     const result = data as any;
-    console.log('🔍 [SUPER_ADMIN_DELETE] Analisando resultado:', result);
+    console.log(`🔍 [${getTimestamp()}] [SUPER_ADMIN_DELETE] Analisando resultado:`, result);
 
     if (!result.success) {
       const errorMsg = result.error || 'Erro desconhecido';
-      console.error('❌ [SUPER_ADMIN_DELETE] Falha lógica:', {
+      console.error(`❌ [${getTimestamp()}] [SUPER_ADMIN_DELETE] Falha lógica:`, {
         success: result.success,
         error: errorMsg,
         deleted_count: result.deleted_count,
@@ -147,7 +149,7 @@ export const superAdminBulkDeletePedidos = async (
 
     // Sucesso
     const deletedCount = result.deleted_count || 0;
-    console.log('✅ [SUPER_ADMIN_DELETE] Sucesso:', {
+    console.log(`✅ [${getTimestamp()}] [SUPER_ADMIN_DELETE] Sucesso:`, {
       deletedCount,
       totalRequested: result.total_requested,
       errors: result.errors
@@ -167,8 +169,9 @@ export const superAdminBulkDeletePedidos = async (
     };
 
   } catch (error) {
-    console.error('💥 [SUPER_ADMIN_DELETE] Erro inesperado:', error);
-    console.error('💥 [SUPER_ADMIN_DELETE] Stack:', (error as Error).stack);
+    const timestamp = getTimestamp();
+    console.error(`💥 [${timestamp}] [SUPER_ADMIN_DELETE] Erro inesperado:`, error);
+    console.error(`💥 [${timestamp}] [SUPER_ADMIN_DELETE] Stack:`, (error as Error).stack);
     toast.error('Erro inesperado ao excluir pedidos: ' + (error as Error).message);
     return {
       success: false,
