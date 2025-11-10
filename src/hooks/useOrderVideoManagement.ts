@@ -307,6 +307,21 @@ export const useOrderVideoManagement = (orderId: string) => {
 
       console.log('✅ [ORDER_VIDEO] Vídeo base definido com sucesso');
 
+      // Mostrar popup com informações da API externa se disponível
+      if (result.apiCallInfo) {
+        toast.success(
+          `🌐 API Externa Chamada\n\nURL: ${result.apiCallInfo.url}\n\nStatus: ${result.apiCallInfo.status} ${result.apiCallInfo.statusText}`,
+          {
+            duration: 8000,
+            style: {
+              whiteSpace: 'pre-line',
+              fontFamily: 'monospace',
+              fontSize: '12px'
+            }
+          }
+        );
+      }
+
       console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
       refreshSlots();
       toast.success('✅ Vídeo definido como principal!');

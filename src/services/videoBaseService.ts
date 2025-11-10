@@ -7,6 +7,11 @@ export const setBaseVideo = async (slotId: string): Promise<{
   pedido_video_id?: string;
   video_id?: string;
   message: string;
+  apiCallInfo?: {
+    url: string;
+    status: number;
+    statusText: string;
+  };
 }> => {
   videoLogger.logProcessStart('SET_BASE_VIDEO', { slotId });
   
@@ -214,13 +219,21 @@ export const setBaseVideo = async (slotId: string): Promise<{
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
     
     // Chamar API externa com o client_id (simples, sem body)
+    let apiCallInfo;
     if (clientId) {
       try {
-        console.log('📞 [VIDEO_BASE] Chamando API externa (PATCH):', `http://15.228.8.3:8000/ativo/${clientId}`);
+        const apiUrl = `http://15.228.8.3:8000/ativo/${clientId}`;
+        console.log('📞 [VIDEO_BASE] Chamando API externa (PATCH):', apiUrl);
         
-        const response = await fetch(`http://15.228.8.3:8000/ativo/${clientId}`, {
+        const response = await fetch(apiUrl, {
           method: 'PATCH',
         });
+        
+        apiCallInfo = {
+          url: apiUrl,
+          status: response.status,
+          statusText: response.statusText
+        };
         
         console.log('✅ [VIDEO_BASE] Resposta da API externa:', response.status);
       } catch (apiError) {
@@ -235,7 +248,8 @@ export const setBaseVideo = async (slotId: string): Promise<{
       timestamp: new Date().toISOString(),
       pedido_video_id: result.pedido_video_id || slotId,
       video_id: result.video_id || null,
-      message: 'Vídeo definido como principal'
+      message: 'Vídeo definido como principal',
+      apiCallInfo
     };
   } catch (error) {
     console.error('💥 [VIDEO_BASE] Erro geral:', error);
