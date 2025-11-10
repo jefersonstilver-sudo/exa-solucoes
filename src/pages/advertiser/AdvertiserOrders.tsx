@@ -202,17 +202,6 @@ const AdvertiserOrders = () => {
               </Badge>
 
               <div className="flex space-x-2">
-                {statusInfo.action && (
-                  <Button 
-                    variant={statusInfo.action.variant} 
-                    size="sm"
-                    onClick={statusInfo.action.onClick}
-                    className="flex items-center space-x-1"
-                  >
-                    {statusInfo.action.label}
-                  </Button>
-                )}
-                
                 {item.type === 'order' && (
                   <Button 
                     variant="outline" 
