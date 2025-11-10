@@ -3,6 +3,8 @@ import { Building2, MapPin, Tv, Users, Video } from 'lucide-react';
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { generatePanelPath } from '@/utils/buildingSlugUtils';
+import { generatePublicUrl } from '@/config/domain';
 
 interface BuildingMobileCardProps {
   building: any;
@@ -157,7 +159,8 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
         </Button>
         <Button
           onClick={() => {
-            const url = `${window.location.origin}/painel/${building.id}`;
+            const buildingCode = building.codigo_predio || '000';
+            const url = generatePublicUrl(generatePanelPath(building.nome, buildingCode));
             navigator.clipboard.writeText(url);
             import('sonner').then(({ toast }) => {
               toast.success('Link copiado!', {

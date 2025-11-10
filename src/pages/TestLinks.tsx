@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Copy, ExternalLink, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateCommercialPath, generatePanelPath, generateEmbedPath } from '@/utils/buildingSlugUtils';
+import { generatePublicUrl } from '@/config/domain';
 
 interface BuildingLink {
   id: string;
@@ -50,9 +51,9 @@ const TestLinks = () => {
         nome: nome,
         codigo_predio: codigo,
         status: building.status,
-        comercial_url: `${window.location.origin}${generateCommercialPath(nome, codigo)}`,
-        painel_url: `${window.location.origin}${generatePanelPath(nome, codigo)}`,
-        embed_code: `<iframe src="${window.location.origin}${generateEmbedPath(nome, codigo)}" width="100%" height="600" frameborder="0"></iframe>`
+        comercial_url: generatePublicUrl(generateCommercialPath(nome, codigo)),
+        painel_url: generatePublicUrl(generatePanelPath(nome, codigo)),
+        embed_code: `<iframe src="${generatePublicUrl(generateEmbedPath(nome, codigo))}" width="100%" height="600" frameborder="0"></iframe>`
       };
     });
 

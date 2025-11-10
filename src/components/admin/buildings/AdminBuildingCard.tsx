@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video, Play, Code, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { generateCommercialPath, generatePanelPath, generateEmbedPath } from '@/utils/buildingSlugUtils';
+import { generatePublicUrl } from '@/config/domain';
 import { Building } from '@/services/buildingsDataService';
 
 interface AdminBuildingCardProps {
@@ -266,7 +267,7 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                 size="sm" 
                 onClick={() => {
                   const buildingCode = building.codigo_predio || '000';
-                  const url = `${window.location.origin}${generatePanelPath(building.nome, buildingCode)}`;
+                  const url = generatePublicUrl(generatePanelPath(building.nome, buildingCode));
                   navigator.clipboard.writeText(url);
                   import('sonner').then(({ toast }) => {
                     toast.success('Link Limpo Copiado!', {
@@ -287,7 +288,7 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                 variant="outline"
                 onClick={() => {
                   const buildingCode = building.codigo_predio || '000';
-                  const url = `${window.location.origin}${generatePanelPath(building.nome, buildingCode)}`;
+                  const url = generatePublicUrl(generatePanelPath(building.nome, buildingCode));
                   window.open(url, '_blank');
                 }}
                 title="Abrir preview em nova aba"
@@ -300,7 +301,7 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               size="sm" 
               onClick={() => {
                 const buildingCode = building.codigo_predio || '000';
-                const url = `${window.location.origin}${generateEmbedPath(building.nome, buildingCode)}`;
+                const url = generatePublicUrl(generateEmbedPath(building.nome, buildingCode));
                 const embedCode = `<iframe src="${url}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>`;
                 navigator.clipboard.writeText(embedCode);
                 import('sonner').then(({ toast }) => {
@@ -330,7 +331,7 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                     building_id: building.id,
                     building_completo: JSON.stringify(building, null, 2)
                   });
-                  const url = `${window.location.origin}${generateCommercialPath(buildingName, buildingCode)}`;
+                  const url = generatePublicUrl(generateCommercialPath(buildingName, buildingCode));
                   console.log('🌐 [LINK COMERCIAL] URL final gerada:', url);
                   navigator.clipboard.writeText(url);
                   import('sonner').then(({ toast }) => {
@@ -351,7 +352,7 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                 onClick={() => {
                   const buildingCode = building.codigo_predio || '000';
                   const buildingName = building.nome || 'predio';
-                  const url = `${window.location.origin}${generateCommercialPath(buildingName, buildingCode)}`;
+                  const url = generatePublicUrl(generateCommercialPath(buildingName, buildingCode));
                   window.open(url, '_blank');
                 }}
                 title="Abrir preview em nova aba"

@@ -5,6 +5,7 @@ import { Eye, Edit, Camera, Trash2, Monitor, Video, Code } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import VideosPopover from '../VideosPopover';
 import { generateCommercialPath, generatePanelPath, generateEmbedPath } from '@/utils/buildingSlugUtils';
+import { generatePublicUrl } from '@/config/domain';
 
 interface BuildingActionsProps {
   building: any;
@@ -42,7 +43,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                 <button
                   onClick={() => {
                     const buildingCode = building.codigo_predio || '000';
-                    const url = `${window.location.origin}${generatePanelPath(building.nome, buildingCode)}`;
+                    const url = generatePublicUrl(generatePanelPath(building.nome, buildingCode));
                     window.open(url, '_blank');
                     navigator.clipboard.writeText(url);
                     toast({
@@ -60,7 +61,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                 <button
                   onClick={() => {
                     const buildingCode = building.codigo_predio || '000';
-                    const url = `${window.location.origin}${generateEmbedPath(building.nome, buildingCode)}`;
+                    const url = generatePublicUrl(generateEmbedPath(building.nome, buildingCode));
                     const embedCode = `<iframe src="${url}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>`;
                     navigator.clipboard.writeText(embedCode);
                     toast({
@@ -76,7 +77,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                 <button
                   onClick={() => {
                     const buildingCode = building.codigo_predio || '000';
-                    const url = `${window.location.origin}${generateCommercialPath(building.nome, buildingCode)}`;
+                    const url = generatePublicUrl(generateCommercialPath(building.nome, buildingCode));
                     window.open(url, '_blank');
                     navigator.clipboard.writeText(url);
                     toast({
