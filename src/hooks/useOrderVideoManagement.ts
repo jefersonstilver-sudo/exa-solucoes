@@ -295,30 +295,26 @@ export const useOrderVideoManagement = (orderId: string) => {
 
       // 3) Usar videoBaseService que contém toda lógica de fallback e sync com API externa
       console.log('⏳ [ORDER_VIDEO] Chamando setBaseVideo do videoBaseService...');
-      const success = await setBaseVideoService(slotId);
+      const result = await setBaseVideoService(slotId);
 
-      // Criar objeto de resposta detalhado
-      const apiResponse: any = {
-        success,
-        timestamp: new Date().toISOString(),
-        pedido_video_id: slotId,
-        video_id: newPv?.video_id,
-        message: success ? 'Vídeo definido como principal e sincronizado com API externa' : 'Falha ao definir vídeo como principal'
-      };
+      // result agora é um objeto com: success, timestamp, message, api_sync_report, etc
+      console.log('📦 [ORDER_VIDEO] Resultado do setBaseVideoService:', result);
 
-      if (!success) {
-        console.error('❌ [ORDER_VIDEO] Falha ao definir vídeo base');
-        toast.error('❌ Não foi possível definir o vídeo como principal');
-        return { success: false, response: apiResponse };
+      if (!result.success) {
+        console.error('❌ [ORDER_VIDEO] Falha ao definir vídeo base:', result);
+        toast.error(result.message || '❌ Não foi possível definir o vídeo como principal');
+        return { success: false, response: result };
       }
 
       console.log('✅ [ORDER_VIDEO] Vídeo base definido com sucesso e API externa sincronizada');
+      console.log('📊 [ORDER_VIDEO] Relatório da API:', result.api_sync_report);
 
       console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
       refreshSlots();
       toast.success('✅ Vídeo definido como principal!');
       
-      return { success: true, response: apiResponse };
+      // Retornar o resultado completo com relatório da API
+      return { success: true, response: result };
     } catch (error) {
       console.error('💥 [ORDER_VIDEO] Erro ao definir vídeo base:', error);
       console.error('💥 [ORDER_VIDEO] Stack:', (error as Error)?.stack);

@@ -13,20 +13,38 @@ const getFileNameWithoutExtension = (url: string): string => {
 };
 
 /**
+ * Resultado de uma chamada individual à API externa
+ */
+interface APICallResult {
+  buildingId: string;
+  clientId: string;
+  url: string;
+  videoFileName: string;
+  isActive: boolean;
+  success: boolean;
+  status?: number;
+  statusText?: string;
+  responseBody?: any;
+  error?: string;
+  timestamp: string;
+}
+
+/**
  * Sincroniza o status de exibição de um vídeo com a API externa
- * 🔥 NUNCA retorna sucesso sem verificar a resposta REAL da API
+ * 🔥 RETORNA resultado detalhado de cada chamada
  */
 const syncVideoWithExternalAPI = async (
   buildingIds: string[],
   videoFileName: string,
   isActive: boolean
-): Promise<void> => {
+): Promise<APICallResult[]> => {
   const API_BASE_URL = 'http://15.228.8.3:8000';
+  const results: APICallResult[] = [];
   
   // 🔒 VALIDAÇÃO DE ENTRADA
   if (!buildingIds || buildingIds.length === 0) {
     console.warn('⚠️ [EXTERNAL_API] Lista de prédios vazia, nada a fazer');
-    return;
+    return results;
   }
   
   if (!videoFileName || videoFileName.trim() === '') {
@@ -45,11 +63,23 @@ const syncVideoWithExternalAPI = async (
   for (const buildingId of buildingIds) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    const startTime = Date.now();
+    
+    const callResult: APICallResult = {
+      buildingId,
+      clientId: buildingId.slice(0, 4),
+      url: '',
+      videoFileName,
+      isActive,
+      success: false,
+      timestamp: new Date().toISOString()
+    };
     
     try {
       // Extrair os 4 primeiros dígitos do UUID do prédio
       const clientId = buildingId.slice(0, 4);
       const url = `${API_BASE_URL}/ativo/${clientId}`;
+      callResult.url = url;
       
       const payload = {
         titulo: videoFileName,
@@ -84,6 +114,10 @@ const syncVideoWithExternalAPI = async (
       });
       
       clearTimeout(timeoutId);
+      const elapsed = Date.now() - startTime;
+      
+      callResult.status = response.status;
+      callResult.statusText = response.statusText;
       
       // 📥 LOG AO RECEBER RESPOSTA
       console.log(`📥 [EXTERNAL_API] RESPOSTA RECEBIDA:`, {
@@ -92,12 +126,16 @@ const syncVideoWithExternalAPI = async (
         status: response.status,
         statusText: response.statusText,
         ok: response.ok,
+        elapsed: `${elapsed}ms`,
         timestamp: new Date().toISOString()
       });
       
       // 🔥 NUNCA ASSUMIR SUCESSO SEM VERIFICAR
       if (!response.ok) {
         const errorBody = await response.text();
+        callResult.error = `Status ${response.status}: ${errorBody}`;
+        callResult.responseBody = errorBody;
+        
         console.error(`❌ [EXTERNAL_API] ERRO NA API:`, {
           buildingId,
           clientId,
@@ -114,41 +152,44 @@ const syncVideoWithExternalAPI = async (
           status: response.status,
           errorBody
         });
-        
-        throw new Error(`API retornou status ${response.status}: ${errorBody}`);
-      }
-      
-      // 📦 LER E LOGAR O CORPO DA RESPOSTA
-      let responseBody = null;
-      try {
-        const contentType = response.headers.get('content-type');
-        if (contentType?.includes('application/json')) {
-          responseBody = await response.json();
-        } else {
-          responseBody = await response.text();
+      } else {
+        // 📦 LER E LOGAR O CORPO DA RESPOSTA
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType?.includes('application/json')) {
+            callResult.responseBody = await response.json();
+          } else {
+            callResult.responseBody = await response.text();
+          }
+          
+          callResult.success = true;
+          
+          console.log(`📦 [EXTERNAL_API] CORPO DA RESPOSTA:`, {
+            buildingId,
+            clientId,
+            responseBody: callResult.responseBody,
+            timestamp: new Date().toISOString()
+          });
+        } catch (parseError) {
+          console.warn(`⚠️ [EXTERNAL_API] Não foi possível parsear resposta:`, parseError);
+          callResult.responseBody = 'Could not parse response';
+          callResult.success = true; // Status foi ok, mesmo que não conseguimos parsear
         }
-        console.log(`📦 [EXTERNAL_API] CORPO DA RESPOSTA:`, {
-          buildingId,
-          clientId,
-          responseBody,
+        
+        // ✅ CONFIRMAR SUCESSO EXPLICITAMENTE
+        console.log(`✅ [EXTERNAL_API] SUCESSO CONFIRMADO para ${buildingId}/${clientId}`, {
+          responseBody: callResult.responseBody,
+          elapsed: `${elapsed}ms`,
           timestamp: new Date().toISOString()
         });
-      } catch (parseError) {
-        console.warn(`⚠️ [EXTERNAL_API] Não foi possível parsear resposta:`, parseError);
+        
+        videoLogger.logAPICall(clientId, url, payload, {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          body: callResult.responseBody
+        });
       }
-      
-      // ✅ CONFIRMAR SUCESSO EXPLICITAMENTE
-      console.log(`✅ [EXTERNAL_API] SUCESSO CONFIRMADO para ${buildingId}/${clientId}`, {
-        responseBody,
-        timestamp: new Date().toISOString()
-      });
-      
-      videoLogger.logAPICall(clientId, url, payload, {
-        ok: response.ok,
-        status: response.status,
-        statusText: response.statusText,
-        body: responseBody
-      });
       
       // ⏱️ DELAY ENTRE REQUISIÇÕES
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -157,9 +198,11 @@ const syncVideoWithExternalAPI = async (
       clearTimeout(timeoutId);
       
       if (error.name === 'AbortError') {
+        callResult.error = 'Request timeout after 30s';
         console.error(`⏱️ [EXTERNAL_API] TIMEOUT após 30s para ${buildingId}`);
         videoLogger.log('error', 'EXTERNAL_API', 'Request timeout', { buildingId });
       } else {
+        callResult.error = error.message || 'Unknown error';
         console.error(`💥 [EXTERNAL_API] ERRO AO CHAMAR API para ${buildingId}:`, {
           error: error.message,
           stack: error.stack,
@@ -172,12 +215,19 @@ const syncVideoWithExternalAPI = async (
           error: error.message 
         });
       }
-      
-      // Continuar com próximo prédio mesmo em caso de erro
     }
+    
+    results.push(callResult);
   }
   
-  console.log(`🏁 [EXTERNAL_API] Sincronização completa finalizada para ${buildingIds.length} prédios`);
+  console.log(`🏁 [EXTERNAL_API] Sincronização finalizada:`, {
+    total: results.length,
+    sucessos: results.filter(r => r.success).length,
+    falhas: results.filter(r => !r.success).length,
+    resultados: results
+  });
+  
+  return results;
 };
 
 /**
@@ -271,7 +321,29 @@ const performExternalAPISync = async (slotId: string): Promise<void> => {
   }
 };
 
-export const setBaseVideo = async (slotId: string): Promise<boolean> => {
+export const setBaseVideo = async (slotId: string): Promise<{
+  success: boolean;
+  timestamp: string;
+  pedido_video_id?: string;
+  video_id?: string;
+  message: string;
+  api_sync_report?: {
+    total_api_calls: number;
+    successful_calls: number;
+    failed_calls: number;
+    success_rate: string;
+    deactivations: {
+      total: number;
+      successful: number;
+      details: APICallResult[];
+    };
+    activations: {
+      total: number;
+      successful: number;
+      details: APICallResult[];
+    };
+  };
+}> => {
   videoLogger.logProcessStart('SET_BASE_VIDEO', { slotId });
   
   try {
@@ -279,7 +351,7 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
     videoLogger.setContext({ slotId });
 
     // Helper fallback direto no banco quando RPCs falharem
-    const fallbackDirectUpdate = async (): Promise<boolean> => {
+    const fallbackDirectUpdate = async () => {
       console.warn('🛟 [VIDEO_BASE] Iniciando fallback direto no banco para set base video');
 
       // 1) Buscar dados do slot (pedido_id, video_id, status)
@@ -302,12 +374,20 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
 
       if (pvErr || !pv) {
         console.error('❌ [VIDEO_BASE] Fallback: erro ao buscar slot:', pvErr);
-        return false;
+        return {
+          success: false,
+          timestamp: new Date().toISOString(),
+          message: 'Erro ao buscar dados do slot'
+        };
       }
 
       if (pv.approval_status !== 'approved') {
         console.error('❌ [VIDEO_BASE] Fallback: vídeo não aprovado:', pv.approval_status);
-        return false;
+        return {
+          success: false,
+          timestamp: new Date().toISOString(),
+          message: 'Vídeo não está aprovado'
+        };
       }
 
       // 2) Buscar lista de prédios do pedido
@@ -342,7 +422,11 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
 
       if (clearErr) {
         console.error('❌ [VIDEO_BASE] Fallback: erro ao desmarcar vídeos:', clearErr);
-        return false;
+        return {
+          success: false,
+          timestamp: new Date().toISOString(),
+          message: 'Erro ao desmarcar vídeos'
+        };
       }
 
       // 5) Marcar este slot como base, selecionado e ativo
@@ -353,7 +437,11 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
 
       if (upErr) {
         console.error('❌ [VIDEO_BASE] Fallback: erro ao marcar vídeo como base:', upErr);
-        return false;
+        return {
+          success: false,
+          timestamp: new Date().toISOString(),
+          message: 'Erro ao marcar vídeo como principal'
+        };
       }
 
       // 6) Desativar regras de agendamento para este vídeo (se existirem)
@@ -418,7 +506,11 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       }
 
       console.log('✅ [VIDEO_BASE] Fallback direto concluído com sucesso');
-      return true;
+      return {
+        success: true,
+        timestamp: new Date().toISOString(),
+        message: 'Vídeo definido como principal (fallback direto)'
+      };
     };
 
     console.log('📞 [VIDEO_BASE] Chamando RPC set_base_video_enhanced:', { slotId });
@@ -458,7 +550,11 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
           console.log('🔄 [VIDEO_BASE] Sincronizando com API externa após fallback legacy...');
           await performExternalAPISync(slotId);
           console.log('✅ [VIDEO_BASE] Fallback legacy + API externa concluído');
-          return true;
+          return {
+            success: true,
+            timestamp: new Date().toISOString(),
+            message: 'Vídeo definido como principal (fallback legacy)'
+          };
         }
 
         console.warn('🛟 [VIDEO_BASE] Legacy retornou falso. Tentando fallback direto.');
@@ -486,10 +582,7 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       });
       // Tentar fallback direto para garantir troca
       console.log('🛟 [VIDEO_BASE] Tentando fallback direto...');
-      const ok = await fallbackDirectUpdate();
-      console.log('📊 [VIDEO_BASE] Resultado do fallback:', ok);
-      if (ok) return true;
-      return false;
+      return await fallbackDirectUpdate();
     }
 
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
@@ -524,7 +617,11 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         console.error('❌ [VIDEO_BASE] ERRO ao buscar slot selecionado:', slotError);
         videoLogger.log('error', 'DATA_FETCH', 'Failed to fetch selected slot', { slotError });
         console.error('🚨 [VIDEO_BASE] NÃO FOI POSSÍVEL CHAMAR API EXTERNA - Dados do slot não encontrados');
-        return true;
+        return {
+          success: false,
+          timestamp: new Date().toISOString(),
+          message: 'Erro ao buscar dados do slot - API externa não foi chamada'
+        };
       }
       
       console.log('✅ [VIDEO_BASE] Slot encontrado:', {
@@ -562,7 +659,11 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         console.error('❌ [VIDEO_BASE] ERRO: Lista de prédios não encontrada:', pedidoError);
         videoLogger.log('warn', 'DATA_FETCH', 'No buildings found', { pedidoError });
         console.error('🚨 [VIDEO_BASE] NÃO FOI POSSÍVEL CHAMAR API EXTERNA - Lista de prédios vazia');
-        return true;
+        return {
+          success: false,
+          timestamp: new Date().toISOString(),
+          message: 'Lista de prédios não encontrada - API externa não foi chamada'
+        };
       }
       
       const buildingIds = pedido.lista_predios as string[];
@@ -612,6 +713,8 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         videosToDeactivate: (allVideos?.length || 0) - 1
       });
       
+      const deactivationResults: APICallResult[] = [];
+      
       if (allVideos && allVideos.length > 0) {
         console.log(`🔄 [VIDEO_BASE] Processando ${allVideos.length} vídeos para desativação...`);
         for (const video of allVideos) {
@@ -626,8 +729,9 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
             });
             
             console.log(`📡 [VIDEO_BASE] Chamando API externa para DESATIVAR: ${videoFileName}`);
-            await syncVideoWithExternalAPI(buildingIds, videoFileName, false);
-            console.log(`✅ [VIDEO_BASE] Vídeo ${videoFileName} desativado com sucesso`);
+            const results = await syncVideoWithExternalAPI(buildingIds, videoFileName, false);
+            deactivationResults.push(...results);
+            console.log(`✅ [VIDEO_BASE] Vídeo ${videoFileName} processado: ${results.filter(r => r.success).length}/${results.length} sucessos`);
           }
         }
       } else {
@@ -643,25 +747,84 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       
       console.log(`🟢 [VIDEO_BASE] Ativando vídeo selecionado: "${selectedVideoFileName}"`);
       console.log(`📡 [VIDEO_BASE] Chamando API externa para ATIVAR: ${selectedVideoFileName}`);
-      await syncVideoWithExternalAPI(buildingIds, selectedVideoFileName, true);
-      console.log(`✅ [VIDEO_BASE] Vídeo ${selectedVideoFileName} ativado com sucesso`);
+      const activationResults = await syncVideoWithExternalAPI(buildingIds, selectedVideoFileName, true);
+      console.log(`✅ [VIDEO_BASE] Vídeo ${selectedVideoFileName} processado: ${activationResults.filter(r => r.success).length}/${activationResults.length} sucessos`);
       
-      console.log('🎉 [VIDEO_BASE] === SINCRONIZAÇÃO COM API EXTERNA CONCLUÍDA COM SUCESSO ===');
-      videoLogger.log('info', 'API_SYNC_PHASE', 'Sync completed successfully', {});
+      // 📊 RELATÓRIO COMPLETO
+      const allResults = [...deactivationResults, ...activationResults];
+      const totalCalls = allResults.length;
+      const successfulCalls = allResults.filter(r => r.success).length;
+      const failedCalls = allResults.filter(r => !r.success).length;
+      
+      console.log('🎉 [VIDEO_BASE] === SINCRONIZAÇÃO COM API EXTERNA CONCLUÍDA ===');
+      console.log('📊 [VIDEO_BASE] RELATÓRIO FINAL:', {
+        totalChamadas: totalCalls,
+        sucessos: successfulCalls,
+        falhas: failedCalls,
+        taxaDeSucesso: `${((successfulCalls / totalCalls) * 100).toFixed(1)}%`,
+        desativacoes: deactivationResults.length,
+        ativacoes: activationResults.length
+      });
+      
+      videoLogger.log('info', 'API_SYNC_PHASE', 'Sync completed', {
+        totalCalls,
+        successfulCalls,
+        failedCalls
+      });
+      
+      // 🔥 RETORNAR DADOS REAIS DA API
+      return {
+        success: successfulCalls === totalCalls,
+        timestamp: new Date().toISOString(),
+        pedido_video_id: result.pedido_video_id || slotId,
+        video_id: result.video_id || selectedSlot.video_id,
+        message: successfulCalls === totalCalls 
+          ? 'Vídeo definido como principal e sincronizado com API externa'
+          : `Sincronização parcial: ${successfulCalls}/${totalCalls} chamadas bem-sucedidas`,
+        api_sync_report: {
+          total_api_calls: totalCalls,
+          successful_calls: successfulCalls,
+          failed_calls: failedCalls,
+          success_rate: `${((successfulCalls / totalCalls) * 100).toFixed(1)}%`,
+          deactivations: {
+            total: deactivationResults.length,
+            successful: deactivationResults.filter(r => r.success).length,
+            details: deactivationResults
+          },
+          activations: {
+            total: activationResults.length,
+            successful: activationResults.filter(r => r.success).length,
+            details: activationResults
+          }
+        }
+      };
     } catch (apiError) {
       console.error('💥 [VIDEO_BASE] Erro na sincronização com API externa:', apiError);
       videoLogger.log('error', 'API_SYNC', 'Sync failed with exception', { apiError });
       // Não falhar a operação principal por causa de erro na API externa
+      return {
+        success: false,
+        timestamp: new Date().toISOString(),
+        message: 'Erro ao sincronizar com API externa: ' + (apiError?.message || 'erro desconhecido')
+      };
     }
 
     videoLogger.logProcessEnd('SET_BASE_VIDEO', true);
     videoLogger.clearContext();
-    return true;
+    return {
+      success: false,
+      timestamp: new Date().toISOString(),
+      message: 'Operação não foi executada completamente'
+    };
   } catch (error) {
     console.error('💥 [VIDEO_BASE] Erro geral:', error);
     videoLogger.logProcessEnd('SET_BASE_VIDEO', false, null, error);
     videoLogger.clearContext();
-    return false;
+    return {
+      success: false,
+      timestamp: new Date().toISOString(),
+      message: 'Erro geral: ' + (error?.message || 'erro desconhecido')
+    };
   }
 };
 
