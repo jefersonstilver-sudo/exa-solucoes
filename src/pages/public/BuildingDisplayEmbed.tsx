@@ -143,14 +143,21 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     const handleLoadedData = () => {
       console.log('✅ [EMBED PLAYER] Vídeo carregado');
       setIsReady(true);
+      // Forçar play após carregar
+      video.play()
+        .then(() => console.log('▶️ [EMBED PLAYER] Reprodução iniciada'))
+        .catch(err => console.warn('⚠️ [EMBED PLAYER] Erro ao iniciar:', err));
     };
 
     const handleCanPlay = () => {
-      if (!isReady) {
-        video.play().catch(err => 
-          console.warn('⚠️ [EMBED PLAYER] Autoplay bloqueado:', err)
-        );
-      }
+      video.play()
+        .then(() => console.log('▶️ [EMBED PLAYER] Play executado'))
+        .catch(err => console.warn('⚠️ [EMBED PLAYER] Erro no play:', err));
+    };
+
+    const handlePlaying = () => {
+      console.log('🎬 [EMBED PLAYER] Reproduzindo');
+      setIsReady(true);
     };
 
     const handleTimeUpdate = () => {
@@ -192,6 +199,7 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
 
     video.addEventListener('loadeddata', handleLoadedData);
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('playing', handlePlaying);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('ended', handleEnded);
     video.addEventListener('error', handleError);
@@ -201,6 +209,7 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     return () => {
       video.removeEventListener('loadeddata', handleLoadedData);
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('playing', handlePlaying);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);

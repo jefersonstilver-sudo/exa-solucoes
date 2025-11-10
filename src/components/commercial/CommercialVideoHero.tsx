@@ -47,21 +47,23 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     console.log(`▶️ [VIDEO HERO] Carregando vídeo ${currentIndex + 1}/${videos.length}:`, currentVideo.video_nome);
 
     const handleLoadedData = () => {
-      console.log('✅ [VIDEO HERO] Vídeo carregado e pronto');
+      console.log('✅ [VIDEO HERO] Vídeo carregado');
       setIsReady(true);
+      // Forçar play após carregar
+      video.play()
+        .then(() => console.log('▶️ [VIDEO HERO] Reprodução iniciada automaticamente'))
+        .catch(err => console.warn('⚠️ [VIDEO HERO] Erro ao iniciar:', err));
     };
 
     const handleCanPlay = () => {
-      console.log('🎵 [VIDEO HERO] Vídeo pode ser reproduzido');
-      if (!isReady) {
-        video.play()
-          .then(() => console.log('▶️ [VIDEO HERO] Reprodução iniciada'))
-          .catch(err => console.warn('⚠️ [VIDEO HERO] Autoplay bloqueado:', err));
-      }
+      console.log('🎵 [VIDEO HERO] Pode reproduzir');
+      video.play()
+        .then(() => console.log('▶️ [VIDEO HERO] Play executado'))
+        .catch(err => console.warn('⚠️ [VIDEO HERO] Erro no play:', err));
     };
 
     const handlePlaying = () => {
-      console.log('🎬 [VIDEO HERO] Vídeo reproduzindo');
+      console.log('🎬 [VIDEO HERO] Reproduzindo');
       setIsReady(true);
     };
 

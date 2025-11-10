@@ -234,8 +234,8 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       <main className="fixed inset-0 pt-12 sm:pt-14 md:pt-16 lg:pt-20 overflow-hidden">
         <div className="h-full w-full flex flex-col p-2 sm:p-3 md:p-4 lg:p-6 xl:p-8 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
           
-          {/* 📺 Vídeo principal - adapta de 60% a 75% da altura */}
-          <div className="flex-[65] md:flex-[70] lg:flex-[75] min-h-0 w-full">
+          {/* 📺 Vídeo principal - 60% da altura */}
+          <div className="flex-[60] min-h-0 w-full">
             <div className="h-full w-full bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-md rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl border border-white/5 overflow-hidden">
               {videosWithCache.length > 0 ? (
                 <CommercialVideoHero 
@@ -257,8 +257,8 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
             </div>
           </div>
 
-          {/* ⏰🌤️ Relógio e Clima - grid responsivo */}
-          <div className="flex-[35] md:flex-[30] lg:flex-[25] min-h-0 w-full">
+          {/* ⏰🌤️ Relógio e Clima - 40% da altura com grid responsivo */}
+          <div className="flex-[40] min-h-0 w-full">
             <div className="h-full w-full grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
               {/* Relógio */}
               <div className="h-full min-h-0 w-full">
