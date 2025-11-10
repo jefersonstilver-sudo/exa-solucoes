@@ -34,6 +34,27 @@ export const setBaseVideo = async (slotId: string): Promise<{
     const listaPredios = pvData?.pedidos?.lista_predios;
     console.log('🏢 [VIDEO_BASE] Lista de prédios:', listaPredios);
 
+    // 🔥 SEMPRE chamar API externa primeiro, independente de sucesso/falha posterior
+    if (listaPredios && listaPredios.length > 0) {
+      try {
+        const buildingUuid = listaPredios[0];
+        const clientId = String(buildingUuid).substring(0, 4);
+        console.log('📦 [VIDEO_BASE] Invocando notify-active ANTES de qualquer validação', { clientId, buildingUuid });
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('notify-active', {
+          body: { clientId, buildingUuid }
+        });
+        if (fnError) {
+          console.error('❌ [VIDEO_BASE] notify-active erro:', fnError);
+        } else {
+          console.log('✅ [VIDEO_BASE] notify-active sucesso:', fnData);
+        }
+      } catch (apiError) {
+        console.error('⚠️ [VIDEO_BASE] Erro ao invocar edge function:', apiError);
+      }
+    } else {
+      console.warn('⚠️ [VIDEO_BASE] Nenhum prédio encontrado - API externa NÃO será chamada');
+    }
+
     // Helper fallback direto no banco quando RPCs falharem
     const fallbackDirectUpdate = async () => {
       console.warn('🛟 [VIDEO_BASE] Iniciando fallback direto no banco para set base video');
@@ -125,28 +146,6 @@ export const setBaseVideo = async (slotId: string): Promise<{
       }
 
       console.log('✅ [VIDEO_BASE] Fallback: Banco atualizado com sucesso');
-
-      // Chamar Edge Function também no caminho de fallback
-      if (listaPredios && listaPredios.length > 0) {
-        try {
-          const buildingUuid = listaPredios[0];
-          const clientId = String(buildingUuid).substring(0, 4);
-          console.log('📦 [VIDEO_BASE][FB] Invocando notify-active', { clientId, buildingUuid });
-          const { data: fnData, error: fnError } = await supabase.functions.invoke('notify-active', {
-            body: { clientId, buildingUuid }
-          });
-          if (fnError) {
-            console.error('❌ [VIDEO_BASE][FB] notify-active erro:', fnError);
-          } else {
-            console.log('✅ [VIDEO_BASE][FB] notify-active ok:', fnData);
-          }
-        } catch (e) {
-          console.error('⚠️ [VIDEO_BASE][FB] Erro ao invocar edge function:', e);
-        }
-      } else {
-        console.warn('⚠️ [VIDEO_BASE][FB] Nenhum prédio encontrado na lista_predios');
-      }
-
       console.log('✅ [VIDEO_BASE] Fallback direto concluído com sucesso');
       return {
         success: true,
@@ -228,27 +227,6 @@ export const setBaseVideo = async (slotId: string): Promise<{
     }
 
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
-    
-    // Chamar API externa via Edge Function com os 4 primeiros dígitos do UUID do prédio
-    if (listaPredios && listaPredios.length > 0) {
-      try {
-        const buildingUuid = listaPredios[0];
-        const clientId = String(buildingUuid).substring(0, 4);
-        console.log('📦 [VIDEO_BASE] Invocando edge function notify-active', { clientId, buildingUuid });
-        const { data: fnData, error: fnError } = await supabase.functions.invoke('notify-active', {
-          body: { clientId, buildingUuid }
-        });
-        if (fnError) {
-          console.error('❌ [VIDEO_BASE] notify-active erro:', fnError);
-        } else {
-          console.log('✅ [VIDEO_BASE] notify-active ok:', fnData);
-        }
-      } catch (apiError) {
-        console.error('⚠️ [VIDEO_BASE] Erro ao invocar edge function:', apiError);
-      }
-    } else {
-      console.warn('⚠️ [VIDEO_BASE] Nenhum prédio encontrado na lista_predios');
-    }
     
     videoLogger.logProcessEnd('SET_BASE_VIDEO', true);
     videoLogger.clearContext();
