@@ -155,20 +155,15 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     if (!slot.video_data) return null;
     
     const videoId = slot.video_data.id;
-    const isCurrentlyShowing = isVideoCurrentlyDisplaying(videoId);
     
     console.log(`🔍 [SLOT_${slot.slot_position}] Calculando status:`, {
       approvalStatus: slot.approval_status,
-      isCurrentlyShowing,
+      isBaseVideo: slot.is_base_video,
       hasActiveSchedule,
       isActive: slot.is_active,
+      isScheduledActiveNow: isScheduledActiveNow(),
       scheduleRulesCount: slot.schedule_rules?.length || 0
     });
-
-    // Se está sendo exibido atualmente (base video), tem prioridade máxima
-    if (isCurrentlyShowing) {
-      return <Badge className="bg-green-600 text-white">EM EXIBIÇÃO</Badge>;
-    }
 
     if (slot.approval_status === 'rejected') {
       return <Badge variant="destructive">REJEITADO</Badge>;
@@ -179,13 +174,25 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
 
     if (slot.approval_status === 'approved') {
-      // Se tem agendamento ativo e NÃO está em exibição, mostra AGENDADO
-      if (hasActiveSchedule && !isCurrentlyShowing) {
+      // Vídeo agendado que está ativo AGORA
+      if (hasActiveSchedule && isScheduledActiveNow()) {
+        console.log(`✅ [SLOT_${slot.slot_position}] EM EXIBIÇÃO (agendado ativo)`);
+        return <Badge className="bg-green-600 text-white">EM EXIBIÇÃO</Badge>;
+      }
+      
+      // Vídeo base (principal) - sempre em exibição quando não há agendamento ativo
+      if (slot.is_base_video) {
+        console.log(`✅ [SLOT_${slot.slot_position}] EM EXIBIÇÃO (vídeo principal)`);
+        return <Badge className="bg-green-600 text-white">EM EXIBIÇÃO</Badge>;
+      }
+      
+      // Tem agendamento mas não está no horário ativo
+      if (hasActiveSchedule) {
         console.log(`✅ [SLOT_${slot.slot_position}] Status AGENDADO aplicado`);
         return <Badge className="bg-blue-600 text-white">AGENDADO</Badge>;
       }
       
-      // Apenas aprovado (não mostrar ATIVO incorretamente)
+      // Apenas aprovado
       return <Badge variant="outline" className="text-green-600 border-green-600">APROVADO</Badge>;
     }
 
@@ -296,20 +303,36 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           <div className="flex items-center space-x-3">
             <h3 className="font-semibold text-lg text-gray-900">Slot {slot.slot_position}</h3>
             
-            {/* Botão Vídeo Principal */}
-            {slot.video_data && slot.approval_status === 'approved' && totalApprovedVideos >= 2 && (
+            {/* Badge Vídeo Principal com Tooltip */}
+            {slot.video_data && slot.approval_status === 'approved' && slot.is_base_video && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center space-x-1 bg-yellow-500 text-white px-3 py-1 rounded-md text-xs font-medium cursor-help">
+                      <Star className="h-3 w-3 fill-current" />
+                      <span>Vídeo Principal</span>
+                      <AlertCircle className="h-3 w-3" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="text-sm">
+                      Este é o vídeo sempre em exibição quando não houver nenhuma outra programação em andamento. É o vídeo padrão dos seus painéis.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
+            {/* Botão para trocar vídeo principal */}
+            {slot.video_data && slot.approval_status === 'approved' && !slot.is_base_video && totalApprovedVideos >= 2 && (
               <Button
-                variant={slot.is_base_video ? "default" : "outline"}
+                variant="outline"
                 size="sm"
                 onClick={() => slot.id && onSetBaseVideo && onSetBaseVideo(slot.id)}
-                className={`text-xs px-3 py-1 h-7 ${
-                  slot.is_base_video 
-                    ? 'bg-yellow-500 text-white hover:bg-yellow-600 border-yellow-500' 
-                    : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                }`}
-                title={slot.is_base_video ? "Este é o vídeo principal" : "Clique para definir como vídeo principal"}
+                className="text-xs px-3 py-1 h-7 border-gray-300 text-gray-600 hover:bg-gray-50"
+                title="Clique para definir como vídeo principal"
               >
-                Vídeo Principal
+                Definir como Principal
               </Button>
             )}
             
@@ -348,14 +371,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 controls={true}
                 onDownload={() => handleDownload(slot.video_data!.url, slot.video_data!.nome)}
               />
-              {slot.is_base_video && (
-                <div className="absolute top-2 left-2 z-10">
-                  <Badge className="bg-yellow-500 text-white flex items-center space-x-1">
-                    <Star className="h-3 w-3 fill-current" />
-                    <span>SELECIONADO</span>
-                  </Badge>
-                </div>
-              )}
               {isBlocked && (
                 <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
                   <div className="text-center text-white">

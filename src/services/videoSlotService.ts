@@ -38,8 +38,8 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
         return null;
       }
 
-      // Buscar regras de agendamento diretamente por video_id e slot_position
-      console.log(`🔍 [VIDEO_SLOTS] Buscando regras para video ${pv.video_id} slot ${pv.slot_position}`);
+      // Buscar regras de agendamento diretamente por video_id
+      console.log(`🔍 [VIDEO_SLOTS] Buscando regras para video ${pv.video_id}`);
       
       const { data: videoSchedules, error: scheduleError } = await supabase
         .from('campaign_video_schedules')
@@ -56,8 +56,7 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
             is_all_day
           )
         `)
-        .eq('video_id', pv.video_id)
-        .eq('slot_position', pv.slot_position);
+        .eq('video_id', pv.video_id);
 
       let scheduleRules = [];
       if (scheduleError) {
@@ -71,7 +70,7 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
         console.log(`📅 [VIDEO_SLOTS] Total de regras ativas encontradas para video ${pv.video_id}:`, scheduleRules.length);
         console.log(`📅 [VIDEO_SLOTS] Regras detalhadas:`, scheduleRules);
       } else {
-        console.log(`📭 [VIDEO_SLOTS] Nenhum schedule encontrado para video ${pv.video_id} slot ${pv.slot_position}`);
+        console.log(`📭 [VIDEO_SLOTS] Nenhum schedule encontrado para video ${pv.video_id}`);
       }
 
       console.log(`✅ [VIDEO_SLOTS] Video carregado:`, video);

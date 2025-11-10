@@ -88,6 +88,16 @@ export const VideoWeeklySchedule: React.FC<VideoWeeklyScheduleProps> = ({ videoS
     slot.approval_status === 'approved' && slot.video_data
   );
 
+  console.log('📊 [WEEKLY_SCHEDULE] Dados recebidos:', {
+    totalSlots: videoSlots.length,
+    approvedVideos: approvedVideos.length,
+    approvedVideosDetails: approvedVideos.map(v => ({
+      nome: v.video_data?.nome,
+      scheduleRules: v.schedule_rules?.length || 0,
+      rules: v.schedule_rules
+    }))
+  });
+
   // Obter vídeo base
   const baseVideo = approvedVideos.find(slot => slot.is_base_video);
   
