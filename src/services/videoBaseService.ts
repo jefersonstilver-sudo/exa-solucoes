@@ -78,7 +78,17 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       // 1) Buscar dados do slot (pedido_id, video_id, status)
       const { data: pv, error: pvErr } = await supabase
         .from('pedido_videos')
-        .select('id, pedido_id, video_id, slot_position, approval_status')
+        .select(`
+          id, 
+          pedido_id, 
+          video_id, 
+          slot_position, 
+          approval_status,
+          videos (
+            id,
+            nome
+          )
+        `)
         .eq('id', slotId)
         .single();
 
@@ -92,19 +102,41 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         return false;
       }
 
-      // 2) Desmarcar outros vídeos base e selecionados do mesmo pedido
+      // 2) Buscar lista de prédios do pedido
+      const { data: pedido, error: pedidoError } = await supabase
+        .from('pedidos')
+        .select('lista_predios')
+        .eq('id', pv.pedido_id)
+        .single();
+
+      const buildingIds = (pedido?.lista_predios as string[]) || [];
+      console.log('🏢 [VIDEO_BASE] Fallback: Prédios do pedido:', buildingIds);
+
+      // 3) Buscar TODOS os vídeos do pedido (para desativar na API externa)
+      const { data: allVideos } = await supabase
+        .from('pedido_videos')
+        .select(`
+          id,
+          video_id,
+          videos (
+            id,
+            nome
+          )
+        `)
+        .eq('pedido_id', pv.pedido_id);
+
+      // 4) PRIMEIRO: Desmarcar TODOS os vídeos do pedido no banco
       const { error: clearErr } = await supabase
         .from('pedido_videos')
         .update({ is_base_video: false, selected_for_display: false, updated_at: new Date().toISOString() })
-        .eq('pedido_id', pv.pedido_id)
-        .neq('id', slotId);
+        .eq('pedido_id', pv.pedido_id);
 
       if (clearErr) {
-        console.error('❌ [VIDEO_BASE] Fallback: erro ao desmarcar outros vídeos:', clearErr);
+        console.error('❌ [VIDEO_BASE] Fallback: erro ao desmarcar vídeos:', clearErr);
         return false;
       }
 
-      // 3) Marcar este slot como base, selecionado e ativo
+      // 5) Marcar este slot como base, selecionado e ativo
       const { error: upErr } = await supabase
         .from('pedido_videos')
         .update({ is_base_video: true, selected_for_display: true, is_active: true, updated_at: new Date().toISOString() })
@@ -115,7 +147,7 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         return false;
       }
 
-      // 4) Desativar regras de agendamento para este vídeo (se existirem)
+      // 6) Desativar regras de agendamento para este vídeo (se existirem)
       const { data: scheds, error: schedFetchErr } = await supabase
         .from('campaign_video_schedules')
         .select('id')
@@ -132,6 +164,36 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
           .eq('is_active', true);
         if (schedUpdErr) {
           console.warn('⚠️ [VIDEO_BASE] Fallback: não foi possível desativar algumas regras:', schedUpdErr);
+        }
+      }
+
+      console.log('✅ [VIDEO_BASE] Fallback: Banco atualizado com sucesso');
+
+      // 7) 🔄 Sincronizar com API externa
+      if (buildingIds.length > 0) {
+        try {
+          console.log('🌐 [VIDEO_BASE] Fallback: Sincronizando com API externa...');
+          
+          // PRIMEIRO: Desativar TODOS os outros vídeos na API externa
+          if (allVideos && allVideos.length > 0) {
+            for (const video of allVideos) {
+              if (video.id !== slotId) {
+                const videoTitle = (video.videos as any)?.nome || 'Video sem titulo';
+                console.log(`🔄 [VIDEO_BASE] Fallback: Desativando vídeo na API: ${videoTitle}`);
+                await syncVideoWithExternalAPI(buildingIds, videoTitle, false);
+              }
+            }
+          }
+          
+          // DEPOIS: Ativar o vídeo selecionado na API externa
+          const selectedVideoTitle = (pv.videos as any)?.nome || 'Video sem titulo';
+          console.log(`🔄 [VIDEO_BASE] Fallback: Ativando vídeo na API: ${selectedVideoTitle}`);
+          await syncVideoWithExternalAPI(buildingIds, selectedVideoTitle, true);
+          
+          console.log('✅ [VIDEO_BASE] Fallback: Sincronização com API externa concluída');
+        } catch (apiError) {
+          console.error('💥 [VIDEO_BASE] Fallback: Erro na API externa:', apiError);
+          // Não falhar a operação por causa de erro na API externa
         }
       }
 
