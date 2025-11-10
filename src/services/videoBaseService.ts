@@ -34,7 +34,12 @@ const syncVideoWithExternalAPI = async (
       });
       
       if (!response.ok) {
-        console.error(`❌ [EXTERNAL_API] Erro ao sincronizar para prédio ${buildingId}:`, response.status, response.statusText);
+        const errorBody = await response.text();
+        console.error(`❌ [EXTERNAL_API] Erro ao sincronizar para prédio ${buildingId}:`);
+        console.error(`   Status: ${response.status} ${response.statusText}`);
+        console.error(`   URL: ${url}`);
+        console.error(`   Payload enviado:`, JSON.stringify(payload, null, 2));
+        console.error(`   Response body:`, errorBody);
       } else {
         console.log(`✅ [EXTERNAL_API] Vídeo sincronizado com sucesso para prédio ${buildingId}`);
       }
