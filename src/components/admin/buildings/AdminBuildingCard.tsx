@@ -256,11 +256,12 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               onClick={() => {
                 const buildingCode = building.codigo_predio || '000';
                 const url = `${window.location.origin}${generatePanelPath(building.nome, buildingCode)}`;
+                window.open(url, '_blank');
                 navigator.clipboard.writeText(url);
                 import('@/hooks/use-toast').then(({ toast }) => {
                   toast({
-                    title: "Link Limpo copiado!",
-                    description: `${url}`,
+                    title: "Link Limpo aberto!",
+                    description: "Link copiado para área de transferência",
                   });
                 });
               }}
@@ -297,11 +298,12 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               onClick={() => {
                 const buildingCode = building.codigo_predio || '000';
                 const url = `${window.location.origin}${generateCommercialPath(building.nome, buildingCode)}`;
+                window.open(url, '_blank');
                 navigator.clipboard.writeText(url);
                 import('@/hooks/use-toast').then(({ toast }) => {
                   toast({
-                    title: "Link Comercial copiado!",
-                    description: `${url}`,
+                    title: "Link Comercial aberto!",
+                    description: "Link copiado para área de transferência",
                   });
                 });
               }}

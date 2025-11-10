@@ -43,10 +43,11 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                   onClick={() => {
                     const buildingCode = building.codigo_predio || '000';
                     const url = `${window.location.origin}${generatePanelPath(building.nome, buildingCode)}`;
+                    window.open(url, '_blank');
                     navigator.clipboard.writeText(url);
                     toast({
-                      title: "Link Limpo copiado!",
-                      description: `${url}`,
+                      title: "Link Limpo aberto!",
+                      description: "Link copiado para área de transferência",
                     });
                   }}
                   className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white rounded transition-all font-semibold"
@@ -76,10 +77,11 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                   onClick={() => {
                     const buildingCode = building.codigo_predio || '000';
                     const url = `${window.location.origin}${generateCommercialPath(building.nome, buildingCode)}`;
+                    window.open(url, '_blank');
                     navigator.clipboard.writeText(url);
                     toast({
-                      title: "Link Comercial copiado!",
-                      description: `${url}`,
+                      title: "Link Comercial aberto!",
+                      description: "Link copiado para área de transferência",
                     });
                   }}
                   className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded transition-all font-semibold"
