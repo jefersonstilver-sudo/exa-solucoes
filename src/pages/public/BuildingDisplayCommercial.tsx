@@ -1,13 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
+import { supabase } from '@/integrations/supabase/client';
+import exaLogo from '@/assets/exa-logo.png';
 
 const BuildingDisplayCommercial = () => {
   const { buildingId } = useParams<{ buildingId: string }>();
   const { videos: activeVideos, loading } = useBuildingActiveVideos(buildingId || '');
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
+  const [buildingName, setBuildingName] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Buscar nome do prédio
+  useEffect(() => {
+    const fetchBuildingName = async () => {
+      if (!buildingId) return;
+      
+      const { data, error } = await supabase
+        .from('buildings')
+        .select('nome')
+        .eq('id', buildingId)
+        .single();
+      
+      if (data && !error) {
+        setBuildingName(data.nome);
+      }
+    };
+
+    fetchBuildingName();
+  }, [buildingId]);
 
   // Auto-avançar com transição suave
   useEffect(() => {
@@ -48,51 +70,29 @@ const BuildingDisplayCommercial = () => {
       {/* Header fixo premium com logo EXA */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 shadow-2xl">
         <div className="container mx-auto px-8 h-20 flex items-center justify-between">
-          {/* Logo EXA com efeito brilhante */}
+          {/* Logo EXA real */}
           <div className="flex items-center gap-4">
-            <div className="relative">
+            <div className="relative h-12 w-auto">
               {/* Glow background */}
-              <div className="absolute inset-0 blur-xl bg-white/30 rounded-full scale-150" />
+              <div className="absolute inset-0 blur-xl bg-white/40 rounded-full scale-150" />
               
-              {/* Logo */}
-              <svg viewBox="0 0 100 35" className="h-12 w-auto relative z-10">
-                <defs>
-                  <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 1 }} />
-                    <stop offset="50%" style={{ stopColor: '#ffffff', stopOpacity: 0.95 }} />
-                    <stop offset="100%" style={{ stopColor: '#ffffff', stopOpacity: 1 }} />
-                  </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-                <text 
-                  x="10" 
-                  y="24" 
-                  fill="url(#logoGradient)" 
-                  fontSize="28" 
-                  fontWeight="800" 
-                  fontFamily="'Inter', 'Poppins', sans-serif" 
-                  letterSpacing="3"
-                  filter="url(#glow)"
-                >
-                  EXA
-                </text>
-              </svg>
+              {/* Logo real da EXA */}
+              <img 
+                src={exaLogo} 
+                alt="EXA" 
+                className="h-12 w-auto relative z-10 drop-shadow-2xl"
+              />
             </div>
-            
-            {/* Divisor */}
-            <div className="w-px h-10 bg-white/30" />
-            
-            {/* Subtitle */}
-            <span className="text-white text-base font-light tracking-[0.25em] uppercase">
-              Digital Signage
-            </span>
           </div>
+
+          {/* Nome do prédio - centralizado */}
+          {buildingName && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <h1 className="text-white text-xl font-semibold tracking-wide drop-shadow-lg">
+                {buildingName}
+              </h1>
+            </div>
+          )}
         </div>
       </header>
 
