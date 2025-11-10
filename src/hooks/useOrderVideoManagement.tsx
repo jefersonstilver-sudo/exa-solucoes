@@ -229,11 +229,38 @@ export const useOrderVideoManagement = (orderId: string) => {
     }
   };
 
-  // Wrapper para remoção
+  // Wrapper para remoção com validação crítica
   const removeVideo = async (slotId: string) => {
     console.log('🗑️ [useOrderVideoManagement] Removendo vídeo:', { slotId });
     
     try {
+      // Validação: não permitir remover último vídeo aprovado de pedido ativo
+      const approvedVideos = baseHook.videoSlots.filter(
+        slot => slot.approval_status === 'approved' && slot.id !== slotId
+      );
+      
+      if (approvedVideos.length === 0 && orderStatus === 'video_aprovado') {
+        const errorMsg = 'Não é possível remover o último vídeo de um pedido ativo. Adicione outro vídeo primeiro.';
+        console.warn('⚠️ [useOrderVideoManagement]', errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      // Validação backend adicional
+      const { data: canRemove, error: checkError } = await supabase.rpc('can_remove_video', {
+        p_pedido_video_id: slotId
+      });
+
+      if (checkError) {
+        console.error('❌ [useOrderVideoManagement] Erro ao verificar permissão:', checkError);
+        throw new Error('Erro ao verificar se o vídeo pode ser removido');
+      }
+
+      if (!canRemove) {
+        const errorMsg = 'Este vídeo não pode ser removido no momento';
+        console.warn('⚠️ [useOrderVideoManagement]', errorMsg);
+        throw new Error(errorMsg);
+      }
+
       await baseHook.handleRemove(slotId);
       console.log('✅ [useOrderVideoManagement] Vídeo removido com sucesso');
       

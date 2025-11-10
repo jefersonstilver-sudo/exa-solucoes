@@ -101,3 +101,6 @@ verify_jwt = true
 
 [functions.auto-cancel-orders]
 verify_jwt = false
+
+[functions.upload-video-to-external-api]
+verify_jwt = true

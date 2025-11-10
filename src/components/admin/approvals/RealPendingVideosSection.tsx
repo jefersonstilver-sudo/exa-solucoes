@@ -174,19 +174,63 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         }
       }
 
-      // Enviar automaticamente para o webhook após aprovação
+      // Enviar para API externa após aprovação - CRÍTICO
       try {
-        const { sendVideoApprovalToWebhook } = await import('@/services/videoApprovalWebhookService');
-        const webhookSuccess = await sendVideoApprovalToWebhook(videoId);
-        
-        if (webhookSuccess) {
-          toast.success(`✅ Vídeo de ${clientName} aprovado e programação ativada!`);
-        } else {
-          toast.success(`✅ Vídeo de ${clientName} aprovado!`);
+        console.log('📤 [APPROVE] Enviando vídeo para API externa...');
+        const { data: externalApiData, error: externalApiError } = await supabase.functions.invoke(
+          'upload-video-to-external-api',
+          {
+            body: { pedido_video_id: videoId }
+          }
+        );
+
+        if (externalApiError || !externalApiData?.success) {
+          const errorMsg = externalApiData?.error || externalApiError?.message || 'Erro desconhecido';
+          console.error('❌ [APPROVE] Falha na API externa:', errorMsg);
+          
+          // REVERTER APROVAÇÃO - CRÍTICO
+          console.log('🔄 [APPROVE] Revertendo aprovação devido a falha na API externa...');
+          const { error: rejectError } = await supabase.rpc('reject_video', {
+            p_pedido_video_id: videoId,
+            p_approved_by: userData.user?.id,
+            p_rejection_reason: `Erro técnico: Falha ao sincronizar com sistema externo - ${errorMsg}`
+          });
+
+          if (rejectError) {
+            console.error('💥 [APPROVE] Erro ao reverter aprovação:', rejectError);
+            toast.error('Erro crítico: Falha na aprovação e na reversão. Contate o suporte.');
+          } else {
+            console.log('✅ [APPROVE] Aprovação revertida com sucesso');
+            toast.error(`Erro ao aprovar: ${errorMsg}. Aprovação foi revertida.`);
+          }
+          
+          onRefresh();
+          fetchPendingVideos();
+          return; // Bloquear continuação
         }
-      } catch (webhookError) {
-        console.error('⚠️ [APPROVE] Erro ao enviar webhook:', webhookError);
-        toast.success(`✅ Vídeo de ${clientName} aprovado!`);
+
+        console.log('✅ [APPROVE] Vídeo enviado para API externa com sucesso:', externalApiData);
+        toast.success(`✅ Vídeo de ${clientName} aprovado e sincronizado!`);
+        
+      } catch (externalError: any) {
+        console.error('💥 [APPROVE] Erro ao processar API externa:', externalError);
+        
+        // REVERTER APROVAÇÃO - CRÍTICO
+        console.log('🔄 [APPROVE] Revertendo aprovação devido a exceção...');
+        const { error: rejectError } = await supabase.rpc('reject_video', {
+          p_pedido_video_id: videoId,
+          p_approved_by: userData.user?.id,
+          p_rejection_reason: `Erro técnico: Exceção ao sincronizar - ${externalError.message}`
+        });
+
+        if (rejectError) {
+          console.error('💥 [APPROVE] Erro ao reverter aprovação:', rejectError);
+        }
+        
+        toast.error(`Erro crítico: ${externalError.message}`);
+        onRefresh();
+        fetchPendingVideos();
+        return; // Bloquear continuação
       }
 
       onRefresh();
