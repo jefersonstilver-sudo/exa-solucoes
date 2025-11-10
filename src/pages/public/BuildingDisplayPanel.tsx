@@ -116,15 +116,16 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
+    <div className="w-full h-screen bg-black overflow-hidden">
       {/* Player fullscreen limpo - SEM NENHUMA INFORMAÇÃO */}
-      <div className="w-full h-screen flex items-center justify-center">
+      <div className="w-full h-full">
         {selectedVideo && (
           <video
             ref={videoRef}
             key={selectedVideo.video_url}
             src={selectedVideo.video_url}
-            className="w-full h-full object-contain bg-black"
+            className="w-full h-full object-contain"
+            style={{ margin: 0, padding: 0, display: 'block' }}
             autoPlay
             muted
             playsInline

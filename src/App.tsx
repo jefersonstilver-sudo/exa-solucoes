@@ -50,6 +50,7 @@ const QuemSomos = lazy(() => import('./pages/QuemSomos'));
 const BuildingDisplayPanel = lazy(() => import('./pages/public/BuildingDisplayPanel'));
 const BuildingDisplayCommercial = lazy(() => import('./pages/public/BuildingDisplayCommercial'));
 const PublicBuildingDisplay = lazy(() => import('./pages/public/PublicBuildingDisplay'));
+const BuildingDisplayEmbed = lazy(() => import('./pages/public/BuildingDisplayEmbed'));
 
 // Blog pages
 const BlogIndex = lazy(() => import('./pages/blog/Index'));
@@ -158,6 +159,13 @@ const AppContent = () => {
           
           {/* ROTAS PÚBLICAS DE EXIBIÇÃO - Novo padrão com nome+código */}
           
+          {/* Embed livre (para iframes) - /embed/[nome-predio]/[codigo] */}
+          <Route path="/embed/:buildingSlug/:buildingCode" element={
+            <Suspense fallback={<div className="w-full h-full bg-black" />}>
+              <PublicBuildingDisplay variant="embed" />
+            </Suspense>
+          } />
+          
           {/* Painel limpo (sem UI) - /painel/[nome-predio]/[codigo] */}
           <Route path="/painel/:buildingSlug/:buildingCode" element={
             <Suspense fallback={<GlobalLoadingPage />}>
@@ -180,6 +188,12 @@ const AppContent = () => {
           } />
           
           {/* ROTAS LEGADAS (UUID) - Manter compatibilidade */}
+          <Route path="/embed/:buildingId" element={
+            <Suspense fallback={<div className="w-full h-full bg-black" />}>
+              <BuildingDisplayEmbed />
+            </Suspense>
+          } />
+          
           <Route path="/painel/:buildingId" element={
             <Suspense fallback={<GlobalLoadingPage />}>
               <BuildingDisplayPanel />

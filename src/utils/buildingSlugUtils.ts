@@ -43,6 +43,14 @@ export const generatePanelPath = (name: string, code: string): string => {
 };
 
 /**
+ * Generates full embed URL (for iframes)
+ */
+export const generateEmbedPath = (name: string, code: string): string => {
+  const slug = generateBuildingSlug(name);
+  return `/embed/${slug}/${code}`;
+};
+
+/**
  * Parse building info from URL params
  */
 export interface BuildingUrlParams {

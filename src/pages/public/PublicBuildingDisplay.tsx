@@ -5,6 +5,7 @@ import { parseBuildingParams } from '@/utils/buildingSlugUtils';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 import BuildingDisplayPanel from './BuildingDisplayPanel';
 import BuildingDisplayCommercial from './BuildingDisplayCommercial';
+import BuildingDisplayEmbed from './BuildingDisplayEmbed';
 
 /**
  * Public building display router
@@ -17,7 +18,7 @@ import BuildingDisplayCommercial from './BuildingDisplayCommercial';
  */
 
 interface PublicBuildingDisplayProps {
-  variant?: 'panel' | 'commercial';
+  variant?: 'panel' | 'commercial' | 'embed';
 }
 
 const PublicBuildingDisplay: React.FC<PublicBuildingDisplayProps> = ({ 
@@ -85,6 +86,10 @@ const PublicBuildingDisplay: React.FC<PublicBuildingDisplayProps> = ({
   }
 
   // Render appropriate display variant
+  if (variant === 'embed') {
+    return <BuildingDisplayEmbed buildingId={buildingId} />;
+  }
+  
   if (variant === 'panel') {
     return <BuildingDisplayPanel buildingId={buildingId} />;
   }

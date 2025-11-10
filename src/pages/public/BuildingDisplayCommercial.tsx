@@ -182,7 +182,8 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
               className="relative bg-black rounded-lg overflow-hidden shadow-2xl" 
               style={{ 
                 aspectRatio: '16/9',
-                maxHeight: '60vh' // ALTURA MÁXIMA REDUZIDA
+                maxHeight: '60vh',
+                width: '100%'
               }}
             >
               {/* Brilho da tela */}
@@ -195,12 +196,12 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                     ref={videoRef}
                     key={selectedVideo.video_url}
                     src={selectedVideo.video_url}
-                    className="w-full h-full object-contain bg-black"
+                    className="w-full h-full object-contain"
+                    style={{ margin: 0, padding: 0, display: 'block' }}
                     autoPlay
                     muted
                     playsInline
                     preload="auto"
-                    style={{ pointerEvents: 'none' }}
                   >
                     Seu navegador não suporta vídeo.
                   </video>

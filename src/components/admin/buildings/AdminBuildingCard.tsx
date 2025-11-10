@@ -2,9 +2,9 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video, Play } from 'lucide-react';
+import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video, Play, Code } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { generateCommercialPath, generatePanelPath } from '@/utils/buildingSlugUtils';
+import { generateCommercialPath, generatePanelPath, generateEmbedPath } from '@/utils/buildingSlugUtils';
 interface AdminBuildingCardProps {
   building: any;
   onView: (building: any) => void;
@@ -270,6 +270,26 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
               Link Limpo
+            </Button>
+            
+            <Button 
+              size="sm" 
+              onClick={() => {
+                const buildingCode = building.codigo_predio || '000';
+                const url = `${window.location.origin}${generateEmbedPath(building.nome, buildingCode)}`;
+                const embedCode = `<iframe src="${url}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>`;
+                navigator.clipboard.writeText(embedCode);
+                import('@/hooks/use-toast').then(({ toast }) => {
+                  toast({
+                    title: "Código Embed copiado!",
+                    description: "Cole em qualquer site ou sistema",
+                  });
+                });
+              }}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
+            >
+              <Code className="h-4 w-4" />
+              Embed
             </Button>
             
             <Button 
