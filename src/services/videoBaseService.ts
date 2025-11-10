@@ -29,12 +29,13 @@ type PedidoVideosRow = {
 
 const now = () => new Date().toISOString();
 
-const extractTitulo = (videoNome?: string | null): string | null => {
-  if (!videoNome) return null;
+const extractTitulo = (videoPathOrName?: string | null): string | null => {
+  if (!videoPathOrName) return null;
   // se vier com path, pega último segmento
-  const base = String(videoNome).split("/").pop() || "";
-  // remove última extensão (.mp4, .mov etc) e trim
-  const cleaned = base.replace(/\.[^.]+$/, "").trim();
+  const base = String(videoPathOrName).split("/").pop() || "";
+  // remove query/hash e última extensão (.mp4, .mov etc)
+  const noQueryHash = base.split("?")[0].split("#")[0];
+  const cleaned = noQueryHash.replace(/\.[^.]+$/, "").trim();
   return cleaned || null;
 };
 
@@ -173,7 +174,7 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
         pedido_id,
         video_id,
         pedidos!inner ( lista_predios ),
-        videos!inner ( nome )
+        videos!inner ( nome, url )
       `,
       )
       .eq("id", slotId)
@@ -185,11 +186,16 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
 
     const listaPredios = pvData?.pedidos?.lista_predios || [];
     const videoNome = pvData?.videos?.nome || null;
-    const tituloSemExtensao = extractTitulo(videoNome);
+    const videoUrl = pvData?.videos?.url || null;
+
+    const tituloFromUrl = extractTitulo(videoUrl);
+    const tituloFromNome = extractTitulo(videoNome);
+    const tituloSemExtensao = tituloFromUrl || tituloFromNome;
 
     console.log("🏢 [VIDEO_BASE] Lista de prédios:", listaPredios);
     console.log("🎬 [VIDEO_BASE] Nome do vídeo:", videoNome);
-    console.log("📝 [VIDEO_BASE] Título sem extensão:", tituloSemExtensao);
+    console.log("🔗 [VIDEO_BASE] URL do vídeo:", videoUrl);
+    console.log("📝 [VIDEO_BASE] Título escolhido (prioridade URL):", tituloSemExtensao);
 
     // 🔥 SEMPRE: tentar notificar API externa primeiro (mas não falha o fluxo)
     if (listaPredios.length > 0 && tituloSemExtensao) {
