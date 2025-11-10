@@ -19,19 +19,19 @@ const BuildingImageSection: React.FC<BuildingImageSectionProps> = ({ building })
     switch (status) {
       case 'ativo':
         return (
-          <Badge className="bg-green-500/90 text-white border-0 shadow-md">
+          <Badge className="bg-green-50 text-green-700 border border-green-200">
             Ativo
           </Badge>
         );
       case 'inativo':
         return (
-          <Badge className="bg-gray-500/90 text-white border-0 shadow-md">
+          <Badge className="bg-gray-50 text-gray-700 border border-gray-200">
             Inativo
           </Badge>
         );
       default:
         return (
-          <Badge variant="outline" className="bg-white/90 shadow-md">
+          <Badge variant="outline" className="bg-white/90">
             {status}
           </Badge>
         );
@@ -40,9 +40,9 @@ const BuildingImageSection: React.FC<BuildingImageSectionProps> = ({ building })
 
   const getPadraoPublicoBadge = (padrao: string) => {
     const styles = {
-      alto: 'bg-[#9C1E1E]/90 text-white border-0 shadow-md',
-      medio: 'bg-blue-500/90 text-white border-0 shadow-md',
-      normal: 'bg-gray-500/90 text-white border-0 shadow-md'
+      alto: 'bg-red-50 text-red-700 border border-red-200',
+      medio: 'bg-blue-50 text-blue-700 border border-blue-200',
+      normal: 'bg-gray-50 text-gray-700 border border-gray-200'
     };
     
     return (
@@ -54,7 +54,7 @@ const BuildingImageSection: React.FC<BuildingImageSectionProps> = ({ building })
 
   const getVenueTypeBadge = (venueType: string) => {
     return (
-      <Badge className="bg-indigo-500/90 text-white border-0 shadow-md">
+      <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200">
         {venueType || 'Residencial'}
       </Badge>
     );

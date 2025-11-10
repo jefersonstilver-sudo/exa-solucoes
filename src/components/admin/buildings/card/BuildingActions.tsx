@@ -33,7 +33,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
             <>
               <div className="flex items-center gap-2 text-sm">
                 <VideosPopover buildingId={building.id} videoCount={videoCount}>
-                  <div className="flex items-center gap-1 px-2 py-1 bg-green-600 rounded text-white text-xs font-semibold cursor-pointer hover:bg-green-700 transition-colors">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 text-xs font-medium cursor-pointer hover:bg-green-100 transition-colors">
                     <Video className="h-3 w-3" />
                     <span>{videoCount} vídeo{videoCount > 1 ? 's' : ''} no AR</span>
                   </div>
@@ -51,7 +51,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                       description: "Link copiado para área de transferência",
                     });
                   }}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-slate-700 hover:bg-slate-800 text-white rounded transition-colors font-medium"
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors font-medium border border-slate-300"
                 >
                   <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -69,7 +69,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                       description: "Cole em qualquer site",
                     });
                   }}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-purple-700 hover:bg-purple-800 text-white rounded transition-colors font-medium"
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 rounded transition-colors font-medium border border-purple-300"
                 >
                   <Code className="h-3 w-3" />
                   Embed
@@ -85,7 +85,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                       description: "Link copiado para área de transferência",
                     });
                   }}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-blue-700 hover:bg-blue-800 text-white rounded transition-colors font-medium"
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors font-medium border border-blue-300"
                 >
                   <Monitor className="h-3 w-3" />
                   UI
@@ -107,7 +107,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
           size="sm"
           variant="outline"
           onClick={() => onView(building)}
-          className="flex items-center space-x-1"
+          className="flex items-center space-x-1 text-xs"
         >
           <Eye className="h-3 w-3" />
           <span>Ver</span>
@@ -116,7 +116,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
           size="sm"
           variant="outline"
           onClick={() => onEdit(building)}
-          className="flex items-center space-x-1"
+          className="flex items-center space-x-1 text-xs"
         >
           <Edit className="h-3 w-3" />
           <span>Editar</span>
@@ -125,7 +125,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
           size="sm"
           variant="outline"
           onClick={() => onImageManager(building)}
-          className="flex items-center space-x-1"
+          className="flex items-center space-x-1 text-xs"
         >
           <Camera className="h-3 w-3" />
           <span>Fotos</span>

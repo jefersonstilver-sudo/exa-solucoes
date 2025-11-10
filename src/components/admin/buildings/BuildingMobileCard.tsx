@@ -24,7 +24,7 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
   onViewPlaylist,
 }) => {
   const getStatusColor = (status: string) => {
-    return status === 'ativo' ? 'bg-green-500' : 'bg-gray-500';
+    return status === 'ativo' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200';
   };
 
   const getStatusText = (status: string) => {
@@ -38,7 +38,7 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
           <Building2 className="h-5 w-5 text-[#9C1E1E] flex-shrink-0" />
           <span className="font-semibold text-foreground truncate">{building.nome}</span>
         </div>
-        <Badge className={`${getStatusColor(building.status)} text-white border-0`}>
+        <Badge className={`${getStatusColor(building.status)} border`}>
           {getStatusText(building.status)}
         </Badge>
       </div>
@@ -62,9 +62,9 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
           </div>
         )}
         {typeof videoCount === 'number' && videoCount > 0 && (
-          <div className="flex items-center gap-1 px-2 py-0.5 bg-green-600 rounded text-white">
+          <div className="flex items-center gap-1 px-2 py-0.5 bg-green-50 border border-green-200 rounded text-green-700">
             <Video className="h-3 w-3" />
-            <span className="font-semibold text-xs">{videoCount} no AR</span>
+            <span className="font-medium text-xs">{videoCount} no AR</span>
           </div>
         )}
       </div>
@@ -129,39 +129,43 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
       </div>
 
       {/* Actions */}
-      <div className="pt-3 border-t grid grid-cols-2 gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onView(building)}
-          className="w-full"
-        >
-          Ver
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onEdit(building)}
-          className="w-full"
-        >
-          Editar
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onImageManager(building)}
-          className="w-full"
-        >
-          Imagens
-        </Button>
-        <Button
-          variant="default"
-          size="sm"
-          onClick={() => onViewPlaylist(building)}
-          className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white"
-        >
-          Playlist
-        </Button>
+      <div className="pt-3 border-t space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onView(building)}
+            className="w-full text-xs"
+          >
+            Ver Detalhes
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(building)}
+            className="w-full text-xs"
+          >
+            Editar
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onImageManager(building)}
+            className="w-full text-xs"
+          >
+            Imagens
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => onViewPlaylist(building)}
+            className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white text-xs"
+          >
+            Ver Playlist
+          </Button>
+        </div>
         <Button
           variant="secondary"
           size="sm"
@@ -176,7 +180,7 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
               });
             });
           }}
-          className="w-full col-span-2"
+          className="w-full text-xs"
         >
           Copiar Link do Painel
         </Button>

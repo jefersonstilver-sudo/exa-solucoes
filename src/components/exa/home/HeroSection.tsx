@@ -16,7 +16,7 @@ const HeroSection = () => {
   // Fallback video URL
   const defaultVideoUrl = 'https://indexa.net.br/wp-content/uploads/2025/01/indexa_exa.mp4';
   const displayVideoUrl = videoUrl || defaultVideoUrl;
-  return <ExaSection background="dark" className="min-h-screen md:min-h-[75vh] lg:min-h-[80vh] flex items-center relative overflow-hidden pt-16 md:pt-20 lg:pt-16 pb-4 md:pb-8">
+  return <ExaSection background="dark" className="min-h-screen md:min-h-[75vh] lg:min-h-[80vh] flex items-center relative overflow-hidden pt-24 md:pt-28 lg:pt-24 pb-8 md:pb-12">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#9C1E1E] via-[#180A0A]/80 to-exa-black opacity-90" />
       
@@ -24,9 +24,9 @@ const HeroSection = () => {
       <div className="absolute top-20 right-20 w-96 h-96 bg-exa-blue/20 rounded-full blur-3xl animate-pulse-soft" />
       <div className="absolute bottom-20 left-20 w-96 h-96 bg-exa-yellow/10 rounded-full blur-3xl animate-pulse-soft" />
 
-      <div ref={ref} className={`relative z-10 w-full flex flex-col lg:grid lg:grid-cols-2 gap-6 md:gap-8 lg:gap-10 items-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div ref={ref} className={`relative z-10 w-full flex flex-col lg:grid lg:grid-cols-2 gap-8 md:gap-10 lg:gap-12 items-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Left side - Text content */}
-        <div className="space-y-4 md:space-y-5 order-1 w-full">
+        <div className="space-y-5 md:space-y-6 order-1 w-full">
           <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
             Publicidade que <span className="text-exa-yellow">convive</span>.
           </h1>
