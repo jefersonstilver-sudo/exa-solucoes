@@ -237,14 +237,35 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
           <div className="flex-[7] min-h-0">
             <div className="h-full bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/5 p-3 flex items-center justify-center">
               <div className="w-full h-full max-w-6xl max-h-full">
-                <CommercialVideoHero 
-                  videos={videosWithCache.length > 0 ? videosWithCache : activeVideos.map(v => ({
-                    id: v.video_id || '',
-                    video_url: v.video_url,
-                    video_nome: v.video_name || ''
-                  }))}
-                  className="h-full"
-                />
+                {videosWithCache.length > 0 ? (
+                  <>
+                    <CommercialVideoHero 
+                      videos={videosWithCache}
+                      className="h-full"
+                    />
+                    {/* Debug info */}
+                    <div className="fixed bottom-2 left-2 bg-black/80 text-white text-xs p-2 rounded">
+                      Playlist: {videosWithCache.length} vídeos
+                    </div>
+                  </>
+                ) : activeVideos.length > 0 ? (
+                  <>
+                    <CommercialVideoHero 
+                      videos={activeVideos.map(v => ({
+                        id: v.video_id || '',
+                        video_url: v.video_url,
+                        video_nome: v.video_name || ''
+                      }))}
+                      className="h-full"
+                    />
+                    {/* Debug info */}
+                    <div className="fixed bottom-2 left-2 bg-black/80 text-white text-xs p-2 rounded">
+                      Carregando cache... {activeVideos.length} vídeos
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-white text-center">Carregando vídeos...</div>
+                )}
               </div>
             </div>
           </div>
