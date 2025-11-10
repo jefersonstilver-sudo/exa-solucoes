@@ -39,6 +39,27 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   useEffect(() => {
     console.log('🔌 [EMBED PLAYER] Iniciando sistema de polling...');
     
+    // PROTEÇÃO GLOBAL - Bloquear contexto menu NO DOCUMENTO INTEIRO
+    const blockContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    };
+    
+    const blockRightClick = (e: MouseEvent) => {
+      if (e.button === 2) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+      }
+    };
+    
+    // Adicionar listeners com capture phase
+    document.addEventListener('contextmenu', blockContextMenu, { capture: true });
+    document.addEventListener('mousedown', blockRightClick, { capture: true });
+    
     pollingIntervalRef.current = setInterval(async () => {
       try {
         console.log('🔄 [EMBED PLAYER] Verificando atualizações...');
@@ -58,6 +79,9 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
         clearInterval(pollingIntervalRef.current);
         console.log('🔌 [EMBED PLAYER] Sistema de polling desligado');
       }
+      // Remover proteção global ao sair
+      document.removeEventListener('contextmenu', blockContextMenu, { capture: true } as any);
+      document.removeEventListener('mousedown', blockRightClick, { capture: true } as any);
     };
   }, [refetch, activeVideos.length]);
 

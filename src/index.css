@@ -2,6 +2,7 @@
 /* Import all modular CSS files */
 @import './styles/base.css';
 @import './styles/animations.css';
+@import './styles/video-protection.css';
 @import './styles/components.css';
 @import './styles/utilities.css';
 @import './styles/admin-mobile-optimizations.css';

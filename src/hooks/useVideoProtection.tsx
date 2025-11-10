@@ -164,9 +164,16 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
     videos.forEach((video) => {
       // Desabilitar atributos que facilitam download
       video.removeAttribute('controls');
-      video.setAttribute('controlsList', 'nodownload noplaybackrate');
+      video.setAttribute('controlsList', 'nodownload noplaybackrate nofullscreen');
       video.setAttribute('disablePictureInPicture', 'true');
       video.setAttribute('disableRemotePlayback', 'true');
+      
+      // Prevenir TODOS os eventos do mouse no vídeo
+      video.style.pointerEvents = 'none';
+      video.style.userSelect = 'none';
+      video.style.webkitUserSelect = 'none';
+      (video.style as any).msUserSelect = 'none';
+      (video.style as any).mozUserSelect = 'none';
 
       // Adicionar overlay invisível
       const parent = video.parentElement;
@@ -179,10 +186,29 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
           left: 0;
           width: 100%;
           height: 100%;
-          z-index: 10;
+          z-index: 999999;
           background: transparent;
-          pointer-events: none;
+          pointer-events: auto;
+          cursor: default;
         `;
+        
+        // Prevenir TUDO no overlay
+        overlay.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          return false;
+        }, { capture: true });
+        
+        overlay.addEventListener('mousedown', (e) => {
+          if (e.button === 2) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+          }
+        }, { capture: true });
+        
         parent.style.position = 'relative';
         parent.appendChild(overlay);
       }
@@ -200,8 +226,34 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
     }
 
     // Prevenir arrastar imagens/vídeos
-    document.addEventListener('dragstart', preventDragDrop);
-    document.addEventListener('drop', preventDragDrop);
+    document.addEventListener('dragstart', preventDragDrop, { capture: true });
+    document.addEventListener('drop', preventDragDrop, { capture: true });
+    
+    // Adicionar CSS global para bloquear contexto
+    const styleId = 'video-protection-styles';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        video {
+          pointer-events: none !important;
+          user-select: none !important;
+          -webkit-user-select: none !important;
+          -ms-user-select: none !important;
+          -moz-user-select: none !important;
+        }
+        video::cue {
+          pointer-events: none !important;
+        }
+        video::-webkit-media-controls {
+          display: none !important;
+        }
+        video::-webkit-media-controls-enclosure {
+          display: none !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
   }, [preventDragDrop]);
 
   useEffect(() => {
