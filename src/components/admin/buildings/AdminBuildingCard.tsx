@@ -264,12 +264,11 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               onClick={() => {
                 const buildingCode = building.codigo_predio || '000';
                 const url = `${window.location.origin}${generatePanelPath(building.nome, buildingCode)}`;
-                window.open(url, '_blank');
                 navigator.clipboard.writeText(url);
-                import('@/hooks/use-toast').then(({ toast }) => {
-                  toast({
-                    title: "Link Limpo aberto!",
-                    description: "Link copiado para área de transferência",
+                import('sonner').then(({ toast }) => {
+                  toast.success('Link Limpo Copiado!', {
+                    description: url,
+                    duration: 4000,
                   });
                 });
               }}
@@ -288,10 +287,10 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                 const url = `${window.location.origin}${generateEmbedPath(building.nome, buildingCode)}`;
                 const embedCode = `<iframe src="${url}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>`;
                 navigator.clipboard.writeText(embedCode);
-                import('@/hooks/use-toast').then(({ toast }) => {
-                  toast({
-                    title: "Código Embed copiado!",
-                    description: "Cole em qualquer site ou sistema",
+                import('sonner').then(({ toast }) => {
+                  toast.success('Código Embed Copiado!', {
+                    description: 'Cole em qualquer site ou sistema',
+                    duration: 4000,
                   });
                 });
               }}
@@ -305,19 +304,12 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               size="sm" 
               onClick={() => {
                 const buildingCode = building.codigo_predio || '000';
-                console.log('🔗 [LINK COMERCIAL] Gerando link:', {
-                  nome: building.nome,
-                  codigo: buildingCode,
-                  codigo_original: building.codigo_predio
-                });
                 const url = `${window.location.origin}${generateCommercialPath(building.nome, buildingCode)}`;
-                console.log('🌐 [LINK COMERCIAL] URL gerada:', url);
-                window.open(url, '_blank');
                 navigator.clipboard.writeText(url);
-                import('@/hooks/use-toast').then(({ toast }) => {
-                  toast({
-                    title: "Link Comercial aberto!",
-                    description: "Link copiado para área de transferência",
+                import('sonner').then(({ toast }) => {
+                  toast.success('Link Comercial Copiado!', {
+                    description: url,
+                    duration: 4000,
                   });
                 });
               }}
