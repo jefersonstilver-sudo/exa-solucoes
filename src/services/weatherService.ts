@@ -38,14 +38,16 @@ const getWeatherInfo = (code: number): { description: string; icon: string } => 
 };
 
 const getDayName = (dateStr: string, index: number): string => {
-  // Usar índice diretamente para garantir precisão
-  if (index === 0) return 'Hoje';
-  if (index === 1) return 'Amanhã';
-  if (index === 2) return 'Depois de Amanhã';
-  
-  // Fallback para outros dias (não usado no contexto atual)
   const date = new Date(dateStr + 'T12:00:00');
-  return date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+  const dayName = date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+  const capitalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+  
+  // Retornar o nome do dia com a indicação
+  if (index === 0) return `Hoje (${capitalizedDay})`;
+  if (index === 1) return `Amanhã (${capitalizedDay})`;
+  if (index === 2) return `${capitalizedDay}`;
+  
+  return capitalizedDay;
 };
 
 export const fetchWeatherData = async (): Promise<WeatherData> => {
