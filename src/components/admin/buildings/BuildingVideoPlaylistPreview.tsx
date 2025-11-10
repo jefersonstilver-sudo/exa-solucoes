@@ -29,6 +29,7 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
   const { videos, loading, error } = useBuildingActiveVideos(buildingId);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   const selectedVideo = videos[selectedVideoIndex];
   const commercialUrl = generatePublicUrl(generateCommercialPath(buildingName, buildingCode));
@@ -37,6 +38,25 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
     setSelectedVideoIndex(index);
     setIsPlaying(false);
   };
+
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  // Reset video quando trocar
+  React.useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.load();
+      setIsPlaying(false);
+    }
+  }, [selectedVideoIndex]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -101,19 +121,41 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 bg-gray-50">
             {/* Player Principal */}
             <div className="lg:col-span-2 space-y-4">
-              <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg border border-gray-200">
+              <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg border border-gray-200 group">
                 {selectedVideo && (
                   <>
                     <video
+                      ref={videoRef}
                       key={selectedVideo.video_id}
                       src={selectedVideo.video_url}
                       className="w-full h-full object-contain"
-                      controls
-                      autoPlay={isPlaying}
                       onPlay={() => setIsPlaying(true)}
                       onPause={() => setIsPlaying(false)}
+                      onEnded={() => setIsPlaying(false)}
                     />
-                    <div className="absolute top-3 right-3">
+                    
+                    {/* Controle de Play customizado */}
+                    <div 
+                      className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      onClick={handlePlayPause}
+                    >
+                      <Button
+                        size="lg"
+                        className="h-16 w-16 rounded-full bg-white/90 hover:bg-white text-gray-900 shadow-xl"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePlayPause();
+                        }}
+                      >
+                        {isPlaying ? (
+                          <Pause className="h-8 w-8" />
+                        ) : (
+                          <Play className="h-8 w-8 ml-1" />
+                        )}
+                      </Button>
+                    </div>
+                    
+                    <div className="absolute top-3 right-3 flex gap-2">
                       <Badge className="bg-green-600 text-white shadow-md">
                         🔴 Ao Vivo Agora
                       </Badge>

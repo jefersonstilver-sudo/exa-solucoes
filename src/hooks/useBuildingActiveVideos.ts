@@ -171,30 +171,69 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         });
       }
 
-      // 7. Verificar status atual baseado em horário
+      // 7. Verificar status atual baseado em horário (AUDITORIA COMPLETA)
       const now = new Date();
-      const currentDay = now.getDay();
-      const currentTime = now.toTimeString().slice(0, 5);
+      const currentDay = now.getDay(); // 0 = Domingo, 1 = Segunda, etc.
+      const currentTime = now.toTimeString().slice(0, 5); // HH:MM
       
-      const isVideoActiveNow = (videoId: string, scheduleRules?: ScheduleRule[]) => {
-        if (!scheduleRules || scheduleRules.length === 0) return true;
+      console.log(`🕐 [AUDITORIA] Hora atual: ${currentTime}, Dia da semana: ${currentDay} (${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][currentDay]})`);
+      
+      /**
+       * LÓGICA DE VERIFICAÇÃO DE VÍDEO ATIVO:
+       * 1. Se NÃO tem schedule_rules = Vídeo permanente (sempre em exibição)
+       * 2. Se TEM schedule_rules = Vídeo programado (só exibe no horário/dia configurado)
+       */
+      const isVideoActiveNow = (videoId: string, videoName: string, scheduleRules?: ScheduleRule[]): boolean => {
+        // SEM PROGRAMAÇÃO = SEMPRE ATIVO (vídeo permanente)
+        if (!scheduleRules || scheduleRules.length === 0) {
+          console.log(`✅ [AUDITORIA] "${videoName}" - SEM programação = PERMANENTE (sempre em exibição)`);
+          return true;
+        }
         
-        return scheduleRules.some(rule => {
-          if (!rule.days_of_week.includes(currentDay)) return false;
-          if (rule.is_all_day) return true;
-          return currentTime >= rule.start_time && currentTime <= rule.end_time;
+        // COM PROGRAMAÇÃO = VERIFICAR HORÁRIO/DIA
+        const isActive = scheduleRules.some(rule => {
+          const matchDay = rule.days_of_week.includes(currentDay);
+          
+          if (!matchDay) {
+            console.log(`❌ [AUDITORIA] "${videoName}" - Dia ${currentDay} NÃO está em ${JSON.stringify(rule.days_of_week)}`);
+            return false;
+          }
+          
+          if (rule.is_all_day) {
+            console.log(`✅ [AUDITORIA] "${videoName}" - Programado para o dia todo (${rule.days_of_week})`);
+            return true;
+          }
+          
+          const matchTime = currentTime >= rule.start_time && currentTime <= rule.end_time;
+          
+          if (matchTime) {
+            console.log(`✅ [AUDITORIA] "${videoName}" - Horário ${currentTime} está dentro de ${rule.start_time}-${rule.end_time}`);
+          } else {
+            console.log(`❌ [AUDITORIA] "${videoName}" - Horário ${currentTime} FORA de ${rule.start_time}-${rule.end_time}`);
+          }
+          
+          return matchTime;
         });
+        
+        return isActive;
       };
 
-      // 8. Montar resultado final com TODOS os vídeos ativos
+      // 8. Montar resultado final com AUDITORIA COMPLETA
       const activeVideos: BuildingActiveVideo[] = [];
+      const videosRejeitados: string[] = [];
 
       for (const pedidoVideo of allVideosData) {
         const pedido = pedidos.find(p => p.id === pedidoVideo.pedido_id);
-        if (!pedido) continue;
+        if (!pedido) {
+          console.log(`⚠️ [AUDITORIA] Pedido não encontrado para video:`, pedidoVideo.video_id);
+          continue;
+        }
 
         const videoData = (pedidoVideo as any).videos;
-        if (!videoData) continue;
+        if (!videoData) {
+          console.log(`⚠️ [AUDITORIA] Video data não encontrado:`, pedidoVideo.video_id);
+          continue;
+        }
 
         const clientData = clientsMap.get(pedido.client_id);
         const clientEmail = clientData?.email || 'Email não encontrado';
@@ -202,8 +241,9 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
 
         const scheduleRules = scheduleRulesMap.get(pedidoVideo.video_id);
         const isScheduled = scheduleRules && scheduleRules.length > 0;
+        const isCurrentlyActive = isVideoActiveNow(pedidoVideo.video_id, videoData.nome, scheduleRules);
 
-        activeVideos.push({
+        const videoInfo = {
           video_id: pedidoVideo.video_id,
           video_name: videoData.nome,
           video_url: videoData.url,
@@ -216,15 +256,31 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           priority_type: (pedidoVideo.is_base_video ? 'base' : 'scheduled') as 'scheduled' | 'base',
           slot_position: pedidoVideo.slot_position || 1,
           schedule_rules: scheduleRules,
-          is_currently_active: isVideoActiveNow(pedidoVideo.video_id, scheduleRules),
+          is_currently_active: isCurrentlyActive,
           created_at: (pedidoVideo as any).created_at
-        });
+        };
+
+        activeVideos.push(videoInfo);
+        
+        if (!isCurrentlyActive) {
+          videosRejeitados.push(`"${videoData.nome}" (programado para outro horário/dia)`);
+        }
       }
 
-      // FILTRAR APENAS VÍDEOS EM EXIBIÇÃO (não programados)
+      // FILTRAR APENAS VÍDEOS EM EXIBIÇÃO AGORA
       const videosEmExibicao = activeVideos.filter(v => v.is_currently_active === true);
       
-      console.log(`📊 [BUILDING ACTIVE VIDEOS] Total de vídeos: ${activeVideos.length}, Em exibição: ${videosEmExibicao.length}, Programados: ${activeVideos.length - videosEmExibicao.length}`);
+      console.log(`
+📊 ============ AUDITORIA COMPLETA ============
+🏢 Prédio: ${buildingId}
+📅 Data/Hora: ${now.toLocaleString('pt-BR')} (${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][currentDay]})
+📦 Total de pedidos ativos: ${pedidos.length}
+🎬 Total de vídeos ativos: ${activeVideos.length}
+✅ Vídeos EM EXIBIÇÃO agora: ${videosEmExibicao.length}
+❌ Vídeos programados (fora do horário): ${activeVideos.length - videosEmExibicao.length}
+${videosRejeitados.length > 0 ? `\n⏰ Vídeos aguardando horário:\n   - ${videosRejeitados.join('\n   - ')}` : ''}
+===========================================
+      `.trim());
       
       // Ordenar: mais recentes primeiro (enviados por último)
       videosEmExibicao.sort((a, b) => {
