@@ -88,34 +88,53 @@ export const superAdminBulkDeletePedidos = async (
   justificativa: string
 ): Promise<BulkDeleteResult> => {
   const getTimestamp = () => new Date().toISOString();
+  const logSeparator = '═'.repeat(80);
   
   try {
     // Obter informações do navegador para auditoria
     const userAgent = navigator.userAgent;
     const ipAddress = 'client-side';
 
-    console.log(`🗑️ [${getTimestamp()}] [SUPER_ADMIN_DELETE] Iniciando deleção completa de ${pedidoIds.length} pedidos`);
-    console.log(`📋 [${getTimestamp()}] [SUPER_ADMIN_DELETE] Justificativa:`, justificativa);
-    console.log(`🎯 [${getTimestamp()}] [SUPER_ADMIN_DELETE] IDs:`, pedidoIds);
+    console.log(`\n${logSeparator}`);
+    console.log(`🚀 [${getTimestamp()}] INICIANDO SUPER ADMIN DELETE`);
+    console.log(logSeparator);
+    console.log(`📊 Total de pedidos: ${pedidoIds.length}`);
+    console.log(`📋 Justificativa: "${justificativa}"`);
+    console.log(`🎯 IDs dos pedidos:`, pedidoIds);
+    console.log(`🌐 User Agent: ${userAgent.substring(0, 50)}...`);
+    console.log(`📍 IP Address: ${ipAddress}`);
+    console.log(logSeparator);
 
-    console.log(`📞 [${getTimestamp()}] [SUPER_ADMIN_DELETE] Chamando RPC super_admin_bulk_delete_pedidos...`);
+    console.log(`\n📞 [${getTimestamp()}] CHAMANDO RPC: super_admin_bulk_delete_pedidos`);
+    console.log(`   Parameters:`, {
+      p_pedido_ids: pedidoIds,
+      p_justification: justificativa,
+      p_ip_address: ipAddress,
+      p_user_agent: userAgent
+    });
     
+    const rpcStartTime = Date.now();
     const { data, error } = await supabase.rpc('super_admin_bulk_delete_pedidos', {
       p_pedido_ids: pedidoIds,
       p_justification: justificativa,
       p_ip_address: ipAddress,
       p_user_agent: userAgent
     });
+    const rpcDuration = Date.now() - rpcStartTime;
 
-    console.log(`📦 [${getTimestamp()}] [SUPER_ADMIN_DELETE] Resposta da RPC:`, { data, error });
+    console.log(`\n⏱️  [${getTimestamp()}] RPC COMPLETADA em ${rpcDuration}ms`);
+    console.log(`📦 Resposta completa:`, JSON.stringify({ data, error }, null, 2));
 
     if (error) {
-      console.error(`❌ [${getTimestamp()}] [SUPER_ADMIN_DELETE] Erro na RPC:`, {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
+      console.log(`\n${logSeparator}`);
+      console.error(`❌ [${getTimestamp()}] ERRO NA RPC`);
+      console.log(logSeparator);
+      console.error(`   Mensagem: ${error.message}`);
+      console.error(`   Detalhes: ${error.details}`);
+      console.error(`   Hint: ${error.hint}`);
+      console.error(`   Código: ${error.code}`);
+      console.error(`   Stack:`, error);
+      console.log(logSeparator);
       
       toast.error('Erro ao excluir pedidos: ' + error.message);
       return {
@@ -127,16 +146,26 @@ export const superAdminBulkDeletePedidos = async (
     }
 
     const result = data as any;
-    console.log(`🔍 [${getTimestamp()}] [SUPER_ADMIN_DELETE] Analisando resultado:`, result);
+    
+    console.log(`\n${logSeparator}`);
+    console.log(`🔍 [${getTimestamp()}] ANALISANDO RESULTADO DA RPC`);
+    console.log(logSeparator);
+    console.log(`   Sucesso: ${result?.success}`);
+    console.log(`   Deletados: ${result?.deleted_count}`);
+    console.log(`   Total requisitado: ${result?.total_requested}`);
+    console.log(`   Erros:`, result?.errors);
+    console.log(logSeparator);
 
-    if (!result.success) {
-      const errorMsg = result.error || 'Erro desconhecido';
-      console.error(`❌ [${getTimestamp()}] [SUPER_ADMIN_DELETE] Falha lógica:`, {
-        success: result.success,
-        error: errorMsg,
-        deleted_count: result.deleted_count,
-        errors_array: result.errors
-      });
+    if (!result || !result.success) {
+      const errorMsg = result?.error || 'Erro desconhecido';
+      console.log(`\n${logSeparator}`);
+      console.error(`❌ [${getTimestamp()}] FALHA LÓGICA NO PROCESSO`);
+      console.log(logSeparator);
+      console.error(`   Success flag: ${result?.success}`);
+      console.error(`   Error message: ${errorMsg}`);
+      console.error(`   Deleted count: ${result?.deleted_count}`);
+      console.error(`   Errors array:`, result?.errors);
+      console.log(logSeparator);
       
       toast.error('Erro: ' + errorMsg);
       return {
@@ -149,11 +178,16 @@ export const superAdminBulkDeletePedidos = async (
 
     // Sucesso
     const deletedCount = result.deleted_count || 0;
-    console.log(`✅ [${getTimestamp()}] [SUPER_ADMIN_DELETE] Sucesso:`, {
-      deletedCount,
-      totalRequested: result.total_requested,
-      errors: result.errors
-    });
+    console.log(`\n${logSeparator}`);
+    console.log(`✅ [${getTimestamp()}] DELEÇÃO CONCLUÍDA COM SUCESSO`);
+    console.log(logSeparator);
+    console.log(`   📊 Pedidos deletados: ${deletedCount}`);
+    console.log(`   📋 Total requisitado: ${result.total_requested}`);
+    console.log(`   ⚠️  Erros encontrados: ${result.errors?.length || 0}`);
+    if (result.errors && result.errors.length > 0) {
+      console.log(`   ❌ Lista de erros:`, result.errors);
+    }
+    console.log(logSeparator);
     
     toast.success(
       `${deletedCount} pedido${deletedCount !== 1 ? 's' : ''} deletado${deletedCount !== 1 ? 's' : ''} completamente com sucesso`,
@@ -170,8 +204,17 @@ export const superAdminBulkDeletePedidos = async (
 
   } catch (error) {
     const timestamp = getTimestamp();
-    console.error(`💥 [${timestamp}] [SUPER_ADMIN_DELETE] Erro inesperado:`, error);
-    console.error(`💥 [${timestamp}] [SUPER_ADMIN_DELETE] Stack:`, (error as Error).stack);
+    const logSeparator = '═'.repeat(80);
+    
+    console.log(`\n${logSeparator}`);
+    console.error(`💥 [${timestamp}] ERRO FATAL NO CLIENTE`);
+    console.log(logSeparator);
+    console.error(`   Tipo: ${error instanceof Error ? error.constructor.name : typeof error}`);
+    console.error(`   Mensagem: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`   Stack trace:`);
+    console.error((error as Error).stack);
+    console.log(logSeparator);
+    
     toast.error('Erro inesperado ao excluir pedidos: ' + (error as Error).message);
     return {
       success: false,
