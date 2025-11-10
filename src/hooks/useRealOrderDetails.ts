@@ -174,6 +174,9 @@ export const useRealOrderDetails = (orderId: string) => {
 
         // Buscar dados dos prédios
         if (order.lista_predios && order.lista_predios.length > 0) {
+          console.log('🏗️ [ORDER DETAILS] Buscando', order.lista_predios.length, 'prédios');
+          console.log('🏗️ [ORDER DETAILS] IDs dos prédios:', order.lista_predios);
+          
           const { data: buildings, error: buildingsError } = await supabase
             .from('buildings')
             .select(`
@@ -190,7 +193,13 @@ export const useRealOrderDetails = (orderId: string) => {
             `)
             .in('id', order.lista_predios);
 
-          if (buildingsError) throw buildingsError;
+          if (buildingsError) {
+            console.error('💥 [ORDER DETAILS] Erro ao buscar prédios:', buildingsError);
+            throw buildingsError;
+          }
+
+          console.log('✅ [ORDER DETAILS] Prédios encontrados:', buildings?.length || 0);
+          console.log('📋 [ORDER DETAILS] Dados dos prédios:', buildings?.map(b => ({ id: b.id.slice(0, 8), nome: b.nome })));
 
           const formattedBuildings: BuildingData[] = buildings?.map(b => ({
             id: b.id,
@@ -206,6 +215,9 @@ export const useRealOrderDetails = (orderId: string) => {
           })) || [];
 
           setBuildingData(formattedBuildings);
+          console.log('💾 [ORDER DETAILS] BuildingData setado com', formattedBuildings.length, 'prédios');
+        } else {
+          console.log('⚠️ [ORDER DETAILS] Nenhum prédio na lista_predios');
         }
 
       } catch (error) {

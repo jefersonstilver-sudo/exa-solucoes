@@ -33,7 +33,9 @@ interface OrderVideo {
   created_at?: string;
   uploaded_at?: string;
   video_data?: {
+    id: string;
     nome: string;
+    url: string;
     duracao: number;
     orientacao: string;
   };
@@ -309,12 +311,12 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
         )}
 
         {/* SEÇÃO: LOCAIS CONTRATADOS */}
-        {panels.length > 0 && (
+        {panels && panels.length > 0 ? (
           <section className="border border-gray-200 rounded">
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Locais Contratados</h2>
-              <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs font-semibold">
-                {panels.length} {panels.length === 1 ? 'local' : 'locais'}
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Prédios Contratados</h2>
+              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">
+                {panels.length} {panels.length === 1 ? 'prédio' : 'prédios'}
               </span>
             </div>
             
@@ -323,7 +325,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                 <thead>
                   <tr className="bg-gray-100 border-b border-gray-200">
                     <th className="px-4 py-2 text-left font-semibold text-gray-700">ID</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Nome do Local</th>
+                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Nome do Prédio</th>
                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Endereço</th>
                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Bairro</th>
                   </tr>
@@ -335,9 +337,9 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                       className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                     >
                       <td className="px-4 py-2">
-                        <span className="font-mono text-gray-600">#{panel.id.substring(0, 8)}</span>
+                        <span className="font-mono text-blue-600 font-semibold">#{panel.id.substring(0, 8)}</span>
                       </td>
-                      <td className="px-4 py-2 font-medium text-gray-900">{panel.nome}</td>
+                      <td className="px-4 py-2 font-semibold text-gray-900">{panel.nome}</td>
                       <td className="px-4 py-2 text-gray-700">{panel.endereco}</td>
                       <td className="px-4 py-2 text-gray-700">{panel.bairro}</td>
                     </tr>
@@ -346,14 +348,25 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               </table>
             </div>
           </section>
+        ) : (
+          <section className="border border-gray-200 rounded">
+            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Prédios Contratados</h2>
+            </div>
+            <div className="p-8 text-center">
+              <MapPin className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm font-medium text-gray-600 mb-1">Nenhum prédio contratado</p>
+              <p className="text-xs text-gray-500">Os prédios aparecerão aqui quando forem selecionados.</p>
+            </div>
+          </section>
         )}
 
-        {/* SEÇÃO: VÍDEOS ENVIADOS */}
+        {/* SEÇÃO: VÍDEOS ENVIADOS COM PREVIEW */}
         <section className="border border-gray-200 rounded">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
             <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Relatório de Vídeos</h2>
             {videos.length > 0 && (
-              <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs font-semibold">
+              <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-semibold">
                 {videos.length} {videos.length === 1 ? 'vídeo' : 'vídeos'}
               </span>
             )}
@@ -366,88 +379,121 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <p className="text-xs text-gray-500">Os vídeos aparecerão aqui quando forem enviados.</p>
             </div>
           ) : (
-            <div className="overflow-hidden">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-gray-100 border-b border-gray-200">
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Slot</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Nome</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Enviado</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Duração</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Orientação</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Status</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Ativo</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Exibição</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {videos.map((video, index) => (
-                    <tr 
-                      key={video.id}
-                      className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                    >
-                      <td className="px-3 py-2">
-                        <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-700 text-white text-xs font-bold rounded">
-                          {video.slot_position}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 font-medium text-gray-900">
-                        {video.video_data?.nome || 'N/A'}
-                      </td>
-                      <td className="px-3 py-2 text-gray-700">
-                        {video.uploaded_at ? formatDate(video.uploaded_at) : 
-                         video.created_at ? formatDate(video.created_at) : 'N/A'}
-                      </td>
-                      <td className="px-3 py-2 text-gray-700">
-                        {video.video_data?.duracao != null ? `${video.video_data.duracao}s` : 'N/A'}
-                      </td>
-                      <td className="px-3 py-2 text-gray-700 capitalize">
-                        {video.video_data?.orientacao || 'N/A'}
-                      </td>
-                      <td className="px-3 py-2">
-                        {video.approval_status === 'approved' && (
-                          <span className="inline-flex items-center gap-1 text-green-700 font-medium">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Aprovado
-                          </span>
-                        )}
-                        {video.approval_status === 'rejected' && (
-                          <span className="inline-flex items-center gap-1 text-red-700 font-medium">
-                            <XCircle className="h-3 w-3" />
-                            Rejeitado
-                          </span>
-                        )}
-                        {video.approval_status === 'pending' && (
-                          <span className="inline-flex items-center gap-1 text-orange-700 font-medium">
-                            <Clock className="h-3 w-3" />
-                            Pendente
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        {video.is_active ? (
-                          <span className="inline-flex items-center gap-1 text-green-700 font-medium">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Sim
-                          </span>
+            <div className="p-4 space-y-4">
+              {videos.map((video) => (
+                <div 
+                  key={video.id}
+                  className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow"
+                >
+                  <div className="grid grid-cols-12 gap-4">
+                    {/* Preview do Vídeo */}
+                    <div className="col-span-3">
+                      <div className="aspect-video bg-gray-900 relative group">
+                        {video.video_data?.url ? (
+                          <>
+                            <video 
+                              src={video.video_data.url} 
+                              className="w-full h-full object-contain"
+                              controls
+                              preload="metadata"
+                            />
+                            <div className="absolute top-2 left-2">
+                              <span className="bg-black/80 text-white px-2 py-1 rounded text-xs font-semibold">
+                                Slot {video.slot_position}
+                              </span>
+                            </div>
+                          </>
                         ) : (
-                          <span className="text-gray-500">Não</span>
+                          <div className="w-full h-full flex items-center justify-center text-gray-500">
+                            <Video className="h-8 w-8" />
+                          </div>
                         )}
-                      </td>
-                      <td className="px-3 py-2">
-                        {video.selected_for_display ? (
-                          <span className="inline-flex items-center gap-1 text-blue-700 font-medium">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Sim
+                      </div>
+                    </div>
+                    
+                    {/* Informações do Vídeo */}
+                    <div className="col-span-9 p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-gray-900 text-base mb-1">
+                            {video.video_data?.nome || 'Nome não disponível'}
+                          </h3>
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                            <span>{video.video_data?.duracao != null ? `${video.video_data.duracao}s` : 'N/A'}</span>
+                            <span>•</span>
+                            <span className="capitalize">{video.video_data?.orientacao || 'N/A'}</span>
+                            <span>•</span>
+                            <span>
+                              Enviado em {video.uploaded_at ? formatDate(video.uploaded_at) : 
+                              video.created_at ? formatDate(video.created_at) : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Status Badges */}
+                        <div className="flex items-center gap-2">
+                          {video.approval_status === 'approved' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-semibold">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Aprovado
+                            </span>
+                          )}
+                          {video.approval_status === 'rejected' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs font-semibold">
+                              <XCircle className="h-3 w-3" />
+                              Rejeitado
+                            </span>
+                          )}
+                          {video.approval_status === 'pending' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-semibold">
+                              <Clock className="h-3 w-3" />
+                              Pendente
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Status de Exibição */}
+                      <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${video.is_active ? 'bg-green-500' : 'bg-gray-300'}`} />
+                          <span className="text-xs text-gray-600">
+                            {video.is_active ? (
+                              <span className="font-semibold text-green-700">Ativo</span>
+                            ) : (
+                              <span className="text-gray-500">Inativo</span>
+                            )}
                           </span>
-                        ) : (
-                          <span className="text-gray-500">Não</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          {video.selected_for_display ? (
+                            <>
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75" />
+                                <div className="relative w-2 h-2 bg-blue-500 rounded-full" />
+                              </div>
+                              <span className="text-xs font-semibold text-blue-700">EM EXIBIÇÃO</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-2 h-2 bg-gray-300 rounded-full" />
+                              <span className="text-xs text-gray-500">Na lista de programação</span>
+                            </>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2 justify-end">
+                          <span className="text-xs text-gray-500">Slot</span>
+                          <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-700 text-white text-xs font-bold rounded">
+                            {video.slot_position}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </section>
