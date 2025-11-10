@@ -60,3 +60,28 @@ export const deleteBuildingFromDatabase = async (id: string) => {
     throw error;
   }
 };
+
+export const updateBuildingCode = async (id: string, newCode: string) => {
+  try {
+    const { error } = await supabase
+      .from('buildings')
+      .update({ codigo_predio: newCode })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    // Log da ação
+    await supabase.rpc('log_building_action', {
+      p_building_id: id,
+      p_action_type: 'update',
+      p_description: `Código do prédio atualizado para: ${newCode}`,
+      p_new_values: { codigo_predio: newCode }
+    });
+
+    toast.success('Código do prédio atualizado com sucesso!');
+  } catch (error) {
+    console.error('Erro ao atualizar código:', error);
+    toast.error('Erro ao atualizar código do prédio');
+    throw error;
+  }
+};

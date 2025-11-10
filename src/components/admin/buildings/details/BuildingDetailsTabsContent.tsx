@@ -61,6 +61,7 @@ const BuildingDetailsTabsContent: React.FC<BuildingDetailsTabsContentProps> = ({
           panels={panels}
           contactInfo={contactInfo}
           canAccessContacts={canAccessContacts}
+          onRefresh={onRefresh}
         />
       </TabsContent>
 

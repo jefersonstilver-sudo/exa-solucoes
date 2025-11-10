@@ -13,19 +13,22 @@ import {
   Phone,
   UserCheck
 } from 'lucide-react';
+import BuildingCodeEditor from './BuildingCodeEditor';
 
 interface BuildingOverviewTabProps {
   building: any;
   panels: any[];
   contactInfo?: any;
   canAccessContacts?: boolean;
+  onRefresh?: () => void;
 }
 
 const BuildingOverviewTab: React.FC<BuildingOverviewTabProps> = ({
   building,
   panels,
   contactInfo,
-  canAccessContacts
+  canAccessContacts,
+  onRefresh
 }) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -36,6 +39,9 @@ const BuildingOverviewTab: React.FC<BuildingOverviewTabProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Código do Prédio */}
+      <BuildingCodeEditor building={building} onUpdate={() => onRefresh?.()} />
+
       {/* Informações Básicas */}
       <Card>
         <CardHeader>
