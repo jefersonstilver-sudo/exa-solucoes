@@ -2,16 +2,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { videoLogger } from './logger/VideoActionLogger';
 
 /**
+ * Extrai o nome do arquivo sem extensão de uma URL
+ */
+const getFileNameWithoutExtension = (url: string): string => {
+  const parts = url.split('/');
+  const fileName = parts[parts.length - 1];
+  return fileName.replace(/\.mp4$/i, '');
+};
+
+/**
  * Sincroniza o status de exibição de um vídeo com a API externa
  */
 const syncVideoWithExternalAPI = async (
   buildingIds: string[],
-  videoTitle: string,
+  videoFileName: string,
   isActive: boolean
 ): Promise<void> => {
   const API_BASE_URL = 'http://15.228.8.3:8000';
   
-  console.log(`🔄 [EXTERNAL_API] Sincronizando vídeo "${videoTitle}" (ativo: ${isActive})`);
+  console.log(`🔄 [EXTERNAL_API] Sincronizando vídeo "${videoFileName}" (ativo: ${isActive})`);
   
   for (const buildingId of buildingIds) {
     try {
@@ -20,7 +29,7 @@ const syncVideoWithExternalAPI = async (
       const url = `${API_BASE_URL}/ativo/${clientId}`;
       
       const payload = {
-        titulo: videoTitle,
+        titulo: videoFileName,
         ativo: isActive
       };
       
@@ -86,7 +95,8 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
           approval_status,
           videos (
             id,
-            nome
+            nome,
+            url
           )
         `)
         .eq('id', slotId)
@@ -120,7 +130,8 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
           video_id,
           videos (
             id,
-            nome
+            nome,
+            url
           )
         `)
         .eq('pedido_id', pv.pedido_id);
@@ -178,17 +189,19 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
           if (allVideos && allVideos.length > 0) {
             for (const video of allVideos) {
               if (video.id !== slotId) {
-                const videoTitle = (video.videos as any)?.nome || 'Video sem titulo';
-                console.log(`🔄 [VIDEO_BASE] Fallback: Desativando vídeo na API: ${videoTitle}`);
-                await syncVideoWithExternalAPI(buildingIds, videoTitle, false);
+                const videoUrl = (video.videos as any)?.url || '';
+                const videoFileName = videoUrl ? getFileNameWithoutExtension(videoUrl) : 'video';
+                console.log(`🔄 [VIDEO_BASE] Fallback: Desativando vídeo na API: ${videoFileName}`);
+                await syncVideoWithExternalAPI(buildingIds, videoFileName, false);
               }
             }
           }
           
           // DEPOIS: Ativar o vídeo selecionado na API externa
-          const selectedVideoTitle = (pv.videos as any)?.nome || 'Video sem titulo';
-          console.log(`🔄 [VIDEO_BASE] Fallback: Ativando vídeo na API: ${selectedVideoTitle}`);
-          await syncVideoWithExternalAPI(buildingIds, selectedVideoTitle, true);
+          const selectedVideoUrl = (pv.videos as any)?.url || '';
+          const selectedVideoFileName = selectedVideoUrl ? getFileNameWithoutExtension(selectedVideoUrl) : 'video';
+          console.log(`🔄 [VIDEO_BASE] Fallback: Ativando vídeo na API: ${selectedVideoFileName}`);
+          await syncVideoWithExternalAPI(buildingIds, selectedVideoFileName, true);
           
           console.log('✅ [VIDEO_BASE] Fallback: Sincronização com API externa concluída');
         } catch (apiError) {
@@ -284,7 +297,8 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
           video_id,
           videos (
             id,
-            nome
+            nome,
+            url
           )
         `)
         .eq('id', slotId)
@@ -298,11 +312,12 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
         return true; // Não falhar a operação principal por causa disso
       }
       
-      const selectedVideoTitle = (selectedSlot.videos as any)?.nome || 'Video sem titulo';
-      console.log('📹 [VIDEO_BASE] Vídeo selecionado:', selectedVideoTitle);
+      const selectedVideoUrl = (selectedSlot.videos as any)?.url || '';
+      const selectedVideoFileName = selectedVideoUrl ? getFileNameWithoutExtension(selectedVideoUrl) : 'video';
+      console.log('📹 [VIDEO_BASE] Vídeo selecionado (arquivo):', selectedVideoFileName);
       videoLogger.setContext({
         videoId: selectedSlot.video_id,
-        videoTitle: selectedVideoTitle,
+        videoTitle: selectedVideoFileName,
         orderId: selectedSlot.pedido_id
       });
       
@@ -337,7 +352,8 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
           video_id,
           videos (
             id,
-            nome
+            nome,
+            url
           )
         `)
         .eq('pedido_id', selectedSlot.pedido_id);
@@ -362,26 +378,27 @@ export const setBaseVideo = async (slotId: string): Promise<boolean> => {
       if (allVideos && allVideos.length > 0) {
         for (const video of allVideos) {
           if (video.id !== slotId) { // Não processar o vídeo selecionado ainda
-            const videoTitle = (video.videos as any)?.nome || 'Video sem titulo';
-            console.log(`🔄 [VIDEO_BASE] Desativando vídeo: ${videoTitle}`);
+            const videoUrl = (video.videos as any)?.url || '';
+            const videoFileName = videoUrl ? getFileNameWithoutExtension(videoUrl) : 'video';
+            console.log(`🔄 [VIDEO_BASE] Desativando vídeo: ${videoFileName}`);
             videoLogger.log('info', 'API_SYNC', 'Deactivating video', { 
               videoId: video.id,
-              videoTitle,
+              videoFileName,
               buildingCount: buildingIds.length
             });
-            await syncVideoWithExternalAPI(buildingIds, videoTitle, false);
+            await syncVideoWithExternalAPI(buildingIds, videoFileName, false);
           }
         }
       }
       
       // 5. DEPOIS: Ativar o vídeo selecionado
       videoLogger.log('info', 'API_SYNC_PHASE', 'Starting activation phase', { 
-        videoTitle: selectedVideoTitle,
+        videoFileName: selectedVideoFileName,
         buildingCount: buildingIds.length
       });
       
-      console.log(`🔄 [VIDEO_BASE] Ativando vídeo selecionado: ${selectedVideoTitle}`);
-      await syncVideoWithExternalAPI(buildingIds, selectedVideoTitle, true);
+      console.log(`🔄 [VIDEO_BASE] Ativando vídeo selecionado: ${selectedVideoFileName}`);
+      await syncVideoWithExternalAPI(buildingIds, selectedVideoFileName, true);
       
       console.log('✅ [VIDEO_BASE] Sincronização com API externa concluída');
       videoLogger.log('info', 'API_SYNC_PHASE', 'Sync completed successfully', {});
