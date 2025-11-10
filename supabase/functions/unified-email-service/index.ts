@@ -178,6 +178,76 @@ serve(async (req: Request) => {
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
 
+    } else if (action === 'video_submitted' || action === 'video_approved' || action === 'video_rejected') {
+      // NOTIFICAÇÕES DE VÍDEO
+      const userEmail = user?.email;
+      const userName = user?.user_metadata?.name || userEmail?.split('@')[0] || 'Cliente';
+      const videoTitle = validatedData.video_data?.video_title || 'Seu Vídeo';
+      const orderId = validatedData.video_data?.order_id;
+
+      if (!userEmail) {
+        return new Response(JSON.stringify({ 
+          error: 'Email do usuário é obrigatório',
+          success: false 
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      console.log(`📧 [UNIFIED-EMAIL] Enviando notificação de vídeo (${action}) para:`, userEmail);
+
+      let emailData, emailError;
+
+      if (action === 'video_submitted') {
+        ({ data: emailData, error: emailError } = await emailService.sendVideoSubmittedEmail(
+          userEmail,
+          userName,
+          videoTitle,
+          orderId
+        ));
+      } else if (action === 'video_approved') {
+        const buildings = validatedData.video_data?.buildings || [];
+        const startDate = validatedData.video_data?.start_date || new Date().toLocaleDateString('pt-BR');
+        const endDate = validatedData.video_data?.end_date || new Date().toLocaleDateString('pt-BR');
+        
+        ({ data: emailData, error: emailError } = await emailService.sendVideoApprovedEmail(
+          userEmail,
+          userName,
+          videoTitle,
+          buildings,
+          startDate,
+          endDate,
+          orderId
+        ));
+      } else if (action === 'video_rejected') {
+        const rejectionReason = validatedData.video_data?.rejection_reason || 'Não especificado';
+        
+        ({ data: emailData, error: emailError } = await emailService.sendVideoRejectedEmail(
+          userEmail,
+          userName,
+          videoTitle,
+          rejectionReason,
+          orderId
+        ));
+      }
+
+      if (emailError) {
+        console.error(`❌ [UNIFIED-EMAIL] Erro ao enviar notificação de vídeo (${action}):`, emailError);
+        throw emailError;
+      }
+
+      console.log(`✅ [UNIFIED-EMAIL] Notificação de vídeo (${action}) enviada com sucesso!`);
+
+      return new Response(JSON.stringify({ 
+        message: `Email de ${action} enviado com sucesso`,
+        email_id: emailData?.id,
+        success: true
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+
     } else {
       // EMAIL DE CONFIRMAÇÃO INICIAL (webhook do Supabase)
       if (!user?.email) {

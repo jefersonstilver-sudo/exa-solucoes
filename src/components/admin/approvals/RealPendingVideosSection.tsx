@@ -145,6 +145,35 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
       
       console.log('✅ [APPROVE] RPC executada com sucesso:', data);
 
+      // Buscar dados do vídeo para enviar email
+      const { data: videoData } = await supabase
+        .from('pedido_videos')
+        .select('video_id, pedido_id, videos(nome)')
+        .eq('id', videoId)
+        .single();
+
+      // Enviar email de aprovação
+      if (videoData?.pedido_id) {
+        try {
+          console.log('📧 [APPROVE] Enviando email de aprovação...');
+          const { error: emailError } = await supabase.functions.invoke('video-notification-service', {
+            body: {
+              action: 'video_approved',
+              pedido_id: videoData.pedido_id,
+              video_title: (videoData.videos as any)?.nome || 'Seu Vídeo'
+            }
+          });
+
+          if (emailError) {
+            console.warn('⚠️ [APPROVE] Erro ao enviar email:', emailError);
+          } else {
+            console.log('✅ [APPROVE] Email de aprovação enviado!');
+          }
+        } catch (emailErr) {
+          console.warn('⚠️ [APPROVE] Falha ao enviar email:', emailErr);
+        }
+      }
+
       // Enviar automaticamente para o webhook após aprovação
       try {
         const { sendVideoApprovalToWebhook } = await import('@/services/videoApprovalWebhookService');
@@ -188,6 +217,36 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
       });
 
       if (error) throw error;
+
+      // Buscar dados do vídeo para enviar email
+      const { data: videoData } = await supabase
+        .from('pedido_videos')
+        .select('video_id, pedido_id, videos(nome)')
+        .eq('id', videoId)
+        .single();
+
+      // Enviar email de rejeição
+      if (videoData?.pedido_id) {
+        try {
+          console.log('📧 [REJECT] Enviando email de rejeição...');
+          const { error: emailError } = await supabase.functions.invoke('video-notification-service', {
+            body: {
+              action: 'video_rejected',
+              pedido_id: videoData.pedido_id,
+              video_title: (videoData.videos as any)?.nome || 'Seu Vídeo',
+              rejection_reason: reason
+            }
+          });
+
+          if (emailError) {
+            console.warn('⚠️ [REJECT] Erro ao enviar email:', emailError);
+          } else {
+            console.log('✅ [REJECT] Email de rejeição enviado!');
+          }
+        } catch (emailErr) {
+          console.warn('⚠️ [REJECT] Falha ao enviar email:', emailErr);
+        }
+      }
 
       toast.success(`Vídeo de ${clientName} rejeitado. Cliente será notificado.`);
       onRefresh();
