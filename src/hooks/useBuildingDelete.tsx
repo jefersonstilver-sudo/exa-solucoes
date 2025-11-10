@@ -1,0 +1,85 @@
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+export const useBuildingDelete = () => {
+  const [loading, setLoading] = useState(false);
+
+  const deleteBuilding = async (buildingId: string, buildingName: string, onSuccess: () => void) => {
+    setLoading(true);
+
+    try {
+      console.log('[DELETE BUILDING] Iniciando deleção:', { buildingId, buildingName });
+
+      // Buscar o prédio para obter o codigo_predio
+      const { data: building, error: fetchError } = await supabase
+        .from('buildings')
+        .select('id, nome, codigo_predio')
+        .eq('id', buildingId)
+        .single();
+
+      if (fetchError || !building) {
+        throw new Error('Prédio não encontrado');
+      }
+
+      const clienteId = building.codigo_predio || building.id.replace(/-/g, '').substring(0, 4);
+
+      // Chamar Edge Function (proxy) para deletar cliente externo
+      try {
+        console.log('[DELETE BUILDING] Deletando cliente externo via Edge Function:', { clienteId });
+
+        const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('delete-building-client', {
+          body: {
+            cliente_id: clienteId
+          }
+        });
+
+        if (edgeFunctionError) {
+          console.error('[DELETE BUILDING] Erro na Edge Function:', edgeFunctionError);
+          // Não falhar a deleção - a API externa pode estar offline ou o cliente já deletado
+        }
+
+        if (edgeFunctionData && !edgeFunctionData.success) {
+          console.warn('[DELETE BUILDING] Aviso ao deletar cliente externo:', edgeFunctionData.error);
+          // Continuar mesmo com erro - o cliente pode já ter sido deletado
+        }
+
+        console.log('[DELETE BUILDING] Cliente externo deletado (ou já inexistente)');
+      } catch (apiError) {
+        console.error('[DELETE BUILDING] Erro ao chamar API externa (não crítico):', apiError);
+        // Continuar com a deleção do prédio mesmo se a API externa falhar
+      }
+
+      // Deletar o prédio do banco de dados
+      const { error: deleteError } = await supabase
+        .from('buildings')
+        .delete()
+        .eq('id', buildingId);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      // Log da ação
+      await supabase.rpc('log_building_action', {
+        p_building_id: buildingId,
+        p_action_type: 'delete',
+        p_description: `Prédio "${buildingName}" deletado`,
+        p_new_values: null,
+      });
+
+      toast.success('Prédio deletado com sucesso!');
+      onSuccess();
+    } catch (error: any) {
+      console.error('[DELETE BUILDING] Erro ao deletar prédio:', error);
+      toast.error(error.message || 'Erro ao deletar prédio');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    deleteBuilding,
+    loading
+  };
+};

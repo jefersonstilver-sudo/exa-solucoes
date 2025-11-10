@@ -9,9 +9,21 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useBuildingFormData } from '@/hooks/useBuildingFormData';
+import { useBuildingDelete } from '@/hooks/useBuildingDelete';
 import { supabase } from '@/integrations/supabase/client';
 import BuildingFormLayout from './form/BuildingFormLayout';
+import { Trash2 } from 'lucide-react';
 
 interface BuildingFormDialogProps {
   open: boolean;
@@ -28,6 +40,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
 }) => {
   const [panels, setPanels] = useState<any[]>([]);
   const [loadingPanels, setLoadingPanels] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const {
     formData,
@@ -36,6 +49,8 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
     handleCharacteristicToggle,
     handleSubmit
   } = useBuildingFormData(building, open);
+
+  const { deleteBuilding, loading: deleting } = useBuildingDelete();
 
   // Carregar painéis quando editando um prédio
   useEffect(() => {
@@ -92,6 +107,20 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
     handleSubmit(e, onSuccess, onOpenChange);
   };
 
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!building?.id) return;
+    
+    await deleteBuilding(building.id, building.nome || 'Prédio', () => {
+      setShowDeleteConfirm(false);
+      onOpenChange(false);
+      onSuccess();
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
@@ -115,20 +144,58 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
             onPanelsChange={handlePanelsChange}
           />
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={loading || loadingPanels} 
-              className="bg-[#9C1E1E] hover:bg-[#180A0A]"
-            >
-              {loading ? 'Salvando...' : (building ? 'Atualizar Prédio' : 'Criar Prédio')}
-            </Button>
+          <DialogFooter className="flex justify-between items-center">
+            <div className="flex-1">
+              {building && (
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  onClick={handleDeleteClick}
+                  disabled={loading || loadingPanels || deleting}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Deletar Prédio
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={loading || loadingPanels || deleting} 
+                className="bg-[#9C1E1E] hover:bg-[#180A0A]"
+              >
+                {loading ? 'Salvando...' : (building ? 'Atualizar Prédio' : 'Criar Prédio')}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja deletar este prédio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O prédio "{building?.nome}" será permanentemente deletado
+              do banco de dados e do sistema externo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? 'Deletando...' : 'Deletar Prédio'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

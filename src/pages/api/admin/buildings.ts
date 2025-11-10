@@ -15,6 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return createBuilding(req, res);
     case 'PUT':
       return updateBuilding(req, res);
+    case 'DELETE':
+      return deleteBuilding(req, res);
     default:
       return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -166,6 +168,87 @@ async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
+// Delete an existing building
+async function deleteBuilding(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const { id } = req.body;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'Building ID is required' });
+    }
+
+    // Buscar o prédio para obter o codigo_predio antes de deletar
+    const { data: building, error: fetchError } = await supabase
+      .from('buildings')
+      .select('id, nome, codigo_predio')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !building) {
+      throw new Error('Prédio não encontrado');
+    }
+
+    const clienteId = building.codigo_predio || building.id.replace(/-/g, '').substring(0, 4);
+
+    // Chamar Edge Function (proxy) para deletar cliente externo
+    try {
+      console.log('[DELETE API] Deletando cliente externo via Edge Function:', { clienteId, nome: building.nome });
+      
+      const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('delete-building-client', {
+        body: {
+          cliente_id: clienteId
+        }
+      });
+
+      if (edgeFunctionError) {
+        console.error('[DELETE API] Erro na Edge Function:', edgeFunctionError);
+        // Não falhar a deleção se a API externa falhar (pode já não existir)
+      }
+
+      if (edgeFunctionData && !edgeFunctionData.success) {
+        console.warn('[DELETE API] Aviso ao deletar cliente externo:', edgeFunctionData.error);
+        // Continuar mesmo com erro - o cliente pode já ter sido deletado
+      }
+
+      console.log('[DELETE API] Cliente externo deletado (ou já inexistente)');
+    } catch (apiError) {
+      console.error('[DELETE API] Erro ao chamar API externa (não crítico):', apiError);
+      // Continuar com a deleção do prédio mesmo se a API externa falhar
+    }
+
+    // Deletar o prédio do banco de dados
+    const { error: deleteError } = await supabase
+      .from('buildings')
+      .delete()
+      .eq('id', id);
+      
+    if (deleteError) {
+      throw deleteError;
+    }
+    
+    // Log action
+    if (req.headers.authorization) {
+      const token = req.headers.authorization.split(' ')[1];
+      const { data: { user } } = await supabase.auth.getUser(token);
+      
+      if (user) {
+        await logUserAction(
+          user.id,
+          'delete_building',
+          { building_id: id, building_name: building.nome }
+        );
+      }
+    }
+    
+    return res.status(200).json({ 
+      success: true,
+      message: 'Prédio deletado com sucesso' 
+    });
+  } catch (error) {
+    console.error('Error deleting building:', error);
+    return res.status(500).json({ error: 'Error deleting building' });
+  }
+}
 // Update an existing building
 async function updateBuilding(req: NextApiRequest, res: NextApiResponse) {
   try {
