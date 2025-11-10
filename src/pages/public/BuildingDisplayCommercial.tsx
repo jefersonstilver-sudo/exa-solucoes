@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
 import exaLogo from '@/assets/exa-logo.png';
+import WeatherFooter from '@/components/public/WeatherFooter';
 
 const BuildingDisplayCommercial = () => {
   const { buildingId } = useParams<{ buildingId: string }>();
@@ -141,22 +142,8 @@ const BuildingDisplayCommercial = () => {
         </div>
       </main>
 
-      {/* Footer elegante com texto personalizado */}
-      <footer className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black via-zinc-900 to-transparent backdrop-blur-sm">
-        <div className="container mx-auto px-8 py-6">
-          <div className="text-center">
-            <p className="text-white/90 text-sm font-light tracking-wide">
-              Exibição ao vivo da lista de programação em exibição {buildingName ? `do ${buildingName}` : ''}
-            </p>
-            <div className="mt-2 flex items-center justify-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-red-400 text-xs font-medium tracking-wider uppercase">
-                Ao Vivo
-              </span>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Footer com meteorologia e horário */}
+      <WeatherFooter buildingName={buildingName} />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Eye, Edit, Camera, Trash2, Monitor, Video } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import VideosPopover from '../VideosPopover';
 
 interface BuildingActionsProps {
   building: any;
@@ -29,10 +30,12 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
           {videoCount > 0 ? (
             <>
               <div className="flex items-center gap-2 text-sm">
-                <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-white text-xs font-semibold">
-                  <Video className="h-3 w-3 animate-pulse" />
-                  <span>{videoCount} vídeo{videoCount > 1 ? 's' : ''} no AR</span>
-                </div>
+                <VideosPopover buildingId={building.id} videoCount={videoCount}>
+                  <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-white text-xs font-semibold cursor-pointer hover:from-green-600 hover:to-emerald-600 transition-all">
+                    <Video className="h-3 w-3 animate-pulse" />
+                    <span>{videoCount} vídeo{videoCount > 1 ? 's' : ''} no AR</span>
+                  </div>
+                </VideosPopover>
               </div>
               <div className="flex gap-2">
                 <button
