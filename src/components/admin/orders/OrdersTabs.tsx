@@ -18,6 +18,7 @@ import { ptBR } from 'date-fns/locale';
 import { Eye, Trash2, AlertTriangle, Building, DollarSign, Calendar, User, Mail, Shield, ShieldOff } from 'lucide-react';
 import { EnhancedOrderCard } from './components/EnhancedOrderCard';
 import { bulkDeletePedidos, bulkDeleteTentativas, superAdminBulkDeletePedidos } from '@/services/bulkDeleteService';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface OrdersTabsProps {
@@ -79,6 +80,8 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [selectedOrderForBlocking, setSelectedOrderForBlocking] = useState<string | null>(null);
   const [blockingMode, setBlockingMode] = useState<'block' | 'unblock'>('block');
+  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+  const [diagnosticData, setDiagnosticData] = useState<any>(null);
   
   const isSuperAdmin = userProfile?.role === 'super_admin';
 
@@ -251,7 +254,7 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
     setSelectedOrderForBlocking(null);
   };
 
-  const handleDebugLog = () => {
+  const handleDebugLog = async () => {
     const selectedPedidos = selectedItems.filter(id => 
       ordersAndAttempts.find(item => item.id === id && item.type === 'order')
     );
@@ -264,27 +267,80 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
       ordersAndAttempts.find(item => item.id === id)
     );
 
-    console.log('🔍 ======= DEBUG LOG - DELEÇÃO DE PEDIDOS =======');
-    console.log('📊 Informações do Usuário:', {
-      userProfile,
-      isSuperAdmin,
-      userId: userProfile?.id,
-      role: userProfile?.role
-    });
-    console.log('📦 Itens Selecionados:', {
-      total: selectedItems.length,
-      pedidos: selectedPedidos.length,
-      tentativas: selectedTentativas.length,
-      ids: selectedItems
-    });
-    console.log('📋 Dados dos Pedidos Selecionados:', selectedPedidosData);
-    console.log('🔧 Funções Disponíveis:', {
-      bulkDeletePedidos: typeof bulkDeletePedidos,
-      superAdminBulkDeletePedidos: typeof superAdminBulkDeletePedidos
-    });
+    // Buscar dados completos do primeiro pedido selecionado para diagnóstico
+    let pedidoDetails = null;
+    let videosDetails = null;
+    let userRoleCheck = null;
+    
+    if (selectedPedidos.length > 0) {
+      try {
+        // Buscar dados completos do pedido
+        const { data: pedido, error: pedidoError } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', selectedPedidos[0])
+          .single();
+        
+        pedidoDetails = { data: pedido, error: pedidoError };
+
+        // Buscar vídeos do pedido
+        const { data: videos, error: videosError } = await supabase
+          .from('pedido_videos')
+          .select('*')
+          .eq('pedido_id', selectedPedidos[0]);
+        
+        videosDetails = { data: videos, error: videosError, count: videos?.length || 0 };
+
+        // Verificar role do usuário
+        const { data: user, error: userError } = await supabase
+          .from('users')
+          .select('id, email, role')
+          .eq('id', userProfile?.id)
+          .single();
+        
+        userRoleCheck = { data: user, error: userError };
+
+        // Testar se a função de super admin está acessível
+        const { data: testResult, error: testError } = await supabase.rpc('is_current_user_super_admin');
+        
+        userRoleCheck.functionTest = { data: testResult, error: testError };
+
+      } catch (error) {
+        console.error('Erro ao buscar detalhes:', error);
+      }
+    }
+
+    const diagnostic = {
+      timestamp: new Date().toISOString(),
+      user: {
+        profile: userProfile,
+        isSuperAdmin,
+        userId: userProfile?.id,
+        role: userProfile?.role,
+        roleCheck: userRoleCheck
+      },
+      selection: {
+        total: selectedItems.length,
+        pedidos: selectedPedidos.length,
+        tentativas: selectedTentativas.length,
+        ids: selectedItems,
+        pedidosIds: selectedPedidos
+      },
+      pedidosData: selectedPedidosData,
+      firstPedidoDetails: pedidoDetails,
+      videosDetails: videosDetails,
+      functions: {
+        bulkDeletePedidos: typeof bulkDeletePedidos,
+        superAdminBulkDeletePedidos: typeof superAdminBulkDeletePedidos
+      }
+    };
+
+    console.log('🔍 ======= DIAGNÓSTICO COMPLETO - DELEÇÃO =======');
+    console.log(JSON.stringify(diagnostic, null, 2));
     console.log('=====================================');
 
-    toast.info('Log de debug enviado para o console (F12)');
+    setDiagnosticData(diagnostic);
+    setDiagnosticOpen(true);
   };
 
   const renderItemCard = (item: any) => (
@@ -482,6 +538,101 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
         isBlocking={blockingMode === 'block' ? isBlocking : isUnblocking}
         mode={blockingMode}
       />
+
+      {/* Modal de Diagnóstico */}
+      <Dialog open={diagnosticOpen} onOpenChange={setDiagnosticOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              🔍 Diagnóstico Completo - Deleção de Pedidos
+            </DialogTitle>
+          </DialogHeader>
+          
+          {diagnosticData && (
+            <div className="space-y-4 font-mono text-xs">
+              <div className="space-y-2">
+                <h3 className="font-bold text-sm">👤 Usuário</h3>
+                <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded">
+                  <p><strong>ID:</strong> {diagnosticData.user.userId}</p>
+                  <p><strong>Email:</strong> {diagnosticData.user.profile?.email}</p>
+                  <p><strong>Role:</strong> <Badge variant={diagnosticData.user.isSuperAdmin ? "destructive" : "secondary"}>{diagnosticData.user.role}</Badge></p>
+                  <p><strong>É Super Admin:</strong> {diagnosticData.user.isSuperAdmin ? '✅ SIM' : '❌ NÃO'}</p>
+                  {diagnosticData.user.roleCheck && (
+                    <div className="mt-2 border-t pt-2">
+                      <p className="font-bold">Verificação no Banco:</p>
+                      <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(diagnosticData.user.roleCheck, null, 2)}</pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-bold text-sm">📦 Seleção</h3>
+                <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded">
+                  <p><strong>Total:</strong> {diagnosticData.selection.total}</p>
+                  <p><strong>Pedidos:</strong> {diagnosticData.selection.pedidos}</p>
+                  <p><strong>Tentativas:</strong> {diagnosticData.selection.tentativas}</p>
+                  <p><strong>IDs dos Pedidos:</strong></p>
+                  <pre className="text-xs whitespace-pre-wrap max-h-32 overflow-y-auto">{JSON.stringify(diagnosticData.selection.pedidosIds, null, 2)}</pre>
+                </div>
+              </div>
+
+              {diagnosticData.firstPedidoDetails && (
+                <div className="space-y-2">
+                  <h3 className="font-bold text-sm">📋 Primeiro Pedido Selecionado</h3>
+                  <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded max-h-48 overflow-y-auto">
+                    <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(diagnosticData.firstPedidoDetails, null, 2)}</pre>
+                  </div>
+                </div>
+              )}
+
+              {diagnosticData.videosDetails && (
+                <div className="space-y-2">
+                  <h3 className="font-bold text-sm">🎥 Vídeos do Pedido</h3>
+                  <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded">
+                    <p><strong>Total de Vídeos:</strong> {diagnosticData.videosDetails.count}</p>
+                    <div className="max-h-48 overflow-y-auto mt-2">
+                      <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(diagnosticData.videosDetails, null, 2)}</pre>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <h3 className="font-bold text-sm">🔧 Funções Disponíveis</h3>
+                <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded">
+                  <p><strong>bulkDeletePedidos:</strong> {diagnosticData.functions.bulkDeletePedidos}</p>
+                  <p><strong>superAdminBulkDeletePedidos:</strong> {diagnosticData.functions.superAdminBulkDeletePedidos}</p>
+                  <p className="mt-2 text-yellow-600 dark:text-yellow-400">
+                    ⚡ {diagnosticData.user.isSuperAdmin 
+                      ? 'Usando superAdminBulkDeletePedidos (deleção completa)'
+                      : 'Usando bulkDeletePedidos (deleção com validações)'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-bold text-sm">📊 JSON Completo</h3>
+                <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded max-h-96 overflow-y-auto">
+                  <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(diagnosticData, null, 2)}</pre>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              navigator.clipboard.writeText(JSON.stringify(diagnosticData, null, 2));
+              toast.success('Diagnóstico copiado para clipboard');
+            }}>
+              📋 Copiar JSON
+            </Button>
+            <Button onClick={() => setDiagnosticOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Tabs>
   );
 };
