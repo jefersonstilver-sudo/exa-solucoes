@@ -3366,6 +3366,45 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_pix_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          pedido_id: string | null
+          request_data: Json | null
+          response_data: Json | null
+          response_status: number | null
+          success: boolean | null
+          user_id: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          pedido_id?: string | null
+          request_data?: Json | null
+          response_data?: Json | null
+          response_status?: number | null
+          success?: boolean | null
+          user_id?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          pedido_id?: string | null
+          request_data?: Json | null
+          response_data?: Json | null
+          response_status?: number | null
+          success?: boolean | null
+          user_id?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       users_with_role: {

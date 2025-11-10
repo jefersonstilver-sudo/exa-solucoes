@@ -1,4 +1,5 @@
 import { PixWebhookData, PixWebhookResponse } from '@/types/pixWebhook';
+import { supabase } from '@/integrations/supabase/client';
 
 const PIX_WEBHOOK_URL = 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19';
 
@@ -64,6 +65,25 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       url: PIX_WEBHOOK_URL
     });
     
+    // ✅ NOVO: Salvar log de resposta (não bloqueante)
+    const logWebhookResponse = async (responseData: any, success: boolean, errorMsg?: string) => {
+      try {
+        await supabase.from('webhook_pix_logs').insert({
+          pedido_id: data.pedido_id || null,
+          request_data: webhookPayload,
+          response_data: responseData,
+          response_status: response.status,
+          success: success,
+          error_message: errorMsg || null,
+          webhook_url: PIX_WEBHOOK_URL,
+          user_id: data.cliente_id || null
+        });
+        console.log('[PixWebhookService] ✅ Log salvo no banco');
+      } catch (logError) {
+        console.warn('[PixWebhookService] ⚠️ Erro ao salvar log (não crítico):', logError);
+      }
+    };
+    
     if (!response.ok) {
       let errorText = '';
       try {
@@ -72,6 +92,14 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       } catch (e) {
         console.error('[PixWebhookService] Erro ao ler resposta de erro:', e);
       }
+      
+      // Salvar log de erro
+      await logWebhookResponse(
+        { error: errorText }, 
+        false, 
+        `Webhook falhou: ${response.status} - ${response.statusText}`
+      );
+      
       throw new Error(`Webhook falhou: ${response.status} - ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
     }
     
@@ -82,6 +110,10 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
     
     if (!responseText || responseText.trim() === '') {
       console.error('[PixWebhookService] Resposta vazia do webhook');
+      
+      // Salvar log de resposta vazia
+      await logWebhookResponse({ empty: true }, false, 'Resposta vazia do webhook');
+      
       // FALLBACK: Retornar dados de teste para permitir que o popup abra
       return {
         success: true,
@@ -139,6 +171,9 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
         ...result
       };
       
+      // ✅ Salvar log de sucesso
+      await logWebhookResponse(result, true);
+      
       console.log('[PixWebhookService] Resposta PIX mapeada:', pixResponse);
       return pixResponse;
     } else {
@@ -147,6 +182,10 @@ export const sendPixPaymentWebhook = async (data: PixWebhookData): Promise<PixWe
       }
       
       console.warn('[PixWebhookService] Webhook não retornou dados PIX, usando fallback');
+      
+      // Salvar log de fallback
+      await logWebhookResponse(result, false, 'Webhook não retornou dados PIX');
+      
       // FALLBACK: Retornar dados de teste
       return {
         success: true,
