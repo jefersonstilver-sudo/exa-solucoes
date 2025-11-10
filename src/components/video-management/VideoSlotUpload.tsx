@@ -107,26 +107,51 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
 
   // Upload direto sem agendamento
   const handleDirectUpload = async () => {
+    console.log('🚀 [VideoSlotUpload] handleDirectUpload iniciado', {
+      slotPosition,
+      hasFile: !!selectedFile,
+      fileName: selectedFile?.name,
+      videoTitle,
+      companyInfoComplete,
+      uploading,
+      isUploading
+    });
+
     if (!companyInfoComplete) {
+      console.warn('⚠️ [VideoSlotUpload] Cadastro da empresa incompleto');
       toast.error('Complete o cadastro da empresa antes de fazer upload');
       navigate('/anunciante/configuracoes');
       return;
     }
 
     if (!validateTitle(videoTitle)) {
+      console.warn('⚠️ [VideoSlotUpload] Validação de título falhou');
       return;
     }
 
     if (!selectedFile) {
-      alert('Por favor, selecione um arquivo de vídeo');
+      console.warn('⚠️ [VideoSlotUpload] Nenhum arquivo selecionado');
+      toast.error('Por favor, selecione um arquivo de vídeo');
       return;
     }
 
     try {
+      console.log('📤 [VideoSlotUpload] Chamando onUpload...', {
+        slotPosition,
+        fileName: selectedFile.name,
+        videoTitle
+      });
+
+      toast.loading('Iniciando upload do vídeo...', { id: 'upload-toast' });
+      
       await onUpload(slotPosition, selectedFile, videoTitle);
+      
+      console.log('✅ [VideoSlotUpload] onUpload completado com sucesso');
+      toast.success('Upload concluído!', { id: 'upload-toast' });
       
       // Enviar email de confirmação de recebimento
       try {
+        console.log('📧 [VideoSlotUpload] Tentando enviar email de confirmação...');
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           // Buscar pedido mais recente do usuário
@@ -139,7 +164,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
             .single();
 
           if (pedido?.id) {
-            console.log('📧 Enviando email de vídeo recebido...');
+            console.log('📧 Enviando email de vídeo recebido para pedido:', pedido.id);
             const { error: emailError } = await supabase.functions.invoke('video-notification-service', {
               body: {
                 action: 'video_submitted',
@@ -160,11 +185,13 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       }
       
       // Reset after upload
+      console.log('🔄 [VideoSlotUpload] Resetando formulário');
       setSelectedFile(null);
       setVideoTitle('');
       setTitleError('');
     } catch (error) {
-      console.error('Erro no upload:', error);
+      console.error('💥 [VideoSlotUpload] Erro no upload:', error);
+      toast.error(`Erro ao fazer upload: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, { id: 'upload-toast' });
     }
   };
 
@@ -255,15 +282,24 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         disabled={!canUpload}
         className="w-full mt-4"
       >
-        {isUploading ? (
+        {uploading || isUploading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Enviando...
+            Enviando vídeo...
           </>
         ) : (
           'Enviar Vídeo'
         )}
       </Button>
+
+      {/* Debug info - remover em produção */}
+      {import.meta.env.DEV && (
+        <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-100 rounded">
+          Debug: canUpload={String(canUpload)} | uploading={String(uploading)} | isUploading={String(isUploading)}
+          {!selectedFile && <div>❌ Sem arquivo</div>}
+          {!videoTitle.trim() && <div>❌ Sem título</div>}
+        </div>
+      )}
 
     </div>
   );

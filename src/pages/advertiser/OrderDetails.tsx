@@ -169,9 +169,26 @@ const OrderDetails = () => {
   };
 
   const handleVideoUpload = async (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => {
-    if (!userProfile?.id || !id) return;
+    console.log('🎬 [OrderDetails] handleVideoUpload chamado', {
+      slotPosition,
+      fileName: file.name,
+      fileSize: file.size,
+      title,
+      hasScheduleRules: !!scheduleRules,
+      rulesCount: scheduleRules?.length || 0,
+      userId: userProfile?.id,
+      orderId: id,
+      contractExpired: contractStatus.isExpired
+    });
+
+    if (!userProfile?.id || !id) {
+      console.error('❌ [OrderDetails] Usuário ou pedido não encontrado');
+      toast.error('Erro: dados do usuário ou pedido não disponíveis');
+      return;
+    }
     
     if (contractStatus.isExpired) {
+      console.warn('⚠️ [OrderDetails] Contrato expirado');
       toast.error('Não é possível fazer upload de vídeos para contratos expirados');
       return;
     }
@@ -183,15 +200,25 @@ const OrderDetails = () => {
       rulesCount: scheduleRules?.length || 0,
       scheduleRules
     });
-    
-    await uploadVideo(slotPosition, file, userProfile.id, title, scheduleRules);
-    
-    // Track video upload after successful upload
-    // Note: We refresh slots after upload to get the new video ID
-    await refreshSlots();
-    const uploadedSlot = videoSlots.find(slot => slot.slot_position === slotPosition);
-    if (uploadedSlot?.video_data?.id) {
-      await trackVideoUpload(uploadedSlot.video_data.id, id);
+
+    try {
+      console.log('📤 [OrderDetails] Chamando uploadVideo...');
+      await uploadVideo(slotPosition, file, userProfile.id, title, scheduleRules);
+      console.log('✅ [OrderDetails] Upload concluído com sucesso');
+      
+      // Track video upload after successful upload
+      // Note: We refresh slots after upload to get the new video ID
+      console.log('🔄 [OrderDetails] Atualizando slots...');
+      await refreshSlots();
+      const uploadedSlot = videoSlots.find(slot => slot.slot_position === slotPosition);
+      if (uploadedSlot?.video_data?.id) {
+        await trackVideoUpload(uploadedSlot.video_data.id, id);
+        console.log('✅ [OrderDetails] Upload rastreado');
+      }
+      console.log('✅ [OrderDetails] handleVideoUpload concluído completamente');
+    } catch (error) {
+      console.error('💥 [OrderDetails] Erro no handleVideoUpload:', error);
+      throw error; // Re-throw para ser tratado pelo componente
     }
   };
 
