@@ -103,18 +103,18 @@ const CheckoutSummary = () => {
     couponDiscount,
     paymentMethod
   });
-  const pixDiscount = 5; // 5% desconto PIX
-  const pixTotal = Math.max(0, baseTotal * (1 - pixDiscount / 100));
-  const cardTotal = Math.max(0, baseTotal); // Cartão sem desconto
+  
+  // SEM desconto PIX - mesmo preço para ambos métodos
+  const finalTotal = Math.max(0, baseTotal);
 
   // Detectar se é pedido gratuito (cupom 100%)
-  const isFreeOrder = pixTotal <= 0;
+  const isFreeOrder = finalTotal <= 0;
   const handleBack = () => {
     navigate('/checkout/cupom');
   };
   const handlePixPayment = async () => {
     console.log('[CheckoutSummary] INICIANDO PAGAMENTO PIX:', {
-      pixTotal,
+      finalTotal,
       cartItemsCount: cartItems?.length || 0,
       selectedPlan,
       timestamp: new Date().toISOString()
@@ -161,7 +161,7 @@ const CheckoutSummary = () => {
   };
   const handleCardPayment = async () => {
     console.log('💳 [CheckoutSummary] INICIANDO PAGAMENTO CARTÃO:', {
-      cardTotal,
+      finalTotal,
       cartItemsCount: cartItems?.length || 0,
       selectedPlan,
       timestamp: new Date().toISOString()
@@ -232,7 +232,6 @@ const CheckoutSummary = () => {
                   selectedMethod={paymentMethod}
                   onMethodChange={setPaymentMethod}
                   totalAmount={baseTotal}
-                  pixDiscount={pixDiscount}
                 />
               )}
 
@@ -242,7 +241,6 @@ const CheckoutSummary = () => {
                 selectedPlan={selectedPlan} 
                 couponValid={couponValid} 
                 couponDiscount={couponDiscount} 
-                pixDiscount={pixDiscount} 
                 paymentMethod={paymentMethod} 
               />
 
@@ -259,13 +257,13 @@ const CheckoutSummary = () => {
                 ) : (
                   paymentMethod === 'pix' ? (
                     <PixPaymentButton 
-                      totalAmount={pixTotal} 
+                      totalAmount={finalTotal} 
                       onPaymentInitiate={handlePixPayment} 
                       disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
                     />
                   ) : (
                     <CreditCardPaymentButton 
-                      totalAmount={cardTotal} 
+                      totalAmount={finalTotal} 
                       onPaymentInitiate={handleCardPayment} 
                       disabled={!cartItems || cartItems.length === 0 || isCardProcessing} 
                     />

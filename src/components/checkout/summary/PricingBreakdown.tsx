@@ -10,7 +10,6 @@ interface PricingBreakdownProps {
   selectedPlan: PlanKey | null;
   couponValid?: boolean;
   couponDiscount?: number;
-  pixDiscount: number;
   paymentMethod: 'pix' | 'credit_card';
 }
 const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
@@ -18,7 +17,6 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   selectedPlan,
   couponValid = false,
   couponDiscount = 0,
-  pixDiscount,
   paymentMethod
 }) => {
   console.log('[PricingBreakdown] Debug:', {
@@ -26,7 +24,6 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
     selectedPlan,
     couponValid,
     couponDiscount,
-    pixDiscount,
     paymentMethod
   });
   if (!selectedPlan || !cartItems || cartItems.length === 0) {
@@ -41,11 +38,10 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   const baseTotal = calculateTotalPrice(selectedPlan, cartItems, 0, false);
   const couponDiscountAmount = couponValid && couponDiscount > 0 ? baseTotal * couponDiscount / 100 : 0;
   const totalAfterCoupon = baseTotal - couponDiscountAmount;
-  const pixDiscountAmount = paymentMethod === 'pix' ? totalAfterCoupon * pixDiscount / 100 : 0;
 
-  // CRÍTICO: Calcular o total final considerando o método de pagamento
-  const finalTotal = Math.max(0, totalAfterCoupon - pixDiscountAmount);
-  const totalSavings = couponDiscountAmount + pixDiscountAmount;
+  // CRÍTICO: Total final SEM desconto PIX
+  const finalTotal = Math.max(0, totalAfterCoupon);
+  const totalSavings = couponDiscountAmount;
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -79,21 +75,6 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
             </div>
             <span className="font-semibold text-orange-600">
               -{formatCurrency(couponDiscountAmount)}
-            </span>
-          </div>
-        )}
-
-        {/* Desconto PIX */}
-        {paymentMethod === 'pix' && (
-          <div className="flex justify-between items-center py-2 border-b">
-            <div className="flex items-center space-x-1.5">
-              <Smartphone className="h-3.5 w-3.5 text-green-500" />
-              <span className="text-sm text-green-600">
-                PIX ({pixDiscount}%)
-              </span>
-            </div>
-            <span className="font-semibold text-green-600">
-              -{formatCurrency(pixDiscountAmount)}
             </span>
           </div>
         )}
