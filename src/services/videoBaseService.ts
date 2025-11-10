@@ -205,9 +205,9 @@ export const setBaseVideo = async (slotId: string): Promise<{
     // Chamar API externa com o client_id
     if (clientId) {
       try {
-        console.log('📞 [VIDEO_BASE] Chamando API externa:', `http://15.228.8.3:8000/ativo/${clientId}`);
+        console.log('📞 [VIDEO_BASE] Chamando API externa (PATCH):', `http://15.228.8.3:8000/ativo/${clientId}`);
         const response = await fetch(`http://15.228.8.3:8000/ativo/${clientId}`, {
-          method: 'GET',
+          method: 'PATCH',
         });
         console.log('✅ [VIDEO_BASE] Resposta da API externa:', response.status);
       } catch (apiError) {
