@@ -213,31 +213,16 @@ export const setBaseVideo = async (slotId: string): Promise<{
 
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
     
-    // Chamar API externa com o client_id
-    if (clientId && tituloSemExtensao) {
+    // Chamar API externa com o client_id (simples, sem body)
+    if (clientId) {
       try {
-        const body = {
-          titulo: tituloSemExtensao,
-          ativo: true
-        };
-        
         console.log('📞 [VIDEO_BASE] Chamando API externa (PATCH):', `http://15.228.8.3:8000/ativo/${clientId}`);
-        console.log('📦 [VIDEO_BASE] Body da requisição:', body);
         
         const response = await fetch(`http://15.228.8.3:8000/ativo/${clientId}`, {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
         });
         
         console.log('✅ [VIDEO_BASE] Resposta da API externa:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('⚠️ [VIDEO_BASE] Erro na resposta da API:', errorText);
-        }
       } catch (apiError) {
         console.error('⚠️ [VIDEO_BASE] Erro ao chamar API externa (não bloqueante):', apiError);
       }
