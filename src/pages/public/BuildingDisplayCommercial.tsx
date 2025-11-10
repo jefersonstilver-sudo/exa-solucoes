@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
+import { useVideoCache } from '@/hooks/useVideoCache';
 import { supabase } from '@/integrations/supabase/client';
 import exaLogo from '@/assets/exa-logo.png';
 import { Wifi, WifiOff } from 'lucide-react';
@@ -19,9 +20,11 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const buildingId = propBuildingId || params.buildingId || '';
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [buildingName, setBuildingName] = useState('');
+  const [videosWithCache, setVideosWithCache] = useState<any[]>([]);
   const networkStatus = useNetworkMonitor();
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastVideoCountRef = useRef(0);
+  const { getCachedVideoUrl, preCacheVideos } = useVideoCache(buildingId);
   const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
     preventPrint: true,
@@ -99,10 +102,40 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     };
   }, [refetch, activeVideos.length]);
 
-  // Atualizar contagem de vídeos
+  // Atualizar contagem de vídeos e pre-cachear
   useEffect(() => {
     lastVideoCountRef.current = activeVideos.length;
-  }, [activeVideos.length]);
+    
+    if (activeVideos.length > 0) {
+      console.log('[DISPLAY COMMERCIAL] Pre-caching videos...');
+      preCacheVideos(activeVideos);
+    }
+  }, [activeVideos, preCacheVideos]);
+
+  // Carregar videos com cache
+  useEffect(() => {
+    if (activeVideos.length === 0) {
+      setVideosWithCache([]);
+      return;
+    }
+
+    const loadVideosWithCache = async () => {
+      const videos = await Promise.all(
+        activeVideos.map(async (video) => {
+          const url = await getCachedVideoUrl(video.video_id, video.video_url);
+          return {
+            id: video.video_id || '',
+            video_url: url,
+            video_nome: video.video_name || ''
+          };
+        })
+      );
+      setVideosWithCache(videos);
+      console.log('[DISPLAY COMMERCIAL]', videos.length, 'videos carregados com cache');
+    };
+
+    loadVideosWithCache();
+  }, [activeVideos, getCachedVideoUrl]);
 
   // Loading - sem mostrar para evitar lag visual
   if (loading && activeVideos.length === 0) {
@@ -202,7 +235,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
             <div className="h-full bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/5 p-3 flex items-center justify-center">
               <div className="w-full h-full max-w-6xl max-h-full">
                 <CommercialVideoHero 
-                  videos={activeVideos.map(v => ({
+                  videos={videosWithCache.length > 0 ? videosWithCache : activeVideos.map(v => ({
                     id: v.video_id || '',
                     video_url: v.video_url,
                     video_nome: v.video_name || ''

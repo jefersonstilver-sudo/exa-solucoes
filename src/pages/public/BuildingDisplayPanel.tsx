@@ -4,6 +4,8 @@ import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
 import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
 import { useVideoProtection } from '@/hooks/useVideoProtection';
+import { useVideoCache } from '@/hooks/useVideoCache';
+import { WifiOff } from 'lucide-react';
 
 interface BuildingDisplayPanelProps {
   buildingId?: string;
@@ -15,11 +17,15 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
+  const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
+  const [videoError, setVideoError] = useState(false);
+  const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastVideoCountRef = useRef(0);
   const networkStatus = useNetworkMonitor();
+  const { getCachedVideoUrl, preCacheVideos } = useVideoCache(buildingId);
   const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
     preventPrint: true,
@@ -101,12 +107,48 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     };
   }, [refetch, activeVideos.length]);
 
-  // Atualizar contagem de vídeos
+  // Atualizar contagem de vídeos e pre-cachear
   useEffect(() => {
     lastVideoCountRef.current = activeVideos.length;
-  }, [activeVideos.length]);
+    
+    if (activeVideos.length > 0) {
+      console.log('[DISPLAY PANEL] Pre-caching videos...');
+      preCacheVideos(activeVideos);
+    }
+  }, [activeVideos, preCacheVideos]);
 
-  // Auto-avançar com loop infinito - transição imediata e suave
+  // Carregar video com cache quando mudar o indice
+  useEffect(() => {
+    if (activeVideos.length === 0) return;
+    
+    const loadVideo = async () => {
+      const selectedVideo = activeVideos[selectedVideoIndex];
+      if (!selectedVideo) return;
+
+      try {
+        setVideoError(false);
+        const url = await getCachedVideoUrl(selectedVideo.video_id, selectedVideo.video_url);
+        setCurrentVideoUrl(url);
+        console.log('[DISPLAY PANEL] Video carregado:', selectedVideo.video_name);
+      } catch (error) {
+        console.error('[DISPLAY PANEL] Erro ao carregar video:', error);
+        setVideoError(true);
+      }
+    };
+
+    loadVideo();
+  }, [selectedVideoIndex, activeVideos, getCachedVideoUrl]);
+
+  // Mostrar indicador offline por 5 segundos quando perder conexao
+  useEffect(() => {
+    if (!networkStatus.isOnline) {
+      setShowOfflineIndicator(true);
+      const timer = setTimeout(() => setShowOfflineIndicator(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [networkStatus.isOnline]);
+
+  // Auto-avancar com loop infinito e error handling
   useEffect(() => {
     const video = videoRef.current;
     if (!video || activeVideos.length === 0) return;
@@ -116,17 +158,27 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
       setSelectedVideoIndex(nextIndex);
     };
 
-    // Garantir que o vídeo sempre carrega e reproduz sem lag
     const handleCanPlay = () => {
-      video.play().catch(err => console.log('Autoplay prevented:', err));
+      video.play().catch(err => console.log('[DISPLAY PANEL] Autoplay prevented:', err));
+    };
+
+    const handleError = () => {
+      console.error('[DISPLAY PANEL] Erro ao reproduzir video, pulando para proximo...');
+      setVideoError(true);
+      setTimeout(() => {
+        const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
+        setSelectedVideoIndex(nextIndex);
+      }, 1000);
     };
 
     video.addEventListener('ended', handleVideoEnd);
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('error', handleError);
     
     return () => {
       video.removeEventListener('ended', handleVideoEnd);
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('error', handleError);
     };
   }, [selectedVideoIndex, activeVideos.length]);
 
@@ -148,14 +200,22 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
 
   return (
     <div ref={protectionRef} className="w-full h-screen bg-black overflow-hidden select-none">
-      {/* Player fullscreen limpo com PROTEÇÃO ANTI-PIRATARIA */}
+      {/* Indicador Offline Discreto */}
+      {showOfflineIndicator && !networkStatus.isOnline && (
+        <div className="fixed top-4 right-4 z-50 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <WifiOff className="h-4 w-4" />
+          <span className="text-sm font-medium">Modo Offline - Reproduzindo do cache</span>
+        </div>
+      )}
+
+      {/* Player fullscreen limpo com CACHE OFFLINE */}
       <div className="w-full h-full relative" onContextMenu={(e) => e.preventDefault()}>
-        {selectedVideo && (
+        {selectedVideo && currentVideoUrl && !videoError && (
           <>
             <video
               ref={videoRef}
-              key={selectedVideo.video_url}
-              src={selectedVideo.video_url}
+              key={currentVideoUrl}
+              src={currentVideoUrl}
               className="w-full h-full object-contain select-none"
               style={{ margin: 0, padding: 0, display: 'block', pointerEvents: 'none' }}
               autoPlay

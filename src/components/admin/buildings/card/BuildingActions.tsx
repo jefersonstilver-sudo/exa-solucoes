@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Eye, Edit, Camera, Trash2, Monitor, Video, Code } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import VideosPopover from '../VideosPopover';
+import { BuildingVideoPlaylistPreview } from '../BuildingVideoPlaylistPreview';
 import { generateCommercialPath, generatePanelPath, generateEmbedPath } from '@/utils/buildingSlugUtils';
 import { generatePublicUrl } from '@/config/domain';
 
@@ -24,7 +24,17 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
   onDelete,
   videoCount
 }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   return (
+    <>
+      <BuildingVideoPlaylistPreview
+        buildingId={building.id}
+        buildingName={building.nome}
+        buildingCode={building.codigo_predio || '000'}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     <div className="space-y-3 mt-auto">
       {/* Contador de vídeos e links de painel */}
       {typeof videoCount === 'number' && (
@@ -32,12 +42,13 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
           {videoCount > 0 ? (
             <>
               <div className="flex items-center gap-2 text-sm">
-                <VideosPopover buildingId={building.id} videoCount={videoCount}>
-                  <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 text-xs font-medium cursor-pointer hover:bg-green-100 transition-colors">
-                    <Video className="h-3 w-3" />
-                    <span>{videoCount} vídeo{videoCount > 1 ? 's' : ''} no AR</span>
-                  </div>
-                </VideosPopover>
+                <div 
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded text-green-700 text-xs font-medium cursor-pointer hover:bg-green-100 transition-colors"
+                >
+                  <Video className="h-3 w-3" />
+                  <span>{videoCount} vídeo{videoCount > 1 ? 's' : ''} no AR</span>
+                </div>
               </div>
               <div className="flex gap-2">
                 <button
@@ -132,6 +143,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
         </Button>
       </div>
     </div>
+    </>
   );
 };
 

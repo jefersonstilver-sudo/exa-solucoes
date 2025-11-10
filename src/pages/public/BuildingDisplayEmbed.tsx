@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
 import { useVideoProtection } from '@/hooks/useVideoProtection';
+import { useVideoCache } from '@/hooks/useVideoCache';
+import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
+import { WifiOff } from 'lucide-react';
 
 /**
  * Embed player - versão totalmente limpa para embed em outros sistemas
@@ -19,10 +22,15 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   const buildingId = propBuildingId || params.buildingId || '';
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
+  const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
+  const [videoError, setVideoError] = useState(false);
+  const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastVideoCountRef = useRef(0);
+  const networkStatus = useNetworkMonitor();
+  const { getCachedVideoUrl, preCacheVideos } = useVideoCache(buildingId);
   const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
     preventPrint: true,
@@ -84,12 +92,48 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     };
   }, [refetch, activeVideos.length]);
 
-  // Atualizar contagem de vídeos
+  // Atualizar contagem de vídeos e pre-cachear
   useEffect(() => {
     lastVideoCountRef.current = activeVideos.length;
-  }, [activeVideos.length]);
+    
+    if (activeVideos.length > 0) {
+      console.log('[EMBED PLAYER] Pre-caching videos...');
+      preCacheVideos(activeVideos);
+    }
+  }, [activeVideos, preCacheVideos]);
 
-  // Auto-avançar com loop infinito
+  // Carregar video com cache quando mudar o indice
+  useEffect(() => {
+    if (activeVideos.length === 0) return;
+    
+    const loadVideo = async () => {
+      const selectedVideo = activeVideos[selectedVideoIndex];
+      if (!selectedVideo) return;
+
+      try {
+        setVideoError(false);
+        const url = await getCachedVideoUrl(selectedVideo.video_id, selectedVideo.video_url);
+        setCurrentVideoUrl(url);
+        console.log('[EMBED PLAYER] Video carregado:', selectedVideo.video_name);
+      } catch (error) {
+        console.error('[EMBED PLAYER] Erro ao carregar video:', error);
+        setVideoError(true);
+      }
+    };
+
+    loadVideo();
+  }, [selectedVideoIndex, activeVideos, getCachedVideoUrl]);
+
+  // Mostrar indicador offline por 5 segundos
+  useEffect(() => {
+    if (!networkStatus.isOnline) {
+      setShowOfflineIndicator(true);
+      const timer = setTimeout(() => setShowOfflineIndicator(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [networkStatus.isOnline]);
+
+  // Auto-avancar com loop infinito e error handling
   useEffect(() => {
     const video = videoRef.current;
     if (!video || activeVideos.length === 0) return;
@@ -100,15 +144,26 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     };
 
     const handleCanPlay = () => {
-      video.play().catch(err => console.log('Autoplay prevented:', err));
+      video.play().catch(err => console.log('[EMBED PLAYER] Autoplay prevented:', err));
+    };
+
+    const handleError = () => {
+      console.error('[EMBED PLAYER] Erro ao reproduzir video, pulando para proximo...');
+      setVideoError(true);
+      setTimeout(() => {
+        const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
+        setSelectedVideoIndex(nextIndex);
+      }, 1000);
     };
 
     video.addEventListener('ended', handleVideoEnd);
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('error', handleError);
     
     return () => {
       video.removeEventListener('ended', handleVideoEnd);
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('error', handleError);
     };
   }, [selectedVideoIndex, activeVideos.length]);
 
@@ -131,12 +186,20 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
       style={{ margin: 0, padding: 0, overflow: 'hidden' }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {selectedVideo && (
+      {/* Indicador Offline Discreto */}
+      {showOfflineIndicator && !networkStatus.isOnline && (
+        <div className="fixed top-2 right-2 z-50 bg-red-500/90 text-white px-3 py-1.5 rounded shadow-lg flex items-center gap-2 text-xs">
+          <WifiOff className="h-3 w-3" />
+          <span>Offline</span>
+        </div>
+      )}
+
+      {selectedVideo && currentVideoUrl && !videoError && (
         <div className="relative w-full h-full">
           <video
             ref={videoRef}
-            key={selectedVideo.video_url}
-            src={selectedVideo.video_url}
+            key={currentVideoUrl}
+            src={currentVideoUrl}
             className="w-full h-full object-contain select-none"
             style={{ margin: 0, padding: 0, display: 'block', pointerEvents: 'none' }}
             autoPlay

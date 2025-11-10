@@ -20,6 +20,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,19 +37,30 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % videos.length);
         setIsTransitioning(false);
+        setVideoError(false);
       }, 150);
     };
 
     const handleCanPlay = () => {
-      video.play().catch(err => console.log('Autoplay prevented:', err));
+      video.play().catch(err => console.log('[COMMERCIAL HERO] Autoplay prevented:', err));
+    };
+
+    const handleError = () => {
+      console.error('[COMMERCIAL HERO] Erro ao reproduzir video, pulando para proximo...');
+      setVideoError(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % videos.length);
+      }, 1000);
     };
 
     video.addEventListener('ended', handleVideoEnd);
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('error', handleError);
     
     return () => {
       video.removeEventListener('ended', handleVideoEnd);
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('error', handleError);
     };
   }, [currentIndex, videos.length]);
 
@@ -103,8 +115,8 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
           return false;
         }}
       >
-        {/* Vídeo atual com proteção */}
-        {currentVideo && (
+        {/* Vídeo atual com proteção e error handling */}
+        {currentVideo && !videoError && (
           <div className={cn(
             "w-full h-full transition-opacity duration-150",
             isTransitioning ? "opacity-0" : "opacity-100"
