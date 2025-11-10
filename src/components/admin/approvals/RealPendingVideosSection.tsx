@@ -153,12 +153,52 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
       
       console.log('✅ [APPROVE] Vídeo aprovado com sucesso no banco!');
 
-      // Buscar dados do vídeo para enviar email
+      // Buscar dados do vídeo para enviar email e verificar se é o primeiro
       const { data: videoData } = await supabase
         .from('pedido_videos')
         .select('video_id, pedido_id, videos(nome)')
         .eq('id', videoId)
         .single();
+
+      // ✅ NOVO: Verificar se é o primeiro vídeo aprovado e ativar automaticamente
+      if (videoData?.pedido_id) {
+        try {
+          console.log('🔍 [APPROVE] Verificando se é o primeiro vídeo aprovado...');
+          const { data: approvedVideos } = await supabase
+            .from('pedido_videos')
+            .select('id')
+            .eq('pedido_id', videoData.pedido_id)
+            .eq('approval_status', 'approved');
+
+          const isFirstVideo = approvedVideos && approvedVideos.length === 1;
+          console.log(`📊 [APPROVE] Total de vídeos aprovados: ${approvedVideos?.length || 0}, É primeiro? ${isFirstVideo}`);
+
+          if (isFirstVideo) {
+            console.log('🎯 [APPROVE] É o primeiro vídeo! Ativando automaticamente via API externa...');
+            
+            const { data: activationData, error: activationError } = await supabase.functions.invoke(
+              'auto-activate-first-video',
+              { body: { pedido_video_id: videoId } }
+            );
+
+            if (activationError) {
+              console.error('❌ [APPROVE] Erro ao ativar primeiro vídeo:', activationError);
+              toast.warning('Vídeo aprovado, mas houve erro na ativação automática. Verifique manualmente.');
+            } else if (activationData?.success) {
+              console.log('✅ [APPROVE] Primeiro vídeo ativado automaticamente:', activationData);
+              toast.success('🎉 Primeiro vídeo aprovado e ativado automaticamente nos painéis!');
+            } else if (activationData?.skipped) {
+              console.log('⚠️ [APPROVE] Ativação não necessária:', activationData.message);
+            } else {
+              console.warn('⚠️ [APPROVE] Ativação parcial:', activationData);
+              toast.warning('Vídeo aprovado, mas ativação parcial. Verifique os logs.');
+            }
+          }
+        } catch (activationErr: any) {
+          console.error('💥 [APPROVE] Exceção ao tentar ativar primeiro vídeo:', activationErr);
+          toast.warning('Vídeo aprovado, mas houve problema na ativação automática.');
+        }
+      }
 
       // Enviar email de aprovação
       if (videoData?.pedido_id) {
