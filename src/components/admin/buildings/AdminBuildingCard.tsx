@@ -305,7 +305,13 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               size="sm" 
               onClick={() => {
                 const buildingCode = building.codigo_predio || '000';
+                console.log('🔗 [LINK COMERCIAL] Gerando link:', {
+                  nome: building.nome,
+                  codigo: buildingCode,
+                  codigo_original: building.codigo_predio
+                });
                 const url = `${window.location.origin}${generateCommercialPath(building.nome, buildingCode)}`;
+                console.log('🌐 [LINK COMERCIAL] URL gerada:', url);
                 window.open(url, '_blank');
                 navigator.clipboard.writeText(url);
                 import('@/hooks/use-toast').then(({ toast }) => {

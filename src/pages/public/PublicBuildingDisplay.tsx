@@ -33,49 +33,70 @@ const PublicBuildingDisplay: React.FC<PublicBuildingDisplayProps> = ({
 
   useEffect(() => {
     const fetchBuildingBySlugAndCode = async () => {
+      console.log('🔍 [PUBLIC DISPLAY] Iniciando busca:', { 
+        buildingSlug, 
+        buildingCode,
+        variant,
+        fullPath: window.location.pathname 
+      });
+
       if (!buildingCode) {
+        console.error('❌ [PUBLIC DISPLAY] Código do prédio não fornecido');
         setNotFound(true);
         setLoading(false);
         return;
       }
 
       try {
-        console.log('🔍 Buscando prédio:', { buildingSlug, buildingCode });
+        console.log('📡 [PUBLIC DISPLAY] Buscando no banco:', { codigo_predio: buildingCode });
 
         // Buscar prédio pelo código (mais confiável)
         const { data, error } = await supabase
           .from('buildings')
-          .select('id, nome, codigo_predio')
+          .select('id, nome, codigo_predio, status')
           .eq('codigo_predio', buildingCode)
-          .eq('status', 'ativo')
           .maybeSingle();
 
+        console.log('📊 [PUBLIC DISPLAY] Resultado da query:', { data, error });
+
         if (error) {
-          console.error('❌ Erro ao buscar prédio:', error);
+          console.error('❌ [PUBLIC DISPLAY] Erro ao buscar prédio:', error);
           setNotFound(true);
           setLoading(false);
           return;
         }
 
         if (!data) {
-          console.warn('⚠️ Prédio não encontrado:', { buildingCode });
+          console.warn('⚠️ [PUBLIC DISPLAY] Prédio não encontrado com código:', buildingCode);
+          // Tentar listar todos os códigos disponíveis para debug
+          const { data: allBuildings } = await supabase
+            .from('buildings')
+            .select('codigo_predio, nome')
+            .limit(10);
+          console.log('📋 [PUBLIC DISPLAY] Códigos disponíveis:', allBuildings);
           setNotFound(true);
           setLoading(false);
           return;
         }
 
-        console.log('✅ Prédio encontrado:', data);
+        console.log('✅ [PUBLIC DISPLAY] Prédio encontrado:', data);
+        
+        // Verificar se está ativo
+        if (data.status !== 'ativo') {
+          console.warn('⚠️ [PUBLIC DISPLAY] Prédio não está ativo:', data.status);
+        }
+        
         setBuildingId(data.id);
         setLoading(false);
       } catch (err) {
-        console.error('💥 Erro crítico:', err);
+        console.error('💥 [PUBLIC DISPLAY] Erro crítico:', err);
         setNotFound(true);
         setLoading(false);
       }
     };
 
     fetchBuildingBySlugAndCode();
-  }, [buildingSlug, buildingCode]);
+  }, [buildingSlug, buildingCode, variant]);
 
   if (loading) {
     return <GlobalLoadingPage message="Carregando exibição..." />;
