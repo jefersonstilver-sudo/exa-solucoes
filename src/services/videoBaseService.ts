@@ -72,7 +72,7 @@ const fallbackDirectUpdate = async (slotId: string): Promise<SetBaseVideoResult>
 
   // 1) Buscar dados do slot (pedido_id, video_id, approval_status)
   const { data: pv, error: pvErr } = await supabase
-    .from<PedidoVideosRow>("pedido_videos")
+    .from("pedido_videos")
     .select(
       `
       id,
@@ -167,7 +167,7 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
 
     // Buscar dados essenciais do pedido/slot/video
     const { data: pvData, error: pvError } = await supabase
-      .from<PedidoVideosRow>("pedido_videos")
+      .from("pedido_videos")
       .select(
         `
         pedido_id,
