@@ -59,6 +59,8 @@ export const useCampaignCreator = () => {
         }
       }
       
+      // 🔒 CRITICAL FIX: Criar apenas UMA campanha por pedido, não uma por painel
+      // Os painéis já estão vinculados ao pedido via lista_paineis
       const panelIds = Array.isArray(orderData.lista_paineis)
         ? orderData.lista_paineis 
         : [orderData.lista_paineis];
@@ -66,25 +68,31 @@ export const useCampaignCreator = () => {
       if (!panelIds || panelIds.length === 0) {
         throw new Error('Nenhum painel encontrado no pedido');
       }
+
+      // ✅ CORRIGIDO: Criar apenas UMA campanha vinculada ao pedido
+      // O primeiro painel será usado como referência principal
+      const mainPanelId = panelIds[0];
       
-      for (const panelId of panelIds) {
-        const campaignData = prepareForInsert({
-          client_id: userId,
-          painel_id: panelId,
-          video_id: 'default_video_id',
-          data_inicio: orderData.data_inicio,
-          data_fim: orderData.data_fim,
-          status: 'ativa'
-        });
-        
-        const { error: campaignError } = await supabase
-          .from('campanhas')
-          .insert(campaignData as any);
-        
-        if (campaignError) {
-          throw new Error(`Erro ao criar campanha: ${campaignError.message}`);
-        }
+      console.log(`📋 [CAMPAIGN_CREATOR] Criando UMA campanha para pedido ${pedidoId} com ${panelIds.length} painéis`);
+      
+      const campaignData = prepareForInsert({
+        client_id: userId,
+        painel_id: mainPanelId, // Painel principal (primeiro da lista)
+        video_id: 'default_video_id',
+        data_inicio: orderData.data_inicio,
+        data_fim: orderData.data_fim,
+        status: 'ativa'
+      });
+      
+      const { error: campaignError } = await supabase
+        .from('campanhas')
+        .insert(campaignData as any);
+      
+      if (campaignError) {
+        throw new Error(`Erro ao criar campanha: ${campaignError.message}`);
       }
+      
+      console.log(`✅ [CAMPAIGN_CREATOR] UMA campanha criada com sucesso para ${panelIds.length} painéis`);
       
       return { success: true, message: 'Campanhas criadas com sucesso' };
     } catch (error: any) {
