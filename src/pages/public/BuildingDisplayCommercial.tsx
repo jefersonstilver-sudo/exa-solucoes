@@ -168,6 +168,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
             <WeatherFooter buildingName={buildingName} />
           }
         />
+      </main>
     </div>
   );
 };
