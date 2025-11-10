@@ -22,7 +22,8 @@ export const useBuildingDelete = () => {
         throw new Error('Prédio não encontrado');
       }
 
-      const clienteId = building.codigo_predio || building.id.replace(/-/g, '').substring(0, 4);
+      // Usar sempre os primeiros 4 caracteres do UUID do Supabase
+      const clienteId = building.id.replace(/-/g, '').substring(0, 4);
 
       // Chamar Edge Function (proxy) para deletar cliente externo - CRÍTICO
       console.log('[DELETE BUILDING] Deletando cliente externo via Edge Function:', { clienteId });
