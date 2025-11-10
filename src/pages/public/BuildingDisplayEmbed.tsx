@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
-import { supabase } from '@/integrations/supabase/client';
-import { useVideoProtection } from '@/hooks/useVideoProtection';
 import { useVideoCache } from '@/hooks/useVideoCache';
+import { useVideoProtection } from '@/hooks/useVideoProtection';
 import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
 import { WifiOff } from 'lucide-react';
 
 /**
- * Embed player - versão totalmente limpa para embed em outros sistemas
- * Sem header, footer, bordas ou qualquer UI
- * Ideal para iframes, painéis de comunicação interna, etc.
+ * 🎬 EMBED PLAYER - Link Limpo 
+ * Versão minimalista para embed em outros sistemas
+ * Sem UI, apenas vídeo em tela cheia com transições suaves
  */
 
 interface BuildingDisplayEmbedProps {
@@ -21,12 +20,14 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   const params = useParams<{ buildingId: string }>();
   const buildingId = propBuildingId || params.buildingId || '';
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
-  const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
-  const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
-  const [videoError, setVideoError] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isReady, setIsReady] = useState(false);
+  const [videosWithCache, setVideosWithCache] = useState<any[]>([]);
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
+  const hasEndedRef = useRef(false);
+  const isTransitioningRef = useRef(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastVideoCountRef = useRef(0);
   const networkStatus = useNetworkMonitor();
@@ -38,34 +39,21 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     preventScreenCapture: true
   });
 
-  // Preload próximo vídeo
-  const nextVideoIndex = (selectedVideoIndex + 1) % activeVideos.length;
-  const nextVideo = activeVideos[nextVideoIndex];
+  const currentVideo = videosWithCache[currentIndex];
+  const nextVideoIndex = (currentIndex + 1) % videosWithCache.length;
+  const nextVideo = videosWithCache[nextVideoIndex];
 
-  // Sistema de polling para verificar novos vídeos a cada 10 segundos
+  // ✅ Sistema de polling a cada 10 segundos
   useEffect(() => {
     console.log('🔌 [EMBED PLAYER] Iniciando sistema de polling...');
     
-    // PROTEÇÃO GLOBAL - Bloquear contexto menu NO DOCUMENTO INTEIRO
     const blockContextMenu = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      e.stopImmediatePropagation();
       return false;
     };
     
-    const blockRightClick = (e: MouseEvent) => {
-      if (e.button === 2) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        return false;
-      }
-    };
-    
-    // Adicionar listeners com capture phase
     document.addEventListener('contextmenu', blockContextMenu, { capture: true });
-    document.addEventListener('mousedown', blockRightClick, { capture: true });
     
     pollingIntervalRef.current = setInterval(async () => {
       try {
@@ -86,45 +74,46 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
         clearInterval(pollingIntervalRef.current);
         console.log('🔌 [EMBED PLAYER] Sistema de polling desligado');
       }
-      // Remover proteção global ao sair
       document.removeEventListener('contextmenu', blockContextMenu, { capture: true } as any);
-      document.removeEventListener('mousedown', blockRightClick, { capture: true } as any);
     };
   }, [refetch, activeVideos.length]);
 
-  // Atualizar contagem de vídeos e pre-cachear
+  // ✅ Pre-cache de vídeos
   useEffect(() => {
     lastVideoCountRef.current = activeVideos.length;
     
     if (activeVideos.length > 0) {
-      console.log('[EMBED PLAYER] Pre-caching videos...');
+      console.log('💾 [EMBED PLAYER] Pre-caching', activeVideos.length, 'vídeos');
       preCacheVideos(activeVideos);
     }
   }, [activeVideos, preCacheVideos]);
 
-  // Carregar video com cache quando mudar o indice
+  // ✅ Carregar vídeos com cache
   useEffect(() => {
-    if (activeVideos.length === 0) return;
-    
-    const loadVideo = async () => {
-      const selectedVideo = activeVideos[selectedVideoIndex];
-      if (!selectedVideo) return;
+    if (activeVideos.length === 0) {
+      setVideosWithCache([]);
+      return;
+    }
 
-      try {
-        setVideoError(false);
-        const url = await getCachedVideoUrl(selectedVideo.video_id, selectedVideo.video_url);
-        setCurrentVideoUrl(url);
-        console.log('[EMBED PLAYER] Video carregado:', selectedVideo.video_name);
-      } catch (error) {
-        console.error('[EMBED PLAYER] Erro ao carregar video:', error);
-        setVideoError(true);
-      }
+    const loadVideosWithCache = async () => {
+      const videos = await Promise.all(
+        activeVideos.map(async (video) => {
+          const url = await getCachedVideoUrl(video.video_id, video.video_url);
+          return {
+            id: video.video_id || '',
+            video_url: url,
+            video_nome: video.video_name || ''
+          };
+        })
+      );
+      setVideosWithCache(videos);
+      console.log('✅ [EMBED PLAYER]', videos.length, 'vídeos carregados');
     };
 
-    loadVideo();
-  }, [selectedVideoIndex, activeVideos, getCachedVideoUrl]);
+    loadVideosWithCache();
+  }, [activeVideos, getCachedVideoUrl]);
 
-  // Mostrar indicador offline por 5 segundos
+  // ✅ Indicador offline por 5 segundos
   useEffect(() => {
     if (!networkStatus.isOnline) {
       setShowOfflineIndicator(true);
@@ -133,58 +122,111 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     }
   }, [networkStatus.isOnline]);
 
-  // Auto-avancar com loop infinito e error handling
+  // ✅ Reset playlist
+  useEffect(() => {
+    if (videosWithCache.length > 0 && currentIndex >= videosWithCache.length) {
+      setCurrentIndex(0);
+    }
+  }, [videosWithCache.length, currentIndex]);
+
+  // ✅ Gerenciar reprodução do vídeo atual
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || activeVideos.length === 0) return;
+    if (!video || !currentVideo) return;
 
-    const handleVideoEnd = () => {
-      const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
-      setSelectedVideoIndex(nextIndex);
+    hasEndedRef.current = false;
+    isTransitioningRef.current = false;
+    setIsReady(false);
+
+    console.log(`▶️ [EMBED PLAYER] Vídeo ${currentIndex + 1}/${videosWithCache.length}:`, currentVideo.video_nome);
+
+    const handleLoadedData = () => {
+      console.log('✅ [EMBED PLAYER] Vídeo carregado');
+      setIsReady(true);
     };
 
     const handleCanPlay = () => {
-      video.play().catch(err => console.log('[EMBED PLAYER] Autoplay prevented:', err));
+      if (!isReady) {
+        video.play().catch(err => 
+          console.warn('⚠️ [EMBED PLAYER] Autoplay bloqueado:', err)
+        );
+      }
     };
 
-    const handleError = () => {
-      console.error('[EMBED PLAYER] Erro ao reproduzir video, pulando para proximo...');
-      setVideoError(true);
+    const handleTimeUpdate = () => {
+      if (!video || isTransitioningRef.current) return;
+      
+      const timeRemaining = video.duration - video.currentTime;
+      
+      // Pre-carregar próximo vídeo quando faltar 5 segundos
+      if (timeRemaining <= 5 && timeRemaining > 4.5 && nextVideoRef.current) {
+        console.log('⏭️ [EMBED PLAYER] Pre-carregando próximo vídeo');
+        nextVideoRef.current.load();
+      }
+    };
+
+    const handleEnded = () => {
+      if (hasEndedRef.current || isTransitioningRef.current) {
+        console.log('⚠️ [EMBED PLAYER] Evento duplicado ignorado');
+        return;
+      }
+
+      hasEndedRef.current = true;
+      isTransitioningRef.current = true;
+      
+      console.log('🔄 [EMBED PLAYER] Avançando para próximo vídeo');
+      
+      requestAnimationFrame(() => {
+        setCurrentIndex(nextVideoIndex);
+      });
+    };
+
+    const handleError = (e: Event) => {
+      console.error('❌ [EMBED PLAYER] Erro ao carregar vídeo:', e);
       setTimeout(() => {
-        const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
-        setSelectedVideoIndex(nextIndex);
+        if (!isTransitioningRef.current) {
+          setCurrentIndex(nextVideoIndex);
+        }
       }, 1000);
     };
 
-    video.addEventListener('ended', handleVideoEnd);
+    video.addEventListener('loadeddata', handleLoadedData);
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('ended', handleEnded);
     video.addEventListener('error', handleError);
-    
+
+    video.load();
+
     return () => {
-      video.removeEventListener('ended', handleVideoEnd);
+      video.removeEventListener('loadeddata', handleLoadedData);
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);
     };
-  }, [selectedVideoIndex, activeVideos.length]);
+  }, [currentIndex, currentVideo, nextVideoIndex, videosWithCache.length]);
 
-  const selectedVideo = activeVideos[selectedVideoIndex];
-
-  // Loading
   if (loading && activeVideos.length === 0) {
     return <div className="w-full h-full bg-black" />;
   }
 
-  // Sem vídeos
-  if (activeVideos.length === 0) {
+  if (videosWithCache.length === 0) {
     return <div className="w-full h-full bg-black" />;
   }
 
   return (
     <div 
       ref={protectionRef}
-      className="w-full h-full bg-black select-none" 
-      style={{ margin: 0, padding: 0, overflow: 'hidden' }}
+      className="w-full h-full bg-black overflow-hidden"
+      style={{
+        margin: 0,
+        padding: 0,
+        userSelect: 'none',
+        WebkitUserSelect: 'none'
+      }}
       onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
     >
       {/* Indicador Offline Discreto */}
       {showOfflineIndicator && !networkStatus.isOnline && (
@@ -194,49 +236,62 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
         </div>
       )}
 
-      {selectedVideo && currentVideoUrl && !videoError && (
-        <div className="relative w-full h-full">
-          <video
-            ref={videoRef}
-            key={currentVideoUrl}
-            src={currentVideoUrl}
-            className="w-full h-full object-contain select-none"
-            style={{ margin: 0, padding: 0, display: 'block', pointerEvents: 'none' }}
-            autoPlay
-            muted
-            playsInline
-            preload="auto"
-            controlsList="nodownload noplaybackrate"
-            disablePictureInPicture
-            disableRemotePlayback
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            Seu navegador não suporta vídeo.
-          </video>
-          
-          {/* Overlay de proteção invisível - SEM marca d'água visível */}
-          <div 
-            className="absolute inset-0 z-50"
-            style={{ 
-              background: 'transparent',
-              pointerEvents: 'auto',
-              userSelect: 'none'
-            }}
-            onContextMenu={(e) => e.preventDefault()}
-            onDragStart={(e) => e.preventDefault()}
-          />
-        </div>
-      )}
-      
-      {/* Preload do próximo vídeo (invisível) */}
+      {/* Container do vídeo */}
+      <div className="absolute inset-0 w-full h-full">
+        {/* Vídeo principal */}
+        <video
+          key={`video-${currentIndex}-${currentVideo.id}`}
+          ref={videoRef}
+          src={currentVideo.video_url}
+          className={`w-full h-full object-cover transition-opacity duration-200 ${
+            isReady ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ 
+            margin: 0,
+            padding: 0,
+            display: 'block',
+            pointerEvents: 'none',
+            userSelect: 'none'
+          }}
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          controlsList="nodownload noplaybackrate nofullscreen"
+          disablePictureInPicture
+          disableRemotePlayback
+          onContextMenu={(e) => e.preventDefault()}
+        />
+
+        {/* Loading placeholder */}
+        {!isReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <div className="text-white text-sm opacity-50">Carregando...</div>
+          </div>
+        )}
+
+        {/* Overlay de proteção invisível */}
+        <div 
+          className="absolute inset-0 z-50"
+          style={{ 
+            background: 'transparent',
+            pointerEvents: 'auto',
+            cursor: 'default'
+          }}
+          onContextMenu={(e) => e.preventDefault()}
+          onMouseDown={(e) => e.button === 2 && e.preventDefault()}
+        />
+      </div>
+
+      {/* Pre-load próximo vídeo (invisível) */}
       {nextVideo && (
         <video
           ref={nextVideoRef}
           src={nextVideo.video_url}
+          className="hidden"
           preload="auto"
           muted
           playsInline
-          className="hidden"
         />
       )}
     </div>

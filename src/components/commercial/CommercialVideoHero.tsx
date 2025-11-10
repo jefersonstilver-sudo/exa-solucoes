@@ -36,7 +36,6 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     }
   }, [videos.length]);
 
-  // 🎯 Gerenciar reprodução do vídeo atual
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !currentVideo) return;
@@ -53,11 +52,17 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     };
 
     const handleCanPlay = () => {
+      console.log('🎵 [VIDEO HERO] Vídeo pode ser reproduzido');
       if (!isReady) {
-        video.play().catch(err => 
-          console.warn('⚠️ [VIDEO HERO] Autoplay bloqueado:', err)
-        );
+        video.play()
+          .then(() => console.log('▶️ [VIDEO HERO] Reprodução iniciada'))
+          .catch(err => console.warn('⚠️ [VIDEO HERO] Autoplay bloqueado:', err));
       }
+    };
+
+    const handlePlaying = () => {
+      console.log('🎬 [VIDEO HERO] Vídeo reproduzindo');
+      setIsReady(true);
     };
 
     const handleTimeUpdate = () => {
@@ -87,7 +92,6 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       requestAnimationFrame(() => {
         setCurrentIndex(nextVideoIndex);
         
-        // ✅ MELHORIA: Ao fim da playlist, apenas refetch via polling (não reload)
         if (nextVideoIndex === 0) {
           console.log('🔄 [VIDEO HERO] Playlist completa - ciclo reiniciado');
         }
@@ -96,9 +100,11 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
     const handleError = (e: Event) => {
       console.error('❌ [VIDEO HERO] Erro ao carregar vídeo:', e);
+      setIsReady(false);
       // Tentar próximo vídeo após erro
       setTimeout(() => {
         if (!isTransitioningRef.current) {
+          console.log('⏭️ [VIDEO HERO] Pulando para próximo vídeo devido a erro');
           setCurrentIndex(nextVideoIndex);
         }
       }, 1000);
@@ -106,6 +112,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
     video.addEventListener('loadeddata', handleLoadedData);
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('playing', handlePlaying);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('ended', handleEnded);
     video.addEventListener('error', handleError);
@@ -116,6 +123,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     return () => {
       video.removeEventListener('loadeddata', handleLoadedData);
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('playing', handlePlaying);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);
