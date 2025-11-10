@@ -76,13 +76,38 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         return;
       }
 
-      // 2. Buscar TODOS os vídeos ATIVOS (aprovados) de TODOS os pedidos
+      // 2. ✅ CORREÇÃO: Buscar apenas 1 vídeo por pedido (vídeo em exibição)
       const pedidoIds = pedidos.map(p => p.id);
       
-      console.log('🎬 [BUILDING ACTIVE VIDEOS] Buscando TODOS os vídeos ativos para', pedidoIds.length, 'pedidos');
+      console.log('🎬 [BUILDING ACTIVE VIDEOS] Buscando vídeos EM EXIBIÇÃO para', pedidoIds.length, 'pedidos');
       const startTime = performance.now();
 
-      // Buscar todos os vídeos ativos de todos os pedidos (não apenas o atual em exibição)
+      // Usar RPC para buscar apenas vídeos em exibição (1 por pedido)
+      const { data: currentVideosData, error: currentVideosError } = await supabase
+        .rpc('get_current_display_videos_batch', { 
+          p_pedido_ids: pedidoIds 
+        });
+
+      if (currentVideosError) {
+        console.error('❌ [BUILDING ACTIVE VIDEOS] Erro ao buscar vídeos em exibição:', currentVideosError);
+        setVideos([]);
+        return;
+      }
+
+      // Filtrar apenas vídeos válidos (com video_id)
+      const validVideos = currentVideosData?.filter((v: any) => v.video_id !== null) || [];
+
+      const videosTime = performance.now();
+      console.log(`✅ [BUILDING ACTIVE VIDEOS] ${validVideos.length} vídeos EM EXIBIÇÃO carregados em ${(videosTime - startTime).toFixed(0)}ms`);
+
+      if (validVideos.length === 0) {
+        console.log('📭 [BUILDING ACTIVE VIDEOS] Nenhum vídeo em exibição encontrado');
+        setVideos([]);
+        return;
+      }
+
+      // Buscar detalhes completos dos vídeos
+      const videoIds = validVideos.map((v: any) => v.video_id);
       const { data: allVideosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -100,27 +125,16 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
             duracao
           )
         `)
-        .in('pedido_id', pedidoIds)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .in('video_id', videoIds)
+        .in('pedido_id', pedidoIds);
 
-      if (videosError) {
-        console.error('❌ [BUILDING ACTIVE VIDEOS] Erro ao buscar vídeos:', videosError);
+      if (videosError || !allVideosData || allVideosData.length === 0) {
+        console.error('❌ [BUILDING ACTIVE VIDEOS] Erro ao buscar detalhes:', videosError);
         setVideos([]);
         return;
       }
 
-      const videosTime = performance.now();
-      console.log(`✅ [BUILDING ACTIVE VIDEOS] ${allVideosData?.length || 0} vídeos ativos carregados em ${(videosTime - startTime).toFixed(0)}ms`);
-
-      if (!allVideosData || allVideosData.length === 0) {
-        console.log('📭 [BUILDING ACTIVE VIDEOS] Nenhum vídeo ativo encontrado');
-        setVideos([]);
-        return;
-      }
-
-      // 3. Extrair todos os IDs necessários
-      const videoIds = [...new Set(allVideosData.map((v: any) => v.video_id).filter(Boolean))];
+      // 3. Extrair IDs de clientes
       const clientIds = [...new Set(pedidos.map(p => p.client_id))];
 
       // 4. Buscar dados de clientes e regras de programação em PARALELO

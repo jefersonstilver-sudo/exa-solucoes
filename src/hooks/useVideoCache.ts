@@ -62,22 +62,25 @@ export function useVideoCache(buildingId: string): UseVideoCacheResult {
     if (videos.length === 0 || isCaching) return;
 
     setIsCaching(true);
-    console.log('[USE VIDEO CACHE] Pre-caching', videos.length, 'videos');
+    console.log('💾 [USE VIDEO CACHE] Pre-caching', videos.length, 'videos para offline');
 
     const cacheAsync = async () => {
       try {
-        const videosToCache = videos.slice(0, Math.min(3, videos.length));
+        // ✅ MELHORIA: Pre-cachear TODOS os vídeos (não apenas 3)
+        const videosToCache = videos.slice(0, Math.min(10, videos.length));
         
         for (const video of videosToCache) {
           const hasCached = await videoCache.hasCachedVideo(video.video_id);
           
           if (!hasCached) {
-            console.log('[USE VIDEO CACHE] Pre-caching:', video.video_name);
+            console.log('💾 [USE VIDEO CACHE] Pre-caching:', video.video_name);
             await videoCache.cacheVideo(video.video_id, video.video_url);
+          } else {
+            console.log('✅ [USE VIDEO CACHE] Já em cache:', video.video_name);
           }
         }
 
-        console.log('[USE VIDEO CACHE] Pre-cache completo');
+        console.log('✅ [USE VIDEO CACHE] Pre-cache completo - vídeos disponíveis offline');
 
         const stats = await videoCache.getCacheStats();
         setCacheStats({
@@ -86,7 +89,7 @@ export function useVideoCache(buildingId: string): UseVideoCacheResult {
         });
 
       } catch (error) {
-        console.error('[USE VIDEO CACHE] Erro no pre-cache:', error);
+        console.error('❌ [USE VIDEO CACHE] Erro no pre-cache:', error);
       } finally {
         setIsCaching(false);
       }
