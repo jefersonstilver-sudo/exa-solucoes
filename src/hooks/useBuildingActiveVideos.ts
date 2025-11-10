@@ -81,7 +81,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       console.log('🎬 [BUILDING ACTIVE VIDEOS] Buscando TODOS os vídeos ativos para', pedidoIds.length, 'pedidos');
       const startTime = performance.now();
 
-      // Buscar todos os vídeos ativos e aprovados de todos os pedidos (não apenas o atual em exibição)
+      // Buscar todos os vídeos ativos de todos os pedidos (não apenas o atual em exibição)
       const { data: allVideosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -95,13 +95,11 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
             id,
             nome,
             url,
-            duracao,
-            status_aprovacao
+            duracao
           )
         `)
         .in('pedido_id', pedidoIds)
         .eq('is_active', true)
-        .eq('videos.status_aprovacao', 'aprovado')
         .order('slot_position', { ascending: true });
 
       if (videosError) {
@@ -243,6 +241,54 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
 
   useEffect(() => {
     fetchActiveVideos();
+
+    // 🔴 REALTIME: Subscrever mudanças em pedido_videos e videos
+    console.log('🔴 [REALTIME] Iniciando subscriptions para prédio:', buildingId);
+    
+    const channel = supabase
+      .channel(`building-videos-${buildingId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pedido_videos'
+        },
+        (payload) => {
+          console.log('🔴 [REALTIME] Mudança detectada em pedido_videos:', payload);
+          fetchActiveVideos();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'videos'
+        },
+        (payload) => {
+          console.log('🔴 [REALTIME] Mudança detectada em videos:', payload);
+          fetchActiveVideos();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pedidos'
+        },
+        (payload) => {
+          console.log('🔴 [REALTIME] Mudança detectada em pedidos:', payload);
+          fetchActiveVideos();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔴 [REALTIME] Removendo subscriptions para prédio:', buildingId);
+      supabase.removeChannel(channel);
+    };
   }, [buildingId]);
 
   return {
