@@ -4,6 +4,7 @@ import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
 import exaLogo from '@/assets/exa-logo.png';
 import WeatherFooter from '@/components/public/WeatherFooter';
+import { Wifi, WifiOff } from 'lucide-react';
 
 const BuildingDisplayCommercial = () => {
   const { buildingId } = useParams<{ buildingId: string }>();
@@ -12,8 +13,9 @@ const BuildingDisplayCommercial = () => {
   const [buildingName, setBuildingName] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const hasRefreshedRef = useRef(false);
+  const [isConnected, setIsConnected] = useState(true);
+  const pollingIntervalRef = useRef<NodeJS.Timeout>();
+  const lastVideoCountRef = useRef(0);
 
   // Buscar nome do prédio
   useEffect(() => {
@@ -34,36 +36,46 @@ const BuildingDisplayCommercial = () => {
     fetchBuildingName();
   }, [buildingId]);
 
-  // Verificar atualizações e auto-avançar com transição suave
+  // Sistema de polling para verificar novos vídeos a cada 10 segundos
+  useEffect(() => {
+    console.log('🔌 [DISPLAY COMMERCIAL] Iniciando sistema de polling...');
+    
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        console.log('🔄 [DISPLAY COMMERCIAL] Verificando atualizações...');
+        setIsConnected(true);
+        await refetch();
+        
+        // Detectar mudanças na playlist
+        if (activeVideos.length !== lastVideoCountRef.current) {
+          console.log(`📊 [DISPLAY COMMERCIAL] Mudança detectada: ${lastVideoCountRef.current} → ${activeVideos.length} vídeos`);
+          lastVideoCountRef.current = activeVideos.length;
+        }
+      } catch (error) {
+        console.error('❌ [DISPLAY COMMERCIAL] Erro ao verificar atualizações:', error);
+        setIsConnected(false);
+      }
+    }, 10000); // Verificar a cada 10 segundos
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        console.log('🔌 [DISPLAY COMMERCIAL] Sistema de polling desligado');
+      }
+    };
+  }, [refetch, activeVideos.length]);
+
+  // Atualizar contagem de vídeos
+  useEffect(() => {
+    lastVideoCountRef.current = activeVideos.length;
+  }, [activeVideos.length]);
+
+  // Auto-avançar com loop infinito
   useEffect(() => {
     const video = videoRef.current;
     if (!video || activeVideos.length === 0) return;
 
-    const handleTimeUpdate = async () => {
-      const isLastVideo = selectedVideoIndex === activeVideos.length - 1;
-      const timeRemaining = video.duration - video.currentTime;
-      
-      // Se for o último vídeo e faltarem 3 segundos para terminar, buscar atualizações
-      if (isLastVideo && timeRemaining <= 3 && timeRemaining > 0 && !hasRefreshedRef.current && !isRefreshing) {
-        console.log('🔄 [DISPLAY COMMERCIAL] Verificando atualizações de vídeos...');
-        hasRefreshedRef.current = true;
-        setIsRefreshing(true);
-        
-        try {
-          await refetch();
-          console.log('✅ [DISPLAY COMMERCIAL] Lista de vídeos atualizada');
-        } catch (error) {
-          console.error('❌ [DISPLAY COMMERCIAL] Erro ao atualizar vídeos:', error);
-        } finally {
-          setIsRefreshing(false);
-        }
-      }
-    };
-
     const handleVideoEnd = () => {
-      // Resetar flag quando o vídeo terminar
-      hasRefreshedRef.current = false;
-      
       setIsTransitioning(true);
       setTimeout(() => {
         const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
@@ -72,14 +84,9 @@ const BuildingDisplayCommercial = () => {
       }, 300);
     };
 
-    video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('ended', handleVideoEnd);
-    
-    return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('ended', handleVideoEnd);
-    };
-  }, [selectedVideoIndex, activeVideos.length, refetch, isRefreshing]);
+    return () => video.removeEventListener('ended', handleVideoEnd);
+  }, [selectedVideoIndex, activeVideos.length]);
 
   const selectedVideo = activeVideos[selectedVideoIndex];
 
@@ -99,20 +106,17 @@ const BuildingDisplayCommercial = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Header fixo premium com logo EXA */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900 via-red-700 to-black shadow-2xl">
-        <div className="container mx-auto px-8 h-20 flex items-center justify-between">
-          {/* Logo EXA real */}
-          <div className="flex items-center gap-4">
-            <div className="relative h-12 w-auto">
-              {/* Glow background */}
-              <div className="absolute inset-0 blur-xl bg-red-500/40 rounded-full scale-150" />
-              
-              {/* Logo real da EXA */}
+      {/* Header premium com logo EXA */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900 via-red-700 to-black shadow-2xl border-b border-white/10">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+          {/* Logo EXA */}
+          <div className="flex items-center gap-3">
+            <div className="relative h-10 w-auto">
+              <div className="absolute inset-0 blur-lg bg-red-500/30 rounded-full" />
               <img 
                 src={exaLogo} 
                 alt="EXA" 
-                className="h-12 w-auto relative z-10 drop-shadow-2xl brightness-110"
+                className="h-10 w-auto relative z-10 drop-shadow-2xl brightness-110"
               />
             </div>
           </div>
@@ -120,33 +124,48 @@ const BuildingDisplayCommercial = () => {
           {/* Nome do prédio - centralizado */}
           {buildingName && (
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <h1 className="text-white text-xl font-semibold tracking-wide drop-shadow-lg">
+              <h1 className="text-white text-lg font-semibold tracking-wide drop-shadow-lg">
                 {buildingName}
               </h1>
             </div>
           )}
+
+          {/* Status de conexão */}
+          <div className="flex items-center gap-2">
+            {isConnected ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 rounded-full border border-green-500/30">
+                <Wifi className="h-3.5 w-3.5 text-green-400" />
+                <span className="text-green-400 text-xs font-medium">Conectado</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 rounded-full border border-red-500/30">
+                <WifiOff className="h-3.5 w-3.5 text-red-400" />
+                <span className="text-red-400 text-xs font-medium">Offline</span>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Conteúdo principal com painel centralizado */}
-      <main className="min-h-screen pt-20 pb-24 flex items-center justify-center p-8">
-        <div className="w-full max-w-6xl">
-          {/* Container do painel - simula monitor/TV físico */}
+      {/* Conteúdo principal com player vertical menor */}
+      <main className="min-h-screen pt-16 pb-48 flex items-center justify-center p-6">
+        <div className="w-full max-w-md">
+          {/* Container do painel vertical - simula monitor vertical */}
           <div className="relative">
-            {/* Moldura externa - simula bezel de monitor */}
-            <div className="absolute -inset-8 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black rounded-3xl shadow-2xl" />
+            {/* Moldura externa */}
+            <div className="absolute -inset-6 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black rounded-3xl shadow-2xl" />
             
-            {/* Moldura interna - profundidade */}
-            <div className="absolute -inset-4 bg-gradient-to-br from-zinc-900 to-black rounded-2xl shadow-inner" />
+            {/* Moldura interna */}
+            <div className="absolute -inset-3 bg-gradient-to-br from-zinc-900 to-black rounded-2xl shadow-inner" />
             
-            {/* Tela do painel */}
-            <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
+            {/* Tela do painel - VERTICAL (9:16) */}
+            <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: '9/16' }}>
               {/* Brilho da tela */}
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none z-20" />
               
               {/* Vídeo */}
               {selectedVideo && (
-                <div className={`w-full h-full transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+                <div className={`w-full h-full transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                   <video
                     ref={videoRef}
                     key={selectedVideo.video_url}
@@ -162,18 +181,27 @@ const BuildingDisplayCommercial = () => {
                 </div>
               )}
               
-              {/* Reflexo sutil simulando vidro */}
+              {/* Reflexo sutil */}
               <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.01] to-transparent pointer-events-none z-10" />
+              
+              {/* Contador de vídeos */}
+              <div className="absolute top-4 right-4 z-30">
+                <div className="px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10">
+                  <span className="text-white/90 text-xs font-medium">
+                    {selectedVideoIndex + 1} / {activeVideos.length}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Suporte/base do monitor (detalhe visual) */}
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-32 h-6 bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-t-lg shadow-lg" />
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-3 bg-gradient-to-b from-zinc-900 to-black rounded-full shadow-xl" />
+            {/* Suporte/base do monitor */}
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-24 h-4 bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-t-lg shadow-lg" />
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-36 h-2 bg-gradient-to-b from-zinc-900 to-black rounded-full shadow-xl" />
           </div>
         </div>
       </main>
 
-      {/* Footer com meteorologia e horário */}
+      {/* Footer com meteorologia e status */}
       <WeatherFooter buildingName={buildingName} />
     </div>
   );

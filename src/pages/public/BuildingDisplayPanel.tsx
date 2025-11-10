@@ -9,8 +9,8 @@ const BuildingDisplayPanel = () => {
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const hasRefreshedRef = useRef(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout>();
+  const lastVideoCountRef = useRef(0);
 
   // Buscar nome do prédio
   useEffect(() => {
@@ -31,47 +31,51 @@ const BuildingDisplayPanel = () => {
     fetchBuildingName();
   }, [buildingId]);
 
-  // Verificar atualizações quando estiver próximo do fim do último vídeo
+  // Sistema de polling para verificar novos vídeos a cada 10 segundos
+  useEffect(() => {
+    console.log('🔌 [DISPLAY PANEL] Iniciando sistema de polling...');
+    
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        console.log('🔄 [DISPLAY PANEL] Verificando atualizações...');
+        await refetch();
+        
+        // Detectar mudanças na playlist
+        if (activeVideos.length !== lastVideoCountRef.current) {
+          console.log(`📊 [DISPLAY PANEL] Mudança detectada: ${lastVideoCountRef.current} → ${activeVideos.length} vídeos`);
+          lastVideoCountRef.current = activeVideos.length;
+        }
+      } catch (error) {
+        console.error('❌ [DISPLAY PANEL] Erro ao verificar atualizações:', error);
+      }
+    }, 10000); // Verificar a cada 10 segundos
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        console.log('🔌 [DISPLAY PANEL] Sistema de polling desligado');
+      }
+    };
+  }, [refetch, activeVideos.length]);
+
+  // Atualizar contagem de vídeos
+  useEffect(() => {
+    lastVideoCountRef.current = activeVideos.length;
+  }, [activeVideos.length]);
+
+  // Auto-avançar com loop infinito
   useEffect(() => {
     const video = videoRef.current;
     if (!video || activeVideos.length === 0) return;
 
-    const handleTimeUpdate = async () => {
-      const isLastVideo = selectedVideoIndex === activeVideos.length - 1;
-      const timeRemaining = video.duration - video.currentTime;
-      
-      // Se for o último vídeo e faltarem 3 segundos para terminar, buscar atualizações
-      if (isLastVideo && timeRemaining <= 3 && timeRemaining > 0 && !hasRefreshedRef.current && !isRefreshing) {
-        console.log('🔄 [DISPLAY PANEL] Verificando atualizações de vídeos...');
-        hasRefreshedRef.current = true;
-        setIsRefreshing(true);
-        
-        try {
-          await refetch();
-          console.log('✅ [DISPLAY PANEL] Lista de vídeos atualizada');
-        } catch (error) {
-          console.error('❌ [DISPLAY PANEL] Erro ao atualizar vídeos:', error);
-        } finally {
-          setIsRefreshing(false);
-        }
-      }
-    };
-
     const handleVideoEnd = () => {
-      // Resetar flag quando o vídeo terminar
-      hasRefreshedRef.current = false;
       const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
       setSelectedVideoIndex(nextIndex);
     };
 
-    video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('ended', handleVideoEnd);
-    
-    return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('ended', handleVideoEnd);
-    };
-  }, [selectedVideoIndex, activeVideos.length, refetch, isRefreshing]);
+    return () => video.removeEventListener('ended', handleVideoEnd);
+  }, [selectedVideoIndex, activeVideos.length]);
 
   const selectedVideo = activeVideos[selectedVideoIndex];
 
