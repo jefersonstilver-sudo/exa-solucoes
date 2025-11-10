@@ -33,8 +33,8 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
             <>
               <div className="flex items-center gap-2 text-sm">
                 <VideosPopover buildingId={building.id} videoCount={videoCount}>
-                  <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded text-white text-xs font-semibold cursor-pointer hover:from-green-600 hover:to-emerald-600 transition-all">
-                    <Video className="h-3 w-3 animate-pulse" />
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-600 rounded text-white text-xs font-semibold cursor-pointer hover:bg-green-700 transition-colors">
+                    <Video className="h-3 w-3" />
                     <span>{videoCount} vídeo{videoCount > 1 ? 's' : ''} no AR</span>
                   </div>
                 </VideosPopover>
@@ -51,7 +51,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                       description: "Link copiado para área de transferência",
                     });
                   }}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white rounded transition-all font-semibold"
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-slate-700 hover:bg-slate-800 text-white rounded transition-colors font-medium"
                 >
                   <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -69,7 +69,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                       description: "Cole em qualquer site",
                     });
                   }}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded transition-all font-semibold"
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-purple-700 hover:bg-purple-800 text-white rounded transition-colors font-medium"
                 >
                   <Code className="h-3 w-3" />
                   Embed
@@ -85,7 +85,7 @@ const BuildingActions: React.FC<BuildingActionsProps> = ({
                       description: "Link copiado para área de transferência",
                     });
                   }}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded transition-all font-semibold"
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-blue-700 hover:bg-blue-800 text-white rounded transition-colors font-medium"
                 >
                   <Monitor className="h-3 w-3" />
                   UI

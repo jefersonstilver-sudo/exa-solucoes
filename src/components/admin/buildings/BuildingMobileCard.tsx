@@ -62,8 +62,8 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
           </div>
         )}
         {typeof videoCount === 'number' && videoCount > 0 && (
-          <div className="flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full text-white">
-            <Video className="h-3 w-3 animate-pulse" />
+          <div className="flex items-center gap-1 px-2 py-0.5 bg-green-600 rounded text-white">
+            <Video className="h-3 w-3" />
             <span className="font-semibold text-xs">{videoCount} no AR</span>
           </div>
         )}
@@ -132,32 +132,39 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
       <div className="pt-3 border-t grid grid-cols-2 gap-2">
         <Button
           variant="outline"
+          size="sm"
           onClick={() => onView(building)}
           className="w-full"
         >
-          👁️ Ver
+          Ver
         </Button>
         <Button
           variant="outline"
+          size="sm"
           onClick={() => onEdit(building)}
           className="w-full"
         >
-          ✏️ Editar
+          Editar
         </Button>
         <Button
           variant="outline"
+          size="sm"
           onClick={() => onImageManager(building)}
           className="w-full"
         >
-          🖼️ Imagens
+          Imagens
         </Button>
         <Button
+          variant="default"
+          size="sm"
           onClick={() => onViewPlaylist(building)}
-          className="w-full bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] hover:from-[#7A1818] hover:to-[#B91C1C] text-white"
+          className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white"
         >
-          📺 Playlist
+          Playlist
         </Button>
         <Button
+          variant="secondary"
+          size="sm"
           onClick={() => {
             const buildingCode = building.codigo_predio || '000';
             const url = generatePublicUrl(generatePanelPath(building.nome, buildingCode));
@@ -169,9 +176,9 @@ export const BuildingMobileCard: React.FC<BuildingMobileCardProps> = ({
               });
             });
           }}
-          className="w-full col-span-2 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white"
+          className="w-full col-span-2"
         >
-          🔗 Copiar Link do Painel
+          Copiar Link do Painel
         </Button>
       </div>
     </div>

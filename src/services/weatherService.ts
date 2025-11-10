@@ -17,6 +17,7 @@ export interface DailyForecast {
   weatherCode: number;
   icon: string;
   description: string;
+  rainChance?: number;
 }
 
 export interface WeatherData {
@@ -53,7 +54,7 @@ const getDayName = (dateStr: string): string => {
 };
 
 export const fetchWeatherData = async (): Promise<WeatherData> => {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${FOZ_DO_IGUACU_LAT}&longitude=${FOZ_DO_IGUACU_LON}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=America/Sao_Paulo&forecast_days=3`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${FOZ_DO_IGUACU_LAT}&longitude=${FOZ_DO_IGUACU_LON}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&timezone=America/Sao_Paulo&forecast_days=3`;
 
   try {
     const response = await fetch(url);
@@ -84,6 +85,7 @@ export const fetchWeatherData = async (): Promise<WeatherData> => {
         weatherCode: data.daily.weather_code[index],
         icon: weatherInfo.icon,
         description: weatherInfo.description,
+        rainChance: data.daily.precipitation_probability_max?.[index] || 0,
       };
     });
 
