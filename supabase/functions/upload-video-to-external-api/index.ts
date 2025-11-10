@@ -62,7 +62,8 @@ serve(async (req) => {
           client_id,
           data_inicio,
           data_fim,
-          plano_meses
+          plano_meses,
+          predios_selecionados
         ),
         videos!inner (
           id,
@@ -81,13 +82,26 @@ serve(async (req) => {
     console.log('✅ [UPLOAD_EXTERNAL_API] Dados do vídeo carregados:', {
       video_nome: pedidoVideo.videos.nome,
       pedido_id: pedidoVideo.pedido_id,
-      client_id: pedidoVideo.pedidos.client_id
+      client_id: pedidoVideo.pedidos.client_id,
+      predios_selecionados: pedidoVideo.pedidos.predios_selecionados
     });
 
-    // 2. Extrair client_id (4 primeiros caracteres do UUID sem hífens)
-    const fullClientId = pedidoVideo.pedidos.client_id.replace(/-/g, '');
-    const clientId = fullClientId.substring(0, 4);
-    console.log('🔑 [UPLOAD_EXTERNAL_API] Client ID extraído:', { clientId, fullClientId });
+    // 2. ⚠️ IMPORTANTE: Extrair building_id (primeiros 4 dígitos do ID do prédio)
+    // Pegar o primeiro prédio da lista de prédios selecionados
+    const prediosSelecionados = pedidoVideo.pedidos.predios_selecionados;
+    if (!prediosSelecionados || !Array.isArray(prediosSelecionados) || prediosSelecionados.length === 0) {
+      throw new Error('Nenhum prédio selecionado no pedido');
+    }
+    
+    const buildingId = prediosSelecionados[0]; // Primeiro prédio da lista
+    const fullBuildingId = buildingId.replace(/-/g, '');
+    const clientId = fullBuildingId.substring(0, 4);
+    
+    console.log('🏢 [UPLOAD_EXTERNAL_API] Building ID extraído (4 primeiros dígitos):', { 
+      buildingId, 
+      clientId,
+      fullBuildingId 
+    });
 
     // 3. Buscar programação do vídeo
     let programacao = getDefaultSchedule();
