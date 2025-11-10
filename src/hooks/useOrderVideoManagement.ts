@@ -7,11 +7,11 @@ import {
   removeVideo as removeVideoAction 
 } from '@/services/videoActionService';
 import { uploadVideo as uploadVideoAction } from '@/services/videoUploadService';
+import { setBaseVideo as setBaseVideoService } from '@/services/videoBaseService';
 import { toast } from 'sonner';
 import { useSuccessPopup } from './useSuccessPopup';
 import { useConflictModal } from './useConflictModal';
 import { supabase } from '@/integrations/supabase/client';
-// Removed n8n integration
 
 export const useOrderVideoManagement = (orderId: string) => {
   const [videoSlots, setVideoSlots] = useState<VideoSlot[]>([]);
@@ -293,38 +293,26 @@ export const useOrderVideoManagement = (orderId: string) => {
         return { success: false, response: { error: 'Vídeo não aprovado', approval_status: newPv?.approval_status } };
       }
 
-      // 3) Executar a mudança no banco E capturar resposta da RPC
-      console.log('⏳ [ORDER_VIDEO] Chamando RPC set_base_video_enhanced...');
-      const { data: rpcData, error: rpcError } = await supabase.rpc('set_base_video_enhanced', {
-        p_pedido_video_id: slotId
-      });
-
-      console.log('📊 [ORDER_VIDEO] Resposta da RPC:', { rpcData, rpcError });
-
-      // Type casting para o formato esperado
-      const rpcResult = rpcData as any;
+      // 3) Usar videoBaseService que contém toda lógica de fallback e sync com API externa
+      console.log('⏳ [ORDER_VIDEO] Chamando setBaseVideo do videoBaseService...');
+      const success = await setBaseVideoService(slotId);
 
       // Criar objeto de resposta detalhado
       const apiResponse: any = {
-        success: rpcResult?.success || false,
+        success,
         timestamp: new Date().toISOString(),
         pedido_video_id: slotId,
         video_id: newPv?.video_id,
-        error: rpcError?.message || rpcResult?.error,
-        rpc_response: rpcData,
-        rpc_error: rpcError
+        message: success ? 'Vídeo definido como principal e sincronizado com API externa' : 'Falha ao definir vídeo como principal'
       };
 
-      if (rpcError || !rpcResult?.success) {
-        console.error('❌ [ORDER_VIDEO] Falha na RPC:', { rpcData, rpcError });
+      if (!success) {
+        console.error('❌ [ORDER_VIDEO] Falha ao definir vídeo base');
         toast.error('❌ Não foi possível definir o vídeo como principal');
         return { success: false, response: apiResponse };
       }
 
-      console.log('✅ [ORDER_VIDEO] RPC executada com sucesso');
-      
-      // 4) API externa será sincronizada automaticamente pelo videoBaseService.ts
-      console.log('✅ [ORDER_VIDEO] API externa será sincronizada automaticamente');
+      console.log('✅ [ORDER_VIDEO] Vídeo base definido com sucesso e API externa sincronizada');
 
       console.log('🔄 [ORDER_VIDEO] Recarregando slots...');
       refreshSlots();
