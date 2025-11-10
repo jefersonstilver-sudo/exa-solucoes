@@ -110,3 +110,7 @@ verify_jwt = true
 
 [functions.fetch-resend-emails]
 verify_jwt = false
+
+[functions.notify-active]
+verify_jwt = true
+

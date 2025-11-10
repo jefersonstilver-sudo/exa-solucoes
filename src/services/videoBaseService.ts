@@ -207,28 +207,22 @@ export const setBaseVideo = async (slotId: string): Promise<{
 
     console.log('✅ [VIDEO_BASE] Vídeo base definido via RPC:', result);
     
-    // Chamar API externa com os 4 primeiros dígitos do UUID do prédio
+    // Chamar API externa via Edge Function com os 4 primeiros dígitos do UUID do prédio
     if (listaPredios && listaPredios.length > 0) {
       try {
-        const primeiroPrediUUID = listaPredios[0];
-        const clientId = primeiroPrediUUID.substring(0, 4);
-        const apiUrl = `http://15.228.8.3:8000/ativo/${clientId}`;
-        
-        console.log('📞 [VIDEO_BASE] Chamando API externa:');
-        console.log('  - Prédio UUID:', primeiroPrediUUID);
-        console.log('  - Client ID (4 dígitos):', clientId);
-        console.log('  - URL:', apiUrl);
-        
-        const response = await fetch(apiUrl, {
-          method: 'PATCH'
+        const buildingUuid = listaPredios[0];
+        const clientId = String(buildingUuid).substring(0, 4);
+        console.log('📦 [VIDEO_BASE] Invocando edge function notify-active', { clientId, buildingUuid });
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('notify-active', {
+          body: { clientId, buildingUuid }
         });
-        
-        console.log('✅ [VIDEO_BASE] API externa respondeu:', {
-          status: response.status,
-          statusText: response.statusText
-        });
+        if (fnError) {
+          console.error('❌ [VIDEO_BASE] notify-active erro:', fnError);
+        } else {
+          console.log('✅ [VIDEO_BASE] notify-active ok:', fnData);
+        }
       } catch (apiError) {
-        console.error('⚠️ [VIDEO_BASE] Erro ao chamar API externa (não bloqueante):', apiError);
+        console.error('⚠️ [VIDEO_BASE] Erro ao invocar edge function:', apiError);
       }
     } else {
       console.warn('⚠️ [VIDEO_BASE] Nenhum prédio encontrado na lista_predios');
