@@ -236,7 +236,7 @@ serve(async (req) => {
     console.log('📤 [UPLOAD_EXTERNAL_API] Enviando para API externa:', {
       url: `http://15.228.8.3:8000/propagandas/upload-propagandas/${clientId}`,
       fileName: storageFileName,
-      fileSize: verifiedBlob.size,
+      fileSize: videoFile.size,
       clientId
     });
 
