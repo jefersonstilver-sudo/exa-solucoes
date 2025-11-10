@@ -6,6 +6,12 @@ import exaLogo from '@/assets/exa-logo.png';
 import WeatherFooter from '@/components/public/WeatherFooter';
 import { Wifi, WifiOff } from 'lucide-react';
 import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
+import { CommercialDisplayLayout } from '@/components/commercial/CommercialDisplayLayout';
+import { CommercialVideoHero } from '@/components/commercial/CommercialVideoHero';
+import { BuildingNoticesCard } from '@/components/commercial/BuildingNoticesCard';
+import { NewsWithQRPanel } from '@/components/commercial/NewsWithQRPanel';
+import { BuildingPhotoDateCard } from '@/components/commercial/BuildingPhotoDateCard';
+import { CurrencyTickerBar } from '@/components/commercial/CurrencyTickerBar';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -15,36 +21,30 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const params = useParams<{ buildingId: string }>();
   const buildingId = propBuildingId || params.buildingId || '';
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
-  const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const nextVideoRef = useRef<HTMLVideoElement>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [buildingCode, setBuildingCode] = useState('');
   const networkStatus = useNetworkMonitor();
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastVideoCountRef = useRef(0);
 
-  // Preload próximo vídeo
-  const nextVideoIndex = (selectedVideoIndex + 1) % activeVideos.length;
-  const nextVideo = activeVideos[nextVideoIndex];
-
-  // Buscar nome do prédio
+  // Buscar dados do prédio
   useEffect(() => {
-    const fetchBuildingName = async () => {
+    const fetchBuildingData = async () => {
       if (!buildingId) return;
       
       const { data, error } = await supabase
         .from('buildings')
-        .select('nome')
+        .select('nome, codigo')
         .eq('id', buildingId)
         .single();
       
       if (data && !error) {
         setBuildingName(data.nome);
+        setBuildingCode(data.codigo);
       }
     };
 
-    fetchBuildingName();
+    fetchBuildingData();
   }, [buildingId]);
 
   // Sistema de polling para verificar novos vídeos a cada 10 segundos
@@ -79,36 +79,6 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     lastVideoCountRef.current = activeVideos.length;
   }, [activeVideos.length]);
 
-  // Auto-avançar com loop infinito - transição rápida e suave
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || activeVideos.length === 0) return;
-
-    const handleVideoEnd = () => {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
-        setSelectedVideoIndex(nextIndex);
-        setIsTransitioning(false);
-      }, 150);
-    };
-
-    // Garantir que o vídeo sempre carrega e reproduz sem lag
-    const handleCanPlay = () => {
-      video.play().catch(err => console.log('Autoplay prevented:', err));
-    };
-
-    video.addEventListener('ended', handleVideoEnd);
-    video.addEventListener('canplay', handleCanPlay);
-    
-    return () => {
-      video.removeEventListener('ended', handleVideoEnd);
-      video.removeEventListener('canplay', handleCanPlay);
-    };
-  }, [selectedVideoIndex, activeVideos.length]);
-
-  const selectedVideo = activeVideos[selectedVideoIndex];
-
   // Loading - sem mostrar para evitar lag visual
   if (loading && activeVideos.length === 0) {
     return (
@@ -125,15 +95,15 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Header premium com logo EXA */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900 via-red-700 to-black shadow-2xl border-b border-white/10">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
           {/* Logo EXA */}
-          <div className="flex items-center gap-3">
-            <div className="relative h-10 w-auto">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="relative h-8 md:h-10 w-auto">
               <div className="absolute inset-0 blur-lg bg-red-500/30 rounded-full" />
               <img 
                 src={exaLogo} 
                 alt="EXA" 
-                className="h-10 w-auto relative z-10 drop-shadow-2xl brightness-110"
+                className="h-8 md:h-10 w-auto relative z-10 drop-shadow-2xl brightness-110"
               />
             </div>
           </div>
@@ -141,7 +111,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
           {/* Nome do prédio - centralizado */}
           {buildingName && (
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <h1 className="text-white text-lg font-semibold tracking-wide drop-shadow-lg">
+              <h1 className="text-white text-sm md:text-lg font-semibold tracking-wide drop-shadow-lg">
                 {buildingName}
               </h1>
             </div>
@@ -150,89 +120,54 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
           {/* Status de conexão em tempo real */}
           <div className="flex items-center gap-2">
             {networkStatus.isOnline ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 rounded-full border border-green-500/30">
-                <Wifi className="h-3.5 w-3.5 text-green-400 animate-pulse" />
-                <span className="text-green-400 text-xs font-medium">
+              <div className="flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 bg-green-500/20 rounded-full border border-green-500/30">
+                <Wifi className="h-3 md:h-3.5 w-3 md:w-3.5 text-green-400 animate-pulse" />
+                <span className="hidden md:inline text-green-400 text-xs font-medium">
                   Conectado {networkStatus.downlink > 0 && `• ${networkStatus.downlink} Mbps`}
                 </span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 rounded-full border border-red-500/30 animate-pulse">
-                <WifiOff className="h-3.5 w-3.5 text-red-400" />
-                <span className="text-red-400 text-xs font-medium">Offline</span>
+              <div className="flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 bg-red-500/20 rounded-full border border-red-500/30 animate-pulse">
+                <WifiOff className="h-3 md:h-3.5 w-3 md:w-3.5 text-red-400" />
+                <span className="hidden md:inline text-red-400 text-xs font-medium">Offline</span>
               </div>
             )}
           </div>
         </div>
       </header>
 
-      {/* Conteúdo principal com player horizontal REDUZIDO */}
-      <main className="min-h-screen pt-16 pb-48 flex items-center justify-center p-6">
-        <div className="w-full max-w-5xl">
-          {/* Container do painel horizontal - simula monitor horizontal MENOR */}
-          <div className="relative">
-            {/* Moldura externa */}
-            <div className="absolute -inset-4 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black rounded-2xl shadow-2xl" />
-            
-            {/* Moldura interna */}
-            <div className="absolute -inset-2 bg-gradient-to-br from-zinc-900 to-black rounded-xl shadow-inner" />
-            
-            {/* Tela do painel - HORIZONTAL (16:9) COM ALTURA MÁXIMA REDUZIDA */}
-            <div 
-              className="relative bg-black rounded-lg overflow-hidden shadow-2xl" 
-              style={{ 
-                aspectRatio: '16/9',
-                maxHeight: '60vh',
-                width: '100%'
-              }}
-            >
-              {/* Brilho da tela */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none z-20" />
-              
-              {/* Vídeo atual */}
-              {selectedVideo && (
-                <div className={`w-full h-full transition-opacity duration-150 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-                  <video
-                    ref={videoRef}
-                    key={selectedVideo.video_url}
-                    src={selectedVideo.video_url}
-                    className="w-full h-full object-contain"
-                    style={{ margin: 0, padding: 0, display: 'block' }}
-                    autoPlay
-                    muted
-                    playsInline
-                    preload="auto"
-                  >
-                    Seu navegador não suporta vídeo.
-                  </video>
-                </div>
-              )}
-              
-              {/* Reflexo sutil */}
-              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.01] to-transparent pointer-events-none z-10" />
-            </div>
-
-            {/* Suporte/base do monitor - menor */}
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-24 h-3 bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-t-lg shadow-lg" />
-            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-36 h-2 bg-gradient-to-b from-zinc-900 to-black rounded-full shadow-xl" />
-          </div>
-        </div>
-        
-        {/* Preload do próximo vídeo (invisível) */}
-        {nextVideo && (
-          <video
-            ref={nextVideoRef}
-            src={nextVideo.video_url}
-            preload="auto"
-            muted
-            playsInline
-            className="hidden"
-          />
-        )}
-      </main>
-
-      {/* Footer com meteorologia e status */}
-      <WeatherFooter buildingName={buildingName} />
+      {/* Conteúdo principal - Layout Mobile-First */}
+      <main className="pt-14 md:pt-16 px-2 md:px-6 pb-4 md:pb-6">
+        <CommercialDisplayLayout
+          video={
+            <CommercialVideoHero 
+              videos={activeVideos.map(v => ({
+                id: v.id || '',
+                video_url: v.video_url,
+                video_nome: v.video_nome || ''
+              }))}
+            />
+          }
+          notices={
+            <BuildingNoticesCard buildingId={buildingId} />
+          }
+          news={
+            <NewsWithQRPanel 
+              buildingId={buildingId}
+              buildingName={buildingName}
+              buildingCode={buildingCode}
+            />
+          }
+          photo={
+            <BuildingPhotoDateCard buildingId={buildingId} />
+          }
+          ticker={
+            <CurrencyTickerBar />
+          }
+          weather={
+            <WeatherFooter buildingName={buildingName} />
+          }
+        />
     </div>
   );
 };
