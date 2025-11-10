@@ -30,6 +30,7 @@ export interface AdminBuilding {
   imagem_4: string;
   caracteristicas: string[];
   created_at: string;
+  codigo_predio: string; // CÓDIGO ÚNICO DO PRÉDIO PARA URLs PÚBLICAS
   nome_sindico: string;
   contato_sindico: string;
   nome_vice_sindico: string;
