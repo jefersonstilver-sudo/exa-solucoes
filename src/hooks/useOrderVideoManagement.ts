@@ -201,32 +201,14 @@ export const useOrderVideoManagement = (orderId: string) => {
     videoTitle?: string,
     scheduleRules?: any[]
   ) => {
-    // Sistema de saúde e métricas otimizado
-    const { testSystemHealth, trackPerformanceMetrics } = await import('@/services/videoHealthService');
-    const performanceTracker = trackPerformanceMetrics;
-    
     try {
-      console.log('📤 [ORDER_VIDEO] Upload otimizado iniciado:', { 
+      console.log('📤 [ORDER_VIDEO] Upload iniciado:', { 
         slotPosition, 
         fileName: file.name, 
         fileSize: file.size,
-        videoTitle 
+        videoTitle,
+        orderId
       });
-      
-      // Health check rápido (timeout de 2s)
-      try {
-        const healthPromise = testSystemHealth();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Health check timeout')), 2000)
-        );
-        
-        const health = await Promise.race([healthPromise, timeoutPromise]) as any;
-        if (!health?.overall) {
-          console.warn('⚠️ [ORDER_VIDEO] Sistema com problemas, continuando...');
-        }
-      } catch (healthError) {
-        console.warn('⚠️ [ORDER_VIDEO] Health check falhou/timeout, continuando...');
-      }
       
       setUploading(true);
       setUploadProgress(prev => ({ ...prev, [slotPosition]: 0 }));
@@ -238,7 +220,6 @@ export const useOrderVideoManagement = (orderId: string) => {
 
       // Rastrear início da operação
       const startTime = Date.now();
-      performanceTracker.recordSuccess();
 
       const success = await uploadVideoAction(
         slotPosition,
@@ -253,7 +234,7 @@ export const useOrderVideoManagement = (orderId: string) => {
           const elapsed = (Date.now() - startTime) / 1000;
           const bytesUploaded = (file.size * progress) / 100;
           const mbPerSecond = (bytesUploaded / (1024 * 1024)) / elapsed;
-          performanceTracker.recordUploadSpeed(mbPerSecond);
+          console.log(`⚡ [ORDER_VIDEO] Velocidade de upload: ${mbPerSecond.toFixed(2)} MB/s`);
         },
         videoTitle,
         scheduleRules
@@ -261,7 +242,6 @@ export const useOrderVideoManagement = (orderId: string) => {
 
       if (success) {
         console.log('✅ [ORDER_VIDEO] Upload concluído com sucesso');
-        performanceTracker.recordSuccess();
         
         // Limpeza otimizada do progresso
         setTimeout(() => {
@@ -275,7 +255,6 @@ export const useOrderVideoManagement = (orderId: string) => {
         refreshSlots();
       } else {
         console.error('❌ [ORDER_VIDEO] Upload falhou');
-        performanceTracker.recordError();
         setUploadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[slotPosition];
@@ -284,7 +263,6 @@ export const useOrderVideoManagement = (orderId: string) => {
       }
     } catch (error: any) {
       console.error('❌ [ORDER_VIDEO] Erro no upload:', error);
-      performanceTracker.recordError();
       
       setUploading(false);
       setUploadProgress(prev => {
@@ -336,22 +314,15 @@ export const useOrderVideoManagement = (orderId: string) => {
         return;
       }
       
-      // Erro genérico com métricas
-      const metrics = performanceTracker.getMetrics();
-      const shouldRetry = performanceTracker.shouldRetry();
+      // Erro genérico - sempre permitir retry
+      console.log('📊 [ORDER_VIDEO] Erro genérico capturado');
       
-      console.log('📊 [ORDER_VIDEO] Métricas atuais:', metrics);
-      
-      if (shouldRetry) {
-        toast.error(error.message || 'Erro no upload', {
-          action: {
-            label: 'Retry Inteligente',
-            onClick: () => uploadVideo(slotPosition, file, userId, videoTitle, scheduleRules)
-          }
-        });
-      } else {
-        toast.error(error.message || 'Erro no upload - sistema instável');
-      }
+      toast.error(error.message || 'Erro no upload', {
+        action: {
+          label: 'Tentar Novamente',
+          onClick: () => uploadVideo(slotPosition, file, userId, videoTitle, scheduleRules)
+        }
+      });
     } finally {
       setUploading(false);
     }
