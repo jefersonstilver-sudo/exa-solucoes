@@ -31,12 +31,12 @@ export const BuildingPhotoDateCard: React.FC<BuildingPhotoDateCardProps> = ({
 
       const { data } = await supabase
         .from('buildings')
-        .select('foto_url')
+        .select('imagem_principal')
         .eq('id', buildingId)
         .single();
 
-      if (data?.foto_url) {
-        setPhotoUrl(data.foto_url);
+      if (data?.imagem_principal) {
+        setPhotoUrl(data.imagem_principal);
       }
     };
 

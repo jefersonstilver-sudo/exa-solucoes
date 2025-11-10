@@ -110,3 +110,24 @@
 .animate-bounce-gentle {
   animation: bounce-gentle 2s ease-in-out infinite;
 }
+
+/* Animação do ticker de cotações */
+@keyframes scroll-ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-ticker {
+  animation: scroll-ticker 60s linear infinite;
+}
+
+/* Pausar animação no hover para desktop */
+@media (min-width: 768px) {
+  .animate-scroll-ticker:hover {
+    animation-play-state: paused;
+  }
+}

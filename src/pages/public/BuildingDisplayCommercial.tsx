@@ -34,13 +34,13 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       
       const { data, error } = await supabase
         .from('buildings')
-        .select('nome, codigo')
+        .select('nome, codigo_predio')
         .eq('id', buildingId)
         .single();
       
       if (data && !error) {
         setBuildingName(data.nome);
-        setBuildingCode(data.codigo);
+        setBuildingCode(data.codigo_predio || '');
       }
     };
 
@@ -142,9 +142,9 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
           video={
             <CommercialVideoHero 
               videos={activeVideos.map(v => ({
-                id: v.id || '',
+                id: v.video_id || '',
                 video_url: v.video_url,
-                video_nome: v.video_nome || ''
+                video_nome: v.video_name || ''
               }))}
             />
           }

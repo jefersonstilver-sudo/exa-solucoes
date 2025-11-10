@@ -15,8 +15,8 @@ const fetchBuildingNotices = async (buildingId: string): Promise<BuildingNotice[
   if (!buildingId) return [];
   
   const { data, error } = await supabase
-    .from('building_notices')
-    .select('*')
+    .from('building_notices' as any)
+    .select('id, title, content, icon, background_color, text_color, display_order')
     .eq('building_id', buildingId)
     .eq('is_active', true)
     .order('display_order', { ascending: true })
@@ -24,10 +24,18 @@ const fetchBuildingNotices = async (buildingId: string): Promise<BuildingNotice[
   
   if (error) {
     console.error('Erro ao buscar avisos:', error);
-    throw error;
+    return [];
   }
   
-  return data || [];
+  return (data as any[])?.map((item: any) => ({
+    id: item.id,
+    title: item.title,
+    content: item.content,
+    icon: item.icon,
+    background_color: item.background_color,
+    text_color: item.text_color,
+    display_order: item.display_order
+  })) || [];
 };
 
 export const useBuildingNotices = (buildingId: string) => {
