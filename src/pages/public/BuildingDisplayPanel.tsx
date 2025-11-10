@@ -63,7 +63,7 @@ const BuildingDisplayPanel = () => {
     lastVideoCountRef.current = activeVideos.length;
   }, [activeVideos.length]);
 
-  // Auto-avançar com loop infinito
+  // Auto-avançar com loop infinito - transição imediata e suave
   useEffect(() => {
     const video = videoRef.current;
     if (!video || activeVideos.length === 0) return;
@@ -73,18 +73,26 @@ const BuildingDisplayPanel = () => {
       setSelectedVideoIndex(nextIndex);
     };
 
+    // Garantir que o vídeo sempre carrega e reproduz sem lag
+    const handleCanPlay = () => {
+      video.play().catch(err => console.log('Autoplay prevented:', err));
+    };
+
     video.addEventListener('ended', handleVideoEnd);
-    return () => video.removeEventListener('ended', handleVideoEnd);
+    video.addEventListener('canplay', handleCanPlay);
+    
+    return () => {
+      video.removeEventListener('ended', handleVideoEnd);
+      video.removeEventListener('canplay', handleCanPlay);
+    };
   }, [selectedVideoIndex, activeVideos.length]);
 
   const selectedVideo = activeVideos[selectedVideoIndex];
 
-  // Loading - limpo e minimalista
-  if (loading) {
+  // Loading - sem mostrar para evitar lag visual
+  if (loading && activeVideos.length === 0) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin" />
-      </div>
+      <div className="min-h-screen bg-black" />
     );
   }
 
@@ -104,10 +112,11 @@ const BuildingDisplayPanel = () => {
             ref={videoRef}
             key={selectedVideo.video_url}
             src={selectedVideo.video_url}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain bg-black"
             autoPlay
             muted
             playsInline
+            preload="auto"
           >
             Seu navegador não suporta vídeo.
           </video>

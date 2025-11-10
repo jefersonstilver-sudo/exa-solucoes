@@ -70,7 +70,7 @@ const BuildingDisplayCommercial = () => {
     lastVideoCountRef.current = activeVideos.length;
   }, [activeVideos.length]);
 
-  // Auto-avançar com loop infinito
+  // Auto-avançar com loop infinito - transição rápida e suave
   useEffect(() => {
     const video = videoRef.current;
     if (!video || activeVideos.length === 0) return;
@@ -81,21 +81,29 @@ const BuildingDisplayCommercial = () => {
         const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
         setSelectedVideoIndex(nextIndex);
         setIsTransitioning(false);
-      }, 300);
+      }, 150);
+    };
+
+    // Garantir que o vídeo sempre carrega e reproduz sem lag
+    const handleCanPlay = () => {
+      video.play().catch(err => console.log('Autoplay prevented:', err));
     };
 
     video.addEventListener('ended', handleVideoEnd);
-    return () => video.removeEventListener('ended', handleVideoEnd);
+    video.addEventListener('canplay', handleCanPlay);
+    
+    return () => {
+      video.removeEventListener('ended', handleVideoEnd);
+      video.removeEventListener('canplay', handleCanPlay);
+    };
   }, [selectedVideoIndex, activeVideos.length]);
 
   const selectedVideo = activeVideos[selectedVideoIndex];
 
-  // Loading - elegante
-  if (loading) {
+  // Loading - sem mostrar para evitar lag visual
+  if (loading && activeVideos.length === 0) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin" />
-      </div>
+      <div className="min-h-screen bg-black" />
     );
   }
 
@@ -147,10 +155,10 @@ const BuildingDisplayCommercial = () => {
         </div>
       </header>
 
-      {/* Conteúdo principal com player vertical menor */}
+      {/* Conteúdo principal com player horizontal */}
       <main className="min-h-screen pt-16 pb-48 flex items-center justify-center p-6">
-        <div className="w-full max-w-md">
-          {/* Container do painel vertical - simula monitor vertical */}
+        <div className="w-full max-w-7xl">
+          {/* Container do painel horizontal - simula monitor horizontal */}
           <div className="relative">
             {/* Moldura externa */}
             <div className="absolute -inset-6 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black rounded-3xl shadow-2xl" />
@@ -158,22 +166,23 @@ const BuildingDisplayCommercial = () => {
             {/* Moldura interna */}
             <div className="absolute -inset-3 bg-gradient-to-br from-zinc-900 to-black rounded-2xl shadow-inner" />
             
-            {/* Tela do painel - VERTICAL (9:16) */}
-            <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: '9/16' }}>
+            {/* Tela do painel - HORIZONTAL (16:9) */}
+            <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
               {/* Brilho da tela */}
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none z-20" />
               
               {/* Vídeo */}
               {selectedVideo && (
-                <div className={`w-full h-full transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+                <div className={`w-full h-full transition-opacity duration-150 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                   <video
                     ref={videoRef}
                     key={selectedVideo.video_url}
                     src={selectedVideo.video_url}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain bg-black"
                     autoPlay
                     muted
                     playsInline
+                    preload="auto"
                     style={{ pointerEvents: 'none' }}
                   >
                     Seu navegador não suporta vídeo.
@@ -183,20 +192,11 @@ const BuildingDisplayCommercial = () => {
               
               {/* Reflexo sutil */}
               <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.01] to-transparent pointer-events-none z-10" />
-              
-              {/* Contador de vídeos */}
-              <div className="absolute top-4 right-4 z-30">
-                <div className="px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10">
-                  <span className="text-white/90 text-xs font-medium">
-                    {selectedVideoIndex + 1} / {activeVideos.length}
-                  </span>
-                </div>
-              </div>
             </div>
 
             {/* Suporte/base do monitor */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-24 h-4 bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-t-lg shadow-lg" />
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-36 h-2 bg-gradient-to-b from-zinc-900 to-black rounded-full shadow-xl" />
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-4 bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-t-lg shadow-lg" />
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-48 h-2 bg-gradient-to-b from-zinc-900 to-black rounded-full shadow-xl" />
           </div>
         </div>
       </main>
