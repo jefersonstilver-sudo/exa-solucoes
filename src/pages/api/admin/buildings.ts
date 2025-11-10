@@ -100,33 +100,31 @@ async function createBuilding(req: NextApiRequest, res: NextApiResponse) {
       console.error('Error updating codigo_predio:', updateError);
     }
     
-    // Chamar API externa para criar cliente - SE FALHAR, CANCELA TUDO
+    // Chamar Edge Function (proxy) para criar cliente - SE FALHAR, CANCELA TUDO
     try {
       const clienteId = data.id.replace(/-/g, '').substring(0, 4);
       
-      console.log('[API EXTERNA] Criando cliente externo:', { clienteId, nome });
+      console.log('[EDGE FUNCTION PROXY] Criando cliente externo via Edge Function:', { clienteId, nome });
       
-      const apiResponse = await fetch('http://15.228.8.3:8000/criar-cliente', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('create-building-client', {
+        body: {
           cliente_id: clienteId,
           cliente_name: nome
-        }),
+        }
       });
 
-      if (!apiResponse.ok) {
-        const errorText = await apiResponse.text();
-        throw new Error(`API externa falhou (${apiResponse.status}): ${errorText}`);
+      if (edgeFunctionError) {
+        throw new Error(`Edge Function falhou: ${edgeFunctionError.message}`);
       }
 
-      const responseData = await apiResponse.json();
-      console.log('[API EXTERNA] Cliente criado com sucesso:', responseData);
+      if (!edgeFunctionData?.success) {
+        throw new Error(edgeFunctionData?.error || 'Erro desconhecido ao criar cliente');
+      }
+
+      console.log('[EDGE FUNCTION PROXY] Cliente criado com sucesso:', edgeFunctionData);
 
     } catch (apiError: any) {
-      console.error('[API EXTERNA] ERRO CRÍTICO ao criar cliente:', apiError);
+      console.error('[EDGE FUNCTION PROXY] ERRO CRÍTICO ao criar cliente:', apiError);
       
       // ROLLBACK: Deletar o prédio criado
       await supabase
