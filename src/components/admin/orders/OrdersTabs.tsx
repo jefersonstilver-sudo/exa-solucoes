@@ -161,29 +161,46 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
         ordersAndAttempts.find(item => item.id === id && item.type === 'attempt')
       );
 
+      console.log('🗑️ [DELETE_START] Iniciando deleção:', {
+        isSuperAdmin,
+        totalItems: selectedItems.length,
+        pedidos: selectedPedidos.length,
+        tentativas: selectedTentativas.length,
+        userRole: userProfile?.role
+      });
+
       let totalDeleted = 0;
       const errors: string[] = [];
 
       // Deletar pedidos usando a função adequada baseado no role
       if (selectedPedidos.length > 0) {
-        console.log('🗑️ [ORDERS_TAB] Deletando pedidos:', {
+        console.log('🗑️ [DELETE_PEDIDOS] Deletando pedidos:', {
           count: selectedPedidos.length,
           isSuperAdmin,
-          ids: selectedPedidos
+          functionToUse: isSuperAdmin ? 'superAdminBulkDeletePedidos' : 'bulkDeletePedidos',
+          ids: selectedPedidos.slice(0, 3) // Primeiros 3 para log
         });
         
         // Se for super admin, usar a função completa que remove tudo
         if (isSuperAdmin) {
+          console.log('✨ [SUPER_ADMIN_DELETE] Usando função de super admin');
           const pedidosResult = await superAdminBulkDeletePedidos(selectedPedidos, deleteJustification);
+          console.log('📊 [SUPER_ADMIN_DELETE] Resultado:', pedidosResult);
+          
           totalDeleted += pedidosResult.deleted_count;
           if (!pedidosResult.success && pedidosResult.error) {
+            console.error('❌ [SUPER_ADMIN_DELETE] Erro:', pedidosResult.error);
             errors.push(`Pedidos: ${pedidosResult.error}`);
           }
         } else {
+          console.log('👤 [REGULAR_DELETE] Usando função regular');
           // Para não-super-admins, usar a função padrão com validações
           const pedidosResult = await bulkDeletePedidos(selectedPedidos, deleteJustification);
+          console.log('📊 [REGULAR_DELETE] Resultado:', pedidosResult);
+          
           totalDeleted += pedidosResult.deleted_count;
           if (!pedidosResult.success && pedidosResult.error) {
+            console.error('❌ [REGULAR_DELETE] Erro:', pedidosResult.error);
             errors.push(`Pedidos: ${pedidosResult.error}`);
           }
         }
@@ -191,12 +208,22 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
 
       // Deletar tentativas
       if (selectedTentativas.length > 0) {
+        console.log('🗑️ [DELETE_TENTATIVAS] Deletando tentativas:', selectedTentativas.length);
         const tentativasResult = await bulkDeleteTentativas(selectedTentativas, deleteJustification);
+        console.log('📊 [DELETE_TENTATIVAS] Resultado:', tentativasResult);
+        
         totalDeleted += tentativasResult.deleted_count;
         if (!tentativasResult.success && tentativasResult.error) {
+          console.error('❌ [DELETE_TENTATIVAS] Erro:', tentativasResult.error);
           errors.push(`Tentativas: ${tentativasResult.error}`);
         }
       }
+
+      console.log('✅ [DELETE_COMPLETE] Deleção concluída:', {
+        totalDeleted,
+        errors: errors.length,
+        errorMessages: errors
+      });
 
       // Feedback final
       if (errors.length > 0) {
@@ -212,8 +239,8 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
       await refetch();
 
     } catch (error) {
-      console.error('Erro na exclusão em massa:', error);
-      toast.error('Erro inesperado na exclusão');
+      console.error('💥 [DELETE_ERROR] Erro inesperado na exclusão:', error);
+      toast.error('Erro inesperado na exclusão: ' + (error as Error).message);
     } finally {
       setIsDeleting(false);
     }
