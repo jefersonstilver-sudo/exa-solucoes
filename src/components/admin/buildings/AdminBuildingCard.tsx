@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video, Play, Code } from 'lucide-react';
+import { Eye, Edit, Image, Trash2, MapPin, Phone, Mail, Monitor, DollarSign, Video, Play, Code, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { generateCommercialPath, generatePanelPath, generateEmbedPath } from '@/utils/buildingSlugUtils';
 interface AdminBuildingCardProps {
@@ -67,8 +67,16 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
   return <Card className={`transition-all duration-200 hover:shadow-lg ${building.status === 'manutenção' ? 'border-orange-200 bg-orange-50/30' : building.status === 'instalação' ? 'border-blue-200 bg-blue-50/30' : building.status === 'inativo' ? 'border-gray-200 bg-gray-50/30' : 'border-gray-200'}`}>
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900 mb-1">{building.nome}</h3>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-xl font-bold text-gray-900">{building.nome}</h3>
+              {building.codigo_predio && (
+                <Badge variant="outline" className="text-xs font-mono bg-slate-100 border-slate-300 text-slate-700">
+                  <Hash className="h-3 w-3 mr-1" />
+                  {building.codigo_predio}
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center text-gray-600 mb-2">
               <MapPin className="h-4 w-4 mr-1" />
               <span className="text-sm">{building.endereco}, {building.bairro}</span>
