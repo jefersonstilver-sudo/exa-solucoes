@@ -24,9 +24,23 @@ const HeroSection = () => {
       <div className="absolute top-20 right-20 w-96 h-96 bg-exa-blue/20 rounded-full blur-3xl animate-pulse-soft" />
       <div className="absolute bottom-20 left-20 w-96 h-96 bg-exa-yellow/10 rounded-full blur-3xl animate-pulse-soft" />
 
-      <div ref={ref} className={`relative z-10 w-full flex flex-col lg:grid lg:grid-cols-2 gap-8 md:gap-10 lg:gap-12 items-center transition-all duration-1000 pb-16 md:pb-0 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        {/* Left side - Text content */}
-        <div className="space-y-5 md:space-y-6 order-1 w-full">
+      <div ref={ref} className={`relative z-10 w-full flex flex-col lg:grid lg:grid-cols-2 gap-8 md:gap-10 lg:gap-12 items-center transition-all duration-1000 pb-20 md:pb-8 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        {/* Left side - Player de vídeo posicionado */}
+        <div className="relative group order-2 lg:order-1 w-full max-w-[240px] md:max-w-[260px] lg:max-w-[280px] mx-auto lg:ml-0 lg:mr-auto mb-8 md:mb-0 lg:mt-8">
+          <div className="bg-gradient-to-b from-zinc-300 via-zinc-200 to-zinc-100 p-2 md:p-2.5 lg:p-3 rounded-3xl shadow-2xl border border-white/90 hover:scale-105 transition-transform duration-300">
+            <div className="bg-black rounded-2xl overflow-hidden shadow-inner aspect-[9/16]">
+              {!loading && <video autoPlay loop muted playsInline controls className="w-full h-full object-cover" key={displayVideoUrl}>
+                  <source src={displayVideoUrl} type="video/mp4" />
+                </video>}
+              {loading && <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-exa-yellow"></div>
+                </div>}
+            </div>
+          </div>
+        </div>
+
+        {/* Right side - Conteúdo de texto */}
+        <div className="space-y-5 md:space-y-6 order-1 lg:order-2 w-full">
           <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
             Publicidade que <span className="text-exa-yellow">convive</span>.
           </h1>
@@ -43,20 +57,6 @@ const HeroSection = () => {
             >
               Falar com Vendedor
             </ExaCTA>
-          </div>
-        </div>
-
-        {/* Right side - Visual element */}
-        <div className="relative group order-2 lg:order-none w-full max-w-[250px] md:max-w-[270px] lg:max-w-[290px] mx-auto lg:mx-0 mb-8 md:mb-0">
-          <div className="bg-gradient-to-b from-zinc-300 via-zinc-200 to-zinc-100 p-2 md:p-2.5 lg:p-3 rounded-3xl shadow-2xl border border-white/90 hover:scale-105 transition-transform duration-300">
-            <div className="bg-black rounded-2xl overflow-hidden shadow-inner aspect-[9/16]">
-              {!loading && <video autoPlay loop muted playsInline controls className="w-full h-full object-cover" key={displayVideoUrl}>
-                  <source src={displayVideoUrl} type="video/mp4" />
-                </video>}
-              {loading && <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-exa-yellow"></div>
-                </div>}
-            </div>
           </div>
         </div>
       </div>
