@@ -4,9 +4,14 @@ import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
 import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
 
-const BuildingDisplayPanel = () => {
-  const { buildingId } = useParams<{ buildingId: string }>();
-  const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId || '');
+interface BuildingDisplayPanelProps {
+  buildingId?: string;
+}
+
+const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId: propBuildingId }) => {
+  const params = useParams<{ buildingId: string }>();
+  const buildingId = propBuildingId || params.buildingId || '';
+  const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);

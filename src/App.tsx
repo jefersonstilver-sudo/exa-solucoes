@@ -49,6 +49,7 @@ const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
 const QuemSomos = lazy(() => import('./pages/QuemSomos'));
 const BuildingDisplayPanel = lazy(() => import('./pages/public/BuildingDisplayPanel'));
 const BuildingDisplayCommercial = lazy(() => import('./pages/public/BuildingDisplayCommercial'));
+const PublicBuildingDisplay = lazy(() => import('./pages/public/PublicBuildingDisplay'));
 
 // Blog pages
 const BlogIndex = lazy(() => import('./pages/blog/Index'));
@@ -155,14 +156,36 @@ const AppContent = () => {
           <Route path="/" element={<Exa />} />
           <Route path="/coming-soon" element={<ComingSoonPage />} />
           
-          {/* Painel Público de Exibição - SEM AUTENTICAÇÃO */}
+          {/* ROTAS PÚBLICAS DE EXIBIÇÃO - Novo padrão com nome+código */}
+          
+          {/* Painel limpo (sem UI) - /painel/[nome-predio]/[codigo] */}
+          <Route path="/painel/:buildingSlug/:buildingCode" element={
+            <Suspense fallback={<GlobalLoadingPage />}>
+              <PublicBuildingDisplay variant="panel" />
+            </Suspense>
+          } />
+          
+          {/* Display comercial (com UI) - /comercial/[nome-predio]/[codigo] */}
+          <Route path="/comercial/:buildingSlug/:buildingCode" element={
+            <Suspense fallback={<GlobalLoadingPage />}>
+              <PublicBuildingDisplay variant="commercial" />
+            </Suspense>
+          } />
+          
+          {/* Display comercial (rota raiz) - /[nome-predio]/[codigo] */}
+          <Route path="/:buildingSlug/:buildingCode" element={
+            <Suspense fallback={<GlobalLoadingPage />}>
+              <PublicBuildingDisplay variant="commercial" />
+            </Suspense>
+          } />
+          
+          {/* ROTAS LEGADAS (UUID) - Manter compatibilidade */}
           <Route path="/painel/:buildingId" element={
             <Suspense fallback={<GlobalLoadingPage />}>
               <BuildingDisplayPanel />
             </Suspense>
           } />
           
-          {/* Painel Comercial com UI - SEM AUTENTICAÇÃO */}
           <Route path="/painel-comercial/:buildingId" element={
             <Suspense fallback={<GlobalLoadingPage />}>
               <BuildingDisplayCommercial />
