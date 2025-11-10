@@ -75,63 +75,70 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         return;
       }
 
-      // ⚡ OTIMIZAÇÃO 3 (FASE 1): Buscar vídeos com RPC batch (1 query ao invés de N)
+      // 2. Buscar TODOS os vídeos ATIVOS (aprovados) de TODOS os pedidos
       const pedidoIds = pedidos.map(p => p.id);
       
-      console.log('⚡ [BUILDING ACTIVE VIDEOS] Buscando vídeos para', pedidoIds.length, 'pedidos via RPC batch');
+      console.log('🎬 [BUILDING ACTIVE VIDEOS] Buscando TODOS os vídeos ativos para', pedidoIds.length, 'pedidos');
       const startTime = performance.now();
 
-      // 2. Buscar vídeos atuais para TODOS os pedidos em uma única query
-      const { data: currentVideosData, error: batchError } = await supabase
-        .rpc('get_current_display_videos_batch', { 
-          p_pedido_ids: pedidoIds 
-        });
+      // Buscar todos os vídeos ativos e aprovados de todos os pedidos (não apenas o atual em exibição)
+      const { data: allVideosData, error: videosError } = await supabase
+        .from('pedido_videos')
+        .select(`
+          pedido_id,
+          video_id,
+          slot_position,
+          is_base_video,
+          selected_for_display,
+          is_active,
+          videos!inner (
+            id,
+            nome,
+            url,
+            duracao,
+            status_aprovacao
+          )
+        `)
+        .in('pedido_id', pedidoIds)
+        .eq('is_active', true)
+        .eq('videos.status_aprovacao', 'aprovado')
+        .order('slot_position', { ascending: true });
 
-      if (batchError) {
-        console.error('❌ [BUILDING ACTIVE VIDEOS] Erro ao buscar vídeos (batch):', batchError);
+      if (videosError) {
+        console.error('❌ [BUILDING ACTIVE VIDEOS] Erro ao buscar vídeos:', videosError);
         setVideos([]);
         return;
       }
 
-      const batchTime = performance.now();
-      console.log(`✅ [BUILDING ACTIVE VIDEOS] ${currentVideosData?.length || 0} vídeos carregados via RPC batch em ${(batchTime - startTime).toFixed(0)}ms (OTIMIZADO)`);
+      const videosTime = performance.now();
+      console.log(`✅ [BUILDING ACTIVE VIDEOS] ${allVideosData?.length || 0} vídeos ativos carregados em ${(videosTime - startTime).toFixed(0)}ms`);
 
-      if (!currentVideosData || currentVideosData.length === 0) {
-        console.log('📭 [BUILDING ACTIVE VIDEOS] Nenhum vídeo em exibição encontrado');
+      if (!allVideosData || allVideosData.length === 0) {
+        console.log('📭 [BUILDING ACTIVE VIDEOS] Nenhum vídeo ativo encontrado');
         setVideos([]);
         return;
       }
 
       // 3. Extrair todos os IDs necessários
-      const videoIds = [...new Set(currentVideosData.map(v => v.video_id).filter(Boolean))];
+      const videoIds = [...new Set(allVideosData.map((v: any) => v.video_id).filter(Boolean))];
       const clientIds = [...new Set(pedidos.map(p => p.client_id))];
 
-      // 4. Buscar dados de vídeos e clientes em PARALELO
-      // Using users_with_role view for secure role reading
-      const [videosData, clientsData, pedidoVideosData] = await Promise.all([
-        supabase.from('videos').select('id, nome, url, duracao').in('id', videoIds),
-        supabase.from('users_with_role').select('id, email').in('id', clientIds),
-        supabase.from('pedido_videos').select('pedido_id, video_id, slot_position').in('pedido_id', pedidoIds)
-      ]);
+      // 4. Buscar dados de clientes e regras de programação em PARALELO
+      const clientsDataPromise = supabase.from('users_with_role').select('id, email').in('id', clientIds);
 
       const parallelTime = performance.now();
-      console.log(`✅ [BUILDING ACTIVE VIDEOS] Queries paralelas concluídas em ${(parallelTime - batchTime).toFixed(0)}ms`);
 
       // 5. Criar maps para lookup O(1)
-      const videosMap = new Map(videosData.data?.map(v => [v.id, v]) || []);
+      const clientsData = await clientsDataPromise;
       const clientsMap = new Map(clientsData.data?.map(c => [c.id, c]) || []);
-      const pedidoVideosMap = new Map(
-        pedidoVideosData.data?.map(pv => [`${pv.pedido_id}_${pv.video_id}`, pv]) || []
-      );
 
-      // 6. Buscar schedule rules para vídeos agendados
-      const scheduledVideoIds = currentVideosData
-        .filter(v => v.is_scheduled)
-        .map(v => v.video_id);
-      
+      console.log(`✅ [BUILDING ACTIVE VIDEOS] Dados de clientes carregados em ${(performance.now() - parallelTime).toFixed(0)}ms`);
+
+      // 6. Buscar schedule rules para vídeos (para identificar se são agendados)
+      // Buscar regras de programação para TODOS os vídeos
       let scheduleRulesMap = new Map<string, ScheduleRule[]>();
       
-      if (scheduledVideoIds.length > 0) {
+      if (videoIds.length > 0) {
         const { data: scheduleRulesData } = await supabase
           .from('campaign_schedule_rules')
           .select(`
@@ -144,7 +151,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
               video_id
             )
           `)
-          .in('campaign_video_schedules.video_id', scheduledVideoIds)
+          .in('campaign_video_schedules.video_id', videoIds)
           .eq('is_active', true);
         
         // Agrupar rules por video_id
@@ -179,25 +186,25 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         });
       };
 
-      // 8. Montar resultado final
+      // 8. Montar resultado final com TODOS os vídeos ativos
       const activeVideos: BuildingActiveVideo[] = [];
 
-      for (const videoInfo of currentVideosData) {
-        const pedido = pedidos.find(p => p.id === videoInfo.pedido_id);
+      for (const pedidoVideo of allVideosData) {
+        const pedido = pedidos.find(p => p.id === pedidoVideo.pedido_id);
         if (!pedido) continue;
 
-        const videoData = videosMap.get(videoInfo.video_id);
+        const videoData = (pedidoVideo as any).videos;
         if (!videoData) continue;
 
         const clientData = clientsMap.get(pedido.client_id);
         const clientEmail = clientData?.email || 'Email não encontrado';
         const clientName = clientEmail.split('@')[0] || 'Cliente';
 
-        const pedidoVideo = pedidoVideosMap.get(`${pedido.id}_${videoInfo.video_id}`);
-        const scheduleRules = scheduleRulesMap.get(videoInfo.video_id);
+        const scheduleRules = scheduleRulesMap.get(pedidoVideo.video_id);
+        const isScheduled = scheduleRules && scheduleRules.length > 0;
 
         activeVideos.push({
-          video_id: videoInfo.video_id,
+          video_id: pedidoVideo.video_id,
           video_name: videoData.nome,
           video_url: videoData.url,
           video_duracao: videoData.duracao || 30,
@@ -205,13 +212,20 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           client_email: clientEmail,
           client_name: clientName,
           valor_total: pedido.valor_total || 0,
-          is_scheduled: videoInfo.is_scheduled || false,
-          priority_type: (videoInfo.priority_type === 'scheduled' ? 'scheduled' : 'base') as 'scheduled' | 'base',
-          slot_position: pedidoVideo?.slot_position || 1,
+          is_scheduled: isScheduled,
+          priority_type: (pedidoVideo.is_base_video ? 'base' : 'scheduled') as 'scheduled' | 'base',
+          slot_position: pedidoVideo.slot_position || 1,
           schedule_rules: scheduleRules,
-          is_currently_active: isVideoActiveNow(videoInfo.video_id, scheduleRules)
+          is_currently_active: isVideoActiveNow(pedidoVideo.video_id, scheduleRules)
         });
       }
+
+      // Ordenar: vídeos base primeiro, depois agendados, depois por slot_position
+      activeVideos.sort((a, b) => {
+        if (a.priority_type === 'base' && b.priority_type !== 'base') return -1;
+        if (a.priority_type !== 'base' && b.priority_type === 'base') return 1;
+        return a.slot_position - b.slot_position;
+      });
 
       const endTime = performance.now();
       const totalTime = (endTime - startTime).toFixed(0);
