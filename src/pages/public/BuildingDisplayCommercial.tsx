@@ -44,21 +44,18 @@ const BuildingDisplayCommercial = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Header premium com logo EXA e gradiente */}
-      <div className="absolute top-0 left-0 right-0 z-30">
-        <div className="relative h-20 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 shadow-xl">
-          {/* Glow effect superior */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
-          
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {/* Header fixo premium com logo EXA */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 shadow-2xl">
+        <div className="container mx-auto px-8 h-20 flex items-center justify-between">
           {/* Logo EXA com efeito brilhante */}
-          <div className="absolute left-8 top-1/2 -translate-y-1/2 flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div className="relative">
               {/* Glow background */}
               <div className="absolute inset-0 blur-xl bg-white/30 rounded-full scale-150" />
               
               {/* Logo */}
-              <svg viewBox="0 0 100 35" className="h-10 w-auto relative z-10">
+              <svg viewBox="0 0 100 35" className="h-12 w-auto relative z-10">
                 <defs>
                   <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 1 }} />
@@ -89,48 +86,69 @@ const BuildingDisplayCommercial = () => {
             </div>
             
             {/* Divisor */}
-            <div className="w-px h-8 bg-white/30" />
+            <div className="w-px h-10 bg-white/30" />
             
             {/* Subtitle */}
-            <span className="text-white/90 text-sm font-light tracking-[0.2em] uppercase">
+            <span className="text-white text-base font-light tracking-[0.25em] uppercase">
               Digital Signage
             </span>
           </div>
         </div>
-        
-        {/* Shadow do header */}
-        <div className="h-4 bg-gradient-to-b from-black/40 to-transparent" />
-      </div>
+      </header>
 
-      {/* Moldura lateral sutil - simula hardware físico */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 bottom-0 w-4 bg-gradient-to-r from-black/60 to-transparent z-20" />
-        <div className="absolute top-0 right-0 bottom-0 w-4 bg-gradient-to-l from-black/60 to-transparent z-20" />
-        <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-black/60 to-transparent z-20" />
-      </div>
+      {/* Conteúdo principal com painel centralizado */}
+      <main className="min-h-screen pt-20 flex items-center justify-center p-8">
+        <div className="w-full max-w-6xl">
+          {/* Container do painel - simula monitor/TV físico */}
+          <div className="relative">
+            {/* Moldura externa - simula bezel de monitor */}
+            <div className="absolute -inset-8 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black rounded-3xl shadow-2xl" />
+            
+            {/* Moldura interna - profundidade */}
+            <div className="absolute -inset-4 bg-gradient-to-br from-zinc-900 to-black rounded-2xl shadow-inner" />
+            
+            {/* Tela do painel */}
+            <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
+              {/* Brilho da tela */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent pointer-events-none z-20" />
+              
+              {/* Vídeo */}
+              {selectedVideo && (
+                <div className={`w-full h-full transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+                  <video
+                    ref={videoRef}
+                    key={selectedVideo.video_url}
+                    src={selectedVideo.video_url}
+                    className="w-full h-full object-cover"
+                    autoPlay
+                    muted
+                    playsInline
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    Seu navegador não suporta vídeo.
+                  </video>
+                </div>
+              )}
+              
+              {/* Reflexo sutil simulando vidro */}
+              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/[0.01] to-transparent pointer-events-none z-10" />
+            </div>
 
-      {/* Vídeo player - área principal */}
-      <div className="min-h-screen pt-20 flex items-center justify-center bg-black">
-        {selectedVideo && (
-          <div className={`w-full h-full transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-            <video
-              ref={videoRef}
-              key={selectedVideo.video_url}
-              src={selectedVideo.video_url}
-              className="w-full h-full object-cover"
-              autoPlay
-              muted
-              playsInline
-              style={{ pointerEvents: 'none' }}
-            >
-              Seu navegador não suporta vídeo.
-            </video>
+            {/* Suporte/base do monitor (detalhe visual) */}
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-32 h-6 bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-t-lg shadow-lg" />
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-3 bg-gradient-to-b from-zinc-900 to-black rounded-full shadow-xl" />
           </div>
-        )}
-      </div>
+        </div>
+      </main>
 
-      {/* Reflexo sutil simulando vidro do painel */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] via-transparent to-transparent pointer-events-none z-10" />
+      {/* Footer discreto */}
+      <footer className="fixed bottom-0 left-0 right-0 py-4 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
+        <div className="text-center">
+          <p className="text-white/40 text-xs font-light tracking-[0.3em] uppercase">
+            Powered by EXA Mídia
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };
