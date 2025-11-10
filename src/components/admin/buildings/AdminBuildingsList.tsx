@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2 } from 'lucide-react';
 import AdminBuildingCard from './AdminBuildingCard';
+import { useBuildingsVideoCount } from '@/hooks/useBuildingsVideoCount';
 
 interface AdminBuildingsListProps {
   buildings: any[];
@@ -21,6 +22,9 @@ const AdminBuildingsList: React.FC<AdminBuildingsListProps> = ({
   onDelete,
   onViewCampaigns
 }) => {
+  const buildingIds = buildings.map(b => b.id);
+  const { counts: videoCounts, loading: videoCountsLoading } = useBuildingsVideoCount(buildingIds);
+  
   const activeBuildings = buildings.filter(b => b.status === 'ativo');
   const maintenanceBuildings = buildings.filter(b => b.status === 'manutenção');
   const installationBuildings = buildings.filter(b => b.status === 'instalação');
@@ -54,6 +58,7 @@ const AdminBuildingsList: React.FC<AdminBuildingsListProps> = ({
                 onImageManager={onImageManager}
                 onDelete={onDelete}
                 onViewCampaigns={onViewCampaigns}
+                videoCount={videoCounts[building.id] ?? 0}
               />
             ))}
           </div>
