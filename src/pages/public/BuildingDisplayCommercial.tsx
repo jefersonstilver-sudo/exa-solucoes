@@ -189,89 +189,76 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       onDragStart={(e) => e.preventDefault()}
       onDrop={(e) => e.preventDefault()}
     >
-      {/* Header compacto e moderno */}
+      {/* 📱 Header responsivo e adaptativo */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900/95 via-red-800/95 to-red-900/95 backdrop-blur-md shadow-2xl border-b border-white/10">
-        <div className="container mx-auto px-6 h-14 flex items-center justify-between">
-          {/* Logo EXA */}
-          <div className="flex items-center gap-3">
-            <div className="relative h-8 w-auto">
+        <div className="container mx-auto px-2 sm:px-4 md:px-6 h-12 sm:h-14 md:h-16 lg:h-20 flex items-center justify-between">
+          {/* Logo EXA - escalável */}
+          <div className="flex items-center">
+            <div className="relative h-6 sm:h-8 md:h-10 lg:h-12 w-auto">
               <div className="absolute inset-0 blur-xl bg-red-500/40 rounded-full animate-pulse" />
               <img 
                 src={exaLogo} 
                 alt="EXA Mídia" 
-                className="h-8 w-auto relative z-10 drop-shadow-2xl brightness-110"
+                className="h-full w-auto relative z-10 drop-shadow-2xl brightness-110"
               />
             </div>
           </div>
 
-          {/* Nome do prédio */}
+          {/* Nome do prédio - escalável */}
           {buildingName && (
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <h1 className="text-white text-xl font-bold tracking-wide drop-shadow-2xl">
+              <h1 className="text-white text-sm sm:text-base md:text-xl lg:text-2xl xl:text-3xl font-bold tracking-wide drop-shadow-2xl">
                 {buildingName}
               </h1>
             </div>
           )}
 
-          {/* Status de conexão */}
-          <div className="flex items-center gap-2">
+          {/* Status de conexão - escalável */}
+          <div className="flex items-center">
             {networkStatus.isOnline ? (
-              <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 rounded-full border border-green-500/30">
-                <Wifi className="h-3.5 w-3.5 text-green-400" />
-                <span className="text-green-400 text-xs font-medium">Online</span>
+              <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-green-500/20 rounded-full border border-green-500/30">
+                <Wifi className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-green-400" />
+                <span className="text-green-400 text-xs sm:text-sm font-medium hidden sm:inline">Online</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 rounded-full border border-red-500/30 animate-pulse">
-                <WifiOff className="h-3.5 w-3.5 text-red-400" />
-                <span className="text-red-400 text-xs font-medium">Offline</span>
+              <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-red-500/20 rounded-full border border-red-500/30 animate-pulse">
+                <WifiOff className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-red-400" />
+                <span className="text-red-400 text-xs sm:text-sm font-medium hidden sm:inline">Offline</span>
               </div>
             )}
           </div>
         </div>
       </header>
 
-      {/* Layout principal - Tudo cabe em 100vh sem scroll */}
-      <main className="fixed inset-0 pt-14 overflow-hidden">
-        <div className="h-full flex flex-col p-4 gap-3">
-          {/* Vídeo principal - 70% da altura */}
-          <div className="flex-[7] min-h-0">
-            <div className="h-full bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/5 p-3 flex items-center justify-center">
-              <div className="w-full h-full max-w-6xl max-h-full">
-                {videosWithCache.length > 0 ? (
-                  <>
-                    <CommercialVideoHero 
-                      videos={videosWithCache}
-                      className="h-full"
-                    />
-                    {/* Debug info */}
-                    <div className="fixed bottom-2 left-2 bg-black/80 text-white text-xs p-2 rounded">
-                      Playlist: {videosWithCache.length} vídeos
-                    </div>
-                  </>
-                ) : activeVideos.length > 0 ? (
-                  <>
-                    <CommercialVideoHero 
-                      videos={activeVideos.map(v => ({
-                        id: v.video_id || '',
-                        video_url: v.video_url,
-                        video_nome: v.video_name || ''
-                      }))}
-                      className="h-full"
-                    />
-                    {/* Debug info */}
-                    <div className="fixed bottom-2 left-2 bg-black/80 text-white text-xs p-2 rounded">
-                      Carregando cache... {activeVideos.length} vídeos
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-white text-center">Carregando vídeos...</div>
-                )}
-              </div>
+      {/* 🎯 Layout 100% responsivo - Mobile até TV 70" */}
+      <main className="fixed inset-0 pt-12 sm:pt-14 md:pt-16 lg:pt-20 overflow-hidden">
+        <div className="h-full w-full flex flex-col p-2 sm:p-3 md:p-4 lg:p-6 xl:p-8 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
+          
+          {/* 📺 Vídeo principal - adapta de 60% a 75% da altura */}
+          <div className="flex-[65] md:flex-[70] lg:flex-[75] min-h-0 w-full">
+            <div className="h-full w-full bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-md rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl border border-white/5 overflow-hidden">
+              {videosWithCache.length > 0 ? (
+                <CommercialVideoHero 
+                  videos={videosWithCache}
+                  className="h-full w-full"
+                />
+              ) : activeVideos.length > 0 ? (
+                <CommercialVideoHero 
+                  videos={activeVideos.map(v => ({
+                    id: v.video_id || '',
+                    video_url: v.video_url,
+                    video_nome: v.video_name || ''
+                  }))}
+                  className="h-full w-full"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-white">Carregando...</div>
+              )}
             </div>
           </div>
 
-          {/* Relógio e Clima - 30% da altura em grid horizontal */}
-          <div className="flex-[3] min-h-0 grid grid-cols-2 gap-3">
+          {/* ⏰🌤️ Relógio e Clima - grid responsivo (25-40% da altura) */}
+          <div className="flex-[35] md:flex-[30] lg:flex-[25] min-h-0 w-full grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
             {/* Relógio */}
             <div className="h-full min-h-0">
               <LiveClock />
