@@ -18,6 +18,7 @@ import {
 export const VideoLogViewer: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [levelFilter, setLevelFilter] = useState<string>('all');
+  const [refreshKey, setRefreshKey] = useState<number>(0);
 
   const logs = videoLogger.exportLogs(
     categoryFilter === 'all' && levelFilter === 'all'
@@ -57,7 +58,11 @@ export const VideoLogViewer: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => videoLogger.clearLogs()}
+              onClick={() => {
+                videoLogger.clearLogs();
+                setRefreshKey(prev => prev + 1);
+                console.log('🗑️ Logs limpos com sucesso!');
+              }}
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Limpar
@@ -102,7 +107,7 @@ export const VideoLogViewer: React.FC = () => {
           </Select>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent key={refreshKey}>
         <div className="space-y-2 max-h-[600px] overflow-y-auto">
           {logs.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
