@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { videoScheduleService } from '@/services/videoScheduleService';
 
 interface UseBuildingScheduleMonitorProps {
   buildingId: string;
@@ -160,17 +161,25 @@ export const useBuildingScheduleMonitor = ({
         }
       }
 
-      // Se detectou mudanças, chama callback
-      if (hasChanges && onScheduleChange) {
+      // Se detectou mudanças, atualizar banco primeiro e depois refetch
+      if (hasChanges) {
         const changeKey = `${currentTimeStr}-${hasChanges}`;
         
         // Evita chamar múltiplas vezes no mesmo minuto
         if (lastCheckRef.current !== changeKey) {
-          console.log('🔄 [SCHEDULE_MONITOR] Executando atualização de playlist');
+          console.log('💾 [SCHEDULE_MONITOR] Atualizando banco de dados do prédio');
           lastCheckRef.current = changeKey;
-          onScheduleChange();
+          
+          // Primeiro atualiza banco
+          await videoScheduleService.updateAllVideosForBuilding(buildingId);
+          
+          // Depois faz refetch
+          if (onScheduleChange) {
+            console.log('🔄 [SCHEDULE_MONITOR] Executando atualização de playlist');
+            onScheduleChange();
+          }
         }
-      } else if (!hasChanges) {
+      } else {
         console.log('✅ [SCHEDULE_MONITOR] Nenhuma mudança necessária');
       }
 

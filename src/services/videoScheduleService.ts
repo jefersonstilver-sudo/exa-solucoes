@@ -233,6 +233,45 @@ export const videoScheduleService = {
   },
 
   /**
+   * Atualiza todos os vídeos de todos os pedidos ativos de um prédio
+   */
+  async updateAllVideosForBuilding(buildingId: string): Promise<void> {
+    try {
+      console.log('🏢 [SCHEDULE] Atualizando vídeos do prédio:', buildingId);
+
+      // Buscar todos os pedidos ativos que incluem esse prédio
+      const { data: pedidos, error } = await supabase
+        .from('pedidos')
+        .select('id, lista_predios, status')
+        .contains('lista_predios', [buildingId])
+        .in('status', ['ativo', 'pago']);
+
+      if (error) {
+        console.error('❌ [SCHEDULE] Erro ao buscar pedidos do prédio:', error);
+        return;
+      }
+
+      if (!pedidos || pedidos.length === 0) {
+        console.log('📋 [SCHEDULE] Nenhum pedido ativo encontrado para o prédio');
+        return;
+      }
+
+      console.log(`📦 [SCHEDULE] Encontrados ${pedidos.length} pedidos ativos`);
+
+      // Atualizar todos os vídeos de cada pedido
+      const updatePromises = pedidos.map(pedido => 
+        this.updateAllVideosForOrder(pedido.id)
+      );
+
+      await Promise.all(updatePromises);
+      console.log('✅ [SCHEDULE] Todos os vídeos do prédio foram atualizados');
+
+    } catch (error) {
+      console.error('❌ [SCHEDULE] Erro ao atualizar vídeos do prédio:', error);
+    }
+  },
+
+  /**
    * Verifica se vídeo deve estar ativo baseado em campanhas avançadas
    */
   async isVideoActiveInCampaign(videoId: string): Promise<boolean> {
