@@ -27,6 +27,7 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastPlaylistHashRef = useRef('');
   const networkStatus = useNetworkMonitor();
+  const [canRefetch, setCanRefetch] = useState(true);
   const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
     preventPrint: true,
@@ -51,8 +52,9 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
       try {
         const currentHash = activeVideos.map(v => v.video_id).sort().join(',');
         
-        // Só refetch se houve mudança
-        if (currentHash !== lastPlaylistHashRef.current) {
+        // Só refetch se playlist terminou E houve mudança
+        if (canRefetch && currentHash !== lastPlaylistHashRef.current) {
+          setCanRefetch(false);
           await refetch();
           
           const newHash = activeVideos.map(v => v.video_id).sort().join(',');
@@ -117,6 +119,11 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
 
       hasEndedRef.current = true;
       isTransitioningRef.current = true;
+      
+      // Se voltou ao início, pode refetch
+      if (nextVideoIndex === 0) {
+        setCanRefetch(true);
+      }
       
       requestAnimationFrame(() => {
         setCurrentIndex(nextVideoIndex);

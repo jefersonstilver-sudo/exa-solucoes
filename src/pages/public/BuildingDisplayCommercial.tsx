@@ -22,6 +22,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const networkStatus = useNetworkMonitor();
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastPlaylistHashRef = useRef('');
+  const [canRefetch, setCanRefetch] = useState(true);
   
   // Hash da playlist para detectar mudanças
   const getPlaylistHash = (videos: any[]) => videos.map(v => v.video_id).sort().join(',');
@@ -65,8 +66,9 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       try {
         const currentHash = getPlaylistHash(activeVideos);
         
-        // Só refetch se houve mudança
-        if (currentHash !== lastPlaylistHashRef.current) {
+        // Só refetch se playlist terminou E houve mudança
+        if (canRefetch && currentHash !== lastPlaylistHashRef.current) {
+          setCanRefetch(false);
           await refetch();
           
           const newHash = getPlaylistHash(activeVideos);
@@ -192,6 +194,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                     video_nome: v.video_name || ''
                   }))}
                   className="h-full w-full"
+                  onPlaylistEnd={() => setCanRefetch(true)}
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-white">Carregando...</div>

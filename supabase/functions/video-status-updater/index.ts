@@ -94,43 +94,92 @@ serve(async (req) => {
 
     let activatedCount = 0;
     let deactivatedCount = 0;
+    const affectedPedidos = new Set<string>();
 
     // Ativar vídeos que estão no horário
-    if (videosToActivate.length > 0) {
+    for (const videoId of videosToActivate) {
+      const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
+      if (!rule) continue;
+
+      const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
+      affectedPedidos.add(pedidoId);
+
+      // 1. Ativar vídeo agendado e marcar para exibição
       const { error: activateError } = await supabase
         .from('pedido_videos')
         .update({ 
           is_active: true,
+          selected_for_display: true,
           updated_at: new Date().toISOString()
         })
-        .in('video_id', videosToActivate)
+        .eq('video_id', videoId)
         .eq('approval_status', 'approved');
 
-      if (!activateError) {
-        activatedCount = videosToActivate.length;
-        console.log(`✅ [VIDEO_STATUS] Ativados ${activatedCount} vídeos agendados`);
+      if (activateError) {
+        console.error(`❌ Erro ao ativar vídeo ${videoId}:`, activateError);
+        continue;
+      }
+
+      // 2. Desmarcar selected_for_display dos outros vídeos do mesmo pedido
+      const { error: deselectError } = await supabase
+        .from('pedido_videos')
+        .update({ 
+          selected_for_display: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('pedido_id', pedidoId)
+        .neq('video_id', videoId);
+
+      if (deselectError) {
+        console.error(`❌ Erro ao desmarcar outros vídeos do pedido ${pedidoId}:`, deselectError);
       } else {
-        console.error('❌ Erro ao ativar vídeos:', activateError);
+        activatedCount++;
+        console.log(`✅ [VIDEO_STATUS] Vídeo ${videoId} ativado e marcado para exibição (Pedido: ${pedidoId})`);
       }
     }
 
     // Desativar vídeos que saíram do horário (apenas os agendados)
-    if (videosToDeactivate.length > 0) {
+    for (const videoId of videosToDeactivate) {
+      const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
+      if (!rule) continue;
+
+      const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
+      affectedPedidos.add(pedidoId);
+
+      // 1. Desativar vídeo agendado e desmarcar exibição
       const { error: deactivateError } = await supabase
         .from('pedido_videos')
         .update({ 
           is_active: false,
+          selected_for_display: false,
           updated_at: new Date().toISOString()
         })
-        .in('video_id', videosToDeactivate)
+        .eq('video_id', videoId)
         .eq('approval_status', 'approved')
-        .eq('is_base_video', false); // Só desativar vídeos agendados, não os principais
+        .eq('is_base_video', false);
 
-      if (!deactivateError) {
-        deactivatedCount = videosToDeactivate.length;
-        console.log(`⏹️ [VIDEO_STATUS] Desativados ${deactivatedCount} vídeos agendados`);
+      if (deactivateError) {
+        console.error(`❌ Erro ao desativar vídeo ${videoId}:`, deactivateError);
+        continue;
+      }
+
+      // 2. Reativar vídeo base do pedido
+      const { error: reactivateBaseError } = await supabase
+        .from('pedido_videos')
+        .update({ 
+          selected_for_display: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('pedido_id', pedidoId)
+        .eq('is_base_video', true)
+        .eq('approval_status', 'approved')
+        .limit(1);
+
+      if (reactivateBaseError) {
+        console.error(`❌ Erro ao reativar vídeo base do pedido ${pedidoId}:`, reactivateBaseError);
       } else {
-        console.error('❌ Erro ao desativar vídeos:', deactivateError);
+        deactivatedCount++;
+        console.log(`⏹️ [VIDEO_STATUS] Vídeo ${videoId} desativado, vídeo base reativado (Pedido: ${pedidoId})`);
       }
     }
 

@@ -11,11 +11,13 @@ interface Video {
 interface CommercialVideoHeroProps {
   videos: Video[];
   className?: string;
+  onPlaylistEnd?: () => void;
 }
 
 export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   videos,
-  className
+  className,
+  onPlaylistEnd
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -44,6 +46,12 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       transitionLockRef.current = true;
 
       const nextIndex = (currentIndex + 1) % videos.length;
+      
+      // Se voltou ao início da playlist, notificar pai
+      if (nextIndex === 0 && onPlaylistEnd) {
+        onPlaylistEnd();
+      }
+      
       setCurrentIndex(nextIndex);
       setIsPlaying(false);
 

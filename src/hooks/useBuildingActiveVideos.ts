@@ -173,22 +173,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         });
       }
 
-      // 7. Verificar status atual baseado em horário (OTIMIZADO)
-      const now = new Date();
-      const currentDay = now.getDay();
-      const currentTime = now.toTimeString().slice(0, 5);
-      
-      const isVideoActiveNow = (scheduleRules?: ScheduleRule[]): boolean => {
-        // SEM PROGRAMAÇÃO = SEMPRE ATIVO
-        if (!scheduleRules || scheduleRules.length === 0) return true;
-        
-        // COM PROGRAMAÇÃO = VERIFICAR HORÁRIO/DIA
-        return scheduleRules.some(rule => {
-          if (!rule.days_of_week.includes(currentDay)) return false;
-          if (rule.is_all_day) return true;
-          return currentTime >= rule.start_time && currentTime <= rule.end_time;
-        });
-      };
+      // 7. Backend já gerencia o status - não precisamos calcular aqui
 
       // 8. Montar resultado final
       const activeVideos: BuildingActiveVideo[] = [];
@@ -209,11 +194,9 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
 
         const scheduleRules = scheduleRulesMap.get(pedidoVideo.video_id);
         const isScheduled = scheduleRules && scheduleRules.length > 0;
-        const isCurrentlyActive = isVideoActiveNow(scheduleRules);
         
         if (!isScheduled) permanentCount++;
-        else if (isCurrentlyActive) scheduledActive++;
-        else scheduledInactive++;
+        else scheduledActive++;
 
         const videoInfo = {
           video_id: pedidoVideo.video_id,
@@ -228,35 +211,32 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           priority_type: (pedidoVideo.is_base_video ? 'base' : 'scheduled') as 'scheduled' | 'base',
           slot_position: pedidoVideo.slot_position || 1,
           schedule_rules: scheduleRules,
-          is_currently_active: isCurrentlyActive,
           created_at: (pedidoVideo as any).created_at
         };
 
         activeVideos.push(videoInfo);
       }
 
-      // FILTRAR APENAS VÍDEOS EM EXIBIÇÃO AGORA
-      const videosEmExibicao = activeVideos.filter(v => v.is_currently_active === true);
-      
+      // Backend já retorna apenas vídeos em exibição (selected_for_display = true)
       // Verificar cache para evitar logs repetidos
-      const currentHash = videosEmExibicao.map(v => v.video_id).sort().join(',');
+      const currentHash = activeVideos.map(v => v.video_id).sort().join(',');
       const isChanged = currentHash !== lastCheckRef.current.videoIds;
       
       if (isChanged) {
-        const totalDuration = videosEmExibicao.reduce((acc, v) => acc + v.video_duracao, 0);
-        console.log(`🎬 [VIDEOS] ${videosEmExibicao.length} vídeos carregados (${totalDuration}s total) - ${permanentCount} permanentes${scheduledActive > 0 ? `, ${scheduledActive} agendados ativos` : ''}${scheduledInactive > 0 ? `, ${scheduledInactive} aguardando` : ''}`);
-        videosEmExibicao.forEach(v => console.log(`  → "${v.video_name}" (${v.video_duracao}s)`));
+        const totalDuration = activeVideos.reduce((acc, v) => acc + v.video_duracao, 0);
+        console.log(`🎬 [VIDEOS] ${activeVideos.length} vídeos carregados (${totalDuration}s total) - ${permanentCount} permanentes${scheduledActive > 0 ? `, ${scheduledActive} agendados` : ''}`);
+        activeVideos.forEach(v => console.log(`  → "${v.video_name}" (${v.video_duracao}s)`));
         lastCheckRef.current = { videoIds: currentHash, timestamp: Date.now() };
       }
       
       // Ordenar: mais recentes primeiro (enviados por último)
-      videosEmExibicao.sort((a, b) => {
+      activeVideos.sort((a, b) => {
         const dateA = new Date(a.created_at || 0).getTime();
         const dateB = new Date(b.created_at || 0).getTime();
         return dateB - dateA; // Descendente (mais recente primeiro)
       });
 
-      setVideos(videosEmExibicao);
+      setVideos(activeVideos);
 
     } catch (error: any) {
       console.error('❌ [VIDEOS] Erro:', error.message);
