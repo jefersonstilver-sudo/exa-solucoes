@@ -173,6 +173,7 @@ serve(async (req) => {
         .eq('pedido_id', pedidoId)
         .eq('is_base_video', true)
         .eq('approval_status', 'approved')
+        .order('created_at', { ascending: true })
         .limit(1);
 
       if (reactivateBaseError) {
