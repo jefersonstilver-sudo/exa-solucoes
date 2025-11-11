@@ -19,8 +19,9 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const buildingId = propBuildingId || params.buildingId || '';
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [buildingName, setBuildingName] = useState('');
+  const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
   
-  // Status de conexão em tempo real
+  // Status de conexão em tempo real (apenas para indicador visual)
   const connectionStatus = useRealtimeConnection(buildingId);
   
   const { containerRef: protectionRef } = useVideoProtection({
@@ -63,13 +64,102 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     };
   }, []);
 
-  // Atualizar quando detectar mudança via Realtime
+  // 🔄 Sistema de polling robusto a cada 2 minutos
   useEffect(() => {
-    if (connectionStatus.lastUpdate) {
-      console.log('🔄 [DISPLAY] Atualizando playlist devido a mudança no banco');
-      refetch();
-    }
-  }, [connectionStatus.lastUpdate, refetch]);
+    if (!buildingId) return;
+
+    console.log('⏰ [POLLING] Iniciando sistema de polling (2 minutos)');
+
+    const checkForUpdates = async () => {
+      const now = new Date();
+      console.log('🔍 [POLLING] Verificando atualizações de vídeos...', {
+        buildingId,
+        lastCheck: lastCheckTime.toISOString(),
+        currentCheck: now.toISOString()
+      });
+
+      try {
+        // Buscar vídeos ativos no banco
+        const { data: currentVideos, error } = await supabase
+          .from('pedido_videos')
+          .select(`
+            id,
+            video_id,
+            is_active,
+            selected_for_display,
+            approval_status,
+            is_base_video,
+            pedidos!inner(building_id),
+            campaign_video_schedules(
+              id,
+              is_active,
+              campaign_schedule_rules(
+                id,
+                days_of_week,
+                start_time,
+                end_time,
+                is_active
+              )
+            )
+          `)
+          .eq('pedidos.building_id', buildingId)
+          .eq('is_active', true)
+          .eq('selected_for_display', true)
+          .eq('approval_status', 'approved');
+
+        if (error) {
+          console.error('❌ [POLLING] Erro ao buscar vídeos:', error);
+          return;
+        }
+
+        // Verificar se há diferença nos vídeos
+        const currentVideoIds = (currentVideos || [])
+          .map(v => v.video_id)
+          .sort()
+          .join(',');
+        
+        const displayedVideoIds = activeVideos
+          .map(v => v.video_id)
+          .sort()
+          .join(',');
+
+        console.log('📊 [POLLING] Comparação de vídeos:', {
+          currentCount: currentVideos?.length || 0,
+          displayedCount: activeVideos.length,
+          currentIds: currentVideoIds,
+          displayedIds: displayedVideoIds,
+          hasChanges: currentVideoIds !== displayedVideoIds
+        });
+
+        if (currentVideoIds !== displayedVideoIds) {
+          console.log('🔄 [POLLING] Mudança detectada! Atualizando playlist...');
+          await refetch();
+          setLastCheckTime(now);
+        } else {
+          console.log('✅ [POLLING] Sem mudanças. Playlist está atualizada.');
+          setLastCheckTime(now);
+        }
+      } catch (error) {
+        console.error('❌ [POLLING] Erro durante verificação:', error);
+      }
+    };
+
+    // Primeira verificação após 5 segundos (para dar tempo de carregar)
+    const initialTimeout = setTimeout(() => {
+      checkForUpdates();
+    }, 5000);
+
+    // Polling a cada 2 minutos (120000ms)
+    const pollingInterval = setInterval(() => {
+      checkForUpdates();
+    }, 120000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(pollingInterval);
+      console.log('🛑 [POLLING] Sistema de polling encerrado');
+    };
+  }, [buildingId, activeVideos, refetch, lastCheckTime]);
 
 
   // Loading - sem mostrar para evitar lag visual
