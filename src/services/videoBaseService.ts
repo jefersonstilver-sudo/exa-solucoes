@@ -185,46 +185,72 @@ const fallbackDirectUpdate = async (slotId: string): Promise<SetBaseVideoResult>
 /* -------------------------------------------------------------------------- */
 
 export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> => {
-  console.log('⭐ [SET_BASE_VIDEO] Iniciando:', slotId);
+  console.log('⭐ [SET_BASE_VIDEO] Iniciando troca de vídeo principal:', {
+    slotId,
+    timestamp: now()
+  });
 
   try {
     // Chamar RPC única - responsabilidade única
+    console.log('🔄 [SET_BASE_VIDEO] Chamando RPC set_base_video_enhanced...');
     const { data, error } = await supabase.rpc('set_base_video_enhanced', {
       p_pedido_video_id: slotId
     });
 
     if (error) {
-      console.error('❌ [SET_BASE_VIDEO] Erro na RPC:', error);
+      console.error('❌ [SET_BASE_VIDEO] Erro na RPC:', {
+        error,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
       return {
         success: false,
         timestamp: now(),
-        message: error.message
+        message: error.message || 'Erro ao chamar RPC'
       };
     }
+
+    console.log('📦 [SET_BASE_VIDEO] Resposta da RPC recebida:', data);
 
     const result = data as any;
 
     if (!result?.success) {
-      console.error('❌ [SET_BASE_VIDEO] RPC retornou falha:', result);
+      console.error('❌ [SET_BASE_VIDEO] RPC retornou falha:', {
+        result,
+        success: result?.success,
+        error: result?.error,
+        message: result?.message
+      });
       return {
         success: false,
         timestamp: now(),
-        message: result?.error || 'Failed to set base video'
+        message: result?.error || result?.message || 'Failed to set base video'
       };
     }
 
-    console.log('✅ [SET_BASE_VIDEO] Sucesso:', result);
+    console.log('✅ [SET_BASE_VIDEO] Sucesso na troca de vídeo principal:', {
+      result,
+      pedido_video_id: result.pedido_video_id,
+      video_id: result.video_id,
+      old_base_video_id: result.old_base_video_id
+    });
     
     return {
       success: true,
       timestamp: now(),
-      message: result.message,
+      message: result.message || 'Vídeo definido como principal',
       pedido_video_id: result.pedido_video_id,
       video_id: result.video_id
     };
 
   } catch (err: any) {
-    console.error('💥 [SET_BASE_VIDEO] Erro geral:', err);
+    console.error('💥 [SET_BASE_VIDEO] Erro geral ao trocar vídeo principal:', {
+      error: err,
+      message: err.message,
+      stack: err.stack
+    });
     return {
       success: false,
       timestamp: now(),

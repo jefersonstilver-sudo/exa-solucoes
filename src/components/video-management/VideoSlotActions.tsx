@@ -175,8 +175,8 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           </Button>
         )}
 
-        {/* Agendar Vídeo - apenas para vídeos aprovados e quando há 2+ vídeos */}
-        {isApproved && totalApprovedVideos >= 2 && (
+        {/* Agendar Vídeo - apenas para vídeos aprovados, quando há 2+ vídeos e NÃO é vídeo principal */}
+        {isApproved && totalApprovedVideos >= 2 && !slot.is_base_video && (
           <Button
             variant="outline"
             size="sm"
@@ -188,8 +188,21 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           </Button>
         )}
         
-        {/* Tooltip quando não pode agendar */}
-        {isApproved && totalApprovedVideos < 2 && (
+        {/* Tooltip quando não pode agendar por ser vídeo principal */}
+        {isApproved && slot.is_base_video && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled
+            className="border-gray-300 text-gray-400 p-2 cursor-not-allowed"
+            title="Vídeos principais não podem ter agendamento"
+          >
+            <Calendar className="h-4 w-4" />
+          </Button>
+        )}
+        
+        {/* Tooltip quando não pode agendar por falta de vídeos */}
+        {isApproved && !slot.is_base_video && totalApprovedVideos < 2 && (
           <Button
             variant="outline"
             size="sm"

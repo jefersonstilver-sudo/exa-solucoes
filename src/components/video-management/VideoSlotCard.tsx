@@ -339,7 +339,24 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => slot.id && onSetBaseVideo && onSetBaseVideo(slot.id)}
+                onClick={() => {
+                  console.log('🎯 [SLOT_CARD] Botão "Definir como Principal" clicado:', {
+                    slotId: slot.id,
+                    slotPosition: slot.slot_position,
+                    videoName: slot.video_data?.nome,
+                    isBaseVideo: slot.is_base_video,
+                    totalApprovedVideos
+                  });
+                  if (slot.id && onSetBaseVideo) {
+                    console.log('✅ [SLOT_CARD] Chamando onSetBaseVideo...');
+                    onSetBaseVideo(slot.id);
+                  } else {
+                    console.error('❌ [SLOT_CARD] Não foi possível chamar onSetBaseVideo:', {
+                      hasSlotId: !!slot.id,
+                      hasCallback: !!onSetBaseVideo
+                    });
+                  }
+                }}
                 className="text-xs px-3 py-1 h-7 border-gray-300 text-gray-600 hover:bg-gray-50"
                 title="Clique para definir como vídeo principal"
               >
