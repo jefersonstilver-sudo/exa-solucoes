@@ -23,6 +23,13 @@ interface VideoSlot {
     formato?: string;
   };
   rejection_reason?: string;
+  schedule_rules?: {
+    id: string;
+    days_of_week: number[];
+    start_time: string;
+    end_time: string;
+    is_active: boolean;
+  }[];
 }
 
 interface VideoSlotGridProps {
@@ -69,6 +76,33 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   const totalApprovedVideos = videoSlots.filter(slot => 
     slot.approval_status === 'approved'
   ).length;
+
+  // Verificar se há algum vídeo agendado ativo AGORA (em qualquer slot)
+  const hasAnyScheduledActiveNow = videoSlots.some(slot => {
+    if (!slot.schedule_rules || slot.schedule_rules.length === 0) return false;
+    
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    
+    return slot.schedule_rules.some(rule => {
+      if (!rule.is_active) return false;
+      
+      // Verificar se hoje está nos dias programados
+      const isDayMatched = rule.days_of_week.includes(currentDay);
+      
+      // Verificar se está no horário programado
+      const isTimeMatched = currentTime >= rule.start_time && currentTime <= rule.end_time;
+      
+      return isDayMatched && isTimeMatched;
+    });
+  });
+
+  console.log('🔍 [GRID] Status de agendamento:', {
+    hasAnyScheduledActiveNow,
+    currentTime: new Date().toTimeString().slice(0, 5),
+    currentDay: new Date().getDay()
+  });
   return (
     <div className="space-y-4">
       <VideoSlotStatus videoSlots={videoSlots} />
@@ -89,6 +123,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
             orderId={orderId}
             currentDisplayVideoId={currentVideo?.video_id}
             totalApprovedVideos={totalApprovedVideos}
+            hasAnyScheduledActiveNow={hasAnyScheduledActiveNow}
           />
         ))}
       </div>

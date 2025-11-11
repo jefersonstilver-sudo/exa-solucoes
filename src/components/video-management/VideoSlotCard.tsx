@@ -65,6 +65,7 @@ interface VideoSlotCardProps {
   orderId: string;
   currentDisplayVideoId?: string;
   totalApprovedVideos: number;
+  hasAnyScheduledActiveNow?: boolean;
 }
 
 export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
@@ -79,7 +80,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   onScheduleVideo,
   orderId,
   currentDisplayVideoId,
-  totalApprovedVideos
+  totalApprovedVideos,
+  hasAnyScheduledActiveNow = false
 }) => {
   const { isVideoCurrentlyDisplaying, getCurrentDisplayType } = useCurrentVideoDisplay({
     orderId,
@@ -161,7 +163,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       hasActiveSchedule,
       isActive: slot.is_active,
       isScheduledActiveNow: isScheduledActiveNow(),
-      scheduleRulesCount: slot.schedule_rules?.length || 0
+      scheduleRulesCount: slot.schedule_rules?.length || 0,
+      hasAnyScheduledActiveNow
     });
 
     if (slot.approval_status === 'rejected') {
@@ -173,8 +176,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
 
     if (slot.approval_status === 'approved') {
-      // PRIORIDADE 1: Agendado ativo AGORA (mostra AMBOS badges)
-      if (hasActiveSchedule && isScheduledActiveNow() && slot.selected_for_display && slot.video_data?.id === currentDisplayVideoId) {
+      // PRIORIDADE 1: Este vídeo está agendado e ativo AGORA (mostra EM EXIBIÇÃO + AGENDADO)
+      if (hasActiveSchedule && isScheduledActiveNow()) {
         console.log(`✅ [SLOT_${slot.slot_position}] EM EXIBIÇÃO + AGENDADO (agendado vigente)`);
         return (
           <div className="flex gap-2">
@@ -184,22 +187,22 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         );
       }
       
-      // PRIORIDADE 2: Vídeo base em exibição (quando não há agendado ativo)
-      if (slot.is_base_video && slot.video_data?.id === currentDisplayVideoId) {
-        console.log(`✅ [SLOT_${slot.slot_position}] EM EXIBIÇÃO (vídeo principal)`);
+      // PRIORIDADE 2: Vídeo base em exibição (quando NÃO há NENHUM agendado ativo)
+      if (slot.is_base_video && !hasAnyScheduledActiveNow) {
+        console.log(`✅ [SLOT_${slot.slot_position}] EM EXIBIÇÃO (vídeo principal sem concorrência)`);
         return <Badge className="bg-green-600 text-white">EM EXIBIÇÃO</Badge>;
       }
       
-      // PRIORIDADE 3: Agendado mas fora do horário
+      // PRIORIDADE 3: Vídeo base em standby (HÁ outro vídeo agendado ativo)
+      if (slot.is_base_video && hasAnyScheduledActiveNow) {
+        console.log(`⏸️ [SLOT_${slot.slot_position}] VÍDEO PRINCIPAL (em standby - outro agendado ativo)`);
+        return <Badge className="bg-yellow-500 text-white flex items-center gap-1"><Star className="h-3 w-3 fill-current" />Vídeo Principal</Badge>;
+      }
+      
+      // PRIORIDADE 4: Agendado mas fora do horário
       if (hasActiveSchedule && !isScheduledActiveNow()) {
         console.log(`⏰ [SLOT_${slot.slot_position}] AGENDADO (fora do horário)`);
         return <Badge className="bg-blue-600 text-white">AGENDADO</Badge>;
-      }
-      
-      // PRIORIDADE 4: Vídeo base em standby (outro vídeo está em exibição)
-      if (slot.is_base_video && slot.video_data?.id !== currentDisplayVideoId) {
-        console.log(`⏸️ [SLOT_${slot.slot_position}] VÍDEO PRINCIPAL (em standby)`);
-        return <Badge className="bg-yellow-500 text-white flex items-center gap-1"><Star className="h-3 w-3 fill-current" />Vídeo Principal</Badge>;
       }
       
       // Apenas aprovado
