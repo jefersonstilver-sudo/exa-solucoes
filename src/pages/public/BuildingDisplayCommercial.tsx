@@ -11,6 +11,7 @@ import { LiveClock } from '@/components/commercial/LiveClock';
 import { useRealtimeConnection } from '@/hooks/useRealtimeConnection';
 import { ConnectionStatusIndicator } from '@/components/commercial/ConnectionStatusIndicator';
 import { VideoDebugger } from '@/utils/videoDebugger';
+import { useBuildingScheduleMonitor } from '@/hooks/useBuildingScheduleMonitor';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -78,6 +79,17 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   
   // Status de conexão em tempo real (apenas para indicador visual)
   const connectionStatus = useRealtimeConnection(buildingId);
+  
+  // Monitor de agendamentos - verifica a cada 1 minuto se algum vídeo deve entrar/sair
+  useBuildingScheduleMonitor({
+    buildingId,
+    onScheduleChange: () => {
+      VideoDebugger.logEvent('SCHEDULE', 'Mudança de agendamento detectada - forçando atualização');
+      refetchRef.current();
+    },
+    intervalMinutes: 1,
+    enabled: true
+  });
   
   const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
