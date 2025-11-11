@@ -29,8 +29,11 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   const hasEndedRef = useRef(false);
   const isTransitioningRef = useRef(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
-  const lastVideoCountRef = useRef(0);
+  const lastPlaylistHashRef = useRef('');
   const networkStatus = useNetworkMonitor();
+  
+  // Hash da playlist para detectar mudanças
+  const getPlaylistHash = (videos: any[]) => videos.map(v => v.video_id || v.id).sort().join(',');
   const { getCachedVideoUrl, preCacheVideos } = useVideoCache(buildingId);
   const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
@@ -43,13 +46,10 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   const nextVideoIndex = (currentIndex + 1) % videosWithCache.length;
   const nextVideo = videosWithCache[nextVideoIndex];
 
-  // ✅ Sistema de polling a cada 10 segundos
+  // ✅ Sistema de polling inteligente a cada 10 segundos
   useEffect(() => {
-    console.log('🔌 [EMBED PLAYER] Iniciando sistema de polling...');
-    
     const blockContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      e.stopPropagation();
       return false;
     };
     
@@ -57,33 +57,32 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     
     pollingIntervalRef.current = setInterval(async () => {
       try {
-        console.log('🔄 [EMBED PLAYER] Verificando atualizações...');
-        await refetch();
+        const currentHash = getPlaylistHash(videosWithCache);
         
-        if (activeVideos.length !== lastVideoCountRef.current) {
-          console.log(`📊 [EMBED PLAYER] Mudança detectada: ${lastVideoCountRef.current} → ${activeVideos.length} vídeos`);
-          lastVideoCountRef.current = activeVideos.length;
+        // Só refetch se houve mudança
+        if (currentHash !== lastPlaylistHashRef.current) {
+          await refetch();
+          
+          const newHash = getPlaylistHash(activeVideos);
+          if (newHash !== lastPlaylistHashRef.current) {
+            console.log('🔄 [EMBED] Mudança detectada');
+            lastPlaylistHashRef.current = newHash;
+          }
         }
       } catch (error) {
-        console.error('❌ [EMBED PLAYER] Erro ao verificar atualizações:', error);
+        console.error('❌ [EMBED] Erro:', error);
       }
     }, 10000);
 
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        console.log('🔌 [EMBED PLAYER] Sistema de polling desligado');
-      }
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
       document.removeEventListener('contextmenu', blockContextMenu, { capture: true } as any);
     };
-  }, [refetch, activeVideos.length]);
+  }, [refetch, activeVideos, videosWithCache]);
 
   // ✅ Pre-cache de vídeos
   useEffect(() => {
-    lastVideoCountRef.current = activeVideos.length;
-    
     if (activeVideos.length > 0) {
-      console.log('💾 [EMBED PLAYER] Pre-caching', activeVideos.length, 'vídeos');
       preCacheVideos(activeVideos);
     }
   }, [activeVideos, preCacheVideos]);
@@ -107,7 +106,6 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
         })
       );
       setVideosWithCache(videos);
-      console.log('✅ [EMBED PLAYER]', videos.length, 'vídeos carregados');
     };
 
     loadVideosWithCache();
@@ -138,25 +136,16 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     isTransitioningRef.current = false;
     setIsReady(false);
 
-    console.log(`▶️ [EMBED PLAYER] Vídeo ${currentIndex + 1}/${videosWithCache.length}:`, currentVideo.video_nome);
-
     const handleLoadedData = () => {
-      console.log('✅ [EMBED PLAYER] Vídeo carregado');
       setIsReady(true);
-      // Forçar play após carregar
-      video.play()
-        .then(() => console.log('▶️ [EMBED PLAYER] Reprodução iniciada'))
-        .catch(err => console.warn('⚠️ [EMBED PLAYER] Erro ao iniciar:', err));
+      video.play().catch(() => {});
     };
 
     const handleCanPlay = () => {
-      video.play()
-        .then(() => console.log('▶️ [EMBED PLAYER] Play executado'))
-        .catch(err => console.warn('⚠️ [EMBED PLAYER] Erro no play:', err));
+      video.play().catch(() => {});
     };
 
     const handlePlaying = () => {
-      console.log('🎬 [EMBED PLAYER] Reproduzindo');
       setIsReady(true);
     };
 
@@ -167,29 +156,22 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
       
       // Pre-carregar próximo vídeo quando faltar 5 segundos
       if (timeRemaining <= 5 && timeRemaining > 4.5 && nextVideoRef.current) {
-        console.log('⏭️ [EMBED PLAYER] Pre-carregando próximo vídeo');
         nextVideoRef.current.load();
       }
     };
 
     const handleEnded = () => {
-      if (hasEndedRef.current || isTransitioningRef.current) {
-        console.log('⚠️ [EMBED PLAYER] Evento duplicado ignorado');
-        return;
-      }
+      if (hasEndedRef.current || isTransitioningRef.current) return;
 
       hasEndedRef.current = true;
       isTransitioningRef.current = true;
-      
-      console.log('🔄 [EMBED PLAYER] Avançando para próximo vídeo');
       
       requestAnimationFrame(() => {
         setCurrentIndex(nextVideoIndex);
       });
     };
 
-    const handleError = (e: Event) => {
-      console.error('❌ [EMBED PLAYER] Erro ao carregar vídeo:', e);
+    const handleError = () => {
       setTimeout(() => {
         if (!isTransitioningRef.current) {
           setCurrentIndex(nextVideoIndex);

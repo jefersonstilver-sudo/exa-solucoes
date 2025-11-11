@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { debounce } from '@/utils/debounce';
 
 export interface ScheduleRule {
   days_of_week: number[];
@@ -37,6 +38,10 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
   const [videos, setVideos] = useState<BuildingActiveVideo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Cache para evitar refetch desnecessário
+  const lastCheckRef = useRef({ videoIds: '', timestamp: 0 });
+  const CACHE_TTL = 3000; // 3 segundos
 
   const fetchActiveVideos = async () => {
     if (!buildingId) {
@@ -48,7 +53,6 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
     setError(null);
 
     try {
-      console.log('🎬 [BUILDING ACTIVE VIDEOS] Buscando vídeos para prédio:', buildingId);
 
       // 1. Buscar pedidos ativos para este prédio
       // CORREÇÃO: Usar filtro correto para array de UUIDs
@@ -71,15 +75,12 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       }
 
       if (!pedidos || pedidos.length === 0) {
-        console.log('📭 [BUILDING ACTIVE VIDEOS] Nenhum pedido ativo encontrado para este prédio');
         setVideos([]);
         return;
       }
 
       // 2. ✅ CORREÇÃO: Buscar apenas 1 vídeo por pedido (vídeo em exibição)
       const pedidoIds = pedidos.map(p => p.id);
-      
-      console.log('🎬 [BUILDING ACTIVE VIDEOS] Buscando vídeos EM EXIBIÇÃO para', pedidoIds.length, 'pedidos');
       const startTime = performance.now();
 
       // Usar RPC para buscar apenas vídeos em exibição (1 por pedido)
@@ -89,7 +90,6 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         });
 
       if (currentVideosError) {
-        console.error('❌ [BUILDING ACTIVE VIDEOS] Erro ao buscar vídeos em exibição:', currentVideosError);
         setVideos([]);
         return;
       }
@@ -97,11 +97,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       // Filtrar apenas vídeos válidos (com video_id)
       const validVideos = currentVideosData?.filter((v: any) => v.video_id !== null) || [];
 
-      const videosTime = performance.now();
-      console.log(`✅ [BUILDING ACTIVE VIDEOS] ${validVideos.length} vídeos EM EXIBIÇÃO carregados em ${(videosTime - startTime).toFixed(0)}ms`);
-
       if (validVideos.length === 0) {
-        console.log('📭 [BUILDING ACTIVE VIDEOS] Nenhum vídeo em exibição encontrado');
         setVideos([]);
         return;
       }
@@ -129,7 +125,6 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         .in('pedido_id', pedidoIds);
 
       if (videosError || !allVideosData || allVideosData.length === 0) {
-        console.error('❌ [BUILDING ACTIVE VIDEOS] Erro ao buscar detalhes:', videosError);
         setVideos([]);
         return;
       }
@@ -137,16 +132,9 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       // 3. Extrair IDs de clientes
       const clientIds = [...new Set(pedidos.map(p => p.client_id))];
 
-      // 4. Buscar dados de clientes e regras de programação em PARALELO
-      const clientsDataPromise = supabase.from('users_with_role').select('id, email').in('id', clientIds);
-
-      const parallelTime = performance.now();
-
-      // 5. Criar maps para lookup O(1)
-      const clientsData = await clientsDataPromise;
+      // 4. Buscar dados de clientes
+      const clientsData = await supabase.from('users_with_role').select('id, email').in('id', clientIds);
       const clientsMap = new Map(clientsData.data?.map(c => [c.id, c]) || []);
-
-      console.log(`✅ [BUILDING ACTIVE VIDEOS] Dados de clientes carregados em ${(performance.now() - parallelTime).toFixed(0)}ms`);
 
       // 6. Buscar schedule rules para vídeos (para identificar se são agendados)
       // Buscar regras de programação para TODOS os vídeos
@@ -185,69 +173,35 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         });
       }
 
-      // 7. Verificar status atual baseado em horário (AUDITORIA COMPLETA)
+      // 7. Verificar status atual baseado em horário (OTIMIZADO)
       const now = new Date();
-      const currentDay = now.getDay(); // 0 = Domingo, 1 = Segunda, etc.
-      const currentTime = now.toTimeString().slice(0, 5); // HH:MM
+      const currentDay = now.getDay();
+      const currentTime = now.toTimeString().slice(0, 5);
       
-      console.log(`🕐 [AUDITORIA] Hora atual: ${currentTime}, Dia da semana: ${currentDay} (${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][currentDay]})`);
-      
-      /**
-       * LÓGICA DE VERIFICAÇÃO DE VÍDEO ATIVO:
-       * 1. Se NÃO tem schedule_rules = Vídeo permanente (sempre em exibição)
-       * 2. Se TEM schedule_rules = Vídeo programado (só exibe no horário/dia configurado)
-       */
-      const isVideoActiveNow = (videoId: string, videoName: string, scheduleRules?: ScheduleRule[]): boolean => {
-        // SEM PROGRAMAÇÃO = SEMPRE ATIVO (vídeo permanente)
-        if (!scheduleRules || scheduleRules.length === 0) {
-          console.log(`✅ [AUDITORIA] "${videoName}" - SEM programação = PERMANENTE (sempre em exibição)`);
-          return true;
-        }
+      const isVideoActiveNow = (scheduleRules?: ScheduleRule[]): boolean => {
+        // SEM PROGRAMAÇÃO = SEMPRE ATIVO
+        if (!scheduleRules || scheduleRules.length === 0) return true;
         
         // COM PROGRAMAÇÃO = VERIFICAR HORÁRIO/DIA
-        const isActive = scheduleRules.some(rule => {
-          const matchDay = rule.days_of_week.includes(currentDay);
-          
-          if (!matchDay) {
-            console.log(`❌ [AUDITORIA] "${videoName}" - Dia ${currentDay} NÃO está em ${JSON.stringify(rule.days_of_week)}`);
-            return false;
-          }
-          
-          if (rule.is_all_day) {
-            console.log(`✅ [AUDITORIA] "${videoName}" - Programado para o dia todo (${rule.days_of_week})`);
-            return true;
-          }
-          
-          const matchTime = currentTime >= rule.start_time && currentTime <= rule.end_time;
-          
-          if (matchTime) {
-            console.log(`✅ [AUDITORIA] "${videoName}" - Horário ${currentTime} está dentro de ${rule.start_time}-${rule.end_time}`);
-          } else {
-            console.log(`❌ [AUDITORIA] "${videoName}" - Horário ${currentTime} FORA de ${rule.start_time}-${rule.end_time}`);
-          }
-          
-          return matchTime;
+        return scheduleRules.some(rule => {
+          if (!rule.days_of_week.includes(currentDay)) return false;
+          if (rule.is_all_day) return true;
+          return currentTime >= rule.start_time && currentTime <= rule.end_time;
         });
-        
-        return isActive;
       };
 
-      // 8. Montar resultado final com AUDITORIA COMPLETA
+      // 8. Montar resultado final
       const activeVideos: BuildingActiveVideo[] = [];
-      const videosRejeitados: string[] = [];
+      let permanentCount = 0;
+      let scheduledActive = 0;
+      let scheduledInactive = 0;
 
       for (const pedidoVideo of allVideosData) {
         const pedido = pedidos.find(p => p.id === pedidoVideo.pedido_id);
-        if (!pedido) {
-          console.log(`⚠️ [AUDITORIA] Pedido não encontrado para video:`, pedidoVideo.video_id);
-          continue;
-        }
+        if (!pedido) continue;
 
         const videoData = (pedidoVideo as any).videos;
-        if (!videoData) {
-          console.log(`⚠️ [AUDITORIA] Video data não encontrado:`, pedidoVideo.video_id);
-          continue;
-        }
+        if (!videoData) continue;
 
         const clientData = clientsMap.get(pedido.client_id);
         const clientEmail = clientData?.email || 'Email não encontrado';
@@ -255,7 +209,11 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
 
         const scheduleRules = scheduleRulesMap.get(pedidoVideo.video_id);
         const isScheduled = scheduleRules && scheduleRules.length > 0;
-        const isCurrentlyActive = isVideoActiveNow(pedidoVideo.video_id, videoData.nome, scheduleRules);
+        const isCurrentlyActive = isVideoActiveNow(scheduleRules);
+        
+        if (!isScheduled) permanentCount++;
+        else if (isCurrentlyActive) scheduledActive++;
+        else scheduledInactive++;
 
         const videoInfo = {
           video_id: pedidoVideo.video_id,
@@ -275,26 +233,21 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         };
 
         activeVideos.push(videoInfo);
-        
-        if (!isCurrentlyActive) {
-          videosRejeitados.push(`"${videoData.nome}" (programado para outro horário/dia)`);
-        }
       }
 
       // FILTRAR APENAS VÍDEOS EM EXIBIÇÃO AGORA
       const videosEmExibicao = activeVideos.filter(v => v.is_currently_active === true);
       
-      console.log(`
-📊 ============ AUDITORIA COMPLETA ============
-🏢 Prédio: ${buildingId}
-📅 Data/Hora: ${now.toLocaleString('pt-BR')} (${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][currentDay]})
-📦 Total de pedidos ativos: ${pedidos.length}
-🎬 Total de vídeos ativos: ${activeVideos.length}
-✅ Vídeos EM EXIBIÇÃO agora: ${videosEmExibicao.length}
-❌ Vídeos programados (fora do horário): ${activeVideos.length - videosEmExibicao.length}
-${videosRejeitados.length > 0 ? `\n⏰ Vídeos aguardando horário:\n   - ${videosRejeitados.join('\n   - ')}` : ''}
-===========================================
-      `.trim());
+      // Verificar cache para evitar logs repetidos
+      const currentHash = videosEmExibicao.map(v => v.video_id).sort().join(',');
+      const isChanged = currentHash !== lastCheckRef.current.videoIds;
+      
+      if (isChanged) {
+        const totalDuration = videosEmExibicao.reduce((acc, v) => acc + v.video_duracao, 0);
+        console.log(`🎬 [VIDEOS] ${videosEmExibicao.length} vídeos carregados (${totalDuration}s total) - ${permanentCount} permanentes${scheduledActive > 0 ? `, ${scheduledActive} agendados ativos` : ''}${scheduledInactive > 0 ? `, ${scheduledInactive} aguardando` : ''}`);
+        videosEmExibicao.forEach(v => console.log(`  → "${v.video_name}" (${v.video_duracao}s)`));
+        lastCheckRef.current = { videoIds: currentHash, timestamp: Date.now() };
+      }
       
       // Ordenar: mais recentes primeiro (enviados por último)
       videosEmExibicao.sort((a, b) => {
@@ -303,26 +256,25 @@ ${videosRejeitados.length > 0 ? `\n⏰ Vídeos aguardando horário:\n   - ${vide
         return dateB - dateA; // Descendente (mais recente primeiro)
       });
 
-      const endTime = performance.now();
-      const totalTime = (endTime - startTime).toFixed(0);
-      
       setVideos(videosEmExibicao);
-      console.log(`🎉 [BUILDING ACTIVE VIDEOS] ${videosEmExibicao.length} vídeos EM EXIBIÇÃO encontrados em ${totalTime}ms`);
 
     } catch (error: any) {
-      console.error('💥 [BUILDING ACTIVE VIDEOS] Erro geral:', error);
+      console.error('❌ [VIDEOS] Erro:', error.message);
       setError(error.message || 'Erro ao carregar vídeos ativos');
     } finally {
       setLoading(false);
     }
   };
+  
+  // Debounce para refetch via realtime
+  const debouncedRefetch = useMemo(() => debounce(() => {
+    fetchActiveVideos();
+  }, 2000), [buildingId]);
 
   useEffect(() => {
     fetchActiveVideos();
 
-    // 🔴 REALTIME: Subscrever mudanças em pedido_videos e videos
-    console.log('🔴 [REALTIME] Iniciando subscriptions para prédio:', buildingId);
-    
+    // REALTIME: Apenas 1 channel para pedido_videos (suficiente)
     const channel = supabase
       .channel(`building-videos-${buildingId}`)
       .on(
@@ -332,42 +284,16 @@ ${videosRejeitados.length > 0 ? `\n⏰ Vídeos aguardando horário:\n   - ${vide
           schema: 'public',
           table: 'pedido_videos'
         },
-        (payload) => {
-          console.log('🔴 [REALTIME] Mudança detectada em pedido_videos:', payload);
-          fetchActiveVideos();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'videos'
-        },
-        (payload) => {
-          console.log('🔴 [REALTIME] Mudança detectada em videos:', payload);
-          fetchActiveVideos();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'pedidos'
-        },
-        (payload) => {
-          console.log('🔴 [REALTIME] Mudança detectada em pedidos:', payload);
-          fetchActiveVideos();
+        () => {
+          debouncedRefetch();
         }
       )
       .subscribe();
 
     return () => {
-      console.log('🔴 [REALTIME] Removendo subscriptions para prédio:', buildingId);
       supabase.removeChannel(channel);
     };
-  }, [buildingId]);
+  }, [buildingId, debouncedRefetch]);
 
   return {
     videos,

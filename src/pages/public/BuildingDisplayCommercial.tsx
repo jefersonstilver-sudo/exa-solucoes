@@ -23,8 +23,11 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const [videosWithCache, setVideosWithCache] = useState<any[]>([]);
   const networkStatus = useNetworkMonitor();
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
-  const lastVideoCountRef = useRef(0);
+  const lastPlaylistHashRef = useRef('');
   const { getCachedVideoUrl, preCacheVideos } = useVideoCache(buildingId);
+  
+  // Hash da playlist para detectar mudanças
+  const getPlaylistHash = (videos: any[]) => videos.map(v => v.video_id).sort().join(',');
   const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
     preventPrint: true,
@@ -51,63 +54,44 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     fetchBuildingData();
   }, [buildingId]);
 
-  // Sistema de polling para verificar novos vídeos a cada 10 segundos
+  // Sistema de polling inteligente a cada 10 segundos
   useEffect(() => {
-    console.log('🔌 [DISPLAY COMMERCIAL] Iniciando sistema de polling...');
-    
-    // PROTEÇÃO GLOBAL - Bloquear contexto menu NO DOCUMENTO INTEIRO
+    // PROTEÇÃO GLOBAL
     const blockContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
       return false;
     };
     
-    const blockRightClick = (e: MouseEvent) => {
-      if (e.button === 2) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        return false;
-      }
-    };
-    
-    // Adicionar listeners com capture phase
     document.addEventListener('contextmenu', blockContextMenu, { capture: true });
-    document.addEventListener('mousedown', blockRightClick, { capture: true });
     
     pollingIntervalRef.current = setInterval(async () => {
       try {
-        console.log('🔄 [DISPLAY COMMERCIAL] Verificando atualizações...');
-        await refetch();
+        const currentHash = getPlaylistHash(activeVideos);
         
-        // Detectar mudanças na playlist
-        if (activeVideos.length !== lastVideoCountRef.current) {
-          console.log(`📊 [DISPLAY COMMERCIAL] Mudança detectada: ${lastVideoCountRef.current} → ${activeVideos.length} vídeos`);
-          lastVideoCountRef.current = activeVideos.length;
+        // Só refetch se houve mudança
+        if (currentHash !== lastPlaylistHashRef.current) {
+          await refetch();
+          
+          const newHash = getPlaylistHash(activeVideos);
+          if (newHash !== lastPlaylistHashRef.current) {
+            console.log('🔄 [PLAYLIST] Mudança detectada');
+            lastPlaylistHashRef.current = newHash;
+          }
         }
       } catch (error) {
-        console.error('❌ [DISPLAY COMMERCIAL] Erro ao verificar atualizações:', error);
+        console.error('❌ [POLLING] Erro:', error);
       }
-    }, 10000); // Verificar a cada 10 segundos
+    }, 10000);
 
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        console.log('🔌 [DISPLAY COMMERCIAL] Sistema de polling desligado');
-      }
-      // Remover proteção global ao sair
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
       document.removeEventListener('contextmenu', blockContextMenu, { capture: true } as any);
-      document.removeEventListener('mousedown', blockRightClick, { capture: true } as any);
     };
-  }, [refetch, activeVideos.length]);
+  }, [refetch, activeVideos]);
 
-  // Atualizar contagem de vídeos e pre-cachear
+  // Pre-cachear vídeos
   useEffect(() => {
-    lastVideoCountRef.current = activeVideos.length;
-    
     if (activeVideos.length > 0) {
-      console.log('[DISPLAY COMMERCIAL] Pre-caching videos...');
       preCacheVideos(activeVideos);
     }
   }, [activeVideos, preCacheVideos]);
@@ -116,11 +100,8 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   useEffect(() => {
     if (activeVideos.length === 0) {
       setVideosWithCache([]);
-      console.log('[DISPLAY COMMERCIAL] No active videos');
       return;
     }
-
-    console.log('[DISPLAY COMMERCIAL] Loading', activeVideos.length, 'videos with cache');
 
     const loadVideosWithCache = async () => {
       const videos = await Promise.all(
@@ -134,7 +115,6 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
         })
       );
       setVideosWithCache(videos);
-      console.log('[DISPLAY COMMERCIAL]', videos.length, 'videos loaded:', videos.map(v => v.video_nome));
     };
 
     loadVideosWithCache();
