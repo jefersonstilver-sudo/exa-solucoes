@@ -50,6 +50,13 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const [buildingName, setBuildingName] = useState('');
   const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
   
+  // ✅ CORREÇÃO 1: Ref estável para refetch
+  const refetchRef = useRef(refetch);
+  
+  useEffect(() => {
+    refetchRef.current = refetch;
+  }, [refetch]);
+  
   const activeVideoIds = useMemo(() => 
     activeVideos.map(v => v.video_id).sort().join(','),
     [activeVideos]
@@ -112,6 +119,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     };
   }, []);
 
+  // ✅ CORREÇÃO 1: Polling com refetch estável via ref
   useEffect(() => {
     if (!buildingId) return;
 
@@ -141,7 +149,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
           currentIds: currentVideoIds
         });
 
-        await refetch();
+        await refetchRef.current(); // ✅ Usar ref estável
         setLastCheckTime(new Date());
         
         VideoDebugger.logEvent('POLLING', 'Verificação concluída');
@@ -160,7 +168,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       VideoDebugger.logEvent('POLLING', 'Sistema encerrado');
       clearInterval(interval);
     };
-  }, [buildingId, refetch]);
+  }, [buildingId]); // ✅ Apenas buildingId como dependência
 
 
   // Loading - Tela profissional enquanto busca vídeos

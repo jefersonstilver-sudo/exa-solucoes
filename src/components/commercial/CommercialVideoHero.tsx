@@ -31,34 +31,49 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   const onPlayingChangeRef = useRef(onPlayingChange);
   const onPlaylistEndRef = useRef(onPlaylistEnd);
 
+  // ✅ CORREÇÃO 3: Refs para acessar valores atuais sem causar re-render
+  const currentIndexRef = useRef(currentIndex);
+  const videosRef = useRef(videos);
+
   // Atualizar refs quando callbacks externos mudarem
   useEffect(() => {
     onPlayingChangeRef.current = onPlayingChange;
     onPlaylistEndRef.current = onPlaylistEnd;
-  }, [onPlayingChange, onPlaylistEnd]);
+    currentIndexRef.current = currentIndex;
+    videosRef.current = videos;
+  }, [onPlayingChange, onPlaylistEnd, currentIndex, videos]);
 
   // Hash estável para detectar mudanças na playlist
   const videosHash = useMemo(() => {
     return videos.map(v => v.id).sort().join(',');
   }, [videos]);
 
-  // Reset quando playlist mudar
+  // ✅ CORREÇÃO 4: Rastrear hash anterior para evitar resets desnecessários
+  const previousHashRef = useRef(videosHash);
+
+  // Reset APENAS quando hash REALMENTE mudar
   useEffect(() => {
-    VideoDebugger.logEvent('PLAYLIST', 'Iniciando', {
-      count: videos.length
-    });
-    setCurrentIndex(0);
-    setIsBuffering(true);
+    if (previousHashRef.current !== videosHash) {
+      VideoDebugger.logEvent('PLAYLIST', 'Mudança detectada - reiniciando', {
+        count: videos.length,
+        oldHash: previousHashRef.current,
+        newHash: videosHash
+      });
+      
+      setCurrentIndex(0);
+      setIsBuffering(true);
+      previousHashRef.current = videosHash;
+    }
   }, [videosHash, videos.length]);
 
-  // Callbacks estáveis para event listeners (PERMANENTES)
+  // ✅ CORREÇÃO 3 & 5: Event handlers TOTALMENTE estáveis - SEM dependências
   const handleLoadStart = useCallback(() => {
     setIsBuffering(true);
     VideoDebugger.logEvent('VIDEO', 'Carregando', {
-      index: `${currentIndex + 1}/${videos.length}`,
-      nome: videos[currentIndex]?.video_nome
+      index: `${currentIndexRef.current + 1}/${videosRef.current.length}`,
+      nome: videosRef.current[currentIndexRef.current]?.video_nome
     });
-  }, [currentIndex, videos]);
+  }, []); // ✅ SEM dependências
 
   const handleLoadedMetadata = useCallback(() => {
     const video = videoRef.current;
@@ -67,27 +82,27 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     VideoDebugger.logEvent('VIDEO', 'Metadados carregados', {
       duração: video.duration.toFixed(1) + 's'
     });
-  }, []);
+  }, []); // ✅ SEM dependências
 
   const handlePlaying = useCallback(() => {
     VideoDebugger.logEvent('VIDEO', 'Reproduzindo', {
-      index: `${currentIndex + 1}/${videos.length}`
+      index: `${currentIndexRef.current + 1}/${videosRef.current.length}`
     });
     setIsBuffering(false);
     onPlayingChangeRef.current?.(true);
-  }, [currentIndex, videos.length]);
+  }, []); // ✅ SEM dependências
 
   const handleEnded = useCallback(() => {
-    const currentVideo = videos[currentIndex];
+    const currentVideo = videosRef.current[currentIndexRef.current];
     VideoDebugger.logEvent('VIDEO', 'Terminou', {
       nome: currentVideo?.video_nome,
-      index: `${currentIndex + 1}/${videos.length}`
+      index: `${currentIndexRef.current + 1}/${videosRef.current.length}`
     });
     
     onPlayingChangeRef.current?.(false);
     
     setCurrentIndex(prev => {
-      const nextIndex = (prev + 1) % videos.length;
+      const nextIndex = (prev + 1) % videosRef.current.length;
       
       if (nextIndex === 0) {
         VideoDebugger.logEvent('PLAYLIST', 'Ciclo completo');
@@ -96,10 +111,10 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       
       return nextIndex;
     });
-  }, [currentIndex, videos]);
+  }, []); // ✅ SEM dependências - handler PERMANENTE
 
   const handleError = useCallback(() => {
-    const currentVideo = videos[currentIndex];
+    const currentVideo = videosRef.current[currentIndexRef.current];
     VideoDebugger.logEvent('VIDEO', 'Erro ao carregar', {
       nome: currentVideo?.video_nome
     });
@@ -109,9 +124,9 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
     // Pular para próximo vídeo após 2s
     setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % videos.length);
+      setCurrentIndex((prev) => (prev + 1) % videosRef.current.length);
     }, 2000);
-  }, [currentIndex, videos.length]);
+  }, []); // ✅ SEM dependências
 
   // Setup de event listeners (APENAS UMA VEZ, PERMANENTES)
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { debounce } from '@/utils/debounce';
 
@@ -43,7 +43,8 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
   const lastCheckRef = useRef({ videoIds: '', timestamp: 0 });
   const CACHE_TTL = 3000; // 3 segundos
 
-  const fetchActiveVideos = async () => {
+  // ✅ CORREÇÃO 2: Estabilizar fetchActiveVideos com useCallback
+  const fetchActiveVideos = useCallback(async () => {
     if (!buildingId) {
       setVideos([]);
       return;
@@ -248,7 +249,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildingId]); // ✅ Apenas buildingId como dependência
   
   // Debounce para refetch via realtime
   const debouncedRefetch = useMemo(() => debounce(() => {
