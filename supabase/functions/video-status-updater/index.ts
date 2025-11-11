@@ -106,43 +106,19 @@ serve(async (req) => {
 
       console.log(`🎬 [VIDEO_STATUS] Ativando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
 
-      // ✅ SOLUÇÃO: Fazer tudo em UMA ÚNICA QUERY para evitar race condition com triggers
-      // Desativa todos e ativa apenas o vídeo agendado específico
-      const { error: updateError } = await supabase
-        .from('pedido_videos')
-        .update({ 
-          is_active: false,
-          selected_for_display: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('pedido_id', pedidoId);
+      // ✅ USAR RPC ATÔMICA para evitar race condition com triggers
+      const { data: rpcResult, error: rpcError } = await supabase
+        .rpc('activate_scheduled_video', {
+          p_video_id: videoId,
+          p_pedido_id: pedidoId
+        });
 
-      if (updateError) {
-        console.error(`❌ Erro ao atualizar vídeos do pedido ${pedidoId}:`, updateError);
+      if (rpcError || !rpcResult?.success) {
+        console.error(`❌ Erro ao ativar vídeo agendado ${videoId}:`, rpcError || rpcResult);
         continue;
       }
 
-      // Aguardar um momento para garantir que o UPDATE anterior foi concluído
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Agora ativar o vídeo agendado
-      const { error: activateError } = await supabase
-        .from('pedido_videos')
-        .update({ 
-          is_active: true,
-          selected_for_display: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('video_id', videoId)
-        .eq('pedido_id', pedidoId)
-        .eq('approval_status', 'approved');
-
-      if (activateError) {
-        console.error(`❌ Erro ao ativar vídeo agendado ${videoId}:`, activateError);
-        continue;
-      }
-
-      // 3️⃣ SUCESSO: Vídeo agendado foi ativado
+      // Sucesso
       activatedCount++;
       console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} ativado, vídeo base pausado (Pedido: ${pedidoId})`);
     }

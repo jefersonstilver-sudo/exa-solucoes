@@ -3429,6 +3429,10 @@ export type Database = {
       }
     }
     Functions: {
+      activate_scheduled_video: {
+        Args: { p_pedido_id: string; p_video_id: string }
+        Returns: Json
+      }
       activate_video: {
         Args: { p_pedido_id: string; p_pedido_video_id: string }
         Returns: boolean
