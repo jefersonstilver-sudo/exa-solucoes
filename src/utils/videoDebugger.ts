@@ -59,13 +59,5 @@ if (typeof window !== 'undefined') {
   (window as any).clearVideoLogs = VideoDebugger.clearLogs;
   (window as any).getVideoLogs = VideoDebugger.getLogs;
   
-  console.log(`
-╔════════════════════════════════════════╗
-║   📹 VIDEO DEBUG TOOLS DISPONÍVEIS    ║
-╠════════════════════════════════════════╣
-║ exportVideoLogs() - Exportar logs     ║
-║ clearVideoLogs()  - Limpar logs       ║
-║ getVideoLogs()    - Ver logs          ║
-╚════════════════════════════════════════╝
-  `);
+  console.log('📹 Video Debug: exportVideoLogs() | clearVideoLogs() | getVideoLogs()');
 }

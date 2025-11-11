@@ -24,16 +24,8 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const prevHashRef = useRef<string>('');
-  const safetyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const metricsRef = useRef({
-    cyclesCompleted: 0,
-    videosPlayed: 0,
-    errors: 0,
-    startTime: Date.now()
-  });
 
   const videosHash = useMemo(() => {
     const hash = videos.map(v => v.id).sort().join(',');
@@ -48,50 +40,10 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
         newHash: videosHash
       });
       setCurrentIndex(0);
-      setIsPlaying(false);
     }
     prevHashRef.current = videosHash;
   }, [videosHash]);
 
-  useEffect(() => {
-    if (onPlayingChange) {
-      onPlayingChange(isPlaying);
-    }
-  }, [isPlaying, onPlayingChange]);
-
-  // Health check periódico
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const video = videoRef.current;
-      if (!video) return;
-      
-      const healthData = {
-        currentIndex,
-        totalVideos: videos.length,
-        isPlaying: !video.paused,
-        currentTime: video.currentTime.toFixed(1),
-        duration: video.duration ? video.duration.toFixed(1) : 'N/A',
-        readyState: video.readyState,
-        networkState: video.networkState,
-        buffered: video.buffered.length > 0 ? video.buffered.end(0).toFixed(1) : 0,
-        cycles: metricsRef.current.cyclesCompleted,
-        videosPlayed: metricsRef.current.videosPlayed,
-        errors: metricsRef.current.errors
-      };
-      
-      VideoDebugger.logEvent('HEALTH', 'Check periódico', healthData);
-      
-      // Detectar vídeo travado
-      if (!video.paused && video.currentTime === 0 && video.readyState === 4) {
-        VideoDebugger.logEvent('HEALTH', 'Vídeo travado - tentando play', healthData);
-        video.play().catch(err => {
-          VideoDebugger.logEvent('HEALTH', 'Erro ao tentar play', { error: err.message });
-        });
-      }
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [currentIndex, videos.length]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -100,153 +52,66 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     const currentVideo = videos[currentIndex];
     if (!currentVideo) {
       VideoDebugger.logEvent('VIDEO', 'Erro: índice inválido', { currentIndex, videosLength: videos.length });
-      metricsRef.current.errors++;
       return;
     }
 
     VideoDebugger.logEvent('VIDEO', 'Carregando', {
-      index: currentIndex + 1,
-      total: videos.length,
-      nome: currentVideo.video_nome,
-      id: currentVideo.id,
-      url: currentVideo.video_url
+      index: `${currentIndex + 1}/${videos.length}`,
+      nome: currentVideo.video_nome
     });
 
     setIsBuffering(true);
-    setIsPlaying(false);
 
     const onMetadata = () => {
-      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
-      
-      VideoDebugger.logEvent('VIDEO', 'Metadados carregados', {
-        duração: video.duration.toFixed(1) + 's',
-        readyState: video.readyState
+      VideoDebugger.logEvent('VIDEO', 'Pronto', {
+        duração: video.duration.toFixed(1) + 's'
       });
-
-      video.play()
-        .then(() => {
-          setIsBuffering(false);
-          setIsPlaying(true);
-          VideoDebugger.logEvent('VIDEO', 'Play iniciado');
-          
-          const safetyDuration = (video.duration + 10) * 1000;
-          safetyTimeoutRef.current = setTimeout(() => {
-            VideoDebugger.logEvent('SAFETY', 'Timeout - forçando próximo', {
-              currentTime: video.currentTime,
-              duration: video.duration
-            });
-            const nextIndex = (currentIndex + 1) % videos.length;
-            setCurrentIndex(nextIndex);
-          }, safetyDuration);
-        })
-        .catch(error => {
-          VideoDebugger.logEvent('VIDEO', 'Erro ao play', { error: error.message });
-          metricsRef.current.errors++;
-          setIsPlaying(false);
-        });
+      setIsBuffering(false);
+      if (onPlayingChange) onPlayingChange(true);
     };
 
     const onEnded = () => {
-      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
-      
-      metricsRef.current.videosPlayed++;
-      
-      VideoDebugger.logEvent('VIDEO', 'Vídeo terminou', {
-        nome: currentVideo.video_nome,
-        currentTime: video.currentTime.toFixed(1) + 's'
+      VideoDebugger.logEvent('VIDEO', 'Terminou', {
+        nome: currentVideo.video_nome
       });
-
-      setIsPlaying(false);
+      
+      if (onPlayingChange) onPlayingChange(false);
+      
       const nextIndex = (currentIndex + 1) % videos.length;
       
-      if (nextIndex === 0) {
-        metricsRef.current.cyclesCompleted++;
-        const elapsed = (Date.now() - metricsRef.current.startTime) / 1000;
-        
-        VideoDebugger.logEvent('METRICS', 'Ciclo completo', {
-          cycles: metricsRef.current.cyclesCompleted,
-          videosPlayed: metricsRef.current.videosPlayed,
-          errors: metricsRef.current.errors,
-          uptime: `${Math.floor(elapsed / 60)}m ${(elapsed % 60).toFixed(0)}s`,
-          avgTimePerCycle: metricsRef.current.cyclesCompleted > 0 
-            ? (elapsed / metricsRef.current.cyclesCompleted).toFixed(1) + 's'
-            : 'N/A'
-        });
-        
-        if (onPlaylistEnd) onPlaylistEnd();
+      if (nextIndex === 0 && onPlaylistEnd) {
+        onPlaylistEnd();
       }
 
-      VideoDebugger.logEvent('VIDEO', 'Avançando', { from: currentIndex + 1, to: nextIndex + 1, total: videos.length });
       setCurrentIndex(nextIndex);
     };
 
-    const onError = (e: Event) => {
-      metricsRef.current.errors++;
-      
-      VideoDebugger.logEvent('VIDEO', 'Erro ao carregar', {
-        nome: currentVideo.video_nome,
-        url: currentVideo.video_url,
-        error: (e.target as HTMLVideoElement).error,
-        errorCode: (e.target as HTMLVideoElement).error?.code
+    const onError = () => {
+      VideoDebugger.logEvent('VIDEO', 'Erro - pulando', {
+        nome: currentVideo.video_nome
       });
 
       setIsBuffering(false);
-      setIsPlaying(false);
+      if (onPlayingChange) onPlayingChange(false);
 
       setTimeout(() => {
         const nextIndex = (currentIndex + 1) % videos.length;
-        VideoDebugger.logEvent('VIDEO', 'Pulando após erro', { nextIndex });
         setCurrentIndex(nextIndex);
       }, 2000);
-    };
-
-    const onWaiting = () => {
-      VideoDebugger.logEvent('VIDEO', 'Buffering');
-      setIsBuffering(true);
-    };
-
-    const onPlaying = () => {
-      VideoDebugger.logEvent('VIDEO', 'Playing');
-      setIsBuffering(false);
-      setIsPlaying(true);
-    };
-
-    const onStalled = () => {
-      VideoDebugger.logEvent('VIDEO', 'Vídeo travado (stalled)');
-      setTimeout(() => {
-        if (video.paused) {
-          VideoDebugger.logEvent('VIDEO', 'Tentando retomar');
-          video.play().catch(err => {
-            VideoDebugger.logEvent('VIDEO', 'Falha ao retomar - pulando', { error: err.message });
-            metricsRef.current.errors++;
-            const nextIndex = (currentIndex + 1) % videos.length;
-            setCurrentIndex(nextIndex);
-          });
-        }
-      }, 3000);
     };
 
     video.addEventListener('loadedmetadata', onMetadata);
     video.addEventListener('ended', onEnded);
     video.addEventListener('error', onError);
-    video.addEventListener('waiting', onWaiting);
-    video.addEventListener('playing', onPlaying);
-    video.addEventListener('stalled', onStalled);
 
     video.load();
-    setIsBuffering(true);
 
     return () => {
-      if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
-      
       video.removeEventListener('loadedmetadata', onMetadata);
       video.removeEventListener('ended', onEnded);
       video.removeEventListener('error', onError);
-      video.removeEventListener('waiting', onWaiting);
-      video.removeEventListener('playing', onPlaying);
-      video.removeEventListener('stalled', onStalled);
     };
-  }, [currentIndex, videos, onPlaylistEnd]);
+  }, [currentIndex, videos, onPlaylistEnd, onPlayingChange]);
 
   if (videos.length === 0) {
     return (
@@ -285,6 +150,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
         ref={videoRef}
         key={currentVideo.id}
         className="w-full h-full object-contain"
+        autoPlay
         muted
         playsInline
         preload="auto"

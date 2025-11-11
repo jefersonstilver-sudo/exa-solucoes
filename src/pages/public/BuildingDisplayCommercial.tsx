@@ -150,7 +150,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       VideoDebugger.logEvent('POLLING', 'Sistema encerrado');
       clearInterval(interval);
     };
-  }, [buildingId, refetch, activeVideoIds]);
+  }, [buildingId, refetch]);
 
 
   // Loading - sem mostrar para evitar lag visual
