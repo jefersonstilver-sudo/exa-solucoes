@@ -5,7 +5,7 @@ import { videoLogger } from "./logger/VideoActionLogger";
 /* Types & Interfaces                                                          */
 /* -------------------------------------------------------------------------- */
 
-type SetBaseVideoResult = {
+export type SetBaseVideoResult = {
   success: boolean;
   timestamp: string;
   pedido_video_id?: string | null;

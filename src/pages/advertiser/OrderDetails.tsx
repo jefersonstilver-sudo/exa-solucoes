@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useOrderVideoManagement } from '@/hooks/useOrderVideoManagement';
 import { VideoActivationSuccessPopup } from '@/components/video-management/VideoActivationSuccessPopup';
 import { VideoConflictModal } from '@/components/video-management/VideoConflictModal';
+import { setBaseVideo as setBaseVideoService, SetBaseVideoResult } from '@/services/videoBaseService';
 import { PurchaseInfoCard } from '@/components/order/PurchaseInfoCard';
 import { useEnhancedOrderData } from '@/hooks/useEnhancedOrderData';
 import { OrderHeader } from '@/components/order/OrderHeader';
@@ -241,7 +242,7 @@ const OrderDetails = () => {
     
     toast.loading('Definindo como vídeo principal...', { id: 'set-base-video' });
 
-    const result = await setBaseVideo(slotId);
+    const result: SetBaseVideoResult = await setBaseVideoService(slotId);
 
     if (result.success) {
       toast.success('✅ Vídeo definido como principal!', { 
