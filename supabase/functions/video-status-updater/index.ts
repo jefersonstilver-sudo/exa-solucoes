@@ -164,24 +164,25 @@ serve(async (req) => {
         continue;
       }
 
-      // 2. Reativar vídeo base do pedido
-      const { error: reactivateBaseError } = await supabase
+      // 2. Reativar vídeo base do pedido (SEMPRE marcar selected_for_display=true)
+      const { data: baseVideoData, error: reactivateBaseError } = await supabase
         .from('pedido_videos')
         .update({ 
           selected_for_display: true,
+          is_active: true,
           updated_at: new Date().toISOString()
         })
         .eq('pedido_id', pedidoId)
         .eq('is_base_video', true)
         .eq('approval_status', 'approved')
-        .order('created_at', { ascending: true })
-        .limit(1);
-
+        .select()
+        .single();
+      
       if (reactivateBaseError) {
         console.error(`❌ Erro ao reativar vídeo base do pedido ${pedidoId}:`, reactivateBaseError);
       } else {
         deactivatedCount++;
-        console.log(`⏹️ [VIDEO_STATUS] Vídeo ${videoId} desativado, vídeo base reativado (Pedido: ${pedidoId})`);
+        console.log(`⏹️ [VIDEO_STATUS] Vídeo ${videoId} desativado, vídeo base ${baseVideoData?.video_id} reativado (Pedido: ${pedidoId})`);
       }
     }
 
