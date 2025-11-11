@@ -17,10 +17,22 @@ interface BuildingDisplayCommercialProps {
 const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ buildingId: propBuildingId }) => {
   const params = useParams<{ buildingId: string }>();
   const buildingId = propBuildingId || params.buildingId || '';
+  
+  console.log('🏢 [DISPLAY COMERCIAL] Componente montado:', { buildingId });
+  
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [buildingName, setBuildingName] = useState('');
   const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
   const isPlayingRef = useRef(false);
+  
+  console.log('📹 [DISPLAY COMERCIAL] Vídeos recebidos:', {
+    count: activeVideos.length,
+    videos: activeVideos.map(v => ({
+      id: v.video_id,
+      name: v.video_name,
+      url: v.video_url
+    }))
+  });
   
   // Status de conexão em tempo real (apenas para indicador visual)
   const connectionStatus = useRealtimeConnection(buildingId);

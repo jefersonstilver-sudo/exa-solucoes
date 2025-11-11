@@ -21,29 +21,33 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
+  const [videoError, setVideoError] = useState<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
-  const currentVideoIdRef = useRef<string>('');
-  const hasPlayedRef = useRef(false);
   const videosHashRef = useRef<string>('');
 
-  // Detectar mudança REAL na lista de vídeos (não re-render)
+  console.log('🎬 [HERO] Componente renderizado:', {
+    videosCount: videos.length,
+    currentIndex,
+    currentVideo: videos[currentIndex]?.video_nome
+  });
+
+  // Detectar mudança REAL na lista de vídeos
   useEffect(() => {
     if (videos.length === 0) return;
 
     const newHash = videos.map(v => v.id).join(',');
     
     if (videosHashRef.current && videosHashRef.current !== newHash) {
-      console.log('🔄 [PLAYLIST] Lista de vídeos REALMENTE mudou - resetando player');
+      console.log('🔄 [PLAYLIST] Lista mudou - resetando para índice 0');
       setCurrentIndex(0);
       setIsBuffering(true);
-      hasPlayedRef.current = false;
-      currentVideoIdRef.current = '';
+      setVideoError('');
     }
     
     videosHashRef.current = newHash;
   }, [videos]);
 
-  // Controle de reprodução do vídeo atual
+  // Sistema de reprodução SIMPLIFICADO - avança apenas no 'ended'
   useEffect(() => {
     const video = videoRef.current;
     if (!video || videos.length === 0) return;
@@ -51,137 +55,110 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     const currentVideo = videos[currentIndex];
     if (!currentVideo) return;
 
-    // Se já estamos reproduzindo este vídeo, não fazer nada
-    if (currentVideoIdRef.current === currentVideo.id && hasPlayedRef.current) {
-      return;
-    }
-
-    console.log('🎬 [VIDEO] Configurando novo vídeo:', {
-      index: currentIndex,
-      videoId: currentVideo.id,
-      videoName: currentVideo.video_nome,
-      totalVideos: videos.length
+    console.log('🎥 [VIDEO] Carregando:', {
+      index: currentIndex + 1,
+      total: videos.length,
+      name: currentVideo.video_nome,
+      url: currentVideo.video_url
     });
 
-    currentVideoIdRef.current = currentVideo.id;
-    hasPlayedRef.current = false;
     setIsBuffering(true);
+    setVideoError('');
 
-    // Handler: vídeo pode ser reproduzido
-    const handleCanPlay = () => {
-      console.log('✅ [VIDEO] Can play - iniciando reprodução');
+    // Handler: Metadados carregados - iniciar reprodução
+    const handleLoadedMetadata = () => {
+      console.log('📊 [VIDEO] Metadados carregados:', {
+        duration: video.duration.toFixed(2),
+        readyState: video.readyState
+      });
       
       video.play()
         .then(() => {
-          console.log('▶️ [VIDEO] Reprodução iniciada com sucesso');
-          hasPlayedRef.current = true;
+          console.log('▶️ [VIDEO] Reprodução iniciada');
           setIsBuffering(false);
         })
-        .catch((err) => {
-          console.error('❌ [VIDEO] Erro ao reproduzir:', err);
+        .catch(err => {
+          console.error('❌ [VIDEO] Erro ao iniciar reprodução:', err);
+          setVideoError(`Erro ao reproduzir: ${err.message}`);
           setIsBuffering(false);
         });
     };
 
-    // Handler: vídeo terminou (ÚNICA forma de avançar)
+    // Handler: Vídeo terminou - ÚNICA forma de avançar
     const handleEnded = () => {
-      console.log('🏁 [VIDEO] Vídeo terminou COMPLETAMENTE:', {
-        videoId: currentVideo.id,
+      console.log('🏁 [VIDEO] Vídeo TERMINOU completamente:', {
         videoName: currentVideo.video_nome,
-        currentTime: video.currentTime.toFixed(2),
+        finalTime: video.currentTime.toFixed(2),
         duration: video.duration.toFixed(2)
       });
 
-      // Calcular próximo índice
       const nextIndex = (currentIndex + 1) % videos.length;
       
-      console.log('➡️ [VIDEO] Avançando para próximo vídeo:', {
-        currentIndex,
-        nextIndex,
-        nextVideoId: videos[nextIndex]?.id,
-        nextVideoName: videos[nextIndex]?.video_nome
+      console.log('➡️ [VIDEO] Avançando:', {
+        from: currentIndex,
+        to: nextIndex,
+        nextVideo: videos[nextIndex]?.video_nome
       });
 
-      // Se voltou ao início, notificar
       if (nextIndex === 0 && onPlaylistEnd) {
-        console.log('🔄 [PLAYLIST] Fim da playlist - reiniciando');
+        console.log('🔄 [PLAYLIST] Ciclo completo - reiniciando');
         onPlaylistEnd();
       }
 
-      // Resetar refs e avançar
-      currentVideoIdRef.current = '';
-      hasPlayedRef.current = false;
-      setIsBuffering(true);
       setCurrentIndex(nextIndex);
     };
 
-    // Handler: erro no vídeo
-    const handleError = (e: Event) => {
-      console.error('❌ [VIDEO] ERRO CRÍTICO no vídeo:', {
+    // Handler: Erro crítico
+    const handleError = () => {
+      const errorMsg = video.error 
+        ? `Erro ${video.error.code}: ${video.error.message}` 
+        : 'Erro desconhecido ao carregar vídeo';
+      
+      console.error('❌ [VIDEO] ERRO:', {
         error: video.error,
-        videoId: currentVideo.id,
-        videoUrl: currentVideo.video_url,
-        networkState: video.networkState,
-        readyState: video.readyState
+        videoName: currentVideo.video_nome,
+        videoUrl: currentVideo.video_url
       });
 
-      // Em caso de erro, tentar próximo vídeo após 2 segundos
+      setVideoError(errorMsg);
+      setIsBuffering(false);
+
+      // Tentar próximo vídeo após 3 segundos
       setTimeout(() => {
+        console.log('⏭️ [VIDEO] Pulando para próximo após erro');
         const nextIndex = (currentIndex + 1) % videos.length;
-        console.log('⏭️ [VIDEO] Pulando para próximo vídeo devido a erro');
-        currentVideoIdRef.current = '';
-        hasPlayedRef.current = false;
         setCurrentIndex(nextIndex);
-      }, 2000);
+      }, 3000);
     };
 
-    // Handler: vídeo está carregando
+    // Handler: Buffering
     const handleWaiting = () => {
       console.log('⏳ [VIDEO] Buffering...');
       setIsBuffering(true);
     };
 
-    // Handler: vídeo voltou a reproduzir após buffer
     const handlePlaying = () => {
-      console.log('▶️ [VIDEO] Playing (saiu do buffer)');
+      console.log('▶️ [VIDEO] Reproduzindo');
       setIsBuffering(false);
     };
 
-    // Handler: tempo de reprodução
-    const handleTimeUpdate = () => {
-      if (!video.duration || video.duration === 0) return;
-      
-      const remaining = video.duration - video.currentTime;
-      
-      // Log apenas nos últimos 3 segundos
-      if (remaining <= 3 && remaining > 0) {
-        console.log('⏱️ [VIDEO] Próximo do fim:', {
-          current: video.currentTime.toFixed(2),
-          duration: video.duration.toFixed(2),
-          remaining: remaining.toFixed(2)
-        });
-      }
-    };
-
-    // Adicionar todos os event listeners
-    video.addEventListener('canplay', handleCanPlay);
+    // Adicionar listeners
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('ended', handleEnded);
     video.addEventListener('error', handleError);
     video.addEventListener('waiting', handleWaiting);
     video.addEventListener('playing', handlePlaying);
-    video.addEventListener('timeupdate', handleTimeUpdate);
 
-    // Forçar load do vídeo
+    // Forçar carregamento
     video.load();
 
     // Cleanup
     return () => {
-      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('playing', handlePlaying);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
     };
   }, [currentIndex, videos, onPlaylistEnd]);
 
@@ -232,11 +209,25 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
       <VideoWatermark />
 
-      {/* Indicador de buffering - SEM contador de vídeos */}
+      {/* Indicador de buffering */}
       {isBuffering && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
           <p className="text-white/80 text-sm">Carregando...</p>
+        </div>
+      )}
+
+      {/* Fallback de erro */}
+      {videoError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 gap-4 p-4">
+          <div className="text-red-400 text-lg font-semibold">⚠️ Erro no vídeo</div>
+          <div className="text-white/70 text-sm text-center max-w-md">
+            {currentVideo.video_nome}
+          </div>
+          <div className="text-white/50 text-xs text-center max-w-md font-mono">
+            {videoError}
+          </div>
+          <div className="text-white/40 text-xs">Tentando próximo vídeo...</div>
         </div>
       )}
     </div>
