@@ -96,7 +96,7 @@ serve(async (req) => {
     let deactivatedCount = 0;
     const affectedPedidos = new Set<string>();
 
-    // Ativar vídeos que estão no horário
+    // ✅ ATIVAR VÍDEOS AGENDADOS (sem tocar no vídeo base)
     for (const videoId of videosToActivate) {
       const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
       if (!rule) continue;
@@ -104,7 +104,9 @@ serve(async (req) => {
       const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
       affectedPedidos.add(pedidoId);
 
-      // 1. Ativar vídeo agendado e marcar para exibição
+      console.log(`🎬 [VIDEO_STATUS] Ativando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
+
+      // 1️⃣ Ativar o vídeo agendado
       const { error: activateError } = await supabase
         .from('pedido_videos')
         .update({ 
@@ -114,14 +116,14 @@ serve(async (req) => {
         })
         .eq('video_id', videoId)
         .eq('approval_status', 'approved')
-        .eq('is_base_video', false); // ✅ CRÍTICO: Só modificar vídeos NÃO-base
+        .eq('is_base_video', false); // ⚠️ CRÍTICO: Só modificar vídeos agendados
 
       if (activateError) {
-        console.error(`❌ Erro ao ativar vídeo ${videoId}:`, activateError);
+        console.error(`❌ Erro ao ativar vídeo agendado ${videoId}:`, activateError);
         continue;
       }
 
-      // 2. Desmarcar APENAS vídeos NÃO-base (NUNCA tocar no vídeo base!)
+      // 2️⃣ Desativar OUTROS vídeos agendados (NUNCA tocar no base!)
       const { error: deselectError } = await supabase
         .from('pedido_videos')
         .update({ 
@@ -130,18 +132,18 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq('pedido_id', pedidoId)
-        .eq('is_base_video', false) // ✅ CRÍTICO: Proteger vídeo base
+        .eq('is_base_video', false) // ⚠️ CRÍTICO: Proteger vídeo base
         .neq('video_id', videoId);
 
       if (deselectError) {
-        console.error(`❌ Erro ao desmarcar outros vídeos do pedido ${pedidoId}:`, deselectError);
+        console.error(`❌ Erro ao desmarcar outros vídeos agendados do pedido ${pedidoId}:`, deselectError);
       } else {
         activatedCount++;
-        console.log(`✅ [VIDEO_STATUS] Vídeo ${videoId} ativado, outros vídeos agendados desativados (Pedido: ${pedidoId})`);
+        console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} ativado (Pedido: ${pedidoId})`);
       }
     }
 
-    // Desativar vídeos que saíram do horário (apenas os agendados, NUNCA o base)
+    // ⏹️ DESATIVAR VÍDEOS AGENDADOS (triggers do banco cuidam do resto)
     for (const videoId of videosToDeactivate) {
       const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
       if (!rule) continue;
@@ -149,7 +151,9 @@ serve(async (req) => {
       const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
       affectedPedidos.add(pedidoId);
 
-      // Desativar APENAS vídeos agendados (is_base_video = false)
+      console.log(`⏹️ [VIDEO_STATUS] Desativando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
+
+      // Desativar APENAS o vídeo agendado (trigger reativa o base automaticamente)
       const { error: deactivateError } = await supabase
         .from('pedido_videos')
         .update({ 
@@ -159,13 +163,13 @@ serve(async (req) => {
         })
         .eq('video_id', videoId)
         .eq('approval_status', 'approved')
-        .eq('is_base_video', false); // ✅ CRÍTICO: Só desativar vídeos NÃO-base
+        .eq('is_base_video', false); // ⚠️ CRÍTICO: Só desativar vídeos agendados
 
       if (deactivateError) {
-        console.error(`❌ Erro ao desativar vídeo ${videoId}:`, deactivateError);
+        console.error(`❌ Erro ao desativar vídeo agendado ${videoId}:`, deactivateError);
       } else {
         deactivatedCount++;
-        console.log(`⏹️ [VIDEO_STATUS] Vídeo agendado ${videoId} desativado (Pedido: ${pedidoId})`);
+        console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} desativado. Trigger reativará vídeo base se necessário. (Pedido: ${pedidoId})`);
       }
     }
 
