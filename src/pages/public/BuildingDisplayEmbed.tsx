@@ -1,10 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
-import { useVideoCache } from '@/hooks/useVideoCache';
 import { useVideoProtection } from '@/hooks/useVideoProtection';
 import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
-import { WifiOff } from 'lucide-react';
 
 /**
  * 🎬 EMBED PLAYER - Link Limpo 
@@ -22,8 +20,6 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isReady, setIsReady] = useState(false);
-  const [videosWithCache, setVideosWithCache] = useState<any[]>([]);
-  const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
   const hasEndedRef = useRef(false);
@@ -31,10 +27,6 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastPlaylistHashRef = useRef('');
   const networkStatus = useNetworkMonitor();
-  
-  // Hash da playlist para detectar mudanças
-  const getPlaylistHash = (videos: any[]) => videos.map(v => v.video_id || v.id).sort().join(',');
-  const { getCachedVideoUrl, preCacheVideos } = useVideoCache(buildingId);
   const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
     preventPrint: true,
@@ -42,9 +34,9 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     preventScreenCapture: true
   });
 
-  const currentVideo = videosWithCache[currentIndex];
-  const nextVideoIndex = (currentIndex + 1) % videosWithCache.length;
-  const nextVideo = videosWithCache[nextVideoIndex];
+  const currentVideo = activeVideos[currentIndex];
+  const nextVideoIndex = (currentIndex + 1) % activeVideos.length;
+  const nextVideo = activeVideos[nextVideoIndex];
 
   // ✅ Sistema de polling inteligente a cada 10 segundos
   useEffect(() => {
@@ -57,13 +49,13 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     
     pollingIntervalRef.current = setInterval(async () => {
       try {
-        const currentHash = getPlaylistHash(videosWithCache);
+        const currentHash = activeVideos.map(v => v.video_id).sort().join(',');
         
         // Só refetch se houve mudança
         if (currentHash !== lastPlaylistHashRef.current) {
           await refetch();
           
-          const newHash = getPlaylistHash(activeVideos);
+          const newHash = activeVideos.map(v => v.video_id).sort().join(',');
           if (newHash !== lastPlaylistHashRef.current) {
             console.log('🔄 [EMBED] Mudança detectada');
             lastPlaylistHashRef.current = newHash;
@@ -78,54 +70,14 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
       if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
       document.removeEventListener('contextmenu', blockContextMenu, { capture: true } as any);
     };
-  }, [refetch, activeVideos, videosWithCache]);
-
-  // ✅ Pre-cache de vídeos
-  useEffect(() => {
-    if (activeVideos.length > 0) {
-      preCacheVideos(activeVideos);
-    }
-  }, [activeVideos, preCacheVideos]);
-
-  // ✅ Carregar vídeos com cache
-  useEffect(() => {
-    if (activeVideos.length === 0) {
-      setVideosWithCache([]);
-      return;
-    }
-
-    const loadVideosWithCache = async () => {
-      const videos = await Promise.all(
-        activeVideos.map(async (video) => {
-          const url = await getCachedVideoUrl(video.video_id, video.video_url);
-          return {
-            id: video.video_id || '',
-            video_url: url,
-            video_nome: video.video_name || ''
-          };
-        })
-      );
-      setVideosWithCache(videos);
-    };
-
-    loadVideosWithCache();
-  }, [activeVideos, getCachedVideoUrl]);
-
-  // ✅ Indicador offline por 5 segundos
-  useEffect(() => {
-    if (!networkStatus.isOnline) {
-      setShowOfflineIndicator(true);
-      const timer = setTimeout(() => setShowOfflineIndicator(false), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [networkStatus.isOnline]);
+  }, [refetch, activeVideos]);
 
   // ✅ Reset playlist
   useEffect(() => {
-    if (videosWithCache.length > 0 && currentIndex >= videosWithCache.length) {
+    if (activeVideos.length > 0 && currentIndex >= activeVideos.length) {
       setCurrentIndex(0);
     }
-  }, [videosWithCache.length, currentIndex]);
+  }, [activeVideos.length, currentIndex]);
 
   // ✅ Gerenciar reprodução do vídeo atual
   useEffect(() => {
@@ -196,13 +148,9 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
       video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);
     };
-  }, [currentIndex, currentVideo, nextVideoIndex, videosWithCache.length]);
+  }, [currentIndex, currentVideo, nextVideoIndex, activeVideos.length]);
 
-  if (loading && activeVideos.length === 0) {
-    return <div className="w-full h-full bg-black" />;
-  }
-
-  if (videosWithCache.length === 0) {
+  if (activeVideos.length === 0) {
     return <div className="w-full h-full bg-black" />;
   }
 
@@ -219,19 +167,11 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
-      {/* Indicador Offline Discreto */}
-      {showOfflineIndicator && !networkStatus.isOnline && (
-        <div className="fixed top-2 right-2 z-50 bg-red-500/90 text-white px-3 py-1.5 rounded shadow-lg flex items-center gap-2 text-xs">
-          <WifiOff className="h-3 w-3" />
-          <span>Offline</span>
-        </div>
-      )}
-
       {/* Container do vídeo */}
       <div className="absolute inset-0 w-full h-full">
         {/* Vídeo principal */}
         <video
-          key={`video-${currentIndex}-${currentVideo.id}`}
+          key={`video-${currentIndex}-${currentVideo.video_id}`}
           ref={videoRef}
           src={currentVideo.video_url}
           className={`w-full h-full object-cover transition-opacity duration-200 ${

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { VideoWatermark } from '@/components/video-security/VideoWatermark';
 
@@ -13,161 +13,113 @@ interface CommercialVideoHeroProps {
   className?: string;
 }
 
-export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({ 
+export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   videos,
-  className 
+  className
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isReady, setIsReady] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const nextVideoRef = useRef<HTMLVideoElement>(null);
   const transitionLockRef = useRef(false);
 
-  const currentVideo = videos[currentIndex];
-  const nextVideoIndex = (currentIndex + 1) % videos.length;
-  const nextVideo = videos[nextVideoIndex];
-
-  // Reset quando playlist mudar
+  // Reset index when videos change
   useEffect(() => {
-    if (videos.length > 0 && currentIndex >= videos.length) {
-      setCurrentIndex(0);
-    }
-  }, [videos.length, currentIndex]);
+    setCurrentIndex(0);
+    setIsPlaying(false);
+  }, [videos]);
 
-  // Gerenciar vídeo atual
+  // Handle video playback and transitions
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !currentVideo) return;
+    if (!video || videos.length === 0) return;
 
-    transitionLockRef.current = false;
-    setIsReady(false);
-
-    // Handler unificado para carregar e reproduzir
-    const startPlayback = () => {
-      setIsReady(true);
-      video.play().catch(() => {
-        // Tentar novamente após delay
-        setTimeout(() => video.play().catch(() => {}), 100);
-      });
-    };
-
-    // Handler para pré-carregar próximo
-    const preloadNext = () => {
-      const timeRemaining = video.duration - video.currentTime;
-      if (timeRemaining <= 5 && timeRemaining > 4.5 && nextVideoRef.current) {
-        nextVideoRef.current.load();
+    const handleCanPlay = () => {
+      if (!isPlaying) {
+        video.play().then(() => setIsPlaying(true)).catch(() => {});
       }
     };
 
-    // Handler para transição
-    const handleTransition = () => {
+    const handleEnded = () => {
       if (transitionLockRef.current) return;
       transitionLockRef.current = true;
-      
-      requestAnimationFrame(() => {
-        setCurrentIndex(nextVideoIndex);
-      });
+
+      const nextIndex = (currentIndex + 1) % videos.length;
+      setCurrentIndex(nextIndex);
+      setIsPlaying(false);
+
+      setTimeout(() => {
+        transitionLockRef.current = false;
+      }, 500);
     };
 
-    // Handler de erro
     const handleError = () => {
-      if (!transitionLockRef.current) {
-        setTimeout(() => setCurrentIndex(nextVideoIndex), 1000);
-      }
+      if (transitionLockRef.current) return;
+      transitionLockRef.current = true;
+
+      const nextIndex = (currentIndex + 1) % videos.length;
+      setCurrentIndex(nextIndex);
+      setIsPlaying(false);
+
+      setTimeout(() => {
+        transitionLockRef.current = false;
+      }, 1000);
     };
 
-    // Adicionar listeners
-    video.addEventListener('loadeddata', startPlayback);
-    video.addEventListener('canplay', startPlayback);
-    video.addEventListener('timeupdate', preloadNext);
-    video.addEventListener('ended', handleTransition);
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('ended', handleEnded);
     video.addEventListener('error', handleError);
 
-    // Iniciar carregamento
-    video.load();
+    // Try to play if video is already ready
+    if (video.readyState >= 3) {
+      handleCanPlay();
+    }
 
-    // Cleanup
     return () => {
-      video.removeEventListener('loadeddata', startPlayback);
-      video.removeEventListener('canplay', startPlayback);
-      video.removeEventListener('timeupdate', preloadNext);
-      video.removeEventListener('ended', handleTransition);
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);
     };
-  }, [currentIndex, currentVideo, nextVideoIndex]);
+  }, [currentIndex, videos.length, isPlaying]);
 
   if (videos.length === 0) {
     return (
-      <div className={cn("w-full h-full bg-black/50 rounded-lg flex items-center justify-center", className)}>
+      <div className={cn(
+        "w-full aspect-video bg-black rounded-lg flex items-center justify-center",
+        className
+      )}>
         <p className="text-white/60">Nenhum vídeo disponível</p>
       </div>
     );
   }
 
+  const currentVideo = videos[currentIndex];
+
   return (
     <div 
-      className={cn("relative w-full h-full", className)}
-      style={{
-        userSelect: 'none',
-        WebkitUserSelect: 'none'
-      }}
+      className={cn(
+        "relative w-full aspect-video bg-black rounded-lg overflow-hidden",
+        className
+      )}
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
-      {/* Container principal */}
-      <div className="absolute inset-0 w-full h-full bg-black rounded-lg overflow-hidden">
-        {/* Vídeo principal */}
-        <video
-          key={`${currentVideo.id}-${currentIndex}`}
-          ref={videoRef}
-          src={currentVideo.video_url}
-          className={cn(
-            "w-full h-full object-cover transition-opacity duration-300",
-            isReady ? "opacity-100" : "opacity-0"
-          )}
-          autoPlay
-          muted
-          playsInline
-          preload="auto"
-          controlsList="nodownload noplaybackrate nofullscreen"
-          disablePictureInPicture
-          disableRemotePlayback
-          style={{ pointerEvents: 'none' }}
-          onContextMenu={(e) => e.preventDefault()}
-        />
+      <video
+        ref={videoRef}
+        key={currentVideo.id}
+        src={currentVideo.video_url}
+        className="w-full h-full object-contain"
+        autoPlay
+        muted
+        playsInline
+        preload="auto"
+      />
 
-        {/* Loading */}
-        {!isReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black">
-            <div className="animate-pulse text-white/60 text-sm">Carregando...</div>
-          </div>
-        )}
+      <VideoWatermark />
 
-        {/* Marca d'água */}
-        <VideoWatermark />
-        
-        {/* Proteção */}
-        <div 
-          className="absolute inset-0 z-[100]" 
-          style={{ 
-            background: 'transparent',
-            pointerEvents: 'auto'
-          }}
-          onContextMenu={(e) => e.preventDefault()}
-          onMouseDown={(e) => e.button === 2 && e.preventDefault()}
-        />
-      </div>
-
-      {/* Pre-load próximo */}
-      {nextVideo && (
-        <video
-          ref={nextVideoRef}
-          src={nextVideo.video_url}
-          className="hidden"
-          preload="auto"
-          muted
-          playsInline
-        />
+      {!isPlaying && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
+        </div>
       )}
     </div>
   );

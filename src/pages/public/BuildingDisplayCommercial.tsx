@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
-import { useVideoCache } from '@/hooks/useVideoCache';
 import { supabase } from '@/integrations/supabase/client';
 import exaLogo from '@/assets/exa-logo.png';
 import { Wifi, WifiOff } from 'lucide-react';
@@ -20,11 +19,9 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const buildingId = propBuildingId || params.buildingId || '';
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [buildingName, setBuildingName] = useState('');
-  const [videosWithCache, setVideosWithCache] = useState<any[]>([]);
   const networkStatus = useNetworkMonitor();
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
   const lastPlaylistHashRef = useRef('');
-  const { getCachedVideoUrl, preCacheVideos } = useVideoCache(buildingId);
   
   // Hash da playlist para detectar mudanças
   const getPlaylistHash = (videos: any[]) => videos.map(v => v.video_id).sort().join(',');
@@ -89,36 +86,6 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     };
   }, [refetch, activeVideos]);
 
-  // Pre-cachear vídeos
-  useEffect(() => {
-    if (activeVideos.length > 0) {
-      preCacheVideos(activeVideos);
-    }
-  }, [activeVideos, preCacheVideos]);
-
-  // Carregar videos com cache
-  useEffect(() => {
-    if (activeVideos.length === 0) {
-      setVideosWithCache([]);
-      return;
-    }
-
-    const loadVideosWithCache = async () => {
-      const videos = await Promise.all(
-        activeVideos.map(async (video) => {
-          const url = await getCachedVideoUrl(video.video_id, video.video_url);
-          return {
-            id: video.video_id || '',
-            video_url: url,
-            video_nome: video.video_name || ''
-          };
-        })
-      );
-      setVideosWithCache(videos);
-    };
-
-    loadVideosWithCache();
-  }, [activeVideos, getCachedVideoUrl]);
 
   // Loading - sem mostrar para evitar lag visual
   if (loading && activeVideos.length === 0) {
@@ -217,12 +184,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
           {/* 📺 Vídeo principal - 60% da altura */}
           <div className="flex-[60] min-h-0 w-full">
             <div className="h-full w-full bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-md rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl border border-white/5 overflow-hidden">
-              {videosWithCache.length > 0 ? (
-                <CommercialVideoHero 
-                  videos={videosWithCache}
-                  className="h-full w-full"
-                />
-              ) : activeVideos.length > 0 ? (
+              {activeVideos.length > 0 ? (
                 <CommercialVideoHero 
                   videos={activeVideos.map(v => ({
                     id: v.video_id || '',
