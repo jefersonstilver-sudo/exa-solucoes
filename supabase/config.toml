@@ -117,3 +117,6 @@ verify_jwt = true
 [functions.cancel-expired-orders]
 verify_jwt = false
 
+[functions.video-status-updater]
+verify_jwt = false
+
