@@ -1,14 +1,14 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
 import exaLogo from '@/assets/exa-logo.png';
-import { Wifi, WifiOff } from 'lucide-react';
-import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
 import { CommercialVideoHero } from '@/components/commercial/CommercialVideoHero';
 import { useVideoProtection } from '@/hooks/useVideoProtection';
 import WeatherFooter from '@/components/public/WeatherFooter';
 import { LiveClock } from '@/components/commercial/LiveClock';
+import { useRealtimeConnection } from '@/hooks/useRealtimeConnection';
+import { ConnectionStatusIndicator } from '@/components/commercial/ConnectionStatusIndicator';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -19,13 +19,10 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const buildingId = propBuildingId || params.buildingId || '';
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [buildingName, setBuildingName] = useState('');
-  const networkStatus = useNetworkMonitor();
-  const pollingIntervalRef = useRef<NodeJS.Timeout>();
-  const lastPlaylistHashRef = useRef('');
-  const [canRefetch, setCanRefetch] = useState(true);
   
-  // Hash da playlist para detectar mudanças
-  const getPlaylistHash = (videos: any[]) => videos.map(v => v.video_id).sort().join(',');
+  // Status de conexão em tempo real
+  const connectionStatus = useRealtimeConnection(buildingId);
+  
   const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
     preventPrint: true,
@@ -52,41 +49,27 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     fetchBuildingData();
   }, [buildingId]);
 
-  // Sistema de polling inteligente a cada 10 segundos
+  // Proteção contra menu de contexto
   useEffect(() => {
-    // PROTEÇÃO GLOBAL
     const blockContextMenu = (e: MouseEvent) => {
       e.preventDefault();
       return false;
     };
     
     document.addEventListener('contextmenu', blockContextMenu, { capture: true });
-    
-    pollingIntervalRef.current = setInterval(async () => {
-      try {
-        const currentHash = getPlaylistHash(activeVideos);
-        
-        // Só refetch se playlist terminou E houve mudança
-        if (canRefetch && currentHash !== lastPlaylistHashRef.current) {
-          setCanRefetch(false);
-          await refetch();
-          
-          const newHash = getPlaylistHash(activeVideos);
-          if (newHash !== lastPlaylistHashRef.current) {
-            console.log('🔄 [PLAYLIST] Mudança detectada');
-            lastPlaylistHashRef.current = newHash;
-          }
-        }
-      } catch (error) {
-        console.error('❌ [POLLING] Erro:', error);
-      }
-    }, 10000);
 
     return () => {
-      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
       document.removeEventListener('contextmenu', blockContextMenu, { capture: true } as any);
     };
-  }, [refetch, activeVideos]);
+  }, []);
+
+  // Atualizar quando detectar mudança via Realtime
+  useEffect(() => {
+    if (connectionStatus.lastUpdate) {
+      console.log('🔄 [DISPLAY] Atualizando playlist devido a mudança no banco');
+      refetch();
+    }
+  }, [connectionStatus.lastUpdate, refetch]);
 
 
   // Loading - sem mostrar para evitar lag visual
@@ -162,20 +145,8 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
             </div>
           )}
 
-          {/* Status de conexão - escalável */}
-          <div className="flex items-center">
-            {networkStatus.isOnline ? (
-              <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-green-500/20 rounded-full border border-green-500/30">
-                <Wifi className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-green-400" />
-                <span className="text-green-400 text-xs sm:text-sm font-medium hidden sm:inline">Online</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-red-500/20 rounded-full border border-red-500/30 animate-pulse">
-                <WifiOff className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-red-400" />
-                <span className="text-red-400 text-xs sm:text-sm font-medium hidden sm:inline">Offline</span>
-              </div>
-            )}
-          </div>
+          {/* Status de conexão em tempo real */}
+          <ConnectionStatusIndicator status={connectionStatus} />
         </div>
       </header>
 
@@ -194,7 +165,6 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                     video_nome: v.video_name || ''
                   }))}
                   className="h-full w-full"
-                  onPlaylistEnd={() => setCanRefetch(true)}
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-white">Carregando...</div>
