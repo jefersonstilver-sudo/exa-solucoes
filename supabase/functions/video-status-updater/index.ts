@@ -113,33 +113,35 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq('video_id', videoId)
-        .eq('approval_status', 'approved');
+        .eq('approval_status', 'approved')
+        .eq('is_base_video', false); // ✅ CRÍTICO: Só modificar vídeos NÃO-base
 
       if (activateError) {
         console.error(`❌ Erro ao ativar vídeo ${videoId}:`, activateError);
         continue;
       }
 
-      // 2. CRÍTICO: Desmarcar APENAS selected_for_display dos outros vídeos
-      // NUNCA alterar is_base_video! Essa flag é sagrada e só muda com ação manual
+      // 2. Desmarcar APENAS vídeos NÃO-base (NUNCA tocar no vídeo base!)
       const { error: deselectError } = await supabase
         .from('pedido_videos')
         .update({ 
           selected_for_display: false,
+          is_active: false,
           updated_at: new Date().toISOString()
         })
         .eq('pedido_id', pedidoId)
+        .eq('is_base_video', false) // ✅ CRÍTICO: Proteger vídeo base
         .neq('video_id', videoId);
 
       if (deselectError) {
         console.error(`❌ Erro ao desmarcar outros vídeos do pedido ${pedidoId}:`, deselectError);
       } else {
         activatedCount++;
-        console.log(`✅ [VIDEO_STATUS] Vídeo ${videoId} ativado e marcado para exibição (Pedido: ${pedidoId})`);
+        console.log(`✅ [VIDEO_STATUS] Vídeo ${videoId} ativado, outros vídeos agendados desativados (Pedido: ${pedidoId})`);
       }
     }
 
-    // Desativar vídeos que saíram do horário (apenas os agendados)
+    // Desativar vídeos que saíram do horário (apenas os agendados, NUNCA o base)
     for (const videoId of videosToDeactivate) {
       const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
       if (!rule) continue;
@@ -147,7 +149,7 @@ serve(async (req) => {
       const pedidoId = rule.campaign_video_schedules.campaigns_advanced.pedido_id;
       affectedPedidos.add(pedidoId);
 
-      // 1. Desativar vídeo agendado e desmarcar exibição
+      // Desativar APENAS vídeos agendados (is_base_video = false)
       const { error: deactivateError } = await supabase
         .from('pedido_videos')
         .update({ 
@@ -157,32 +159,13 @@ serve(async (req) => {
         })
         .eq('video_id', videoId)
         .eq('approval_status', 'approved')
-        .eq('is_base_video', false);
+        .eq('is_base_video', false); // ✅ CRÍTICO: Só desativar vídeos NÃO-base
 
       if (deactivateError) {
         console.error(`❌ Erro ao desativar vídeo ${videoId}:`, deactivateError);
-        continue;
-      }
-
-      // 2. Reativar vídeo base do pedido (SEMPRE marcar selected_for_display=true)
-      const { data: baseVideoData, error: reactivateBaseError } = await supabase
-        .from('pedido_videos')
-        .update({ 
-          selected_for_display: true,
-          is_active: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('pedido_id', pedidoId)
-        .eq('is_base_video', true)
-        .eq('approval_status', 'approved')
-        .select()
-        .single();
-      
-      if (reactivateBaseError) {
-        console.error(`❌ Erro ao reativar vídeo base do pedido ${pedidoId}:`, reactivateBaseError);
       } else {
         deactivatedCount++;
-        console.log(`⏹️ [VIDEO_STATUS] Vídeo ${videoId} desativado, vídeo base ${baseVideoData?.video_id} reativado (Pedido: ${pedidoId})`);
+        console.log(`⏹️ [VIDEO_STATUS] Vídeo agendado ${videoId} desativado (Pedido: ${pedidoId})`);
       }
     }
 
