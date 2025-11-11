@@ -184,7 +184,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     };
 
     loadVideo();
-  }, [currentIndex, videosHash, videos]);
+  }, [currentIndex, videosHash]); // ✅ REMOVIDO `videos` - evita loop infinito
 
   // Pré-cachear próximos vídeos em background
   useEffect(() => {

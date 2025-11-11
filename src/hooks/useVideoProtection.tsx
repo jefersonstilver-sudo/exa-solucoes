@@ -89,12 +89,12 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
     const heightThreshold = window.outerHeight - window.innerHeight > threshold;
 
     if (widthThreshold || heightThreshold) {
-      // DevTools detectado - limpar vídeo temporariamente
+      // DevTools detectado - apenas proteção visual (SEM pausar)
       if (containerRef.current) {
         const videos = containerRef.current.querySelectorAll('video');
         videos.forEach(video => {
           video.style.filter = 'blur(50px)';
-          video.pause();
+          // ✅ REMOVIDO: video.pause() - não interferir na reprodução
         });
       }
     }
@@ -135,22 +135,24 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
   const detectScreenCapture = useCallback(() => {
     if (!preventScreenCapture) return;
 
-    // Detectar quando a página perde foco (possível captura)
+    // Detectar quando a página perde foco (possível captura) - apenas visual
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && containerRef.current) {
         const videos = containerRef.current.querySelectorAll('video');
         videos.forEach(video => {
-          video.pause();
+          // ✅ REMOVIDO: video.pause() - manter reprodução contínua
+          video.style.filter = 'blur(50px)'; // Apenas proteção visual
         });
       }
     });
 
-    // Detectar blur (possível captura com outra janela)
+    // Detectar blur (possível captura com outra janela) - apenas visual
     window.addEventListener('blur', () => {
       if (containerRef.current) {
         const videos = containerRef.current.querySelectorAll('video');
         videos.forEach(video => {
-          video.pause();
+          // ✅ REMOVIDO: video.pause() - manter reprodução contínua
+          video.style.filter = 'blur(50px)'; // Apenas proteção visual
         });
       }
     });
