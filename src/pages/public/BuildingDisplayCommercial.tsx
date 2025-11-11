@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useParams, Navigate } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
 import exaLogo from '@/assets/exa-logo.png';
@@ -9,6 +9,7 @@ import WeatherFooter from '@/components/public/WeatherFooter';
 import { LiveClock } from '@/components/commercial/LiveClock';
 import { useRealtimeConnection } from '@/hooks/useRealtimeConnection';
 import { ConnectionStatusIndicator } from '@/components/commercial/ConnectionStatusIndicator';
+import { VideoDebugger } from '@/utils/videoDebugger';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -16,22 +17,46 @@ interface BuildingDisplayCommercialProps {
 
 const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ buildingId: propBuildingId }) => {
   const params = useParams<{ buildingId: string }>();
-  const buildingId = propBuildingId || params.buildingId || '';
+  const rawBuildingId = propBuildingId || params.buildingId || '';
+  const isPlayingRef = useRef(false);
+  const isCheckingRef = useRef(false);
+
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
-  console.log('🏢 [DISPLAY COMERCIAL] Componente montado:', { buildingId });
+  VideoDebugger.logEvent('ROUTING', 'Debug de rota', {
+    propBuildingId,
+    paramsKeys: Object.keys(params),
+    paramsBuildingId: params.buildingId,
+    rawBuildingId,
+    currentPath: window.location.pathname,
+    isValidUUID: UUID_REGEX.test(rawBuildingId),
+    isLiteralString: rawBuildingId.startsWith(':')
+  });
+
+  if (rawBuildingId === ':buildingId' || rawBuildingId.startsWith(':')) {
+    VideoDebugger.logEvent('ROUTING', 'ERRO: BuildingId é string literal', { rawBuildingId });
+    return <Navigate to="/404" replace />;
+  }
+
+  if (rawBuildingId && !UUID_REGEX.test(rawBuildingId)) {
+    VideoDebugger.logEvent('ROUTING', 'ERRO: BuildingId inválido', { rawBuildingId });
+    return <Navigate to="/404" replace />;
+  }
+
+  const buildingId = rawBuildingId;
   
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [buildingName, setBuildingName] = useState('');
   const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
-  const isPlayingRef = useRef(false);
   
-  console.log('📹 [DISPLAY COMERCIAL] Vídeos recebidos:', {
+  const activeVideoIds = useMemo(() => 
+    activeVideos.map(v => v.video_id).sort().join(','),
+    [activeVideos]
+  );
+
+  VideoDebugger.logEvent('DISPLAY', 'Vídeos recebidos', {
     count: activeVideos.length,
-    videos: activeVideos.map(v => ({
-      id: v.video_id,
-      name: v.video_name,
-      url: v.video_url
-    }))
+    videoIds: activeVideoIds
   });
   
   // Status de conexão em tempo real (apenas para indicador visual)
@@ -77,96 +102,55 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     };
   }, []);
 
-  // 🔄 Sistema de polling robusto a cada 2 minutos (SEM INTERFERIR com reprodução)
   useEffect(() => {
     if (!buildingId) return;
 
-    console.log('⏰ [POLLING] Iniciando sistema de polling inteligente (2 minutos)');
+    VideoDebugger.logEvent('POLLING', 'Sistema iniciado (2 minutos)');
 
     const checkForUpdates = async () => {
-      // NÃO verificar se estiver reproduzindo para não interferir
       if (isPlayingRef.current) {
-        console.log('⏸️ [POLLING] Pulando verificação - vídeo em reprodução');
+        VideoDebugger.logEvent('POLLING', 'Pulando - vídeo reproduzindo');
         return;
       }
 
-      const now = new Date();
-      console.log('🔍 [POLLING] Verificando atualizações de vídeos...', {
-        buildingId,
-        lastCheck: lastCheckTime.toISOString(),
-        currentCheck: now.toISOString()
-      });
+      if (isCheckingRef.current) {
+        VideoDebugger.logEvent('POLLING', 'Pulando - verificação em andamento');
+        return;
+      }
+
+      isCheckingRef.current = true;
 
       try {
-        // ✅ Query corrigida: Buscar apenas pedido_videos + pedidos (SEM campaign_video_schedules)
-        const { data: currentVideos, error } = await supabase
-          .from('pedido_videos')
-          .select(`
-            id,
-            video_id,
-            pedidos!inner(
-              building_id,
-              lista_predios
-            )
-          `)
-          .eq('pedidos.building_id', buildingId)
-          .eq('is_active', true)
-          .eq('selected_for_display', true)
-          .eq('approval_status', 'approved');
-
-        if (error) {
-          console.error('❌ [POLLING] Erro ao buscar vídeos:', error);
-          return;
-        }
-
-        // Verificar se há diferença nos vídeos
-        const currentVideoIds = (currentVideos || [])
-          .map(v => v.video_id)
-          .sort()
-          .join(',');
-        
-        const displayedVideoIds = activeVideos
+        const currentVideoIds = activeVideos
           .map(v => v.video_id)
           .sort()
           .join(',');
 
-        console.log('📊 [POLLING] Comparação de vídeos:', {
-          currentCount: currentVideos?.length || 0,
-          displayedCount: activeVideos.length,
-          currentIds: currentVideoIds,
-          displayedIds: displayedVideoIds,
-          hasChanges: currentVideoIds !== displayedVideoIds
+        VideoDebugger.logEvent('POLLING', 'Verificando atualizações', {
+          currentCount: activeVideos.length,
+          currentIds: currentVideoIds
         });
 
-        if (currentVideoIds !== displayedVideoIds) {
-          console.log('🔄 [POLLING] Mudança detectada! Atualizando playlist...');
-          await refetch();
-          setLastCheckTime(now);
-        } else {
-          console.log('✅ [POLLING] Sem mudanças. Playlist está atualizada.');
-          setLastCheckTime(now);
-        }
+        await refetch();
+        setLastCheckTime(new Date());
+        
+        VideoDebugger.logEvent('POLLING', 'Verificação concluída');
       } catch (error) {
-        console.error('❌ [POLLING] Erro durante verificação:', error);
+        VideoDebugger.logEvent('POLLING', 'Erro ao verificar', { 
+          error: error instanceof Error ? error.message : 'Erro desconhecido' 
+        });
+      } finally {
+        isCheckingRef.current = false;
       }
     };
 
-    // Primeira verificação após 5 segundos (para dar tempo de carregar)
-    const initialTimeout = setTimeout(() => {
-      checkForUpdates();
-    }, 5000);
-
-    // Polling a cada 2 minutos (120000ms)
-    const pollingInterval = setInterval(() => {
-      checkForUpdates();
-    }, 120000);
+    const interval = setInterval(checkForUpdates, 120000);
 
     return () => {
-      clearTimeout(initialTimeout);
-      clearInterval(pollingInterval);
-      console.log('🛑 [POLLING] Sistema de polling encerrado');
+      VideoDebugger.logEvent('POLLING', 'Sistema encerrado');
+      clearInterval(interval);
     };
-  }, [buildingId, activeVideos, refetch, lastCheckTime]);
+  }, [buildingId, refetch, activeVideoIds]);
 
 
   // Loading - sem mostrar para evitar lag visual
@@ -263,11 +247,9 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                   }))}
                   className="h-full w-full"
                   onPlayingChange={(playing) => {
-                    console.log('🎵 [DISPLAY] Estado de reprodução:', playing);
                     isPlayingRef.current = playing;
                   }}
                   onPlaylistEnd={() => {
-                    console.log('🔄 [DISPLAY] Playlist terminou, permitindo próxima verificação');
                     isPlayingRef.current = false;
                   }}
                 />

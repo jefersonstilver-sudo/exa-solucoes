@@ -121,6 +121,17 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       }
 
       console.log(`✅ [VIDEOS] ${allVideosData.length} vídeos em exibição encontrados`);
+      
+      // Validar URLs e IDs
+      allVideosData.forEach((v: any) => {
+        if (!v.videos?.url || !v.videos.url.startsWith('http')) {
+          console.error('❌ [VIDEOS] URL inválida:', v);
+        }
+        
+        if (!v.video_id || v.video_id === ':video_id') {
+          console.error('❌ [VIDEOS] Video ID inválido:', v);
+        }
+      });
 
       // 3. Extrair IDs de clientes
       const clientIds = [...new Set(pedidos.map(p => p.client_id))];
