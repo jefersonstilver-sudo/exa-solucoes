@@ -174,8 +174,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     }
 
     if (slot.approval_status === 'approved') {
-      // REGRA CRÍTICA: Vídeo agendado ATIVO mostra AMBOS badges
-      if (hasActiveSchedule && isScheduledActiveNow()) {
+      // PRIORIDADE 1: Agendado ativo AGORA (mostra AMBOS badges)
+      if (hasActiveSchedule && isScheduledActiveNow() && slot.selected_for_display) {
         console.log(`✅ [SLOT_${slot.slot_position}] EM EXIBIÇÃO + AGENDADO (agendado vigente)`);
         return (
           <div className="flex gap-2">
@@ -185,16 +185,22 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         );
       }
       
-      // Vídeo base (principal) - em exibição quando não há agendado ativo
+      // PRIORIDADE 2: Vídeo base em exibição (quando não há agendado ativo)
       if (slot.is_base_video && slot.selected_for_display) {
         console.log(`✅ [SLOT_${slot.slot_position}] EM EXIBIÇÃO (vídeo principal)`);
         return <Badge className="bg-green-600 text-white">EM EXIBIÇÃO</Badge>;
       }
       
-      // Tem agendamento mas não está no horário ativo
-      if (hasActiveSchedule) {
-        console.log(`✅ [SLOT_${slot.slot_position}] Status AGENDADO aplicado`);
+      // PRIORIDADE 3: Agendado mas fora do horário
+      if (hasActiveSchedule && !isScheduledActiveNow()) {
+        console.log(`⏰ [SLOT_${slot.slot_position}] AGENDADO (fora do horário)`);
         return <Badge className="bg-blue-600 text-white">AGENDADO</Badge>;
+      }
+      
+      // PRIORIDADE 4: Vídeo base aguardando (há um agendado ativo)
+      if (slot.is_base_video && !slot.selected_for_display) {
+        console.log(`⏸️ [SLOT_${slot.slot_position}] AGUARDANDO (vídeo principal pausado)`);
+        return <Badge className="bg-gray-400 text-white">AGUARDANDO</Badge>;
       }
       
       // Apenas aprovado
