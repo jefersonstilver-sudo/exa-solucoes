@@ -262,6 +262,10 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                     video_nome: v.video_name || ''
                   }))}
                   className="h-full w-full"
+                  onPlayingChange={(playing) => {
+                    console.log('🎵 [DISPLAY] Estado de reprodução:', playing);
+                    isPlayingRef.current = playing;
+                  }}
                   onPlaylistEnd={() => {
                     console.log('🔄 [DISPLAY] Playlist terminou, permitindo próxima verificação');
                     isPlayingRef.current = false;
