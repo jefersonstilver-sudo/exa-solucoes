@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +20,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [buildingName, setBuildingName] = useState('');
   const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
+  const isPlayingRef = useRef(false);
   
   // Status de conexão em tempo real (apenas para indicador visual)
   const connectionStatus = useRealtimeConnection(buildingId);
@@ -64,13 +65,19 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     };
   }, []);
 
-  // 🔄 Sistema de polling robusto a cada 2 minutos
+  // 🔄 Sistema de polling robusto a cada 2 minutos (SEM INTERFERIR com reprodução)
   useEffect(() => {
     if (!buildingId) return;
 
-    console.log('⏰ [POLLING] Iniciando sistema de polling (2 minutos)');
+    console.log('⏰ [POLLING] Iniciando sistema de polling inteligente (2 minutos)');
 
     const checkForUpdates = async () => {
+      // NÃO verificar se estiver reproduzindo para não interferir
+      if (isPlayingRef.current) {
+        console.log('⏸️ [POLLING] Pulando verificação - vídeo em reprodução');
+        return;
+      }
+
       const now = new Date();
       console.log('🔍 [POLLING] Verificando atualizações de vídeos...', {
         buildingId,
@@ -255,6 +262,10 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                     video_nome: v.video_name || ''
                   }))}
                   className="h-full w-full"
+                  onPlaylistEnd={() => {
+                    console.log('🔄 [DISPLAY] Playlist terminou, permitindo próxima verificação');
+                    isPlayingRef.current = false;
+                  }}
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-white">Carregando...</div>
