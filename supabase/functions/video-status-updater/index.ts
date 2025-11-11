@@ -96,7 +96,7 @@ serve(async (req) => {
     let deactivatedCount = 0;
     const affectedPedidos = new Set<string>();
 
-    // ✅ ATIVAR VÍDEOS AGENDADOS (sem tocar no vídeo base)
+    // ✅ ATIVAR VÍDEOS AGENDADOS E DESATIVAR VÍDEO BASE TEMPORARIAMENTE
     for (const videoId of videosToActivate) {
       const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
       if (!rule) continue;
@@ -106,7 +106,24 @@ serve(async (req) => {
 
       console.log(`🎬 [VIDEO_STATUS] Ativando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
 
-      // 1️⃣ Ativar o vídeo agendado
+      // 1️⃣ PRIMEIRO: Desativar o vídeo base para dar lugar ao agendado
+      const { error: deactivateBaseError } = await supabase
+        .from('pedido_videos')
+        .update({ 
+          is_active: false,
+          selected_for_display: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('pedido_id', pedidoId)
+        .eq('is_base_video', true); // Desativar vídeo base temporariamente
+
+      if (deactivateBaseError) {
+        console.error(`❌ Erro ao desativar vídeo base do pedido ${pedidoId}:`, deactivateBaseError);
+      } else {
+        console.log(`⏸️ [VIDEO_STATUS] Vídeo base desativado temporariamente (Pedido: ${pedidoId})`);
+      }
+
+      // 2️⃣ SEGUNDO: Ativar o vídeo agendado
       const { error: activateError } = await supabase
         .from('pedido_videos')
         .update({ 
@@ -116,14 +133,14 @@ serve(async (req) => {
         })
         .eq('video_id', videoId)
         .eq('approval_status', 'approved')
-        .eq('is_base_video', false); // ⚠️ CRÍTICO: Só modificar vídeos agendados
+        .eq('is_base_video', false);
 
       if (activateError) {
         console.error(`❌ Erro ao ativar vídeo agendado ${videoId}:`, activateError);
         continue;
       }
 
-      // 2️⃣ Desativar OUTROS vídeos agendados (NUNCA tocar no base!)
+      // 3️⃣ TERCEIRO: Desativar outros vídeos agendados
       const { error: deselectError } = await supabase
         .from('pedido_videos')
         .update({ 
@@ -132,18 +149,18 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq('pedido_id', pedidoId)
-        .eq('is_base_video', false) // ⚠️ CRÍTICO: Proteger vídeo base
+        .eq('is_base_video', false)
         .neq('video_id', videoId);
 
       if (deselectError) {
         console.error(`❌ Erro ao desmarcar outros vídeos agendados do pedido ${pedidoId}:`, deselectError);
       } else {
         activatedCount++;
-        console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} ativado (Pedido: ${pedidoId})`);
+        console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} ativado, vídeo base pausado (Pedido: ${pedidoId})`);
       }
     }
 
-    // ⏹️ DESATIVAR VÍDEOS AGENDADOS (triggers do banco cuidam do resto)
+    // ⏹️ DESATIVAR VÍDEOS AGENDADOS E REATIVAR VÍDEO BASE
     for (const videoId of videosToDeactivate) {
       const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
       if (!rule) continue;
@@ -153,7 +170,7 @@ serve(async (req) => {
 
       console.log(`⏹️ [VIDEO_STATUS] Desativando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
 
-      // Desativar APENAS o vídeo agendado (trigger reativa o base automaticamente)
+      // Desativar o vídeo agendado
       const { error: deactivateError } = await supabase
         .from('pedido_videos')
         .update({ 
@@ -163,13 +180,16 @@ serve(async (req) => {
         })
         .eq('video_id', videoId)
         .eq('approval_status', 'approved')
-        .eq('is_base_video', false); // ⚠️ CRÍTICO: Só desativar vídeos agendados
+        .eq('is_base_video', false);
 
       if (deactivateError) {
         console.error(`❌ Erro ao desativar vídeo agendado ${videoId}:`, deactivateError);
       } else {
         deactivatedCount++;
-        console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} desativado. Trigger reativará vídeo base se necessário. (Pedido: ${pedidoId})`);
+        console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} desativado (Pedido: ${pedidoId})`);
+        
+        // Trigger reativará o vídeo base automaticamente
+        console.log(`🔄 [VIDEO_STATUS] Trigger reativará vídeo base para pedido ${pedidoId}`);
       }
     }
 
