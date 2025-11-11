@@ -106,24 +106,26 @@ serve(async (req) => {
 
       console.log(`🎬 [VIDEO_STATUS] Ativando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
 
-      // 1️⃣ PRIMEIRO: Desativar o vídeo base para dar lugar ao agendado
-      const { error: deactivateBaseError } = await supabase
+      // ✅ SOLUÇÃO: Fazer tudo em UMA ÚNICA QUERY para evitar race condition com triggers
+      // Desativa todos e ativa apenas o vídeo agendado específico
+      const { error: updateError } = await supabase
         .from('pedido_videos')
         .update({ 
           is_active: false,
           selected_for_display: false,
           updated_at: new Date().toISOString()
         })
-        .eq('pedido_id', pedidoId)
-        .eq('is_base_video', true); // Desativar vídeo base temporariamente
+        .eq('pedido_id', pedidoId);
 
-      if (deactivateBaseError) {
-        console.error(`❌ Erro ao desativar vídeo base do pedido ${pedidoId}:`, deactivateBaseError);
-      } else {
-        console.log(`⏸️ [VIDEO_STATUS] Vídeo base desativado temporariamente (Pedido: ${pedidoId})`);
+      if (updateError) {
+        console.error(`❌ Erro ao atualizar vídeos do pedido ${pedidoId}:`, updateError);
+        continue;
       }
 
-      // 2️⃣ SEGUNDO: Ativar o vídeo agendado
+      // Aguardar um momento para garantir que o UPDATE anterior foi concluído
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Agora ativar o vídeo agendado
       const { error: activateError } = await supabase
         .from('pedido_videos')
         .update({ 
@@ -132,32 +134,17 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq('video_id', videoId)
-        .eq('approval_status', 'approved')
-        .eq('is_base_video', false);
+        .eq('pedido_id', pedidoId)
+        .eq('approval_status', 'approved');
 
       if (activateError) {
         console.error(`❌ Erro ao ativar vídeo agendado ${videoId}:`, activateError);
         continue;
       }
 
-      // 3️⃣ TERCEIRO: Desativar outros vídeos agendados
-      const { error: deselectError } = await supabase
-        .from('pedido_videos')
-        .update({ 
-          selected_for_display: false,
-          is_active: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('pedido_id', pedidoId)
-        .eq('is_base_video', false)
-        .neq('video_id', videoId);
-
-      if (deselectError) {
-        console.error(`❌ Erro ao desmarcar outros vídeos agendados do pedido ${pedidoId}:`, deselectError);
-      } else {
-        activatedCount++;
-        console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} ativado, vídeo base pausado (Pedido: ${pedidoId})`);
-      }
+      // 3️⃣ SUCESSO: Vídeo agendado foi ativado
+      activatedCount++;
+      console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} ativado, vídeo base pausado (Pedido: ${pedidoId})`);
     }
 
     // ⏹️ DESATIVAR VÍDEOS AGENDADOS E REATIVAR VÍDEO BASE
