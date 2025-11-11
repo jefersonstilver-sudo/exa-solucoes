@@ -36,18 +36,6 @@ serve(async (req) => {
   }
 
   try {
-    // Validate cron secret for security
-    const cronSecret = req.headers.get('X-Cron-Secret');
-    const expectedSecret = Deno.env.get('CRON_SECRET');
-    
-    if (!expectedSecret || cronSecret !== expectedSecret) {
-      log.error('❌ [VIDEO_SYNC] Unauthorized: Invalid or missing cron secret');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized - Invalid cron secret' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -195,28 +183,29 @@ serve(async (req) => {
 
         log.info(`🔄 [VIDEO_SYNC] Switching video for pedido ${pedidoId}: from ${videoAtualmenteExibindo?.video_id || 'none'} to ${videoParaExibir}`);
 
-        // Desativar todos os vídeos selecionados
-        const { error: desativarError } = await supabase
-          .from('pedido_videos')
-          .update({ selected_for_display: false, updated_at: new Date().toISOString() })
-          .eq('pedido_id', pedidoId)
-          .eq('selected_for_display', true);
-
-        if (desativarError) {
-          log.error(`❌ [VIDEO_SYNC] Error deactivating videos for pedido ${pedidoId}:`, desativarError);
-          return { success: false, pedidoId, error: desativarError.message };
+        // Encontrar o pedido_video_id (slot ID) do vídeo que queremos ativar
+        const videoSlotParaAtivar = pedidoVideos?.find(v => v.video_id === videoParaExibir);
+        
+        if (!videoSlotParaAtivar) {
+          log.error(`❌ [VIDEO_SYNC] Video slot not found for video ${videoParaExibir} in pedido ${pedidoId}`);
+          return { success: false, pedidoId, error: 'Video slot not found' };
         }
 
-        // Ativar o vídeo correto
-        const { error: ativarError } = await supabase
-          .from('pedido_videos')
-          .update({ selected_for_display: true, updated_at: new Date().toISOString() })
-          .eq('pedido_id', pedidoId)
-          .eq('video_id', videoParaExibir);
+        // Usar RPC select_video_for_display para fazer a troca de forma segura
+        // Este RPC já lida com triggers e validações automaticamente
+        const { data: rpcResult, error: rpcError } = await supabase
+          .rpc('select_video_for_display', {
+            p_pedido_video_id: videoSlotParaAtivar.id
+          });
 
-        if (ativarError) {
-          log.error(`❌ [VIDEO_SYNC] Error activating video ${videoParaExibir} for pedido ${pedidoId}:`, ativarError);
-          return { success: false, pedidoId, error: ativarError.message };
+        if (rpcError) {
+          log.error(`❌ [VIDEO_SYNC] Error calling select_video_for_display RPC for pedido ${pedidoId}:`, rpcError);
+          return { success: false, pedidoId, error: rpcError.message };
+        }
+
+        if (!rpcResult) {
+          log.error(`❌ [VIDEO_SYNC] RPC returned false for pedido ${pedidoId}`);
+          return { success: false, pedidoId, error: 'RPC returned false' };
         }
 
         // Registrar no log
