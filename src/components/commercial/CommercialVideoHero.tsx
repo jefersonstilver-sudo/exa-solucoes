@@ -217,7 +217,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
-      {/* Elemento de vídeo - NÃO mudar key durante reprodução */}
+      {/* Elemento de vídeo */}
       <video
         ref={videoRef}
         key={currentVideo.id}
@@ -232,11 +232,11 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
       <VideoWatermark />
 
-      {/* Indicador de buffering */}
+      {/* Indicador de buffering - SEM contador de vídeos */}
       {isBuffering && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
-          <p className="text-white/80 text-sm">Carregando vídeo...</p>
+          <p className="text-white/80 text-sm">Carregando...</p>
         </div>
       )}
     </div>

@@ -79,31 +79,12 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         return;
       }
 
-      // 2. ✅ CORREÇÃO: Buscar apenas 1 vídeo por pedido (vídeo em exibição)
+      // 2. ✅ Buscar TODOS os vídeos em exibição (selected_for_display = true)
       const pedidoIds = pedidos.map(p => p.id);
-      const startTime = performance.now();
+      
+      console.log(`🔍 [VIDEOS] Buscando vídeos para ${pedidoIds.length} pedidos ativos`);
 
-      // Usar RPC para buscar apenas vídeos em exibição (1 por pedido)
-      const { data: currentVideosData, error: currentVideosError } = await supabase
-        .rpc('get_current_display_videos_batch', { 
-          p_pedido_ids: pedidoIds 
-        });
-
-      if (currentVideosError) {
-        setVideos([]);
-        return;
-      }
-
-      // Filtrar apenas vídeos válidos (com video_id)
-      const validVideos = currentVideosData?.filter((v: any) => v.video_id !== null) || [];
-
-      if (validVideos.length === 0) {
-        setVideos([]);
-        return;
-      }
-
-      // Buscar detalhes completos dos vídeos
-      const videoIds = validVideos.map((v: any) => v.video_id);
+      // Buscar TODOS os vídeos em exibição diretamente
       const { data: allVideosData, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -113,6 +94,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           is_base_video,
           selected_for_display,
           is_active,
+          approval_status,
           created_at,
           videos!inner (
             id,
@@ -121,13 +103,24 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
             duracao
           )
         `)
-        .in('video_id', videoIds)
-        .in('pedido_id', pedidoIds);
+        .in('pedido_id', pedidoIds)
+        .eq('is_active', true)
+        .eq('selected_for_display', true)
+        .eq('approval_status', 'approved');
 
-      if (videosError || !allVideosData || allVideosData.length === 0) {
+      if (videosError) {
+        console.error('❌ [VIDEOS] Erro ao buscar vídeos:', videosError);
         setVideos([]);
         return;
       }
+
+      if (!allVideosData || allVideosData.length === 0) {
+        console.log('⚠️ [VIDEOS] Nenhum vídeo em exibição encontrado');
+        setVideos([]);
+        return;
+      }
+
+      console.log(`✅ [VIDEOS] ${allVideosData.length} vídeos em exibição encontrados`);
 
       // 3. Extrair IDs de clientes
       const clientIds = [...new Set(pedidos.map(p => p.client_id))];
@@ -137,7 +130,7 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       const clientsMap = new Map(clientsData.data?.map(c => [c.id, c]) || []);
 
       // 6. Buscar schedule rules para vídeos (para identificar se são agendados)
-      // Buscar regras de programação para TODOS os vídeos
+      const videoIds = allVideosData.map(v => v.video_id);
       let scheduleRulesMap = new Map<string, ScheduleRule[]>();
       
       if (videoIds.length > 0) {
