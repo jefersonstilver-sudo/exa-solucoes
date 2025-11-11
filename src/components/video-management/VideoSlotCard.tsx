@@ -22,6 +22,7 @@ import { VideoSlotUpload } from './VideoSlotUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
+import { videoLogger } from '@/services/logger/VideoActionLogger';
 
 interface VideoSlot {
   id?: string;
@@ -338,21 +339,39 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  console.log('🎯 [SLOT_CARD] Botão "Definir como Principal" clicado:', {
+                  const clickData = {
                     slotId: slot.id,
                     slotPosition: slot.slot_position,
                     videoName: slot.video_data?.nome,
                     isBaseVideo: slot.is_base_video,
                     totalApprovedVideos
-                  });
+                  };
+                  
+                  console.log('🎯 [SLOT_CARD] Botão "Definir como Principal" clicado:', clickData);
+                  videoLogger.logUserClick('set_base_video_button', 'Clique no botão Definir como Principal', clickData);
+                  
                   if (slot.id && onSetBaseVideo) {
                     console.log('✅ [SLOT_CARD] Chamando onSetBaseVideo...');
-                    onSetBaseVideo(slot.id);
+                    videoLogger.logUserClick('set_base_video_calling', 'Chamando callback onSetBaseVideo', { slotId: slot.id });
+                    
+                    try {
+                      onSetBaseVideo(slot.id);
+                      videoLogger.logUserClick('set_base_video_callback_called', 'Callback executado', { slotId: slot.id });
+                    } catch (error: any) {
+                      console.error('❌ [SLOT_CARD] Erro ao chamar onSetBaseVideo:', error);
+                      videoLogger.logUserClick('set_base_video_callback_error', 'Erro ao executar callback', { 
+                        slotId: slot.id,
+                        error: error.message,
+                        stack: error.stack
+                      });
+                    }
                   } else {
-                    console.error('❌ [SLOT_CARD] Não foi possível chamar onSetBaseVideo:', {
+                    const errorData = {
                       hasSlotId: !!slot.id,
                       hasCallback: !!onSetBaseVideo
-                    });
+                    };
+                    console.error('❌ [SLOT_CARD] Não foi possível chamar onSetBaseVideo:', errorData);
+                    videoLogger.logUserClick('set_base_video_no_callback', 'Callback não disponível', errorData);
                   }
                 }}
                 className="text-xs px-3 py-1 h-7 border-gray-300 text-gray-600 hover:bg-gray-50"

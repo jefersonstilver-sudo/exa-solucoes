@@ -189,12 +189,31 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
     slotId,
     timestamp: now()
   });
+  
+  videoLogger.logRPC('set_base_video_init', 'Iniciando setBaseVideo', { 
+    slotId, 
+    timestamp: now() 
+  });
 
   try {
     // Chamar RPC única - responsabilidade única
     console.log('🔄 [SET_BASE_VIDEO] Chamando RPC set_base_video_enhanced...');
+    videoLogger.logRPC('set_base_video_rpc_call', 'Chamando RPC set_base_video_enhanced', { slotId });
+    
     const { data, error } = await supabase.rpc('set_base_video_enhanced', {
       p_pedido_video_id: slotId
+    });
+    
+    videoLogger.logRPC('set_base_video_rpc_response', 'Resposta da RPC recebida', { 
+      slotId, 
+      hasError: !!error,
+      hasData: !!data,
+      error: error ? {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      } : null
     });
 
     if (error) {
@@ -204,6 +223,15 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
         message: error.message,
         details: error.details,
         hint: error.hint
+      });
+      videoLogger.logRPC('set_base_video_rpc_error', 'Erro na chamada RPC', { 
+        slotId, 
+        error: {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        }
       });
       return {
         success: false,
@@ -223,6 +251,10 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
         error: result?.error,
         message: result?.message
       });
+      videoLogger.logRPC('set_base_video_rpc_failed', 'RPC retornou falha', { 
+        slotId, 
+        result
+      });
       return {
         success: false,
         timestamp: now(),
@@ -232,6 +264,13 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
 
     console.log('✅ [SET_BASE_VIDEO] Sucesso na troca de vídeo principal:', {
       result,
+      pedido_video_id: result.pedido_video_id,
+      video_id: result.video_id,
+      old_base_video_id: result.old_base_video_id
+    });
+    
+    videoLogger.logRPC('set_base_video_success', 'Vídeo definido como principal com sucesso', { 
+      slotId, 
       pedido_video_id: result.pedido_video_id,
       video_id: result.video_id,
       old_base_video_id: result.old_base_video_id
@@ -249,6 +288,11 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
     console.error('💥 [SET_BASE_VIDEO] Erro geral ao trocar vídeo principal:', {
       error: err,
       message: err.message,
+      stack: err.stack
+    });
+    videoLogger.logRPC('set_base_video_exception', 'Exceção geral ao trocar vídeo', { 
+      slotId, 
+      error: err.message,
       stack: err.stack
     });
     return {

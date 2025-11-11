@@ -13,6 +13,7 @@ import { useOrderVideoManagement } from '@/hooks/useOrderVideoManagement';
 import { VideoActivationSuccessPopup } from '@/components/video-management/VideoActivationSuccessPopup';
 import { VideoConflictModal } from '@/components/video-management/VideoConflictModal';
 import { setBaseVideo as setBaseVideoService, SetBaseVideoResult } from '@/services/videoBaseService';
+import { videoLogger } from '@/services/logger/VideoActionLogger';
 import { PurchaseInfoCard } from '@/components/order/PurchaseInfoCard';
 import { useEnhancedOrderData } from '@/hooks/useEnhancedOrderData';
 import { OrderHeader } from '@/components/order/OrderHeader';
@@ -239,23 +240,50 @@ const OrderDetails = () => {
 
   const handleSetBaseVideo = async (slotId: string) => {
     console.log('🎯 [ORDER_DETAILS] Definindo vídeo base:', slotId);
+    videoLogger.logRPC('set_base_video_start', 'Iniciando definição de vídeo base', { slotId });
     
-    toast.loading('Definindo como vídeo principal...', { id: 'set-base-video' });
+    try {
+      toast.loading('Definindo como vídeo principal...', { id: 'set-base-video' });
 
-    const result: SetBaseVideoResult = await setBaseVideoService(slotId);
-
-    if (result.success) {
-      toast.success('✅ Vídeo definido como principal!', { 
-        id: 'set-base-video',
-        description: 'Este vídeo será exibido quando não houver outros agendados.'
-      });
+      videoLogger.logRPC('set_base_video_calling_service', 'Chamando setBaseVideoService', { slotId });
+      const result: SetBaseVideoResult = await setBaseVideoService(slotId);
       
-      // Recarregar slots para atualizar a UI
-      await refreshSlots();
-    } else {
+      videoLogger.logRPC('set_base_video_service_response', 'Resposta do service', { 
+        slotId, 
+        success: result.success, 
+        message: result.message 
+      });
+
+      if (result.success) {
+        toast.success('✅ Vídeo definido como principal!', { 
+          id: 'set-base-video',
+          description: 'Este vídeo será exibido quando não houver outros agendados.'
+        });
+        
+        videoLogger.logRPC('set_base_video_refreshing', 'Recarregando slots', { slotId });
+        // Recarregar slots para atualizar a UI
+        await refreshSlots();
+        videoLogger.logRPC('set_base_video_success', 'Vídeo definido com sucesso', { slotId });
+      } else {
+        videoLogger.logRPC('set_base_video_failed', 'Falha ao definir vídeo', { 
+          slotId, 
+          message: result.message 
+        });
+        toast.error('❌ Erro ao definir vídeo principal', { 
+          id: 'set-base-video',
+          description: result.message
+        });
+      }
+    } catch (error: any) {
+      videoLogger.logRPC('set_base_video_exception', 'Exceção ao definir vídeo base', { 
+        slotId, 
+        error: error.message,
+        stack: error.stack 
+      });
+      console.error('💥 [ORDER_DETAILS] Exceção ao definir vídeo base:', error);
       toast.error('❌ Erro ao definir vídeo principal', { 
         id: 'set-base-video',
-        description: result.message
+        description: error.message || 'Erro inesperado'
       });
     }
   };
