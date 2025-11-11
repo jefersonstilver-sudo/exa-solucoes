@@ -98,27 +98,15 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       });
 
       try {
-        // Buscar vídeos ativos no banco
+        // ✅ Query corrigida: Buscar apenas pedido_videos + pedidos (SEM campaign_video_schedules)
         const { data: currentVideos, error } = await supabase
           .from('pedido_videos')
           .select(`
             id,
             video_id,
-            is_active,
-            selected_for_display,
-            approval_status,
-            is_base_video,
-            pedidos!inner(building_id),
-            campaign_video_schedules(
-              id,
-              is_active,
-              campaign_schedule_rules(
-                id,
-                days_of_week,
-                start_time,
-                end_time,
-                is_active
-              )
+            pedidos!inner(
+              building_id,
+              lista_predios
             )
           `)
           .eq('pedidos.building_id', buildingId)
