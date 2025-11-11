@@ -237,7 +237,26 @@ const OrderDetails = () => {
   };
 
   const handleSetBaseVideo = async (slotId: string) => {
-    await setBaseVideo(slotId);
+    console.log('🎯 [ORDER_DETAILS] Definindo vídeo base:', slotId);
+    
+    toast.loading('Definindo como vídeo principal...', { id: 'set-base-video' });
+
+    const result = await setBaseVideo(slotId);
+
+    if (result.success) {
+      toast.success('✅ Vídeo definido como principal!', { 
+        id: 'set-base-video',
+        description: 'Este vídeo será exibido quando não houver outros agendados.'
+      });
+      
+      // Recarregar slots para atualizar a UI
+      await refreshSlots();
+    } else {
+      toast.error('❌ Erro ao definir vídeo principal', { 
+        id: 'set-base-video',
+        description: result.message
+      });
+    }
   };
 
   // Enquanto verifica autenticação, não mostrar nada

@@ -185,159 +185,51 @@ const fallbackDirectUpdate = async (slotId: string): Promise<SetBaseVideoResult>
 /* -------------------------------------------------------------------------- */
 
 export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> => {
-  videoLogger.logProcessStart("SET_BASE_VIDEO", { slotId });
-  videoLogger.setContext({ slotId });
+  console.log('⭐ [SET_BASE_VIDEO] Iniciando:', slotId);
 
   try {
-    console.log("⭐ [VIDEO_BASE] Definindo vídeo base:", slotId);
-
-    // Buscar dados essenciais do pedido/slot/video
-    const { data: pvData, error: pvError } = await supabase
-      .from("pedido_videos")
-      .select(
-        `
-        pedido_id,
-        video_id,
-        pedidos!inner ( lista_predios ),
-        videos!inner ( nome, url )
-      `,
-      )
-      .eq("id", slotId)
-      .maybeSingle();
-
-    if (pvError) {
-      videoLogger.log("error", "FETCH_PV_ERR", "Erro ao buscar dados do pedido_videos", { pvError });
-    }
-
-    const listaPredios = pvData?.pedidos?.lista_predios || [];
-    const pedidoId = pvData?.pedido_id;
-    const videoNome = pvData?.videos?.nome || null;
-    const videoUrl = pvData?.videos?.url || null;
-
-    const tituloFromUrl = extractTitulo(videoUrl);
-    const tituloFromNome = extractTitulo(videoNome);
-    const tituloSemExtensao = tituloFromUrl || tituloFromNome;
-
-    console.log("🏢 [VIDEO_BASE] Lista de prédios:", listaPredios);
-    console.log("📦 [VIDEO_BASE] Pedido ID:", pedidoId);
-    console.log("🎬 [VIDEO_BASE] Nome do vídeo:", videoNome);
-    console.log("🔗 [VIDEO_BASE] URL do vídeo:", videoUrl);
-    console.log("📝 [VIDEO_BASE] Título escolhido (prioridade URL):", tituloSemExtensao);
-
-    // 🔄 SINCRONIZAÇÃO: Desativar TODOS os slots primeiro, depois ativar apenas o selecionado
-    console.log("🔄 [VIDEO_BASE] Iniciando sincronização de status ativo...");
-    
-    if (listaPredios.length > 0 && pedidoId) {
-      // 1️⃣ Buscar todos os slots do pedido
-      const { data: allSlots, error: slotsError } = await fetchAllPedidoSlots(pedidoId);
-      
-      if (!slotsError && allSlots && allSlots.length > 0) {
-        console.log(`🚫 [VIDEO_BASE] Desativando ${allSlots.length} slot(s)...`);
-        
-        // 2️⃣ DESATIVAR TODOS os slots (síncrono)
-        for (const slot of allSlots) {
-          const slotTituloUrl = extractTitulo(slot.videos?.url);
-          const slotTituloNome = extractTitulo(slot.videos?.nome);
-          const slotTitulo = slotTituloUrl || slotTituloNome;
-          
-          if (slotTitulo) {
-            console.log(`  🚫 Desativando slot #${slot.slot_position}: ${slotTitulo}`);
-            for (const buildingUuid of listaPredios) {
-              await safeInvokeNotifyActive(buildingUuid, slotTitulo, false); // ❌ DESATIVAR
-            }
-          }
-        }
-        
-        console.log("✅ [VIDEO_BASE] Todos os slots desativados!");
-      }
-      
-      // 3️⃣ ATIVAR apenas o slot selecionado
-      if (tituloSemExtensao) {
-        console.log(`✅ [VIDEO_BASE] Ativando slot selecionado: ${tituloSemExtensao}`);
-        for (const buildingUuid of listaPredios) {
-          await safeInvokeNotifyActive(buildingUuid, tituloSemExtensao, true); // ✅ ATIVAR
-        }
-        console.log("🎯 [VIDEO_BASE] Sincronização concluída!");
-      }
-    } else {
-      console.warn("[VIDEO_BASE] Dados insuficientes para sincronização", {
-        temPredios: listaPredios.length > 0,
-        temPedidoId: !!pedidoId,
-        temTitulo: !!tituloSemExtensao,
-      });
-    }
-
-    // Tentar RPC principal
-    videoLogger.log("debug", "RPC_CALL", "Calling set_base_video_enhanced", { slotId });
-    console.log("📞 [VIDEO_BASE] Chamando RPC set_base_video_enhanced:", { slotId });
-
-    const { data, error } = await supabase.rpc("set_base_video_enhanced", {
-      p_pedido_video_id: slotId,
+    // Chamar RPC única - responsabilidade única
+    const { data, error } = await supabase.rpc('set_base_video_enhanced', {
+      p_pedido_video_id: slotId
     });
 
-    videoLogger.logRPC("set_base_video_enhanced", { slotId }, data, error);
-
     if (error) {
-      videoLogger.log("error", "RPC_ERR_ENHANCED", "Erro RPC set_base_video_enhanced", { error });
-
-      // tentar RPC legacy como compatibilidade
-      try {
-        const { data: legacyData, error: legacyError } = await supabase.rpc("set_base_video", {
-          p_pedido_video_id: slotId,
-        });
-
-        if (legacyError) {
-          videoLogger.log("error", "RPC_ERR_LEGACY", "Erro RPC legacy set_base_video", { legacyError });
-          // partir para fallback direto
-          return await fallbackDirectUpdate(slotId);
-        }
-
-        if (legacyData === true) {
-          videoLogger.log("info", "RPC_LEGACY_OK", "Vídeo definido via legacy RPC", { slotId });
-          videoLogger.logProcessEnd("SET_BASE_VIDEO", true);
-          videoLogger.clearContext();
-          return {
-            success: true,
-            timestamp: now(),
-            message: "Vídeo definido como principal (fallback legacy)",
-            pedido_video_id: slotId,
-            video_id: null,
-          };
-        }
-
-        // legacy retornou falsy -> fallback direto
-        return await fallbackDirectUpdate(slotId);
-      } catch (legacyCatchErr) {
-        videoLogger.log("error", "RPC_LEGACY_THROW", "Legacy RPC throw", { legacyCatchErr });
-        return await fallbackDirectUpdate(slotId);
-      }
+      console.error('❌ [SET_BASE_VIDEO] Erro na RPC:', error);
+      return {
+        success: false,
+        timestamp: now(),
+        message: error.message
+      };
     }
 
     const result = data as any;
-    videoLogger.log("debug", "RPC_RESULT", "Resultado RPC", { result });
 
-    if (!result || !result.success) {
-      videoLogger.log("error", "RPC_LOGIC_FAIL", "Falha lógica na RPC", { result });
-      // tentar fallback direto
-      return await fallbackDirectUpdate(slotId);
+    if (!result?.success) {
+      console.error('❌ [SET_BASE_VIDEO] RPC retornou falha:', result);
+      return {
+        success: false,
+        timestamp: now(),
+        message: result?.error || 'Failed to set base video'
+      };
     }
 
-    videoLogger.logProcessEnd("SET_BASE_VIDEO", true);
-    videoLogger.clearContext();
-
+    console.log('✅ [SET_BASE_VIDEO] Sucesso:', result);
+    
     return {
       success: true,
       timestamp: now(),
-      pedido_video_id: result?.pedido_video_id || slotId,
-      video_id: result?.video_id || null,
-      message: "Vídeo definido como principal",
+      message: result.message,
+      pedido_video_id: result.pedido_video_id,
+      video_id: result.video_id
     };
-  } catch (err) {
-    videoLogger.log("error", "SET_BASE_VIDEO_THROW", "Erro geral", { err });
-    videoLogger.logProcessEnd("SET_BASE_VIDEO", false, null, err);
-    videoLogger.clearContext();
 
-    return { success: false, timestamp: now(), message: "Erro geral: " + (err?.message || "erro desconhecido") };
+  } catch (err: any) {
+    console.error('💥 [SET_BASE_VIDEO] Erro geral:', err);
+    return {
+      success: false,
+      timestamp: now(),
+      message: err.message || 'Unknown error'
+    };
   }
 };
 
