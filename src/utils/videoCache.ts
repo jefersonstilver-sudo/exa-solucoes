@@ -40,29 +40,18 @@ export class VideoCache {
     if (this.db) return;
 
     return new Promise((resolve, reject) => {
-      console.log('🗄️ [VIDEO CACHE] Inicializando IndexedDB...');
-      
       const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-      request.onerror = () => {
-        console.error('❌ [VIDEO CACHE] Erro ao abrir IndexedDB:', request.error);
-        reject(request.error);
-      };
-
+      request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('✅ [VIDEO CACHE] IndexedDB inicializado com sucesso');
         resolve();
       };
-
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: 'videoId' });
           store.createIndex('lastAccessedAt', 'lastAccessedAt', { unique: false });
           store.createIndex('cachedAt', 'cachedAt', { unique: false });
-          console.log('🏗️ [VIDEO CACHE] Object store criado');
         }
       };
     });
@@ -77,11 +66,8 @@ export class VideoCache {
 
       // Verificar se já está em cache
       if (await this.hasCachedVideo(videoId)) {
-        console.log(`✅ [VIDEO CACHE] Vídeo ${videoId} já está em cache`);
         return true;
       }
-
-      console.log(`📥 [VIDEO CACHE] Baixando vídeo ${videoId} para cache...`);
       
       // Baixar o vídeo
       const response = await fetch(videoUrl);
@@ -91,8 +77,6 @@ export class VideoCache {
 
       const blob = await response.blob();
       const size = blob.size;
-
-      console.log(`💾 [VIDEO CACHE] Vídeo baixado: ${(size / 1024 / 1024).toFixed(2)}MB`);
 
       // Verificar espaço disponível e limpar se necessário
       await this.ensureSpaceAvailable(size);
@@ -108,12 +92,9 @@ export class VideoCache {
       };
 
       await this.saveToStore(cachedVideo);
-      
-      console.log(`✅ [VIDEO CACHE] Vídeo ${videoId} armazenado com sucesso`);
       return true;
 
     } catch (error) {
-      console.error(`❌ [VIDEO CACHE] Erro ao cachear vídeo ${videoId}:`, error);
       return false;
     }
   }
@@ -124,25 +105,17 @@ export class VideoCache {
   async getCachedVideo(videoId: string): Promise<string | null> {
     try {
       await this.init();
-      
       const cachedVideo = await this.getFromStore(videoId);
-      
-      if (!cachedVideo) {
-        return null;
-      }
+      if (!cachedVideo) return null;
 
       // Atualizar lastAccessedAt
       cachedVideo.lastAccessedAt = Date.now();
       await this.saveToStore(cachedVideo);
 
       // Criar URL do blob
-      const blobUrl = URL.createObjectURL(cachedVideo.blob);
-      console.log(`✅ [VIDEO CACHE] Vídeo ${videoId} recuperado do cache`);
-      
-      return blobUrl;
+      return URL.createObjectURL(cachedVideo.blob);
 
     } catch (error) {
-      console.error(`❌ [VIDEO CACHE] Erro ao recuperar vídeo ${videoId}:`, error);
       return null;
     }
   }
@@ -156,7 +129,6 @@ export class VideoCache {
       const video = await this.getFromStore(videoId);
       return video !== null;
     } catch (error) {
-      console.error(`❌ [VIDEO CACHE] Erro ao verificar cache:`, error);
       return false;
     }
   }
@@ -169,14 +141,11 @@ export class VideoCache {
     
     // Verificar limite de vídeos
     if (stats.videoCount >= MAX_VIDEO_COUNT) {
-      console.log(`🗑️ [VIDEO CACHE] Limite de ${MAX_VIDEO_COUNT} vídeos atingido, removendo mais antigo...`);
       await this.removeOldestVideo();
     }
 
     // Verificar limite de tamanho
     if (stats.totalSize + requiredSize > MAX_CACHE_SIZE) {
-      console.log(`🗑️ [VIDEO CACHE] Limite de tamanho atingido, liberando espaço...`);
-      
       while (stats.totalSize + requiredSize > MAX_CACHE_SIZE) {
         await this.removeOldestVideo();
         const newStats = await this.getCacheStats();
@@ -197,19 +166,14 @@ export class VideoCache {
       const transaction = this.db.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
       const index = store.index('lastAccessedAt');
-      
       const request = index.openCursor();
 
       request.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest).result;
-        if (cursor) {
-          console.log(`🗑️ [VIDEO CACHE] Removendo vídeo ${cursor.value.videoId}`);
-          cursor.delete();
-        }
+        if (cursor) cursor.delete();
       };
-
     } catch (error) {
-      console.error('❌ [VIDEO CACHE] Erro ao remover vídeo mais antigo:', error);
+      // Silent fail
     }
   }
 
@@ -230,8 +194,7 @@ export class VideoCache {
 
         request.onsuccess = () => {
           const videos: CachedVideo[] = request.result;
-          
-          const stats: CacheStats = {
+          resolve({
             totalSize: videos.reduce((sum, v) => sum + v.size, 0),
             videoCount: videos.length,
             videos: videos.map(v => ({
@@ -240,16 +203,13 @@ export class VideoCache {
               cachedAt: new Date(v.cachedAt),
               lastAccessedAt: new Date(v.lastAccessedAt)
             }))
-          };
-
-          resolve(stats);
+          });
         };
 
         request.onerror = () => reject(request.error);
       });
 
     } catch (error) {
-      console.error('❌ [VIDEO CACHE] Erro ao obter estatísticas:', error);
       return { totalSize: 0, videoCount: 0, videos: [] };
     }
   }
@@ -265,10 +225,8 @@ export class VideoCache {
       const transaction = this.db.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
       await store.clear();
-
-      console.log('🗑️ [VIDEO CACHE] Cache limpo completamente');
     } catch (error) {
-      console.error('❌ [VIDEO CACHE] Erro ao limpar cache:', error);
+      // Silent fail
     }
   }
 

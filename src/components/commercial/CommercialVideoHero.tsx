@@ -21,116 +21,80 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   const [isReady, setIsReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
-  const hasEndedRef = useRef(false);
-  const isTransitioningRef = useRef(false);
+  const transitionLockRef = useRef(false);
 
   const currentVideo = videos[currentIndex];
   const nextVideoIndex = (currentIndex + 1) % videos.length;
   const nextVideo = videos[nextVideoIndex];
 
-  // 🔄 Reset quando playlist mudar
+  // Reset quando playlist mudar
   useEffect(() => {
-    console.log('🎬 [VIDEO HERO] Playlist:', videos.length, 'vídeos');
     if (videos.length > 0 && currentIndex >= videos.length) {
       setCurrentIndex(0);
     }
-  }, [videos.length]);
+  }, [videos.length, currentIndex]);
 
+  // Gerenciar vídeo atual
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !currentVideo) return;
 
-    hasEndedRef.current = false;
-    isTransitioningRef.current = false;
+    transitionLockRef.current = false;
     setIsReady(false);
 
-    console.log(`▶️ [VIDEO HERO] Carregando vídeo ${currentIndex + 1}/${videos.length}:`, currentVideo.video_nome);
-
-    const handleLoadedData = () => {
-      console.log('✅ [VIDEO HERO] Vídeo carregado');
+    // Handler unificado para carregar e reproduzir
+    const startPlayback = () => {
       setIsReady(true);
-      // Forçar play após carregar
-      video.play()
-        .then(() => console.log('▶️ [VIDEO HERO] Reprodução iniciada automaticamente'))
-        .catch(err => console.warn('⚠️ [VIDEO HERO] Erro ao iniciar:', err));
+      video.play().catch(() => {
+        // Tentar novamente após delay
+        setTimeout(() => video.play().catch(() => {}), 100);
+      });
     };
 
-    const handleCanPlay = () => {
-      console.log('🎵 [VIDEO HERO] Pode reproduzir');
-      video.play()
-        .then(() => console.log('▶️ [VIDEO HERO] Play executado'))
-        .catch(err => console.warn('⚠️ [VIDEO HERO] Erro no play:', err));
-    };
-
-    const handlePlaying = () => {
-      console.log('🎬 [VIDEO HERO] Reproduzindo');
-      setIsReady(true);
-    };
-
-    const handleTimeUpdate = () => {
-      if (!video || isTransitioningRef.current) return;
-      
+    // Handler para pré-carregar próximo
+    const preloadNext = () => {
       const timeRemaining = video.duration - video.currentTime;
-      
-      // Pre-carregar próximo vídeo quando faltar 5 segundos
       if (timeRemaining <= 5 && timeRemaining > 4.5 && nextVideoRef.current) {
-        console.log('⏭️ [VIDEO HERO] Pre-carregando próximo vídeo');
         nextVideoRef.current.load();
       }
     };
 
-    const handleEnded = () => {
-      if (hasEndedRef.current || isTransitioningRef.current) {
-        console.log('⚠️ [VIDEO HERO] Evento "ended" duplicado ignorado');
-        return;
-      }
-
-      hasEndedRef.current = true;
-      isTransitioningRef.current = true;
+    // Handler para transição
+    const handleTransition = () => {
+      if (transitionLockRef.current) return;
+      transitionLockRef.current = true;
       
-      console.log('🔄 [VIDEO HERO] Vídeo finalizado, avançando para o próximo...');
-      
-      // Aguardar frame antes de trocar para evitar flicker
       requestAnimationFrame(() => {
         setCurrentIndex(nextVideoIndex);
-        
-        if (nextVideoIndex === 0) {
-          console.log('🔄 [VIDEO HERO] Playlist completa - ciclo reiniciado');
-        }
       });
     };
 
-    const handleError = (e: Event) => {
-      console.error('❌ [VIDEO HERO] Erro ao carregar vídeo:', e);
-      setIsReady(false);
-      // Tentar próximo vídeo após erro
-      setTimeout(() => {
-        if (!isTransitioningRef.current) {
-          console.log('⏭️ [VIDEO HERO] Pulando para próximo vídeo devido a erro');
-          setCurrentIndex(nextVideoIndex);
-        }
-      }, 1000);
+    // Handler de erro
+    const handleError = () => {
+      if (!transitionLockRef.current) {
+        setTimeout(() => setCurrentIndex(nextVideoIndex), 1000);
+      }
     };
 
-    video.addEventListener('loadeddata', handleLoadedData);
-    video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('playing', handlePlaying);
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('ended', handleEnded);
+    // Adicionar listeners
+    video.addEventListener('loadeddata', startPlayback);
+    video.addEventListener('canplay', startPlayback);
+    video.addEventListener('timeupdate', preloadNext);
+    video.addEventListener('ended', handleTransition);
     video.addEventListener('error', handleError);
 
-    // Forçar load
+    // Iniciar carregamento
     video.load();
 
+    // Cleanup
     return () => {
-      video.removeEventListener('loadeddata', handleLoadedData);
-      video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('playing', handlePlaying);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('loadeddata', startPlayback);
+      video.removeEventListener('canplay', startPlayback);
+      video.removeEventListener('timeupdate', preloadNext);
+      video.removeEventListener('ended', handleTransition);
       video.removeEventListener('error', handleError);
     };
-  }, [currentIndex, currentVideo, nextVideoIndex, videos.length]);
+  }, [currentIndex, currentVideo, nextVideoIndex]);
 
   if (videos.length === 0) {
     return (
@@ -145,23 +109,20 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       className={cn("relative w-full h-full", className)}
       style={{
         userSelect: 'none',
-        WebkitUserSelect: 'none',
-        msUserSelect: 'none',
-        MozUserSelect: 'none',
-        WebkitTouchCallout: 'none'
+        WebkitUserSelect: 'none'
       }}
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
-      {/* Container principal do vídeo */}
+      {/* Container principal */}
       <div className="absolute inset-0 w-full h-full bg-black rounded-lg overflow-hidden">
         {/* Vídeo principal */}
         <video
-          key={`video-${currentIndex}-${currentVideo.id}`}
+          key={`${currentVideo.id}-${currentIndex}`}
           ref={videoRef}
           src={currentVideo.video_url}
           className={cn(
-            "w-full h-full object-cover transition-opacity duration-200",
+            "w-full h-full object-cover transition-opacity duration-300",
             isReady ? "opacity-100" : "opacity-0"
           )}
           autoPlay
@@ -171,37 +132,33 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
           controlsList="nodownload noplaybackrate nofullscreen"
           disablePictureInPicture
           disableRemotePlayback
-          style={{ 
-            pointerEvents: 'none',
-            userSelect: 'none'
-          }}
+          style={{ pointerEvents: 'none' }}
           onContextMenu={(e) => e.preventDefault()}
         />
 
-        {/* Loading placeholder */}
+        {/* Loading */}
         {!isReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-            <div className="text-white text-sm">Carregando...</div>
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <div className="animate-pulse text-white/60 text-sm">Carregando...</div>
           </div>
         )}
 
-        {/* MARCA D'ÁGUA */}
+        {/* Marca d'água */}
         <VideoWatermark />
         
-        {/* Proteção invisível */}
+        {/* Proteção */}
         <div 
           className="absolute inset-0 z-[100]" 
           style={{ 
             background: 'transparent',
-            pointerEvents: 'auto',
-            cursor: 'default'
+            pointerEvents: 'auto'
           }}
           onContextMenu={(e) => e.preventDefault()}
           onMouseDown={(e) => e.button === 2 && e.preventDefault()}
         />
       </div>
 
-      {/* Pre-load próximo vídeo (invisível) */}
+      {/* Pre-load próximo */}
       {nextVideo && (
         <video
           ref={nextVideoRef}
