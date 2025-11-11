@@ -97,11 +97,20 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
   };
 
   // Calcular se todas as regras são válidas em tempo real
+  // Permitir salvar se:
+  // - Não há regras (array vazio = remover agendamento)
+  // - OU todas as regras existentes são válidas
   const canSave = useMemo(() => {
-    return scheduleRules.length > 0 && scheduleRules.every(rule => isRuleValid(rule));
+    return scheduleRules.length === 0 || scheduleRules.every(rule => isRuleValid(rule));
   }, [scheduleRules]);
 
   const validateRules = (): boolean => {
+    // Se não há regras, é válido (permitir remover agendamento)
+    if (scheduleRules.length === 0) {
+      return true;
+    }
+
+    // Se há regras, todas devem ser válidas
     const invalidRules = scheduleRules.filter((rule) => !isRuleValid(rule));
 
     if (invalidRules.length > 0) {
@@ -118,10 +127,22 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
     setSaving(true);
     try {
       console.log('💾 [SCHEDULE_MODAL] Salvando regras:', scheduleRules);
+      
+      // Mensagem diferenciada se estiver removendo todas as regras
+      if (scheduleRules.length === 0) {
+        console.log('🗑️ [SCHEDULE_MODAL] Removendo todas as regras de agendamento');
+      }
+      
       await onSave(scheduleRules);
       
       console.log('✅ [SCHEDULE_MODAL] Agendamento salvo com sucesso');
-      toast.success('Agendamento salvo com sucesso!');
+      
+      // Mensagem apropriada baseada na ação
+      if (scheduleRules.length === 0) {
+        toast.success('Agendamento removido com sucesso!');
+      } else {
+        toast.success('Agendamento salvo com sucesso!');
+      }
       
       // Enviar webhook após salvar com sucesso (só se tiver orderId)
       if (orderId) {
