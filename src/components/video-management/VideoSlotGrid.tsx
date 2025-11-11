@@ -32,7 +32,6 @@ interface VideoSlotGridProps {
   onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => void;
   onActivate: (slotId: string) => void;
   onRemove: (slotId: string) => void;
-  onSelectForDisplay: (slotId: string) => void;
   onDownload?: (videoUrl: string, fileName: string) => void;
   onSetBaseVideo?: (slotId: string) => void;
   onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
@@ -46,7 +45,6 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   onUpload,
   onActivate,
   onRemove,
-  onSelectForDisplay,
   onDownload,
   onSetBaseVideo,
   onScheduleVideo,
@@ -85,7 +83,6 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
             onUpload={onUpload}
             onActivate={onActivate}
             onRemove={onRemove}
-            onSelectForDisplay={onSelectForDisplay}
             onDownload={onDownload}
             onSetBaseVideo={onSetBaseVideo}
             onScheduleVideo={onScheduleVideo}

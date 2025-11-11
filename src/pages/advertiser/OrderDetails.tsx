@@ -443,7 +443,6 @@ const OrderDetails = () => {
               onUpload={handleVideoUpload}
               onActivate={(slotId) => handleVideoAction(() => activateVideo(slotId))}
               onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
-              onSelectForDisplay={(slotId) => handleVideoAction(() => selectVideoForDisplay(slotId))}
               onDownload={handleVideoDownload}
               onSetBaseVideo={(slotId) => handleVideoAction(() => handleSetBaseVideo(slotId))}
               onRefreshSlots={refreshSlots}

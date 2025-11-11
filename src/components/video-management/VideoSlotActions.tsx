@@ -5,9 +5,6 @@ import {
   Trash2, 
   Download, 
   Calendar,
-  Lock,
-  AlertTriangle,
-  Check,
   Info
 } from 'lucide-react';
 import {
@@ -19,10 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from 'sonner';
 import { VideoScheduleDetailsModal } from './VideoScheduleDetailsModal';
 import { SlotVideoScheduleModal } from './SlotVideoScheduleModal';
-import { videoLogger } from '@/services/logger/VideoActionLogger';
 
 interface VideoSlot {
   id?: string;
@@ -56,86 +51,27 @@ interface VideoSlotActionsProps {
   slot: VideoSlot;
   onActivate: (slotId: string) => void;
   onRemove: (slotId: string) => void;
-  onSelectForDisplay: (slotId: string) => void;
   onDownload: (videoUrl: string, fileName: string) => void;
   onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
   totalApprovedVideos: number;
-  orderId?: string; // Novo: ID do pedido para o webhook
+  orderId?: string;
 }
 
 export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
   slot,
   onActivate,
   onRemove,
-  onSelectForDisplay,
   onDownload,
   onScheduleVideo,
   totalApprovedVideos,
   orderId
 }) => {
-  const [showApprovalAlert, setShowApprovalAlert] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showSlotScheduleModal, setShowSlotScheduleModal] = useState(false);
 
   if (!slot.video_data) return null;
 
   const isApproved = slot.approval_status === 'approved';
-  const isPending = slot.approval_status === 'pending';
-  const isRejected = slot.approval_status === 'rejected';
-
-  const handleSelectForDisplay = () => {
-    // 📘 LOG: Capturar clique do usuário
-    videoLogger.logUserClick(slot.id || 'unknown', slot.video_data?.nome || 'unknown', {
-      slotPosition: slot.slot_position,
-      approvalStatus: slot.approval_status,
-      isBaseVideo: slot.is_base_video,
-      selectedForDisplay: slot.selected_for_display,
-      orderId
-    });
-
-    if (!isApproved) {
-      videoLogger.log('warn', 'UI_USER_ACTION', 'Video not approved - blocking action', {
-        slotId: slot.id,
-        approvalStatus: slot.approval_status
-      });
-      setShowApprovalAlert(true);
-      return;
-    }
-    
-    if (slot.id) {
-      videoLogger.log('info', 'UI_USER_ACTION', 'Calling onSelectForDisplay', {
-        slotId: slot.id,
-        videoTitle: slot.video_data?.nome
-      });
-      onSelectForDisplay(slot.id);
-    }
-  };
-
-  const getApprovalAlertContent = () => {
-    if (isPending) {
-      return {
-        title: "Vídeo Aguardando Aprovação",
-        description: "Este vídeo ainda não foi aprovado pelos administradores. Apenas vídeos aprovados podem ser selecionados para exibição nos painéis.",
-        icon: <AlertTriangle className="h-6 w-6 text-yellow-500" />
-      };
-    }
-    
-    if (isRejected) {
-      return {
-        title: "Vídeo Rejeitado",
-        description: `Este vídeo foi rejeitado pelos administradores. ${slot.rejection_reason ? `Motivo: ${slot.rejection_reason}` : ''} Apenas vídeos aprovados podem ser selecionados para exibição.`,
-        icon: <AlertTriangle className="h-6 w-6 text-red-500" />
-      };
-    }
-
-    return {
-      title: "Vídeo Não Aprovado",
-      description: "Apenas vídeos aprovados podem ser selecionados para exibição nos painéis.",
-      icon: <Lock className="h-6 w-6 text-gray-500" />
-    };
-  };
-
-  const alertContent = getApprovalAlertContent();
 
   const handleScheduleVideo = async (scheduleRules: any[]) => {
     if (onScheduleVideo && slot.video_data?.id) {
@@ -157,23 +93,6 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
         >
           <Download className="h-4 w-4" />
         </Button>
-
-        {/* Exibir nos Painéis - apenas para vídeos aprovados */}
-        {isApproved && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSelectForDisplay}
-            className={`${
-              slot.selected_for_display 
-                ? 'border-green-600 text-green-600 bg-green-50 hover:bg-green-100' 
-                : 'border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white'
-            } p-2`}
-            title={slot.selected_for_display ? "Vídeo em exibição" : "Exibir nos painéis"}
-          >
-            {slot.selected_for_display ? <Check className="h-4 w-4" /> : <Info className="h-4 w-4" />}
-          </Button>
-        )}
 
         {/* Agendar Vídeo - apenas para vídeos aprovados, quando há 2+ vídeos e NÃO é vídeo principal */}
         {isApproved && totalApprovedVideos >= 2 && !slot.is_base_video && (
@@ -237,26 +156,6 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
-
-      {/* Alert Dialog para vídeos não aprovados */}
-      <AlertDialog open={showApprovalAlert} onOpenChange={setShowApprovalAlert}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <div className="flex items-center space-x-3">
-              {alertContent.icon}
-              <AlertDialogTitle>{alertContent.title}</AlertDialogTitle>
-            </div>
-            <AlertDialogDescription className="text-left">
-              {alertContent.description}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setShowApprovalAlert(false)}>
-              Entendi
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Modal de Detalhes da Programação */}
       <VideoScheduleDetailsModal

@@ -20,7 +20,6 @@ interface VideoManagementCardProps {
   onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => Promise<void>;
   onActivate: (slotId: string) => Promise<void>;
   onRemove: (slotId: string) => Promise<void>;
-  onSelectForDisplay: (slotId: string) => Promise<void>;
   onDownload: (videoUrl: string, fileName: string) => void;
   onSetBaseVideo: (slotId: string) => Promise<void>;
   onRefreshSlots?: () => Promise<void>;
@@ -34,7 +33,6 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   onUpload,
   onActivate,
   onRemove,
-  onSelectForDisplay,
   onDownload,
   onSetBaseVideo,
   onRefreshSlots,
@@ -104,7 +102,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
         <CardContent className="space-y-4">
           
           {/* Grid de vídeos - só mostra se upload for permitido */}
-          {uploadAllowed ? <VideoSlotGrid videoSlots={videoSlots} uploading={uploading} uploadProgress={uploadProgress} onUpload={onUpload} onActivate={onActivate} onRemove={onRemove} onSelectForDisplay={onSelectForDisplay} onDownload={onDownload} onSetBaseVideo={onSetBaseVideo} onScheduleVideo={handleScheduleVideo} orderId={orderId} /> : <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          {uploadAllowed ? <VideoSlotGrid videoSlots={videoSlots} uploading={uploading} uploadProgress={uploadProgress} onUpload={onUpload} onActivate={onActivate} onRemove={onRemove} onDownload={onDownload} onSetBaseVideo={onSetBaseVideo} onScheduleVideo={handleScheduleVideo} orderId={orderId} /> : <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
               <Video className="h-12 w-12 mx-auto mb-4 text-gray-400" />
               <p className="text-gray-600 font-medium">Upload de vídeos bloqueado</p>
               <p className="text-sm text-gray-500 mt-2">

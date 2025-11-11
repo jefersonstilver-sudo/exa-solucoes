@@ -58,7 +58,6 @@ interface VideoSlotCardProps {
   onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: any[]) => void;
   onActivate: (slotId: string) => void;
   onRemove: (slotId: string) => void;
-  onSelectForDisplay: (slotId: string) => void;
   onDownload?: (videoUrl: string, fileName: string) => void;
   onSetBaseVideo?: (slotId: string) => void;
   onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
@@ -74,7 +73,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   onUpload,
   onActivate,
   onRemove,
-  onSelectForDisplay,
   onDownload,
   onSetBaseVideo,
   onScheduleVideo,
@@ -450,7 +448,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               slot={slot}
               onActivate={onActivate}
               onRemove={onRemove}
-              onSelectForDisplay={onSelectForDisplay}
               onDownload={handleDownload}
               onScheduleVideo={onScheduleVideo}
               totalApprovedVideos={totalApprovedVideos}
