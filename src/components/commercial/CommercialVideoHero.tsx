@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { VideoWatermark } from '@/components/video-security/VideoWatermark';
 import { VideoDebugger } from '@/utils/videoDebugger';
@@ -25,26 +25,68 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const prevHashRef = useRef<string>('');
 
+  // Hash estável para detectar mudanças na playlist
   const videosHash = useMemo(() => {
     const hash = videos.map(v => v.id).sort().join(',');
     VideoDebugger.logEvent('HASH', 'Hash calculado', { hash, count: videos.length });
     return hash;
   }, [videos]);
 
+  // Resetar para primeiro vídeo quando playlist mudar
   useEffect(() => {
-    if (prevHashRef.current !== '' && prevHashRef.current !== videosHash) {
-      VideoDebugger.logEvent('PLAYLIST', 'Vídeos mudaram - resetando', {
-        prevHash: prevHashRef.current,
-        newHash: videosHash
-      });
-      setCurrentIndex(0);
+    VideoDebugger.logEvent('PLAYLIST', 'Resetando para início', {
+      hash: videosHash,
+      count: videos.length
+    });
+    setCurrentIndex(0);
+  }, [videosHash, videos.length]);
+
+  // Callbacks estáveis para event listeners
+  const handleMetadata = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    VideoDebugger.logEvent('VIDEO', 'Pronto para reproduzir', {
+      duração: video.duration.toFixed(1) + 's'
+    });
+    setIsBuffering(false);
+    onPlayingChange?.(true);
+  }, [onPlayingChange]);
+
+  const handleEnded = useCallback(() => {
+    const currentVideo = videos[currentIndex];
+    VideoDebugger.logEvent('VIDEO', 'Terminou', {
+      nome: currentVideo?.video_nome
+    });
+    
+    onPlayingChange?.(false);
+    
+    const nextIndex = (currentIndex + 1) % videos.length;
+    
+    if (nextIndex === 0 && onPlaylistEnd) {
+      VideoDebugger.logEvent('PLAYLIST', 'Ciclo completo');
+      onPlaylistEnd();
     }
-    prevHashRef.current = videosHash;
-  }, [videosHash]);
 
+    setCurrentIndex(nextIndex);
+  }, [currentIndex, videos, onPlaylistEnd, onPlayingChange]);
 
+  const handleError = useCallback(() => {
+    const currentVideo = videos[currentIndex];
+    VideoDebugger.logEvent('VIDEO', 'Erro - pulando', {
+      nome: currentVideo?.video_nome
+    });
+
+    setIsBuffering(false);
+    onPlayingChange?.(false);
+
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % videos.length);
+    }, 2000);
+  }, [currentIndex, videos, onPlayingChange]);
+
+  // Gerenciar reprodução de vídeo
   useEffect(() => {
     const video = videoRef.current;
     if (!video || videos.length === 0) return;
@@ -62,56 +104,26 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
     setIsBuffering(true);
 
-    const onMetadata = () => {
-      VideoDebugger.logEvent('VIDEO', 'Pronto', {
-        duração: video.duration.toFixed(1) + 's'
-      });
-      setIsBuffering(false);
-      if (onPlayingChange) onPlayingChange(true);
-    };
+    // Adicionar event listeners
+    video.addEventListener('loadedmetadata', handleMetadata);
+    video.addEventListener('ended', handleEnded);
+    video.addEventListener('error', handleError);
 
-    const onEnded = () => {
-      VideoDebugger.logEvent('VIDEO', 'Terminou', {
-        nome: currentVideo.video_nome
-      });
-      
-      if (onPlayingChange) onPlayingChange(false);
-      
-      const nextIndex = (currentIndex + 1) % videos.length;
-      
-      if (nextIndex === 0 && onPlaylistEnd) {
-        onPlaylistEnd();
-      }
-
-      setCurrentIndex(nextIndex);
-    };
-
-    const onError = () => {
-      VideoDebugger.logEvent('VIDEO', 'Erro - pulando', {
-        nome: currentVideo.video_nome
-      });
-
-      setIsBuffering(false);
-      if (onPlayingChange) onPlayingChange(false);
-
-      setTimeout(() => {
-        const nextIndex = (currentIndex + 1) % videos.length;
-        setCurrentIndex(nextIndex);
-      }, 2000);
-    };
-
-    video.addEventListener('loadedmetadata', onMetadata);
-    video.addEventListener('ended', onEnded);
-    video.addEventListener('error', onError);
-
-    video.load();
+    // Atualizar source e carregar vídeo
+    const sourceElement = video.querySelector('source');
+    if (sourceElement && sourceElement.src !== currentVideo.video_url) {
+      sourceElement.src = currentVideo.video_url;
+      video.load();
+    } else if (!sourceElement) {
+      video.load();
+    }
 
     return () => {
-      video.removeEventListener('loadedmetadata', onMetadata);
-      video.removeEventListener('ended', onEnded);
-      video.removeEventListener('error', onError);
+      video.removeEventListener('loadedmetadata', handleMetadata);
+      video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('error', handleError);
     };
-  }, [currentIndex, videos, onPlaylistEnd, onPlayingChange]);
+  }, [currentIndex, videosHash, handleMetadata, handleEnded, handleError, videos]);
 
   if (videos.length === 0) {
     return (
@@ -145,10 +157,9 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
-      {/* Elemento de vídeo */}
+      {/* Elemento de vídeo - SEM key prop para evitar remontagens */}
       <video
         ref={videoRef}
-        key={currentVideo.id}
         className="w-full h-full object-contain"
         autoPlay
         muted

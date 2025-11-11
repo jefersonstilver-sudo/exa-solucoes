@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,6 +58,15 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     count: activeVideos.length,
     videoIds: activeVideoIds
   });
+  
+  // Callbacks estáveis para evitar re-renders infinitos
+  const handlePlayingChange = useCallback((playing: boolean) => {
+    isPlayingRef.current = playing;
+  }, []);
+
+  const handlePlaylistEnd = useCallback(() => {
+    isPlayingRef.current = false;
+  }, []);
   
   // Status de conexão em tempo real (apenas para indicador visual)
   const connectionStatus = useRealtimeConnection(buildingId);
@@ -246,12 +255,8 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                     video_nome: v.video_name || ''
                   }))}
                   className="h-full w-full"
-                  onPlayingChange={(playing) => {
-                    isPlayingRef.current = playing;
-                  }}
-                  onPlaylistEnd={() => {
-                    isPlayingRef.current = false;
-                  }}
+                  onPlayingChange={handlePlayingChange}
+                  onPlaylistEnd={handlePlaylistEnd}
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-white">Carregando...</div>
