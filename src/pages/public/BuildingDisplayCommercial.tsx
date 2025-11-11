@@ -4,6 +4,7 @@ import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
 import exaLogo from '@/assets/exa-logo.png';
 import { CommercialVideoHero } from '@/components/commercial/CommercialVideoHero';
+import { CommercialLoadingScreen } from '@/components/commercial/CommercialLoadingScreen';
 import { useVideoProtection } from '@/hooks/useVideoProtection';
 import WeatherFooter from '@/components/public/WeatherFooter';
 import { LiveClock } from '@/components/commercial/LiveClock';
@@ -162,11 +163,9 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   }, [buildingId, refetch]);
 
 
-  // Loading - sem mostrar para evitar lag visual
+  // Loading - Tela profissional enquanto busca vídeos
   if (loading && activeVideos.length === 0) {
-    return (
-      <div className="min-h-screen bg-black" />
-    );
+    return <CommercialLoadingScreen buildingName={buildingName} />;
   }
 
   // Sem vídeos - mostrar mensagem informativa

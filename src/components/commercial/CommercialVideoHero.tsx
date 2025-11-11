@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { cn } from '@/lib/utils';
 import { VideoWatermark } from '@/components/video-security/VideoWatermark';
 import { VideoDebugger } from '@/utils/videoDebugger';
+import { videoCache } from '@/utils/videoCache';
 
 interface Video {
   id: string;
@@ -13,20 +13,21 @@ interface CommercialVideoHeroProps {
   videos: Video[];
   className?: string;
   onPlaylistEnd?: () => void;
-  onPlayingChange?: (isPlaying: boolean) => void;
+  onPlayingChange?: (playing: boolean) => void;
 }
 
 export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   videos,
-  className,
+  className = '',
   onPlaylistEnd,
   onPlayingChange
 }) => {
+  // Estados simples
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Refs para callbacks externos (não causam re-render)
+  // Refs para callbacks externos (evitar re-renders)
   const onPlayingChangeRef = useRef(onPlayingChange);
   const onPlaylistEndRef = useRef(onPlaylistEnd);
 
@@ -38,23 +39,28 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
   // Hash estável para detectar mudanças na playlist
   const videosHash = useMemo(() => {
-    const hash = videos.map(v => v.id).sort().join(',');
-    VideoDebugger.logEvent('HASH', 'Hash calculado', { hash, count: videos.length });
-    return hash;
+    return videos.map(v => v.id).sort().join(',');
   }, [videos]);
 
-  // Resetar para primeiro vídeo quando playlist mudar
+  // Reset quando playlist mudar
   useEffect(() => {
-    VideoDebugger.logEvent('PLAYLIST', 'Resetando para início', {
-      hash: videosHash,
+    VideoDebugger.logEvent('PLAYLIST', 'Iniciando', {
       count: videos.length
     });
     setCurrentIndex(0);
     setIsBuffering(true);
   }, [videosHash, videos.length]);
 
-  // Callbacks estáveis para event listeners
-  const handleMetadata = useCallback(() => {
+  // Callbacks estáveis para event listeners (PERMANENTES)
+  const handleLoadStart = useCallback(() => {
+    setIsBuffering(true);
+    VideoDebugger.logEvent('VIDEO', 'Carregando', {
+      index: `${currentIndex + 1}/${videos.length}`,
+      nome: videos[currentIndex]?.video_nome
+    });
+  }, [currentIndex, videos]);
+
+  const handleLoadedMetadata = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
     
@@ -64,9 +70,6 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   }, []);
 
   const handlePlaying = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    
     VideoDebugger.logEvent('VIDEO', 'Reproduzindo', {
       index: `${currentIndex + 1}/${videos.length}`
     });
@@ -97,92 +100,117 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
   const handleError = useCallback(() => {
     const currentVideo = videos[currentIndex];
-    VideoDebugger.logEvent('VIDEO', 'Erro - pulando', {
+    VideoDebugger.logEvent('VIDEO', 'Erro ao carregar', {
       nome: currentVideo?.video_nome
     });
 
     setIsBuffering(false);
     onPlayingChangeRef.current?.(false);
 
+    // Pular para próximo vídeo após 2s
     setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % videos.length);
     }, 2000);
   }, [currentIndex, videos.length]);
 
-  // Gerenciar reprodução de vídeo
+  // Setup de event listeners (APENAS UMA VEZ, PERMANENTES)
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || videos.length === 0) return;
+    if (!video) return;
 
-    const currentVideo = videos[currentIndex];
-    if (!currentVideo) {
-      VideoDebugger.logEvent('VIDEO', 'Erro: índice inválido', { currentIndex, videosLength: videos.length });
-      return;
-    }
-
-    VideoDebugger.logEvent('VIDEO', 'Carregando', {
-      index: `${currentIndex + 1}/${videos.length}`,
-      nome: currentVideo.video_nome
-    });
-
-    setIsBuffering(true);
-
-    // Adicionar event listeners
-    video.addEventListener('loadedmetadata', handleMetadata);
+    video.addEventListener('loadstart', handleLoadStart);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('playing', handlePlaying);
     video.addEventListener('ended', handleEnded);
     video.addEventListener('error', handleError);
 
-    // Atualizar source e carregar vídeo
-    const sourceElement = video.querySelector('source');
-    if (sourceElement && sourceElement.src !== currentVideo.video_url) {
-      sourceElement.src = currentVideo.video_url;
-      video.load();
-    } else if (!sourceElement) {
-      video.load();
-    }
-
     return () => {
-      video.removeEventListener('loadedmetadata', handleMetadata);
+      video.removeEventListener('loadstart', handleLoadStart);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('playing', handlePlaying);
       video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);
     };
-  }, [currentIndex, videosHash, handleMetadata, handlePlaying, handleEnded, handleError, videos]);
+  }, [handleLoadStart, handleLoadedMetadata, handlePlaying, handleEnded, handleError]);
+
+  // Mudança de vídeo (SEPARADO do setup de listeners)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || videos.length === 0) return;
+    
+    const currentVideo = videos[currentIndex];
+    if (!currentVideo) return;
+
+    const loadVideo = async () => {
+      try {
+        // Tentar obter vídeo do cache primeiro
+        const cachedUrl = await videoCache.getCachedVideo(currentVideo.id);
+        const videoUrl = cachedUrl || currentVideo.video_url;
+        
+        // Só atualizar se URL mudou
+        if (video.src !== videoUrl) {
+          video.src = videoUrl;
+          video.load(); // Trigger load + autoplay
+        }
+
+        // Se não estava no cache, iniciar download em background
+        if (!cachedUrl) {
+          videoCache.cacheVideo(currentVideo.id, currentVideo.video_url).catch(() => {
+            // Falha silenciosa no cache
+          });
+        }
+      } catch (error) {
+        // Fallback para URL original
+        if (video.src !== currentVideo.video_url) {
+          video.src = currentVideo.video_url;
+          video.load();
+        }
+      }
+    };
+
+    loadVideo();
+  }, [currentIndex, videosHash, videos]);
+
+  // Pré-cachear próximos vídeos em background
+  useEffect(() => {
+    if (videos.length === 0) return;
+
+    const preCacheVideos = async () => {
+      // Cachear próximos 3 vídeos
+      for (let i = 1; i <= 3; i++) {
+        const nextIndex = (currentIndex + i) % videos.length;
+        const nextVideo = videos[nextIndex];
+        if (!nextVideo) continue;
+
+        const hasCached = await videoCache.hasCachedVideo(nextVideo.id);
+        if (!hasCached) {
+          videoCache.cacheVideo(nextVideo.id, nextVideo.video_url).catch(() => {
+            // Falha silenciosa
+          });
+        }
+      }
+    };
+
+    preCacheVideos();
+  }, [currentIndex, videos]);
 
   if (videos.length === 0) {
     return (
-      <div className={cn(
-        "w-full aspect-video bg-black rounded-lg flex items-center justify-center",
-        className
-      )}>
-        <p className="text-white/60">Nenhum vídeo disponível</p>
+      <div className={`flex items-center justify-center bg-slate-900 ${className}`}>
+        <p className="text-white/60 text-lg">Nenhum vídeo disponível</p>
       </div>
     );
   }
 
   const currentVideo = videos[currentIndex];
-  if (!currentVideo) {
-    return (
-      <div className={cn(
-        "w-full aspect-video bg-black rounded-lg flex items-center justify-center",
-        className
-      )}>
-        <p className="text-white/60">Erro ao carregar vídeo</p>
-      </div>
-    );
-  }
 
   return (
     <div 
-      className={cn(
-        "relative w-full aspect-video bg-black rounded-lg overflow-hidden",
-        className
-      )}
+      className={`relative overflow-hidden ${className}`}
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
-      {/* Elemento de vídeo - SEM key prop para evitar remontagens */}
+      {/* Elemento de vídeo LIMPO - sem <source> interno */}
       <video
         ref={videoRef}
         className="w-full h-full object-contain"
@@ -191,17 +219,21 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
         playsInline
         preload="auto"
         crossOrigin="anonymous"
-      >
-        <source src={currentVideo.video_url} type="video/mp4" />
-      </video>
+        style={{
+          backgroundColor: '#0f172a'
+        }}
+      />
 
+      {/* Watermark */}
       <VideoWatermark />
 
       {/* Indicador de buffering */}
       {isBuffering && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
-          <p className="text-white/80 text-sm">Carregando...</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/20 border-t-red-500" />
+            <p className="text-white/90 text-lg font-medium">Carregando vídeo...</p>
+          </div>
         </div>
       )}
     </div>
