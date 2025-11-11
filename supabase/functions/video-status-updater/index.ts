@@ -120,7 +120,8 @@ serve(async (req) => {
         continue;
       }
 
-      // 2. Desmarcar selected_for_display dos outros vídeos do mesmo pedido
+      // 2. CRÍTICO: Desmarcar APENAS selected_for_display dos outros vídeos
+      // NUNCA alterar is_base_video! Essa flag é sagrada e só muda com ação manual
       const { error: deselectError } = await supabase
         .from('pedido_videos')
         .update({ 
