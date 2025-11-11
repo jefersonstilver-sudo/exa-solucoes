@@ -26,6 +26,16 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   const [isBuffering, setIsBuffering] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Refs para callbacks externos (não causam re-render)
+  const onPlayingChangeRef = useRef(onPlayingChange);
+  const onPlaylistEndRef = useRef(onPlaylistEnd);
+
+  // Atualizar refs quando callbacks externos mudarem
+  useEffect(() => {
+    onPlayingChangeRef.current = onPlayingChange;
+    onPlaylistEndRef.current = onPlaylistEnd;
+  }, [onPlayingChange, onPlaylistEnd]);
+
   // Hash estável para detectar mudanças na playlist
   const videosHash = useMemo(() => {
     const hash = videos.map(v => v.id).sort().join(',');
@@ -40,6 +50,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
       count: videos.length
     });
     setCurrentIndex(0);
+    setIsBuffering(true);
   }, [videosHash, videos.length]);
 
   // Callbacks estáveis para event listeners
@@ -47,30 +58,42 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     const video = videoRef.current;
     if (!video) return;
     
-    VideoDebugger.logEvent('VIDEO', 'Pronto para reproduzir', {
+    VideoDebugger.logEvent('VIDEO', 'Metadados carregados', {
       duração: video.duration.toFixed(1) + 's'
     });
+  }, []);
+
+  const handlePlaying = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    VideoDebugger.logEvent('VIDEO', 'Reproduzindo', {
+      index: `${currentIndex + 1}/${videos.length}`
+    });
     setIsBuffering(false);
-    onPlayingChange?.(true);
-  }, [onPlayingChange]);
+    onPlayingChangeRef.current?.(true);
+  }, [currentIndex, videos.length]);
 
   const handleEnded = useCallback(() => {
     const currentVideo = videos[currentIndex];
     VideoDebugger.logEvent('VIDEO', 'Terminou', {
-      nome: currentVideo?.video_nome
+      nome: currentVideo?.video_nome,
+      index: `${currentIndex + 1}/${videos.length}`
     });
     
-    onPlayingChange?.(false);
+    onPlayingChangeRef.current?.(false);
     
-    const nextIndex = (currentIndex + 1) % videos.length;
-    
-    if (nextIndex === 0 && onPlaylistEnd) {
-      VideoDebugger.logEvent('PLAYLIST', 'Ciclo completo');
-      onPlaylistEnd();
-    }
-
-    setCurrentIndex(nextIndex);
-  }, [currentIndex, videos, onPlaylistEnd, onPlayingChange]);
+    setCurrentIndex(prev => {
+      const nextIndex = (prev + 1) % videos.length;
+      
+      if (nextIndex === 0) {
+        VideoDebugger.logEvent('PLAYLIST', 'Ciclo completo');
+        onPlaylistEndRef.current?.();
+      }
+      
+      return nextIndex;
+    });
+  }, [currentIndex, videos]);
 
   const handleError = useCallback(() => {
     const currentVideo = videos[currentIndex];
@@ -79,12 +102,12 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
     });
 
     setIsBuffering(false);
-    onPlayingChange?.(false);
+    onPlayingChangeRef.current?.(false);
 
     setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % videos.length);
     }, 2000);
-  }, [currentIndex, videos, onPlayingChange]);
+  }, [currentIndex, videos.length]);
 
   // Gerenciar reprodução de vídeo
   useEffect(() => {
@@ -106,6 +129,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
     // Adicionar event listeners
     video.addEventListener('loadedmetadata', handleMetadata);
+    video.addEventListener('playing', handlePlaying);
     video.addEventListener('ended', handleEnded);
     video.addEventListener('error', handleError);
 
@@ -120,10 +144,11 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
     return () => {
       video.removeEventListener('loadedmetadata', handleMetadata);
+      video.removeEventListener('playing', handlePlaying);
       video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);
     };
-  }, [currentIndex, videosHash, handleMetadata, handleEnded, handleError, videos]);
+  }, [currentIndex, videosHash, handleMetadata, handlePlaying, handleEnded, handleError, videos]);
 
   if (videos.length === 0) {
     return (
