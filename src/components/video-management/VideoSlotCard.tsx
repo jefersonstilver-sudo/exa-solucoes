@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 import { videoLogger } from '@/services/logger/VideoActionLogger';
+import { useForceCleanup } from '@/hooks/useForceCleanup';
 
 interface VideoSlot {
   id?: string;
@@ -88,6 +89,29 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     orderId,
     enabled: !!slot.video_data?.id
   });
+  
+  const { forceCleanupSlot } = useForceCleanup();
+  
+  const handleForceCleanup = async (slotId: string) => {
+    console.log('🧹 [SLOT_CARD] Iniciando limpeza forçada:', {
+      slotId,
+      slotPosition: slot.slot_position,
+      videoName: slot.video_data?.nome
+    });
+    
+    const success = await forceCleanupSlot(slotId, slot.slot_position);
+    
+    if (success) {
+      // Forçar reload da página após 1 segundo
+      setTimeout(() => {
+        console.log('🔄 Recarregando página após limpeza...');
+        window.location.reload();
+      }, 1000);
+    }
+    
+    return success;
+  };
+  
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'approved':
@@ -468,6 +492,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               onRemove={onRemove}
               onDownload={handleDownload}
               onScheduleVideo={onScheduleVideo}
+              onForceCleanup={handleForceCleanup}
               totalApprovedVideos={totalApprovedVideos}
               orderId={orderId}
             />

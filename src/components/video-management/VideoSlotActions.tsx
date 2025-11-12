@@ -5,7 +5,8 @@ import {
   Trash2, 
   Download, 
   Calendar,
-  Info
+  Info,
+  AlertTriangle
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -53,6 +54,7 @@ interface VideoSlotActionsProps {
   onRemove: (slotId: string) => void;
   onDownload: (videoUrl: string, fileName: string) => void;
   onScheduleVideo?: (videoId: string, scheduleRules: any[]) => Promise<void>;
+  onForceCleanup?: (slotId: string) => Promise<boolean>;
   totalApprovedVideos: number;
   orderId?: string;
 }
@@ -63,6 +65,7 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
   onRemove,
   onDownload,
   onScheduleVideo,
+  onForceCleanup,
   totalApprovedVideos,
   orderId
 }) => {
@@ -78,6 +81,22 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
       await onScheduleVideo(slot.video_data.id, scheduleRules);
     }
   };
+
+  const handleForceCleanup = async () => {
+    if (onForceCleanup && slot.id) {
+      const success = await onForceCleanup(slot.id);
+      if (success) {
+        console.log('✅ Limpeza forçada bem-sucedida');
+      }
+    }
+  };
+
+  // Verificar se o vídeo tem URL corrompida ou inválida
+  const hasCorruptedUrl = slot.video_data?.url && (
+    slot.video_data.url.includes('undefined') ||
+    slot.video_data.url.includes('null') ||
+    !slot.video_data.url.startsWith('http')
+  );
 
   return (
     <>
@@ -155,6 +174,19 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
         >
           <Trash2 className="h-4 w-4" />
         </Button>
+
+        {/* Limpeza Forçada - apenas se tiver onForceCleanup ou URL corrompida */}
+        {(onForceCleanup || hasCorruptedUrl) && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleForceCleanup}
+            className="border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white p-2"
+            title="⚠️ Limpeza Forçada - Remove vídeo corrompido bypassing validações"
+          >
+            <AlertTriangle className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Modal de Detalhes da Programação */}
