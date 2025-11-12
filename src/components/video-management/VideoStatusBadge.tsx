@@ -17,10 +17,10 @@ export const VideoStatusBadge: React.FC<VideoStatusBadgeProps> = ({
     return (
       <Badge 
         variant="default" 
-        className="bg-green-600 hover:bg-green-700 text-white font-medium gap-1"
+        className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium gap-1"
       >
         <Home className="h-3 w-3" />
-        Vídeo Principal - Sempre ativo
+        Vídeo Principal
       </Badge>
     );
   }
