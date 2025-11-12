@@ -54,13 +54,13 @@ serve(async (req) => {
         end_time,
         is_active,
         campaign_video_schedule_id,
-        campaign_video_schedules!inner (
+        campaign_video_schedules!campaign_schedule_rules_campaign_video_schedule_id_fkey!inner (
           video_id,
           campaign_id,
-          campaigns_advanced!inner (
+          campaigns_advanced!fk_campaign_video_schedules_campaign!inner (
             pedido_id
           ),
-          videos!inner (
+          videos!fk_campaign_video_schedules_video!inner (
             id,
             nome
           )

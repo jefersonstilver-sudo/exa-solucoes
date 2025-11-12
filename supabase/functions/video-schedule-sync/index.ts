@@ -61,11 +61,11 @@ serve(async (req) => {
         end_time,
         is_active,
         campaign_video_schedule_id,
-        campaign_video_schedules (
+        campaign_video_schedules!campaign_schedule_rules_campaign_video_schedule_id_fkey (
           video_id,
           slot_position,
           campaign_id,
-          campaigns_advanced (
+          campaigns_advanced!fk_campaign_video_schedules_campaign (
             pedido_id,
             status
           )
