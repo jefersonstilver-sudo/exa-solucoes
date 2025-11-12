@@ -42,9 +42,11 @@ export const sendAdminWelcomeEmail = async (
     const siteUrl = Deno.env.get('SITE_URL') || 'https://www.examidia.com.br';
     
     const htmlContent = EmailTemplates.createAdminWelcomeEmail({
+      userEmail: data.email,
+      userName: data.nome,
       nome: data.nome,
       email: data.email,
-      role: data.role,
+      role: data.role as 'super_admin' | 'admin' | 'admin_marketing' | 'admin_financeiro',
       password: data.password,
       createdBy: data.createdBy || 'Sistema',
       loginUrl: `${siteUrl}/login`
