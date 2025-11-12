@@ -13,10 +13,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { VideoLogViewer } from './VideoLogViewer';
+import { ContextualDebugPanel } from './ContextualDebugPanel';
+import { GlobalDebugDashboard } from './GlobalDebugDashboard';
 
 export const FloatingDebugButton: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [showGlobal, setShowGlobal] = useState(false);
   const [, forceUpdate] = useState({});
 
   // Só mostra em desenvolvimento ou se houver uma flag no localStorage
@@ -25,7 +27,8 @@ export const FloatingDebugButton: React.FC = () => {
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     if (newOpen) {
-      // Forçar atualização quando abrir
+      // Resetar para contextual ao abrir
+      setShowGlobal(false);
       forceUpdate({});
     }
   };
@@ -45,15 +48,25 @@ export const FloatingDebugButton: React.FC = () => {
             <Bug className="w-5 h-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-6xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>🐛 Debug Completo - Backend + Frontend</SheetTitle>
+            <SheetTitle>
+              {showGlobal ? '🌐 Debug Global - Sistema Completo' : '🔍 Debug Contextual - Página Atual'}
+            </SheetTitle>
             <SheetDescription>
-              Logs detalhados de TODAS as operações (RPC, triggers, frontend)
+              {showGlobal 
+                ? 'Logs detalhados de TODAS as operações do sistema' 
+                : 'Análise específica da página atual com erros conhecidos e correções'}
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6">
-            <VideoLogViewer key={String(open)} />
+            {showGlobal ? (
+              <GlobalDebugDashboard key={String(open)} />
+            ) : (
+              <ContextualDebugPanel 
+                onOpenGlobalDebug={() => setShowGlobal(true)} 
+              />
+            )}
           </div>
         </SheetContent>
       </Sheet>
