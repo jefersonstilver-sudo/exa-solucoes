@@ -3702,10 +3702,6 @@ export type Database = {
       }
     }
     Functions: {
-      activate_scheduled_video: {
-        Args: { p_pedido_id: string; p_video_id: string }
-        Returns: Json
-      }
       activate_video: {
         Args: { p_pedido_id: string; p_pedido_video_id: string }
         Returns: boolean
@@ -3751,10 +3747,6 @@ export type Database = {
         Args: { p_codigo: string; p_pedido_id: string }
         Returns: Json
       }
-      approve_video: {
-        Args: { p_approved_by: string; p_pedido_video_id: string }
-        Returns: boolean
-      }
       audit_unauthorized_uploads: { Args: never; Returns: Json }
       auto_cleanup_paid_attempts: { Args: never; Returns: Json }
       auto_fix_lost_transactions: { Args: never; Returns: Json }
@@ -3786,10 +3778,6 @@ export type Database = {
       can_access_panel_credentials: { Args: never; Returns: boolean }
       can_access_pedido_secure: {
         Args: { p_pedido_id: string }
-        Returns: boolean
-      }
-      can_remove_video: {
-        Args: { p_pedido_video_id: string }
         Returns: boolean
       }
       cancel_expired_orders: { Args: never; Returns: Json }
@@ -3846,7 +3834,6 @@ export type Database = {
       }
       diagnose_user_system: { Args: never; Returns: Json }
       emergency_financial_audit_and_fix: { Args: never; Returns: Json }
-      ensure_pedido_has_base_video: { Args: never; Returns: undefined }
       ensure_video_consistency: { Args: { p_pedido_id: string }; Returns: Json }
       extract_compliance_data: { Args: { payment_data: Json }; Returns: Json }
       generate_coupon_code: { Args: { prefix?: string }; Returns: string }
@@ -3947,21 +3934,6 @@ export type Database = {
           video_name: string
         }[]
       }
-      get_building_active_campaigns: {
-        Args: { p_building_id: string }
-        Returns: {
-          client_email: string
-          client_id: string
-          client_name: string
-          data_fim: string
-          data_inicio: string
-          pedido_id: string
-          plano_meses: number
-          status: string
-          valor_total: number
-          video_count: number
-        }[]
-      }
       get_building_contact_info: {
         Args: { building_id: string }
         Returns: {
@@ -3979,13 +3951,6 @@ export type Database = {
         Returns: {
           id: string
           nome: string
-        }[]
-      }
-      get_buildings_current_video_count: {
-        Args: { p_building_ids: string[] }
-        Returns: {
-          building_id: string
-          current_videos_count: number
         }[]
       }
       get_buildings_for_authenticated_users: {
@@ -4051,8 +4016,12 @@ export type Database = {
       get_current_display_video: {
         Args: { p_pedido_id: string }
         Returns: {
-          is_scheduled: boolean
-          priority_type: string
+          duracao: number
+          id: string
+          nome: string
+          orientacao: string
+          tem_audio: boolean
+          url: string
           video_id: string
         }[]
       }
@@ -4199,53 +4168,6 @@ export type Database = {
           status: string
           valor_total: number
           video_status: string
-        }[]
-      }
-      get_pedidos_com_status_correto: {
-        Args: never
-        Returns: {
-          client_cpf: string
-          client_email: string
-          client_id: string
-          client_name: string
-          client_phone: string
-          correct_status: string
-          coupon_code: string
-          created_at: string
-          cupom_id: string
-          data_fim: string
-          data_inicio: string
-          id: string
-          lista_paineis: string[]
-          plano_meses: number
-          status: string
-          valor_total: number
-          video_count: number
-          video_status: string
-        }[]
-      }
-      get_pedidos_com_status_inteligente: {
-        Args: never
-        Returns: {
-          client_id: string
-          correct_status: string
-          created_at: string
-          cupom_id: string
-          data_fim: string
-          data_inicio: string
-          email: string
-          has_active_video: boolean
-          has_any_video: boolean
-          has_approved_video: boolean
-          id: string
-          lista_paineis: string[]
-          lista_predios: string[]
-          nome_pedido: string
-          plano_meses: number
-          status: string
-          transaction_id: string
-          updated_at: string
-          valor_total: number
         }[]
       }
       get_pending_approval_videos: {
@@ -4577,10 +4499,6 @@ export type Database = {
         Returns: boolean
       }
       set_base_video: { Args: { p_pedido_video_id: string }; Returns: boolean }
-      set_base_video_enhanced: {
-        Args: { p_pedido_video_id: string }
-        Returns: Json
-      }
       set_pedido_nome: {
         Args: { p_nome: string; p_pedido_id: string }
         Returns: {
