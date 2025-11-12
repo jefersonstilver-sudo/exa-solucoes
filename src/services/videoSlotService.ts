@@ -93,13 +93,29 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
         const { pedidoVideo, video, scheduleRules } = matchingResult;
         console.log(`🎯 [VIDEO_SLOTS] Slot ${position} preenchido com:`, { pedidoVideo, video, scheduleRules });
         
+        // 🔧 CORREÇÃO: Normalizar dados inconsistentes - vídeos base SEMPRE devem estar ativos e em exibição
+        const isBase = pedidoVideo.is_base_video || false;
+        const normalizedIsActive = isBase ? true : (pedidoVideo.is_active || false);
+        const normalizedSelectedForDisplay = isBase ? true : (pedidoVideo.selected_for_display || false);
+        
+        if (isBase && (pedidoVideo.is_active !== true || pedidoVideo.selected_for_display !== true)) {
+          console.warn('⚠️ [VIDEO_SLOTS] Dados inconsistentes corrigidos no frontend:', {
+            slotId: pedidoVideo.id,
+            position,
+            was_active: pedidoVideo.is_active,
+            was_selected: pedidoVideo.selected_for_display,
+            now_active: true,
+            now_selected: true
+          });
+        }
+        
         return {
           id: pedidoVideo.id,
           slot_position: position,
           video_id: pedidoVideo.video_id,
-          is_active: pedidoVideo.is_active || false,
-          selected_for_display: pedidoVideo.selected_for_display || false,
-          is_base_video: pedidoVideo.is_base_video || false,
+          is_active: normalizedIsActive,
+          selected_for_display: normalizedSelectedForDisplay,
+          is_base_video: isBase,
           approval_status: (pedidoVideo.approval_status as 'pending' | 'approved' | 'rejected') || 'pending',
           video_data: {
             id: video.id,

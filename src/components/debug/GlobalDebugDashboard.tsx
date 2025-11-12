@@ -6,11 +6,35 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VideoLogViewer } from './VideoLogViewer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Database, Code, AlertTriangle, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Activity, Database, Code, AlertTriangle, Zap, Copy } from 'lucide-react';
+import { toast } from 'sonner';
+import { VideoDebugger } from '@/utils/videoDebugger';
 
 export const GlobalDebugDashboard: React.FC = () => {
+  const copyAllLogs = () => {
+    const videoLogs = VideoDebugger.getLogs();
+    const timestamp = new Date().toISOString();
+    const logsText = JSON.stringify({
+      timestamp,
+      videoLogs,
+      exported_at: new Date().toLocaleString('pt-BR')
+    }, null, 2);
+    
+    navigator.clipboard.writeText(logsText);
+    toast.success('📋 Todos os logs copiados para a área de transferência');
+  };
+
   return (
-    <Tabs defaultValue="frontend" className="w-full">
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={copyAllLogs} variant="outline" size="sm">
+          <Copy className="w-4 h-4 mr-2" />
+          Copiar Todos os Logs
+        </Button>
+      </div>
+      
+      <Tabs defaultValue="frontend" className="w-full">
       <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="frontend">
           <Code className="w-4 h-4 mr-2" />
@@ -107,5 +131,6 @@ export const GlobalDebugDashboard: React.FC = () => {
         </Card>
       </TabsContent>
     </Tabs>
+    </div>
   );
 };
