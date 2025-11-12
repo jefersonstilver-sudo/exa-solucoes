@@ -51,7 +51,7 @@ export const SiteInfoTab: React.FC<SiteInfoTabProps> = ({ config, updateConfig }
                 id="site_nome"
                 value={localConfig.site_nome || ''}
                 onChange={(e) => handleChange('site_nome', e.target.value)}
-                placeholder="INDEXA"
+                placeholder="EXA Soluções Digitais LTDA"
               />
             </div>
 
@@ -154,7 +154,7 @@ export const SiteInfoTab: React.FC<SiteInfoTabProps> = ({ config, updateConfig }
                 type="email"
                 value={localConfig.contato_email || ''}
                 onChange={(e) => handleChange('contato_email', e.target.value)}
-                placeholder="contato@indexa.com.br"
+                placeholder="contato@examidia.com.br"
               />
             </div>
 
@@ -165,7 +165,7 @@ export const SiteInfoTab: React.FC<SiteInfoTabProps> = ({ config, updateConfig }
                 type="email"
                 value={localConfig.suporte_email || ''}
                 onChange={(e) => handleChange('suporte_email', e.target.value)}
-                placeholder="suporte@indexa.com.br"
+                placeholder="suporte@examidia.com.br"
               />
             </div>
           </div>

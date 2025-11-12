@@ -55,10 +55,10 @@ export const EmailConfigTab: React.FC<EmailConfigTabProps> = ({ config, updateCo
                 id="email_remetente_nome"
                 value={localConfig.email_remetente_nome || ''}
                 onChange={(e) => handleChange('email_remetente_nome', e.target.value)}
-                placeholder="INDEXA"
+                placeholder="EXA Soluções Digitais"
               />
               <p className="text-xs text-muted-foreground">
-                Exemplo: "INDEXA" em "INDEXA &lt;noreply@indexa.com.br&gt;"
+                Exemplo: "EXA Soluções Digitais" em "EXA Soluções Digitais &lt;noreply@examidia.com.br&gt;"
               </p>
             </div>
 
@@ -69,7 +69,7 @@ export const EmailConfigTab: React.FC<EmailConfigTabProps> = ({ config, updateCo
                 type="email"
                 value={localConfig.email_remetente_email || ''}
                 onChange={(e) => handleChange('email_remetente_email', e.target.value)}
-                placeholder="noreply@indexa.com.br"
+                placeholder="noreply@examidia.com.br"
               />
               <p className="text-xs text-muted-foreground">
                 Deve ser um domínio verificado no Resend
@@ -83,7 +83,7 @@ export const EmailConfigTab: React.FC<EmailConfigTabProps> = ({ config, updateCo
               id="email_footer_texto"
               value={localConfig.email_footer_texto || ''}
               onChange={(e) => handleChange('email_footer_texto', e.target.value)}
-              placeholder="© 2025 INDEXA. Todos os direitos reservados."
+              placeholder="© 2025 EXA Soluções Digitais LTDA. Todos os direitos reservados."
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
@@ -109,7 +109,7 @@ export const EmailConfigTab: React.FC<EmailConfigTabProps> = ({ config, updateCo
               type="url"
               value={localConfig.termos_uso_url || ''}
               onChange={(e) => handleChange('termos_uso_url', e.target.value)}
-              placeholder="https://indexa.com.br/termos-de-uso"
+              placeholder="https://examidia.com.br/termos-de-uso"
             />
           </div>
 
@@ -120,7 +120,7 @@ export const EmailConfigTab: React.FC<EmailConfigTabProps> = ({ config, updateCo
               type="url"
               value={localConfig.politica_privacidade_url || ''}
               onChange={(e) => handleChange('politica_privacidade_url', e.target.value)}
-              placeholder="https://indexa.com.br/politica-privacidade"
+              placeholder="https://examidia.com.br/politica-privacidade"
             />
           </div>
 
@@ -131,7 +131,7 @@ export const EmailConfigTab: React.FC<EmailConfigTabProps> = ({ config, updateCo
               type="url"
               value={localConfig.politica_cookies_url || ''}
               onChange={(e) => handleChange('politica_cookies_url', e.target.value)}
-              placeholder="https://indexa.com.br/politica-cookies"
+              placeholder="https://examidia.com.br/politica-cookies"
             />
           </div>
         </CardContent>

@@ -271,7 +271,7 @@ const AdminSidebar = () => {
   
   return (
     <aside className="w-80 h-screen bg-gradient-to-b from-[#1e1b4b] via-[#4c1d95] to-[#7c3aed] shadow-xl flex flex-col">
-      {/* Logo da INDEXA no topo */}
+      {/* Logo da EXA no topo */}
       <div className="p-6 border-b border-white/20">
         <div className="flex items-center justify-center mb-6">
           <UnifiedLogo 
@@ -378,7 +378,7 @@ const AdminSidebar = () => {
           <span>Sistema Seguro</span>
         </div>
         <div className="text-xs text-white/60 mt-1">
-          INDEXA Admin v3.0
+          EXA Admin v3.0
         </div>
       </div>
     </aside>

@@ -406,7 +406,7 @@ export function ModernAdminSidebar() {
           <span className={`${collapsed ? 'text-[9px]' : 'text-xs'} truncate whitespace-nowrap`}>Sistema Seguro</span>
         </div>
         <div className={`${collapsed ? 'text-[8px]' : 'text-[10px] md:text-xs'} text-white/60 mt-0.5 truncate`}>
-          INDEXA Admin v3.0
+          EXA Admin v3.0
         </div>
       </SidebarFooter>
     </Sidebar>

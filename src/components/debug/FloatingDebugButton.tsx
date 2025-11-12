@@ -73,8 +73,8 @@ export const FloatingDebugButton: React.FC = () => {
 
   // Só mostra se:
   // 1. Está em dev OU
-  // 2. Debug mode ativado E usuário autorizado
-  const shouldShow = import.meta.env.DEV || (isDebugMode && isDebugAuthorized);
+  // 2. Debug AI ativado E usuário autorizado
+  const shouldShow = import.meta.env.DEV || (debugAIEnabled && isDebugAuthorized);
   
   // Log de debug (apenas em dev)
   if (import.meta.env.DEV) {

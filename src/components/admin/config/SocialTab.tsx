@@ -53,7 +53,7 @@ export const SocialTab: React.FC<SocialTabProps> = ({ config, updateConfig }) =>
               type="url"
               value={localConfig.social_facebook || ''}
               onChange={(e) => handleChange('social_facebook', e.target.value)}
-              placeholder="https://facebook.com/indexa"
+              placeholder="https://facebook.com/exasolucoes"
             />
           </div>
 
@@ -67,7 +67,7 @@ export const SocialTab: React.FC<SocialTabProps> = ({ config, updateConfig }) =>
               type="url"
               value={localConfig.social_instagram || ''}
               onChange={(e) => handleChange('social_instagram', e.target.value)}
-              placeholder="https://instagram.com/indexa"
+              placeholder="https://instagram.com/exa.publicidade"
             />
           </div>
 
@@ -81,7 +81,7 @@ export const SocialTab: React.FC<SocialTabProps> = ({ config, updateConfig }) =>
               type="url"
               value={localConfig.social_linkedin || ''}
               onChange={(e) => handleChange('social_linkedin', e.target.value)}
-              placeholder="https://linkedin.com/company/indexa"
+              placeholder="https://linkedin.com/company/exasolucoes"
             />
           </div>
 
@@ -95,7 +95,7 @@ export const SocialTab: React.FC<SocialTabProps> = ({ config, updateConfig }) =>
               type="url"
               value={localConfig.social_twitter || ''}
               onChange={(e) => handleChange('social_twitter', e.target.value)}
-              placeholder="https://twitter.com/indexa"
+              placeholder="https://twitter.com/exasolucoes"
             />
           </div>
 
@@ -109,7 +109,7 @@ export const SocialTab: React.FC<SocialTabProps> = ({ config, updateConfig }) =>
               type="url"
               value={localConfig.social_youtube || ''}
               onChange={(e) => handleChange('social_youtube', e.target.value)}
-              placeholder="https://youtube.com/@indexa"
+              placeholder="https://youtube.com/@exasolucoes"
             />
           </div>
         </CardContent>

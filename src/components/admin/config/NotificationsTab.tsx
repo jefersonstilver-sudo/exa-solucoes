@@ -51,7 +51,7 @@ export const NotificationsTab: React.FC<NotificationsTabProps> = ({ config, upda
               type="email"
               value={localConfig.notificacoes_admin_email || ''}
               onChange={(e) => handleChange('notificacoes_admin_email', e.target.value)}
-              placeholder="admin@indexa.com.br"
+              placeholder="admin@examidia.com.br"
             />
             <p className="text-xs text-muted-foreground">
               Email que receberá as notificações administrativas

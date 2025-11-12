@@ -38,7 +38,7 @@ const SuperAdminLayout = ({ children }: SuperAdminLayoutProps) => {
         <footer className="bg-white border-t border-gray-200 p-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between text-sm text-gray-600">
             <div className="flex items-center space-x-4">
-              <span>© 2024 INDEXA MEDIA</span>
+              <span>© 2025 EXA Soluções Digitais LTDA</span>
               <span>•</span>
               <span>Super Admin Panel</span>
             </div>
