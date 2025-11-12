@@ -36,7 +36,7 @@ export const FloatingDebugButton: React.FC = () => {
   const [, forceUpdate] = useState({});
   
   const { isDebugMode, isDebugAuthorized, userEmail } = useDebugContext();
-  const { isAnalyzing, progress, currentStep, analysis, analyzeCurrentPage } = useAIDebug();
+  const { isAnalyzing, progress, currentStep, analysis, analyzeCurrentPage, reanalyzeCurrentPage } = useAIDebug();
 
   useEffect(() => {
     // Verificação inicial
@@ -186,6 +186,7 @@ export const FloatingDebugButton: React.FC = () => {
               <AIGeneratedDebugPanel 
                 analysis={analysis}
                 onClose={() => setShowAIPanel(false)}
+                onReanalyze={reanalyzeCurrentPage}
               />
             ) : (
               <ContextualDebugPanel 

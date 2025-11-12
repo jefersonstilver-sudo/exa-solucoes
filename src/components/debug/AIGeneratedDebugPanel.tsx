@@ -21,9 +21,10 @@ import { AIAnalysis } from '@/hooks/useAIDebug';
 interface AIGeneratedDebugPanelProps {
   analysis: AIAnalysis;
   onClose: () => void;
+  onReanalyze?: () => void;
 }
 
-export const AIGeneratedDebugPanel: React.FC<AIGeneratedDebugPanelProps> = ({ analysis, onClose }) => {
+export const AIGeneratedDebugPanel: React.FC<AIGeneratedDebugPanelProps> = ({ analysis, onClose, onReanalyze }) => {
   const [expandedError, setExpandedError] = useState<string | null>(null);
 
   const getSeverityColor = (severity: string) => {
@@ -62,9 +63,16 @@ export const AIGeneratedDebugPanel: React.FC<AIGeneratedDebugPanelProps> = ({ an
             Powered by Google Gemini 2.5 Flash
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={onClose}>
-          Fechar
-        </Button>
+        <div className="flex gap-2">
+          {onReanalyze && (
+            <Button variant="secondary" size="sm" onClick={onReanalyze}>
+              🔄 Reanalizar
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Fechar
+          </Button>
+        </div>
       </div>
 
       <ScrollArea className="flex-1 p-4">

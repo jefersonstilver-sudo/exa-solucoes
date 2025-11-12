@@ -189,8 +189,7 @@ Seja EXTREMAMENTE crítico e detalhado. Encontre TUDO.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.3,
-        max_tokens: 4000
+        max_completion_tokens: 8000  // Gemini 2.5 não suporta 'temperature' e usa 'max_completion_tokens'
       }),
     });
 
@@ -208,8 +207,16 @@ Seja EXTREMAMENTE crítico e detalhado. Encontre TUDO.`;
 
     const aiData = await aiResponse.json();
     const aiAnalysisText = aiData.choices?.[0]?.message?.content || '{}';
+    const finishReason = aiData.choices?.[0]?.finish_reason;
     
-    console.log('[AI Debug] Raw AI response:', aiAnalysisText.substring(0, 200) + '...');
+    console.log('[AI Debug] Raw AI response length:', aiAnalysisText.length);
+    console.log('[AI Debug] Finish reason:', finishReason);
+    console.log('[AI Debug] Response preview:', aiAnalysisText.substring(0, 200) + '...');
+
+    // Avisar se a resposta foi truncada
+    if (finishReason === 'length') {
+      console.warn('[AI Debug] ⚠️ Resposta truncada - limite de tokens atingido');
+    }
 
     // Parse AI response
     let aiAnalysis;
@@ -219,21 +226,61 @@ Seja EXTREMAMENTE crítico e detalhado. Encontre TUDO.`;
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
         .trim();
+      
       aiAnalysis = JSON.parse(cleanedText);
+      console.log('[AI Debug] ✅ JSON parseado com sucesso');
     } catch (parseError) {
-      console.error('[AI Debug] Failed to parse AI response:', parseError);
-      // Fallback structure
-      aiAnalysis = {
-        summary: { totalIssues: 0, criticalCount: 0, highCount: 0, mediumCount: 0, lowCount: 0 },
-        detectedComponents: [],
-        detectedHooks: [],
-        detectedApis: [],
-        errors: [],
-        suggestions: [],
-        performanceIssues: [],
-        securityConcerns: [],
-        rawResponse: aiAnalysisText
-      };
+      console.error('[AI Debug] ❌ Falha ao parsear resposta da IA:', parseError);
+      console.error('[AI Debug] Texto que falhou:', aiAnalysisText.substring(0, 500));
+      
+      // Tentar recuperar JSON parcial
+      let partialJson = aiAnalysisText;
+      
+      // Se termina com string não fechada, tentar fechar
+      if (aiAnalysisText.includes('{') && !aiAnalysisText.trim().endsWith('}')) {
+        console.log('[AI Debug] Tentando recuperar JSON parcial...');
+        // Encontrar última vírgula ou campo completo
+        const lastComma = aiAnalysisText.lastIndexOf(',');
+        const lastBrace = aiAnalysisText.lastIndexOf('}');
+        const cutPoint = Math.max(lastComma, lastBrace);
+        
+        if (cutPoint > 0) {
+          partialJson = aiAnalysisText.substring(0, cutPoint + 1) + '\n}';
+          try {
+            aiAnalysis = JSON.parse(partialJson);
+            console.log('[AI Debug] ✅ JSON parcial recuperado com sucesso');
+          } catch {
+            // Fallback completo
+            aiAnalysis = null;
+          }
+        }
+      }
+      
+      // Fallback structure se tudo falhar
+      if (!aiAnalysis) {
+        console.error('[AI Debug] ❌ Impossível recuperar JSON - usando fallback');
+        aiAnalysis = {
+          summary: { totalIssues: 0, criticalCount: 0, highCount: 0, mediumCount: 0, lowCount: 0 },
+          detectedComponents: [],
+          detectedHooks: [],
+          detectedApis: [],
+          errors: [{
+            id: 'parse_error',
+            title: 'Erro ao analisar resposta da IA',
+            description: 'A resposta da IA foi truncada ou está malformada. Clique em "Reanalizar" para tentar novamente.',
+            severity: 'high',
+            category: 'api',
+            affectedFiles: [],
+            errorDetails: `Finish reason: ${finishReason}, Parse error: ${parseError.message}`,
+            suggestedFix: 'Clique no botão "Reanalizar" para executar uma nova análise completa.'
+          }],
+          suggestions: [],
+          performanceIssues: [],
+          securityConcerns: [],
+          rawResponse: aiAnalysisText.substring(0, 1000),
+          truncated: finishReason === 'length'
+        };
+      }
     }
 
     const duration = Date.now() - startTime;

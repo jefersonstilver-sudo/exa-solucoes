@@ -201,7 +201,7 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
     videoLogger.logRPC('set_base_video_rpc_call', 'Chamando RPC safe_set_base_video', { slotId });
     
     const { data, error } = await supabase.rpc('safe_set_base_video', {
-      p_new_base_id: slotId
+      p_slot_id: slotId  // Nome correto do parâmetro
     });
     
     videoLogger.logRPC('set_base_video_rpc_response', 'Resposta da RPC recebida', { 

@@ -196,12 +196,27 @@ export const useAIDebug = () => {
     return null;
   }, []);
 
+  const reanalyzeCurrentPage = useCallback(async () => {
+    // Limpa cache antes de reanalizar
+    const cacheKey = `ai-debug-${window.location.pathname}`;
+    localStorage.removeItem(cacheKey);
+    
+    toast({
+      title: '🔄 Limpando Cache',
+      description: 'Executando nova análise...',
+    });
+    
+    // Executa análise nova
+    await analyzeCurrentPage();
+  }, [analyzeCurrentPage, toast]);
+
   return {
     isAnalyzing,
     progress,
     currentStep,
     analysis,
     analyzeCurrentPage,
+    reanalyzeCurrentPage,
     getCachedAnalysis,
   };
 };
