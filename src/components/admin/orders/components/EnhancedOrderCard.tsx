@@ -182,29 +182,92 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Botões de ação CRM */}
-            {item.type === 'order' || item.type === 'attempt' ? <div className="flex gap-1">
-                {whatsappNumber && <Button variant="outline" size="sm" onClick={() => window.open(`https://wa.me/55${whatsappNumber}?text=${whatsappMessage}`, '_blank')} className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400">
-                    <MessageCircle className="w-4 h-4" />
-                  </Button>}
-                
-                {item.client_email && <Button variant="outline" size="sm" onClick={() => window.open(`mailto:${item.client_email}?subject=Seu pedido Indexa&body=Olá! Gostaria de conversar sobre seu pedido...`, '_blank')} className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400">
-                    <Mail className="w-4 h-4" />
-                  </Button>}
-              </div> : null}
+            {/* Botões de ação - SEMPRE na mesma ordem para consistência visual */}
+            {item.type === 'order' && (
+              <>
+                {/* Botão WhatsApp */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => whatsappNumber && window.open(`https://wa.me/55${whatsappNumber}?text=${whatsappMessage}`, '_blank')} 
+                  disabled={!whatsappNumber}
+                  className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400 disabled:opacity-30"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </Button>
 
-            {item.type === 'order' && <>
-                <Button variant="outline" size="sm" onClick={() => onViewOrderDetails?.(item.id)}>
+                {/* Botão Email */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => item.client_email && window.open(`mailto:${item.client_email}?subject=Seu pedido Indexa&body=Olá! Gostaria de conversar sobre seu pedido...`, '_blank')} 
+                  disabled={!item.client_email}
+                  className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400 disabled:opacity-30"
+                >
+                  <Mail className="w-4 h-4" />
+                </Button>
+
+                {/* Botão Ver Detalhes */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => onViewOrderDetails?.(item.id)}
+                  className="hover:bg-muted"
+                >
                   <Eye className="w-4 h-4" />
                 </Button>
                 
-                {/* Botões de Bloqueio/Desbloqueio */}
-                {item.status === 'bloqueado' ? <Button variant="outline" size="sm" onClick={() => onUnblockOrder?.(item.id)} disabled={isUnblocking} className="text-green-600 hover:text-green-700">
+                {/* Botão Bloqueio/Desbloqueio */}
+                {item.status === 'bloqueado' ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => onUnblockOrder?.(item.id)} 
+                    disabled={isUnblocking} 
+                    className="text-green-600 hover:text-green-700"
+                  >
                     <ShieldOff className="w-4 h-4" />
-                  </Button> : ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status) && <Button variant="outline" size="sm" onClick={() => onBlockOrder?.(item.id)} disabled={isBlocking} className="text-red-600 hover:text-red-700">
-                      <Shield className="w-4 h-4" />
-                    </Button>}
-              </>}
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => onBlockOrder?.(item.id)} 
+                    disabled={isBlocking || !['pago', 'ativo', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status)}
+                    className="text-red-600 hover:text-red-700 disabled:opacity-30"
+                  >
+                    <Shield className="w-4 h-4" />
+                  </Button>
+                )}
+              </>
+            )}
+
+            {/* Botões para tentativas - também padronizados */}
+            {item.type === 'attempt' && (
+              <>
+                {/* Botão WhatsApp */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => whatsappNumber && window.open(`https://wa.me/55${whatsappNumber}?text=${whatsappMessage}`, '_blank')} 
+                  disabled={!whatsappNumber}
+                  className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400 disabled:opacity-30"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </Button>
+
+                {/* Botão Email */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => item.client_email && window.open(`mailto:${item.client_email}?subject=Sua cotação Indexa&body=Olá! Vi que você iniciou uma cotação...`, '_blank')} 
+                  disabled={!item.client_email}
+                  className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400 disabled:opacity-30"
+                >
+                  <Mail className="w-4 h-4" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </CardHeader>
