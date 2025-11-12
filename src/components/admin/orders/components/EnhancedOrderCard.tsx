@@ -40,7 +40,12 @@ const getStatusColor = (status: string, correctStatus?: string) => {
   };
   return statusMap[targetStatus] || 'bg-gray-100 text-gray-800 border-gray-300';
 };
-const getStatusText = (status: string, correctStatus?: string) => {
+const getStatusText = (status: string, correctStatus?: string, videoStatus?: string) => {
+  // Se o pedido tem vídeos aprovados/ativos, mostrar como "ativo"
+  if (status === 'pago' && (videoStatus === 'video_ativo' || videoStatus === 'video_aprovado')) {
+    return '🟢 Ativo';
+  }
+  
   const targetStatus = correctStatus || status;
   const statusMap: Record<string, string> = {
     // Novos status inteligentes com emojis
@@ -50,7 +55,8 @@ const getStatusText = (status: string, correctStatus?: string) => {
     'aguardando_pagamento': '⏳ Aguardando Pagamento',
     // Status legados
     'pendente': '⏳ Aguardando Pagamento',
-    'pago': '✅ Pago',
+    'ativo': '🟢 Ativo',
+    'pago': '✅ Pago - Aguardando Vídeo',
     'pago_pendente_video': '📹 Aguardando Vídeo',
     'video_enviado': '📤 Vídeo Enviado',
     'video_aprovado': '🟢 Em Exibição',
@@ -159,7 +165,7 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                 </CardTitle>
                 {item.coupon_code && <CouponBadge couponCode={item.coupon_code} size="md" />}
                 <Badge className={getStatusColor(item.status, item.correct_status)}>
-                  {getStatusText(item.status, item.correct_status)}
+                  {getStatusText(item.status, item.correct_status, item.video_status)}
                 </Badge>
                 <div className={`flex items-center gap-1 text-xs ${urgencyClass}`}>
                   <Clock className="w-3 h-3" />
