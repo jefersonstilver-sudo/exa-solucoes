@@ -15,14 +15,29 @@ import {
 } from "@/components/ui/sheet";
 import { ContextualDebugPanel } from './ContextualDebugPanel';
 import { GlobalDebugDashboard } from './GlobalDebugDashboard';
+import { useDebugContext } from '@/contexts/DebugContext';
 
 export const FloatingDebugButton: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [showGlobal, setShowGlobal] = useState(false);
   const [, forceUpdate] = useState({});
+  
+  const { isDebugMode, isDebugAuthorized, userEmail } = useDebugContext();
 
-  // Só mostra em desenvolvimento ou se houver uma flag no localStorage
-  const shouldShow = import.meta.env.DEV || localStorage.getItem('debug_mode') === 'true';
+  // Só mostra se:
+  // 1. Está em dev OU
+  // 2. Debug mode ativado E usuário autorizado
+  const shouldShow = import.meta.env.DEV || (isDebugMode && isDebugAuthorized);
+  
+  // Log de debug (apenas em dev)
+  if (import.meta.env.DEV) {
+    console.log('🐛 [FLOATING DEBUG] Status:', {
+      isDebugMode,
+      isDebugAuthorized,
+      userEmail,
+      shouldShow
+    });
+  }
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
@@ -33,7 +48,9 @@ export const FloatingDebugButton: React.FC = () => {
     }
   };
 
-  if (!shouldShow) return null;
+  if (!shouldShow) {
+    return null;
+  }
 
   return (
     <>
@@ -43,7 +60,7 @@ export const FloatingDebugButton: React.FC = () => {
             variant="outline"
             size="icon"
             className="fixed bottom-4 right-4 z-50 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-red-500 hover:bg-red-600 text-white border-red-600"
-            title="Abrir Debug Logs (Backend + Frontend)"
+            title={`🐛 Debug Mode (${userEmail || 'dev'})`}
           >
             <Bug className="w-5 h-5" />
           </Button>

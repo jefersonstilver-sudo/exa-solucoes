@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { ConsoleTab } from './ConsoleTab';
+import { DebugControlPanel } from './DebugControlPanel';
 import { 
   AlertCircle, 
   FileCode, 
@@ -104,6 +105,9 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
           </div>
         </CardHeader>
       </Card>
+
+      {/* Debug Control Panel */}
+      <DebugControlPanel />
 
       {/* Tabs */}
       <Tabs defaultValue="errors" className="w-full">

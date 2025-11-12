@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/hooks/useAuth';
 import { SimpleCartProvider } from '@/contexts/SimpleCartContext';
 import { ResponsiveProvider } from '@/contexts/ResponsiveContext';
+import { DebugProvider } from '@/contexts/DebugContext';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
 import PageTransitionLoader from '@/components/loading/PageTransitionLoader';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
@@ -401,13 +402,15 @@ function App() {
         <ResponsiveProvider>
           <TooltipProvider>
             <AuthProvider>
-              <Router>
-                <SimpleCartProvider>
-                  <ErrorBoundary>
-                    <AppContent />
-                  </ErrorBoundary>
-                </SimpleCartProvider>
-              </Router>
+              <DebugProvider>
+                <Router>
+                  <SimpleCartProvider>
+                    <ErrorBoundary>
+                      <AppContent />
+                    </ErrorBoundary>
+                  </SimpleCartProvider>
+                </Router>
+              </DebugProvider>
             </AuthProvider>
           </TooltipProvider>
         </ResponsiveProvider>

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useDebugContext } from '@/contexts/DebugContext';
 import { 
   Trash2, 
   Download, 
@@ -71,6 +72,7 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
 }) => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showSlotScheduleModal, setShowSlotScheduleModal] = useState(false);
+  const { forceCleanupEnabled } = useDebugContext();
 
   if (!slot.video_data) return null;
 
@@ -175,14 +177,14 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           <Trash2 className="h-4 w-4" />
         </Button>
 
-        {/* Limpeza Forçada - apenas se tiver onForceCleanup ou URL corrompida */}
-        {(onForceCleanup || hasCorruptedUrl) && (
+        {/* Limpeza Forçada - apenas se Force Cleanup estiver ativado no debug E (tiver onForceCleanup OU URL corrompida) */}
+        {forceCleanupEnabled && (onForceCleanup || hasCorruptedUrl) && (
           <Button
             variant="outline"
             size="sm"
             onClick={handleForceCleanup}
             className="border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white p-2"
-            title="⚠️ Limpeza Forçada - Remove vídeo corrompido bypassing validações"
+            title="⚠️ Limpeza Forçada - Remove vídeo corrompido bypassing validações (Ativado via Debug Mode)"
           >
             <AlertTriangle className="h-4 w-4" />
           </Button>

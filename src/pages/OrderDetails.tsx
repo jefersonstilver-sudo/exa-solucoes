@@ -5,6 +5,8 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { useRealOrderDetails } from '@/hooks/useRealOrderDetails';
 import { useVideoManagement } from '@/hooks/useVideoManagement';
 import { useOrderViewTracking } from '@/hooks/tracking/useOrderViewTracking';
+import { useAutoErrorDetection } from '@/hooks/useAutoErrorDetection';
+import { useDebugContext } from '@/contexts/DebugContext';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoManagementCard } from '@/components/order/VideoManagementCard';
@@ -18,11 +20,19 @@ const OrderDetails: React.FC = () => {
   const { user } = useUserSession();
   const { loading, orderDetails, orderVideos, panelData } = useRealOrderDetails(orderId || '');
   const { trackOrderView } = useOrderViewTracking();
+  const { isDebugMode } = useDebugContext();
   
   const videoManagement = useVideoManagement({
     orderId: orderId || '',
     userId: user?.id || '',
     orderStatus: orderDetails?.status || ''
+  });
+
+  // Auto-detecção de erros nos videoSlots (apenas quando debug mode estiver ativo)
+  useAutoErrorDetection({
+    videoSlots: videoManagement.videoSlots,
+    orderId: orderId || '',
+    enabled: isDebugMode
   });
 
   // Track order view when order details are loaded
