@@ -20,6 +20,8 @@ import { AIAnalysisProgressModal } from './AIAnalysisProgressModal';
 import { useDebugContext } from '@/contexts/DebugContext';
 import { useAIDebug } from '@/hooks/useAIDebug';
 import { AIDebugService } from '@/services/debug/AIDebugService';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const FloatingDebugButton: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -32,7 +34,35 @@ export const FloatingDebugButton: React.FC = () => {
   const { isAnalyzing, progress, currentStep, analysis, analyzeCurrentPage } = useAIDebug();
 
   useEffect(() => {
+    // Verificação inicial
     AIDebugService.isDebugAIEnabled().then(setDebugAIEnabled);
+
+    // Listener em tempo real para detectar quando Debug AI é ativado
+    const channel = supabase
+      .channel('debug-ai-config-changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'configuracoes_sistema' 
+        }, 
+        (payload) => {
+          console.log('🔄 Mudança detectada em configuracoes_sistema:', payload);
+          if (payload.new && 'debug_ai_enabled' in payload.new) {
+            const newValue = (payload.new as any).debug_ai_enabled;
+            console.log('🤖 Debug AI mudou para:', newValue);
+            setDebugAIEnabled(newValue);
+            if (newValue) {
+              toast.success('Debug AI ativado! Clique no botão vermelho para analisar.');
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
