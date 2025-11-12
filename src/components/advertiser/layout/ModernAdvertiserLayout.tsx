@@ -1,9 +1,9 @@
 
 import React from 'react';
-import CompleteResponsiveLayout from './CompleteResponsiveLayout';
+import NewModernAdvertiserLayout from './NewModernAdvertiserLayout';
 
 const ModernAdvertiserLayout = () => {
-  return <CompleteResponsiveLayout />;
+  return <NewModernAdvertiserLayout />;
 };
 
 export default ModernAdvertiserLayout;
