@@ -3,12 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, Building, DollarSign, Calendar, User, Mail, Phone, Shield, ShieldOff, Clock, MessageCircle, AlertTriangle, FileText } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Eye, Building, DollarSign, Calendar, User, Mail, Phone, Shield, ShieldOff, Clock, MessageCircle, AlertTriangle, FileText, Copy, ExternalLink } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { CouponBadge } from '@/components/admin/orders/CouponBadge';
+import { toast } from 'sonner';
+import { formatPhoneBR, cleanPhone, getWhatsAppLink, copyToClipboard } from '@/utils/whatsapp';
 interface EnhancedOrderCardProps {
   item: OrderOrAttempt;
   isSelected: boolean;
@@ -185,16 +188,135 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
             {/* Botões de ação - SEMPRE na mesma ordem para consistência visual */}
             {item.type === 'order' && (
               <>
-                {/* Botão WhatsApp */}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => whatsappNumber && window.open(`https://wa.me/55${whatsappNumber}?text=${whatsappMessage}`, '_blank')} 
-                  disabled={!whatsappNumber}
-                  className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400 disabled:opacity-30"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                </Button>
+                {/* Botão WhatsApp com Popover CRM */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={!whatsappNumber}
+                      className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400 disabled:opacity-30"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="end">
+                    <div className="space-y-3">
+                      <div className="font-semibold text-sm border-b pb-2">
+                        Informações de Contato CRM
+                      </div>
+                      
+                      {/* Nome do Cliente */}
+                      {item.client_name && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{item.client_name}</span>
+                        </div>
+                      )}
+                      
+                      {/* Telefone com ações */}
+                      {item.client_phone && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium text-sm">{formatPhoneBR(item.client_phone)}</span>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={async () => {
+                                  const clean = cleanPhone(item.client_phone!);
+                                  const success = await copyToClipboard(clean);
+                                  if (success) toast.success('Número copiado!');
+                                  else toast.error('Erro ao copiar');
+                                }}
+                                title="Copiar número"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={async () => {
+                                  const link = getWhatsAppLink(item.client_phone!);
+                                  const success = await copyToClipboard(link);
+                                  if (success) toast.success('Link do WhatsApp copiado!');
+                                  else toast.error('Erro ao copiar');
+                                }}
+                                title="Copiar link do WhatsApp"
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-green-600 hover:text-green-700"
+                                onClick={() => window.open(`https://wa.me/55${whatsappNumber}?text=${whatsappMessage}`, '_blank')}
+                                title="Abrir WhatsApp"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Email */}
+                      {item.client_email && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="truncate">{item.client_email}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 ml-auto"
+                            onClick={async () => {
+                              const success = await copyToClipboard(item.client_email!);
+                              if (success) toast.success('Email copiado!');
+                              else toast.error('Erro ao copiar');
+                            }}
+                            title="Copiar email"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* CPF */}
+                      {item.client_cpf && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span>CPF: {item.client_cpf}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 ml-auto"
+                            onClick={async () => {
+                              const success = await copyToClipboard(item.client_cpf!);
+                              if (success) toast.success('CPF copiado!');
+                              else toast.error('Erro ao copiar');
+                            }}
+                            title="Copiar CPF"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* Nacionalidade */}
+                      {nationality && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <User className="h-4 w-4" />
+                          <span>{nationality}</span>
+                        </div>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
                 {/* Botão Email */}
                 <Button 
@@ -245,16 +367,135 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
             {/* Botões para tentativas - também padronizados */}
             {item.type === 'attempt' && (
               <>
-                {/* Botão WhatsApp */}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => whatsappNumber && window.open(`https://wa.me/55${whatsappNumber}?text=${whatsappMessage}`, '_blank')} 
-                  disabled={!whatsappNumber}
-                  className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400 disabled:opacity-30"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                </Button>
+                {/* Botão WhatsApp com Popover CRM */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={!whatsappNumber}
+                      className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400 disabled:opacity-30"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="end">
+                    <div className="space-y-3">
+                      <div className="font-semibold text-sm border-b pb-2">
+                        Informações de Contato CRM
+                      </div>
+                      
+                      {/* Nome do Cliente */}
+                      {item.client_name && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{item.client_name}</span>
+                        </div>
+                      )}
+                      
+                      {/* Telefone com ações */}
+                      {item.client_phone && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium text-sm">{formatPhoneBR(item.client_phone)}</span>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={async () => {
+                                  const clean = cleanPhone(item.client_phone!);
+                                  const success = await copyToClipboard(clean);
+                                  if (success) toast.success('Número copiado!');
+                                  else toast.error('Erro ao copiar');
+                                }}
+                                title="Copiar número"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={async () => {
+                                  const link = getWhatsAppLink(item.client_phone!);
+                                  const success = await copyToClipboard(link);
+                                  if (success) toast.success('Link do WhatsApp copiado!');
+                                  else toast.error('Erro ao copiar');
+                                }}
+                                title="Copiar link do WhatsApp"
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-green-600 hover:text-green-700"
+                                onClick={() => window.open(`https://wa.me/55${whatsappNumber}?text=${whatsappMessage}`, '_blank')}
+                                title="Abrir WhatsApp"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Email */}
+                      {item.client_email && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="truncate">{item.client_email}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 ml-auto"
+                            onClick={async () => {
+                              const success = await copyToClipboard(item.client_email!);
+                              if (success) toast.success('Email copiado!');
+                              else toast.error('Erro ao copiar');
+                            }}
+                            title="Copiar email"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* CPF */}
+                      {item.client_cpf && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span>CPF: {item.client_cpf}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 ml-auto"
+                            onClick={async () => {
+                              const success = await copyToClipboard(item.client_cpf!);
+                              if (success) toast.success('CPF copiado!');
+                              else toast.error('Erro ao copiar');
+                            }}
+                            title="Copiar CPF"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* Nacionalidade */}
+                      {nationality && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <User className="h-4 w-4" />
+                          <span>{nationality}</span>
+                        </div>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
                 {/* Botão Email */}
                 <Button 
