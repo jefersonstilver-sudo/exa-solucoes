@@ -50,21 +50,12 @@ export const useContractStatus = (orderDetails: {
           approvedVideosCount = approvedVideos.length;
         }
       } catch (error) {
-        console.error('❌ [CONTRACT STATUS] Erro ao buscar vídeos aprovados:', error);
+        console.error('Erro ao buscar vídeos aprovados:', error);
       }
       
       // Usar timezone brasileiro para cálculos corretos
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
-      console.log('📅 [CONTRACT STATUS] Debug de datas:', {
-        data_inicio,
-        data_fim,
-        status,
-        today: today.toISOString(),
-        approvedVideosCount,
-        hasApprovedVideos: approvedVideosCount > 0
-      });
     
     let newContractData: ContractStatusReturn = {
       isActive: false,
@@ -94,35 +85,24 @@ export const useContractStatus = (orderDetails: {
       const timeDiff = endDateOnly.getTime() - today.getTime();
       const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
       
-      console.log('📅 [CONTRACT STATUS] Cálculo de dias:', {
-        endDateOnly: endDateOnly.toISOString(),
-        startDateOnly: startDateOnly.toISOString(),
-        today: today.toISOString(),
-        timeDiff,
-        daysRemaining
-      });
-      
       newContractData.daysRemaining = Math.max(0, daysRemaining);
       
       // Calcular horas restantes se < 24 horas
       if (daysRemaining === 0 && timeDiff > 0) {
         const hoursRemaining = Math.ceil(timeDiff / (1000 * 3600));
         newContractData.hoursRemaining = hoursRemaining;
-        console.log('⏰ [CONTRACT STATUS] Horas restantes:', hoursRemaining);
       }
       
       // Verificar se expirou
       if (daysRemaining < 0 || status === 'expirado') {
         newContractData.isExpired = true;
         newContractData.isActive = false;
-        console.log('❌ [CONTRACT STATUS] Contrato expirado');
       } else {
         newContractData.isActive = status === 'video_aprovado' || status === 'ativo';
         
         // Verificar se está próximo da expiração (7 dias)
         if (daysRemaining <= 7 && daysRemaining > 0) {
           newContractData.isExpiringSoon = true;
-          console.log('⚠️ [CONTRACT STATUS] Contrato expirando em breve');
         }
       }
       
@@ -131,17 +111,11 @@ export const useContractStatus = (orderDetails: {
       const elapsedTime = today.getTime() - startDateOnly.getTime();
       newContractData.totalDays = Math.ceil(totalTime / (1000 * 3600 * 24));
       newContractData.progressPercentage = Math.min(100, Math.max(0, (elapsedTime / totalTime) * 100));
-      
-      console.log('📊 [CONTRACT STATUS] Progresso calculado:', {
-        totalDays: newContractData.totalDays,
-        progressPercentage: newContractData.progressPercentage
-      });
       } else {
         // Contrato ainda não iniciou - aguardando aprovação de vídeo
         newContractData.isActive = false;
         newContractData.daysRemaining = 0;
         newContractData.totalDays = orderDetails.plano_meses * 30; // Estimativa
-        console.log('⏳ [CONTRACT STATUS] Contrato aguardando aprovação de vídeo - Videos aprovados:', approvedVideosCount);
       }
 
       setContractData(newContractData);

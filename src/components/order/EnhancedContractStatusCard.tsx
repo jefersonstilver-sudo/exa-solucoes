@@ -105,15 +105,8 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
         year: 'numeric'
       });
       
-      console.log('📅 [ENHANCED CONTRACT] Formatando data:', {
-        original: dateString,
-        parsed: date.toISOString(),
-        formatted: formattedDate
-      });
-      
       return formattedDate;
     } catch (error) {
-      console.error('❌ [ENHANCED CONTRACT] Erro ao formatar data:', dateString, error);
       return 'Data inválida';
     }
   };
@@ -194,20 +187,24 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
               <p className="font-medium">{formatDate(orderDetails.created_at)}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <PlayCircle className="h-4 w-4 text-gray-500" />
-            <div>
-              <p className="text-gray-500">Data de Início</p>
-              <p className="font-medium">{formatDate(orderDetails.data_inicio)}</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Flag className="h-4 w-4 text-gray-500" />
-            <div>
-              <p className="text-gray-500">Data de Término</p>
-              <p className="font-medium">{formatDate(orderDetails.data_fim)}</p>
-            </div>
-          </div>
+          {hasStarted && (
+            <>
+              <div className="flex items-center space-x-2">
+                <PlayCircle className="h-4 w-4 text-gray-500" />
+                <div>
+                  <p className="text-gray-500">Data de Início</p>
+                  <p className="font-medium">{formatDate(orderDetails.data_inicio)}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Flag className="h-4 w-4 text-gray-500" />
+                <div>
+                  <p className="text-gray-500">Data de Término</p>
+                  <p className="font-medium">{formatDate(orderDetails.data_fim)}</p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Detalhes do Plano */}

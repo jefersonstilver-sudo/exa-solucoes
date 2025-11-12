@@ -71,12 +71,15 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
     };
   };
   const getContractPeriod = () => {
-    if (orderDetails.data_inicio && orderDetails.data_fim) {
+    // Verificar se tem vídeo aprovado antes de mostrar datas
+    const hasApprovedVideo = orderDetails.status === 'video_aprovado' || orderDetails.status === 'ativo';
+    
+    if (hasApprovedVideo && orderDetails.data_inicio && orderDetails.data_fim) {
       const startDate = new Date(orderDetails.data_inicio).toLocaleDateString('pt-BR');
       const endDate = new Date(orderDetails.data_fim).toLocaleDateString('pt-BR');
       return `${startDate} - ${endDate}`;
     }
-    return `${orderDetails.plano_meses} ${orderDetails.plano_meses === 1 ? 'mês' : 'meses'}`;
+    return `${orderDetails.plano_meses} ${orderDetails.plano_meses === 1 ? 'mês' : 'meses'} (aguardando aprovação de vídeo)`;
   };
   const purchaseDateTime = formatDateTime(orderDetails.created_at);
   const paymentStatus = getPaymentStatus();
@@ -120,8 +123,15 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
             </div>
           </div>
           
-          {/* UPDATED: Usar nova coluna lista_predios com fallback para lista_paineis */}
-          
+          {orderDetails.cupom_id && (
+            <div className="flex items-center space-x-3">
+              <CreditCard className="h-6 w-6 text-purple-500" />
+              <div>
+                <p className="text-sm text-gray-600">Cupom Usado</p>
+                <CouponInfoDisplay cupomId={orderDetails.cupom_id} valorOriginal={orderDetails.valor_total} showDetails={false} />
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center space-x-3">
             <CheckCircle className="h-6 w-6 text-green-500" />

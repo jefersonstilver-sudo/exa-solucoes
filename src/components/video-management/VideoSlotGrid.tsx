@@ -2,7 +2,6 @@
 import React from 'react';
 import { VideoSlotCard } from './VideoSlotCard';
 import { VideoSlotStatus } from './VideoSlotStatus';
-import { VideoScheduleDebugPanel } from './VideoScheduleDebugPanel';
 import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
 
 interface VideoSlot {
@@ -107,9 +106,6 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   return (
     <div className="space-y-4">
       <VideoSlotStatus videoSlots={videoSlots} />
-      
-      {/* Painel de Debug de Agendamento */}
-      <VideoScheduleDebugPanel orderId={orderId} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {videoSlots.map((slot) => (
