@@ -19,6 +19,7 @@ import {
 import { VideoPlayer } from './VideoPlayer';
 import { VideoSlotActions } from './VideoSlotActions';
 import { VideoSlotUpload } from './VideoSlotUpload';
+import { VideoStatusBadge } from './VideoStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
@@ -152,65 +153,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
     rules: slot.schedule_rules
   });
 
-  const getStatusBadge = () => {
-    if (!slot.video_data) return null;
-    
-    const videoId = slot.video_data.id;
-    
-    console.log(`🔍 [SLOT_${slot.slot_position}] Calculando status:`, {
-      approvalStatus: slot.approval_status,
-      isBaseVideo: slot.is_base_video,
-      hasActiveSchedule,
-      isActive: slot.is_active,
-      isScheduledActiveNow: isScheduledActiveNow(),
-      scheduleRulesCount: slot.schedule_rules?.length || 0,
-      hasAnyScheduledActiveNow
-    });
-
-    if (slot.approval_status === 'rejected') {
-      return <Badge variant="destructive">REJEITADO</Badge>;
-    }
-
-    if (slot.approval_status === 'pending') {
-      return <Badge variant="secondary">PENDENTE</Badge>;
-    }
-
-    if (slot.approval_status === 'approved') {
-      // PRIORIDADE 1: Este vídeo está agendado e ativo AGORA (mostra EM EXIBIÇÃO + AGENDADO)
-      if (hasActiveSchedule && isScheduledActiveNow()) {
-        console.log(`✅ [SLOT_${slot.slot_position}] EM EXIBIÇÃO + AGENDADO (agendado vigente)`);
-        return (
-          <div className="flex gap-2">
-            <Badge className="bg-green-600 text-white">EM EXIBIÇÃO</Badge>
-            <Badge className="bg-blue-600 text-white">AGENDADO</Badge>
-          </div>
-        );
-      }
-      
-      // PRIORIDADE 2: Vídeo base em exibição (quando NÃO há NENHUM agendado ativo)
-      if (slot.is_base_video && !hasAnyScheduledActiveNow) {
-        console.log(`✅ [SLOT_${slot.slot_position}] EM EXIBIÇÃO (vídeo principal sem concorrência)`);
-        return <Badge className="bg-green-600 text-white">EM EXIBIÇÃO</Badge>;
-      }
-      
-      // PRIORIDADE 3: Vídeo base em standby (HÁ outro vídeo agendado ativo)
-      if (slot.is_base_video && hasAnyScheduledActiveNow) {
-        console.log(`⏸️ [SLOT_${slot.slot_position}] VÍDEO PRINCIPAL (em standby - outro agendado ativo)`);
-        return <Badge className="bg-yellow-500 text-white flex items-center gap-1"><Star className="h-3 w-3 fill-current" />Vídeo Principal</Badge>;
-      }
-      
-      // PRIORIDADE 4: Agendado mas fora do horário
-      if (hasActiveSchedule && !isScheduledActiveNow()) {
-        console.log(`⏰ [SLOT_${slot.slot_position}] AGENDADO (fora do horário)`);
-        return <Badge className="bg-blue-600 text-white">AGENDADO</Badge>;
-      }
-      
-      // Apenas aprovado
-      return <Badge variant="outline" className="text-green-600 border-green-600">APROVADO</Badge>;
-    }
-
-    return null;
-  };
 
   const getSelectionIcon = (slot: VideoSlot) => {
     if (slot.approval_status !== 'approved') {
@@ -282,7 +224,9 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   const isBlocked = slot.video_data && slot.approval_status !== 'approved';
   const cardClasses = `transition-all duration-200 bg-white border ${
     slot.is_base_video
-      ? 'border-2 border-yellow-400 bg-yellow-50 shadow-lg' 
+      ? 'border-4 border-yellow-500 bg-yellow-50 shadow-xl' 
+      : hasActiveSchedule && isScheduledActiveNow()
+        ? 'border-3 border-green-500 bg-green-50 shadow-lg'
       : hasActiveSchedule
         ? 'border-2 border-blue-400 bg-blue-50 shadow-md'
       : isBlocked
@@ -321,15 +265,16 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center space-x-1 bg-yellow-500 text-white px-3 py-1 rounded-md text-xs font-medium cursor-help">
-                      <Star className="h-3 w-3 fill-current" />
-                      <span>Vídeo Principal</span>
-                      <AlertCircle className="h-3 w-3" />
+                    <div className="flex items-center space-x-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-help shadow-md">
+                      <Star className="h-4 w-4 fill-current animate-pulse" />
+                      <span>VÍDEO PRINCIPAL</span>
+                      <Shield className="h-4 w-4" />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-xs">
-                    <p className="text-sm">
-                      Este é o vídeo sempre em exibição quando não houver nenhuma outra programação em andamento. É o vídeo padrão dos seus painéis.
+                    <p className="text-sm font-medium">🏠 Vídeo Principal Protegido</p>
+                    <p className="text-xs mt-1">
+                      Este vídeo está sempre ativo e será exibido automaticamente quando não houver outros agendamentos em andamento. Não pode ser desativado.
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -337,11 +282,20 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
             )}
             
             {/* Botão para trocar vídeo principal */}
-            {slot.video_data && slot.approval_status === 'approved' && !slot.is_base_video && totalApprovedVideos >= 2 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
+            {slot.video_data && slot.approval_status === 'approved' && !slot.is_base_video && !hasActiveSchedule && totalApprovedVideos >= 2 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={hasActiveSchedule}
+                      onClick={() => {
+                        console.log('🔄 [BASE_VIDEO] Definindo novo vídeo base:', {
+                          oldBaseVideoId: slot.id,
+                          newBaseVideoId: slot.id,
+                          timestamp: new Date().toISOString()
+                        });
                   const clickData = {
                     slotId: slot.id,
                     slotPosition: slot.slot_position,
@@ -377,11 +331,19 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                     videoLogger.logUserClick('set_base_video_no_callback', 'Callback não disponível', errorData);
                   }
                 }}
-                className="text-xs px-3 py-1 h-7 border-gray-300 text-gray-600 hover:bg-gray-50"
-                title="Clique para definir como vídeo principal"
-              >
-                Definir como Principal
-              </Button>
+                      className="text-xs px-3 py-1 h-7 border-gray-300 text-gray-600 hover:bg-gray-50"
+                      title="Clique para definir como vídeo principal"
+                    >
+                      Definir como Principal
+                    </Button>
+                  </TooltipTrigger>
+                  {hasActiveSchedule && (
+                    <TooltipContent>
+                      Remova os agendamentos antes de definir como principal
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             )}
             
             {slot.video_data && getStatusIcon(slot.approval_status)}
@@ -392,7 +354,15 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            {getStatusBadge()}
+            {slot.video_data && slot.approval_status === 'approved' && (
+              <VideoStatusBadge
+                isBaseVideo={slot.is_base_video}
+                hasScheduleRules={hasActiveSchedule}
+                scheduleRuleCount={slot.schedule_rules?.length || 0}
+              />
+            )}
+            {slot.approval_status === 'rejected' && <Badge variant="destructive">REJEITADO</Badge>}
+            {slot.approval_status === 'pending' && <Badge variant="secondary">PENDENTE</Badge>}
           </div>
         </div>
 
