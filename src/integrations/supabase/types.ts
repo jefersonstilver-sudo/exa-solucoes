@@ -713,13 +713,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "campaign_video_schedules_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaigns_advanced"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_campaign_video_schedules_campaign"
             columns: ["campaign_id"]
             isOneToOne: false
