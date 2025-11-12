@@ -102,7 +102,7 @@ const OrdersTabs: React.FC<OrdersTabsProps> = ({ onViewOrderDetails }) => {
   const activeOrders = sortByNewest(
     ordersAndAttempts.filter(item => 
       item.type === 'order' && (
-        ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status) ||
+        ['pago', 'ativo', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status) ||
         ['em_exibicao', 'aguardando_video', 'aguardando_aprovacao'].includes(item.correct_status || '')
       )
     )
