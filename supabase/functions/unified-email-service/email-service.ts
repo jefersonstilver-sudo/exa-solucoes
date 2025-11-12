@@ -1,6 +1,6 @@
 
 import { Resend } from "npm:resend@4.0.0";
-import { EmailTemplates } from "./email-templates.ts";
+import * as EmailTemplates from "../_shared/email-templates/index.ts";
 
 export class EmailService {
   private resend: Resend;
@@ -47,7 +47,11 @@ export class EmailService {
   }
 
   async sendConfirmationEmail(userEmail: string, userName: string, confirmationUrl: string) {
-    const html = EmailTemplates.createConfirmationHTML(userName, confirmationUrl);
+    const html = EmailTemplates.createConfirmationEmail({
+      userEmail,
+      userName,
+      confirmationUrl
+    });
 
     try {
       console.log('📧 [EMAIL] Enviando confirmação para:', userEmail);
@@ -82,7 +86,11 @@ export class EmailService {
   }
 
   async sendResendConfirmationEmail(userEmail: string, userName: string, confirmationUrl: string) {
-    const html = EmailTemplates.createResendHTML(userName, confirmationUrl);
+    const html = EmailTemplates.createResendConfirmationEmail({
+      userEmail,
+      userName,
+      confirmationUrl
+    });
 
     return await this.resend.emails.send({
       from: 'EXA <noreply@examidia.com.br>',
@@ -93,7 +101,11 @@ export class EmailService {
   }
 
   async sendPasswordRecoveryEmail(userEmail: string, userName: string, recoveryUrl: string) {
-    const html = EmailTemplates.createPasswordRecoveryHTML(userName, recoveryUrl);
+    const html = EmailTemplates.createPasswordRecoveryEmail({
+      userEmail,
+      userName,
+      recoveryUrl
+    });
 
     return await this.resend.emails.send({
       from: 'EXA <noreply@examidia.com.br>',
@@ -104,7 +116,12 @@ export class EmailService {
   }
 
   async sendVideoSubmittedEmail(userEmail: string, userName: string, videoTitle: string, orderId: string, userId?: string, videoId?: string) {
-    const html = EmailTemplates.createVideoSubmittedHTML(userName, videoTitle, orderId);
+    const html = EmailTemplates.createVideoSubmittedEmail({
+      userEmail,
+      userName,
+      videoTitle,
+      orderId
+    });
 
     try {
       console.log('📧 [EMAIL] Enviando confirmação de submissão para:', userEmail);
@@ -156,7 +173,15 @@ export class EmailService {
     userId?: string,
     videoId?: string
   ) {
-    const html = EmailTemplates.createVideoApprovedHTML(userName, videoTitle, buildings, startDate, endDate, orderId);
+    const html = EmailTemplates.createVideoApprovedEmail({
+      userEmail,
+      userName,
+      videoTitle,
+      buildings,
+      startDate,
+      endDate,
+      orderId
+    });
 
     try {
       console.log('📧 [EMAIL] Enviando aprovação de vídeo para:', userEmail);
@@ -206,7 +231,13 @@ export class EmailService {
     userId?: string,
     videoId?: string
   ) {
-    const html = EmailTemplates.createVideoRejectedHTML(userName, videoTitle, rejectionReason, orderId);
+    const html = EmailTemplates.createVideoRejectedEmail({
+      userEmail,
+      userName,
+      videoTitle,
+      rejectionReason,
+      orderId
+    });
 
     try {
       console.log('📧 [EMAIL] Enviando rejeição de vídeo para:', userEmail);
