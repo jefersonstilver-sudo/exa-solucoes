@@ -5,6 +5,7 @@ import { CartItem } from '@/types/cart';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { loadCartFromStorage, saveCartToStorage, clearCartStorage, LegacyCartItem } from '@/services/cartStorageService';
+import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 
 const convertLegacyToCartItem = (legacyItem: LegacyCartItem): CartItem => {
   const basePrice = legacyItem.panel.buildings?.preco_base || 200;
@@ -29,6 +30,7 @@ export const useSimpleCart = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
   const navigate = useNavigate();
+  const { trackCartAdd, trackCartRemove, trackCheckoutStart } = useBehaviorTracking();
 
   // Load cart on mount
   useEffect(() => {
@@ -91,17 +93,26 @@ export const useSimpleCart = () => {
 
     triggerAnimation();
     
+    // Track cart add event
+    trackCartAdd(panel.id, panel.buildings?.nome || 'Painel', panel.buildings?.preco_base || 200);
+    
     toast.success(`${panel.buildings?.nome || 'Painel'} adicionado ao carrinho!`, {
       duration: 2000,
       position: 'top-center'
     });
-  }, [triggerAnimation]);
+  }, [triggerAnimation, trackCartAdd]);
 
   const removeFromCart = useCallback((panelId: string) => {
     const item = cartItems.find(item => item.panel?.id === panelId);
     setCartItems(prev => prev.filter(item => item.panel?.id !== panelId));
+    
+    // Track cart remove event
+    if (item?.panel?.id) {
+      trackCartRemove(item.panel.id);
+    }
+    
     toast.success(`${item?.panel.buildings?.nome || 'Painel'} removido do carrinho`);
-  }, [cartItems]);
+  }, [cartItems, trackCartRemove]);
 
   const clearCart = useCallback(() => {
     setCartItems([]);
@@ -122,9 +133,14 @@ export const useSimpleCart = () => {
       toast.error('Carrinho vazio');
       return;
     }
+    
+    // Track checkout start event
+    const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
+    trackCheckoutStart(cartItems, totalPrice);
+    
     setIsOpen(false);
     navigate('/plano');
-  }, [cartItems.length, navigate]);
+  }, [cartItems, navigate, trackCheckoutStart]);
 
   return {
     cartItems,
