@@ -79,7 +79,7 @@ const BuildingStore = () => {
         ]}
       />
       {/* Container principal com padding para evitar sobreposição do header */}
-      <div className="min-h-screen w-full">
+      <div className="min-h-screen w-full pt-24">
         <div className="w-full container mx-auto px-4 md:px-6 py-6">
         <BuildingStoreLayout
           buildings={buildings}

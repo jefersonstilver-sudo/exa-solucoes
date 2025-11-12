@@ -80,34 +80,62 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
         return;
       }
 
-      // 2. ✅ Buscar TODOS os vídeos em exibição (selected_for_display = true)
+      // 2. ✅ Buscar apenas o vídeo em exibição atual para cada pedido
       const pedidoIds = pedidos.map(p => p.id);
       
-      console.log(`🔍 [VIDEOS] Buscando vídeos para ${pedidoIds.length} pedidos ativos`);
+      console.log(`🔍 [VIDEOS] Buscando vídeos em exibição para ${pedidoIds.length} pedidos ativos`);
 
-      // Buscar TODOS os vídeos em exibição diretamente
-      const { data: allVideosData, error: videosError } = await supabase
-        .from('pedido_videos')
-        .select(`
-          pedido_id,
-          video_id,
-          slot_position,
-          is_base_video,
-          selected_for_display,
-          is_active,
-          approval_status,
-          created_at,
-          videos!inner (
-            id,
-            nome,
-            url,
-            duracao
-          )
-        `)
-        .in('pedido_id', pedidoIds)
-        .eq('is_active', true)
-        .eq('selected_for_display', true)
-        .eq('approval_status', 'approved');
+      // Buscar vídeo em exibição atual usando a RPC para cada pedido
+      const videoPromises = pedidoIds.map(async (pedidoId) => {
+        const { data: currentVideoData, error: rpcError } = await supabase.rpc('get_current_display_video', {
+          p_pedido_id: pedidoId
+        });
+
+        if (rpcError) {
+          console.error(`❌ [VIDEOS] Erro ao buscar vídeo atual para pedido ${pedidoId}:`, rpcError);
+          return null;
+        }
+
+        if (!currentVideoData || currentVideoData.length === 0) {
+          return null;
+        }
+
+        const videoInfo = currentVideoData[0];
+        
+        // Buscar dados completos do vídeo
+        const { data: videoData, error: videoError } = await supabase
+          .from('pedido_videos')
+          .select(`
+            pedido_id,
+            video_id,
+            slot_position,
+            is_base_video,
+            selected_for_display,
+            is_active,
+            approval_status,
+            created_at,
+            videos!inner (
+              id,
+              nome,
+              url,
+              duracao
+            )
+          `)
+          .eq('pedido_id', pedidoId)
+          .eq('video_id', videoInfo.video_id)
+          .eq('approval_status', 'approved')
+          .single();
+
+        if (videoError || !videoData) {
+          console.error(`❌ [VIDEOS] Erro ao buscar dados do vídeo ${videoInfo.video_id}:`, videoError);
+          return null;
+        }
+
+        return videoData;
+      });
+
+      const allVideosData = (await Promise.all(videoPromises)).filter(v => v !== null);
+      const videosError = null;
 
       if (videosError) {
         console.error('❌ [VIDEOS] Erro ao buscar vídeos:', videosError);

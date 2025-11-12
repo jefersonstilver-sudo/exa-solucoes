@@ -18,10 +18,6 @@ export const LoginFooter = ({ redirectPath }: LoginFooterProps) => {
           Crie uma agora
         </Link>
       </div>
-      
-      <div className="text-center text-xs text-muted-foreground">
-        <p>Ao entrar, você concorda com os nossos <a href="#" className="underline hover:text-indexa-purple transition-colors">termos de uso</a> e <a href="#" className="underline hover:text-indexa-purple transition-colors">política de privacidade</a>.</p>
-      </div>
     </>
   );
 };
