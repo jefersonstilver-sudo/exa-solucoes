@@ -31,11 +31,11 @@ export const useOrdersWithAttemptsRefactored = () => {
     try {
       setLoading(true);
       
-      // Usar a função SQL NOVA para pedidos com status inteligente
-      const { data: pedidosComStatus, error: pedidosError } = await supabase.rpc('get_pedidos_com_status_inteligente' as any) as { data: any[] | null; error: any };
+      // Buscar pedidos usando a RPC get_pedidos_com_clientes
+      const { data: pedidosComClientes, error: pedidosError } = await supabase.rpc('get_pedidos_com_clientes');
       
       if (pedidosError) {
-        console.error('❌ Erro ao buscar pedidos com status inteligente:', pedidosError);
+        console.error('❌ Erro ao buscar pedidos:', pedidosError);
         throw pedidosError;
       }
       
@@ -45,16 +45,12 @@ export const useOrdersWithAttemptsRefactored = () => {
       // Enriquecer tentativas com emails
       const tentativasComEmails = await enrichAttemptsWithEmails(tentativas);
       
-      // IMPORTANTE: Enriquecer pedidos também com informações completas do cliente
-      const pedidosEnriquecidos = await enrichOrdersWithEmails((Array.isArray(pedidosComStatus) ? pedidosComStatus : []) as any[]);
-      
-      // Formatar dados - pedidos já vêm formatados da função SQL, mas vamos usar os enriquecidos
-      const pedidosFormatados = pedidosEnriquecidos?.map((pedido: any) => ({
+      // Formatar dados dos pedidos
+      const pedidosFormatados = (pedidosComClientes || []).map((pedido: any) => ({
         id: pedido.id,
         type: 'order' as const,
         created_at: pedido.created_at,
         status: pedido.status,
-        correct_status: pedido.correct_status, // IMPORTANTE: incluir correct_status calculado pela RPC
         valor_total: pedido.valor_total,
         lista_paineis: pedido.lista_paineis,
         plano_meses: pedido.plano_meses,
@@ -63,12 +59,9 @@ export const useOrdersWithAttemptsRefactored = () => {
         client_id: pedido.client_id,
         client_email: pedido.client_email,
         client_name: pedido.client_name,
-        client_phone: pedido.client_phone,
-        client_cpf: pedido.client_cpf,
         video_status: pedido.video_status,
-        cupom_id: pedido.cupom_id,
-        coupon_code: pedido.coupon_code
-      })) || [];
+        cupom_id: pedido.cupom_id
+      }));
       
       const tentativasFormatadas = formatAttemptsData(tentativasComEmails);
       
