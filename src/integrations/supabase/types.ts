@@ -3754,6 +3754,10 @@ export type Database = {
         Args: { p_codigo: string; p_pedido_id: string }
         Returns: Json
       }
+      approve_video: {
+        Args: { p_approved_by: string; p_pedido_video_id: string }
+        Returns: boolean
+      }
       audit_unauthorized_uploads: { Args: never; Returns: Json }
       auto_cleanup_paid_attempts: { Args: never; Returns: Json }
       auto_fix_lost_transactions: { Args: never; Returns: Json }
@@ -3960,6 +3964,13 @@ export type Database = {
           nome: string
         }[]
       }
+      get_buildings_current_video_count: {
+        Args: { p_building_ids: string[] }
+        Returns: {
+          building_id: string
+          current_videos_count: number
+        }[]
+      }
       get_buildings_for_authenticated_users: {
         Args: never
         Returns: {
@@ -4023,12 +4034,8 @@ export type Database = {
       get_current_display_video: {
         Args: { p_pedido_id: string }
         Returns: {
-          duracao: number
-          id: string
-          nome: string
-          orientacao: string
-          tem_audio: boolean
-          url: string
+          is_scheduled: boolean
+          priority_type: string
           video_id: string
         }[]
       }
