@@ -73,7 +73,7 @@ const ModernAdvertiserSidebar = () => {
                 'flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200',
                 isActive(item.href, item.exact)
                   ? 'bg-[#00FFAB] text-[#9C1E1E] shadow-lg font-semibold'
-                  : 'text-purple-100 hover:text-white hover:bg-white/10 hover:translate-x-1'
+                  : 'text-white hover:text-white hover:bg-white/10 hover:translate-x-1'
               )}
             >
               <item.icon className="h-5 w-5" />

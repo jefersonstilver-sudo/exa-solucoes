@@ -43,11 +43,11 @@ const DocumentInput: React.FC<DocumentInputProps> = ({
       {/* Tipo de Documento */}
       <div className="space-y-2">
         <Label htmlFor="documentType" className="flex items-center text-gray-900">
-          <FileText className="h-4 w-4 mr-2 text-indexa-purple" /> 
+          <FileText className="h-4 w-4 mr-2 text-exa-red" /> 
           Tipo de documento <span className="text-red-500 ml-1">*</span>
         </Label>
         <Select value={documentType} onValueChange={onDocumentTypeChange}>
-          <SelectTrigger className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900">
+          <SelectTrigger className="border-gray-300 focus:border-exa-red h-11 text-gray-900">
             <SelectValue placeholder="Selecione o tipo de documento" />
           </SelectTrigger>
           <SelectContent className="bg-white border border-gray-200">
@@ -61,11 +61,11 @@ const DocumentInput: React.FC<DocumentInputProps> = ({
       {isDocumentoEstrangeiro && (
         <div className="space-y-2">
           <Label htmlFor="country" className="flex items-center text-gray-900">
-            <Globe className="h-4 w-4 mr-2 text-indexa-purple" /> 
+            <Globe className="h-4 w-4 mr-2 text-exa-red" /> 
             País <span className="text-red-500 ml-1">*</span>
           </Label>
           <Select value={country || ''} onValueChange={onCountryChange}>
-            <SelectTrigger className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900">
+            <SelectTrigger className="border-gray-300 focus:border-exa-red h-11 text-gray-900">
               <SelectValue placeholder="Selecione o país" />
             </SelectTrigger>
             <SelectContent className="bg-white border border-gray-200">
@@ -79,7 +79,7 @@ const DocumentInput: React.FC<DocumentInputProps> = ({
       {/* Campo de Número do Documento */}
       <div className="space-y-2">
         <Label htmlFor="document" className="flex items-center text-gray-900">
-          <FileText className="h-4 w-4 mr-2 text-indexa-purple" /> 
+          <FileText className="h-4 w-4 mr-2 text-exa-red" /> 
           {documentType === 'cpf' ? 'CPF' : 'Número do Documento'}
           <span className="text-red-500 ml-1">*</span>
         </Label>
@@ -90,7 +90,7 @@ const DocumentInput: React.FC<DocumentInputProps> = ({
           value={document}
           onChange={onDocumentChange}
           required
-          className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
+          className="border-gray-300 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
           maxLength={documentType === 'cpf' ? 14 : 30}
         />
         {documentType === 'cpf' && (

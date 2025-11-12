@@ -53,7 +53,7 @@ const ResponsiveAdvertiserSidebar = ({
               className="fixed left-0 top-0 z-[110] h-full w-80 max-w-[85vw]"
               style={{ pointerEvents: 'auto' }}
             >
-              <div className="relative h-full bg-gradient-to-b from-[#3C1361] via-[#5a1a8f] to-[#8b1874]">
+              <div className="relative h-full bg-gradient-to-b from-exa-red via-exa-red/90 to-exa-red/80">
                 <AdvertiserSidebarContent onItemClick={onClose} />
                 <button
                   onClick={onClose}

@@ -15,7 +15,7 @@ const LoginModeToggle: React.FC<LoginModeToggleProps> = ({ mode, onToggle }) => 
     <div className="flex items-center">
       <div 
         className={`h-7 w-14 rounded-full p-1 cursor-pointer transition-colors ${
-          mode === 'admin' ? 'bg-amber-500' : 'bg-indexa-mint'
+          mode === 'admin' ? 'bg-amber-500' : 'bg-[#00FFAB]'
         }`}
         onClick={onToggle}
       >

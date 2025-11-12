@@ -41,7 +41,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     <form onSubmit={onSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="name" className="flex items-center text-gray-900">
-          <UserCheck className="h-4 w-4 mr-2 text-indexa-purple" /> Nome completo
+          <UserCheck className="h-4 w-4 mr-2 text-exa-red" /> Nome completo
         </Label>
         <Input
           id="name"
@@ -50,13 +50,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
           required
-          className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
+          className="border-gray-300 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
         />
       </div>
       
       <div className="space-y-2">
         <Label htmlFor="email" className="flex items-center text-gray-900">
-          <Mail className="h-4 w-4 mr-2 text-indexa-purple" /> Email
+          <Mail className="h-4 w-4 mr-2 text-exa-red" /> Email
         </Label>
         <Input
           id="email"
@@ -65,13 +65,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
           required
-          className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
+          className="border-gray-300 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
         />
       </div>
       
       <div className="space-y-2">
         <Label htmlFor="password" className="flex items-center text-gray-900">
-          <Key className="h-4 w-4 mr-2 text-indexa-purple" /> Senha
+          <Key className="h-4 w-4 mr-2 text-exa-red" /> Senha
         </Label>
         <PasswordInput
           id="password"
@@ -79,7 +79,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           value={password}
           onChange={(e) => onPasswordChange(e.target.value)}
           required
-          className="border-indexa-purple/20 focus:border-indexa-purple h-11 text-gray-900 placeholder-gray-500"
+          className="border-gray-300 focus:border-exa-red h-11 text-gray-900 placeholder-gray-500"
         />
         <p className="text-xs text-gray-600">
           A senha deve ter pelo menos 6 caracteres
@@ -100,7 +100,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
       >
         <Button 
           type="submit" 
-          className="w-full bg-indexa-purple hover:bg-indexa-purple-dark transition-all duration-200 h-11"
+          className="w-full bg-exa-red hover:bg-exa-red/90 transition-all duration-200 h-11"
           disabled={isLoading}
         >
           {isLoading ? (

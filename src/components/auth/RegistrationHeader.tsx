@@ -12,7 +12,7 @@ const RegistrationHeader: React.FC = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.5 }}
       >
-        <CardTitle className="text-2xl font-bold text-indexa-purple flex items-center justify-center gap-2">
+        <CardTitle className="text-2xl font-bold text-exa-red flex items-center justify-center gap-2">
           <UserPlus size={24} /> Crie sua conta
         </CardTitle>
         <CardDescription className="text-gray-600">

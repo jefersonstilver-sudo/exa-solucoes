@@ -92,7 +92,7 @@ const RegistrationContainer: React.FC<RegistrationContainerProps> = ({
               <span className="text-gray-600">Já tem uma conta?</span>{' '}
               <Link 
                 to={`/login${redirectPath ? `?redirect=${encodeURIComponent(redirectPath)}` : ''}`}
-                className="font-medium text-indexa-purple hover:text-indexa-purple-dark hover:underline transition-colors"
+                className="font-medium text-exa-red hover:text-exa-red/90 hover:underline transition-colors"
               >
                 Faça login
               </Link>
@@ -101,11 +101,11 @@ const RegistrationContainer: React.FC<RegistrationContainerProps> = ({
             <div className="text-center text-xs text-gray-500 px-2">
               <p>
                 Ao criar uma conta, você concorda com os nossos{' '}
-                <a href="#" className="underline hover:text-indexa-purple transition-colors">
+                <a href="#" className="underline hover:text-exa-red transition-colors">
                   termos de uso
                 </a>{' '}
                 e{' '}
-                <a href="#" className="underline hover:text-indexa-purple transition-colors">
+                <a href="#" className="underline hover:text-exa-red transition-colors">
                   política de privacidade
                 </a>.
               </p>

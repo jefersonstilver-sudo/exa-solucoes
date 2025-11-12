@@ -49,7 +49,7 @@ const AdvertiserAccessButton: React.FC<AdvertiserAccessButtonProps> = ({
               className={`relative ${className}`}
             >
               {isAdvertiser ? (
-                <UserCheck className="h-5 w-5 text-indexa-mint" />
+                <UserCheck className="h-5 w-5 text-[#00FFAB]" />
               ) : (
                 <Users className="h-5 w-5 text-gray-400" />
               )}
@@ -72,7 +72,7 @@ const AdvertiserAccessButton: React.FC<AdvertiserAccessButtonProps> = ({
         className={`flex items-center gap-2 text-sm ${className}`}
       >
         {isAdvertiser ? (
-          <UserCheck className="h-4 w-4 text-indexa-mint" />
+          <UserCheck className="h-4 w-4 text-[#00FFAB]" />
         ) : (
           <Users className="h-4 w-4 text-gray-400" />
         )}

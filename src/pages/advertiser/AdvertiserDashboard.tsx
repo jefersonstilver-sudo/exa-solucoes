@@ -211,7 +211,7 @@ const AdvertiserDashboard = () => {
   }];
   if (isLoading || loadingStats) {
     return <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
+        <Loader2 className="h-12 w-12 animate-spin text-exa-red" />
         <p className="ml-2 text-lg">Carregando dashboard...</p>
       </div>;
   }
@@ -235,7 +235,7 @@ const AdvertiserDashboard = () => {
           <p className="text-gray-600 mt-1">Bem-vindo de volta! Aqui está o resumo das suas campanhas.</p>
         </div>
         <div className="flex space-x-3">
-          <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-indexa-purple hover:bg-indexa-purple/90">
+          <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-exa-red hover:bg-exa-red/90">
             Comprar Painéis
           </Button>
         </div>
@@ -336,8 +336,8 @@ const AdvertiserDashboard = () => {
           {recentOrders.length > 0 ? <div className="space-y-4">
               {recentOrders.map(order => <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-indexa-purple/10 rounded-lg flex items-center justify-center">
-                      <ShoppingBag className="h-5 w-5 text-indexa-purple" />
+                    <div className="w-10 h-10 bg-exa-red/10 rounded-lg flex items-center justify-center">
+                      <ShoppingBag className="h-5 w-5 text-exa-red" />
                     </div>
                     <div>
                       <p className="font-medium">Pedido #{order.id.substring(0, 8)}</p>

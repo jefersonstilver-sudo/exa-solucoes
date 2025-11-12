@@ -133,7 +133,7 @@ const MyVideos = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
+        <Loader2 className="h-12 w-12 animate-spin text-exa-red" />
         <p className="ml-2 text-lg">Carregando vídeos...</p>
       </div>
     );
@@ -147,7 +147,7 @@ const MyVideos = () => {
           <h1 className="text-3xl font-bold text-gray-900">Meus Vídeos</h1>
           <p className="text-gray-600 mt-1">Gerencie todos os seus vídeos publicitários</p>
         </div>
-        <Button onClick={handleUpload} className="bg-indexa-purple hover:bg-indexa-purple/90">
+        <Button onClick={handleUpload} className="bg-exa-red hover:bg-exa-red/90">
           <Upload className="h-4 w-4 mr-2" />
           Fazer Upload
         </Button>
@@ -216,7 +216,7 @@ const MyVideos = () => {
               Você ainda não fez upload de nenhum vídeo. Comece enviando seus materiais criativos.
             </p>
             <div className="flex justify-center space-x-4">
-              <Button onClick={handleUpload} className="bg-indexa-purple hover:bg-indexa-purple/90">
+              <Button onClick={handleUpload} className="bg-exa-red hover:bg-exa-red/90">
                 <Upload className="h-4 w-4 mr-2" />
                 Fazer Primeiro Upload
               </Button>

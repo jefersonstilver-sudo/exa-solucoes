@@ -144,12 +144,12 @@ const AdvertiserOrders = () => {
         await finalizeAttemptToOrder(item.id);
       }
     };
-    return <Card className={cn('hover:shadow-lg transition-all duration-200 border-l-4', item.type === 'attempt' ? 'border-l-orange-500' : 'border-l-indexa-purple')}>
+    return <Card className={cn('hover:shadow-lg transition-all duration-200 border-l-4', item.type === 'attempt' ? 'border-l-orange-500' : 'border-l-exa-red')}>
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
             <div className="flex-1 space-y-3">
               <div className="flex items-center space-x-3">
-                <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', item.type === 'attempt' ? 'bg-orange-500/10' : 'bg-indexa-purple/10')}>
+                <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', item.type === 'attempt' ? 'bg-orange-500/10' : 'bg-exa-red/10')}>
                   <StatusIcon className={cn('h-5 w-5', item.type === 'attempt' ? 'text-orange-500' : statusInfo.color.replace('text-', ''))} />
                 </div>
                 <div>
@@ -162,7 +162,7 @@ const AdvertiserOrders = () => {
                   <p className="text-sm text-gray-500">
                     Criado em {formatDate(item.created_at)}
                     {item.type === 'order' && item.nome_pedido && (
-                      <span className="ml-2 text-xs text-indexa-purple">• Nome personalizado</span>
+                      <span className="ml-2 text-xs text-exa-red">• Nome personalizado</span>
                     )}
                   </p>
                 </div>
@@ -223,7 +223,7 @@ const AdvertiserOrders = () => {
   };
   if (loading) {
     return <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
+        <Loader2 className="h-12 w-12 animate-spin text-exa-red" />
         <p className="ml-2 text-lg">Carregando seus pedidos...</p>
       </div>;
   }
@@ -234,7 +234,7 @@ const AdvertiserOrders = () => {
           <h1 className="text-3xl font-bold text-gray-900">Meus Pedidos</h1>
           <p className="text-gray-600 mt-1">Acompanhe o status e histórico de todas as suas campanhas e tentativas</p>
         </div>
-        <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-indexa-purple hover:bg-indexa-purple/90">
+        <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-exa-red hover:bg-exa-red/90">
           <ShoppingBag className="h-4 w-4 mr-2" />
           Novo Pedido
         </Button>

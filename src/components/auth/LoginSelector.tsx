@@ -24,7 +24,7 @@ const LoginSelector: React.FC<LoginSelectorProps> = ({ onLoginSuccess }) => {
   } = useLoginLogic({ onLoginSuccess });
 
   return (
-    <div className="absolute right-0 top-[60px] w-[350px] bg-gradient-to-br from-[#2a0d5c] via-[#3e1c85] to-[#4f28a1] rounded-xl shadow-xl overflow-hidden z-50">
+    <div className="absolute right-0 top-[60px] w-[350px] bg-gradient-to-br from-exa-red via-exa-red/90 to-exa-red/80 rounded-xl shadow-xl overflow-hidden z-50">
       <div className="p-5 text-white">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">

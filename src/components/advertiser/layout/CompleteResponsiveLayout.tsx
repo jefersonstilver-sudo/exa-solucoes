@@ -53,7 +53,7 @@ const CompleteResponsiveLayout = () => {
                     variant="ghost"
                     size="icon"
                     onClick={handleSidebarOpen}
-                    className="flex-shrink-0 bg-gradient-to-r from-[#3C1361] to-[#5a1a8f] text-white hover:from-[#5a1a8f] hover:to-[#3C1361] shadow-md transition-all duration-300"
+                    className="flex-shrink-0 bg-gradient-to-r from-exa-red to-exa-red/90 text-white hover:from-exa-red/90 hover:to-exa-red shadow-md transition-all duration-300"
                     aria-label="Abrir menu"
                   >
                     <Menu className="h-5 w-5" />

@@ -12,7 +12,7 @@ export const LoginFormActions = ({ isLoading, onQuickLogin }: LoginFormActionsPr
   return (
     <Button
       type="submit"
-      className="w-full bg-indexa-purple hover:bg-indexa-purple-dark transition-colors"
+      className="w-full bg-exa-red hover:bg-exa-red/90 transition-colors"
       disabled={isLoading}
     >
       {isLoading ? (

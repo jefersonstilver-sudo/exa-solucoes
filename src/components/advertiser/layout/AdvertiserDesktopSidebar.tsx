@@ -100,10 +100,10 @@ const AdvertiserDesktopSidebar = ({
               transition={{ duration: 0.2 }}
               className="flex items-center space-x-3"
             >
-              <div className="w-8 h-8 bg-indexa-purple rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">I</span>
+              <div className="w-8 h-8 bg-exa-red rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">E</span>
               </div>
-              <span className="font-semibold text-gray-900">INDEXA</span>
+              <span className="font-semibold text-gray-900">EXA</span>
             </motion.div>
           )}
           
@@ -139,14 +139,14 @@ const AdvertiserDesktopSidebar = ({
                   'w-full justify-start h-12 px-3',
                   collapsed && 'justify-center px-0',
                   active
-                    ? 'bg-indexa-purple/10 text-indexa-purple hover:bg-indexa-purple/20'
+                    ? 'bg-exa-red/10 text-exa-red hover:bg-exa-red/20'
                     : 'text-gray-700 hover:bg-gray-100'
                 )}
               >
                 <Icon className={cn(
                   'h-5 w-5',
                   !collapsed && 'mr-3',
-                  active ? 'text-indexa-purple' : 'text-gray-500'
+                  active ? 'text-exa-red' : 'text-gray-500'
                 )} />
                 
                 {!collapsed && (
