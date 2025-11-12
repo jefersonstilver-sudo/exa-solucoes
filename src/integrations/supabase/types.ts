@@ -1160,6 +1160,180 @@ export type Database = {
           },
         ]
       }
+      configuracoes_adicionais: {
+        Row: {
+          backup_automatico_ativo: boolean | null
+          backup_frequencia: string | null
+          backup_retencao_dias: number | null
+          contato_email: string | null
+          contato_telefone: string | null
+          contato_whatsapp: string | null
+          created_at: string
+          email_footer_texto: string | null
+          email_remetente_email: string | null
+          email_remetente_nome: string | null
+          endereco_bairro: string | null
+          endereco_cep: string | null
+          endereco_cidade: string | null
+          endereco_complemento: string | null
+          endereco_estado: string | null
+          endereco_numero: string | null
+          endereco_rua: string | null
+          facebook_pixel_id: string | null
+          google_analytics_id: string | null
+          google_tag_manager_id: string | null
+          id: string
+          limite_pedidos_simultaneos: number | null
+          limite_tamanho_video_mb: number | null
+          limite_videos_por_cliente: number | null
+          manutencao_mensagem: string | null
+          modo_demonstracao: boolean | null
+          mostrar_precos: boolean | null
+          notificacoes_admin_email: string | null
+          notificacoes_clientes_novos: boolean | null
+          notificacoes_email_ativas: boolean | null
+          notificacoes_pagamentos: boolean | null
+          notificacoes_pedidos_novos: boolean | null
+          permitir_registro_publico: boolean | null
+          politica_cookies_url: string | null
+          politica_privacidade_url: string | null
+          seguranca_ip_whitelist: string[] | null
+          seguranca_max_tentativas_login: number | null
+          seguranca_sessao_timeout_minutos: number | null
+          seguranca_tempo_bloqueio_minutos: number | null
+          seo_description: string | null
+          seo_keywords: string | null
+          site_descricao: string | null
+          site_favicon_url: string | null
+          site_logo_url: string | null
+          site_nome: string | null
+          site_slogan: string | null
+          social_facebook: string | null
+          social_instagram: string | null
+          social_linkedin: string | null
+          social_twitter: string | null
+          social_youtube: string | null
+          suporte_email: string | null
+          suporte_horario: string | null
+          termos_uso_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          backup_automatico_ativo?: boolean | null
+          backup_frequencia?: string | null
+          backup_retencao_dias?: number | null
+          contato_email?: string | null
+          contato_telefone?: string | null
+          contato_whatsapp?: string | null
+          created_at?: string
+          email_footer_texto?: string | null
+          email_remetente_email?: string | null
+          email_remetente_nome?: string | null
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_cidade?: string | null
+          endereco_complemento?: string | null
+          endereco_estado?: string | null
+          endereco_numero?: string | null
+          endereco_rua?: string | null
+          facebook_pixel_id?: string | null
+          google_analytics_id?: string | null
+          google_tag_manager_id?: string | null
+          id?: string
+          limite_pedidos_simultaneos?: number | null
+          limite_tamanho_video_mb?: number | null
+          limite_videos_por_cliente?: number | null
+          manutencao_mensagem?: string | null
+          modo_demonstracao?: boolean | null
+          mostrar_precos?: boolean | null
+          notificacoes_admin_email?: string | null
+          notificacoes_clientes_novos?: boolean | null
+          notificacoes_email_ativas?: boolean | null
+          notificacoes_pagamentos?: boolean | null
+          notificacoes_pedidos_novos?: boolean | null
+          permitir_registro_publico?: boolean | null
+          politica_cookies_url?: string | null
+          politica_privacidade_url?: string | null
+          seguranca_ip_whitelist?: string[] | null
+          seguranca_max_tentativas_login?: number | null
+          seguranca_sessao_timeout_minutos?: number | null
+          seguranca_tempo_bloqueio_minutos?: number | null
+          seo_description?: string | null
+          seo_keywords?: string | null
+          site_descricao?: string | null
+          site_favicon_url?: string | null
+          site_logo_url?: string | null
+          site_nome?: string | null
+          site_slogan?: string | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_twitter?: string | null
+          social_youtube?: string | null
+          suporte_email?: string | null
+          suporte_horario?: string | null
+          termos_uso_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          backup_automatico_ativo?: boolean | null
+          backup_frequencia?: string | null
+          backup_retencao_dias?: number | null
+          contato_email?: string | null
+          contato_telefone?: string | null
+          contato_whatsapp?: string | null
+          created_at?: string
+          email_footer_texto?: string | null
+          email_remetente_email?: string | null
+          email_remetente_nome?: string | null
+          endereco_bairro?: string | null
+          endereco_cep?: string | null
+          endereco_cidade?: string | null
+          endereco_complemento?: string | null
+          endereco_estado?: string | null
+          endereco_numero?: string | null
+          endereco_rua?: string | null
+          facebook_pixel_id?: string | null
+          google_analytics_id?: string | null
+          google_tag_manager_id?: string | null
+          id?: string
+          limite_pedidos_simultaneos?: number | null
+          limite_tamanho_video_mb?: number | null
+          limite_videos_por_cliente?: number | null
+          manutencao_mensagem?: string | null
+          modo_demonstracao?: boolean | null
+          mostrar_precos?: boolean | null
+          notificacoes_admin_email?: string | null
+          notificacoes_clientes_novos?: boolean | null
+          notificacoes_email_ativas?: boolean | null
+          notificacoes_pagamentos?: boolean | null
+          notificacoes_pedidos_novos?: boolean | null
+          permitir_registro_publico?: boolean | null
+          politica_cookies_url?: string | null
+          politica_privacidade_url?: string | null
+          seguranca_ip_whitelist?: string[] | null
+          seguranca_max_tentativas_login?: number | null
+          seguranca_sessao_timeout_minutos?: number | null
+          seguranca_tempo_bloqueio_minutos?: number | null
+          seo_description?: string | null
+          seo_keywords?: string | null
+          site_descricao?: string | null
+          site_favicon_url?: string | null
+          site_logo_url?: string | null
+          site_nome?: string | null
+          site_slogan?: string | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_twitter?: string | null
+          social_youtube?: string | null
+          suporte_email?: string | null
+          suporte_horario?: string | null
+          termos_uso_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       configuracoes_sindico: {
         Row: {
           condominio_ticker_names: string[] | null
