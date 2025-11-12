@@ -51,7 +51,7 @@ export const useOrdersDataComplete = () => {
       console.log('✅ Usuário autenticado:', user.email);
 
       // Usar a função corrigida do banco
-      const { data, error } = await supabase.rpc('get_pedidos_com_status_correto');
+      const { data, error } = await supabase.rpc('get_pedidos_com_status_correto' as any) as { data: any[] | null; error: any };
 
       if (error) {
         console.error('❌ Erro detalhado ao buscar pedidos:', error);
@@ -60,9 +60,9 @@ export const useOrdersDataComplete = () => {
       }
 
       console.log('📊 Dados brutos retornados:', data);
-      console.log('📊 Número de pedidos encontrados:', data?.length || 0);
+      console.log('📊 Número de pedidos encontrados:', Array.isArray(data) ? data.length : 0);
       
-      if (!data || data.length === 0) {
+      if (!Array.isArray(data) || data.length === 0) {
         console.log('⚠️ Nenhum pedido encontrado na função RPC');
         
         // Fazer uma verificação direta na tabela pedidos como fallback
@@ -81,7 +81,7 @@ export const useOrdersDataComplete = () => {
         toast.info('Nenhum pedido encontrado na base de dados');
       } else {
         console.log('🎉 Pedidos carregados com sucesso:');
-        data.forEach((pedido, index) => {
+        (data as any[]).forEach((pedido, index) => {
           console.log(`📦 Pedido ${index + 1}:`, {
             id: pedido.id,
             cliente: pedido.client_name,
@@ -95,10 +95,10 @@ export const useOrdersDataComplete = () => {
         toast.success(`${data.length} pedidos carregados com dados dos clientes`);
       }
 
-      setOrders(data || []);
+      setOrders((Array.isArray(data) ? data : []) as any);
       
       // Calcular estatísticas detalhadas
-      const ordersList = data || [];
+      const ordersList = (Array.isArray(data) ? data : []) as any[];
       const total = ordersList.length;
       const pending = ordersList.filter(o => o.status === 'pendente').length;
       const completed = ordersList.filter(o => ['pago', 'video_aprovado'].includes(o.status)).length;

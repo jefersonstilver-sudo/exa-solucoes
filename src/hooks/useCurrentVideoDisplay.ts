@@ -34,11 +34,11 @@ export const useCurrentVideoDisplay = ({ orderId, enabled = true }: UseCurrentVi
       console.log('📺 [CURRENT_VIDEO] Resultado da RPC:', data);
 
       if (data && data.length > 0) {
-        const videoData = data[0];
+        const videoData = data[0] as any;
         const newCurrentVideo = {
           video_id: videoData.video_id,
-          is_scheduled: videoData.is_scheduled,
-          priority_type: videoData.priority_type as 'scheduled' | 'base'
+          is_scheduled: videoData.is_scheduled ?? false,
+          priority_type: (videoData.priority_type || 'base') as 'scheduled' | 'base'
         };
         
         console.log('✅ [CURRENT_VIDEO] Vídeo atual definido:', newCurrentVideo);

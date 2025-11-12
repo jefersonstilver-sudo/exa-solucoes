@@ -48,17 +48,17 @@ export const useEnhancedOrdersData = () => {
       setLoading(true);
       console.log('📊 Buscando pedidos com dados corrigidos...');
       
-      const { data, error } = await supabase.rpc('get_pedidos_com_status_correto');
+      const { data, error } = await supabase.rpc('get_pedidos_com_status_correto' as any) as { data: any[] | null; error: any };
       
       if (error) {
         console.error('❌ Erro ao buscar pedidos:', error);
         throw error;
       }
       
-      console.log('✅ Pedidos carregados:', data?.length || 0);
+      console.log('✅ Pedidos carregados:', Array.isArray(data) ? data.length : 0);
       
-      if (data) {
-        setOrders(data);
+      if (Array.isArray(data)) {
+        setOrders(data as any);
         
         // Calcular estatísticas detalhadas
         const total = data.length;

@@ -142,7 +142,7 @@ const VideoManagement = () => {
     try {
       setActionLoading(true);
       
-      const { data, error } = await supabase.rpc('approve_video', {
+      const { data, error } = await supabase.rpc('approve_video' as any, {
         p_pedido_video_id: videoId,
         p_approved_by: (await supabase.auth.getUser()).data.user?.id
       });

@@ -133,7 +133,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
       console.log('✅ [APPROVE] Aprovando vídeo:', videoId);
       
       const { data: userData } = await supabase.auth.getUser();
-      const { data, error } = await supabase.rpc('approve_video', {
+      const { data, error } = await supabase.rpc('approve_video' as any, {
         p_pedido_video_id: videoId,
         p_approved_by: userData.user?.id
       });

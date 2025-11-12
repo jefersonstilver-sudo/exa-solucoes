@@ -32,7 +32,7 @@ export const useOrdersWithAttemptsRefactored = () => {
       setLoading(true);
       
       // Usar a função SQL NOVA para pedidos com status inteligente
-      const { data: pedidosComStatus, error: pedidosError } = await supabase.rpc('get_pedidos_com_status_inteligente');
+      const { data: pedidosComStatus, error: pedidosError } = await supabase.rpc('get_pedidos_com_status_inteligente' as any) as { data: any[] | null; error: any };
       
       if (pedidosError) {
         console.error('❌ Erro ao buscar pedidos com status inteligente:', pedidosError);
@@ -46,7 +46,7 @@ export const useOrdersWithAttemptsRefactored = () => {
       const tentativasComEmails = await enrichAttemptsWithEmails(tentativas);
       
       // IMPORTANTE: Enriquecer pedidos também com informações completas do cliente
-      const pedidosEnriquecidos = await enrichOrdersWithEmails(pedidosComStatus || []);
+      const pedidosEnriquecidos = await enrichOrdersWithEmails((Array.isArray(pedidosComStatus) ? pedidosComStatus : []) as any[]);
       
       // Formatar dados - pedidos já vêm formatados da função SQL, mas vamos usar os enriquecidos
       const pedidosFormatados = pedidosEnriquecidos?.map((pedido: any) => ({

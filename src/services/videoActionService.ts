@@ -67,7 +67,7 @@ export const selectVideoForDisplay = async (
     console.log('✅ [VIDEO_ACTION] Vídeo aprovado, usando função corrigida para seleção');
     
     // Usar a função RPC transacional que faz a troca com lock e consistência
-    const { data, error } = await supabase.rpc('set_base_video_enhanced', {
+    const { data, error } = await supabase.rpc('set_base_video_enhanced' as any, {
       p_pedido_video_id: slotId
     });
 
