@@ -39,10 +39,29 @@ export const FloatingDebugButton: React.FC = () => {
   const { isAnalyzing, progress, currentStep, analysis, analyzeCurrentPage, reanalyzeCurrentPage } = useAIDebug();
 
   useEffect(() => {
-    // Verificação inicial
-    AIDebugService.isDebugAIEnabled().then(setDebugAIEnabled);
+    // ✅ CORREÇÃO CRÍTICA: Verificação em tempo real do banco de dados
+    const checkDebugStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('configuracoes_sistema')
+          .select('debug_ai_enabled')
+          .single();
+        
+        if (data && !error) {
+          setDebugAIEnabled(data.debug_ai_enabled || false);
+        } else {
+          setDebugAIEnabled(false);
+        }
+      } catch (err) {
+        console.error('Erro ao verificar debug status:', err);
+        setDebugAIEnabled(false);
+      }
+    };
 
-    // Listener em tempo real para detectar quando Debug AI é ativado
+    // Verificação inicial
+    checkDebugStatus();
+
+    // Listener em tempo real para detectar quando Debug AI é ativado/desativado
     const channel = supabase
       .channel('debug-ai-config-changes')
       .on('postgres_changes', 
@@ -59,6 +78,8 @@ export const FloatingDebugButton: React.FC = () => {
             setDebugAIEnabled(newValue);
             if (newValue) {
               toast.success('Debug AI ativado! Clique no botão vermelho para analisar.');
+            } else {
+              toast.info('Debug AI desativado.');
             }
           }
         }
@@ -76,10 +97,9 @@ export const FloatingDebugButton: React.FC = () => {
     }
   }, [analysis]);
 
-  // Só mostra se:
-  // 1. Está em dev OU
-  // 2. Debug AI ativado E usuário autorizado
-  const shouldShow = import.meta.env.DEV || (debugAIEnabled && isDebugAuthorized);
+  // ✅ CORREÇÃO CRÍTICA DE SEGURANÇA: Só mostra se Debug AI estiver REALMENTE ativado no banco
+  // NUNCA mostrar em produção a menos que configurado explicitamente pelo super admin
+  const shouldShow = debugAIEnabled && isDebugAuthorized;
   
   // Log de debug (apenas em dev)
   if (import.meta.env.DEV) {
@@ -87,6 +107,7 @@ export const FloatingDebugButton: React.FC = () => {
       isDebugMode,
       isDebugAuthorized,
       userEmail,
+      debugAIEnabled,
       shouldShow
     });
   }

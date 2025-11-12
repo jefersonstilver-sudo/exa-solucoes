@@ -237,6 +237,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
         autoPlay
         muted
         playsInline
+        loop={videos.length === 1}
         preload="auto"
         crossOrigin="anonymous"
         controlsList="nodownload noplaybackrate"

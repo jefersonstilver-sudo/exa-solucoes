@@ -111,12 +111,12 @@ export function NewModernAdvertiserSidebar() {
 
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-black via-[#1A0A0A] to-[#9C1E1E] border-r border-white/10 shadow-2xl"
+      className="h-screen bg-gradient-to-b from-[#180A0A] via-[#3B1E1E] to-[#9C1E1E] border-r border-white/20 shadow-2xl"
       collapsible={isMobile ? "offcanvas" : "icon"}
       variant={isMobile ? "sidebar" : "sidebar"}
-      style={{ backgroundColor: '#000000' }}
+      style={{ backgroundColor: '#180A0A' }}
     >
-      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-6'} border-b border-white/10 bg-black`}>
+      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-6'} border-b border-white/20 bg-[#180A0A]`}>
         <div className="flex items-center justify-center mb-3 md:mb-4">
           <UnifiedLogo 
             size="custom" 
@@ -173,8 +173,8 @@ export function NewModernAdvertiserSidebar() {
       <SidebarContent 
         className={`${collapsed ? 'px-2' : 'px-3 md:px-4'} py-4 md:py-6 space-y-4 md:space-y-6 overflow-y-auto admin-sidebar-scroll`}
         style={{ 
-          background: 'linear-gradient(180deg, #000000 0%, #1A0A0A 50%, #9C1E1E 100%)',
-          backgroundColor: '#000000'
+          background: 'linear-gradient(180deg, #180A0A 0%, #3B1E1E 50%, #9C1E1E 100%)',
+          backgroundColor: '#180A0A'
         }}
       >
         {navigationGroups.map((group) => (
@@ -243,7 +243,7 @@ export function NewModernAdvertiserSidebar() {
         ))}
       </SidebarContent>
       
-      <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3 md:p-4'} border-t border-white/10 bg-gradient-to-r from-[#7A1E1E] to-[#DC2626]`}>
+      <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3 md:p-4'} border-t border-white/20 bg-[#9C1E1E]`}>
         {!collapsed && (
           <>
             <div className="flex items-center space-x-2 text-white text-xs md:text-sm">
