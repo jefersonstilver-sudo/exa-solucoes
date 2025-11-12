@@ -4174,6 +4174,7 @@ export type Database = {
           client_id: string
           client_name: string
           created_at: string
+          cupom_id: string
           data_fim: string
           data_inicio: string
           id: string
