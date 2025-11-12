@@ -241,14 +241,17 @@ export const validateBeforeSave = async (
         campaign_video_schedule_id,
         campaign_video_schedules!inner (
           video_id,
-          pedido_id,
+          campaign_id,
+          campaigns_advanced!inner (
+            pedido_id
+          ),
           videos!inner (
             id,
             nome
           )
         )
       `)
-      .eq('campaign_video_schedules.pedido_id', orderId)
+      .eq('campaign_video_schedules.campaigns_advanced.pedido_id', orderId)
       .neq('campaign_video_schedules.video_id', videoId)
       .eq('is_active', true);
 
