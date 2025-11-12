@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Eye, Building, DollarSign, Calendar, User, Mail, Phone, Shield, ShieldOff, Clock, MessageCircle, AlertTriangle, FileText, Copy, ExternalLink } from 'lucide-react';
+import { Eye, Building, DollarSign, Calendar, User, Mail, Phone, Shield, ShieldOff, Clock, MessageCircle, AlertTriangle, FileText, Copy, ExternalLink, Info } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -12,6 +12,7 @@ import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { CouponBadge } from '@/components/admin/orders/CouponBadge';
 import { toast } from 'sonner';
 import { formatPhoneBR, cleanPhone, getWhatsAppLink, copyToClipboard } from '@/utils/whatsapp';
+import { ClientTrackingModal } from '@/components/admin/crm/ClientTrackingModal';
 interface EnhancedOrderCardProps {
   item: OrderOrAttempt;
   isSelected: boolean;
@@ -137,6 +138,8 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
   isBlocking,
   isUnblocking
 }) => {
+  const [showTrackingModal, setShowTrackingModal] = useState(false);
+  
   const {
     timeText,
     urgencyClass,
@@ -145,6 +148,11 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
   const whatsappNumber = formatWhatsAppNumber(item.client_phone || '');
   const whatsappMessage = generateWhatsAppMessage(item);
   const nationality = detectNationality(item.client_phone || '', item.client_cpf || '');
+  
+  // Verificar se deve mostrar o botão de rastreabilidade
+  const showTrackingButton = item.status === 'pendente' || 
+                             item.status === 'aguardando_pagamento' ||
+                             item.type === 'attempt';
   
   // Debug logging para entender os dados disponíveis
   console.log('🔍 Item data:', {
@@ -185,6 +193,19 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Botão de Rastreabilidade - Apenas para aguardando pagamento */}
+            {showTrackingButton && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTrackingModal(true)}
+                className="text-purple-600 hover:text-purple-700 border-purple-300 hover:border-purple-400"
+                title="Ver rastreabilidade e insights do cliente"
+              >
+                <Info className="w-4 h-4" />
+              </Button>
+            )}
+            
             {/* Botões de ação - SEMPRE na mesma ordem para consistência visual */}
             {item.type === 'order' && (
               <>
@@ -364,7 +385,7 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
               </>
             )}
 
-            {/* Botões para tentativas - também padronizados */}
+            {/* Botões para tentativas */}
             {item.type === 'attempt' && (
               <>
                 {/* Botão WhatsApp com Popover CRM */}
@@ -589,5 +610,25 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
             </div>
           </div> : null}
       </CardContent>
+      
+      {/* Modal de Rastreabilidade */}
+      <ClientTrackingModal
+        isOpen={showTrackingModal}
+        onClose={() => setShowTrackingModal(false)}
+        orderData={{
+          id: item.id,
+          client_name: item.client_name,
+          client_email: item.client_email,
+          client_phone: item.client_phone,
+          client_cpf: item.client_cpf,
+          valor_total: item.valor_total,
+          created_at: item.created_at,
+          status: item.status,
+          lista_paineis: item.lista_paineis,
+          plano_meses: item.plano_meses,
+          selected_buildings: item.selected_buildings,
+          client_id: item.client_id
+        }}
+      />
     </Card>;
 };
