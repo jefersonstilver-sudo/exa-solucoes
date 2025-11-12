@@ -284,21 +284,31 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
           <div className="flex items-center space-x-3">
             <h3 className="font-semibold text-lg text-gray-900">Slot {slot.slot_position}</h3>
             
-            {/* Badge Vídeo Principal com Tooltip */}
+            {/* Badge Vídeo Principal - Minimalista e Profissional */}
             {slot.video_data && slot.approval_status === 'approved' && slot.is_base_video && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center space-x-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-help shadow-md">
-                      <Star className="h-4 w-4 fill-current animate-pulse" />
-                      <span>VÍDEO PRINCIPAL</span>
-                      <Shield className="h-4 w-4" />
+                    <div className="flex items-center space-x-2 cursor-help">
+                      {/* Badge Minimalista */}
+                      <div className="flex items-center space-x-1.5 bg-slate-100 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-md text-xs font-medium">
+                        <Star className="h-3.5 w-3.5" />
+                        <span>Vídeo Principal</span>
+                      </div>
+                      
+                      {/* Badge "EM EXIBIÇÃO" - apenas se não houver agendamentos ativos */}
+                      {!hasAnyScheduledActiveNow && (
+                        <div className="flex items-center space-x-1 bg-green-50 border border-green-300 text-green-700 px-2.5 py-1 rounded-md text-xs font-medium">
+                          <Tv className="h-3 w-3" />
+                          <span>EM EXIBIÇÃO</span>
+                        </div>
+                      )}
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs">
-                    <p className="text-sm font-medium">🏠 Vídeo Principal Protegido</p>
-                    <p className="text-xs mt-1">
-                      Este vídeo está sempre ativo e será exibido automaticamente quando não houver outros agendamentos em andamento. Não pode ser desativado.
+                  <TooltipContent side="bottom" className="max-w-xs bg-slate-900 text-white p-3">
+                    <p className="text-sm font-semibold mb-1">⭐ Vídeo Principal</p>
+                    <p className="text-xs leading-relaxed">
+                      Quando o pedido é ativado, o sistema sempre mantém pelo menos um vídeo em exibição. Este é o vídeo padrão que será exibido automaticamente quando não houver agendamentos ativos.
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -408,13 +418,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            {slot.video_data && slot.approval_status === 'approved' && (
-              <VideoStatusBadge
-                isBaseVideo={slot.is_base_video}
-                hasScheduleRules={hasActiveSchedule}
-                scheduleRuleCount={slot.schedule_rules?.length || 0}
-              />
-            )}
+            {/* Badges de status de aprovação */}
             {slot.approval_status === 'rejected' && <Badge variant="destructive">REJEITADO</Badge>}
             {slot.approval_status === 'pending' && <Badge variant="secondary">PENDENTE</Badge>}
           </div>
