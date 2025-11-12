@@ -1957,6 +1957,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates_cache: {
+        Row: {
+          created_at: string
+          html_content: string
+          id: string
+          last_updated: string
+          template_id: string
+          template_name: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          html_content: string
+          id?: string
+          last_updated?: string
+          template_id: string
+          template_name: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          html_content?: string
+          id?: string
+          last_updated?: string
+          template_id?: string
+          template_name?: string
+          version?: string
+        }
+        Relationships: []
+      }
       financial_access_logs: {
         Row: {
           action: string
