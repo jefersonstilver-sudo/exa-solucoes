@@ -49,6 +49,13 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
   existingRules = [],
   orderId
 }) => {
+  console.log('🎬 [SCHEDULE_MODAL] Modal inicializado com:', { 
+    videoId, 
+    videoName, 
+    orderId, 
+    existingRulesCount: existingRules.length 
+  });
+
   const [scheduleRules, setScheduleRules] = useState<ScheduleRule[]>(
     existingRules.length > 0 ? existingRules : []
   );
@@ -130,12 +137,18 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
     if (!validateRules()) return;
 
     // VALIDAÇÃO CRÍTICA: Verificar conflitos ANTES de salvar
-    if (scheduleRules.length > 0 && orderId) {
+    if (scheduleRules.length > 0 && orderId && videoId) {
       setValidating(true);
       try {
-        console.log('🔍 [SCHEDULE_MODAL] Validando conflitos antes de salvar...');
+        console.log('🔍 [SCHEDULE_MODAL] Validando conflitos antes de salvar...', {
+          orderId,
+          videoId,
+          scheduleRulesCount: scheduleRules.length
+        });
         
         const validationResult = await validateBeforeSave(orderId, videoId, scheduleRules);
+        
+        console.log('📊 [SCHEDULE_MODAL] Resultado da validação:', validationResult);
         
         if (validationResult.hasConflict) {
           console.error('🚨 [SCHEDULE_MODAL] CONFLITOS DETECTADOS - BLOQUEANDO SALVAMENTO:', validationResult.conflicts);
@@ -149,15 +162,33 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
         console.log('✅ [SCHEDULE_MODAL] Nenhum conflito detectado - prosseguindo com salvamento');
         setConflicts([]);
         setSuggestions({});
+        setValidating(false);
         
-      } catch (validationError) {
+      } catch (validationError: any) {
         console.error('❌ [SCHEDULE_MODAL] Erro na validação:', validationError);
-        toast.error('Erro ao validar conflitos de agendamento');
-        setValidating(false);
-        return;
-      } finally {
-        setValidating(false);
+        console.error('❌ [SCHEDULE_MODAL] Stack trace:', validationError?.stack);
+        console.error('❌ [SCHEDULE_MODAL] Mensagem detalhada:', validationError?.message);
+        
+        // Se o erro for de rede ou timeout, permitir salvar (fail-safe)
+        const errorMessage = validationError?.message || '';
+        if (errorMessage.includes('network') || errorMessage.includes('timeout') || errorMessage.includes('fetch')) {
+          console.warn('⚠️ [SCHEDULE_MODAL] Erro de rede na validação - permitindo salvar');
+          toast.warning('Não foi possível validar conflitos (erro de rede). Salvando mesmo assim...');
+          setConflicts([]);
+          setSuggestions({});
+          setValidating(false);
+          // Continuar com o salvamento
+        } else {
+          toast.error(`Erro ao validar: ${errorMessage}`);
+          setValidating(false);
+          return;
+        }
       }
+    } else {
+      // Se não há regras ou dados necessários, limpar estados de conflito
+      console.log('ℹ️ [SCHEDULE_MODAL] Pulando validação (sem regras ou IDs ausentes)');
+      setConflicts([]);
+      setSuggestions({});
     }
     
     setSaving(true);
