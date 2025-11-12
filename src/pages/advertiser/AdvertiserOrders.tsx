@@ -202,6 +202,27 @@ const AdvertiserOrders = () => {
               </Badge>
 
               <div className="flex space-x-2">
+                {/* Botão de ação principal (Pagar com PIX, Enviar Vídeo, etc.) */}
+                {statusInfo.action && (
+                  <Button 
+                    variant={statusInfo.action.variant}
+                    size="sm" 
+                    onClick={() => {
+                      if (item.type === 'attempt') {
+                        handleFinalizarCompra();
+                      } else if (statusInfo.action?.onClick) {
+                        statusInfo.action.onClick();
+                      } else if (statusInfo.action?.href) {
+                        navigate(statusInfo.action.href);
+                      }
+                    }}
+                    disabled={isProcessing || isProcessingAttempt}
+                  >
+                    {statusInfo.action.label}
+                  </Button>
+                )}
+                
+                {/* Botão de detalhes sempre visível para pedidos */}
                 {item.type === 'order' && (
                   <Button 
                     variant="outline" 
