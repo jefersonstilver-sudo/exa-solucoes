@@ -67,13 +67,14 @@ serve(async (req) => {
 
     console.log(`📋 [VIDEO_STATUS] Encontradas ${scheduleRules?.length || 0} regras ativas`);
 
-    const videosToActivate: string[] = [];
-    const videosToDeactivate: string[] = [];
+    // Map para rastrear vídeos e suas regras ativas
+    const videoStatusMap = new Map<string, { pedidoId: string, hasActiveRule: boolean }>();
 
-    // Processar cada regra
+    // Processar cada regra para determinar quais vídeos têm regras ativas
     for (const rule of scheduleRules || []) {
       const schedule = rule.campaign_video_schedules;
       const campaign = schedule.campaigns_advanced;
+      const videoId = schedule.video_id;
       
       // Verificar se hoje está nos dias programados
       const isDayActive = rule.days_of_week.includes(currentDay);
@@ -83,12 +84,33 @@ serve(async (req) => {
         currentTimeStr >= rule.start_time && 
         currentTimeStr <= rule.end_time;
 
-      console.log(`🎯 [VIDEO_STATUS] Vídeo ${schedule.video_id} (Pedido: ${campaign.pedido_id}): Dia ativo: ${isDayActive}, Horário ativo: ${isTimeActive}`);
+      console.log(`🎯 [VIDEO_STATUS] Vídeo ${videoId} (Pedido: ${campaign.pedido_id}): Regra ${rule.id.slice(0,8)}, Dia ativo: ${isDayActive}, Horário ativo: ${isTimeActive}`);
 
+      // Se este vídeo ainda não foi processado, inicializar
+      if (!videoStatusMap.has(videoId)) {
+        videoStatusMap.set(videoId, { 
+          pedidoId: campaign.pedido_id, 
+          hasActiveRule: false 
+        });
+      }
+
+      // Se QUALQUER regra está ativa, marcar o vídeo como tendo regra ativa
       if (isTimeActive) {
-        videosToActivate.push(schedule.video_id);
+        const status = videoStatusMap.get(videoId)!;
+        status.hasActiveRule = true;
+        videoStatusMap.set(videoId, status);
+      }
+    }
+
+    // Separar vídeos em listas de ativação/desativação com base no status final
+    const videosToActivate: string[] = [];
+    const videosToDeactivate: string[] = [];
+
+    for (const [videoId, status] of videoStatusMap.entries()) {
+      if (status.hasActiveRule) {
+        videosToActivate.push(videoId);
       } else {
-        videosToDeactivate.push(schedule.video_id);
+        videosToDeactivate.push(videoId);
       }
     }
 
