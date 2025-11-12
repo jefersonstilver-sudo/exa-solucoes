@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, Calendar, Clock } from 'lucide-react';
+import { Trash2, Plus, Calendar, Clock, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendWebhookAfterScheduleSave } from '@/services/webhookProgramacaoService';
+import { validateBeforeSave } from '@/services/videoScheduleValidationService';
+import { ConflictAlert } from './ConflictAlert';
 
 interface ScheduleRule {
   id?: string;
@@ -51,6 +53,9 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
     existingRules.length > 0 ? existingRules : []
   );
   const [saving, setSaving] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [conflicts, setConflicts] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<Record<string, string[]>>({});
 
   const addNewRule = () => {
     const newRule: ScheduleRule = {
@@ -123,6 +128,37 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
 
   const handleSave = async () => {
     if (!validateRules()) return;
+
+    // VALIDAÇÃO CRÍTICA: Verificar conflitos ANTES de salvar
+    if (scheduleRules.length > 0 && orderId) {
+      setValidating(true);
+      try {
+        console.log('🔍 [SCHEDULE_MODAL] Validando conflitos antes de salvar...');
+        
+        const validationResult = await validateBeforeSave(orderId, videoId, scheduleRules);
+        
+        if (validationResult.hasConflict) {
+          console.error('🚨 [SCHEDULE_MODAL] CONFLITOS DETECTADOS - BLOQUEANDO SALVAMENTO:', validationResult.conflicts);
+          setConflicts(validationResult.conflicts);
+          setSuggestions(validationResult.suggestions);
+          setValidating(false);
+          toast.error('Conflitos de agendamento detectados. Ajuste os horários antes de salvar.');
+          return;
+        }
+        
+        console.log('✅ [SCHEDULE_MODAL] Nenhum conflito detectado - prosseguindo com salvamento');
+        setConflicts([]);
+        setSuggestions({});
+        
+      } catch (validationError) {
+        console.error('❌ [SCHEDULE_MODAL] Erro na validação:', validationError);
+        toast.error('Erro ao validar conflitos de agendamento');
+        setValidating(false);
+        return;
+      } finally {
+        setValidating(false);
+      }
+    }
     
     setSaving(true);
     try {
@@ -186,6 +222,25 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Alerta de Conflitos */}
+          {conflicts.length > 0 && (
+            <ConflictAlert
+              conflicts={conflicts}
+              suggestions={suggestions}
+              newVideoName={videoName}
+            />
+          )}
+
+          {/* Indicador de Validação */}
+          {conflicts.length === 0 && scheduleRules.length > 0 && !validating && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <span className="text-sm text-green-800 font-medium">
+                ✓ Sem conflitos detectados
+              </span>
+            </div>
+          )}
+
           {/* Informações */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
@@ -348,10 +403,11 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
             <Button
               type="button"
               onClick={handleSave}
-              disabled={!canSave || saving}
+              disabled={!canSave || saving || validating || conflicts.length > 0}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {saving ? 'Salvando...' : 'Salvar Agendamento'}
+              {validating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {validating ? 'Validando conflitos...' : saving ? 'Salvando...' : 'Salvar Agendamento'}
             </Button>
           </div>
         </div>

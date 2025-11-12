@@ -197,6 +197,103 @@ export const suggestAvailableTimeSlots = (
   return suggestions.length > 0 ? suggestions : ['Nenhum horário livre encontrado'];
 };
 
+/**
+ * Valida agendamentos antes de salvar (integração com modal)
+ */
+export const validateBeforeSave = async (
+  orderId: string,
+  videoId: string,
+  newRules: ScheduleRule[]
+): Promise<{
+  hasConflict: boolean;
+  conflicts: ScheduleConflict[];
+  suggestions: Record<string, string[]>;
+}> => {
+  console.log('🔍 [VALIDATION] Validando antes de salvar:', { orderId, videoId, newRules });
+
+  // Buscar todas as regras ativas de TODOS os vídeos do pedido (exceto o atual)
+  const { data: existingRules, error } = await supabase
+    .from('campaign_schedule_rules')
+    .select(`
+      id,
+      days_of_week,
+      start_time,
+      end_time,
+      is_active,
+      campaign_video_schedule_id,
+      campaign_video_schedules!inner (
+        video_id,
+        pedido_id,
+        videos!inner (
+          id,
+          nome
+        )
+      )
+    `)
+    .eq('campaign_video_schedules.pedido_id', orderId)
+    .neq('campaign_video_schedules.video_id', videoId)
+    .eq('is_active', true);
+
+  if (error) {
+    console.error('❌ [VALIDATION] Erro ao buscar regras existentes:', error);
+    throw new Error(`Erro ao validar conflitos: ${error.message}`);
+  }
+
+  console.log('📊 [VALIDATION] Regras existentes encontradas:', existingRules?.length || 0);
+
+  const conflicts: ScheduleConflict[] = [];
+  const suggestionsByDay: Record<string, string[]> = {};
+
+  // Verificar cada nova regra contra todas as existentes
+  for (const newRule of newRules) {
+    for (const newDay of newRule.days_of_week) {
+      const existingOnDay = (existingRules || []).filter(rule => 
+        rule.days_of_week.includes(newDay)
+      );
+
+      for (const existing of existingOnDay) {
+        const hasOverlap = hasTimeOverlap(
+          newRule.start_time,
+          newRule.end_time,
+          existing.start_time,
+          existing.end_time
+        );
+
+        if (hasOverlap) {
+          const videoData = (existing as any).campaign_video_schedules?.videos;
+          conflicts.push({
+            conflictingVideoName: videoData?.nome || 'Vídeo desconhecido',
+            conflictingDay: newDay,
+            conflictingStartTime: existing.start_time,
+            conflictingEndTime: existing.end_time,
+            newStartTime: newRule.start_time,
+            newEndTime: newRule.end_time
+          });
+        }
+      }
+
+      // Gerar sugestões de horários disponíveis para este dia
+      if (!suggestionsByDay[newDay]) {
+        suggestionsByDay[newDay] = suggestAvailableTimeSlots(
+          conflicts.filter(c => c.conflictingDay === newDay),
+          newDay
+        );
+      }
+    }
+  }
+
+  console.log('✅ [VALIDATION] Validação concluída:', {
+    hasConflict: conflicts.length > 0,
+    conflictCount: conflicts.length
+  });
+
+  return {
+    hasConflict: conflicts.length > 0,
+    conflicts,
+    suggestions: suggestionsByDay
+  };
+};
+
 export const formatConflictMessage = (conflicts: ScheduleConflict[]): string => {
   if (conflicts.length === 0) return '';
   
