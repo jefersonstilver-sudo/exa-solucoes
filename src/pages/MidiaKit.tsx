@@ -38,15 +38,10 @@ const MidiaKit = () => {
             }} transition={{
               duration: 0.5,
               delay: 0.2
-            }} className="inline-flex items-center space-x-2 bg-gradient-to-r from-exa-yellow/20 to-red-500/20 px-4 py-2 rounded-full border border-exa-yellow/30">
+            }} className="inline-flex items-center space-x-2 bg-exa-yellow/20 px-4 py-2 rounded-full border border-exa-yellow/30">
                 <FileText className="h-5 w-5 text-exa-yellow" />
                 <span className="text-white font-medium">Mídia Kit Oficial</span>
               </motion.div>
-
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-white via-exa-yellow to-red-500 bg-clip-text text-transparent">
-                Conheça a EXA em Números
-              </h1>
-              
               
             </div>
           </motion.div>
@@ -63,7 +58,7 @@ const MidiaKit = () => {
           delay: 0.4
         }} className="relative">
             {/* Decorative background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-exa-yellow/10 via-red-500/10 to-purple-500/10 rounded-2xl blur-3xl -z-10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-exa-yellow/10 to-exa-yellow/5 rounded-2xl blur-3xl -z-10" />
             
             {/* Main container */}
             <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-8 shadow-2xl">
@@ -85,57 +80,13 @@ const MidiaKit = () => {
               delay: 1
             }} className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a href="https://www.canva.com/design/DAG3SayUelg/Ix2U8fPwsre1fPVeb7Q1Lw/view?utm_content=DAG3SayUelg&utm_campaign=designshare&utm_medium=embeds&utm_source=link" target="_blank" rel="noopener noreferrer" className="group">
-                  <Button size="lg" className="bg-gradient-to-r from-exa-yellow to-red-500 hover:from-exa-yellow/90 hover:to-red-500/90 text-black font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  <Button size="lg" className="bg-exa-yellow hover:bg-exa-yellow/90 text-black font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                     <Download className="mr-2 h-5 w-5 group-hover:animate-bounce" />
                     Abrir Mídia Kit Completo
                   </Button>
                 </a>
-
-                <div className="flex items-center space-x-2 text-gray-400 text-sm">
-                  
-                  
-                </div>
               </motion.div>
             </div>
-          </motion.div>
-
-          {/* Features grid */}
-          <motion.div initial={{
-          opacity: 0,
-          y: 40
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.8,
-          delay: 0.6
-        }} className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[{
-            title: 'Alcance Real',
-            description: 'Dados atualizados sobre nosso alcance e público impactado',
-            icon: '📊'
-          }, {
-            title: 'Cases de Sucesso',
-            description: 'Exemplos reais de campanhas que geraram resultados',
-            icon: '🎯'
-          }, {
-            title: 'Diferenciais',
-            description: 'Por que a EXA é a escolha certa para sua marca',
-            icon: '⭐'
-          }].map((feature, index) => <motion.div key={index} initial={{
-            opacity: 0,
-            y: 20
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} transition={{
-            duration: 0.5,
-            delay: 0.8 + index * 0.1
-          }} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300 hover:scale-105">
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
-                <p className="text-gray-400">{feature.description}</p>
-              </motion.div>)}
           </motion.div>
 
           {/* CTA Section */}
@@ -146,7 +97,7 @@ const MidiaKit = () => {
         }} transition={{
           duration: 0.8,
           delay: 1
-        }} className="mt-16 text-center bg-gradient-to-r from-exa-yellow/10 to-red-500/10 border border-exa-yellow/20 rounded-2xl p-8 md:p-12">
+        }} className="mt-16 text-center bg-exa-yellow/10 border border-exa-yellow/20 rounded-2xl p-8 md:p-12">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
               Pronto para levar sua marca ao próximo nível?
             </h2>
