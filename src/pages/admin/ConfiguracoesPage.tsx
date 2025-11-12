@@ -137,7 +137,7 @@ export default function ConfiguracoesPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Configurações do Sistema</h1>
           <p className="text-muted-foreground mt-1">
-            Gerenciamento completo da plataforma INDEXA
+            Gerenciamento completo da plataforma EXA Soluções Digitais
           </p>
         </div>
         <div className="flex gap-2">

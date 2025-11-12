@@ -17,6 +17,7 @@ import { useState, useEffect } from 'react';
 import { usePageTransition } from '@/hooks/usePageTransition';
 import { useLoadingState } from '@/hooks/useLoadingState';
 import { GlobalActivityTracker } from '@/components/tracking/GlobalActivityTracker';
+import { FloatingDebugButton } from '@/components/debug/FloatingDebugButton';
 import { useActiveSession } from '@/hooks/useActiveSession';
 
 // Importações diretas para páginas críticas
@@ -154,6 +155,10 @@ const AppContent = () => {
       <div className="min-h-screen bg-background">
         {/* Global Activity Tracker - tracks login/logout */}
         <GlobalActivityTracker />
+        
+        {/* Floating Debug Button - appears on all pages when Debug AI is enabled */}
+        <FloatingDebugButton />
+        
         <Routes>
           {/* Rotas principais */}
           <Route path="/" element={<Exa />} />

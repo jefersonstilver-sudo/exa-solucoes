@@ -31,7 +31,6 @@ import { useVideoScheduleMonitor } from '@/hooks/useVideoScheduleMonitor';
 import { BlockedOrderAlert } from '@/components/order/BlockedOrderAlert';
 import { OrderNameEdit } from '@/components/order/OrderNameEdit';
 import { useSelectedBuildingsDetails } from '@/hooks/useSelectedBuildingsDetails';
-import { FloatingDebugButton } from '@/components/debug/FloatingDebugButton';
 
 interface OrderDetails {
   id: string;
@@ -507,9 +506,6 @@ const OrderDetails = () => {
         suggestions={conflictModal.suggestions}
         newVideoName={conflictModal.newVideoName}
       />
-
-      {/* Botão de Debug - Logs de Vídeo */}
-      <FloatingDebugButton />
     </>
   );
 };
