@@ -18,6 +18,7 @@ import { GlobalDebugDashboard } from './GlobalDebugDashboard';
 import { AIGeneratedDebugPanel } from './AIGeneratedDebugPanel';
 import { AIAnalysisProgressModal } from './AIAnalysisProgressModal';
 import { DebugPasswordModal } from './DebugPasswordModal';
+import { ComprehensiveDebugPanel } from './ComprehensiveDebugPanel';
 import { useDebugContext } from '@/contexts/DebugContext';
 import { useAIDebug } from '@/hooks/useAIDebug';
 import { AIDebugService } from '@/services/debug/AIDebugService';
@@ -28,6 +29,7 @@ export const FloatingDebugButton: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [showGlobal, setShowGlobal] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [showComprehensive, setShowComprehensive] = useState(false);
   const [debugAIEnabled, setDebugAIEnabled] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -99,6 +101,7 @@ export const FloatingDebugButton: React.FC = () => {
     if (newOpen) {
       setShowGlobal(false);
       setShowAIPanel(false);
+      setShowComprehensive(false);
       
       // Se Debug AI está ativo, verificar se tem análise em cache ou iniciar nova
       if (debugAIEnabled) {
@@ -146,17 +149,38 @@ export const FloatingDebugButton: React.FC = () => {
         </SheetTrigger>
         <SheetContent side="right" className="w-full sm:max-w-6xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>
-              {showGlobal ? '🌐 Debug Global - Sistema Completo' : '🔍 Debug Contextual - Página Atual'}
-            </SheetTitle>
-            <SheetDescription>
-              {showGlobal 
-                ? 'Logs detalhados de TODAS as operações do sistema' 
-                : 'Análise específica da página atual com erros conhecidos e correções'}
-            </SheetDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <SheetTitle>
+                  {showComprehensive 
+                    ? '🎯 Debug Completo - Todo o Sistema' 
+                    : showGlobal 
+                    ? '🌐 Debug Global - Sistema Completo' 
+                    : '🔍 Debug Contextual - Página Atual'}
+                </SheetTitle>
+                <SheetDescription>
+                  {showComprehensive
+                    ? 'Captura completa de erros, logs, toasts e contexto com timestamps'
+                    : showGlobal 
+                    ? 'Logs detalhados de TODAS as operações do sistema' 
+                    : 'Análise específica da página atual com erros conhecidos e correções'}
+                </SheetDescription>
+              </div>
+              {!showComprehensive && (
+                <Button 
+                  onClick={() => setShowComprehensive(true)} 
+                  size="sm"
+                  variant="default"
+                >
+                  🎯 Debug Completo
+                </Button>
+              )}
+            </div>
           </SheetHeader>
           <div className="mt-6">
-            {showGlobal ? (
+            {showComprehensive ? (
+              <ComprehensiveDebugPanel />
+            ) : showGlobal ? (
               <GlobalDebugDashboard key={String(open)} />
             ) : showAIPanel && analysis ? (
               <AIGeneratedDebugPanel 
