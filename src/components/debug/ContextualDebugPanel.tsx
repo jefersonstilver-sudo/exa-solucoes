@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { ConsoleTab } from './ConsoleTab';
 import { DebugControlPanel } from './DebugControlPanel';
+import { toast } from 'sonner';
 import { 
   AlertCircle, 
   FileCode, 
@@ -23,7 +24,8 @@ import {
   Globe,
   Clock,
   Terminal,
-  TrendingUp
+  TrendingUp,
+  Copy
 } from 'lucide-react';
 
 interface ContextualDebugPanelProps {
@@ -36,11 +38,31 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
   
   const formatTimestamp = (iso: string) => {
     const date = new Date(iso);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
     const ms = String(date.getMilliseconds()).padStart(3, '0');
-    return `${hours}:${minutes}:${seconds}.${ms}`;
+    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}.${ms}`;
+  };
+  
+  const copyLogsToClipboard = () => {
+    const logsText = JSON.stringify({
+      pageInfo,
+      currentPath,
+      detectedErrors,
+      recentApiCalls,
+      performanceMetrics,
+      consoleHistory,
+      sessionStartTime,
+      componentState,
+      timestamp: new Date().toISOString()
+    }, null, 2);
+    
+    navigator.clipboard.writeText(logsText);
+    toast.success('📋 Logs copiados para a área de transferência');
   };
   
   const getSessionDuration = () => {
@@ -98,10 +120,16 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
                 </div>
               </CardDescription>
             </div>
-            <Button onClick={onOpenGlobalDebug} variant="outline" size="sm">
-              <Globe className="w-4 h-4 mr-2" />
-              Debug Global
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={copyLogsToClipboard} variant="outline" size="sm">
+                <Copy className="w-4 h-4 mr-2" />
+                Copiar Logs
+              </Button>
+              <Button onClick={onOpenGlobalDebug} variant="outline" size="sm">
+                <Globe className="w-4 h-4 mr-2" />
+                Debug Global
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>

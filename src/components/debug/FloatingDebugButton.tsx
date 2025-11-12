@@ -17,6 +17,7 @@ import { ContextualDebugPanel } from './ContextualDebugPanel';
 import { GlobalDebugDashboard } from './GlobalDebugDashboard';
 import { AIGeneratedDebugPanel } from './AIGeneratedDebugPanel';
 import { AIAnalysisProgressModal } from './AIAnalysisProgressModal';
+import { DebugPasswordModal } from './DebugPasswordModal';
 import { useDebugContext } from '@/contexts/DebugContext';
 import { useAIDebug } from '@/hooks/useAIDebug';
 import { AIDebugService } from '@/services/debug/AIDebugService';
@@ -28,6 +29,8 @@ export const FloatingDebugButton: React.FC = () => {
   const [showGlobal, setShowGlobal] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [debugAIEnabled, setDebugAIEnabled] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [, forceUpdate] = useState({});
   
   const { isDebugMode, isDebugAuthorized, userEmail } = useDebugContext();
@@ -87,6 +90,11 @@ export const FloatingDebugButton: React.FC = () => {
   }
 
   const handleOpenChange = async (newOpen: boolean) => {
+    if (newOpen && !isAuthenticated) {
+      setShowPasswordModal(true);
+      return;
+    }
+    
     setOpen(newOpen);
     if (newOpen) {
       setShowGlobal(false);
@@ -106,6 +114,12 @@ export const FloatingDebugButton: React.FC = () => {
       forceUpdate({});
     }
   };
+  
+  const handlePasswordCorrect = () => {
+    setIsAuthenticated(true);
+    setShowPasswordModal(false);
+    setOpen(true);
+  };
 
   if (!shouldShow) {
     return null;
@@ -113,6 +127,12 @@ export const FloatingDebugButton: React.FC = () => {
 
   return (
     <>
+      <DebugPasswordModal 
+        open={showPasswordModal}
+        onCorrectPassword={handlePasswordCorrect}
+        onClose={() => setShowPasswordModal(false)}
+      />
+      
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetTrigger asChild>
           <Button
