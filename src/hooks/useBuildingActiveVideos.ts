@@ -85,22 +85,25 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
       
       console.log(`🔍 [VIDEOS] Buscando vídeos em exibição para ${pedidoIds.length} pedidos ativos`);
 
-      // Buscar vídeo em exibição atual usando a RPC para cada pedido
+      // ✅ CRÍTICO: Buscar apenas o vídeo QUE DEVE ESTAR EM EXIBIÇÃO AGORA via RPC
+      // Esta RPC considera agendamentos ativos e retorna o vídeo correto para cada pedido
       const videoPromises = pedidoIds.map(async (pedidoId) => {
         const { data: currentVideoData, error: rpcError } = await supabase.rpc('get_current_display_video', {
           p_pedido_id: pedidoId
         });
 
         if (rpcError) {
-          console.error(`❌ [VIDEOS] Erro ao buscar vídeo atual para pedido ${pedidoId}:`, rpcError);
+          console.error(`❌ [VIDEOS] Erro RPC para pedido ${pedidoId}:`, rpcError);
           return null;
         }
 
         if (!currentVideoData || currentVideoData.length === 0) {
+          console.log(`⚠️ [VIDEOS] Nenhum vídeo em exibição para pedido ${pedidoId}`);
           return null;
         }
 
         const videoInfo = currentVideoData[0];
+        console.log(`🎯 [VIDEOS] Pedido ${pedidoId}: Vídeo em exibição: ${videoInfo.video_id} (${videoInfo.priority_type})`);
         
         // Buscar dados completos do vídeo
         const { data: videoData, error: videoError } = await supabase
@@ -127,7 +130,13 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
           .single();
 
         if (videoError || !videoData) {
-          console.error(`❌ [VIDEOS] Erro ao buscar dados do vídeo ${videoInfo.video_id}:`, videoError);
+          console.error(`❌ [VIDEOS] Erro ao buscar dados completos do vídeo ${videoInfo.video_id}:`, videoError);
+          return null;
+        }
+
+        // ✅ Validação extra: Garantir que o vídeo é realmente válido
+        if (!videoData.videos?.url) {
+          console.error(`❌ [VIDEOS] Vídeo ${videoInfo.video_id} sem URL válida`);
           return null;
         }
 
