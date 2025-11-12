@@ -38,8 +38,8 @@ const MidiaKit = () => {
             }} transition={{
               duration: 0.5,
               delay: 0.2
-            }} className="inline-flex items-center space-x-2 bg-exa-yellow/20 px-4 py-2 rounded-full border border-exa-yellow/30">
-                <FileText className="h-5 w-5 text-exa-yellow" />
+            }} className="inline-flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full border border-white/20">
+                <FileText className="h-5 w-5 text-white" />
                 <span className="text-white font-medium">Mídia Kit Oficial</span>
               </motion.div>
               
@@ -58,7 +58,7 @@ const MidiaKit = () => {
           delay: 0.4
         }} className="relative">
             {/* Decorative background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-exa-yellow/10 to-exa-yellow/5 rounded-2xl blur-3xl -z-10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#9C1E1E]/10 to-[#180A0A]/5 rounded-2xl blur-3xl -z-10" />
             
             {/* Main container */}
             <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 md:p-8 shadow-2xl">
@@ -80,7 +80,7 @@ const MidiaKit = () => {
               delay: 1
             }} className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a href="https://www.canva.com/design/DAG3SayUelg/Ix2U8fPwsre1fPVeb7Q1Lw/view?utm_content=DAG3SayUelg&utm_campaign=designshare&utm_medium=embeds&utm_source=link" target="_blank" rel="noopener noreferrer" className="group">
-                  <Button size="lg" className="bg-exa-yellow hover:bg-exa-yellow/90 text-black font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  <Button size="lg" className="bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] hover:opacity-90 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                     <Download className="mr-2 h-5 w-5 group-hover:animate-bounce" />
                     Abrir Mídia Kit Completo
                   </Button>
@@ -97,7 +97,7 @@ const MidiaKit = () => {
         }} transition={{
           duration: 0.8,
           delay: 1
-        }} className="mt-16 text-center bg-exa-yellow/10 border border-exa-yellow/20 rounded-2xl p-8 md:p-12">
+        }} className="mt-16 text-center bg-white/5 border border-white/10 rounded-2xl p-8 md:p-12">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
               Pronto para levar sua marca ao próximo nível?
             </h2>
