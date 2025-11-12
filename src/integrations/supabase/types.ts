@@ -4571,6 +4571,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      safe_set_base_video: { Args: { p_new_base_id: string }; Returns: Json }
       select_video_for_display: {
         Args: { p_pedido_video_id: string }
         Returns: boolean

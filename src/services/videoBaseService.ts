@@ -196,12 +196,12 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
   });
 
   try {
-    // Chamar RPC única - responsabilidade única
-    console.log('🔄 [SET_BASE_VIDEO] Chamando RPC set_base_video_enhanced...');
-    videoLogger.logRPC('set_base_video_rpc_call', 'Chamando RPC set_base_video_enhanced', { slotId });
+    // Chamar nova RPC safe_set_base_video (com proteção contra remoção do último base)
+    console.log('🔄 [SET_BASE_VIDEO] Chamando RPC safe_set_base_video...');
+    videoLogger.logRPC('set_base_video_rpc_call', 'Chamando RPC safe_set_base_video', { slotId });
     
-    const { data, error } = await supabase.rpc('set_base_video_enhanced', {
-      p_pedido_video_id: slotId
+    const { data, error } = await supabase.rpc('safe_set_base_video', {
+      p_new_base_id: slotId
     });
     
     videoLogger.logRPC('set_base_video_rpc_response', 'Resposta da RPC recebida', { 
@@ -264,24 +264,26 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
 
     console.log('✅ [SET_BASE_VIDEO] Sucesso na troca de vídeo principal:', {
       result,
-      pedido_video_id: result.pedido_video_id,
-      video_id: result.video_id,
-      old_base_video_id: result.old_base_video_id
+      new_base_id: result.new_base_id,
+      old_base_id: result.old_base_id,
+      pedido_id: result.pedido_id,
+      schedules_removed: result.schedules_removed
     });
     
     videoLogger.logRPC('set_base_video_success', 'Vídeo definido como principal com sucesso', { 
       slotId, 
-      pedido_video_id: result.pedido_video_id,
-      video_id: result.video_id,
-      old_base_video_id: result.old_base_video_id
+      new_base_id: result.new_base_id,
+      old_base_id: result.old_base_id,
+      pedido_id: result.pedido_id,
+      schedules_removed: result.schedules_removed
     });
     
     return {
       success: true,
       timestamp: now(),
       message: result.message || 'Vídeo definido como principal',
-      pedido_video_id: result.pedido_video_id,
-      video_id: result.video_id
+      pedido_video_id: result.new_base_id,
+      video_id: null // A nova RPC não retorna video_id diretamente
     };
 
   } catch (err: any) {

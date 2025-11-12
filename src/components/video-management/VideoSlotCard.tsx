@@ -305,7 +305,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               </TooltipProvider>
             )}
             
-            {/* Botão para trocar vídeo principal */}
+            {/* Botão para trocar vídeo principal - SOMENTE se há 2+ vídeos aprovados */}
             {slot.video_data && slot.approval_status === 'approved' && !slot.is_base_video && totalApprovedVideos >= 2 && (
               <TooltipProvider>
                 <Tooltip>
@@ -325,25 +325,9 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                         // Se tem agendamento, avisar que será removido
                         if (hasActiveSchedule) {
                           const confirmed = window.confirm(
-                            'Este vídeo possui agendamentos ativos. Ao defini-lo como vídeo principal, todos os agendamentos serão removidos. Deseja continuar?'
+                            'Este vídeo possui agendamentos ativos. Ao defini-lo como vídeo principal, todos os agendamentos serão removidos automaticamente. Deseja continuar?'
                           );
                           if (!confirmed) return;
-                          
-                          // Remover agendamentos antes de definir como principal
-                          try {
-                            const { error } = await supabase
-                              .from('campaign_video_schedules')
-                              .delete()
-                              .eq('video_id', slot.video_data!.id);
-                            
-                            if (error) throw error;
-                            
-                            toast.success('Agendamentos removidos com sucesso');
-                          } catch (error) {
-                            console.error('Erro ao remover agendamentos:', error);
-                            toast.error('Erro ao remover agendamentos');
-                            return;
-                          }
                         }
                   const clickData = {
                     slotId: slot.id,
@@ -392,6 +376,26 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                       <p className="text-xs mt-1">Os agendamentos deste vídeo serão removidos ao torná-lo principal</p>
                     </TooltipContent>
                   )}
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
+            {/* Aviso se é o único vídeo aprovado (não pode ser removido/desmarcado) */}
+            {slot.is_base_video && totalApprovedVideos === 1 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center space-x-1 bg-red-50 border border-red-200 text-red-700 px-2 py-1 rounded-md text-xs cursor-help">
+                      <Shield className="h-3 w-3" />
+                      <span>Protegido</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs bg-red-900 text-white">
+                    <p className="text-sm font-medium">⚠️ Não Pode Ser Removido</p>
+                    <p className="text-xs mt-1">
+                      Este é o único vídeo aprovado do pedido. Envie outro vídeo e aguarde aprovação antes de remover este.
+                    </p>
+                  </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
