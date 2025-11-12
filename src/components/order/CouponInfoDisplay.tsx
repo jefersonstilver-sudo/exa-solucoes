@@ -32,12 +32,15 @@ export const CouponInfoDisplay: React.FC<CouponInfoDisplayProps> = ({
   useEffect(() => {
     const fetchCouponInfo = async () => {
       if (!cupomId) {
+        console.log('🎫 [CouponInfoDisplay] Sem cupom ID');
         setCouponInfo(null);
         return;
       }
 
       try {
         setLoading(true);
+        console.log('🔍 [CouponInfoDisplay] Buscando cupom:', cupomId);
+        
         const { data, error } = await supabase
           .from('cupons')
           .select('id, codigo, desconto_percentual, descricao, categoria, min_meses, valor_minimo_pedido')
@@ -45,13 +48,22 @@ export const CouponInfoDisplay: React.FC<CouponInfoDisplayProps> = ({
           .single();
 
         if (error) {
-          console.error('Erro ao buscar cupom:', error);
+          console.error('❌ [CouponInfoDisplay] Erro ao buscar cupom:', error);
+          setCouponInfo(null);
           return;
         }
 
+        if (!data) {
+          console.warn('⚠️ [CouponInfoDisplay] Cupom não encontrado no banco:', cupomId);
+          setCouponInfo(null);
+          return;
+        }
+
+        console.log('✅ [CouponInfoDisplay] Cupom encontrado:', data);
         setCouponInfo(data);
       } catch (error) {
-        console.error('Erro ao carregar informações do cupom:', error);
+        console.error('💥 [CouponInfoDisplay] Erro ao carregar informações do cupom:', error);
+        setCouponInfo(null);
       } finally {
         setLoading(false);
       }

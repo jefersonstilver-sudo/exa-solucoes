@@ -86,6 +86,8 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
   const transactionId = getTransactionId();
   console.log('💳 [PURCHASE_INFO] Dados do pedido:', {
     orderDetails,
+    cupomId: orderDetails.cupom_id,
+    hasCupom: !!orderDetails.cupom_id,
     transactionId,
     paymentMethod: getPaymentMethod(),
     contractPeriod: getContractPeriod()
