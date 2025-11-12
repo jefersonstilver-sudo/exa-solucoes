@@ -76,7 +76,15 @@ export const useConfigurationsData = () => {
   };
 
   const updateConfiguration = async (updates: Partial<SystemConfiguration>) => {
-    if (!config) return false;
+    console.log('🔸 updateConfiguration chamado');
+    console.log('🔸 config atual:', config);
+    console.log('🔸 updates:', updates);
+    
+    if (!config) {
+      console.error('❌ ERRO CRÍTICO: config é null no updateConfiguration');
+      toast.error('Erro: Configuração não foi carregada');
+      return false;
+    }
 
     try {
       console.log('💾 Salvando configurações...', updates);

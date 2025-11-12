@@ -60,8 +60,9 @@ export const ReAuthModal: React.FC<ReAuthModalProps> = ({ open, onClose, onSucce
         return;
       }
 
-      // Sucesso
-      onSuccess();
+      // Sucesso - executar onSuccess ANTES de fechar modal
+      console.log('🔐 Senha verificada com sucesso!');
+      await onSuccess();
       onClose();
       setPassword('');
       setAttempts(0);

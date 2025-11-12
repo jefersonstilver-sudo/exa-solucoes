@@ -55,17 +55,36 @@ export default function ConfiguracoesPage() {
     }
   }, [baseConfig?.debug_ai_enabled]);
 
-  const handleDebugAIToggle = (checked: boolean) => {
+  const handleDebugAIToggle = async (checked: boolean) => {
+    // Garantir que configuração está carregada
+    if (!baseConfig) {
+      console.warn('⚠️ Config não carregado, fazendo refetch...');
+      await refetchBase();
+    }
+    
     setPendingDebugAIValue(checked);
     setShowReAuthModal(true);
   };
 
   const handleDebugAIConfirm = async () => {
+    console.log('🔹 handleDebugAIConfirm INICIADO');
+    console.log('🔹 pendingDebugAIValue:', pendingDebugAIValue);
+    console.log('🔹 baseConfig:', baseConfig);
+    
+    if (!baseConfig) {
+      console.error('❌ baseConfig é null - não pode salvar!');
+      toast.error('Erro: Configuração base não carregada');
+      setShowReAuthModal(false);
+      return;
+    }
+    
     const success = await updateBaseConfig({ 
       debug_ai_enabled: pendingDebugAIValue,
       debug_ai_activated_at: pendingDebugAIValue ? new Date().toISOString() : baseConfig?.debug_ai_activated_at,
       debug_ai_activated_by: pendingDebugAIValue ? 'jefersonstilver@gmail.com' : baseConfig?.debug_ai_activated_by,
     });
+
+    console.log('🔹 Resultado do update:', success);
 
     if (success) {
       toast.success(
@@ -77,6 +96,8 @@ export default function ConfiguracoesPage() {
       if (pendingDebugAIValue) {
         AIDebugService.getStatistics().then(setStats);
       }
+    } else {
+      toast.error('Falha ao atualizar configuração do Debug AI');
     }
     
     setShowReAuthModal(false);
