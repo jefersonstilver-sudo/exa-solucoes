@@ -50,6 +50,7 @@ const SouSindico = lazy(() => import('./pages/SouSindico'));
 const Contato = lazy(() => import('./pages/Contato'));
 const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
 const QuemSomos = lazy(() => import('./pages/QuemSomos'));
+const MidiaKit = lazy(() => import('./pages/MidiaKit'));
 const BuildingDisplayPanel = lazy(() => import('./pages/public/BuildingDisplayPanel'));
 const BuildingDisplayCommercial = lazy(() => import('./pages/public/BuildingDisplayCommercial'));
 const PublicBuildingDisplay = lazy(() => import('./pages/public/PublicBuildingDisplay'));
@@ -266,6 +267,11 @@ const AppContent = () => {
           <Route path="/quem-somos" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando Quem Somos..." />}>
               <QuemSomos />
+            </Suspense>
+          } />
+          <Route path="/midia-kit" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando Mídia Kit..." />}>
+              <MidiaKit />
             </Suspense>
           } />
           <Route path="/contato" element={

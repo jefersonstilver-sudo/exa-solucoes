@@ -1,8 +1,10 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import ExaSection from '../base/ExaSection';
 import ExaCard from '../base/ExaCard';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-import { Award, Shield, MapPin } from 'lucide-react';
+import { Award, Shield, MapPin, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const confianca = [
   {
@@ -59,6 +61,34 @@ const ConfiancaSection = () => {
               </ExaCard>
             );
           })}
+        </div>
+
+        {/* Mídia Kit Card - Destaque especial */}
+        <div className="mt-12">
+          <ExaCard 
+            variant="dark" 
+            className="text-center border-2 border-exa-yellow/30 hover:border-exa-yellow/60 hover:scale-102 transition-all duration-300 bg-gradient-to-br from-gray-900/50 to-black/50"
+          >
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-exa-yellow to-red-500 flex items-center justify-center animate-pulse">
+              <FileText className="w-10 h-10 text-black" />
+            </div>
+            <h3 className="text-2xl md:text-3xl font-bold text-white mb-4 font-montserrat">
+              Conheça Nosso Mídia Kit
+            </h3>
+            <p className="text-gray-300 font-inter leading-relaxed mb-6 max-w-2xl mx-auto">
+              Explore nosso portfólio completo, números de alcance, cases de sucesso e diferenciais. 
+              Tudo o que você precisa saber sobre a EXA em um só lugar.
+            </p>
+            <Link to="/midia-kit">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-exa-yellow to-red-500 hover:from-exa-yellow/90 hover:to-red-500/90 text-black font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              >
+                <FileText className="mr-2 h-5 w-5" />
+                Acessar Mídia Kit
+              </Button>
+            </Link>
+          </ExaCard>
         </div>
       </div>
     </ExaSection>
