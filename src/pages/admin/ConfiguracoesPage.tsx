@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useConfigurationsData } from '@/hooks/useConfigurationsData';
 import { useAdditionalConfigurations } from '@/hooks/useAdditionalConfigurations';
+import { useAuth } from '@/hooks/useAuth';
 import { AIDebugService } from '@/services/debug/AIDebugService';
 import { AIDebugHistory } from '@/components/debug/AIDebugHistory';
 import { ReAuthModal } from '@/components/debug/ReAuthModal';
@@ -35,6 +36,7 @@ import { IntegrationsTab } from '@/components/admin/config/IntegrationsTab';
 import { SocialTab } from '@/components/admin/config/SocialTab';
 
 export default function ConfiguracoesPage() {
+  const { user } = useAuth();
   const { config: baseConfig, loading: baseLoading, updateConfiguration: updateBaseConfig, refetch: refetchBase } = useConfigurationsData();
   const { config: additionalConfig, loading: additionalLoading, updateConfiguration: updateAdditionalConfig, refetch: refetchAdditional } = useAdditionalConfigurations();
   const [saving, setSaving] = useState(false);
@@ -70,6 +72,7 @@ export default function ConfiguracoesPage() {
     console.log('🔹 handleDebugAIConfirm INICIADO');
     console.log('🔹 pendingDebugAIValue:', pendingDebugAIValue);
     console.log('🔹 baseConfig:', baseConfig);
+    console.log('🔹 user:', user);
     
     if (!baseConfig) {
       console.error('❌ baseConfig é null - não pode salvar!');
@@ -77,11 +80,18 @@ export default function ConfiguracoesPage() {
       setShowReAuthModal(false);
       return;
     }
+
+    if (!user?.id) {
+      console.error('❌ user.id é null - não pode salvar!');
+      toast.error('Erro: Usuário não identificado');
+      setShowReAuthModal(false);
+      return;
+    }
     
     const success = await updateBaseConfig({ 
       debug_ai_enabled: pendingDebugAIValue,
       debug_ai_activated_at: pendingDebugAIValue ? new Date().toISOString() : baseConfig?.debug_ai_activated_at,
-      debug_ai_activated_by: pendingDebugAIValue ? 'jefersonstilver@gmail.com' : baseConfig?.debug_ai_activated_by,
+      debug_ai_activated_by: pendingDebugAIValue ? user.id : baseConfig?.debug_ai_activated_by,
     });
 
     console.log('🔹 Resultado do update:', success);
