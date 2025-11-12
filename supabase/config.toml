@@ -48,6 +48,9 @@ verify_jwt = false
 [functions.send-confirmation-email]
 verify_jwt = false
 
+[functions.analyze-page-debug]
+verify_jwt = true
+
 [functions.create-external-client]
 verify_jwt = true
 

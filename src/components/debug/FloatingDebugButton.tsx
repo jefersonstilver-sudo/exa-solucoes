@@ -2,7 +2,7 @@
  * Botão flutuante para abrir painel de debug
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Bug } from 'lucide-react';
 import {
@@ -15,14 +15,31 @@ import {
 } from "@/components/ui/sheet";
 import { ContextualDebugPanel } from './ContextualDebugPanel';
 import { GlobalDebugDashboard } from './GlobalDebugDashboard';
+import { AIGeneratedDebugPanel } from './AIGeneratedDebugPanel';
+import { AIAnalysisProgressModal } from './AIAnalysisProgressModal';
 import { useDebugContext } from '@/contexts/DebugContext';
+import { useAIDebug } from '@/hooks/useAIDebug';
+import { AIDebugService } from '@/services/debug/AIDebugService';
 
 export const FloatingDebugButton: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [showGlobal, setShowGlobal] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [debugAIEnabled, setDebugAIEnabled] = useState(false);
   const [, forceUpdate] = useState({});
   
   const { isDebugMode, isDebugAuthorized, userEmail } = useDebugContext();
+  const { isAnalyzing, progress, currentStep, analysis, analyzeCurrentPage } = useAIDebug();
+
+  useEffect(() => {
+    AIDebugService.isDebugAIEnabled().then(setDebugAIEnabled);
+  }, []);
+
+  useEffect(() => {
+    if (analysis) {
+      setShowAIPanel(true);
+    }
+  }, [analysis]);
 
   // Só mostra se:
   // 1. Está em dev OU
@@ -39,11 +56,23 @@ export const FloatingDebugButton: React.FC = () => {
     });
   }
 
-  const handleOpenChange = (newOpen: boolean) => {
+  const handleOpenChange = async (newOpen: boolean) => {
     setOpen(newOpen);
     if (newOpen) {
-      // Resetar para contextual ao abrir
       setShowGlobal(false);
+      setShowAIPanel(false);
+      
+      // Se Debug AI está ativo, verificar se tem análise em cache ou iniciar nova
+      if (debugAIEnabled) {
+        const cached = AIDebugService.getCachedAnalysis(window.location.pathname);
+        if (cached) {
+          setShowAIPanel(true);
+        } else {
+          // Iniciar análise automaticamente
+          await analyzeCurrentPage();
+        }
+      }
+      
       forceUpdate({});
     }
   };
@@ -79,6 +108,11 @@ export const FloatingDebugButton: React.FC = () => {
           <div className="mt-6">
             {showGlobal ? (
               <GlobalDebugDashboard key={String(open)} />
+            ) : showAIPanel && analysis ? (
+              <AIGeneratedDebugPanel 
+                analysis={analysis}
+                onClose={() => setShowAIPanel(false)}
+              />
             ) : (
               <ContextualDebugPanel 
                 onOpenGlobalDebug={() => setShowGlobal(true)} 
@@ -87,6 +121,12 @@ export const FloatingDebugButton: React.FC = () => {
           </div>
         </SheetContent>
       </Sheet>
+      
+      <AIAnalysisProgressModal
+        open={isAnalyzing}
+        progress={progress}
+        currentStep={currentStep}
+      />
     </>
   );
 };

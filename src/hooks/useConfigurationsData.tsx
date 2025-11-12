@@ -9,6 +9,9 @@ interface SystemConfiguration {
   seed_hash: string;
   created_at: string;
   updated_at: string;
+  debug_ai_enabled?: boolean;
+  debug_ai_activated_at?: string;
+  debug_ai_activated_by?: string;
 }
 
 export const useConfigurationsData = () => {

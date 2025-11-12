@@ -5,9 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Shield, Bell, Database, Save, AlertTriangle, Mail, Globe, Lock, Server, RefreshCw, CheckCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Settings, Shield, Bell, Database, Save, AlertTriangle, Mail, Globe, Lock, Server, RefreshCw, CheckCircle, Bug, ShieldOff, ShieldCheck, Brain } from 'lucide-react';
 import { useConfigurationsData } from '@/hooks/useConfigurationsData';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { ReAuthModal } from '@/components/debug/ReAuthModal';
+import { AIDebugHistory } from '@/components/debug/AIDebugHistory';
+import { format } from 'date-fns';
 const ConfiguracoesPage = () => {
+  const { toast } = useToast();
+  const { userProfile } = useAuth();
   const {
     config,
     loading,
@@ -15,6 +24,14 @@ const ConfiguracoesPage = () => {
     refetch
   } = useConfigurationsData();
   const [isLoading, setIsLoading] = useState(false);
+  const [reAuthModalOpen, setReAuthModalOpen] = useState(false);
+  const [debugAIAction, setDebugAIAction] = useState<'activate' | 'deactivate'>('activate');
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [debugAIStats, setDebugAIStats] = useState({
+    totalAnalyses: 0,
+    totalErrors: 0,
+    fixesApplied: 0
+  });
   const [localSettings, setLocalSettings] = useState({
     // Sistema
     siteName: 'INDEXA',
@@ -48,6 +65,81 @@ const ConfiguracoesPage = () => {
       }));
     }
   }, [config]);
+
+  useEffect(() => {
+    fetchDebugAIStats();
+  }, []);
+
+  const fetchDebugAIStats = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ai_debug_analysis_history')
+        .select('error_count');
+
+      if (!error && data) {
+        setDebugAIStats({
+          totalAnalyses: data.length,
+          totalErrors: data.reduce((sum, item) => sum + (item.error_count || 0), 0),
+          fixesApplied: 0 // TODO: implement fixes tracking
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching debug AI stats:', error);
+    }
+  };
+
+  const handleToggleDebugAI = () => {
+    if (!userProfile?.email || userProfile.email !== 'jefersonstilver@gmail.com') {
+      toast({
+        title: 'Acesso Negado',
+        description: 'Apenas o super admin jefersonstilver@gmail.com pode gerenciar o Debug com IA',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setDebugAIAction(config?.debug_ai_enabled ? 'deactivate' : 'activate');
+    setReAuthModalOpen(true);
+  };
+
+  const handleReAuthSuccess = async () => {
+    try {
+      const newStatus = !config?.debug_ai_enabled;
+      
+      await updateConfiguration({
+        debug_ai_enabled: newStatus,
+        debug_ai_activated_at: newStatus ? new Date().toISOString() : config?.debug_ai_activated_at,
+        debug_ai_activated_by: newStatus ? userProfile?.id : config?.debug_ai_activated_by,
+        seed_hash: config?.seed_hash || 'default_' + Date.now()
+      });
+
+      // Log na tabela de auditoria
+      await supabase.from('user_activity_logs').insert({
+        user_id: userProfile?.id,
+        action_type: newStatus ? 'debug_ai_activation' : 'debug_ai_deactivation',
+        entity_type: 'system_configuration',
+        metadata: {
+          activated_by: userProfile?.email,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+      toast({
+        title: newStatus ? '✓ Debug AI Ativado' : '✗ Debug AI Desativado',
+        description: newStatus ? 'Sistema de debug inteligente agora está ativo para todos os usuários.' : 'Sistema de debug inteligente foi desativado.',
+      });
+
+      refetch();
+      fetchDebugAIStats();
+    } catch (error: any) {
+      console.error('Error toggling debug AI:', error);
+      toast({
+        title: 'Erro',
+        description: 'Falha ao atualizar configuração do Debug AI',
+        variant: 'destructive'
+      });
+    }
+  };
   const handleSave = async () => {
     setIsLoading(true);
     try {
@@ -262,7 +354,127 @@ const ConfiguracoesPage = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Debug com Inteligência Artificial */}
+        <Card className="border-red-500/30 bg-red-50/20 lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center text-red-900">
+              <Bug className="h-5 w-5 mr-2" />
+              🤖 Debug com Inteligência Artificial
+            </CardTitle>
+            <CardDescription>
+              Sistema avançado de detecção de erros com IA
+              <span className="block text-xs text-red-600 mt-1">
+                ⚠️ Requer autorização - Apenas jefersonstilver@gmail.com
+              </span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-white rounded-lg border border-red-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <div className={`h-3 w-3 rounded-full ${config?.debug_ai_enabled ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                    <Label className="text-gray-900 font-semibold">
+                      Status do Sistema
+                    </Label>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {config?.debug_ai_enabled ? (
+                      <>
+                        ✅ Ativo desde {config.debug_ai_activated_at ? format(new Date(config.debug_ai_activated_at), 'dd/MM/yyyy HH:mm') : 'N/A'}
+                        <br />
+                        <span className="text-xs text-muted-foreground">
+                          Powered by Google Gemini 2.5 Flash
+                        </span>
+                      </>
+                    ) : (
+                      'Sistema desativado'
+                    )}
+                  </p>
+                </div>
+                
+                <Button
+                  variant={config?.debug_ai_enabled ? 'destructive' : 'default'}
+                  onClick={handleToggleDebugAI}
+                  disabled={!userProfile?.email || userProfile.email !== 'jefersonstilver@gmail.com'}
+                >
+                  {config?.debug_ai_enabled ? (
+                    <>
+                      <ShieldOff className="h-4 w-4 mr-2" />
+                      Desativar Debug AI
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-4 w-4 mr-2" />
+                      Ativar Debug AI
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+            
+            {config?.debug_ai_enabled && (
+              <div className="space-y-3 pt-4 border-t border-red-200">
+                <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-purple-600" />
+                  Estatísticas do Sistema
+                </h3>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 bg-blue-50 rounded border border-blue-200">
+                    <p className="text-xs text-blue-600">Análises Realizadas</p>
+                    <p className="text-2xl font-bold text-blue-900">{debugAIStats.totalAnalyses}</p>
+                  </div>
+                  <div className="p-3 bg-red-50 rounded border border-red-200">
+                    <p className="text-xs text-red-600">Erros Detectados</p>
+                    <p className="text-2xl font-bold text-red-900">{debugAIStats.totalErrors}</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded border border-green-200">
+                    <p className="text-xs text-green-600">Quick Fixes Aplicados</p>
+                    <p className="text-2xl font-bold text-green-900">{debugAIStats.fixesApplied}</p>
+                  </div>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => setHistoryModalOpen(true)}
+                >
+                  📜 Ver Histórico Completo de Análises
+                </Button>
+              </div>
+            )}
+
+            {!config?.debug_ai_enabled && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-900">
+                  <strong>💡 Como funciona:</strong>
+                </p>
+                <ul className="list-disc list-inside text-xs text-amber-800 mt-2 space-y-1">
+                  <li>Análise automática de código com IA (Google Gemini 2.5 Flash)</li>
+                  <li>Detecção inteligente de erros, bugs e problemas de performance</li>
+                  <li>Sugestões de correção com exemplos de código</li>
+                  <li>Histórico completo de análises para auditoria</li>
+                  <li>Quick fixes SQL para problemas de dados</li>
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Modals */}
+      <ReAuthModal
+        open={reAuthModalOpen}
+        onClose={() => setReAuthModalOpen(false)}
+        onSuccess={handleReAuthSuccess}
+        action={debugAIAction}
+      />
+
+      <AIDebugHistory
+        open={historyModalOpen}
+        onClose={() => setHistoryModalOpen(false)}
+      />
 
       {/* Estatísticas do Sistema */}
       <Card className="border-indexa-purple/20">

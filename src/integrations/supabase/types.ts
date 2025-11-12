@@ -80,6 +80,96 @@ export type Database = {
           },
         ]
       }
+      ai_debug_analysis_history: {
+        Row: {
+          ai_analysis: Json
+          ai_model: string | null
+          analysis_duration_ms: number | null
+          analyzed_components: Json | null
+          analyzed_hooks: Json | null
+          analyzed_services: Json | null
+          browser_info: Json | null
+          console_logs: Json | null
+          created_at: string | null
+          detected_errors: Json | null
+          error_count: number | null
+          error_message: string | null
+          error_severity: string | null
+          id: string
+          network_calls: Json | null
+          page_path: string
+          page_state_snapshot: Json | null
+          page_url: string
+          performance_metrics: Json | null
+          quick_fixes: Json | null
+          screen_resolution: string | null
+          status: string | null
+          suggestions: Json | null
+          tokens_used: number | null
+          updated_at: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_analysis: Json
+          ai_model?: string | null
+          analysis_duration_ms?: number | null
+          analyzed_components?: Json | null
+          analyzed_hooks?: Json | null
+          analyzed_services?: Json | null
+          browser_info?: Json | null
+          console_logs?: Json | null
+          created_at?: string | null
+          detected_errors?: Json | null
+          error_count?: number | null
+          error_message?: string | null
+          error_severity?: string | null
+          id?: string
+          network_calls?: Json | null
+          page_path: string
+          page_state_snapshot?: Json | null
+          page_url: string
+          performance_metrics?: Json | null
+          quick_fixes?: Json | null
+          screen_resolution?: string | null
+          status?: string | null
+          suggestions?: Json | null
+          tokens_used?: number | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: Json
+          ai_model?: string | null
+          analysis_duration_ms?: number | null
+          analyzed_components?: Json | null
+          analyzed_hooks?: Json | null
+          analyzed_services?: Json | null
+          browser_info?: Json | null
+          console_logs?: Json | null
+          created_at?: string | null
+          detected_errors?: Json | null
+          error_count?: number | null
+          error_message?: string | null
+          error_severity?: string | null
+          id?: string
+          network_calls?: Json | null
+          page_path?: string
+          page_state_snapshot?: Json | null
+          page_url?: string
+          performance_metrics?: Json | null
+          quick_fixes?: Json | null
+          screen_resolution?: string | null
+          status?: string | null
+          suggestions?: Json | null
+          tokens_used?: number | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       api_rate_limits: {
         Row: {
           created_at: string | null
@@ -1103,6 +1193,9 @@ export type Database = {
       configuracoes_sistema: {
         Row: {
           created_at: string | null
+          debug_ai_activated_at: string | null
+          debug_ai_activated_by: string | null
+          debug_ai_enabled: boolean | null
           id: string
           modo_emergencia: boolean
           seed_hash: string
@@ -1110,6 +1203,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          debug_ai_activated_at?: string | null
+          debug_ai_activated_by?: string | null
+          debug_ai_enabled?: boolean | null
           id?: string
           modo_emergencia?: boolean
           seed_hash: string
@@ -1117,6 +1213,9 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          debug_ai_activated_at?: string | null
+          debug_ai_activated_by?: string | null
+          debug_ai_enabled?: boolean | null
           id?: string
           modo_emergencia?: boolean
           seed_hash?: string
