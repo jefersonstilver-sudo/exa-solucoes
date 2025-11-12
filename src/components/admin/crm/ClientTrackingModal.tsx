@@ -4,12 +4,15 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   User, Mail, Phone, FileText, MapPin, ShoppingCart, 
-  Calendar, Clock, CreditCard, Building, Target, TrendingUp
+  Calendar, Clock, CreditCard, Building, Target, TrendingUp, 
+  Search, MousePointer, Activity
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatCurrency } from '@/utils/formatters';
 import { PhoneWithActions } from './PhoneWithActions';
+import { useEffect, useState } from 'react';
+import { getUserBehaviorSummary, formatTimeSpent, UserBehaviorSummary } from '@/services/behaviorTrackingService';
 
 interface ClientTrackingModalProps {
   isOpen: boolean;
@@ -35,8 +38,27 @@ interface ClientTrackingModalProps {
 }
 
 export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTrackingModalProps) {
+  const [behaviorData, setBehaviorData] = useState<UserBehaviorSummary | null>(null);
+  const [isLoadingBehavior, setIsLoadingBehavior] = useState(false);
+  
   const createdDate = new Date(orderData.created_at);
   const timeElapsed = Math.floor((Date.now() - createdDate.getTime()) / (1000 * 60 * 60));
+  
+  // Carregar dados de comportamento quando o modal abrir
+  useEffect(() => {
+    if (isOpen && orderData.client_id) {
+      setIsLoadingBehavior(true);
+      getUserBehaviorSummary(orderData.client_id)
+        .then(data => {
+          setBehaviorData(data);
+          setIsLoadingBehavior(false);
+        })
+        .catch(err => {
+          console.error('Erro ao carregar comportamento:', err);
+          setIsLoadingBehavior(false);
+        });
+    }
+  }, [isOpen, orderData.client_id]);
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -171,6 +193,182 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                 </div>
               </div>
             </section>
+
+            <Separator />
+
+            {/* Navegação e Comportamento no Site */}
+            {behaviorData && (
+              <>
+                <section>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-indigo-600" />
+                    Navegação no Site
+                    {isLoadingBehavior && <span className="text-xs text-muted-foreground">(Carregando...)</span>}
+                  </h3>
+                  <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg space-y-3">
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="text-center p-3 bg-background rounded">
+                        <p className="text-2xl font-bold text-indigo-600">{behaviorData.total_sessions}</p>
+                        <p className="text-xs text-muted-foreground">Sessões</p>
+                      </div>
+                      <div className="text-center p-3 bg-background rounded">
+                        <p className="text-2xl font-bold text-indigo-600">{behaviorData.total_events}</p>
+                        <p className="text-xs text-muted-foreground">Eventos</p>
+                      </div>
+                      <div className="text-center p-3 bg-background rounded">
+                        <p className="text-2xl font-bold text-indigo-600">
+                          {Object.keys(behaviorData.time_by_page).length}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Páginas</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+                
+                <Separator />
+
+                {/* Páginas Visitadas */}
+                {behaviorData.page_views && behaviorData.page_views.length > 0 && (
+                  <>
+                    <section>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-blue-600" />
+                        Tempo por Página
+                      </h3>
+                      <div className="space-y-2">
+                        {behaviorData.page_views.slice(0, 5).map((pageView, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{pageView.page}</p>
+                              <p className="text-xs text-muted-foreground">{pageView.count} visualizações</p>
+                            </div>
+                            <Badge variant="outline">
+                              {formatTimeSpent(Math.floor(pageView.avg_time || 0))} médio
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                    <Separator />
+                  </>
+                )}
+
+                {/* Buscas Realizadas */}
+                {behaviorData.searches && behaviorData.searches.length > 0 && (
+                  <>
+                    <section>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <Search className="h-5 w-5 text-yellow-600" />
+                        Buscas Realizadas
+                        <Badge variant="secondary">{behaviorData.searches.length}</Badge>
+                      </h3>
+                      <div className="space-y-2">
+                        {behaviorData.searches.slice(0, 10).map((search, index) => (
+                          <div key={index} className="p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded">
+                            <p className="font-medium text-sm">"{search.search_term}"</p>
+                            {search.timestamp && (
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(search.timestamp), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                    <Separator />
+                  </>
+                )}
+
+                {/* Prédios Clicados */}
+                {behaviorData.buildings_clicked && behaviorData.buildings_clicked.length > 0 && (
+                  <>
+                    <section>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <MousePointer className="h-5 w-5 text-green-600" />
+                        Prédios Clicados
+                        <Badge variant="secondary">{behaviorData.buildings_clicked.length}</Badge>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {behaviorData.buildings_clicked.map((building, index) => (
+                          <div key={index} className="p-3 bg-green-50 dark:bg-green-950/20 rounded flex items-center gap-2">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium text-sm">{building.name}</p>
+                              <p className="text-xs text-muted-foreground">{building.neighborhood}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                    <Separator />
+                  </>
+                )}
+
+                {/* Interações com Mapa */}
+                {behaviorData.map_interactions && behaviorData.map_interactions.length > 0 && (
+                  <>
+                    <section>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-red-600" />
+                        Cliques no Mapa
+                        <Badge variant="secondary">{behaviorData.map_interactions.length}</Badge>
+                      </h3>
+                      <div className="space-y-2">
+                        {behaviorData.map_interactions.slice(0, 10).map((interaction, index) => (
+                          <div key={index} className="p-3 bg-red-50 dark:bg-red-950/20 rounded">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-red-600" />
+                              <div>
+                                <p className="font-medium text-sm">{interaction.building?.name || 'Pin do mapa'}</p>
+                                {interaction.building?.neighborhood && (
+                                  <p className="text-xs text-muted-foreground">{interaction.building.neighborhood}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                    <Separator />
+                  </>
+                )}
+
+                {/* Interações com Carrinho */}
+                {behaviorData.cart_interactions && behaviorData.cart_interactions.length > 0 && (
+                  <>
+                    <section>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <ShoppingCart className="h-5 w-5 text-orange-600" />
+                        Histórico do Carrinho
+                        <Badge variant="secondary">{behaviorData.cart_interactions.length}</Badge>
+                      </h3>
+                      <div className="space-y-2">
+                        {behaviorData.cart_interactions.map((interaction, index) => (
+                          <div key={index} className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {interaction.building_name || 'Item do carrinho'}
+                                </p>
+                                {interaction.timestamp && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {format(new Date(interaction.timestamp), 'dd/MM HH:mm', { locale: ptBR })}
+                                  </p>
+                                )}
+                              </div>
+                              <Badge variant={interaction.type === 'cart_add' ? 'default' : 'destructive'}>
+                                {interaction.type === 'cart_add' ? 'Adicionado' : 'Removido'}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                    <Separator />
+                  </>
+                )}
+              </>
+            )}
 
             <Separator />
 

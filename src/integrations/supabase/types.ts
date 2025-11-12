@@ -3307,6 +3307,54 @@ export type Database = {
           },
         ]
       }
+      user_behavior_tracking: {
+        Row: {
+          created_at: string | null
+          device_info: Json | null
+          event_data: Json
+          event_type: string
+          id: string
+          ip_address: unknown
+          page_title: string | null
+          page_url: string | null
+          referrer: string | null
+          session_id: string
+          time_spent_seconds: number | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_info?: Json | null
+          event_data?: Json
+          event_type: string
+          id?: string
+          ip_address?: unknown
+          page_title?: string | null
+          page_url?: string | null
+          referrer?: string | null
+          session_id: string
+          time_spent_seconds?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_info?: Json | null
+          event_data?: Json
+          event_type?: string
+          id?: string
+          ip_address?: unknown
+          page_title?: string | null
+          page_url?: string | null
+          referrer?: string | null
+          session_id?: string
+          time_spent_seconds?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           granted_at: string | null
@@ -4289,6 +4337,21 @@ export type Database = {
       get_unified_client_data: { Args: { p_user_id: string }; Returns: Json }
       get_unread_notifications_count: { Args: never; Returns: number }
       get_user_activity_summary: { Args: { p_user_id: string }; Returns: Json }
+      get_user_behavior_summary: {
+        Args: { target_user_id: string }
+        Returns: {
+          buildings_clicked: Json
+          cart_interactions: Json
+          first_visit: string
+          last_activity: string
+          map_interactions: Json
+          page_views: Json
+          searches: Json
+          time_by_page: Json
+          total_events: number
+          total_sessions: number
+        }[]
+      }
       get_user_role:
         | { Args: never; Returns: string }
         | {
