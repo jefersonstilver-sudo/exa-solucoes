@@ -94,38 +94,43 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
 
   const handleEnded = useCallback(() => {
     const currentVideo = videosRef.current[currentIndexRef.current];
-    VideoDebugger.logEvent('VIDEO', 'Terminou', {
+    VideoDebugger.logEvent('VIDEO', 'Terminou - iniciando próximo', {
       nome: currentVideo?.video_nome,
       index: `${currentIndexRef.current + 1}/${videosRef.current.length}`
     });
     
     onPlayingChangeRef.current?.(false);
     
+    // ✅ GARANTIR LOOP INFINITO: Sempre avança para o próximo vídeo
     setCurrentIndex(prev => {
       const nextIndex = (prev + 1) % videosRef.current.length;
       
       if (nextIndex === 0) {
-        VideoDebugger.logEvent('PLAYLIST', 'Ciclo completo');
+        VideoDebugger.logEvent('PLAYLIST', '🔄 Ciclo completo - reiniciando playlist');
         onPlaylistEndRef.current?.();
       }
       
+      VideoDebugger.logEvent('VIDEO', `⏭️ Próximo vídeo: ${nextIndex + 1}/${videosRef.current.length}`);
       return nextIndex;
     });
   }, []); // ✅ SEM dependências - handler PERMANENTE
 
   const handleError = useCallback(() => {
     const currentVideo = videosRef.current[currentIndexRef.current];
-    VideoDebugger.logEvent('VIDEO', 'Erro ao carregar', {
-      nome: currentVideo?.video_nome
+    VideoDebugger.logEvent('VIDEO', '❌ Erro ao carregar - pulando para próximo', {
+      nome: currentVideo?.video_nome,
+      url: currentVideo?.video_url
     });
 
     setIsBuffering(false);
     onPlayingChangeRef.current?.(false);
 
-    // Pular para próximo vídeo após 2s
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % videosRef.current.length);
-    }, 2000);
+    // ✅ Pular imediatamente para próximo vídeo (não esperar 2s)
+    setCurrentIndex((prev) => {
+      const nextIndex = (prev + 1) % videosRef.current.length;
+      VideoDebugger.logEvent('VIDEO', `⏭️ Pulando para vídeo: ${nextIndex + 1}/${videosRef.current.length}`);
+      return nextIndex;
+    });
   }, []); // ✅ SEM dependências
 
   // Setup de event listeners (APENAS UMA VEZ, PERMANENTES)
@@ -234,6 +239,10 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
         playsInline
         preload="auto"
         crossOrigin="anonymous"
+        controlsList="nodownload noplaybackrate"
+        disablePictureInPicture
+        onContextMenu={(e) => e.preventDefault()}
+        onDragStart={(e) => e.preventDefault()}
         style={{
           backgroundColor: '#0f172a'
         }}

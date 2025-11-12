@@ -218,39 +218,65 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     }
   }, [networkStatus.isOnline]);
 
-  // Auto-avancar com loop infinito e error handling
+  // ✅ Auto-avancar com loop infinito GARANTIDO e error handling
   useEffect(() => {
     const video = videoRef.current;
     if (!video || activeVideos.length === 0) return;
 
     const handleVideoEnd = () => {
+      console.log('[DISPLAY PANEL] 🔄 Vídeo terminou - avançando para próximo');
       handlePlaylistEnd();
       const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
+      console.log(`[DISPLAY PANEL] ⏭️ Próximo vídeo: ${nextIndex + 1}/${activeVideos.length}`);
       setSelectedVideoIndex(nextIndex);
     };
 
     const handleCanPlay = () => {
+      console.log('[DISPLAY PANEL] ▶️ Vídeo pronto - iniciando reprodução');
       handlePlayingChange(true);
-      video.play().catch(err => console.log('[DISPLAY PANEL] Autoplay prevented:', err));
+      video.play().catch(err => {
+        console.error('[DISPLAY PANEL] ❌ Autoplay bloqueado:', err);
+        // Tentar novamente após 1s
+        setTimeout(() => {
+          video.play().catch(() => console.error('[DISPLAY PANEL] Autoplay falhou novamente'));
+        }, 1000);
+      });
     };
 
     const handleError = () => {
-      console.error('[DISPLAY PANEL] Erro ao reproduzir video, pulando para proximo...');
+      console.error('[DISPLAY PANEL] ❌ Erro ao reproduzir vídeo - pulando imediatamente');
       setVideoError(true);
-      setTimeout(() => {
-        const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
-        setSelectedVideoIndex(nextIndex);
-      }, 1000);
+      const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
+      console.log(`[DISPLAY PANEL] ⏭️ Pulando para: ${nextIndex + 1}/${activeVideos.length}`);
+      setSelectedVideoIndex(nextIndex);
+    };
+
+    const handlePause = () => {
+      // ✅ CRÍTICO: Se o vídeo pausar sozinho, retomar reprodução
+      console.warn('[DISPLAY PANEL] ⚠️ Vídeo pausado inesperadamente - retomando');
+      if (!video.ended) {
+        video.play().catch(err => console.error('[DISPLAY PANEL] Erro ao retomar:', err));
+      }
+    };
+
+    const handleStalled = () => {
+      console.warn('[DISPLAY PANEL] ⚠️ Reprodução travada - tentando retomar');
+      video.load();
+      video.play().catch(err => console.error('[DISPLAY PANEL] Erro ao retomar após stall:', err));
     };
 
     video.addEventListener('ended', handleVideoEnd);
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('error', handleError);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('stalled', handleStalled);
     
     return () => {
       video.removeEventListener('ended', handleVideoEnd);
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('error', handleError);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('stalled', handleStalled);
     };
   }, [selectedVideoIndex, activeVideos.length, handlePlayingChange, handlePlaylistEnd]);
 
