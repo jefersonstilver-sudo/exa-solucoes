@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, Navigate } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 import { supabase } from '@/integrations/supabase/client';
 import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
 import { useVideoProtection } from '@/hooks/useVideoProtection';
 import { useVideoCache } from '@/hooks/useVideoCache';
 import { WifiOff } from 'lucide-react';
+import { VideoDebugger } from '@/utils/videoDebugger';
+import { useBuildingScheduleMonitor } from '@/hooks/useBuildingScheduleMonitor';
 
 interface BuildingDisplayPanelProps {
   buildingId?: string;
@@ -13,7 +15,33 @@ interface BuildingDisplayPanelProps {
 
 const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId: propBuildingId }) => {
   const params = useParams<{ buildingId: string }>();
-  const buildingId = propBuildingId || params.buildingId || '';
+  const rawBuildingId = propBuildingId || params.buildingId || '';
+  const isPlayingRef = useRef(false);
+  const isCheckingRef = useRef(false);
+
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  VideoDebugger.logEvent('ROUTING', 'Debug de rota (Panel)', {
+    propBuildingId,
+    paramsKeys: Object.keys(params),
+    paramsBuildingId: params.buildingId,
+    rawBuildingId,
+    currentPath: window.location.pathname,
+    isValidUUID: UUID_REGEX.test(rawBuildingId),
+    isLiteralString: rawBuildingId.startsWith(':')
+  });
+
+  if (rawBuildingId === ':buildingId' || rawBuildingId.startsWith(':')) {
+    VideoDebugger.logEvent('ROUTING', 'ERRO: BuildingId é string literal', { rawBuildingId });
+    return <Navigate to="/404" replace />;
+  }
+
+  if (rawBuildingId && !UUID_REGEX.test(rawBuildingId)) {
+    VideoDebugger.logEvent('ROUTING', 'ERRO: BuildingId inválido', { rawBuildingId });
+    return <Navigate to="/404" replace />;
+  }
+
+  const buildingId = rawBuildingId;
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
@@ -22,10 +50,16 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout>();
-  const lastVideoCountRef = useRef(0);
   const networkStatus = useNetworkMonitor();
   const { getCachedVideoUrl, preCacheVideos } = useVideoCache(buildingId);
+  
+  // ✅ Ref estável para refetch
+  const refetchRef = useRef(refetch);
+  
+  useEffect(() => {
+    refetchRef.current = refetch;
+  }, [refetch]);
+  
   const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
     preventPrint: true,
@@ -33,13 +67,27 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     preventScreenCapture: true
   });
 
+  VideoDebugger.logEvent('DISPLAY', 'Vídeos recebidos (Panel)', {
+    count: activeVideos.length,
+    videoIds: activeVideos.map(v => v.video_id).join(',')
+  });
+  
+  // Callbacks estáveis para evitar re-renders infinitos
+  const handlePlayingChange = useCallback((playing: boolean) => {
+    isPlayingRef.current = playing;
+  }, []);
+
+  const handlePlaylistEnd = useCallback(() => {
+    isPlayingRef.current = false;
+  }, []);
+
   // Preload próximo vídeo
   const nextVideoIndex = (selectedVideoIndex + 1) % activeVideos.length;
   const nextVideo = activeVideos[nextVideoIndex];
 
-  // Buscar nome do prédio
+  // Buscar dados do prédio
   useEffect(() => {
-    const fetchBuildingName = async () => {
+    const fetchBuildingData = async () => {
       if (!buildingId) return;
       
       const { data, error } = await supabase
@@ -53,64 +101,86 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
       }
     };
 
-    fetchBuildingName();
+    fetchBuildingData();
   }, [buildingId]);
+  
+  // Monitor de agendamentos - verifica a cada 1 minuto se algum vídeo deve entrar/sair
+  useBuildingScheduleMonitor({
+    buildingId,
+    onScheduleChange: () => {
+      VideoDebugger.logEvent('SCHEDULE', 'Mudança de agendamento detectada (Panel) - forçando atualização');
+      refetchRef.current();
+    },
+    intervalMinutes: 1,
+    enabled: true
+  });
 
-  // Sistema de polling para verificar novos vídeos a cada 10 segundos
+  // Proteção contra menu de contexto
   useEffect(() => {
-    console.log('🔌 [DISPLAY PANEL] Iniciando sistema de polling...');
-    
-    // PROTEÇÃO GLOBAL - Bloquear contexto menu NO DOCUMENTO INTEIRO
     const blockContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
       return false;
     };
     
-    const blockRightClick = (e: MouseEvent) => {
-      if (e.button === 2) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        return false;
-      }
-    };
-    
-    // Adicionar listeners com capture phase
     document.addEventListener('contextmenu', blockContextMenu, { capture: true });
-    document.addEventListener('mousedown', blockRightClick, { capture: true });
-    
-    pollingIntervalRef.current = setInterval(async () => {
-      try {
-        console.log('🔄 [DISPLAY PANEL] Verificando atualizações...');
-        await refetch();
-        
-        // Detectar mudanças na playlist
-        if (activeVideos.length !== lastVideoCountRef.current) {
-          console.log(`📊 [DISPLAY PANEL] Mudança detectada: ${lastVideoCountRef.current} → ${activeVideos.length} vídeos`);
-          lastVideoCountRef.current = activeVideos.length;
-        }
-      } catch (error) {
-        console.error('❌ [DISPLAY PANEL] Erro ao verificar atualizações:', error);
-      }
-    }, 10000); // Verificar a cada 10 segundos
 
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        console.log('🔌 [DISPLAY PANEL] Sistema de polling desligado');
-      }
-      // Remover proteção global ao sair
       document.removeEventListener('contextmenu', blockContextMenu, { capture: true } as any);
-      document.removeEventListener('mousedown', blockRightClick, { capture: true } as any);
     };
-  }, [refetch, activeVideos.length]);
+  }, []);
 
-  // Atualizar contagem de vídeos e pre-cachear
+  // ✅ Sistema de polling com refetch estável via ref (2 minutos)
   useEffect(() => {
-    lastVideoCountRef.current = activeVideos.length;
-    
+    if (!buildingId) return;
+
+    VideoDebugger.logEvent('POLLING', 'Sistema iniciado (Panel - 2 minutos)');
+
+    const checkForUpdates = async () => {
+      if (isPlayingRef.current) {
+        VideoDebugger.logEvent('POLLING', 'Pulando - vídeo reproduzindo');
+        return;
+      }
+
+      if (isCheckingRef.current) {
+        VideoDebugger.logEvent('POLLING', 'Pulando - verificação em andamento');
+        return;
+      }
+
+      isCheckingRef.current = true;
+
+      try {
+        const currentVideoIds = activeVideos
+          .map(v => v.video_id)
+          .sort()
+          .join(',');
+
+        VideoDebugger.logEvent('POLLING', 'Verificando atualizações (Panel)', {
+          currentCount: activeVideos.length,
+          currentIds: currentVideoIds
+        });
+
+        await refetchRef.current(); // ✅ Usar ref estável
+        
+        VideoDebugger.logEvent('POLLING', 'Verificação concluída (Panel)');
+      } catch (error) {
+        VideoDebugger.logEvent('POLLING', 'Erro ao verificar (Panel)', { 
+          error: error instanceof Error ? error.message : 'Erro desconhecido' 
+        });
+      } finally {
+        isCheckingRef.current = false;
+      }
+    };
+
+    const interval = setInterval(checkForUpdates, 120000); // 2 minutos
+
+    return () => {
+      VideoDebugger.logEvent('POLLING', 'Sistema encerrado (Panel)');
+      clearInterval(interval);
+    };
+  }, [buildingId]); // ✅ Apenas buildingId como dependência
+
+  // Pre-cachear vídeos
+  useEffect(() => {
     if (activeVideos.length > 0) {
       console.log('[DISPLAY PANEL] Pre-caching videos...');
       preCacheVideos(activeVideos);
@@ -154,11 +224,13 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     if (!video || activeVideos.length === 0) return;
 
     const handleVideoEnd = () => {
+      handlePlaylistEnd();
       const nextIndex = (selectedVideoIndex + 1) % activeVideos.length;
       setSelectedVideoIndex(nextIndex);
     };
 
     const handleCanPlay = () => {
+      handlePlayingChange(true);
       video.play().catch(err => console.log('[DISPLAY PANEL] Autoplay prevented:', err));
     };
 
@@ -180,7 +252,7 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('error', handleError);
     };
-  }, [selectedVideoIndex, activeVideos.length]);
+  }, [selectedVideoIndex, activeVideos.length, handlePlayingChange, handlePlaylistEnd]);
 
   const selectedVideo = activeVideos[selectedVideoIndex];
 
@@ -191,10 +263,15 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     );
   }
 
-  // Sem vídeos - tela preta limpa
+  // Sem vídeos - tela preta com mensagem discreta
   if (activeVideos.length === 0) {
     return (
-      <div className="min-h-screen bg-black" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center text-gray-600 text-sm">
+          <p>{buildingName || 'Display'}</p>
+          <p className="mt-2 text-xs">Aguardando conteúdo...</p>
+        </div>
+      </div>
     );
   }
 
