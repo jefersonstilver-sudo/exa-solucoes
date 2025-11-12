@@ -16,7 +16,11 @@ interface DebugContextType {
 
 const DebugContext = createContext<DebugContextType | undefined>(undefined);
 
-const AUTHORIZED_DEBUG_EMAIL = 'jefersonstilver@gmail.com';
+// Lista de emails autorizados a usar o modo debug
+const AUTHORIZED_DEBUG_EMAILS = [
+  'jefersonstilver@gmail.com',  // Master admin
+  'jefi92@gmail.com'             // Conta de teste
+];
 
 export const DebugProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useUserSession();
@@ -24,7 +28,7 @@ export const DebugProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [forceCleanupEnabled, setForceCleanupEnabled] = useState(false);
   
   const userEmail = user?.email || null;
-  const isDebugAuthorized = userEmail === AUTHORIZED_DEBUG_EMAIL;
+  const isDebugAuthorized = userEmail ? AUTHORIZED_DEBUG_EMAILS.includes(userEmail) : false;
 
   // Carregar estado do localStorage
   useEffect(() => {
@@ -52,7 +56,7 @@ export const DebugProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const toggleDebugMode = () => {
     if (!isDebugAuthorized) {
-      console.warn('⚠️ [DEBUG] Acesso negado. Apenas', AUTHORIZED_DEBUG_EMAIL, 'pode ativar debug mode');
+      console.warn('⚠️ [DEBUG] Acesso negado. Apenas usuários autorizados podem ativar debug mode:', AUTHORIZED_DEBUG_EMAILS);
       return;
     }
     
