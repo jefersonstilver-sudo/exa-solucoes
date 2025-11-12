@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus, Calendar, Clock, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { sendWebhookAfterScheduleSave } from '@/services/webhookProgramacaoService';
 import { validateBeforeSave } from '@/services/videoScheduleValidationService';
 import { ConflictAlert } from './ConflictAlert';
@@ -76,7 +77,18 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
   };
 
   const removeRule = (index: number) => {
-    setScheduleRules(scheduleRules.filter((_, i) => i !== index));
+    console.log('🗑️ [SCHEDULE_MODAL] Removendo regra:', {
+      ruleIndex: index,
+      ruleId: scheduleRules[index].id,
+      remainingRules: scheduleRules.length - 1
+    });
+    
+    const updatedRules = scheduleRules.filter((_, i) => i !== index);
+    setScheduleRules(updatedRules);
+    
+    // Limpar conflitos ao remover regra
+    setConflicts([]);
+    toast.success('Regra removida. Clique em "Salvar" para confirmar.');
   };
 
   const updateRule = (index: number, field: keyof ScheduleRule, value: any) => {
@@ -193,7 +205,23 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
     
     setSaving(true);
     try {
-      console.log('💾 [SCHEDULE_MODAL] Salvando regras:', scheduleRules);
+      // VERIFICAR AUTENTICAÇÃO ANTES DE SALVAR
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Sua sessão expirou. Fazendo logout...');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1500);
+        return;
+      }
+      
+      console.log('💾 [SCHEDULE_MODAL] Salvando regras:', {
+        videoId,
+        orderId,
+        rulesCount: scheduleRules.length,
+        userId: session.user.id,
+        userEmail: session.user.email
+      });
       
       // Mensagem diferenciada se estiver removendo todas as regras
       if (scheduleRules.length === 0) {
@@ -230,9 +258,22 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
         console.log('🔄 [SCHEDULE_MODAL] Forçando refresh da página após save');
         window.location.reload();
       }, 1000);
-    } catch (error) {
-      console.error('❌ [SCHEDULE_MODAL] Erro ao salvar agendamento:', error);
-      toast.error('Erro ao salvar agendamento');
+    } catch (error: any) {
+      console.error('❌ [SCHEDULE_MODAL] Erro ao salvar:', error);
+      console.error('❌ [SCHEDULE_MODAL] Stack:', error?.stack);
+      
+      // Detectar erro de autenticação/RLS
+      if (error.message?.includes('Sessão') || 
+          error.message?.includes('permission') ||
+          error.message?.includes('Permissão') ||
+          error.code === 'PGRST301') {
+        toast.error('Sessão expirada. Redirecionando para login...');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        toast.error(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
+      }
     } finally {
       setSaving(false);
     }

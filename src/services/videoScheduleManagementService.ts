@@ -111,14 +111,57 @@ async updateVideoScheduleRules(
       }
 
       // 3. Remover regras existentes
-      const { error: deleteError } = await supabase
+      console.log('🗑️ [SCHEDULE_MGMT] === INÍCIO DO DELETE ===');
+      console.log('🗑️ [SCHEDULE_MGMT] Deletando regras antigas...', {
+        campaignVideoScheduleId,
+        timestamp: new Date().toISOString()
+      });
+
+      // VERIFICAR AUTENTICAÇÃO ANTES
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('🚨 [SCHEDULE_MGMT] SESSÃO INVÁLIDA - DELETE SERÁ BLOQUEADO');
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
+      console.log('✅ [SCHEDULE_MGMT] Sessão válida:', {
+        userId: session.user.id,
+        email: session.user.email
+      });
+
+      const { error: deleteError, count } = await supabase
         .from('campaign_schedule_rules')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('campaign_video_schedule_id', campaignVideoScheduleId);
 
+      console.log('📊 [SCHEDULE_MGMT] Resultado do DELETE:', {
+        deletedCount: count,
+        hadError: !!deleteError,
+        error: deleteError ? {
+          code: deleteError.code,
+          message: deleteError.message,
+          details: deleteError.details,
+          hint: deleteError.hint
+        } : null
+      });
+
       if (deleteError) {
-        throw new Error('Erro ao remover regras existentes');
+        console.error('❌ [SCHEDULE_MGMT] ERRO CRÍTICO NO DELETE:', {
+          code: deleteError.code,
+          message: deleteError.message,
+          details: deleteError.details,
+          hint: deleteError.hint
+        });
+        
+        // Detectar erro de RLS
+        if (deleteError.code === 'PGRST301' || deleteError.message?.includes('permission')) {
+          throw new Error('Permissão negada. Faça logout e login novamente.');
+        }
+        
+        throw new Error(`Erro ao remover regras: ${deleteError.message}`);
       }
+
+      console.log('✅ [SCHEDULE_MGMT] DELETE concluído com sucesso');
 
       // 4. Inserir novas regras
       if (scheduleRules.length > 0) {
