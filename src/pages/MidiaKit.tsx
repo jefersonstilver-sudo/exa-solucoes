@@ -92,8 +92,8 @@ const MidiaKit = () => {
                 </a>
 
                 <div className="flex items-center space-x-2 text-gray-400 text-sm">
-                  <FileText className="h-4 w-4" />
-                  <span>Desenvolvido no Canva</span>
+                  
+                  
                 </div>
               </motion.div>
             </div>
