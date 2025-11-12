@@ -315,6 +315,26 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
               </TooltipProvider>
             )}
             
+            {/* Badge "EM EXIBIÇÃO" para vídeos agendados - quando estão no período ativo */}
+            {slot.video_data && slot.approval_status === 'approved' && !slot.is_base_video && hasActiveSchedule && isScheduledActiveNow() && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center space-x-1 bg-green-50 border border-green-300 text-green-700 px-2.5 py-1.5 rounded-md text-xs font-semibold animate-pulse cursor-help">
+                      <Tv className="h-3.5 w-3.5" />
+                      <span>EM EXIBIÇÃO</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs bg-green-900 text-white p-3">
+                    <p className="text-sm font-semibold mb-1">🎬 Vídeo Agendado em Exibição</p>
+                    <p className="text-xs leading-relaxed">
+                      Este vídeo está sendo exibido agora de acordo com o agendamento configurado. Quando o período de agendamento terminar, o sistema voltará automaticamente para o vídeo principal.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
             {/* Botão para trocar vídeo principal - SOMENTE se há 2+ vídeos aprovados */}
             {slot.video_data && slot.approval_status === 'approved' && !slot.is_base_video && totalApprovedVideos >= 2 && (
               <TooltipProvider>
