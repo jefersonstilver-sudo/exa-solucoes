@@ -12,7 +12,7 @@ interface DebugPasswordModalProps {
 }
 
 // Senha hardcoded para debug (pode ser movida para env futuramente)
-const DEBUG_PASSWORD = 'jefersonstilver';
+const DEBUG_PASSWORD = '573039';
 
 export const DebugPasswordModal: React.FC<DebugPasswordModalProps> = ({
   open,
