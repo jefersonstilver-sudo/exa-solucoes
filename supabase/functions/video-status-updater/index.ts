@@ -118,7 +118,7 @@ serve(async (req) => {
     let deactivatedCount = 0;
     const affectedPedidos = new Set<string>();
 
-    // ✅ ATIVAR VÍDEOS AGENDADOS E DESATIVAR VÍDEO BASE TEMPORARIAMENTE
+    // ✅ ATIVAR VÍDEOS AGENDADOS (sem desativar base - triggers do banco não permitem)
     for (const videoId of videosToActivate) {
       const rule = scheduleRules?.find((r: any) => r.campaign_video_schedules.video_id === videoId);
       if (!rule) continue;
@@ -128,21 +128,35 @@ serve(async (req) => {
 
       console.log(`🎬 [VIDEO_STATUS] Ativando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
 
-      // ✅ USAR RPC ATÔMICA para evitar race condition com triggers
-      const { data: rpcResult, error: rpcError } = await supabase
-        .rpc('activate_scheduled_video', {
-          p_video_id: videoId,
-          p_pedido_id: pedidoId
-        });
+      // 1. Usar RPC select_video_for_display que gerencia tudo corretamente
+      // Primeiro, buscar o pedido_video_id do vídeo agendado
+      const { data: pedidoVideo, error: fetchError } = await supabase
+        .from('pedido_videos')
+        .select('id')
+        .eq('video_id', videoId)
+        .eq('pedido_id', pedidoId)
+        .eq('approval_status', 'approved')
+        .eq('is_base_video', false)
+        .single();
 
-      if (rpcError || !rpcResult?.success) {
-        console.error(`❌ Erro ao ativar vídeo agendado ${videoId}:`, rpcError || rpcResult);
+      if (fetchError || !pedidoVideo) {
+        console.error(`❌ Erro ao buscar pedido_video:`, fetchError);
         continue;
       }
 
-      // Sucesso
+      // 2. Chamar RPC que faz toda a lógica corretamente
+      const { error: rpcError } = await supabase
+        .rpc('select_video_for_display', {
+          p_pedido_video_id: pedidoVideo.id
+        });
+
+      if (rpcError) {
+        console.error(`❌ Erro ao ativar vídeo agendado ${videoId}:`, rpcError);
+        continue;
+      }
+
       activatedCount++;
-      console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} ativado, vídeo base pausado (Pedido: ${pedidoId})`);
+      console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} ativado para exibição (Pedido: ${pedidoId})`);
     }
 
     // ⏹️ DESATIVAR VÍDEOS AGENDADOS E REATIVAR VÍDEO BASE
@@ -155,26 +169,31 @@ serve(async (req) => {
 
       console.log(`⏹️ [VIDEO_STATUS] Desativando vídeo agendado ${videoId} (Pedido: ${pedidoId})`);
 
-      // Desativar o vídeo agendado
-      const { error: deactivateError } = await supabase
+      // 1. Buscar o vídeo base para reativar
+      const { data: baseVideo, error: baseError } = await supabase
         .from('pedido_videos')
-        .update({ 
-          is_active: false,
-          selected_for_display: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('video_id', videoId)
+        .select('id')
+        .eq('pedido_id', pedidoId)
+        .eq('is_base_video', true)
         .eq('approval_status', 'approved')
-        .eq('is_base_video', false);
+        .single();
 
-      if (deactivateError) {
-        console.error(`❌ Erro ao desativar vídeo agendado ${videoId}:`, deactivateError);
+      if (baseError || !baseVideo) {
+        console.error(`❌ Erro ao buscar vídeo base:`, baseError);
+        continue;
+      }
+
+      // 2. Usar RPC para reativar vídeo base (gerencia tudo corretamente)
+      const { error: rpcError } = await supabase
+        .rpc('select_video_for_display', {
+          p_pedido_video_id: baseVideo.id
+        });
+
+      if (rpcError) {
+        console.error(`❌ Erro ao reativar vídeo base:`, rpcError);
       } else {
         deactivatedCount++;
-        console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} desativado (Pedido: ${pedidoId})`);
-        
-        // Trigger reativará o vídeo base automaticamente
-        console.log(`🔄 [VIDEO_STATUS] Trigger reativará vídeo base para pedido ${pedidoId}`);
+        console.log(`✅ [VIDEO_STATUS] Vídeo base reativado para pedido ${pedidoId}`);
       }
     }
 
