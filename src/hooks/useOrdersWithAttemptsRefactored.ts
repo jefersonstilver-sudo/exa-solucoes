@@ -45,7 +45,7 @@ export const useOrdersWithAttemptsRefactored = () => {
       // Enriquecer tentativas com emails
       const tentativasComEmails = await enrichAttemptsWithEmails(tentativas);
       
-      // Formatar dados dos pedidos
+      // Formatar dados dos pedidos com TODOS os campos necessários
       const pedidosFormatados = (pedidosComClientes || []).map((pedido: any) => ({
         id: pedido.id,
         type: 'order' as const,
