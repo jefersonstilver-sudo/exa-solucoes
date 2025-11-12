@@ -6,7 +6,7 @@ const HeroQuemSomos = () => {
   const { ref, isVisible } = useScrollReveal(0.1);
 
   return (
-    <ExaSection background="transparent" className="pt-20 md:pt-40 pb-12 md:pb-16 bg-gradient-to-br from-[#4A0E0E] via-[#6B1818] to-[#2D0808] relative overflow-hidden">
+    <ExaSection background="transparent" className="pt-24 md:pt-44 pb-12 md:pb-16 bg-gradient-to-br from-[#4A0E0E] via-[#6B1818] to-[#2D0808] relative overflow-hidden">
       {/* Efeito sutil de textura */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,0,0,0.15),transparent_50%)] opacity-50"></div>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(128,0,32,0.12),transparent_50%)] opacity-40"></div>
