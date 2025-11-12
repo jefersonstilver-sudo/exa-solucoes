@@ -29,6 +29,7 @@ import { ptBR } from 'date-fns/locale';
 import { useEmailStats } from '@/hooks/useEmailStats';
 import { useEmailHistory } from '@/hooks/useEmailHistory';
 import EmailTemplatePreviewDialog from '@/components/admin/emails/EmailTemplatePreviewDialog';
+import { EmailTemplateSyncButton } from '@/components/admin/emails/EmailTemplateSyncButton';
 import AdminPeriodSelector, { PeriodType, getPeriodDates } from '@/components/admin/common/AdminPeriodSelector';
 
 interface EmailTemplate {
@@ -300,11 +301,14 @@ const ComunicacoesPage = () => {
         <TabsContent value="templates" className="space-y-4">
           {/* Filtros */}
           <Card>
-            <CardHeader>
-              <CardTitle>Templates de Email</CardTitle>
-              <CardDescription>
-                {templates.length} templates disponíveis no sistema
-              </CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between space-y-0">
+              <div>
+                <CardTitle>Templates de Email</CardTitle>
+                <CardDescription>
+                  {templates.length} templates disponíveis no sistema
+                </CardDescription>
+              </div>
+              <EmailTemplateSyncButton />
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
