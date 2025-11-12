@@ -1,14 +1,17 @@
 
 import React from 'react';
-import { MapPin, Users, Building } from 'lucide-react';
+import { MapPin, Users, Building, Eye } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { generateCommercialPath } from '@/utils/buildingSlugUtils';
 
 interface BuildingDetails {
   id: string;
   nome: string;
   endereco: string;
   bairro: string;
+  codigo_predio?: string;
   imageurl?: string;
   imagem_principal?: string;
   imagem_2?: string;
@@ -40,8 +43,15 @@ const getBuildingImageUrl = (building: BuildingDetails): string | null => {
 export const BuildingCard: React.FC<BuildingCardProps> = ({ building, index }) => {
   const imageUrl = getBuildingImageUrl(building);
   
+  const handleWatchLive = () => {
+    if (building.codigo_predio) {
+      const commercialPath = generateCommercialPath(building.nome, building.codigo_predio);
+      window.open(commercialPath, '_blank', 'noopener,noreferrer');
+    }
+  };
+  
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 relative group">
       <div className="relative">
         {imageUrl ? (
           <img 
@@ -57,6 +67,19 @@ export const BuildingCard: React.FC<BuildingCardProps> = ({ building, index }) =
         <div className="absolute top-3 left-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
           Local {index + 1}
         </div>
+        
+        {building.codigo_predio && (
+          <div className="absolute top-3 right-3">
+            <Button
+              size="sm"
+              onClick={handleWatchLive}
+              className="bg-white/90 hover:bg-white text-blue-600 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full px-3 py-2 group/btn"
+              title="Assistir ao vivo"
+            >
+              <Eye className="h-4 w-4 group-hover/btn:scale-110 transition-transform" />
+            </Button>
+          </div>
+        )}
       </div>
       
       <CardContent className="p-4">

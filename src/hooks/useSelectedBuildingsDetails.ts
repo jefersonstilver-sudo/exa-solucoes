@@ -7,6 +7,7 @@ interface BuildingDetails {
   nome: string;
   endereco: string;
   bairro: string;
+  codigo_predio?: string;
   imageurl?: string;
   imagem_principal?: string;
   imagem_2?: string;
