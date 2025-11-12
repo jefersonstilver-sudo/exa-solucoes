@@ -226,6 +226,11 @@ export const captureToast = (type: 'success' | 'error' | 'warning' | 'info', mes
   }
 };
 
+// Expor captureToast globalmente
+if (typeof window !== 'undefined') {
+  (window as any).__captureToast = captureToast;
+}
+
 export const useComprehensiveDebug = () => {
   const location = useLocation();
   const [debugData, setDebugData] = useState<ComprehensiveDebugData | null>(null);

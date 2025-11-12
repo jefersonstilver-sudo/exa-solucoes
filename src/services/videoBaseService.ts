@@ -245,20 +245,29 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
     const result = data as any;
 
     if (!result?.success) {
+      const errorMsg = result?.error || result?.message || 'Falha ao definir vídeo como principal';
       console.error('❌ [SET_BASE_VIDEO] RPC retornou falha:', {
         result,
         success: result?.success,
         error: result?.error,
-        message: result?.message
+        message: result?.message,
+        errorMsg
       });
       videoLogger.logRPC('set_base_video_rpc_failed', 'RPC retornou falha', { 
         slotId, 
-        result
+        result,
+        errorMsg
       });
+      
+      // Registrar no sistema de debug
+      if (typeof window !== 'undefined' && (window as any).__captureToast) {
+        (window as any).__captureToast('error', errorMsg);
+      }
+      
       return {
         success: false,
         timestamp: now(),
-        message: result?.error || result?.message || 'Failed to set base video'
+        message: errorMsg
       };
     }
 

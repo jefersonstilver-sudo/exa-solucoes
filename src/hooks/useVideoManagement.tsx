@@ -290,12 +290,17 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
 
       // 2) EXECUTAR A MUDANÇA NO BANCO
       console.log('🔄 [WEBHOOK] Executando setBaseVideo...');
-      const success = await setBaseVideo(slotId);
-      if (!success) {
-        throw new Error('Falha ao definir vídeo como base');
+      const result = await setBaseVideo(slotId);
+      
+      // 3) VERIFICAR RESULTADO E MOSTRAR MENSAGEM ESPECÍFICA
+      if (!result.success) {
+        const errorMessage = result.message || 'Falha ao definir vídeo como base';
+        console.error('❌ [HOOK] Falha ao definir vídeo base:', errorMessage);
+        toast.error(errorMessage);
+        return;
       }
 
-      // 3) BUSCAR DADOS PARA OS WEBHOOKS APÓS A MUDANÇA COM SLOT
+      // 4) BUSCAR DADOS PARA OS WEBHOOKS APÓS A MUDANÇA COM SLOT
       console.log('🔄 [WEBHOOK] Buscando dados para webhook...');
       const [pedidoResult, newVideoResult] = await Promise.all([
         supabase
@@ -327,19 +332,20 @@ export const useVideoManagement = ({ orderId, userId, orderStatus }: UseVideoMan
         willActivate: !!newVideoId
       });
 
-      // 4) API externa será sincronizada automaticamente pelo videoBaseService.ts
+      // 5) API externa será sincronizada automaticamente pelo videoBaseService.ts
       console.log('✅ API externa será sincronizada automaticamente');
 
-      toast.success('Vídeo definido como principal e selecionado para exibição!');
+      toast.success('✅ Vídeo definido como principal e selecionado para exibição!');
       
-      // 7) RECARREGAR SLOTS PARA REFLETIR MUDANÇAS
+      // 6) RECARREGAR SLOTS PARA REFLETIR MUDANÇAS
       const slots = await loadVideoSlots(orderId);
       setVideoSlots(slots);
       console.log('✅ [HOOK] Vídeo base definido com sucesso');
 
-    } catch (error) {
-      console.error('Erro ao definir vídeo base:', error);
-      toast.error('Erro ao definir vídeo base');
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Erro ao definir vídeo base';
+      console.error('❌ [HOOK] Erro ao definir vídeo base:', error);
+      toast.error(errorMessage);
     }
   };
 
