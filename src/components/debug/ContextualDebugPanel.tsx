@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { ConsoleTab } from './ConsoleTab';
 import { 
   AlertCircle, 
   FileCode, 
@@ -18,7 +19,10 @@ import {
   Zap,
   Download,
   ExternalLink,
-  Globe
+  Globe,
+  Clock,
+  Terminal,
+  TrendingUp
 } from 'lucide-react';
 
 interface ContextualDebugPanelProps {
@@ -27,7 +31,29 @@ interface ContextualDebugPanelProps {
 
 export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOpenGlobalDebug }) => {
   const { debugData, exportDebugData, clearErrors } = usePageDebug();
-  const { pageInfo, currentPath, detectedErrors, recentApiCalls, performanceMetrics } = debugData;
+  const { pageInfo, currentPath, detectedErrors, recentApiCalls, performanceMetrics, consoleHistory, sessionStartTime, componentState } = debugData;
+  
+  const formatTimestamp = (iso: string) => {
+    const date = new Date(iso);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const ms = String(date.getMilliseconds()).padStart(3, '0');
+    return `${hours}:${minutes}:${seconds}.${ms}`;
+  };
+  
+  const getSessionDuration = () => {
+    const start = new Date(sessionStartTime);
+    const now = new Date();
+    const diffMs = now.getTime() - start.getTime();
+    const seconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    
+    if (hours > 0) return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+    return `${seconds}s`;
+  };
 
   if (!pageInfo) {
     return (
@@ -55,10 +81,20 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
-            <div>
+            <div className="flex-1">
               <CardTitle className="text-2xl">🔍 {pageInfo.pageName}</CardTitle>
-              <CardDescription className="mt-2">
-                <code className="text-xs bg-muted px-2 py-1 rounded">{pageInfo.pageFile}</code>
+              <CardDescription className="mt-2 space-y-1">
+                <code className="text-xs bg-muted px-2 py-1 rounded block">{pageInfo.pageFile}</code>
+                <div className="flex items-center gap-4 text-xs mt-2">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Sessão: {getSessionDuration()}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Activity className="w-3 h-3" />
+                    Iniciado em: {formatTimestamp(sessionStartTime)}
+                  </span>
+                </div>
               </CardDescription>
             </div>
             <Button onClick={onOpenGlobalDebug} variant="outline" size="sm">
@@ -71,7 +107,7 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
 
       {/* Tabs */}
       <Tabs defaultValue="errors" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="errors" className="relative">
             <AlertCircle className="w-4 h-4 mr-1" />
             Erros
@@ -81,9 +117,14 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="files">
-            <FileCode className="w-4 h-4 mr-1" />
-            Arquivos
+          <TabsTrigger value="console" className="relative">
+            <Terminal className="w-4 h-4 mr-1" />
+            Console
+            {consoleHistory.length > 0 && (
+              <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+                {consoleHistory.length}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="apis">
             <Database className="w-4 h-4 mr-1" />
@@ -92,6 +133,10 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
           <TabsTrigger value="state">
             <Zap className="w-4 h-4 mr-1" />
             Estado
+          </TabsTrigger>
+          <TabsTrigger value="files">
+            <FileCode className="w-4 h-4 mr-1" />
+            Arquivos
           </TabsTrigger>
           <TabsTrigger value="performance">
             <Activity className="w-4 h-4 mr-1" />
@@ -125,8 +170,13 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
                       <Card key={idx} className="border-destructive/50">
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between">
-                            <div>
-                              <Badge variant="destructive" className="mb-2">{error.code}</Badge>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="destructive">{error.code}</Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  Mapeado
+                                </Badge>
+                              </div>
                               <CardTitle className="text-base">{error.description}</CardTitle>
                             </div>
                           </div>
@@ -139,19 +189,102 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
                           {error.sqlFix && (
                             <div className="mt-2">
                               <p className="text-sm font-medium text-blue-600">🔧 SQL Fix:</p>
-                              <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
+                              <pre className="text-xs bg-muted p-2 rounded overflow-x-auto font-mono">
                                 {error.sqlFix}
                               </pre>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mt-2"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(error.sqlFix!);
+                                }}
+                              >
+                                Copiar SQL
+                              </Button>
                             </div>
                           )}
                         </CardContent>
                       </Card>
                     ))}
+                    
+                    {detectedErrors.length > 0 && (
+                      <>
+                        <Separator className="my-4" />
+                        <h3 className="text-sm font-semibold mb-2 text-destructive">
+                          Erros Detectados em Tempo Real ({detectedErrors.length})
+                        </h3>
+                        {detectedErrors.map((error, idx) => (
+                          <Card key={idx} className="border-destructive">
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge variant="destructive">{error.code}</Badge>
+                                    <Badge 
+                                      variant={
+                                        error.severity === 'critical' ? 'destructive' :
+                                        error.severity === 'high' ? 'destructive' :
+                                        'secondary'
+                                      }
+                                      className="text-xs"
+                                    >
+                                      {error.severity?.toUpperCase()}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {formatTimestamp(error.timestamp)}
+                                    </span>
+                                  </div>
+                                  <CardTitle className="text-base">{error.description}</CardTitle>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                              <div>
+                                <p className="text-sm font-medium text-green-600">💡 Solução:</p>
+                                <p className="text-sm text-muted-foreground">{error.solution}</p>
+                              </div>
+                              {error.data && (
+                                <div className="mt-2">
+                                  <p className="text-sm font-medium text-blue-600">📊 Dados do Erro:</p>
+                                  <pre className="text-xs bg-muted p-2 rounded overflow-x-auto font-mono max-h-32">
+                                    {JSON.stringify(error.data, null, 2)}
+                                  </pre>
+                                </div>
+                              )}
+                              {error.sqlFix && (
+                                <div className="mt-2">
+                                  <p className="text-sm font-medium text-blue-600">🔧 SQL Fix:</p>
+                                  <pre className="text-xs bg-muted p-2 rounded overflow-x-auto font-mono">
+                                    {error.sqlFix}
+                                  </pre>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="mt-2"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(error.sqlFix!);
+                                    }}
+                                  >
+                                    Copiar SQL
+                                  </Button>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
               </ScrollArea>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Console */}
+        <TabsContent value="console" className="space-y-4">
+          <ConsoleTab consoleHistory={consoleHistory} formatTimestamp={formatTimestamp} />
         </TabsContent>
 
         {/* Arquivos Relacionados */}
@@ -251,20 +384,45 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
                           <Card key={idx} className={call.error ? 'border-destructive' : ''}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between mb-1">
-                                <Badge variant={call.status >= 200 && call.status < 300 ? 'default' : 'destructive'}>
-                                  {call.method} {call.status || 'ERR'}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  {call.duration.toFixed(0)}ms
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={call.status >= 200 && call.status < 300 ? 'default' : 'destructive'}>
+                                    {call.method} {call.status || 'ERR'}
+                                  </Badge>
+                                  <Badge variant="outline" className="text-xs">
+                                    {call.duration.toFixed(2)}ms
+                                  </Badge>
+                                </div>
+                                <span className="text-xs text-muted-foreground font-mono">
+                                  {formatTimestamp(call.timestamp)}
                                 </span>
                               </div>
-                              <p className="text-xs font-mono break-all">{call.url}</p>
-                              {call.error && (
-                                <p className="text-xs text-destructive mt-1">{call.error}</p>
+                              <p className="text-xs font-mono break-all mb-2">{call.url}</p>
+                              {call.requestBody && (
+                                <details className="mb-2">
+                                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                                    📤 Request Body
+                                  </summary>
+                                  <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-x-auto">
+                                    {JSON.stringify(call.requestBody, null, 2)}
+                                  </pre>
+                                </details>
                               )}
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {new Date(call.timestamp).toLocaleTimeString()}
-                              </p>
+                              {call.responsePreview && (
+                                <details className="mb-2">
+                                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                                    📥 Response Preview
+                                  </summary>
+                                  <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-x-auto">
+                                    {call.responsePreview}
+                                  </pre>
+                                </details>
+                              )}
+                              {call.error && (
+                                <div className="mt-2 p-2 bg-destructive/10 rounded">
+                                  <p className="text-xs font-semibold text-destructive mb-1">❌ Erro:</p>
+                                  <p className="text-xs text-destructive">{call.error}</p>
+                                </div>
+                              )}
                             </CardContent>
                           </Card>
                         ))}
@@ -281,20 +439,55 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
         <TabsContent value="state" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Variáveis de Estado</CardTitle>
+              <CardTitle>Estado dos Componentes</CardTitle>
               <CardDescription>
-                Variáveis monitoradas nesta página
+                Estado atual dos componentes React e variáveis monitoradas
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
-                <div className="space-y-2">
-                  {pageInfo.stateVariables.map((variable, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded">
-                      <code className="text-xs font-mono">{variable}</code>
-                      <Badge variant="outline">Monitorado</Badge>
+                <div className="space-y-4">
+                  {/* Variáveis Esperadas */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">Variáveis Esperadas ({pageInfo.stateVariables.length}):</h3>
+                    <div className="space-y-2">
+                      {pageInfo.stateVariables.map((variable, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded">
+                          <code className="text-xs font-mono">{variable}</code>
+                          <Badge variant="outline">Mapeado</Badge>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Estado Capturado */}
+                  {componentState && Object.keys(componentState).length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h3 className="text-sm font-semibold mb-2">Estado Capturado em Tempo Real:</h3>
+                        <div className="space-y-2">
+                          {Object.entries(componentState).map(([componentName, state]) => (
+                            <Card key={componentName}>
+                              <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="text-sm">{componentName}</CardTitle>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {formatTimestamp((state as any)._lastUpdate || new Date().toISOString())}
+                                  </Badge>
+                                </div>
+                              </CardHeader>
+                              <CardContent>
+                                <pre className="text-xs bg-muted p-2 rounded overflow-x-auto font-mono max-h-48">
+                                  {JSON.stringify(state, null, 2)}
+                                </pre>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>
@@ -305,42 +498,103 @@ export const ContextualDebugPanel: React.FC<ContextualDebugPanelProps> = ({ onOp
         <TabsContent value="performance" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Métricas de Performance</CardTitle>
-              <CardDescription>
-                Tempo de carregamento e renderizações
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Métricas de Performance</CardTitle>
+                  <CardDescription>
+                    Tempo de carregamento, renderizações e uso de recursos
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  Atualizado: {formatTimestamp(performanceMetrics.lastRenderTime)}
+                </Badge>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted rounded">
-                  <div>
-                    <p className="text-sm font-medium">Tempo de Carregamento</p>
-                    <p className="text-xs text-muted-foreground">Primeira renderização</p>
-                  </div>
-                  <Badge variant="secondary" className="text-lg">
-                    {performanceMetrics.loadTime.toFixed(2)}ms
-                  </Badge>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-muted rounded">
-                  <div>
-                    <p className="text-sm font-medium">Re-renderizações</p>
-                    <p className="text-xs text-muted-foreground">Total de renders</p>
-                  </div>
-                  <Badge variant="secondary" className="text-lg">
-                    {performanceMetrics.renderCount}
-                  </Badge>
-                </div>
-
-                {performanceMetrics.memoryUsage && (
+                <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center justify-between p-4 bg-muted rounded">
                     <div>
-                      <p className="text-sm font-medium">Uso de Memória</p>
-                      <p className="text-xs text-muted-foreground">Heap size</p>
+                      <p className="text-sm font-medium">Load Time</p>
+                      <p className="text-xs text-muted-foreground">Primeira renderização</p>
                     </div>
-                    <Badge variant="secondary" className="text-lg">
-                      {(performanceMetrics.memoryUsage / 1024 / 1024).toFixed(2)}MB
+                    <Badge variant="secondary" className="text-base">
+                      {performanceMetrics.loadTime.toFixed(3)}ms
                     </Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-muted rounded">
+                    <div>
+                      <p className="text-sm font-medium">Re-renders</p>
+                      <p className="text-xs text-muted-foreground">Total de renderizações</p>
+                    </div>
+                    <Badge variant="secondary" className="text-base">
+                      {performanceMetrics.renderCount}x
+                    </Badge>
+                  </div>
+
+                  {performanceMetrics.domNodes && (
+                    <div className="flex items-center justify-between p-4 bg-muted rounded">
+                      <div>
+                        <p className="text-sm font-medium">DOM Nodes</p>
+                        <p className="text-xs text-muted-foreground">Elementos no DOM</p>
+                      </div>
+                      <Badge variant="secondary" className="text-base">
+                        {performanceMetrics.domNodes.toLocaleString()}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {performanceMetrics.memoryUsage && (
+                    <div className="flex items-center justify-between p-4 bg-muted rounded">
+                      <div>
+                        <p className="text-sm font-medium">JS Heap Used</p>
+                        <p className="text-xs text-muted-foreground">Memória utilizada</p>
+                      </div>
+                      <Badge variant="secondary" className="text-base">
+                        {(performanceMetrics.memoryUsage / 1024 / 1024).toFixed(2)} MB
+                      </Badge>
+                    </div>
+                  )}
+
+                  {performanceMetrics.heapSize && (
+                    <div className="flex items-center justify-between p-4 bg-muted rounded">
+                      <div>
+                        <p className="text-sm font-medium">Total Heap Size</p>
+                        <p className="text-xs text-muted-foreground">Memória total alocada</p>
+                      </div>
+                      <Badge variant="secondary" className="text-base">
+                        {(performanceMetrics.heapSize / 1024 / 1024).toFixed(2)} MB
+                      </Badge>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between p-4 bg-muted rounded">
+                    <div>
+                      <p className="text-sm font-medium">API Calls</p>
+                      <p className="text-xs text-muted-foreground">Total de chamadas</p>
+                    </div>
+                    <Badge variant="secondary" className="text-base">
+                      {recentApiCalls.length}
+                    </Badge>
+                  </div>
+                </div>
+
+                {performanceMetrics.memoryUsage && performanceMetrics.heapSize && (
+                  <div className="mt-4 p-4 bg-muted rounded">
+                    <p className="text-sm font-medium mb-2">Memory Usage</p>
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary transition-all"
+                        style={{ 
+                          width: `${(performanceMetrics.memoryUsage / performanceMetrics.heapSize * 100).toFixed(1)}%` 
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {((performanceMetrics.memoryUsage / performanceMetrics.heapSize) * 100).toFixed(1)}% utilizado
+                    </p>
                   </div>
                 )}
               </div>
