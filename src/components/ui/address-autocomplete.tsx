@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, X, Loader2, Home, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGooglePlacesAutocomplete, PlaceResult } from '@/hooks/useGooglePlacesAutocomplete';
+import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 
 interface AddressAutocompleteProps {
   value: string;
@@ -32,6 +33,7 @@ export function AddressAutocomplete({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const { trackSearch } = useBehaviorTracking();
 
   const {
     suggestions,
@@ -74,6 +76,14 @@ export function AddressAutocomplete({
         lng: placeDetails.geometry.location.lng(),
       };
 
+      // Track address selection from autocomplete
+      trackSearch(placeDetails.formatted_address || place.description, {
+        source: 'address_autocomplete',
+        coordinates,
+        placeId: place.placeId,
+        types: place.types
+      });
+
       onPlaceSelect({
         address: placeDetails.formatted_address || place.description,
         coordinates,
@@ -82,6 +92,13 @@ export function AddressAutocomplete({
 
       onChange(placeDetails.formatted_address || place.description);
     } else {
+      // Track even without coordinates
+      trackSearch(place.description, {
+        source: 'address_autocomplete',
+        placeId: place.placeId,
+        types: place.types
+      });
+      
       onChange(place.description);
     }
 

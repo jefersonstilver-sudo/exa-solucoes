@@ -8,6 +8,7 @@ import { BuildingFilters } from '@/hooks/useBuildingStore';
 import { useIsMobile } from '@/hooks/use-mobile';
 import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 import { shallow } from 'zustand/shallow';
+import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 interface BuildingSearchSectionProps {
   searchLocation: string;
   setSearchLocation: (location: string) => void;
@@ -32,6 +33,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
   buildingsCount
 }) => {
   const isMobile = useIsMobile();
+  const { trackSearch } = useBehaviorTracking();
   
   // Estado local para debounce
   const [localSearchValue, setLocalSearchValue] = useState(searchLocation);
@@ -59,13 +61,19 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
     e.preventDefault();
     const valueToSearch = localSearchValue.trim() || searchLocation.trim();
     if (valueToSearch) {
+      // Track search event
+      trackSearch(valueToSearch, {
+        source: 'manual_search',
+        hasLocation: !!selectedLocation
+      });
+      
       // Sincronizar imediatamente antes de buscar
       if (localSearchValue !== searchLocation) {
         setSearchLocation(localSearchValue);
       }
       handleSearch(valueToSearch);
     }
-  }, [localSearchValue, searchLocation, setSearchLocation, handleSearch]);
+  }, [localSearchValue, searchLocation, setSearchLocation, handleSearch, trackSearch, selectedLocation]);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalSearchValue(e.target.value);
@@ -82,11 +90,18 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
     coordinates: { lat: number; lng: number }; 
     placeId: string 
   }) => {
+    // Track autocomplete selection
+    trackSearch(place.address, {
+      source: 'autocomplete',
+      coordinates: place.coordinates,
+      placeId: place.placeId
+    });
+    
     setLocalSearchValue(place.address);
     setSearchLocation(place.address);
     // Trigger search with the selected coordinates
     handleSearch(place.address);
-  }, [setSearchLocation, handleSearch]);
+  }, [setSearchLocation, handleSearch, trackSearch]);
   return <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 building-search-section">
       <motion.div initial={{
       opacity: 0,
