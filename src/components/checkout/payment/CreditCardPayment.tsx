@@ -1,59 +1,37 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { CreditCard, ExternalLink, Lock } from 'lucide-react';
-import { toast } from 'sonner';
-import { handleMercadoPagoRedirect } from '@/services/mercadoPagoService';
+import { CreditCard, Lock } from 'lucide-react';
 
 interface CreditCardPaymentProps {
-  preferenceId: string;
   totalAmount: number;
+  onPaymentInitiate: () => Promise<void>;
   isLoading: boolean;
 }
 
 const CreditCardPayment = ({ 
-  preferenceId, 
   totalAmount,
+  onPaymentInitiate,
   isLoading
 }: CreditCardPaymentProps) => {
   
-  // Efeito para redirecionar automaticamente ao MercadoPago quando o preferenceId estiver disponível
-  useEffect(() => {
-    if (preferenceId && !isLoading) {
-      const redirectTimer = setTimeout(() => {
-        handleMercadoPagoRedirect(preferenceId, 'credit_card');
-      }, 2000); // Espera 2 segundos para mostrar informações e então redireciona
-      
-      return () => clearTimeout(redirectTimer);
-    }
-  }, [preferenceId, isLoading]);
-  
-  const handleManualRedirect = () => {
-    if (preferenceId) {
-      toast.info("Redirecionando para o MercadoPago...");
-      handleMercadoPagoRedirect(preferenceId, 'credit_card');
-    } else {
-      toast.error("Aguarde, ainda estamos processando seu pagamento.");
-    }
-  };
-  
   return (
     <div className="flex flex-col items-center space-y-6 p-6">
-      <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center space-x-4 w-full">
-        <div className="bg-blue-100 p-3 rounded-full">
-          <CreditCard className="h-6 w-6 text-blue-600" />
+      <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 flex items-center space-x-4 w-full">
+        <div className="bg-primary/10 p-3 rounded-full">
+          <CreditCard className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-medium text-blue-900">Pagamento com Cartão de Crédito</h3>
-          <p className="text-sm text-blue-700">
-            Você está sendo redirecionado para o ambiente seguro do MercadoPago
+          <h3 className="text-lg font-medium text-foreground">Pagamento com Cartão de Crédito</h3>
+          <p className="text-sm text-muted-foreground">
+            Você será redirecionado para o checkout seguro do Stripe
           </p>
         </div>
       </div>
       
       <div className="text-center">
-        <p className="text-sm text-gray-500 mb-2">Total a pagar:</p>
-        <p className="text-2xl font-bold">
+        <p className="text-sm text-muted-foreground mb-2">Total a pagar:</p>
+        <p className="text-2xl font-bold text-foreground">
           {new Intl.NumberFormat('pt-BR', { 
             style: 'currency', 
             currency: 'BRL' 
@@ -61,10 +39,10 @@ const CreditCardPayment = ({
         </p>
       </div>
       
-      <div className="flex flex-col items-center space-y-2">
+      <div className="flex flex-col items-center space-y-2 w-full">
         <Button
-          onClick={handleManualRedirect}
-          disabled={isLoading || !preferenceId}
+          onClick={onPaymentInitiate}
+          disabled={isLoading}
           className="w-full"
           size="lg"
         >
@@ -72,23 +50,22 @@ const CreditCardPayment = ({
             <>Processando...</>
           ) : (
             <>
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Pagar com MercadoPago
+              <CreditCard className="mr-2 h-4 w-4" />
+              Pagar com Cartão
             </>
           )}
         </Button>
         
-        <div className="flex items-center text-xs text-gray-500">
+        <div className="flex items-center text-xs text-muted-foreground">
           <Lock className="h-3 w-3 mr-1" />
-          Ambiente 100% seguro
+          Ambiente 100% seguro via Stripe
         </div>
       </div>
       
-      <div className="flex flex-wrap justify-center gap-2">
-        <img src="https://www.mercadopago.com/org-img/Manual/checkout/logos/visa.gif" alt="Visa" className="h-8" />
-        <img src="https://www.mercadopago.com/org-img/Manual/checkout/logos/mastercard.gif" alt="Mastercard" className="h-8" />
-        <img src="https://www.mercadopago.com/org-img/Manual/checkout/logos/amex.gif" alt="Amex" className="h-8" />
-        <img src="https://www.mercadopago.com/org-img/Manual/checkout/logos/elo.gif" alt="Elo" className="h-8" />
+      <div className="flex flex-wrap justify-center gap-2 opacity-70">
+        <div className="text-xs text-muted-foreground">
+          Aceitamos: Visa, Mastercard, Amex, Elo e mais
+        </div>
       </div>
     </div>
   );
