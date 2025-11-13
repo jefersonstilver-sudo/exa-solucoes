@@ -86,36 +86,41 @@ export class EmailService {
   }
 
   async sendResendConfirmationEmail(userEmail: string, userName: string, confirmationUrl: string) {
-    console.log('🎨 [EMAIL-SERVICE] Gerando HTML INLINE (sem dependências externas)...');
-    console.log(`📅 [DEPLOY] Timestamp: 2025-11-13T00:47:00Z - VERSÃO INLINE COMPLETA`);
+    console.log('📧 [EMAIL] Gerando email de confirmação para:', userEmail);
     
     const html = createResendConfirmationEmailInline(userName, confirmationUrl);
     
-    console.log(`✅ [EMAIL-SERVICE] HTML INLINE gerado (${html.length} chars)`);
-    console.log(`🔍 [DEBUG] Primeiros 800 chars do HTML INLINE:`);
-    console.log(html.substring(0, 800));
-    console.log(`🔍 [DEBUG] Verificando gradiente: ${html.includes('linear-gradient(135deg, #7D1818') ? '✅ PRESENTE' : '❌ AUSENTE'}`);
-    console.log(`🔍 [DEBUG] Verificando header vermelho: ${html.includes('background: linear-gradient(135deg, #7D1818 0%, #9C1E1E 100%)') ? '✅ PRESENTE' : '❌ AUSENTE'}`);
+    console.log(`✅ [EMAIL] HTML gerado (${html.length} caracteres)`);
 
-    // ⚡ FORÇA BYPASS TOTAL DE CACHE: Timestamp único + ID único
-    const now = new Date();
-    const timestamp = now.toISOString().substring(11, 19).replace(/:/g, 'h');
-    const uniqueId = Math.random().toString(36).substring(2, 8);
-    const uniqueSubject = `🎯 Confirme seu email - EXA [${timestamp}-${uniqueId}]`;
-    
-    console.log(`📬 [EMAIL] Assunto único: ${uniqueSubject}`);
-    console.log(`🔑 [EMAIL] ID único: ${uniqueId}`);
-    
-    // Adicionar header X-Entity-Ref-ID único para forçar Resend a processar como novo
-    return await this.resend.emails.send({
-      from: 'EXA <noreply@examidia.com.br>',
-      to: [userEmail],
-      subject: uniqueSubject,
-      html,
-      headers: {
-        'X-Entity-Ref-ID': `exa-confirmation-${uniqueId}-${Date.now()}`
-      }
-    });
+    try {
+      const result = await this.resend.emails.send({
+        from: 'EXA <noreply@examidia.com.br>',
+        to: [userEmail],
+        subject: '🎯 Confirme seu email - EXA',
+        html,
+      });
+
+      await this.logEmail({
+        email_type: 'resend_confirmation',
+        recipient_email: userEmail,
+        recipient_name: userName,
+        status: 'sent',
+        resend_email_id: result.data?.id,
+      });
+
+      console.log('✅ [EMAIL] Email enviado com sucesso:', result.data?.id);
+      return result;
+    } catch (error: any) {
+      console.error('❌ [EMAIL] Erro ao enviar email:', error);
+      await this.logEmail({
+        email_type: 'resend_confirmation',
+        recipient_email: userEmail,
+        recipient_name: userName,
+        status: 'failed',
+        error_message: error.message,
+      });
+      throw error;
+    }
   }
 
   async sendPasswordRecoveryEmail(userEmail: string, userName: string, recoveryUrl: string) {

@@ -1,7 +1,6 @@
 // ============================================
-// TEMPLATES INLINE - SEM DEPENDÊNCIAS EXTERNAS
+// TEMPLATE DE EMAIL DE CONFIRMAÇÃO - EXA MÍDIA
 // ============================================
-// HTML minificado para evitar timeout no bundle
 
 const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc2MjcyNjAzNCwiZXhwIjozMzI2NzE5MDAzNH0._Nyn4D-HG8Mjv5vNZ0hqvDvnlGsnPFmaewhjv1xdu_k';
 
