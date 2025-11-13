@@ -1,6 +1,6 @@
-
 import { Resend } from "npm:resend@4.0.0";
 import * as EmailTemplates from "../_shared/email-templates/index.ts";
+import { createResendConfirmationEmailInline } from "./inline-templates.ts";
 
 export class EmailService {
   private resend: Resend;
@@ -86,18 +86,16 @@ export class EmailService {
   }
 
   async sendResendConfirmationEmail(userEmail: string, userName: string, confirmationUrl: string) {
-    console.log('🎨 [EMAIL-SERVICE] Gerando HTML com createResendConfirmationEmail...');
-    const html = EmailTemplates.createResendConfirmationEmail({
-      userEmail,
-      userName,
-      confirmationUrl
-    });
+    console.log('🎨 [EMAIL-SERVICE] Gerando HTML INLINE (sem dependências externas)...');
+    console.log(`📅 [DEPLOY] Timestamp: 2025-11-13T00:47:00Z - VERSÃO INLINE COMPLETA`);
     
-    console.log(`✅ [EMAIL-SERVICE] HTML gerado (${html.length} chars)`);
-    console.log(`🔍 [DEBUG] Primeiros 500 chars do HTML:`);
-    console.log(html.substring(0, 500));
-    console.log(`🔍 [DEBUG] Verificando presença de 'gradient': ${html.includes('gradient') ? '✅ SIM' : '❌ NÃO'}`);
-    console.log(`🔍 [DEBUG] Verificando presença de '#7D1818': ${html.includes('#7D1818') ? '✅ SIM' : '❌ NÃO'}`);
+    const html = createResendConfirmationEmailInline(userName, confirmationUrl);
+    
+    console.log(`✅ [EMAIL-SERVICE] HTML INLINE gerado (${html.length} chars)`);
+    console.log(`🔍 [DEBUG] Primeiros 800 chars do HTML INLINE:`);
+    console.log(html.substring(0, 800));
+    console.log(`🔍 [DEBUG] Verificando gradiente: ${html.includes('linear-gradient(135deg, #7D1818') ? '✅ PRESENTE' : '❌ AUSENTE'}`);
+    console.log(`🔍 [DEBUG] Verificando header vermelho: ${html.includes('background: linear-gradient(135deg, #7D1818 0%, #9C1E1E 100%)') ? '✅ PRESENTE' : '❌ AUSENTE'}`);
 
     return await this.resend.emails.send({
       from: 'EXA <noreply@examidia.com.br>',
