@@ -95,8 +95,8 @@ const PaymentGateway = ({
       { orderId, paymentMethod: 'pix' }
     );
     
-    // Redirecionar para a página de PIX que usa MercadoPago
-    navigate(`/payment/pix/${orderId}`);
+    // ✅ ROTA CORRETA: /pix-payment com query param
+    navigate(`/pix-payment?pedido=${orderId}`);
   };
   
   const handleStripePayment = async () => {
