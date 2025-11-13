@@ -177,7 +177,31 @@ serve(async (req) => {
 
     console.log(`✅ [DELETE-USER] Deletados dados de ${deletedCount}/${relatedTables.length} tabelas`);
 
-    // 4. DELETAR do auth.users PRIMEIRO (isso pode fazer cascade em tabelas internas do Supabase)
+    // 4. DELETAR da tabela users PRIMEIRO (antes do auth para evitar constraint errors)
+    console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
+    const { error: deleteUserError } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (deleteUserError) {
+      console.error('❌ [DELETE-USER] Erro ao deletar da tabela users:', deleteUserError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Erro ao deletar usuário da tabela users',
+          code: 'USER_TABLE_DELETE_ERROR',
+          details: deleteUserError.message
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('✅ [DELETE-USER] Deletado da tabela users com sucesso');
+
+    // 5. POR ÚLTIMO deletar do auth.users (após limpar todas as dependências)
     console.log('🔐 [DELETE-USER] Deletando do auth.users...');
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
@@ -197,20 +221,6 @@ serve(async (req) => {
     }
 
     console.log('✅ [DELETE-USER] Deletado do auth com sucesso');
-
-    // 5. POR ÚLTIMO deletar da tabela users (já que auth.users foi deletado)
-    console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
-    const { error: deleteUserError } = await supabaseAdmin
-      .from('users')
-      .delete()
-      .eq('id', userId);
-
-    if (deleteUserError) {
-      console.error('❌ [DELETE-USER] Erro ao deletar da tabela users:', deleteUserError);
-      console.warn('⚠️ [DELETE-USER] Auth deletado mas falhou ao limpar tabela users');
-    } else {
-      console.log('✅ [DELETE-USER] Deletado da tabela users com sucesso');
-    }
 
     // Resposta de sucesso
     console.log('🎉 [DELETE-USER] Usuário deletado completamente!');
