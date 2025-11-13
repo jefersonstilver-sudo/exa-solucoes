@@ -28,9 +28,10 @@ const UnifiedLogo = ({
     custom: '' // Para quando className define o tamanho
   };
 
+  // Suporte melhorado para dark mode - remove o filtro que causava problemas
   const filterClasses = {
-    light: 'filter brightness-0 invert',
-    dark: ''
+    light: 'filter brightness-0 invert dark:brightness-100 dark:invert-0',
+    dark: 'dark:opacity-100'
   };
 
   const LogoImage = () => (
@@ -39,6 +40,11 @@ const UnifiedLogo = ({
         src={logoUrl || "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0"}
         alt={logoUrl ? altText : "EXA Publicidade Inteligente - Painéis Digitais para Elevadores"}
         className={`w-full h-auto object-contain mt-1 ${filterClasses[variant]} ${showSubtitle ? 'mb-1' : ''}`}
+        style={{ 
+          minWidth: '100%',
+          minHeight: '100%',
+          display: 'block'
+        }}
       />
       {false && (
         <span className={`text-xs font-medium text-center whitespace-nowrap ${variant === 'light' ? 'text-white' : 'text-gray-700'}`}>
