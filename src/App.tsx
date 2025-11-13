@@ -239,6 +239,16 @@ const AppContent = () => {
           
           {/* PAGAMENTO - ROTAS CORRIGIDAS */}
           <Route path="/payment" element={<Payment />} />
+          <Route path="/payment/success" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
+              {React.createElement(lazy(() => import('./pages/PaymentSuccess')))}
+            </Suspense>
+          } />
+          <Route path="/payment/canceled" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
+              {React.createElement(lazy(() => import('./pages/PaymentCanceled')))}
+            </Suspense>
+          } />
           <Route path="/pix-payment" element={<PixPayment />} />
           <Route path="/pedido-confirmado" element={
             <Suspense fallback={<GlobalLoadingPage message="Carregando confirmação..." />}>
