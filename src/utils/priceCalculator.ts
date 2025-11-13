@@ -15,8 +15,15 @@ const PLAN_PRICES: Record<PlanKey, number> = {
 // PIX tem 5% de desconto sobre o total
 const PIX_DISCOUNT_RATE = 0.05;
 
-// Valor mínimo para ativação de pedidos (5 centavos)
-export const MINIMUM_ORDER_VALUE = 0.05;
+// 🆕 FASE 4: Valores mínimos do Stripe (em reais)
+export const MINIMUM_ORDER_VALUE_PIX = 0.50; // Mínimo Stripe PIX
+export const MINIMUM_ORDER_VALUE_CARD = 1.00; // Mínimo Stripe Cartão
+export const MINIMUM_ORDER_VALUE = 0.05; // Mínimo genérico (manter compatibilidade)
+
+// Função auxiliar para obter valor mínimo por método
+export const getMinimumOrderValue = (paymentMethod: 'pix' | 'credit_card'): number => {
+  return paymentMethod === 'pix' ? MINIMUM_ORDER_VALUE_PIX : MINIMUM_ORDER_VALUE_CARD;
+};
 
 interface PriceCalculationResult {
   subtotal: number;

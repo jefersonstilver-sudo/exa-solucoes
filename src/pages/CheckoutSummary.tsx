@@ -11,8 +11,9 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
 import { usePaymentFlow } from '@/hooks/payment/usePaymentFlow';
 import { toast } from 'sonner';
-import { MINIMUM_ORDER_VALUE } from '@/utils/priceCalculator';
+import { getMinimumOrderValue } from '@/utils/priceCalculator';
 import Layout from '@/components/layout/Layout';
+import { useCartValidation } from '@/hooks/useCartValidation';
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const {
@@ -33,6 +34,7 @@ const CheckoutSummary = () => {
   } = useCheckout();
   
   const { isCreatingPayment, processPayment } = usePaymentFlow();
+  const { validateCartPanels } = useCartValidation();
   console.log('[CheckoutSummary] Estado atual:', {
     isLoggedIn,
     userId: user?.id,
@@ -54,15 +56,16 @@ const CheckoutSummary = () => {
     }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // Validação do carrinho menos agressiva
+  // 🆕 FASE 2: Validação do carrinho com verificação de painéis
   useEffect(() => {
     if (isLoading || !isLoggedIn || hasValidatedCart) return;
-    const validateCartTimer = setTimeout(() => {
+    const validateCartTimer = setTimeout(async () => {
       console.log('[CheckoutSummary] Validando carrinho:', {
         cartItemsLength: cartItems?.length || 0,
         selectedPlan,
         timestamp: new Date().toISOString()
       });
+      
       if (!cartItems || cartItems.length === 0) {
         console.log('[CheckoutSummary] Carrinho vazio detectado');
         toast.error("Seu carrinho está vazio. Adicione painéis para continuar.", {
@@ -72,20 +75,31 @@ const CheckoutSummary = () => {
             onClick: () => navigate('/paineis-digitais/loja')
           }
         });
+      } else {
+        // Validar se os painéis existem no banco
+        const panelIds = cartItems.map(item => item.panel?.id).filter(Boolean) as string[];
+        if (panelIds.length > 0) {
+          await validateCartPanels(panelIds);
+        }
       }
+      
       setHasValidatedCart(true);
     }, 1500);
     return () => clearTimeout(validateCartTimer);
-  }, [isLoggedIn, cartItems, navigate, isLoading, hasValidatedCart, selectedPlan]);
+  }, [isLoggedIn, cartItems, navigate, isLoading, hasValidatedCart, selectedPlan, validateCartPanels]);
 
   // Calcular preços usando função centralizada
   const baseTotal = calculateTotalPrice();
+  
+  // 🆕 FASE 4: Usar valor mínimo correto por método de pagamento
+  const minimumValue = getMinimumOrderValue(paymentMethod);
+  
   console.log('[CheckoutSummary] Preços calculados:', {
     baseTotal,
     couponValid,
     couponDiscount,
     paymentMethod,
-    MINIMUM_ORDER_VALUE
+    minimumValue
   });
   
   // Aplicar cupom se válido
@@ -93,20 +107,20 @@ const CheckoutSummary = () => {
     ? baseTotal - (baseTotal * couponDiscount / 100)
     : baseTotal;
   
-  // CRÍTICO: Garantir valor mínimo de R$ 0,05 - SEMPRE gera PIX
-  const finalTotal = Math.max(totalAfterCoupon, MINIMUM_ORDER_VALUE);
+  // CRÍTICO: Garantir valor mínimo correto por método
+  const finalTotal = Math.max(totalAfterCoupon, minimumValue);
 
-  // TODOS os pedidos geram PIX, mesmo com cupom 100%
-  const isPedidoComValorMinimo = finalTotal === MINIMUM_ORDER_VALUE && totalAfterCoupon < MINIMUM_ORDER_VALUE;
+  // Verificar se foi aplicado o mínimo
+  const isPedidoComValorMinimo = finalTotal === minimumValue && totalAfterCoupon < minimumValue;
   
   console.log('[CheckoutSummary] TOTAL FINAL COM MÍNIMO:', {
     baseTotal,
     totalAfterCoupon,
     finalTotal,
-    MINIMUM_ORDER_VALUE,
+    minimumValue,
+    paymentMethod,
     isPedidoComValorMinimo,
-    appliedMinimum: totalAfterCoupon < MINIMUM_ORDER_VALUE,
-    todosGeramPix: true
+    appliedMinimum: totalAfterCoupon < minimumValue
   });
   const handleBack = () => {
     navigate('/checkout/cupom');
@@ -123,8 +137,8 @@ const CheckoutSummary = () => {
       toast.error("Seu carrinho está vazio");
       return;
     }
-    if (finalTotal < MINIMUM_ORDER_VALUE) {
-      toast.error(`O valor mínimo do pedido é R$ ${MINIMUM_ORDER_VALUE.toFixed(2)}`);
+    if (finalTotal < minimumValue) {
+      toast.error(`O valor mínimo do pedido é R$ ${minimumValue.toFixed(2)}`);
       return;
     }
 
@@ -205,7 +219,7 @@ const CheckoutSummary = () => {
           <div className="space-y-1.5 sm:space-y-3">
             <Button 
               onClick={handlePayment} 
-              disabled={isCreatingPayment || !isLoggedIn || (cartItems?.length || 0) === 0 || finalTotal < MINIMUM_ORDER_VALUE}
+              disabled={isCreatingPayment || !isLoggedIn || (cartItems?.length || 0) === 0 || finalTotal < minimumValue}
               className="w-full h-14 text-lg font-semibold"
               size="lg"
             >
