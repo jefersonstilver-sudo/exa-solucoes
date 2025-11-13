@@ -18,53 +18,8 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Get authenticated user from JWT
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ 
-        error: 'Não autorizado',
-        exists: false
-      }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      console.error('❌ [CHECK-EMAIL] Auth error:', authError);
-      return new Response(JSON.stringify({ 
-        error: 'Não autorizado',
-        exists: false
-      }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-    }
-
-    // Check if user is admin
-    const { data: userRole } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    const isAdmin = userRole && ['admin', 'super_admin'].includes(userRole.role);
-    if (!isAdmin) {
-      console.error('❌ [CHECK-EMAIL] Forbidden: non-admin user');
-      return new Response(JSON.stringify({ 
-        error: 'Acesso negado - apenas administradores',
-        exists: false
-      }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-    }
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
     const { email } = await req.json();
     
@@ -107,8 +62,7 @@ serve(async (req: Request) => {
 
     console.log('📧 [CHECK-EMAIL] Verificando email:', sanitizedEmail);
 
-    // Use service role key for admin operations
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Use service role key for checking users
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
