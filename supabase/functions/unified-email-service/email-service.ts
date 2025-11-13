@@ -97,10 +97,16 @@ export class EmailService {
     console.log(`🔍 [DEBUG] Verificando gradiente: ${html.includes('linear-gradient(135deg, #7D1818') ? '✅ PRESENTE' : '❌ AUSENTE'}`);
     console.log(`🔍 [DEBUG] Verificando header vermelho: ${html.includes('background: linear-gradient(135deg, #7D1818 0%, #9C1E1E 100%)') ? '✅ PRESENTE' : '❌ AUSENTE'}`);
 
+    // ⚡ FORÇA BYPASS DE CACHE: Timestamp único no assunto
+    const timestamp = new Date().toISOString().substring(11, 19).replace(/:/g, 'h');
+    const uniqueSubject = `🎯 Confirme seu email na EXA (${timestamp})`;
+    
+    console.log(`📬 [EMAIL] Assunto com timestamp: ${uniqueSubject}`);
+    
     return await this.resend.emails.send({
       from: 'EXA <noreply@examidia.com.br>',
       to: [userEmail],
-      subject: '🎯 Confirme seu email na EXA (Reenviado)',
+      subject: uniqueSubject,
       html,
     });
   }
