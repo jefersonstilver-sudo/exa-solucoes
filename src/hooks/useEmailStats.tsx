@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { resendSyncCache } from '@/lib/resendSyncCache';
 
 export interface EmailStats {
   total: number;
@@ -42,18 +43,22 @@ export function useEmailStats(days: number = 30, fetchAll: boolean = false) {
     try {
       setLoading(true);
 
-      // Primeiro, sincronizar com Resend API
+      // Primeiro, sincronizar com Resend API usando cache para evitar rate limiting
       try {
-        console.log('Syncing with Resend API...');
-        const { data: syncData, error: syncError } = await supabase.functions.invoke('fetch-resend-emails');
-        
-        if (syncError) {
-          console.error('Error syncing with Resend:', syncError);
-        } else {
-          console.log('Resend sync successful:', syncData);
-        }
+        await resendSyncCache.sync(async () => {
+          console.log('📧 [EMAIL STATS] Syncing with Resend API...');
+          const { data: syncData, error: syncError } = await supabase.functions.invoke('fetch-resend-emails');
+          
+          if (syncError) {
+            console.error('❌ [EMAIL STATS] Error syncing with Resend:', syncError);
+            throw syncError;
+          }
+          
+          console.log('✅ [EMAIL STATS] Resend sync successful:', syncData);
+          return syncData;
+        });
       } catch (syncError) {
-        console.error('Failed to sync with Resend:', syncError);
+        console.error('❌ [EMAIL STATS] Failed to sync with Resend:', syncError);
         // Continuar mesmo se falhar a sincronização
       }
 

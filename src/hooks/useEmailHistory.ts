@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { resendSyncCache } from '@/lib/resendSyncCache';
 
 export interface EmailLog {
   id: string;
@@ -31,10 +32,24 @@ export const useEmailHistory = (days: number = 30, fetchAll: boolean = false) =>
     try {
       setLoading(true);
       
-      // Primeiro, sincronizar emails do Resend
-      console.log('📧 Sincronizando emails do Resend...');
-      const { data: syncData } = await supabase.functions.invoke('fetch-resend-emails');
-      console.log('✅ Resend sync successful:', syncData);
+      // Sincronizar emails do Resend usando cache para evitar rate limiting
+      try {
+        await resendSyncCache.sync(async () => {
+          console.log('📧 [EMAIL HISTORY] Syncing with Resend API...');
+          const { data: syncData, error: syncError } = await supabase.functions.invoke('fetch-resend-emails');
+          
+          if (syncError) {
+            console.error('❌ [EMAIL HISTORY] Error syncing with Resend:', syncError);
+            throw syncError;
+          }
+          
+          console.log('✅ [EMAIL HISTORY] Resend sync successful:', syncData);
+          return syncData;
+        });
+      } catch (syncError) {
+        console.error('❌ [EMAIL HISTORY] Failed to sync with Resend:', syncError);
+        // Continuar mesmo se falhar a sincronização
+      }
 
       // Calcular data de início baseado no período
       let query = supabase

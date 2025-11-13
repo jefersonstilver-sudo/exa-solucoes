@@ -31,15 +31,42 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Buscar emails do Resend
-    console.log('Fetching emails from Resend API...');
-    const resendResponse = await fetch('https://api.resend.com/emails', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Buscar emails do Resend com retry logic
+    console.log('📧 [FETCH-RESEND] Fetching emails from Resend API...');
+    
+    let resendResponse;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        resendResponse = await fetch('https://api.resend.com/emails', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        // Se receber 429, aguardar antes de tentar novamente
+        if (resendResponse.status === 429) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            const waitTime = 2000 * retryCount; // 2s, 4s, 6s
+            console.log(`⏳ [FETCH-RESEND] Rate limited, waiting ${waitTime}ms before retry ${retryCount}/${maxRetries}`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+        }
+        
+        break;
+      } catch (fetchError) {
+        retryCount++;
+        if (retryCount >= maxRetries) throw fetchError;
+        console.log(`⚠️ [FETCH-RESEND] Fetch error, retry ${retryCount}/${maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
 
     if (!resendResponse.ok) {
       const errorText = await resendResponse.text();
