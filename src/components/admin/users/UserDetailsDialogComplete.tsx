@@ -220,7 +220,9 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
     try {
       setResendingEmail(true);
       
-      console.log('📧 Reenviando email via unified-email-service para:', user.email);
+      console.log('📧 [TESTE-NOVO-EMAIL] Reenviando via unified-email-service');
+      console.log('🔍 [DEBUG] Email destino:', user.email);
+      console.log('🕐 [DEBUG] Timestamp:', new Date().toISOString());
       
       // ✅ CORREÇÃO: Usar edge function unificada que considera o role
       const { data, error } = await supabase.functions.invoke('unified-email-service', {
@@ -233,11 +235,13 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('Email de confirmação enviado!', {
-          description: `Um novo link foi enviado para ${user.email}`
+        toast.success('✅ Email reenviado! PROCURE O EMAIL COM HORÁRIO NO ASSUNTO', {
+          description: `Procure: "🎯 Confirme seu email - EXA [${new Date().toISOString().substring(11, 19)}...]"`,
+          duration: 8000
         });
+        console.log('✅ [SUCESSO] Email enviado - ID:', data.email_id);
       } else {
-        throw new Error(data?.error || 'Erro ao enviar email');
+        throw new Error(data?.error || 'Erro desconhecido');
       }
     } catch (error: any) {
       console.error('❌ Erro ao reenviar email:', error);
