@@ -71,9 +71,12 @@ serve(async (req: Request) => {
         });
       }
 
+      console.log('🔗 [1/5] Gerando link de confirmação...');
       const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
       const confirmationUrl = await linkGenerator.generateConfirmationLink(email);
+      console.log('✅ [1/5] Link gerado');
       
+      console.log('👤 [2/5] Buscando nome do usuário...');
       // Buscar nome real do usuário no banco de dados
       let userName = email.split('@')[0]; // fallback
       try {
@@ -104,12 +107,14 @@ serve(async (req: Request) => {
           }
         }
         
-        console.log(`📧 Email de reenvio para: ${email} | Nome: ${userName}`);
+        console.log(`✅ [2/5] Nome encontrado: ${userName}`);
       } catch (error) {
         console.error('⚠️ Erro ao buscar nome do usuário:', error);
-        // Manter o fallback
+        console.log(`⚠️ [2/5] Usando fallback: ${userName}`);
       }
       
+      console.log('📧 [3/5] Gerando HTML do email...');
+      console.log(`🔍 [DEBUG] Template: resend | Deploy: 2025-11-13T00:42:00Z`);
       const { data: emailData, error: emailError } = await emailService.sendResendConfirmationEmail(
         email, 
         userName, 
@@ -117,8 +122,11 @@ serve(async (req: Request) => {
       );
 
       if (emailError) throw emailError;
+      
+      console.log(`✅ [4/5] Email enviado para Resend - ID: ${emailData?.id}`);
+      console.log(`✅ [5/5] Processo completo!`);
 
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         message: 'Email reenviado',
         email_id: emailData?.id,
         success: true

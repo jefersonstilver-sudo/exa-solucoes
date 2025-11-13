@@ -1,6 +1,8 @@
 // ============================================
 // COMPONENTES BASE E ESTILOS - EMAIL TEMPLATES
 // ============================================
+// 🔄 FORÇAR REDEPLOY: 2025-11-13T00:42:00Z
+// ✅ Versão moderna com gradientes e estilos profissionais
 
 // Logo oficial da EXA
 export const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png';

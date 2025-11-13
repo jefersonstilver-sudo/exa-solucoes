@@ -86,11 +86,18 @@ export class EmailService {
   }
 
   async sendResendConfirmationEmail(userEmail: string, userName: string, confirmationUrl: string) {
+    console.log('🎨 [EMAIL-SERVICE] Gerando HTML com createResendConfirmationEmail...');
     const html = EmailTemplates.createResendConfirmationEmail({
       userEmail,
       userName,
       confirmationUrl
     });
+    
+    console.log(`✅ [EMAIL-SERVICE] HTML gerado (${html.length} chars)`);
+    console.log(`🔍 [DEBUG] Primeiros 500 chars do HTML:`);
+    console.log(html.substring(0, 500));
+    console.log(`🔍 [DEBUG] Verificando presença de 'gradient': ${html.includes('gradient') ? '✅ SIM' : '❌ NÃO'}`);
+    console.log(`🔍 [DEBUG] Verificando presença de '#7D1818': ${html.includes('#7D1818') ? '✅ SIM' : '❌ NÃO'}`);
 
     return await this.resend.emails.send({
       from: 'EXA <noreply@examidia.com.br>',

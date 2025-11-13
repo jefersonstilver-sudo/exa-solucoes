@@ -1,6 +1,8 @@
 // ============================================
 // EXPORTAÇÕES CENTRALIZADAS - EMAIL TEMPLATES
 // ============================================
+// 🔄 FORÇAR REDEPLOY: 2025-11-13T00:42:00Z - v2.0.0
+// ✅ Sistema moderno de templates com gradientes profissionais
 
 // Base
 export { 

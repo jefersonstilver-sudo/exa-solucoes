@@ -1,6 +1,8 @@
 // ============================================
 // TEMPLATES DE AUTENTICAÇÃO
 // ============================================
+// 🔄 FORÇAR REDEPLOY: 2025-11-13T00:42:00Z
+// ✅ Versão moderna com gradientes e estilos profissionais
 
 import { createEmailTemplate } from './base.ts';
 import type { ConfirmationEmailData, PasswordRecoveryEmailData } from './types.ts';
