@@ -126,3 +126,9 @@ verify_jwt = false
 [functions.video-status-updater]
 verify_jwt = false
 
+[functions.pix-confirmation]
+verify_jwt = false
+
+[functions.mercadopago-webhook]
+verify_jwt = false
+
