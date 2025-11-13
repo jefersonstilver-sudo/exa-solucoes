@@ -64,7 +64,8 @@ export const usePaymentDeduplication = () => {
     
     if (lastSubmission) {
       const timeDiff = now - parseInt(lastSubmission);
-      if (timeDiff < 15000) { // INCREASED: Prevent submissions within 15 seconds
+      // Reduzido de 15s para 3s - permitir retry mais rápido
+      if (timeDiff < 3000) {
         toast.error('Aguarde alguns segundos antes de tentar novamente');
         return false;
       }
