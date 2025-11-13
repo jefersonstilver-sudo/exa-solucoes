@@ -22,10 +22,8 @@ const PixPaymentButton: React.FC<PixPaymentButtonProps> = ({
     setIsProcessing(true);
     
     try {
-      // Configurar webhook PIX
-      const webhookUrl = 'https://stilver.app.n8n.cloud/webhook/d8e707ae-093a-4e08-9069-8627eb9c1d19';
-      
-      console.log('🔗 Configurando webhook PIX:', webhookUrl);
+      // REMOVED: n8n webhook - PIX handled by process-payment edge function
+      console.log('[PixPaymentButton] Usando Mercado Pago SDK nativo');
       
       // Iniciar processo de pagamento
       await onPaymentInitiate();

@@ -19,13 +19,12 @@ serve(async (req) => {
 
     const body = await req.json();
     
-    console.log("🔔 [PIX Confirmation] Webhook recebido do n8n:", body);
-
+    console.log("🔔 [PIX Confirmation] Webhook recebido:", body);
     // Log do webhook
     const { error: logError } = await supabase
       .from('webhook_logs')
       .insert({
-        origem: 'n8n-pix-confirmation',
+        origem: 'mercadopago-pix-confirmation',
         payload: body,
         status: 'received',
         recebido_em: new Date().toISOString()
@@ -35,7 +34,7 @@ serve(async (req) => {
       console.error("❌ Erro ao salvar log do webhook:", logError);
     }
 
-    // Extrair dados - aceitar múltiplos formatos do n8n
+    // Extrair dados - aceitar múltiplos formatos
     const transactionId = body.transaction_id || body.external_reference || body.pedido_id;
     const paymentId = body.payment_id || body.id;
     const status = body.status || body.payment_status;
@@ -143,7 +142,7 @@ serve(async (req) => {
       payment_id: paymentId,
       payment_status: 'approved',
       webhook_processed: true,
-      webhook_source: 'n8n-pix-confirmation',
+      webhook_source: 'mercadopago-webhook',
       confirmation_amount: amount
     };
 
@@ -163,8 +162,8 @@ serve(async (req) => {
     await supabase
       .from('log_eventos_sistema')
       .insert({
-        tipo_evento: 'PIX_CONFIRMADO_N8N',
-        descricao: `PIX confirmado via n8n: Pedido ${pedido.id}, Transaction: ${transactionId}, Valor: ${amount}`
+        tipo_evento: 'PIX_CONFIRMADO_WEBHOOK',
+        descricao: `PIX confirmado: Pedido ${pedido.id}, Transaction: ${transactionId}, Valor: ${amount}`
       });
 
     // Registrar controle de processamento
@@ -172,12 +171,12 @@ serve(async (req) => {
       await supabase
         .rpc('log_payment_processing_secure', {
           p_payment_id: paymentId.toString(),
-          p_webhook_source: 'n8n-pix-confirmation',
+          p_webhook_source: 'mercadopago-webhook',
           p_external_reference: transactionId,
-          p_pedido_id: pedido.id,
-          p_amount: amount || pedido.valor_total,
+          p_amount: amount,
+          p_status: 'approved',
           p_details: {
-            webhook_source: 'n8n',
+            webhook_source: 'mercadopago',
             transaction_id: transactionId
           }
         });

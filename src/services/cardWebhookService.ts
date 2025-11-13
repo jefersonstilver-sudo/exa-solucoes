@@ -29,51 +29,10 @@ interface CardWebhookResponse {
 }
 
 export const sendCardWebhookData = async (data: CardWebhookData): Promise<CardWebhookResponse> => {
-  console.log('🏦 [CardWebhook] Enviando dados para webhook de cartão:', {
-    cliente_id: data.cliente_id,
-    valor_total: data.valor_total,
-    predios_count: data.predios_selecionados.length,
-    plano: data.plano_escolhido
-  });
+  console.log('🏦 [CardWebhook] DEPRECATED - Card payments now use Stripe Checkout');
 
-  try {
-    const response = await fetch('https://stilver.app.n8n.cloud/webhook/cartão_pix', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    
-    console.log('🏦 [CardWebhook] Resposta recebida:', {
-      success: result.success,
-      has_init_point: !!result.init_point,
-      has_preference_id: !!result.preference_id,
-      has_id_transacao: !!result.id_transacao,
-      has_init_point_opcoes_pagamento: !!result.init_point_opcoes_pagamento
-    });
-
-    return {
-      success: true,
-      init_point: result.init_point,
-      preference_id: result.preference_id,
-      id_transacao: result.id_transacao,
-      init_point_opcoes_pagamento: result.init_point_opcoes_pagamento,
-      message: result.message || 'Dados enviados com sucesso'
-    };
-
-  } catch (error: any) {
-    console.error('🏦 [CardWebhook] Erro ao enviar dados:', error);
-    
-    return {
-      success: false,
-      error: error.message || 'Erro desconhecido ao processar pagamento com cartão'
-    };
-  }
+  return {
+    success: false,
+    error: 'Card webhook deprecated - use Stripe Checkout via process-payment edge function'
+  };
 };
