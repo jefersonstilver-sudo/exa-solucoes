@@ -53,7 +53,7 @@ const CheckoutCoupon = () => {
   return (
     <CheckoutLayout currentStep={1} maxWidth="4xl">
       {/* Main Content */}
-      <div className="bg-white rounded-xl shadow-lg border p-6 sm:p-8 mb-6 sm:mb-8">
+      <div className="bg-white rounded-lg sm:rounded-xl shadow-sm sm:shadow-lg border p-3 sm:p-6 mb-3 sm:mb-6">
         <CouponStep
           couponCode={couponCode}
           setCouponCode={setCouponCode}
@@ -66,21 +66,21 @@ const CheckoutCoupon = () => {
       </div>
 
       {/* Summary Card */}
-      <div className="bg-white rounded-xl shadow-lg border p-6 sm:p-8 mb-6 sm:mb-8">
-        <h3 className="text-lg font-semibold mb-4">Resumo do Pedido</h3>
+      <div className="bg-white rounded-lg sm:rounded-xl shadow-sm sm:shadow-lg border p-3 sm:p-6 mb-3 sm:mb-6">
+        <h3 className="text-sm sm:text-lg font-semibold mb-3 sm:mb-4">Resumo do Pedido</h3>
         
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <div className="flex justify-between">
-            <span className="text-gray-600">Total do pedido:</span>
-            <span className="font-medium text-lg">
+            <span className="text-xs sm:text-sm text-gray-600">Total do pedido:</span>
+            <span className="font-medium text-base sm:text-lg">
               {formatCurrency(currentTotal)}
             </span>
           </div>
           
           {couponValid && (
             <div className="flex justify-between text-green-600">
-              <span>Desconto aplicado:</span>
-              <span className="font-medium">Aplicado com sucesso!</span>
+              <span className="text-xs sm:text-sm">Desconto aplicado:</span>
+              <span className="font-medium text-sm sm:text-base">Aplicado com sucesso!</span>
             </div>
           )}
         </div>

@@ -219,26 +219,26 @@ const CheckoutSummary = () => {
 
   return (
     <CheckoutLayout currentStep={2} maxWidth="6xl">
-      {/* Main Content Grid - 2 colunas 60/40 */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 sm:gap-6">
+      {/* Main Content Grid - Mobile Otimizado */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3 sm:gap-6">
         {/* Left Column - Order Details */}
         <div>
           <OrderSummaryCard cartItems={cartItems} selectedPlan={selectedPlan} />
         </div>
 
         {/* Right Column - Payment (Sticky) */}
-        <div className="lg:sticky lg:top-32 space-y-4 h-fit">
+        <div className="lg:sticky lg:top-32 space-y-3 sm:space-y-4 h-fit">
           {/* Payment Method Selector */}
           {isPedidoComValorMinimo ? (
-            <div className="bg-white rounded-lg shadow-sm border p-4">
-              <h3 className="text-lg font-semibold mb-3">Forma de Pagamento</h3>
-              <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="font-medium text-green-800 text-sm">Cupom 100% - Valor Mínimo</p>
-                  <p className="text-xs text-green-600">PIX de R$ 0,05 (valor simbólico de ativação)</p>
+            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4">
+              <h3 className="text-sm sm:text-lg font-semibold mb-2 sm:mb-3">Forma de Pagamento</h3>
+              <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full flex-shrink-0"></div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-green-800 text-xs sm:text-sm">Cupom 100% - Valor Mínimo</p>
+                  <p className="text-[10px] sm:text-xs text-green-600">PIX de R$ 0,05 (ativação)</p>
                 </div>
-                <p className="font-bold text-green-700">R$ 0,05</p>
+                <p className="font-bold text-green-700 text-sm sm:text-base">R$ 0,05</p>
               </div>
             </div>
           ) : (
@@ -258,23 +258,23 @@ const CheckoutSummary = () => {
             paymentMethod={paymentMethod} 
           />
 
-          {/* Payment Buttons - Integrado */}
-          <div className="space-y-3">
+          {/* Payment Buttons */}
+          <div className="space-y-2 sm:space-y-3">
             {isPedidoComValorMinimo ? (
               <button 
                 onClick={handlePixPayment} 
                 disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 sm:py-3 px-4 rounded-lg text-sm sm:text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isPixProcessing ? (
                   <>
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Gerando QR Code...</span>
+                    <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Gerando...</span>
                   </>
                 ) : (
                   <>
-                    <Smartphone className="h-5 w-5" />
-                    <span>Gerar QR Code PIX (R$ 0,05)</span>
+                    <Smartphone className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span>Gerar QR Code</span>
                   </>
                 )}
               </button>
@@ -297,16 +297,16 @@ const CheckoutSummary = () => {
             {/* Back Link */}
             <button 
               onClick={handleBack}
-              className="w-full flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-900 py-2 text-sm transition-colors"
+              className="w-full flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-900 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Voltar para Cupons</span>
+              <ArrowLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span>Voltar</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* PIX QR Code Dialog - SEMPRE RENDERIZADO COM DADOS COMPLETOS */}
+      {/* PIX QR Code Dialog */}
       <PixQrCodeDialog
         isOpen={showPixDialog}
         onClose={handleClosePixDialog}

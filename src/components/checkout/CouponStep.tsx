@@ -53,55 +53,40 @@ const CouponStep: React.FC<CouponStepProps> = ({
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-6"
+      className="space-y-3 sm:space-y-6"
     >
-      <motion.div variants={itemVariants} className="space-y-2">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold flex items-center">
-            <Tag className="mr-3 h-5 w-5 text-[#3C1361]" />
+      <motion.div variants={itemVariants} className="space-y-1 sm:space-y-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <h2 className="text-base sm:text-xl font-semibold flex items-center">
+            <Tag className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
             Cupom de Desconto
           </h2>
           <HoverCard openDelay={200}>
             <HoverCardTrigger asChild>
-              <button className="inline-flex items-center justify-center rounded-full w-5 h-5 bg-[#3C1361]/10 hover:bg-[#3C1361]/20 transition-colors">
-                <Info className="h-3 w-3 text-[#3C1361]" />
+              <button className="inline-flex items-center justify-center rounded-full w-4 h-4 sm:w-5 sm:h-5 bg-gray-100 hover:bg-gray-200 transition-colors">
+                <Info className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-gray-600" />
               </button>
             </HoverCardTrigger>
-            <HoverCardContent className="w-80 p-4 bg-gradient-to-br from-white to-gray-50 border-2 shadow-xl">
-              <div className="space-y-3">
+            <HoverCardContent className="w-72 sm:w-80 p-3 sm:p-4 bg-white border shadow-xl">
+              <div className="space-y-2 sm:space-y-3">
                 <div className="flex items-start gap-2">
-                  <div className="rounded-full p-2 bg-[#3C1361]/10">
-                    <Tag className="h-4 w-4 text-[#3C1361]" />
+                  <div className="rounded-full p-1.5 sm:p-2 bg-gray-100">
+                    <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-gray-700" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-sm text-gray-900 mb-1">
+                    <h3 className="font-semibold text-xs sm:text-sm text-gray-900 mb-1">
                       Como funcionam os cupons?
                     </h3>
-                    <p className="text-xs text-gray-600 leading-relaxed">
+                    <p className="text-[10px] sm:text-xs text-gray-600 leading-relaxed">
                       Os cupons podem ter diferentes requisitos como quantidade mínima de prédios, valor mínimo do pedido ou período de contrato específico.
                     </p>
-                  </div>
-                </div>
-                
-                <div className="pt-2 border-t space-y-2">
-                  <div className="flex items-start gap-2 text-xs">
-                    <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Descontos aplicados automaticamente no total</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-xs">
-                    <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Verifique as condições antes de aplicar</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-xs">
-                    <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Cada cupom tem limite de uso</span>
                   </div>
                 </div>
               </div>
             </HoverCardContent>
           </HoverCard>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Se você possui um cupom promocional, insira o código abaixo
         </p>
       </motion.div>
@@ -109,15 +94,15 @@ const CouponStep: React.FC<CouponStepProps> = ({
       <motion.form 
         variants={itemVariants}
         onSubmit={handleSubmit} 
-        className="space-y-4"
+        className="space-y-3 sm:space-y-4"
       >
         <div className="flex gap-2">
           <Input 
             type="text" 
-            placeholder="Insira o código do cupom" 
+            placeholder="Código do cupom" 
             value={couponCode}
             onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-            className="uppercase"
+            className="uppercase text-sm"
             disabled={isValidatingCoupon || couponValid}
           />
           {couponValid ? (
@@ -125,19 +110,19 @@ const CouponStep: React.FC<CouponStepProps> = ({
               type="button" 
               variant="destructive"
               onClick={removeCoupon}
-              className="min-w-[90px] transition-colors"
+              className="min-w-[80px] sm:min-w-[90px] text-xs sm:text-sm px-3 transition-colors"
             >
-              <XCircle className="h-4 w-4" />
-              Remover
+              <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Remover</span>
             </Button>
           ) : (
             <Button 
               type="submit" 
               disabled={!couponCode || isValidatingCoupon}
-              className="min-w-[90px] bg-[#3C1361] hover:bg-[#3C1361]/90 transition-colors"
+              className="min-w-[80px] sm:min-w-[90px] bg-gray-900 hover:bg-gray-800 text-xs sm:text-sm px-3 transition-colors"
             >
               {isValidatingCoupon ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
               ) : (
                 'Aplicar'
               )}
@@ -151,7 +136,7 @@ const CouponStep: React.FC<CouponStepProps> = ({
             animate={{ opacity: 1, height: 'auto' }}
             transition={{ duration: 0.3 }}
             className={`
-              p-4 rounded-xl text-sm flex items-start gap-2
+              p-2.5 sm:p-4 rounded-lg text-xs sm:text-sm flex items-start gap-1.5 sm:gap-2
               ${couponValid 
                 ? 'bg-green-50 text-green-800 border border-green-200' 
                 : 'bg-red-50 text-red-800 border border-red-200'
@@ -159,9 +144,9 @@ const CouponStep: React.FC<CouponStepProps> = ({
             `}
           >
             {couponValid ? (
-              <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5 text-green-600" />
+              <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5 text-green-600" />
             ) : (
-              <XCircle className="h-4 w-4 flex-shrink-0 mt-0.5 text-red-600" />
+              <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5 text-red-600" />
             )}
             <span>{couponMessage}</span>
           </motion.div>
@@ -169,21 +154,21 @@ const CouponStep: React.FC<CouponStepProps> = ({
       </motion.form>
       
       <motion.div variants={itemVariants}>
-        <Card className="overflow-hidden shadow-sm border-none bg-gradient-to-br from-[#3C1361]/5 to-[#3C1361]/10 rounded-2xl">
-          <CardContent className="p-5">
-            <h3 className="text-sm font-medium mb-3 text-[#3C1361]">Como conseguir cupons</h3>
-            <ul className="space-y-3 text-sm text-gray-600">
+        <Card className="overflow-hidden shadow-sm border-none bg-gray-50 rounded-lg sm:rounded-2xl">
+          <CardContent className="p-3 sm:p-5">
+            <h3 className="text-xs sm:text-sm font-medium mb-2 sm:mb-3 text-gray-700">Como conseguir cupons</h3>
+            <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-gray-600">
               <li className="flex items-start">
-                <Smartphone className="mr-3 h-4 w-4 text-[#3C1361] flex-shrink-0 mt-0.5" />
-                <span>Siga-nos nas redes sociais para cupons exclusivos</span>
+                <Smartphone className="mr-2 sm:mr-3 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <span>Siga-nos nas redes sociais</span>
               </li>
               <li className="flex items-start">
-                <Mail className="mr-3 h-4 w-4 text-[#3C1361] flex-shrink-0 mt-0.5" />
-                <span>Inscreva-se em nossa newsletter para receber promoções</span>
+                <Mail className="mr-2 sm:mr-3 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <span>Inscreva-se na newsletter</span>
               </li>
               <li className="flex items-start">
-                <Gift className="mr-3 h-4 w-4 text-[#3C1361] flex-shrink-0 mt-0.5" />
-                <span>Participe de eventos e campanias promocionais</span>
+                <Gift className="mr-2 sm:mr-3 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <span>Participe de eventos promocionais</span>
               </li>
             </ul>
           </CardContent>

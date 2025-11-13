@@ -27,18 +27,18 @@ const CheckoutLayout: React.FC<CheckoutLayoutProps> = ({
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100">
-        {/* Header com Progress integrado - Sticky e Compacto */}
+      <div className="min-h-screen bg-gray-50 sm:bg-gradient-to-br sm:from-gray-50 sm:via-gray-50 sm:to-gray-100">
+        {/* Header com Progress integrado - Mobile Compacto */}
         {showProgress && (
-          <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md shadow-sm border-b py-3 sm:py-4">
-            <div className={`container mx-auto px-4 ${maxWidthClasses[maxWidth]}`}>
+          <div className="sticky top-0 z-20 bg-white shadow-sm border-b py-2 sm:py-4">
+            <div className={`container mx-auto px-3 sm:px-4 ${maxWidthClasses[maxWidth]}`}>
               <UnifiedCheckoutProgress currentStep={currentStep} />
             </div>
           </div>
         )}
 
-        {/* Main Content com espaçamento adequado */}
-        <div className={`container mx-auto px-4 py-6 sm:py-8 ${maxWidthClasses[maxWidth]}`}>
+        {/* Main Content - Mobile Otimizado */}
+        <div className={`container mx-auto px-3 py-3 sm:px-4 sm:py-8 ${maxWidthClasses[maxWidth]}`}>
           {children}
         </div>
       </div>

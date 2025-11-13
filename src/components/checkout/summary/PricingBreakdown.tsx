@@ -58,66 +58,68 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
       currency: 'BRL'
     }).format(value);
   };
-  return <Card className="shadow-sm border">
-      <CardHeader className="p-4 pb-3">
-        <CardTitle className="text-lg font-semibold">
+  return (
+    <Card className="shadow-sm border">
+      <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
+        <CardTitle className="text-sm sm:text-lg font-semibold">
           Resumo Financeiro
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="p-4 pt-0 space-y-2">
+      <CardContent className="p-3 sm:p-4 pt-0 space-y-1.5 sm:space-y-2">
         {/* Valor Base */}
-        <div className="flex justify-between items-center py-2 border-b">
-          <span className="text-sm text-gray-600">
+        <div className="flex justify-between items-center py-1.5 sm:py-2 border-b">
+          <span className="text-xs sm:text-sm text-gray-600">
             Valor base ({cartItems.length} × {selectedPlan}m)
           </span>
-          <span className="font-semibold text-gray-900">{formatCurrency(baseTotal)}</span>
+          <span className="font-semibold text-sm sm:text-base text-gray-900">{formatCurrency(baseTotal)}</span>
         </div>
 
         {/* Desconto do Cupom */}
         {couponValid && couponDiscount > 0 && (
-          <div className="flex justify-between items-center py-2 border-b">
-            <div className="flex items-center space-x-1.5">
-              <Tag className="h-3.5 w-3.5 text-orange-500" />
-              <span className="text-sm text-orange-600">
+          <div className="flex justify-between items-center py-1.5 sm:py-2 border-b">
+            <div className="flex items-center space-x-1 sm:space-x-1.5">
+              <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-orange-500" />
+              <span className="text-xs sm:text-sm text-orange-600">
                 Cupom ({couponDiscount}%)
               </span>
             </div>
-            <span className="font-semibold text-orange-600">
+            <span className="font-semibold text-sm sm:text-base text-orange-600">
               -{formatCurrency(couponDiscountAmount)}
             </span>
           </div>
         )}
 
         {/* Total Final */}
-        <div className="flex justify-between items-center pt-3 border-t-2">
-          <span className="text-base font-bold text-gray-900">TOTAL</span>
-          <span className="text-xl font-bold text-[#3C1361]">
+        <div className="flex justify-between items-center pt-2 sm:pt-3 border-t-2">
+          <span className="text-sm sm:text-base font-bold text-gray-900">TOTAL</span>
+          <span className="text-lg sm:text-xl font-bold text-gray-900">
             {formatCurrency(finalTotal)}
           </span>
         </div>
 
         {/* Mensagem de Valor Mínimo */}
         {totalAfterCoupon < MINIMUM_ORDER_VALUE && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-xs text-blue-800">
-              <strong>Valor mínimo:</strong> R$ 0,05 é o valor simbólico de ativação do sistema. Pagamento via PIX necessário.
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
+            <p className="text-[10px] sm:text-xs text-blue-800">
+              <strong>Valor mínimo:</strong> R$ 0,05 é o valor simbólico de ativação. Pagamento via PIX.
             </p>
           </div>
         )}
 
         {/* Economia Total */}
         {totalSavings > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="flex items-center space-x-1.5">
-              <TrendingDown className="h-4 w-4 text-green-700" />
-              <span className="text-sm font-semibold text-green-800">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
+            <div className="flex items-center space-x-1 sm:space-x-1.5">
+              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-green-700" />
+              <span className="text-xs sm:text-sm font-semibold text-green-800">
                 Economia: {formatCurrency(totalSavings)}
               </span>
             </div>
           </div>
         )}
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };
 export default PricingBreakdown;
