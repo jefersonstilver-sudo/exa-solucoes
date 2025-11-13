@@ -97,7 +97,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
 
   return (
     <aside className={cn(
-      "h-screen bg-gradient-to-b from-exa-red via-exa-red/90 to-exa-red/80 shadow-2xl flex flex-col transition-all duration-300 overflow-hidden",
+      "h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-red-950/40 shadow-2xl flex flex-col transition-all duration-300 overflow-hidden",
       isCollapsed ? "w-16" : "w-80"
     )}>
       {/* Logo e Info do Usuário */}
@@ -128,8 +128,8 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                 {user?.email?.split('@')[0] || 'Anunciante'}
               </div>
               <div className="flex items-center space-x-2 mt-1">
-                <Crown className="h-3 w-3 text-yellow-300 flex-shrink-0" />
-                <span className="text-xs font-medium text-yellow-300 truncate">
+                <Crown className="h-3 w-3 text-blue-400 flex-shrink-0" />
+                <span className="text-xs font-medium text-blue-400 truncate">
                   Portal do Anunciante
                 </span>
               </div>
@@ -149,12 +149,12 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
+                  <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-xl rounded-xl" align="end" forceMount>
                   <div className="flex flex-col space-y-1 p-2">
                     <p className="text-sm font-medium leading-none text-gray-900">
                       {user?.email || 'Anunciante'}
                     </p>
-                    <p className="text-xs leading-none text-gray-600">
+                    <p className="text-xs leading-none text-blue-600 font-medium">
                       Portal do Anunciante
                     </p>
                   </div>
@@ -190,7 +190,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                   <p className="text-sm font-medium leading-none text-gray-900">
                     {user?.email || 'Anunciante'}
                   </p>
-                  <p className="text-xs leading-none text-gray-600">
+                  <p className="text-xs leading-none text-blue-600 font-medium">
                     Portal do Anunciante
                   </p>
                 </div>
@@ -216,7 +216,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
         {Object.entries(groupedItems).map(([sectionKey, items]) => (
           <div key={sectionKey}>
             {!isCollapsed && (
-            <h3 className="text-xs font-semibold text-white/70 uppercase tracking-wider mb-3 px-2">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">
               {sections[sectionKey as keyof typeof sections]}
             </h3>
             )}
@@ -226,18 +226,18 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
                   key={item.href}
                   to={item.href}
                   onClick={onItemClick}
-                  className={cn(
+                   className={cn(
                     'flex items-center rounded-xl text-sm font-medium transition-all duration-200 group',
-                    isCollapsed ? "p-2 justify-center" : "space-x-3 px-3 py-3",
+                    isCollapsed ? "p-2 justify-center" : "space-x-3 px-4 py-3",
                    isActive(item.href)
-                      ? 'bg-white text-exa-red shadow-lg font-semibold'
-                      : 'text-white hover:text-white hover:bg-white/20 hover:translate-x-1'
+                      ? 'bg-white text-gray-900 shadow-lg font-semibold'
+                      : 'text-white hover:text-white hover:bg-white/10 hover:translate-x-1'
                   )}
                   title={isCollapsed ? item.title : undefined}
                 >
                   <item.icon className={cn(
                     "transition-transform duration-200 group-hover:scale-110",
-                    isActive(item.href) ? "text-exa-red" : "text-white",
+                    isActive(item.href) ? "text-red-600" : "text-white",
                     isCollapsed ? "h-5 w-5" : "h-5 w-5"
                   )} />
                   {!isCollapsed && <span>{item.title}</span>}
@@ -252,11 +252,11 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       <div className={cn("border-t border-white/20", isCollapsed ? "p-2" : "p-4")}>
         {!isCollapsed && (
           <>
-            <div className="flex items-center space-x-2 text-white text-sm">
+            <div className="flex items-center space-x-2 text-white text-xs">
               <Crown className="h-4 w-4" />
-              <span>Portal Seguro</span>
+              <span>Sistema Seguro</span>
             </div>
-            <div className="text-xs text-white/60 mt-1">
+            <div className="text-xs text-white/50 mt-1">
               EXA Anunciante v3.0
             </div>
           </>
