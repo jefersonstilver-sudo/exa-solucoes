@@ -4,10 +4,8 @@ import MobileAdvertiserOrders from './MobileAdvertiserOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
-import { useOrderPixPayment } from '@/hooks/useOrderPixPayment';
 import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
-import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { Loader2, ShoppingBag, Calendar, Search, Eye, AlertTriangle, CheckCircle, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,19 +34,6 @@ const AdvertiserOrders = () => {
     isOpen: false,
     orderId: null
   });
-  const [pixPaymentModal, setPixPaymentModal] = useState<{
-    isOpen: boolean;
-    pixData: any;
-    orderId: string | null;
-  }>({
-    isOpen: false,
-    pixData: null,
-    orderId: null
-  });
-  const {
-    generatePixForOrder,
-    isProcessing
-  } = useOrderPixPayment();
   const {
     finalizeAttemptToOrder,
     isProcessing: isProcessingAttempt
@@ -71,17 +56,10 @@ const AdvertiserOrders = () => {
     };
   }, []);
 
-  // Função para lidar com pagamento PIX de pedidos específicos
-  const handlePixPayment = async (order: any) => {
-    console.log('[AdvertiserOrders] Iniciando pagamento PIX para pedido:', order.id);
-    const result = await generatePixForOrder(order);
-    if (result.success && result.pixData) {
-      setPixPaymentModal({
-        isOpen: true,
-        pixData: result.pixData,
-        orderId: order.id
-      });
-    }
+  // Função para redirecionar para página de pagamento Stripe
+  const handlePaymentRedirect = (orderId: string) => {
+    console.log('[AdvertiserOrders] Redirecionando para pagamento Stripe:', orderId);
+    navigate(`/payment?pedido=${orderId}`);
   };
 
   // Return mobile version directly without wrapper layout since it's already handled by ResponsiveAdvertiserLayout
@@ -134,7 +112,7 @@ const AdvertiserOrders = () => {
   }: {
     item: any;
   }) => {
-    const statusInfo = useOrderStatus(item, handlePixPayment);
+    const statusInfo = useOrderStatus(item);
     const StatusIcon = statusInfo.icon;
     const painelsList = item.type === 'order' ? item.lista_paineis || [] : item.predios_selecionados || [];
 
@@ -216,7 +194,7 @@ const AdvertiserOrders = () => {
                         navigate(statusInfo.action.href);
                       }
                     }}
-                    disabled={isProcessing || isProcessingAttempt}
+                    disabled={isProcessingAttempt}
                   >
                     {statusInfo.action.label}
                   </Button>
@@ -359,13 +337,6 @@ const AdvertiserOrders = () => {
       isOpen: false,
       orderId: null
     })} />}
-
-      {/* PIX Payment Modal */}
-      {pixPaymentModal.isOpen && pixPaymentModal.pixData && <PixQrCodeDialog isOpen={pixPaymentModal.isOpen} onClose={() => setPixPaymentModal({
-      isOpen: false,
-      pixData: null,
-      orderId: null
-    })} qrCodeBase64={pixPaymentModal.pixData.qrCodeBase64} qrCodeText={pixPaymentModal.pixData.qrCodeText} pix_base64={pixPaymentModal.pixData.pix_base64} pix_url={pixPaymentModal.pixData.pix_url} paymentLink={pixPaymentModal.pixData.paymentLink} userId={userProfile?.id} pedidoId={pixPaymentModal.orderId} />}
     </div>;
 };
 export default AdvertiserOrders;

@@ -5,15 +5,11 @@ import CheckoutLayout from '@/components/checkout/CheckoutLayout';
 import OrderSummaryCard from '@/components/checkout/summary/OrderSummaryCard';
 import PaymentMethodSelector from '@/components/checkout/summary/PaymentMethodSelector';
 import PricingBreakdown from '@/components/checkout/summary/PricingBreakdown';
-import PixPaymentButton from '@/components/checkout/summary/PixPaymentButton';
-import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
-import CreditCardPaymentButton from '@/components/checkout/summary/CreditCardPaymentButton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CreditCard, Shield, Lock, Smartphone } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
-import { useSimplifiedPixCheckout } from '@/hooks/useSimplifiedPixCheckout';
-import { useCardCheckout } from '@/hooks/useCardCheckout';
+import { usePaymentFlow } from '@/hooks/payment/usePaymentFlow';
 import { toast } from 'sonner';
 import { MINIMUM_ORDER_VALUE } from '@/utils/priceCalculator';
 import Layout from '@/components/layout/Layout';
@@ -27,10 +23,6 @@ const CheckoutSummary = () => {
   const [hasValidatedCart, setHasValidatedCart] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
 
-  // Estados para o popup PIX
-  const [showPixDialog, setShowPixDialog] = useState(false);
-  const [pixDialogData, setPixDialogData] = useState<any>(null);
-  const [currentPedidoId, setCurrentPedidoId] = useState<string | null>(null);
   const {
     cartItems,
     selectedPlan,
@@ -39,16 +31,8 @@ const CheckoutSummary = () => {
     couponId,
     couponDiscount
   } = useCheckout();
-  const {
-    processPixPayment,
-    isProcessing: isPixProcessingHook
-  } = useSimplifiedPixCheckout();
   
-  const [isPixProcessing, setIsPixProcessing] = useState(false);
-  const {
-    processCardPayment,
-    isProcessing: isCardProcessing
-  } = useCardCheckout();
+  const { isCreatingPayment, processPayment } = usePaymentFlow();
   console.log('[CheckoutSummary] Estado atual:', {
     isLoggedIn,
     userId: user?.id,
@@ -57,11 +41,7 @@ const CheckoutSummary = () => {
     couponValid,
     couponDiscount,
     paymentMethod,
-    showPixDialog,
-    hasPixData: !!pixDialogData,
-    currentPedidoId,
-    isPixProcessing,
-    isCardProcessing
+    isCreatingPayment
   });
 
   // Verificação de autenticação melhorada
@@ -131,72 +111,51 @@ const CheckoutSummary = () => {
   const handleBack = () => {
     navigate('/checkout/cupom');
   };
-  const handlePixPayment = async () => {
-    console.log('[CheckoutSummary] INICIANDO PAGAMENTO PIX:', {
-      finalTotal,
-      cartItemsCount: cartItems?.length || 0,
-      selectedPlan,
-      timestamp: new Date().toISOString()
-    });
-    
-    setIsPixProcessing(true);
-    
+
+  // Handler unificado para pagamento via Stripe
+  const handlePayment = async () => {
+    if (!isLoggedIn || !user?.id) {
+      toast.error("Você precisa estar logado para continuar");
+      navigate('/login?redirect=/checkout/resumo');
+      return;
+    }
+    if (!cartItems || cartItems.length === 0) {
+      toast.error("Seu carrinho está vazio");
+      return;
+    }
+    if (finalTotal < MINIMUM_ORDER_VALUE) {
+      toast.error(`O valor mínimo do pedido é R$ ${MINIMUM_ORDER_VALUE.toFixed(2)}`);
+      return;
+    }
+
+    console.log('[CheckoutSummary] Iniciando processamento Stripe:', paymentMethod);
+
     try {
-      // Adicionar delay de 500ms para garantir processamento
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const result = await processPixPayment(couponValid ? couponId : undefined, couponDiscount || 0);
-      
-      console.log('[CheckoutSummary] RESULTADO DO PAGAMENTO PIX:', {
-        success: result.success,
-        hasPixData: !!result.pixData,
-        error: result.error,
-        pixData: result.pixData
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + (selectedPlan || 1));
+
+      await processPayment({
+        sessionUser: user,
+        cartItems,
+        selectedPlan: selectedPlan || 1,
+        totalPrice: finalTotal,
+        couponId: couponValid ? couponId : null,
+        paymentMethod,
+        startDate,
+        endDate,
+        acceptTerms: true,
+        unavailablePanels: [],
+        handleClearCart: () => {
+          localStorage.removeItem('checkout_cart');
+          localStorage.removeItem('checkout_plan');
+          localStorage.removeItem('checkout_coupon');
+        }
       });
-      
-      if (result.success && result.pixData) {
-        // Adicionar delay adicional antes de abrir o popup
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        console.log('[CheckoutSummary] ABRINDO POPUP PIX com dados:', result.pixData);
-        setPixDialogData(result.pixData);
-        setCurrentPedidoId(result.pixData.pedido_id || null);
-        setShowPixDialog(true);
-        toast.success("QR Code PIX gerado com sucesso!");
-      } else {
-        console.error('[CheckoutSummary] ERRO - Sem dados PIX:', result);
-        toast.error(result.error || "Erro ao gerar QR Code PIX");
-      }
     } catch (error: any) {
-      console.error('[CheckoutSummary] ERRO CAPTURADO no pagamento PIX:', error);
-      toast.error(`Erro no pagamento: ${error.message}`);
-    } finally {
-      setIsPixProcessing(false);
+      console.error('[CheckoutSummary] Erro no pagamento:', error);
+      toast.error(error.message || 'Erro ao processar pagamento');
     }
-  };
-  const handleCardPayment = async () => {
-    console.log('💳 [CheckoutSummary] INICIANDO PAGAMENTO CARTÃO:', {
-      finalTotal,
-      cartItemsCount: cartItems?.length || 0,
-      selectedPlan,
-      timestamp: new Date().toISOString()
-    });
-    try {
-      const result = await processCardPayment(couponDiscount || 0);
-      console.log('💳 [CheckoutSummary] RESULTADO DO PAGAMENTO CARTÃO:', result);
-      if (result.redirected) {
-        toast.success("Redirecionando para checkout...");
-      }
-    } catch (error: any) {
-      console.error('💳 [CheckoutSummary] ERRO no pagamento cartão:', error);
-      toast.error(`Erro no pagamento: ${error.message}`);
-    }
-  };
-  const handleClosePixDialog = () => {
-    console.log('[CheckoutSummary] FECHANDO POPUP PIX');
-    setShowPixDialog(false);
-    setPixDialogData(null);
-    setCurrentPedidoId(null);
   };
   if (isLoading) {
     return (
@@ -244,19 +203,23 @@ const CheckoutSummary = () => {
 
           {/* Payment Buttons - SEMPRE ATIVO */}
           <div className="space-y-1.5 sm:space-y-3">
-            {paymentMethod === 'pix' ? (
-              <PixPaymentButton 
-                totalAmount={finalTotal} 
-                onPaymentInitiate={handlePixPayment} 
-                disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
-              />
-            ) : (
-              <CreditCardPaymentButton 
-                totalAmount={finalTotal} 
-                onPaymentInitiate={handleCardPayment} 
-                disabled={!cartItems || cartItems.length === 0 || isCardProcessing} 
-              />
-            )}
+            <Button 
+              onClick={handlePayment} 
+              disabled={isCreatingPayment || !isLoggedIn || (cartItems?.length || 0) === 0 || finalTotal < MINIMUM_ORDER_VALUE}
+              className="w-full h-14 text-lg font-semibold"
+              size="lg"
+            >
+              {isCreatingPayment ? (
+                <>
+                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  {paymentMethod === 'pix' ? 'Pagar com PIX' : 'Pagar com Cartão'}
+                </>
+              )}
+            </Button>
 
             {/* Back Link */}
             <button 
@@ -269,19 +232,6 @@ const CheckoutSummary = () => {
           </div>
         </div>
       </div>
-
-      {/* PIX QR Code Dialog */}
-      <PixQrCodeDialog
-        isOpen={showPixDialog}
-        onClose={handleClosePixDialog}
-        qrCodeBase64={pixDialogData?.qrCodeBase64 || pixDialogData?.pix_base64}
-        qrCodeText={pixDialogData?.qrCodeText || pixDialogData?.pix_url}
-        paymentLink={pixDialogData?.paymentLink}
-        pix_url={pixDialogData?.pix_url}
-        pix_base64={pixDialogData?.pix_base64}
-        userId={user?.id}
-        pedidoId={currentPedidoId || undefined}
-      />
     </CheckoutLayout>
   );
 };

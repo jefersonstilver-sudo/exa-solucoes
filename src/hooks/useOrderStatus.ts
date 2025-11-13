@@ -26,7 +26,7 @@ export interface OrderStatusInfo {
   };
 }
 
-export const useOrderStatus = (order: any, onPixPayment?: (order: any) => void) => {
+export const useOrderStatus = (order: any) => {
   const statusInfo = useMemo((): OrderStatusInfo => {
     // CORREÇÃO: Verificar se é uma tentativa de compra primeiro
     if (order?.type === 'attempt') {
@@ -60,15 +60,9 @@ export const useOrderStatus = (order: any, onPixPayment?: (order: any) => void) 
           bgColor: 'bg-orange-600 border-orange-700',
           icon: CreditCard,
           action: {
-            label: 'Pagar com PIX',
+            label: 'Pagar Agora',
             variant: 'default',
-            onClick: () => {
-              if (onPixPayment) {
-                onPixPayment(order);
-              } else {
-                console.log('Abrir PIX para pedido:', order.id);
-              }
-            }
+            href: `/payment?pedido=${order.id}`
           }
         };
 
