@@ -47,7 +47,10 @@ const PixActiveState = ({
       
       {qrCodeBase64 && (
         <div className="flex flex-col items-center">
-          <QRCodeDisplay qrCodeBase64={qrCodeBase64} />
+          <QRCodeDisplay 
+            qrCodeBase64={qrCodeBase64} 
+            qrCodeText={qrCodeText}
+          />
         </div>
       )}
       
