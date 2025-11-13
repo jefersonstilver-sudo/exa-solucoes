@@ -228,26 +228,12 @@ const CheckoutSummary = () => {
 
         {/* Right Column - Payment (Sticky) */}
         <div className="lg:sticky lg:top-32 space-y-2 sm:space-y-4 h-fit">
-          {/* Payment Method Selector */}
-          {isPedidoComValorMinimo ? (
-            <div className="bg-white rounded-lg shadow-sm border p-2 sm:p-4">
-              <h3 className="text-xs sm:text-lg font-semibold mb-1.5 sm:mb-3">Forma de Pagamento</h3>
-              <div className="flex items-center space-x-1.5 sm:space-x-3 p-1.5 sm:p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full flex-shrink-0"></div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-green-800 text-[10px] sm:text-sm">Cupom 100%</p>
-                  <p className="text-[9px] sm:text-xs text-green-600">PIX R$ 0,05</p>
-                </div>
-                <p className="font-bold text-green-700 text-xs sm:text-base">R$ 0,05</p>
-              </div>
-            </div>
-          ) : (
-            <PaymentMethodSelector 
-              selectedMethod={paymentMethod}
-              onMethodChange={setPaymentMethod}
-              totalAmount={finalTotal}
-            />
-          )}
+          {/* Payment Method Selector - SEMPRE ATIVO */}
+          <PaymentMethodSelector 
+            selectedMethod={paymentMethod}
+            onMethodChange={setPaymentMethod}
+            totalAmount={finalTotal}
+          />
 
           {/* Pricing Breakdown */}
           <PricingBreakdown 
@@ -258,40 +244,20 @@ const CheckoutSummary = () => {
             paymentMethod={paymentMethod} 
           />
 
-          {/* Payment Buttons */}
+          {/* Payment Buttons - SEMPRE ATIVO */}
           <div className="space-y-1.5 sm:space-y-3">
-            {isPedidoComValorMinimo ? (
-              <button 
-                onClick={handlePixPayment} 
+            {paymentMethod === 'pix' ? (
+              <PixPaymentButton 
+                totalAmount={finalTotal} 
+                onPaymentInitiate={handlePixPayment} 
                 disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 sm:py-3 px-3 sm:px-4 rounded-lg text-xs sm:text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 sm:gap-2"
-              >
-                {isPixProcessing ? (
-                  <>
-                    <div className="h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Gerando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Smartphone className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
-                    <span>Gerar QR Code</span>
-                  </>
-                )}
-              </button>
+              />
             ) : (
-              paymentMethod === 'pix' ? (
-                <PixPaymentButton 
-                  totalAmount={finalTotal} 
-                  onPaymentInitiate={handlePixPayment} 
-                  disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
-                />
-              ) : (
-                <CreditCardPaymentButton 
-                  totalAmount={finalTotal} 
-                  onPaymentInitiate={handleCardPayment} 
-                  disabled={!cartItems || cartItems.length === 0 || isCardProcessing} 
-                />
-              )
+              <CreditCardPaymentButton 
+                totalAmount={finalTotal} 
+                onPaymentInitiate={handleCardPayment} 
+                disabled={!cartItems || cartItems.length === 0 || isCardProcessing} 
+              />
             )}
 
             {/* Back Link */}

@@ -51,49 +51,43 @@ const CreditCardPaymentButton: React.FC<CreditCardPaymentButtonProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2 sm:space-y-4">
       <motion.div
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
       >
         <Button
           onClick={handleCardPayment}
           disabled={disabled || isProcessing}
-          className="w-full h-16 text-lg font-bold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg border-0 relative overflow-hidden"
+          className="w-full h-12 sm:h-14 text-sm sm:text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-sm border-0"
         >
-          <div className="flex items-center justify-center space-x-3">
+          <div className="flex items-center justify-center gap-2 sm:gap-3">
             {isProcessing ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
             ) : (
-              <CreditCard className="h-6 w-6" />
+              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5" />
             )}
             <div className="flex flex-col items-start">
               <span>
                 {isProcessing ? 'Processando...' : 'Pagar com Cartão'}
               </span>
-              <span className="text-sm font-normal opacity-90">
-                {isProcessing ? 'Redirecionando...' : `${formatCurrency(totalAmount)} - Parcelamento disponível`}
+              <span className="text-[10px] sm:text-xs font-normal opacity-90">
+                {isProcessing ? 'Redirecionando...' : `${formatCurrency(totalAmount)}`}
               </span>
             </div>
           </div>
-          
-          {!isProcessing && (
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-          )}
         </Button>
       </motion.div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-800">
-            <div className="font-medium mb-1">Pagamento Seguro com Cartão</div>
-            <ul className="space-y-1 text-blue-700">
-              <li>• Aceita Visa, Mastercard, Elo e mais</li>
-              <li>• Parcelamento em até 12x sem juros</li>
-              <li>• Processamento via MercadoPago</li>
-              <li>• Ambiente 100% seguro e criptografado</li>
-            </ul>
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3">
+        <div className="flex items-start gap-2">
+          <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600 flex-shrink-0 mt-0.5" />
+          <div className="text-[9px] sm:text-xs text-gray-700">
+            <div className="font-medium mb-1">Pagamento Seguro</div>
+            <div className="text-gray-600">
+              <div>• Parcelamento disponível</div>
+              <div>• Aceita Visa, Master, Elo</div>
+            </div>
           </div>
         </div>
       </div>
