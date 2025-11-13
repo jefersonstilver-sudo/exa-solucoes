@@ -175,80 +175,78 @@ const PlanCard: React.FC<PlanCardProps> = ({
         `}
         onClick={onSelect}
       >
-        {/* Headers Profissionais - SEM EMOJIS */}
+        {/* Headers Profissionais - Mobile Compacto */}
         {planKey === 3 && (
-          <div className={`${style.header} text-center py-2 text-sm font-bold tracking-wide`}>
+          <div className={`${style.header} text-center py-1 sm:py-2 text-[9px] sm:text-sm font-bold tracking-wide`}>
             MAIS POPULAR
           </div>
         )}
         
         {planKey === 6 && (
-          <div className={`${style.header} text-center py-2 text-sm font-bold tracking-wide`}>
+          <div className={`${style.header} text-center py-1 sm:py-2 text-[9px] sm:text-sm font-bold tracking-wide`}>
             RECOMENDADO
           </div>
         )}
         
         {planKey === 12 && (
-          <div className={`${style.header} text-center py-2 text-sm font-bold tracking-wide`}>
-            MÁXIMA ECONOMIA
+          <div className={`${style.header} text-center py-1 sm:py-2 text-[9px] sm:text-sm font-bold tracking-wide`}>
+            MAX ECONOMIA
           </div>
         )}
 
         {planKey === 1 && (
-          <div className={`${style.header} text-center py-1.5 text-xs font-medium`}>
-            Plano Básico
+          <div className={`${style.header} text-center py-0.5 sm:py-1.5 text-[8px] sm:text-xs font-medium`}>
+            Básico
           </div>
         )}
         
-        <CardContent className="p-4 sm:p-5 flex-grow flex flex-col">
-          {/* Plan Title com ícone */}
-          <div className="text-center mb-4">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <IconComponent className={`h-5 w-5 ${style.iconColor}`} />
-              <h3 className={`text-lg sm:text-xl font-bold ${style.text}`}>
+        <CardContent className="p-2 sm:p-5 flex-grow flex flex-col">
+          {/* Plan Title com ícone - Mobile Compacto */}
+          <div className="text-center mb-2 sm:mb-4">
+            <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+              <IconComponent className={`h-3 w-3 sm:h-5 sm:w-5 ${style.iconColor}`} />
+              <h3 className={`text-xs sm:text-xl font-bold ${style.text}`}>
                 {plan.name}
               </h3>
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-[9px] sm:text-sm text-gray-500 hidden sm:block">
               {plan.description}
             </p>
           </div>
           
-          {/* Dynamic Pricing */}
-          <div className="text-center mb-4 sm:mb-6">
-            <div className="flex justify-center items-baseline mb-2">
-              <span className={`text-2xl sm:text-3xl font-bold ${planKey === 1 ? 'text-gray-600' : style.text}`}>
+          {/* Dynamic Pricing - Mobile Compacto */}
+          <div className="text-center mb-2 sm:mb-6">
+            <div className="flex justify-center items-baseline mb-1 sm:mb-2">
+              <span className={`text-base sm:text-3xl font-bold ${planKey === 1 ? 'text-gray-600' : style.text}`}>
                 {formatCurrency(dynamicPricePerMonth)}
               </span>
-              <span className="text-gray-500 text-sm ml-1">/mês</span>
+              <span className="text-gray-500 text-[9px] sm:text-sm ml-0.5 sm:ml-1">/mês</span>
             </div>
             
-            {/* Total Price on Hover/Selection */}
-            {(isHovered || isSelected) && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-50 py-2 px-3 rounded-lg shadow-sm border border-gray-100 mb-2"
-              >
-                <div className="text-sm font-medium text-gray-700">
-                  Total: {formatCurrency(dynamicTotalPrice)}
+            {/* Total Price - Sempre visível no mobile */}
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gray-50 py-1 sm:py-2 px-2 sm:px-3 rounded-md sm:rounded-lg shadow-sm border border-gray-100 mb-1 sm:mb-2"
+            >
+              <div className="text-[10px] sm:text-sm font-medium text-gray-700">
+                Total: {formatCurrency(dynamicTotalPrice)}
+              </div>
+              {plan.months > 1 && (
+                <div className="text-[9px] sm:text-xs text-gray-500">
+                  ({plan.months} meses)
                 </div>
-                {plan.months > 1 && (
-                  <div className="text-xs text-gray-500">
-                    ({plan.months} meses)
-                  </div>
-                )}
-              </motion.div>
-            )}
+              )}
+            </motion.div>
             
-            {/* Discount Badge */}
+            {/* Discount Badge - Compacto */}
             {plan.discount > 0 && (
-              <div className="flex justify-center gap-2">
-                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">
-                  Economize {plan.discount}%
+              <div className="flex justify-center gap-1 sm:gap-2 flex-wrap">
+                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5">
+                  {plan.discount}% OFF
                 </Badge>
                 {dynamicSavings > 0 && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 hidden sm:inline-flex">
                     -{formatCurrency(dynamicSavings)}
                   </Badge>
                 )}
@@ -256,76 +254,68 @@ const PlanCard: React.FC<PlanCardProps> = ({
             )}
           </div>
           
-          {/* Features profissionais - SEM EMOJIS */}
-          <div className="space-y-2 sm:space-y-3 mt-auto">
+          {/* Features profissionais - Mobile Compacto */}
+          <div className="space-y-1 sm:space-y-3 mt-auto">
             {planKey === 1 && (
               <>
-                <div className="flex items-start gap-2">
-                  <X className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-gray-500 leading-tight">Sem vídeos inclusos</span>
+                <div className="flex items-start gap-1 sm:gap-2">
+                  <X className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-gray-500 leading-tight">Sem vídeos</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <X className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-gray-500 leading-tight">Sem benefícios extras</span>
+                <div className="flex items-start gap-1 sm:gap-2">
+                  <X className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-gray-500 leading-tight">Sem extras</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-gray-500 leading-tight">Apenas exibição básica</span>
+                <div className="flex items-start gap-1 sm:gap-2">
+                  <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-gray-500 leading-tight">Básico</span>
                 </div>
               </>
             )}
 
             {planKey === 3 && (
               <>
-                <div className="flex items-start gap-2">
-                  <Video className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-green-700 leading-tight font-medium">1 vídeo horizontal lettering de 15s por mês</span>
+                <div className="flex items-start gap-1 sm:gap-2">
+                  <Video className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-green-700 leading-tight font-medium">1 vídeo/mês</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-green-700 leading-tight">Economize R$ 40/mês</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-green-700 leading-tight">Melhor custo-benefício</span>
+                <div className="flex items-start gap-1 sm:gap-2 hidden sm:flex">
+                  <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-green-700 leading-tight">Economize R$ 40/mês</span>
                 </div>
               </>
             )}
 
             {planKey === 6 && (
               <>
-                <div className="flex items-start gap-2">
-                  <Video className="h-4 w-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-purple-700 leading-tight font-medium">1 vídeo por mês</span>
+                <div className="flex items-start gap-1 sm:gap-2">
+                  <Video className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-purple-700 leading-tight font-medium">1 vídeo/mês</span>
                 </div>
-                <div className="flex items-start gap-2 bg-purple-100 p-2 rounded-lg">
-                  <Building className="h-4 w-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-purple-800 leading-tight font-bold">1 aluguel GRÁTIS do estúdio avançado Indexa Mídia</span>
+                <div className="flex items-start gap-1 sm:gap-2 bg-purple-100 p-1 sm:p-2 rounded-md sm:rounded-lg">
+                  <Building className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-purple-800 leading-tight font-bold">Estúdio GRÁTIS</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-purple-700 leading-tight">Economize R$ 60/mês</span>
+                <div className="flex items-start gap-1 sm:gap-2 hidden sm:flex">
+                  <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-purple-700 leading-tight">Economize R$ 60/mês</span>
                 </div>
               </>
             )}
 
             {planKey === 12 && (
               <>
-                <div className="flex items-start gap-2">
-                  <Video className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-blue-700 leading-tight font-medium">1 vídeo por mês</span>
+                <div className="flex items-start gap-1 sm:gap-2">
+                  <Video className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-blue-700 leading-tight font-medium">1 vídeo/mês</span>
                 </div>
-                <div className="flex items-start gap-2 bg-blue-100 p-2 rounded-lg">
-                  <Gift className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-blue-800 leading-tight font-bold">1 vídeo cinematográfico de até 1 minuto GRÁTIS</span>
+                <div className="flex items-start gap-1 sm:gap-2 bg-blue-100 p-1 sm:p-2 rounded-md sm:rounded-lg">
+                  <Gift className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-blue-800 leading-tight font-bold">Vídeo 1min GRÁTIS</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-blue-700 leading-tight">Para usar nas redes sociais</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-blue-700 leading-tight">Economize R$ 75/mês</span>
+                <div className="flex items-start gap-1 sm:gap-2 hidden sm:flex">
+                  <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-[9px] sm:text-sm text-blue-700 leading-tight">Para redes sociais</span>
                 </div>
               </>
             )}
@@ -333,29 +323,30 @@ const PlanCard: React.FC<PlanCardProps> = ({
         </CardContent>
         
         <CardFooter className={`
-          px-4 sm:px-5 py-3 border-t flex justify-between items-center
+          px-2 sm:px-5 py-1.5 sm:py-3 border-t flex justify-between items-center
           ${isSelected ? 'border-t-green-200 bg-white/50' : 'border-t-gray-100'}
         `}>
           {isSelected ? (
-            <span className="text-sm font-medium text-green-600 flex items-center">
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Selecionado
+            <span className="text-[9px] sm:text-sm font-medium text-green-600 flex items-center">
+              <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+              <span className="hidden sm:inline">Selecionado</span>
+              <span className="sm:hidden">OK</span>
             </span>
           ) : (
-            <span className={`text-sm ${planKey === 1 ? 'text-gray-400' : style.text}`}>
-              {planKey === 1 ? 'Plano Básico' : 'Selecionar'}
+            <span className={`text-[9px] sm:text-sm ${planKey === 1 ? 'text-gray-400' : style.text}`}>
+              {planKey === 1 ? 'Básico' : 'Selecionar'}
             </span>
           )}
           
           <div className={`
-            h-5 w-5 sm:h-6 sm:w-6 rounded-full border flex items-center justify-center
+            h-4 w-4 sm:h-6 sm:w-6 rounded-full border flex items-center justify-center
             ${isSelected 
               ? planKey === 1 ? 'border-gray-400 bg-gray-400' : `${style.border.split(' ')[0].replace('border-', 'border-')} bg-${style.border.split(' ')[0].replace('border-', '').replace('-400', '-500')}`
               : 'border-gray-300'}`
             }
           >
             {isSelected && (
-              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+              <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-white" />
             )}
           </div>
         </CardFooter>

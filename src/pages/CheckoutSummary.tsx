@@ -219,33 +219,33 @@ const CheckoutSummary = () => {
 
   return (
     <CheckoutLayout currentStep={2} maxWidth="6xl">
-      {/* Main Content Grid - Mobile Otimizado */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3 sm:gap-6">
+      {/* Main Content Grid - Mobile Ultra Compacto */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-2 sm:gap-6 mt-2 sm:mt-0">
         {/* Left Column - Order Details */}
         <div>
           <OrderSummaryCard cartItems={cartItems} selectedPlan={selectedPlan} />
         </div>
 
         {/* Right Column - Payment (Sticky) */}
-        <div className="lg:sticky lg:top-32 space-y-3 sm:space-y-4 h-fit">
+        <div className="lg:sticky lg:top-32 space-y-2 sm:space-y-4 h-fit">
           {/* Payment Method Selector */}
           {isPedidoComValorMinimo ? (
-            <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4">
-              <h3 className="text-sm sm:text-lg font-semibold mb-2 sm:mb-3">Forma de Pagamento</h3>
-              <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="bg-white rounded-lg shadow-sm border p-2 sm:p-4">
+              <h3 className="text-xs sm:text-lg font-semibold mb-1.5 sm:mb-3">Forma de Pagamento</h3>
+              <div className="flex items-center space-x-1.5 sm:space-x-3 p-1.5 sm:p-3 bg-green-50 border border-green-200 rounded-lg">
                 <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full flex-shrink-0"></div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-green-800 text-xs sm:text-sm">Cupom 100% - Valor Mínimo</p>
-                  <p className="text-[10px] sm:text-xs text-green-600">PIX de R$ 0,05 (ativação)</p>
+                  <p className="font-medium text-green-800 text-[10px] sm:text-sm">Cupom 100%</p>
+                  <p className="text-[9px] sm:text-xs text-green-600">PIX R$ 0,05</p>
                 </div>
-                <p className="font-bold text-green-700 text-sm sm:text-base">R$ 0,05</p>
+                <p className="font-bold text-green-700 text-xs sm:text-base">R$ 0,05</p>
               </div>
             </div>
           ) : (
             <PaymentMethodSelector 
               selectedMethod={paymentMethod}
               onMethodChange={setPaymentMethod}
-              totalAmount={baseTotal}
+              totalAmount={finalTotal}
             />
           )}
 
@@ -259,21 +259,21 @@ const CheckoutSummary = () => {
           />
 
           {/* Payment Buttons */}
-          <div className="space-y-2 sm:space-y-3">
+          <div className="space-y-1.5 sm:space-y-3">
             {isPedidoComValorMinimo ? (
               <button 
                 onClick={handlePixPayment} 
                 disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 sm:py-3 px-4 rounded-lg text-sm sm:text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 sm:py-3 px-3 sm:px-4 rounded-lg text-xs sm:text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 sm:gap-2"
               >
                 {isPixProcessing ? (
                   <>
-                    <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     <span>Gerando...</span>
                   </>
                 ) : (
                   <>
-                    <Smartphone className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Smartphone className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
                     <span>Gerar QR Code</span>
                   </>
                 )}

@@ -31,24 +31,24 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
   const planKeys = Object.keys(plans).map(Number) as PlanKey[];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-2.5 sm:space-y-6">
+      {/* Header - Mobile Compacto */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+        <h2 className="text-sm sm:text-2xl font-bold text-gray-900 mb-0.5 sm:mb-2">
           Escolha seu Plano
         </h2>
-        <p className="text-sm sm:text-base text-gray-600">
-          Selecione o período de veiculação da sua campanha
+        <p className="text-[10px] sm:text-base text-gray-600">
+          Selecione o período de veiculação
         </p>
       </motion.div>
 
-      {/* Plans Grid */}
+      {/* Plans Grid - Mobile em 2 colunas */}
       <motion.div 
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+        className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6"
         variants={{
           hidden: { opacity: 0 },
           visible: { 
@@ -79,7 +79,7 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mt-8"
+          className="mt-2 sm:mt-8"
         >
           <PlanContinueButton 
             onContinue={onContinue}
