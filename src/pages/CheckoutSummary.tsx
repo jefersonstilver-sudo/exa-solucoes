@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
-import UnifiedCheckoutProgress from '@/components/checkout/UnifiedCheckoutProgress';
+import CheckoutLayout from '@/components/checkout/CheckoutLayout';
 import OrderSummaryCard from '@/components/checkout/summary/OrderSummaryCard';
 import PaymentMethodSelector from '@/components/checkout/summary/PaymentMethodSelector';
 import PricingBreakdown from '@/components/checkout/summary/PricingBreakdown';
@@ -17,6 +16,7 @@ import { useSimplifiedPixCheckout } from '@/hooks/useSimplifiedPixCheckout';
 import { useCardCheckout } from '@/hooks/useCardCheckout';
 import { toast } from 'sonner';
 import { MINIMUM_ORDER_VALUE } from '@/utils/priceCalculator';
+import Layout from '@/components/layout/Layout';
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const {
@@ -201,118 +201,124 @@ const CheckoutSummary = () => {
     setCurrentPedidoId(null);
   };
   if (isLoading) {
-    return <Layout>
+    return (
+      <Layout>
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-4 py-8 flex items-center justify-center">
-          <motion.div initial={{
-          opacity: 0
-        }} animate={{
-          opacity: 1
-        }} className="text-center">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center"
+          >
             <div className="h-8 w-8 border-4 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600">Carregando resumo do pedido...</p>
           </motion.div>
         </div>
-      </Layout>;
+      </Layout>
+    );
   }
-  return <Layout>
-      <div className="min-h-screen bg-gray-50 pt-4">
-        <div className="container mx-auto px-4 py-4 max-w-6xl">
-          {/* Progress Bar - Sem card wrapper */}
-          <div className="mb-4">
-            <UnifiedCheckoutProgress currentStep={2} />
-          </div>
 
-          {/* Main Content Grid - 2 colunas 60/40 */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
-            {/* Left Column - Order Details */}
-            <div>
-              <OrderSummaryCard cartItems={cartItems} selectedPlan={selectedPlan} />
-            </div>
+  return (
+    <CheckoutLayout currentStep={2} maxWidth="6xl">
+      {/* Main Content Grid - 2 colunas 60/40 */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 sm:gap-6">
+        {/* Left Column - Order Details */}
+        <div>
+          <OrderSummaryCard cartItems={cartItems} selectedPlan={selectedPlan} />
+        </div>
 
-            {/* Right Column - Payment (Sticky) */}
-            <div className="lg:sticky lg:top-24 space-y-4 h-fit">
-              {/* Payment Method Selector */}
-              {isPedidoComValorMinimo ? (
-                <div className="bg-white rounded-lg shadow-sm border p-4">
-                  <h3 className="text-lg font-semibold mb-3">Forma de Pagamento</h3>
-                  <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-green-800 text-sm">Cupom 100% - Valor Mínimo</p>
-                      <p className="text-xs text-green-600">PIX de R$ 0,05 (valor simbólico de ativação)</p>
-                    </div>
-                    <p className="font-bold text-green-700">R$ 0,05</p>
-                  </div>
+        {/* Right Column - Payment (Sticky) */}
+        <div className="lg:sticky lg:top-32 space-y-4 h-fit">
+          {/* Payment Method Selector */}
+          {isPedidoComValorMinimo ? (
+            <div className="bg-white rounded-lg shadow-sm border p-4">
+              <h3 className="text-lg font-semibold mb-3">Forma de Pagamento</h3>
+              <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="font-medium text-green-800 text-sm">Cupom 100% - Valor Mínimo</p>
+                  <p className="text-xs text-green-600">PIX de R$ 0,05 (valor simbólico de ativação)</p>
                 </div>
-              ) : (
-                <PaymentMethodSelector 
-                  selectedMethod={paymentMethod}
-                  onMethodChange={setPaymentMethod}
-                  totalAmount={baseTotal}
-                />
-              )}
-
-              {/* Pricing Breakdown */}
-              <PricingBreakdown 
-                cartItems={cartItems} 
-                selectedPlan={selectedPlan} 
-                couponValid={couponValid} 
-                couponDiscount={couponDiscount} 
-                paymentMethod={paymentMethod} 
-              />
-
-              {/* Payment Buttons - Integrado */}
-              <div className="space-y-3">
-                {isPedidoComValorMinimo ? (
-                  <button 
-                    onClick={handlePixPayment} 
-                    disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isPixProcessing ? (
-                      <>
-                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Gerando QR Code...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Smartphone className="h-5 w-5" />
-                        <span>Gerar QR Code PIX (R$ 0,05)</span>
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  paymentMethod === 'pix' ? (
-                    <PixPaymentButton 
-                      totalAmount={finalTotal} 
-                      onPaymentInitiate={handlePixPayment} 
-                      disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
-                    />
-                  ) : (
-                    <CreditCardPaymentButton 
-                      totalAmount={finalTotal} 
-                      onPaymentInitiate={handleCardPayment} 
-                      disabled={!cartItems || cartItems.length === 0 || isCardProcessing} 
-                    />
-                  )
-                )}
-
-                {/* Back Link */}
-                <button 
-                  onClick={handleBack}
-                  className="w-full flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-900 py-2 text-sm transition-colors"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  <span>Voltar para Cupons</span>
-                </button>
+                <p className="font-bold text-green-700">R$ 0,05</p>
               </div>
             </div>
+          ) : (
+            <PaymentMethodSelector 
+              selectedMethod={paymentMethod}
+              onMethodChange={setPaymentMethod}
+              totalAmount={baseTotal}
+            />
+          )}
+
+          {/* Pricing Breakdown */}
+          <PricingBreakdown 
+            cartItems={cartItems} 
+            selectedPlan={selectedPlan} 
+            couponValid={couponValid} 
+            couponDiscount={couponDiscount} 
+            paymentMethod={paymentMethod} 
+          />
+
+          {/* Payment Buttons - Integrado */}
+          <div className="space-y-3">
+            {isPedidoComValorMinimo ? (
+              <button 
+                onClick={handlePixPayment} 
+                disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isPixProcessing ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Gerando QR Code...</span>
+                  </>
+                ) : (
+                  <>
+                    <Smartphone className="h-5 w-5" />
+                    <span>Gerar QR Code PIX (R$ 0,05)</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              paymentMethod === 'pix' ? (
+                <PixPaymentButton 
+                  totalAmount={finalTotal} 
+                  onPaymentInitiate={handlePixPayment} 
+                  disabled={!cartItems || cartItems.length === 0 || isPixProcessing} 
+                />
+              ) : (
+                <CreditCardPaymentButton 
+                  totalAmount={finalTotal} 
+                  onPaymentInitiate={handleCardPayment} 
+                  disabled={!cartItems || cartItems.length === 0 || isCardProcessing} 
+                />
+              )
+            )}
+
+            {/* Back Link */}
+            <button 
+              onClick={handleBack}
+              className="w-full flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-900 py-2 text-sm transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Voltar para Cupons</span>
+            </button>
           </div>
         </div>
       </div>
 
       {/* PIX QR Code Dialog - SEMPRE RENDERIZADO COM DADOS COMPLETOS */}
-      <PixQrCodeDialog isOpen={showPixDialog} onClose={handleClosePixDialog} qrCodeBase64={pixDialogData?.qrCodeBase64 || pixDialogData?.pix_base64} qrCodeText={pixDialogData?.qrCodeText || pixDialogData?.pix_url} paymentLink={pixDialogData?.paymentLink} pix_url={pixDialogData?.pix_url} pix_base64={pixDialogData?.pix_base64} userId={user?.id} pedidoId={currentPedidoId || undefined} />
-    </Layout>;
+      <PixQrCodeDialog
+        isOpen={showPixDialog}
+        onClose={handleClosePixDialog}
+        qrCodeBase64={pixDialogData?.qrCodeBase64 || pixDialogData?.pix_base64}
+        qrCodeText={pixDialogData?.qrCodeText || pixDialogData?.pix_url}
+        paymentLink={pixDialogData?.paymentLink}
+        pix_url={pixDialogData?.pix_url}
+        pix_base64={pixDialogData?.pix_base64}
+        userId={user?.id}
+        pedidoId={currentPedidoId || undefined}
+      />
+    </CheckoutLayout>
+  );
 };
 export default CheckoutSummary;

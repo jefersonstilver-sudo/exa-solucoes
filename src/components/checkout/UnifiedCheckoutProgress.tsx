@@ -11,7 +11,7 @@ interface UnifiedCheckoutProgressProps {
 
 const UnifiedCheckoutProgress: React.FC<UnifiedCheckoutProgressProps> = ({ currentStep }) => {
   return (
-    <div className="w-full bg-white rounded-lg shadow-sm border p-4">
+    <div className="w-full">
       <ProgressHeader currentStep={currentStep} />
       <DesktopProgressSteps currentStep={currentStep} />
       <MobileProgressSteps currentStep={currentStep} />
