@@ -146,7 +146,9 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error('Nenhum painel válido encontrado no carrinho');
       }
 
-      // ENHANCED: Extract building IDs from panel data
+      // 🔍 FASE 1: VALIDAR EXISTÊNCIA DOS PAINÉIS ANTES DE CRIAR PEDIDO
+      console.log('🔍 [ENHANCED_ORDER_CREATOR] Validando existência dos painéis no banco...');
+      
       const { data: panelData, error: panelError } = await supabase
         .from('painels')
         .select('id, building_id')
@@ -157,9 +159,29 @@ export const useEnhancedPaymentOrderCreator = () => {
         throw new Error('Erro ao validar painéis selecionados');
       }
 
+      // CRÍTICO: Verificar se TODOS os painéis existem
       if (!panelData || panelData.length === 0) {
-        throw new Error('Painéis selecionados não encontrados no sistema');
+        const errorMsg = `Nenhum dos painéis selecionados foi encontrado no sistema. IDs procurados: ${panelIds.join(', ')}`;
+        console.error('❌ [ENHANCED_ORDER_CREATOR]', errorMsg);
+        
+        // Limpar carrinho automaticamente
+        console.log('🧹 [ENHANCED_ORDER_CREATOR] Limpando carrinho com dados inválidos...');
+        localStorage.removeItem('simple_cart');
+        
+        throw new Error('Os painéis do seu carrinho não estão mais disponíveis. O carrinho foi limpo. Por favor, adicione novos painéis.');
       }
+      
+      // Verificar se ALGUM painel está faltando
+      if (panelData.length < panelIds.length) {
+        const foundIds = panelData.map(p => p.id);
+        const missingIds = panelIds.filter(id => !foundIds.includes(id));
+        
+        console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Alguns painéis não foram encontrados:', missingIds);
+        
+        throw new Error(`Alguns painéis não estão mais disponíveis: ${missingIds.join(', ')}. Por favor, remova-os do carrinho.`);
+      }
+
+      console.log('✅ [ENHANCED_ORDER_CREATOR] Todos os painéis validados com sucesso');
 
       const buildingIds = [...new Set(
         panelData.map(p => p.building_id).filter(Boolean)

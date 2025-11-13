@@ -93,15 +93,48 @@ export const usePaymentFlow = () => {
       }
       
       // Create order in database
-      const pedidoResult = await createPaymentOrder({
-        sessionUser,
-        cartItems,
-        selectedPlan,
-        totalPrice,
-        couponId,
-        startDate,
-        endDate
-      });
+      let pedidoResult;
+      try {
+        pedidoResult = await createPaymentOrder({
+          sessionUser,
+          cartItems,
+          selectedPlan,
+          totalPrice,
+          couponId,
+          startDate,
+          endDate
+        });
+      } catch (orderError: any) {
+        console.error('[Payment Flow] Order creation error:', orderError);
+        
+        // 🆕 FASE 3: Mensagens específicas para erros conhecidos
+        if (orderError.message?.includes('não estão mais disponíveis')) {
+          sonnerToast.dismiss();
+          sonnerToast.error(orderError.message, {
+            duration: 7000,
+            action: {
+              label: "Recarregar Loja",
+              onClick: () => navigate('/paineis-digitais/loja')
+            }
+          });
+        } else if (orderError.message?.includes('carrinho foi limpo')) {
+          sonnerToast.dismiss();
+          sonnerToast.error(orderError.message, {
+            duration: 7000,
+            action: {
+              label: "Ir para Loja",
+              onClick: () => navigate('/paineis-digitais/loja')
+            }
+          });
+        } else {
+          sonnerToast.dismiss();
+          sonnerToast.error("Erro ao processar pagamento: " + orderError.message);
+        }
+        
+        setIsCreatingPayment(false);
+        processingPaymentRef.current = false;
+        return;
+      }
       
       // Ensure we have a valid order with type assertion
       const pedido = unwrapData(pedidoResult);
