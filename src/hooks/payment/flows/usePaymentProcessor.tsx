@@ -10,18 +10,7 @@ interface CartItem {
   duration: number;
 }
 
-interface ProcessPaymentConfig {
-  pedidoId: string;
-  cartItems: CartItem[];
-  totalPrice: number;
-  selectedPlan: number;
-  couponId: string | null;
-  startDate: Date;
-  endDate: Date;
-  sessionUser: any;
-  paymentMethod: string;
-  redirectToMercadoPago: (preferenceId: string, paymentMethod: string) => void;
-}
+// Interface removed - no longer needed as we only use Stripe checkout
 
 /**
  * Hook for payment processing logic using Stripe

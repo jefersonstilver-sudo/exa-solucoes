@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { getMinimumOrderValue } from '@/utils/priceCalculator';
 import Layout from '@/components/layout/Layout';
 import { useCartValidation } from '@/hooks/useCartValidation';
+import { getValidPanels } from '@/utils/cleanupInvalidData';
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const {
@@ -48,12 +49,24 @@ const CheckoutSummary = () => {
 
   // Verificação de autenticação melhorada
   useEffect(() => {
-    if (isLoading) return;
-    if (!isLoggedIn || !user?.id) {
-      console.log('[CheckoutSummary] User not authenticated, redirecting to login');
-      toast.error("Você precisa estar logado para continuar");
-      navigate('/login?redirect=/checkout/resumo');
-    }
+    const init = async () => {
+      if (isLoading) return;
+      
+      // Verificar painéis válidos disponíveis
+      const validPanels = await getValidPanels();
+      if (validPanels.length === 0) {
+        toast.warning('Nenhum painel disponível no momento');
+      }
+      
+      // Verificar autenticação
+      if (!isLoggedIn || !user?.id) {
+        console.log('[CheckoutSummary] User not authenticated, redirecting to login');
+        toast.error("Você precisa estar logado para continuar");
+        navigate('/login?redirect=/checkout/resumo');
+      }
+    };
+    
+    init();
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
   // 🆕 FASE 2: Validação do carrinho com verificação de painéis

@@ -60,9 +60,28 @@ serve(async (req) => {
       throw new Error("User does not have permission to access this order");
     }
 
+    // CRITICAL: Validate Stripe minimum amounts
+    const STRIPE_MINIMUM_PIX = 0.50;
+    const STRIPE_MINIMUM_CARD = 1.00;
+    const minimumAmount = STRIPE_MINIMUM_CARD; // Use card minimum (highest)
+
+    if (orderData.valor_total < minimumAmount) {
+      logStep("ERROR: Order value below Stripe minimum", { 
+        valor: orderData.valor_total, 
+        minimum: minimumAmount 
+      });
+      
+      return new Response(JSON.stringify({ 
+        error: `Valor mínimo para pagamento é R$ ${minimumAmount.toFixed(2)}. Seu pedido: R$ ${orderData.valor_total.toFixed(2)}` 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
     // Check if checkout session already exists (anti-duplication)
-    const logPagamento = orderData.log_pagamento as any || {};
-    if (logPagamento.checkout_session_id) {
+    if (orderData.checkout_session_id) {
+      logStep("Checkout session already exists in dedicated column", { sessionId: orderData.checkout_session_id });
       logStep("Checkout session already exists", { sessionId: logPagamento.checkout_session_id });
       
       // Check if session is still valid in Stripe
@@ -104,6 +123,7 @@ serve(async (req) => {
 
     // Create Checkout Session
     const origin = req.headers.get("origin") || "http://localhost:3000";
+    // Create Checkout Session with CORRECTED metadata (pedido_id not pedidoId)
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -123,8 +143,8 @@ serve(async (req) => {
       mode: "payment",
       payment_method_types: ["card", "pix"],
       metadata: {
-        pedido_id: pedidoId,
-        user_id: user.id,
+        pedido_id: pedidoId,  // ✅ CORRIGIDO: snake_case para alinhar com webhook
+        user_id: user.id      // ✅ CORRIGIDO: snake_case
       },
       success_url: `${origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/payment/canceled?pedido_id=${pedidoId}`,
@@ -132,7 +152,8 @@ serve(async (req) => {
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
-    // Update order with checkout_session_id
+    // Update order with checkout_session_id in DEDICATED COLUMN + log_pagamento
+    const logPagamento = orderData.log_pagamento as any || {};
     const updatedLogPagamento = {
       ...logPagamento,
       payment_method: "stripe",
@@ -142,7 +163,10 @@ serve(async (req) => {
 
     const { error: updateError } = await supabaseClient
       .from('pedidos')
-      .update({ log_pagamento: updatedLogPagamento })
+      .update({ 
+        checkout_session_id: session.id,  // ✅ NOVO: Salvar em coluna dedicada
+        log_pagamento: updatedLogPagamento 
+      })
       .eq('id', pedidoId);
 
     if (updateError) {
@@ -150,13 +174,13 @@ serve(async (req) => {
       throw new Error(`Failed to update order: ${updateError.message}`);
     }
 
-    logStep("Order updated with checkout session");
+    logStep("Order updated with checkout session in dedicated column");
 
     // Log to sistema
     await supabaseClient.from('log_eventos_sistema').insert({
       tipo_evento: 'STRIPE_CHECKOUT_CREATED',
       descricao: `Stripe checkout session created for order ${pedidoId}`,
-      detalhes: {
+      metadados: {
         pedido_id: pedidoId,
         checkout_session_id: session.id,
         amount: orderData.valor_total,

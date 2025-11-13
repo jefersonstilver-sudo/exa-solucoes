@@ -12,7 +12,7 @@ const TrustIndicators: React.FC = () => {
     >
       <div className="flex items-center space-x-2 text-sm text-gray-600">
         <span role="img" aria-label="secure" className="text-lg">🔒</span>
-        <span className="font-medium">Compra 100% Segura com Mercado Pago</span>
+        <span className="font-medium">Compra 100% Segura com Stripe</span>
       </div>
       <div className="h-4 border-r border-gray-300 hidden sm:block"></div>
       <div className="text-sm text-gray-600 hidden sm:block">
