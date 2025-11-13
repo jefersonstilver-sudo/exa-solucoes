@@ -1,5 +1,5 @@
-// Mercado Pago PIX Webhook Handler (PRODUÇÃO)
-// Version: 3.0.0 - Webhook para pagamentos PIX de produção
+// Mercado Pago Credit Card Webhook Handler (TESTE)
+// Version: 1.0.0 - Webhook para pagamentos com cartão de teste
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔔 [WEBHOOK-PIX-PROD] Webhook recebido');
+    console.log('🔔 [WEBHOOK-CARD-TEST] Webhook recebido');
     
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -23,11 +23,11 @@ serve(async (req) => {
 
     const payload = await req.json();
     
-    console.log('📦 [WEBHOOK-PIX-PROD] Payload:', JSON.stringify(payload, null, 2));
+    console.log('📦 [WEBHOOK-CARD-TEST] Payload:', JSON.stringify(payload, null, 2));
 
     // Log do webhook
     await supabase.from('webhook_logs').insert({
-      origem: 'mercadopago-pix-producao',
+      origem: 'mercadopago-card-teste',
       payload: payload,
       status: 'received',
       recebido_em: new Date().toISOString()
@@ -38,36 +38,36 @@ serve(async (req) => {
     const paymentData = payload.data || {};
     const paymentId = paymentData.id;
 
-    console.log(`🔍 [WEBHOOK-PIX-PROD] Action: ${action}, PaymentID: ${paymentId}`);
+    console.log(`🔍 [WEBHOOK-CARD-TEST] Action: ${action}, PaymentID: ${paymentId}`);
 
     // Processar apenas eventos de pagamento aprovado
     if (action !== 'payment.updated' && action !== 'payment.created' && action !== 'payment.approved') {
-      console.log(`⏭️ [WEBHOOK-PIX-PROD] Evento ignorado: ${action}`);
+      console.log(`⏭️ [WEBHOOK-CARD-TEST] Evento ignorado: ${action}`);
       return new Response(JSON.stringify({ success: true, ignored: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     if (!paymentId) {
-      console.error('❌ [WEBHOOK-PIX-PROD] PaymentID ausente');
+      console.error('❌ [WEBHOOK-CARD-TEST] PaymentID ausente');
       return new Response(JSON.stringify({ success: false, error: 'PaymentID ausente' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Buscar informações do pagamento via API do Mercado Pago
-    const mpAccessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
+    // Buscar informações do pagamento via API do Mercado Pago (TESTE)
+    const mpAccessTokenTest = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN_TEST');
     
-    if (!mpAccessToken) {
-      throw new Error('MERCADO_PAGO_ACCESS_TOKEN não configurado');
+    if (!mpAccessTokenTest) {
+      throw new Error('MERCADO_PAGO_ACCESS_TOKEN_TEST não configurado');
     }
 
-    console.log('🔍 [WEBHOOK-PIX-PROD] Buscando detalhes do pagamento no Mercado Pago...');
+    console.log('🔍 [WEBHOOK-CARD-TEST] Buscando detalhes do pagamento no Mercado Pago...');
 
     const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: {
-        'Authorization': `Bearer ${mpAccessToken}`,
+        'Authorization': `Bearer ${mpAccessTokenTest}`,
         'Content-Type': 'application/json'
       }
     });
@@ -78,12 +78,12 @@ serve(async (req) => {
 
     const payment = await mpResponse.json();
     
-    console.log('💳 [WEBHOOK-PIX-PROD] Status do pagamento:', payment.status);
-    console.log('📋 [WEBHOOK-PIX-PROD] External reference:', payment.external_reference);
+    console.log('💳 [WEBHOOK-CARD-TEST] Status do pagamento:', payment.status);
+    console.log('📋 [WEBHOOK-CARD-TEST] External reference:', payment.external_reference);
 
     // Verificar se pagamento foi aprovado
     if (payment.status !== 'approved') {
-      console.log(`⏭️ [WEBHOOK-PIX-PROD] Pagamento não aprovado ainda: ${payment.status}`);
+      console.log(`⏭️ [WEBHOOK-CARD-TEST] Pagamento não aprovado ainda: ${payment.status}`);
       return new Response(JSON.stringify({ success: true, status: payment.status }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -96,7 +96,7 @@ serve(async (req) => {
       throw new Error('external_reference (pedidoId) não encontrado no pagamento');
     }
 
-    console.log(`🔍 [WEBHOOK-PIX-PROD] Buscando pedido: ${pedidoId}`);
+    console.log(`🔍 [WEBHOOK-CARD-TEST] Buscando pedido: ${pedidoId}`);
 
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
@@ -105,16 +105,16 @@ serve(async (req) => {
       .single();
 
     if (pedidoError || !pedido) {
-      console.error('❌ [WEBHOOK-PIX-PROD] Pedido não encontrado:', pedidoError);
+      console.error('❌ [WEBHOOK-CARD-TEST] Pedido não encontrado:', pedidoError);
       throw new Error(`Pedido ${pedidoId} não encontrado`);
     }
 
     // Verificar se já foi processado (anti-duplicação)
     if (pedido.status === 'pago_pendente_video' || pedido.status === 'pago') {
-      console.warn('🚫 [WEBHOOK-PIX-PROD] Pedido já foi marcado como pago anteriormente');
+      console.warn('🚫 [WEBHOOK-CARD-TEST] Pedido já foi marcado como pago anteriormente');
       
       await supabase.from('log_eventos_sistema').insert({
-        tipo_evento: 'WEBHOOK_DUPLICADO_BLOQUEADO_PIX_PROD',
+        tipo_evento: 'WEBHOOK_DUPLICADO_BLOQUEADO_CARD_TEST',
         descricao: `Tentativa de reprocessamento bloqueada: pedidoId=${pedidoId}, paymentId=${paymentId}`
       });
 
@@ -128,12 +128,12 @@ serve(async (req) => {
     }
 
     // Atualizar pedido para pago_pendente_video
-    console.log('✅ [WEBHOOK-PIX-PROD] Atualizando pedido para PAGO');
+    console.log('✅ [WEBHOOK-CARD-TEST] Atualizando pedido para PAGO');
 
     const updatedLogPagamento = {
       ...(pedido.log_pagamento || {}),
-      pixData: {
-        ...(pedido.log_pagamento?.pixData || {}),
+      cardData: {
+        ...(pedido.log_pagamento?.cardData || {}),
         status: 'approved',
         approvedAt: new Date().toISOString(),
         transactionAmount: payment.transaction_amount
@@ -151,16 +151,16 @@ serve(async (req) => {
       .eq('id', pedidoId);
 
     if (updateError) {
-      console.error('❌ [WEBHOOK-PIX-PROD] Erro ao atualizar pedido:', updateError);
+      console.error('❌ [WEBHOOK-CARD-TEST] Erro ao atualizar pedido:', updateError);
       throw updateError;
     }
 
-    console.log('🎉 [WEBHOOK-PIX-PROD] Pedido atualizado com sucesso!');
+    console.log('🎉 [WEBHOOK-CARD-TEST] Pedido atualizado com sucesso!');
 
     // Log de sucesso
     await supabase.from('log_eventos_sistema').insert({
-      tipo_evento: 'PIX_APROVADO_PRODUCAO',
-      descricao: `Pagamento PIX aprovado (PRODUÇÃO): pedidoId=${pedidoId}, paymentId=${paymentId}, valor=R$${payment.transaction_amount}`
+      tipo_evento: 'CARTAO_APROVADO_TESTE',
+      descricao: `Pagamento com cartão aprovado (TESTE): pedidoId=${pedidoId}, paymentId=${paymentId}, valor=R$${payment.transaction_amount}`
     });
 
     return new Response(JSON.stringify({ 
@@ -173,7 +173,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('❌ [WEBHOOK-PIX-PROD] Erro:', error);
+    console.error('❌ [WEBHOOK-CARD-TEST] Erro:', error);
     
     return new Response(JSON.stringify({
       success: false,
