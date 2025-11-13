@@ -98,10 +98,6 @@ export const PLANS = {
   }
 };
 
-// Configuração MercadoPago
-export const MP_PUBLIC_KEY = 'TEST-c7666b6a-b135-4b17-9e3e-e9e0939353be';
-export const MP_ACCESS_TOKEN = 'TEST-1284714739337536-091623-...'; // Truncado por segurança
-
 // Constantes de duração
 export const DAYS_IN_MONTH = 30;
 
