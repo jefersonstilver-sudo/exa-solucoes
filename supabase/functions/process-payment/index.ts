@@ -17,11 +17,23 @@ function handleCorsPreflightRequest() {
   return new Response(null, { headers: corsHeaders });
 }
 
-// Create a Supabase client
+// Create a Supabase client with SERVICE_ROLE_KEY (bypasses RLS)
 function createSupabaseClient() {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  return createClient(supabaseUrl, supabaseKey);
+  
+  console.log(`🔑 Creating Supabase client with SERVICE_ROLE_KEY:`, {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseKey,
+    keyPrefix: supabaseKey.substring(0, 20) + '...'
+  });
+  
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
 }
 
 // Configure MercadoPago Client
@@ -73,6 +85,7 @@ async function checkDuplicateProcessing(supabase: any, paymentKey: string, pedid
 async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: number, userEmail: string, mpClient: any) {
   try {
     console.log(`🎯 [PIX] Gerando pagamento PIX para pedido: ${pedidoId}, valor: ${totalAmount}`);
+    console.log(`🔑 [PIX] SERVICE_ROLE_KEY presente:`, !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
     
     // Create PIX payment preference
     const preferenceData = {
@@ -148,7 +161,8 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
       createdAt: new Date().toISOString()
     };
 
-    // Update order with PIX data - ESTRUTURA CORRIGIDA
+    // Update order with PIX data - USANDO SERVICE ROLE PARA BYPASS RLS
+    console.log(`💾 [PIX] Salvando dados PIX no pedido ${pedidoId}...`);
     const { error: updateError } = await supabase
       .from('pedidos')
       .update({
@@ -163,6 +177,7 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
       .eq('id', pedidoId);
 
     if (updateError) {
+      console.error(`❌ [PIX] Erro ao salvar dados PIX:`, updateError);
       throw new Error(`Erro ao salvar dados PIX: ${updateError.message}`);
     }
 
