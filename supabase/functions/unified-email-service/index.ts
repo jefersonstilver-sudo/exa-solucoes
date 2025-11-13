@@ -80,33 +80,31 @@ serve(async (req: Request) => {
         const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
         const supabase = createClient(supabaseUrl, serviceRoleKey);
         
-        const { data: authUser } = await supabase.auth.admin.getUserByEmail(email);
-        if (authUser?.user) {
-          // Tentar pegar do user_metadata primeiro
-          userName = authUser.user.user_metadata?.name || 
-                     authUser.user.user_metadata?.full_name ||
-                     authUser.user.user_metadata?.nome;
+        // Buscar na tabela users primeiro (mais rápido)
+        const { data: userData } = await supabase
+          .from('users')
+          .select('nome, id')
+          .eq('email', email)
+          .single();
+        
+        if (userData?.nome) {
+          userName = userData.nome;
+          console.log(`👤 Nome encontrado na tabela users: ${userName}`);
+        } else if (userData?.id) {
+          // Se não tem nome na users, buscar na profiles
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('nome, name, full_name')
+            .eq('id', userData.id)
+            .single();
           
-          // Se não encontrar nos metadados, buscar na tabela profiles
-          if (!userName || userName === email.split('@')[0]) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('nome, name, full_name')
-              .eq('id', authUser.user.id)
-              .single();
-            
-            if (profile) {
-              userName = profile.nome || profile.name || profile.full_name;
-            }
+          if (profile) {
+            userName = profile.nome || profile.name || profile.full_name || userName;
+            console.log(`👤 Nome encontrado na tabela profiles: ${userName}`);
           }
         }
         
-        // Se ainda não encontrou um nome válido, usar a parte do email
-        if (!userName || userName === email.split('@')[0]) {
-          userName = email.split('@')[0];
-        }
-        
-        console.log(`👤 Nome do usuário para ${email}: ${userName}`);
+        console.log(`📧 Email de reenvio para: ${email} | Nome: ${userName}`);
       } catch (error) {
         console.error('⚠️ Erro ao buscar nome do usuário:', error);
         // Manter o fallback
