@@ -1,14 +1,11 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-
-// 🔄 DEPLOY TIMESTAMP: 2025-11-13T01:52:00Z - Fixed delete order
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -179,62 +176,31 @@ serve(async (req) => {
 
     console.log(`✅ [DELETE-USER] Deletados dados de ${deletedCount}/${relatedTables.length} tabelas`);
 
-    // 4. TENTAR DELETAR DO AUTH.USERS PRIMEIRO (pode fazer cascade em users)
-    console.log('🔐 [DELETE-USER] Tentando deletar do auth.users...');
+    // 4. Deletar da tabela users primeiro
+    console.log('🗑️ [DELETE-USER] Deletando da tabela users...');
+    await supabaseAdmin.from('users').delete().eq('id', userId);
+    console.log('✅ [DELETE-USER] Tabela users limpa');
+
+    // 5. Deletar do auth.users
+    console.log('🔐 [DELETE-USER] Deletando do auth.users...');
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteAuthError) {
       console.error('❌ [DELETE-USER] Erro ao deletar do auth:', deleteAuthError);
-      
-      // Se falhou no auth, tentar deletar da tabela users primeiro e depois retry
-      console.log('🔄 [DELETE-USER] Tentando deletar da tabela users primeiro...');
-      const { error: deleteUserError } = await supabaseAdmin
-        .from('users')
-        .delete()
-        .eq('id', userId);
-
-      if (deleteUserError) {
-        console.error('❌ [DELETE-USER] Erro ao deletar da tabela users:', deleteUserError);
-        return new Response(
-          JSON.stringify({ 
-            error: 'Erro ao deletar usuário',
-            code: 'DELETE_ERROR',
-            details: `Auth: ${deleteAuthError.message}, Users: ${deleteUserError.message}`
-          }),
-          { 
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
-      }
-
-      console.log('✅ [DELETE-USER] Deletado da tabela users, tentando auth novamente...');
-      
-      // Retry auth delete
-      const { error: retryAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-      
-      if (retryAuthError) {
-        console.error('❌ [DELETE-USER] Ainda falhou ao deletar do auth após limpar users:', retryAuthError);
-        // Sucesso parcial - usuário removido da tabela users mas não do auth
-        console.warn('⚠️ [DELETE-USER] ATENÇÃO: Usuário removido de public.users mas permanece em auth.users');
-      } else {
-        console.log('✅ [DELETE-USER] Deletado do auth com sucesso no retry');
-      }
-    } else {
-      console.log('✅ [DELETE-USER] Deletado do auth com sucesso (primeira tentativa)');
-      
-      // Verificar se precisa limpar a tabela users também
-      const { error: cleanupError } = await supabaseAdmin
-        .from('users')
-        .delete()
-        .eq('id', userId);
-      
-      if (cleanupError && cleanupError.code !== 'PGRST116') {
-        console.warn('⚠️ [DELETE-USER] Erro ao limpar tabela users:', cleanupError.message);
-      } else {
-        console.log('✅ [DELETE-USER] Tabela users limpa (ou já estava vazia)');
-      }
+      return new Response(
+        JSON.stringify({ 
+          error: 'Erro ao deletar usuário do auth',
+          code: 'AUTH_DELETE_ERROR',
+          details: deleteAuthError.message
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
+
+    console.log('✅ [DELETE-USER] Deletado do auth com sucesso');
 
     // Resposta de sucesso
     console.log('🎉 [DELETE-USER] Usuário deletado completamente!');
