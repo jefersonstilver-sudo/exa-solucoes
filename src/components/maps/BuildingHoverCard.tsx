@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import type { BuildingStore } from '@/services/buildingStoreService';
 import { getImageUrl } from '@/services/buildingStoreService';
-import { convertBuildingToPanel } from '@/services/buildingToPanelService';
+import { adaptBuildingToPanel } from '@/services/buildingToPanelAdapter';
 import { useCartOptional } from '@/hooks/useCartOptional';
 import { toast } from 'sonner';
 import { getOptimalCardSide, getDynamicSideOffset, type CardSide } from '@/utils/cardPositioning';
@@ -150,7 +150,7 @@ const BuildingHoverCard: React.FC<BuildingHoverCardProps> = ({
     
     try {
       setIsAdding(true);
-      const panel = convertBuildingToPanel(building);
+      const panel = adaptBuildingToPanel(building);
       await targetCart.addToCart(panel, 30);
       setInCartLocal(true);
       toast.success(`${building.nome} adicionado ao carrinho!`);

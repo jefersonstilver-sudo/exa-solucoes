@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Check, Loader2, Plus } from 'lucide-react';
 import { BuildingStore } from '@/services/buildingStoreService';
-import { convertBuildingToPanel } from '@/services/buildingToPanelService';
+import { adaptBuildingToPanel } from '@/services/buildingToPanelAdapter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { useCart } from '@/contexts/SimpleCartContext';
@@ -24,7 +24,8 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
     
     try {
       setIsAdding(true);
-      const panel = convertBuildingToPanel(building);
+      // Usar adaptador para converter Building para Panel temporariamente
+      const panel = adaptBuildingToPanel(building);
       await addToCart(panel, 30);
     } catch (error) {
       console.error('Error adding to cart:', error);
