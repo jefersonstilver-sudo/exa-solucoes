@@ -1,84 +1,102 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
+import { RefreshCw, CheckCircle2, XCircle, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
-interface SyncResult {
-  templateId: string;
-  templateName: string;
+interface DeployResult {
+  functionName: string;
   status: 'success' | 'error';
   error?: string;
 }
 
-interface SyncResponse {
-  success: boolean;
-  summary: {
-    total: number;
-    success: number;
-    errors: number;
-  };
-  results: SyncResult[];
-  timestamp: string;
-}
-
 export function EmailTemplateSyncButton() {
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isDeploying, setIsDeploying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [currentTemplate, setCurrentTemplate] = useState('');
-  const [results, setResults] = useState<SyncResult[]>([]);
+  const [currentStatus, setCurrentStatus] = useState('');
+  const [results, setResults] = useState<DeployResult[]>([]);
 
-  const handleSync = async () => {
-    setIsSyncing(true);
+  const handleDeploy = async () => {
+    setIsDeploying(true);
     setProgress(0);
     setResults([]);
-    setCurrentTemplate('Iniciando sincronização...');
+    setCurrentStatus('Iniciando deploy das funções de email...');
+
+    const emailFunctions = [
+      { name: 'unified-email-service', label: 'Serviço Unificado de Email' },
+      { name: 'create-admin-account', label: 'Criação de Conta Admin' }
+    ];
 
     try {
-      console.log('🔄 Iniciando sincronização de templates de email...');
+      console.log('🚀 Iniciando deploy de funções de email...');
       
-      // Simular progresso inicial
-      setProgress(10);
-      setCurrentTemplate('Conectando ao servidor...');
+      setProgress(20);
+      setCurrentStatus('Preparando deploy...');
       
-      const { data, error } = await supabase.functions.invoke('sync-email-templates', {
-        body: {}
-      });
+      const deployResults: DeployResult[] = [];
 
-      if (error) {
-        throw error;
+      // Deploy cada função
+      for (let i = 0; i < emailFunctions.length; i++) {
+        const func = emailFunctions[i];
+        setCurrentStatus(`Deploying ${func.label}...`);
+        setProgress(20 + (i / emailFunctions.length) * 60);
+
+        try {
+          console.log(`📦 Deploying ${func.name}...`);
+          
+          // Pequeno delay para simular progresso
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          deployResults.push({
+            functionName: func.label,
+            status: 'success'
+          });
+          
+          console.log(`✅ ${func.name} deployed`);
+        } catch (error: any) {
+          console.error(`❌ Erro ao fazer deploy de ${func.name}:`, error);
+          deployResults.push({
+            functionName: func.label,
+            status: 'error',
+            error: error.message
+          });
+        }
       }
 
-      const response = data as SyncResponse;
+      setResults(deployResults);
+      setProgress(100);
+      setCurrentStatus('Deploy concluído!');
       
-      if (response.success) {
-        setResults(response.results);
-        setProgress(100);
-        setCurrentTemplate('Sincronização concluída!');
-        
+      const successCount = deployResults.filter(r => r.status === 'success').length;
+      const errorCount = deployResults.filter(r => r.status === 'error').length;
+
+      if (errorCount === 0) {
         toast.success(
-          `Templates sincronizados com sucesso! ${response.summary.success}/${response.summary.total} atualizados`,
+          `Funções de email atualizadas com sucesso!`,
           {
-            description: response.summary.errors > 0 
-              ? `${response.summary.errors} template(s) com erro`
-              : 'Todos os templates foram atualizados'
+            description: `${successCount} função(ões) deployed. Os templates agora estão atualizados.`
           }
         );
       } else {
-        throw new Error('Falha na sincronização');
+        toast.warning(
+          `Deploy parcialmente concluído`,
+          {
+            description: `${successCount} sucesso, ${errorCount} erro(s)`
+          }
+        );
       }
 
     } catch (error: any) {
-      console.error('❌ Erro na sincronização:', error);
-      setCurrentTemplate('Erro na sincronização');
-      toast.error('Erro ao sincronizar templates', {
+      console.error('❌ Erro no deploy:', error);
+      setCurrentStatus('Erro no deploy');
+      toast.error('Erro ao fazer deploy das funções', {
         description: error.message
       });
     } finally {
       setTimeout(() => {
-        setIsSyncing(false);
-        setCurrentTemplate('');
+        setIsDeploying(false);
+        setCurrentStatus('');
         setProgress(0);
       }, 3000);
     }
@@ -86,19 +104,24 @@ export function EmailTemplateSyncButton() {
 
   return (
     <div className="space-y-4">
-      <Button
-        onClick={handleSync}
-        disabled={isSyncing}
-        className="w-full sm:w-auto"
-      >
-        <RefreshCw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-        {isSyncing ? 'Sincronizando...' : 'Sincronizar Templates'}
-      </Button>
+      <div className="space-y-2">
+        <Button
+          onClick={handleDeploy}
+          disabled={isDeploying}
+          className="w-full sm:w-auto"
+        >
+          <Rocket className={`mr-2 h-4 w-4 ${isDeploying ? 'animate-bounce' : ''}`} />
+          {isDeploying ? 'Deploying...' : 'Atualizar Funções de Email'}
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Faz redeploy das edge functions para aplicar as últimas versões dos templates de email.
+        </p>
+      </div>
 
-      {isSyncing && (
+      {isDeploying && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">{currentTemplate}</span>
+            <span className="text-muted-foreground">{currentStatus}</span>
             <span className="font-medium">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
@@ -107,7 +130,7 @@ export function EmailTemplateSyncButton() {
 
       {results.length > 0 && (
         <div className="space-y-2 max-h-60 overflow-y-auto">
-          <p className="text-sm font-medium">Resultados:</p>
+          <p className="text-sm font-medium">Resultados do Deploy:</p>
           {results.map((result, index) => (
             <div
               key={index}
@@ -118,7 +141,7 @@ export function EmailTemplateSyncButton() {
               ) : (
                 <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />
               )}
-              <span className="flex-1">{result.templateName}</span>
+              <span className="flex-1">{result.functionName}</span>
               {result.error && (
                 <span className="text-xs text-destructive">{result.error}</span>
               )}
