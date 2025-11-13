@@ -2,8 +2,8 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 
-// Import the MercadoPago SDK
-import * as MercadoPago from "https://esm.sh/mercadopago@1.5.16";
+// Import the MercadoPago SDK v2
+import { MercadoPagoConfig, Preference, Payment } from "https://esm.sh/mercadopago@2.0.15?target=deno";
 
 // Configure CORS headers
 const corsHeaders = {
@@ -23,14 +23,18 @@ function createSupabaseClient() {
   return createClient(supabaseUrl, supabaseKey);
 }
 
-// Configure MercadoPago
+// Configure MercadoPago Client
 function configureMercadoPago() {
   const MP_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') ?? '';
-  MercadoPago.configure({
-    access_token: MP_ACCESS_TOKEN,
-    sandbox: false
+  
+  const client = new MercadoPagoConfig({
+    accessToken: MP_ACCESS_TOKEN,
+    options: {
+      timeout: 10000
+    }
   });
-  return MP_ACCESS_TOKEN;
+  
+  return { client, accessToken: MP_ACCESS_TOKEN };
 }
 
 // Validate pedidoId (must be a valid UUID)
@@ -65,12 +69,12 @@ async function checkDuplicateProcessing(supabase: any, paymentKey: string, pedid
 }
 
 // Generate PIX payment with MercadoPago
-async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: number, userEmail: string) {
+async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: number, userEmail: string, mpClient: any) {
   try {
     console.log(`🎯 [PIX] Gerando pagamento PIX para pedido: ${pedidoId}, valor: ${totalAmount}`);
     
     // Create PIX payment preference
-    const preference = {
+    const preferenceData = {
       items: [{
         id: `campaign_${pedidoId}`,
         title: `Campanha publicitária digital`,
@@ -100,13 +104,14 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
     };
 
     // Create preference in MercadoPago
-    const response = await MercadoPago.preferences.create(preference);
-    const preferenceId = response.body.id;
+    const preferenceClient = new Preference(mpClient);
+    const preferenceResponse = await preferenceClient.create({ body: preferenceData });
+    const preferenceId = preferenceResponse.id;
     
     console.log(`✅ [PIX] Preferência criada: ${preferenceId}`);
     
     // Create payment specifically for PIX
-    const payment = {
+    const paymentData = {
       transaction_amount: totalAmount,
       description: `Campanha publicitária digital - Pedido ${pedidoId}`,
       payment_method_id: 'pix',
@@ -119,24 +124,25 @@ async function generatePixPayment(supabase: any, pedidoId: string, totalAmount: 
       }
     };
 
-    const paymentResponse = await MercadoPago.payment.create(payment);
-    const paymentData = paymentResponse.body;
+    const paymentClient = new Payment(mpClient);
+    const paymentResponse = await paymentClient.create({ body: paymentData });
+    const pixPaymentData = paymentResponse;
     
     console.log(`✅ [PIX] Pagamento PIX criado:`, {
-      id: paymentData.id,
-      status: paymentData.status,
-      hasQrCode: !!paymentData.point_of_interaction?.transaction_data?.qr_code_base64
+      id: pixPaymentData.id,
+      status: pixPaymentData.status,
+      hasQrCode: !!pixPaymentData.point_of_interaction?.transaction_data?.qr_code_base64
     });
 
     // CORREÇÃO: Mapear corretamente os dados PIX para o formato esperado pelo frontend
     const pixData = {
-      paymentId: paymentData.id.toString(),
-      status: paymentData.status,
-      qrCode: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
-      qrCodeBase64: paymentData.point_of_interaction?.transaction_data?.qr_code_base64 || '',
-      qrCodeText: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
-      pix_url: paymentData.point_of_interaction?.transaction_data?.qr_code || '',
-      pix_base64: paymentData.point_of_interaction?.transaction_data?.qr_code_base64 || '',
+      paymentId: pixPaymentData.id.toString(),
+      status: pixPaymentData.status,
+      qrCode: pixPaymentData.point_of_interaction?.transaction_data?.qr_code || '',
+      qrCodeBase64: pixPaymentData.point_of_interaction?.transaction_data?.qr_code_base64 || '',
+      qrCodeText: pixPaymentData.point_of_interaction?.transaction_data?.qr_code || '',
+      pix_url: pixPaymentData.point_of_interaction?.transaction_data?.qr_code || '',
+      pix_base64: pixPaymentData.point_of_interaction?.transaction_data?.qr_code_base64 || '',
       preferenceId: preferenceId,
       createdAt: new Date().toISOString()
     };
@@ -181,7 +187,7 @@ async function handleRequest(req: Request) {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     
     // Configure MercadoPago
-    const MP_ACCESS_TOKEN = configureMercadoPago();
+    const { client: mpClient, accessToken: MP_ACCESS_TOKEN } = configureMercadoPago();
     
     // Get request data
     const requestData = await req.json();
@@ -234,7 +240,7 @@ async function handleRequest(req: Request) {
     // CORREÇÃO ESPECÍFICA PARA PIX
     if (payment_method === 'pix') {
       console.log("🎯 [PAYMENT-REAL] Processando PIX com integração real");
-      const pixResult = await generatePixPayment(supabase, pedidoId, totalAmount, userData?.email);
+      const pixResult = await generatePixPayment(supabase, pedidoId, totalAmount, userData?.email, mpClient);
       
       return new Response(
         JSON.stringify({
@@ -331,10 +337,11 @@ async function handleRequest(req: Request) {
       } else {
         // Use MercadoPago API
         console.log("Sending request to MercadoPago API...");
-        const response = await MercadoPago.preferences.create(preference);
+        const preferenceClient = new Preference(mpClient);
+        const response = await preferenceClient.create({ body: preference });
         
-        preferenceId = response.body.id;
-        initPoint = response.body.init_point;
+        preferenceId = response.id;
+        initPoint = response.init_point;
         
         
         console.log("MercadoPago preference created successfully");
