@@ -21,6 +21,17 @@ async function verifyPixPayment(supabase: any, pedidoId: string) {
   try {
     console.log(`🔍 [VERIFY_PIX] Verificando pagamento para pedido: ${pedidoId}`);
 
+    // 🔒 CRITICAL: Check if this payment was already used for another order
+    const { data: allOrders, error: allOrdersError } = await supabase
+      .from('pedidos')
+      .select('id, status, log_pagamento, created_at')
+      .neq('id', pedidoId)
+      .in('status', ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo']);
+
+    if (allOrdersError) {
+      console.error(`❌ [VERIFY_PIX] Erro ao buscar outros pedidos:`, allOrdersError);
+    }
+
     // Buscar pedido e dados de pagamento
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
@@ -67,6 +78,20 @@ async function verifyPixPayment(supabase: any, pedidoId: string) {
     const paymentId = pixData.paymentId;
     console.log(`💳 [VERIFY_PIX] Consultando pagamento MP: ${paymentId}`);
 
+    // 🔒 CRITICAL: Verify this paymentId is not already used by another PAID order
+    if (allOrders && allOrders.length > 0) {
+      for (const otherOrder of allOrders) {
+        const otherLogPagamento = otherOrder.log_pagamento as any;
+        if (otherLogPagamento) {
+          const otherPixData = otherLogPagamento.pixData || otherLogPagamento.pix_data;
+          if (otherPixData?.paymentId === paymentId) {
+            console.error(`🚨 [VERIFY_PIX] SEGURANÇA: paymentId ${paymentId} já usado no pedido ${otherOrder.id} (status: ${otherOrder.status})`);
+            throw new Error(`Este pagamento já foi usado em outro pedido (${otherOrder.id}). Contate o suporte.`);
+          }
+        }
+      }
+    }
+
     // Consultar API do Mercado Pago
     const MP_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
     if (!MP_ACCESS_TOKEN) {
@@ -89,14 +114,45 @@ async function verifyPixPayment(supabase: any, pedidoId: string) {
     console.log(`✅ [VERIFY_PIX] Resposta MP:`, {
       id: paymentData.id,
       status: paymentData.status,
-      transaction_amount: paymentData.transaction_amount
+      transaction_amount: paymentData.transaction_amount,
+      external_reference: paymentData.external_reference
     });
+
+    // 🔒 CRITICAL: Verify external_reference matches this pedidoId
+    if (paymentData.external_reference && paymentData.external_reference !== pedidoId) {
+      console.error(`🚨 [VERIFY_PIX] SEGURANÇA: external_reference ${paymentData.external_reference} não corresponde ao pedido ${pedidoId}`);
+      throw new Error(`Este pagamento pertence a outro pedido (${paymentData.external_reference})`);
+    }
 
     // Verificar se foi aprovado
     const isApproved = paymentData.status === 'approved';
     let statusUpdated = false;
 
     if (isApproved && pedido.status === 'pendente') {
+      // 🔒 CRITICAL: Double-check pedido status before updating (avoid race conditions)
+      const { data: pedidoRecheck, error: recheckError } = await supabase
+        .from('pedidos')
+        .select('status')
+        .eq('id', pedidoId)
+        .single();
+
+      if (recheckError || !pedidoRecheck) {
+        throw new Error('Falha ao verificar status atual do pedido');
+      }
+
+      if (pedidoRecheck.status !== 'pendente') {
+        console.warn(`⚠️ [VERIFY_PIX] Pedido ${pedidoId} não está mais pendente (status: ${pedidoRecheck.status})`);
+        return {
+          success: true,
+          payment_found: true,
+          payment_approved: isApproved,
+          payment_status: paymentData.status,
+          payment_amount: paymentData.transaction_amount,
+          status_updated: false,
+          message: 'Pedido já foi processado por outra verificação'
+        };
+      }
+
       // Atualizar status do pedido para pago
       const { error: updateError } = await supabase
         .from('pedidos')
@@ -107,10 +163,16 @@ async function verifyPixPayment(supabase: any, pedidoId: string) {
             payment_verified_manually: true,
             payment_status: 'approved',
             verified_at: new Date().toISOString(),
-            mercadopago_data: paymentData
+            mercadopago_data: paymentData,
+            payment_security_checks: {
+              duplicate_check: true,
+              external_reference_match: true,
+              checked_at: new Date().toISOString()
+            }
           }
         })
-        .eq('id', pedidoId);
+        .eq('id', pedidoId)
+        .eq('status', 'pendente'); // 🔒 CRITICAL: Only update if still pendente
 
       if (updateError) {
         console.error(`❌ [VERIFY_PIX] Erro ao atualizar status:`, updateError);
