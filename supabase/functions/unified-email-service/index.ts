@@ -73,7 +73,44 @@ serve(async (req: Request) => {
 
       const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
       const confirmationUrl = await linkGenerator.generateConfirmationLink(email);
-      const userName = email.split('@')[0];
+      
+      // Buscar nome real do usuário no banco de dados
+      let userName = email.split('@')[0]; // fallback
+      try {
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabase = createClient(supabaseUrl, serviceRoleKey);
+        
+        const { data: authUser } = await supabase.auth.admin.getUserByEmail(email);
+        if (authUser?.user) {
+          // Tentar pegar do user_metadata primeiro
+          userName = authUser.user.user_metadata?.name || 
+                     authUser.user.user_metadata?.full_name ||
+                     authUser.user.user_metadata?.nome;
+          
+          // Se não encontrar nos metadados, buscar na tabela profiles
+          if (!userName || userName === email.split('@')[0]) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('nome, name, full_name')
+              .eq('id', authUser.user.id)
+              .single();
+            
+            if (profile) {
+              userName = profile.nome || profile.name || profile.full_name;
+            }
+          }
+        }
+        
+        // Se ainda não encontrou um nome válido, usar a parte do email
+        if (!userName || userName === email.split('@')[0]) {
+          userName = email.split('@')[0];
+        }
+        
+        console.log(`👤 Nome do usuário para ${email}: ${userName}`);
+      } catch (error) {
+        console.error('⚠️ Erro ao buscar nome do usuário:', error);
+        // Manter o fallback
+      }
       
       const { data: emailData, error: emailError } = await emailService.sendResendConfirmationEmail(
         email, 
