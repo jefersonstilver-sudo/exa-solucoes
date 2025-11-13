@@ -15,6 +15,7 @@ import { getMinimumOrderValue } from '@/utils/priceCalculator';
 import Layout from '@/components/layout/Layout';
 import { useCartValidation } from '@/hooks/useCartValidation';
 import { getValidPanels } from '@/utils/cleanupInvalidData';
+import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const {
@@ -24,6 +25,10 @@ const CheckoutSummary = () => {
   } = useUserSession();
   const [hasValidatedCart, setHasValidatedCart] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
+  
+  // Estados para o popup PIX
+  const [isPixDialogOpen, setIsPixDialogOpen] = useState(false);
+  const [pixData, setPixData] = useState<{ qrCodeBase64: string; qrCodeText: string; pedidoId: string } | null>(null);
 
   const {
     cartItems,
@@ -176,6 +181,11 @@ const CheckoutSummary = () => {
           localStorage.removeItem('checkout_cart');
           localStorage.removeItem('checkout_plan');
           localStorage.removeItem('checkout_coupon');
+        },
+        onPixGenerated: (pixResponse) => {
+          console.log('[CheckoutSummary] QR Code PIX gerado:', pixResponse);
+          setPixData(pixResponse);
+          setIsPixDialogOpen(true);
         }
       });
     } catch (error: any) {
@@ -258,6 +268,16 @@ const CheckoutSummary = () => {
           </div>
         </div>
       </div>
+      
+      {/* Popup PIX - abre quando QR code é gerado */}
+      <PixQrCodeDialog
+        isOpen={isPixDialogOpen}
+        onClose={() => setIsPixDialogOpen(false)}
+        qrCodeBase64={pixData?.qrCodeBase64}
+        qrCodeText={pixData?.qrCodeText}
+        userId={user?.id}
+        pedidoId={pixData?.pedidoId}
+      />
     </CheckoutLayout>
   );
 };

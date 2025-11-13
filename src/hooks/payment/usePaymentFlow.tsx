@@ -25,6 +25,7 @@ interface ProcessPaymentOptions {
   sessionUser: any;
   handleClearCart: () => void;
   paymentMethod?: string;
+  onPixGenerated?: (pixData: { qrCodeBase64: string; qrCodeText: string; pedidoId: string }) => void;
 }
 
 export const usePaymentFlow = () => {
@@ -54,7 +55,8 @@ export const usePaymentFlow = () => {
     unavailablePanels,
     sessionUser,
     handleClearCart,
-    paymentMethod = 'credit_card'
+    paymentMethod = 'credit_card',
+    onPixGenerated
   }: ProcessPaymentOptions) => {
     // CRITICAL FIX: Prevent double submission
     if (processingPaymentRef.current) {
@@ -150,23 +152,67 @@ export const usePaymentFlow = () => {
       
       // ✅ VERIFICAR MÉTODO DE PAGAMENTO
       if (paymentMethodNormalized === 'pix') {
-        // 💚 PIX: Navegar para página de QR Code (MercadoPago)
-        console.log("[Payment Flow] Navigating to PIX payment page");
+        // 💚 PIX: Chamar webhook n8n e gerar QR Code
+        console.log("[Payment Flow] Gerando PIX via n8n webhook");
         
-        // Store info no localStorage
-        localStorage.setItem('lastPedidoId', pedidoTyped.id);
-        localStorage.setItem('lastPaymentMethod', 'pix');
-        localStorage.setItem('lastPaymentTimestamp', new Date().toISOString());
-        
-        // Clear cart
-        handleClearCart();
-        
-        // Dismiss loading toast
-        sonnerToast.dismiss();
-        sonnerToast.success("Gerando QR Code PIX...");
-        
-        // Navigate to PIX payment page
-        navigate(`/pix-payment?pedido=${pedidoTyped.id}`);
+        try {
+          // Importar o serviço de webhook
+          const { sendPixPaymentWebhook } = await import('@/services/pixWebhookService');
+          
+          // Preparar dados para webhook
+          const webhookData = {
+            pedido_id: pedidoTyped.id,
+            cliente_id: sessionUser.id,
+            valor_total: totalPrice.toFixed(2),
+            email: sessionUser.email || 'cliente@email.com',
+            nome: sessionUser.user_metadata?.full_name || sessionUser.email || 'Cliente',
+            plano_escolhido: `${selectedPlan} ${selectedPlan === 1 ? 'mês' : 'meses'}`,
+            periodo_meses: selectedPlan,
+            periodo_exibicao: {
+              inicio: startDate.toISOString().split('T')[0],
+              fim: endDate.toISOString().split('T')[0]
+            },
+            predios_selecionados: cartItems.map(item => ({
+              id: item.panel.buildings?.id || '',
+              nome: item.panel.buildings?.nome || ''
+            }))
+          };
+          
+          console.log("[Payment Flow] Enviando dados para n8n:", webhookData);
+          sonnerToast.loading("Gerando QR Code PIX...");
+          
+          // Chamar webhook n8n
+          const webhookResponse = await sendPixPaymentWebhook(webhookData);
+          
+          console.log("[Payment Flow] Resposta do n8n:", webhookResponse);
+          
+          // Verificar se recebeu QR code
+          if (!webhookResponse.pix_base64 && !webhookResponse.pix_url) {
+            throw new Error("QR Code não foi gerado pelo webhook");
+          }
+          
+          // Clear cart
+          handleClearCart();
+          
+          // Dismiss loading toast
+          sonnerToast.dismiss();
+          sonnerToast.success("QR Code PIX gerado!");
+          
+          // Chamar callback com dados do PIX
+          if (onPixGenerated) {
+            onPixGenerated({
+              qrCodeBase64: webhookResponse.pix_base64 || '',
+              qrCodeText: webhookResponse.pix_url || '',
+              pedidoId: pedidoTyped.id
+            });
+          }
+          
+        } catch (pixError: any) {
+          console.error("[Payment Flow] Erro ao gerar PIX:", pixError);
+          sonnerToast.dismiss();
+          sonnerToast.error(`Erro ao gerar QR Code: ${pixError.message}`);
+          throw pixError;
+        }
         
       } else {
         // 💳 CARTÃO: Processar via Stripe Checkout
