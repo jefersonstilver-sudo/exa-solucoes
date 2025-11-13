@@ -209,7 +209,7 @@ async function handleRequest(req: Request) {
       userId, 
       paymentMethod: payment_method, 
       cartItemsCount: cartItems?.length,
-      paymentKey,
+      paymentKey: payment_key,
       antiDuplicateControls: anti_duplicate_controls
     });
     
