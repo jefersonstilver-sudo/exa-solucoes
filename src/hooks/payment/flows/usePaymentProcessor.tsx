@@ -72,7 +72,7 @@ export const usePaymentProcessor = () => {
     
     // Call Stripe Create Checkout edge function
     const { data, error } = await supabase.functions.invoke('stripe-create-checkout', {
-      body: { orderId: pedidoId }
+      body: { pedidoId }
     });
     
     if (error) {
