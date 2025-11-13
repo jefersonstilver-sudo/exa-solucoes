@@ -124,6 +124,10 @@ serve(async (req) => {
     // Create Checkout Session
     const origin = req.headers.get("origin") || "http://localhost:3000";
     // Create Checkout Session with CORRECTED metadata (pedido_id not pedidoId)
+    // 🔴 IMPORTANTE: PIX removido temporariamente - Stripe requer 90 dias de processamento
+    // 📝 Para ativar PIX: https://dashboard.stripe.com/settings/payment_methods (após 90 dias)
+    // 💳 Atualmente apenas CARTÃO está disponível via Stripe
+    // 💵 Para pagamentos PIX, usar MercadoPago via process-payment edge function
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -141,7 +145,7 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      payment_method_types: ["card", "pix"],
+      payment_method_types: ["card"], // ✅ APENAS CARTÃO - PIX via MercadoPago
       metadata: {
         pedido_id: pedidoId,  // ✅ CORRIGIDO: snake_case para alinhar com webhook
         user_id: user.id      // ✅ CORRIGIDO: snake_case

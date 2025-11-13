@@ -84,18 +84,53 @@ const PaymentGateway = ({
     );
   };
   
-  // Handle payment for both PIX and Credit Card via Stripe
-  const handlePayment = async () => {
-    console.log("🎯 PaymentGateway: Iniciando pagamento via Stripe:", { orderId, paymentMethod });
+  // ✅ SISTEMA DUAL: PIX via MercadoPago | Cartão via Stripe
+  const handlePixPayment = async () => {
+    console.log("💵 PaymentGateway: Navegando para página PIX (MercadoPago):", { orderId });
+    
+    logCheckoutEvent(
+      CheckoutEvent.NAVIGATION_EVENT,
+      LogLevel.INFO,
+      'Redirecionando para pagamento PIX via MercadoPago',
+      { orderId, paymentMethod: 'pix' }
+    );
+    
+    // Redirecionar para a página de PIX que usa MercadoPago
+    navigate(`/payment/pix/${orderId}`);
+  };
+  
+  const handleStripePayment = async () => {
+    console.log("💳 PaymentGateway: Iniciando pagamento com cartão via Stripe:", { orderId });
+    
+    logCheckoutEvent(
+      CheckoutEvent.DEBUG_EVENT,
+      LogLevel.INFO,
+      'Iniciando pagamento com cartão via Stripe',
+      { orderId, paymentMethod: 'credit_card' }
+    );
     
     try {
       const { url } = await createCheckoutSession(orderId);
       
+      logCheckoutEvent(
+        CheckoutEvent.NAVIGATION_EVENT,
+        LogLevel.INFO,
+        'Redirecionando para Stripe Checkout',
+        { orderId, stripeUrl: url }
+      );
+      
       // Redirect to Stripe Checkout
       window.location.href = url;
     } catch (error) {
-      console.error('Erro ao processar pagamento:', error);
-      toast.error("Erro ao processar pagamento");
+      console.error('❌ Erro ao processar pagamento Stripe:', error);
+      toast.error("Erro ao processar pagamento com cartão");
+      
+      logCheckoutEvent(
+        CheckoutEvent.PAYMENT_ERROR,
+        LogLevel.ERROR,
+        'Erro ao criar sessão Stripe',
+        { orderId, error: error instanceof Error ? error.message : String(error) }
+      );
     }
   };
   
@@ -119,18 +154,20 @@ const PaymentGateway = ({
           totalAmount={totalAmount}
         />
 
-        {/* Payment Button - Same for both PIX and Credit Card */}
+        {/* ✅ SISTEMA DUAL DE PAGAMENTOS */}
+        {/* 💵 PIX → MercadoPago (process-payment) */}
+        {/* 💳 Cartão → Stripe (stripe-create-checkout) */}
         <div className="space-y-4">
           {paymentMethod === 'pix' ? (
             <PixPaymentButton
               totalAmount={totalAmount}
-              onPaymentInitiate={handlePayment}
-              disabled={isCreating}
+              onPaymentInitiate={handlePixPayment}
+              disabled={false}
             />
           ) : (
             <CreditCardPayment
               totalAmount={totalAmount}
-              onPaymentInitiate={handlePayment}
+              onPaymentInitiate={handleStripePayment}
               isLoading={isCreating}
             />
           )}
@@ -140,9 +177,9 @@ const PaymentGateway = ({
         <div className="bg-muted/50 p-4 rounded-lg border border-border">
           <h3 className="font-semibold text-foreground mb-2">Informações do Pagamento</h3>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>• Seu pagamento será processado de forma segura via Stripe</p>
-            <p>• PIX: Desconto de 5% aplicado automaticamente</p>
-            <p>• Cartão: Parcelamento disponível</p>
+            <p>• <strong>PIX</strong>: Processado via MercadoPago (desconto de 5%)</p>
+            <p>• <strong>Cartão</strong>: Processado via Stripe (parcelamento disponível)</p>
+            <p>• Pagamentos 100% seguros e criptografados</p>
             <p>• Você receberá confirmação por email</p>
           </div>
         </div>
