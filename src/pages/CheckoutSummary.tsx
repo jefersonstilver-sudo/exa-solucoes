@@ -41,8 +41,10 @@ const CheckoutSummary = () => {
   } = useCheckout();
   const {
     processPixPayment,
-    isProcessing: isPixProcessing
+    isProcessing: isPixProcessingHook
   } = useSimplifiedPixCheckout();
+  
+  const [isPixProcessing, setIsPixProcessing] = useState(false);
   const {
     processCardPayment,
     isProcessing: isCardProcessing
@@ -136,15 +138,26 @@ const CheckoutSummary = () => {
       selectedPlan,
       timestamp: new Date().toISOString()
     });
+    
+    setIsPixProcessing(true);
+    
     try {
+      // Adicionar delay de 500ms para garantir processamento
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const result = await processPixPayment(couponValid ? couponId : undefined, couponDiscount || 0);
+      
       console.log('[CheckoutSummary] RESULTADO DO PAGAMENTO PIX:', {
         success: result.success,
         hasPixData: !!result.pixData,
         error: result.error,
         pixData: result.pixData
       });
+      
       if (result.success && result.pixData) {
+        // Adicionar delay adicional antes de abrir o popup
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
         console.log('[CheckoutSummary] ABRINDO POPUP PIX com dados:', result.pixData);
         setPixDialogData(result.pixData);
         setCurrentPedidoId(result.pixData.pedido_id || null);
@@ -152,28 +165,13 @@ const CheckoutSummary = () => {
         toast.success("QR Code PIX gerado com sucesso!");
       } else {
         console.error('[CheckoutSummary] ERRO - Sem dados PIX:', result);
-        // FORÇAR ABERTURA DO POPUP MESMO SEM DADOS VÁLIDOS (para debugging)
-        setPixDialogData({
-          qrCodeBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-          qrCodeText: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST',
-          pix_url: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST'
-        });
-        setCurrentPedidoId('test-pedido-id');
-        setShowPixDialog(true);
-        toast.error("Erro ao gerar QR Code PIX, usando dados de teste");
+        toast.error(result.error || "Erro ao gerar QR Code PIX");
       }
     } catch (error: any) {
       console.error('[CheckoutSummary] ERRO CAPTURADO no pagamento PIX:', error);
       toast.error(`Erro no pagamento: ${error.message}`);
-
-      // FORÇAR ABERTURA DO POPUP MESMO COM ERRO (para debugging)
-      setPixDialogData({
-        qrCodeBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-        qrCodeText: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST',
-        pix_url: '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5913TESTE EMPRESA6008BRASILIA62070503***6304TEST'
-      });
-      setCurrentPedidoId('test-pedido-id');
-      setShowPixDialog(true);
+    } finally {
+      setIsPixProcessing(false);
     }
   };
   const handleCardPayment = async () => {

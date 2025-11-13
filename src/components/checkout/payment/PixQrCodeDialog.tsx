@@ -142,7 +142,7 @@ const PixQrCodeDialog = ({
       </Dialog>;
   }
   return <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md bg-white border-0 rounded-3xl shadow-2xl fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl w-full bg-white border-0 rounded-3xl shadow-2xl fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] max-h-[90vh] overflow-y-auto">
         {/* Header moderno e clean */}
         <DialogHeader className="relative text-center pb-8">
           <Button variant="ghost" size="icon" onClick={handleClose} className="absolute -right-3 -top-3 h-10 w-10 rounded-full hover:bg-gray-100">

@@ -97,7 +97,7 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
 
   return (
     <aside className={cn(
-      "h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-red-950/40 shadow-2xl flex flex-col transition-all duration-300 overflow-hidden",
+      "h-screen bg-gradient-to-b from-red-800 via-red-900 to-black shadow-2xl flex flex-col transition-all duration-300 overflow-hidden",
       isCollapsed ? "w-16" : "w-80"
     )}>
       {/* Logo e Info do Usuário */}
