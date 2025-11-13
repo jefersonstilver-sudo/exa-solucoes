@@ -24,15 +24,15 @@ interface ProcessPaymentConfig {
 }
 
 /**
- * Hook for payment processing logic
+ * Hook for payment processing logic using Stripe
  */
 export const usePaymentProcessor = () => {
-  const { createPaymentOrder, processPaymentWithEdgeFunction, storeCheckoutInfo } = useOrderCreation();
+  const { createPaymentOrder: createOrder } = useOrderCreation();
 
   /**
    * Create order in database
    */
-  const createPaymentOrder2 = async ({
+  const createPaymentOrder = async ({
     sessionUser,
     cartItems,
     selectedPlan,
@@ -49,7 +49,7 @@ export const usePaymentProcessor = () => {
     startDate: Date;
     endDate: Date;
   }) => {
-    return await createPaymentOrder({
+    return await createOrder({
       sessionUser,
       cartItems,
       selectedPlan,
@@ -61,116 +61,37 @@ export const usePaymentProcessor = () => {
   };
 
   /**
-   * Process payment with Edge Function
+   * Process payment with Stripe Checkout
    */
-  const processPaymentWithEdgeFunction2 = async ({
-    pedidoId,
-    cartItems,
-    selectedPlan,
-    totalPrice,
-    couponId,
-    sessionUser,
-    paymentMethod
+  const processStripeCheckout = async ({
+    pedidoId
   }: {
     pedidoId: string;
-    cartItems: CartItem[];
-    selectedPlan: number;
-    totalPrice: number;
-    couponId: string | null;
-    sessionUser: any;
-    paymentMethod: string;
   }) => {
-    // Get application base URL
-    const currentUrl = window.location.origin;
+    console.log("[Payment Processor] Creating Stripe Checkout session for order:", pedidoId);
     
-    // Convert months to days
-    const duration = selectedPlan * 30;
-    
-    // Prepare data for Edge Function
-    const paymentData = {
-      pedidoId,
-      cartItems,
-      totals: {
-        totalPrice,
-        selectedPlan,
-        duration,
-        withCoupon: !!couponId,
-        couponDiscount: couponId ? 10 : 0,
-      },
-      userId: sessionUser.id,
-      returnUrl: `${currentUrl}/pedido-confirmado?id=${pedidoId}`,
-      paymentMethod
-    };
-    
-    console.log("[Payment Flow] Sending data to payment processor", {
-      pedidoId,
-      method: paymentMethod
-    });
-    
-    // Determine which edge function to call based on payment method
-    const functionName = paymentMethod === 'pix' ? 'process-pix-payment' : 'process-payment';
-    
-    // Call Edge Function
-    const { data, error } = await supabase.functions.invoke(functionName, {
-      body: functionName === 'process-pix-payment' ? {
-        amount: totalPrice,
-        pedidoId,
-        description: `Plano: ${selectedPlan} meses`,
-        userId: sessionUser.id,
-        userEmail: sessionUser.email,
-        returnUrl: `${currentUrl}/pedido-confirmado?id=${pedidoId}`
-      } : paymentData
+    // Call Stripe Create Checkout edge function
+    const { data, error } = await supabase.functions.invoke('stripe-create-checkout', {
+      body: { orderId: pedidoId }
     });
     
     if (error) {
-      console.error(`[Payment Flow] Edge function error: ${functionName}`, error);
-      throw new Error(`Error processing payment: ${error.message}`);
+      console.error("[Payment Processor] Stripe edge function error:", error);
+      throw new Error(`Erro ao criar sessão de pagamento: ${error.message}`);
     }
     
-    console.log(`[Payment Flow] ${functionName} response:`, data);
+    console.log("[Payment Processor] Stripe checkout session created:", data);
     
-    if (!data || !data.success) {
-      throw new Error('Invalid response from payment processor');
+    if (!data || !data.url) {
+      throw new Error('URL de checkout não retornada pelo servidor');
     }
     
-    // For PIX payments, we return a different structure
-    if (paymentMethod === 'pix') {
-      return {
-        pixData: data.pix_data,
-        pedidoId: data.pedido_id
-      };
-    }
-    
-    // For credit card payments, validate the preference_id
-    if (!data.preference_id) {
-      throw new Error('Missing preference_id in payment processor response');
-    }
-    
-    return {
-      preferenceId: data.preference_id,
-      initPoint: data.init_point
-    };
-  };
-
-  /**
-   * Store checkout information in localStorage
-   */
-  const storeCheckoutInfo2 = (pedidoId: string, paymentMethod: string, preferenceId?: string) => {
-    // Store order info in localStorage
-    localStorage.setItem('lastPedidoId', pedidoId);
-    localStorage.setItem('lastPaymentMethod', paymentMethod);
-    localStorage.setItem('lastPaymentTimestamp', new Date().toISOString());
-    
-    // For credit card payments, also store MercadoPago info
-    if (paymentMethod === 'credit_card' && preferenceId) {
-      localStorage.setItem('mp_redirect_timestamp', Date.now().toString());
-      localStorage.setItem('mp_preference_id', preferenceId);
-    }
+    return data.url;
   };
 
   return {
     createPaymentOrder,
-    processPaymentWithEdgeFunction,
-    storeCheckoutInfo
+    processStripeCheckout
   };
 };
+

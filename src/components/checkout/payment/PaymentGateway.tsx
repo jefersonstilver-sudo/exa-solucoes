@@ -116,6 +116,7 @@ const PaymentGateway = ({
         <PaymentMethodSelector
           selectedMethod={paymentMethod}
           onMethodChange={handlePaymentMethodChange}
+          totalAmount={totalAmount}
         />
 
         {/* Payment Button - Same for both PIX and Credit Card */}

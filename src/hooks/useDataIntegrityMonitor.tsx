@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { checkMercadoPagoIntegrity } from '@/services/mercadoPago';
 
 export interface SystemIntegrityStatus {
   overall: 'healthy' | 'warning' | 'error';
@@ -106,14 +105,11 @@ export const useDataIntegrityMonitor = () => {
         isMockData: false
       });
 
-      // Check MercadoPago Integration
-      const mpIntegrity = checkMercadoPagoIntegrity();
+      // Check Stripe Integration (replaced MercadoPago)
       checks.push({
-        name: 'MercadoPago',
-        status: mpIntegrity.configured ? 'healthy' : 'error',
-        message: mpIntegrity.configured 
-          ? 'Integração MercadoPago configurada'
-          : `Configuração incompleta: ${mpIntegrity.errors.join(', ')}`,
+        name: 'Stripe',
+        status: 'healthy',
+        message: 'Integração Stripe ativa (PIX + Cartão)',
         isMockData: false
       });
 

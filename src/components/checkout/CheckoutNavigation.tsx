@@ -38,10 +38,9 @@ const CheckoutNavigation = ({
     if (isPaymentStep && paymentMethod === 'pix') {
       return (
         <PixPaymentButton
-          onClick={onNext}
-          isDisabled={isDisabled}
-          isLoading={isLoading}
-          totalPrice={totalPrice}
+          totalAmount={totalPrice}
+          onPaymentInitiate={async () => onNext()}
+          disabled={isDisabled}
         />
       );
     }
