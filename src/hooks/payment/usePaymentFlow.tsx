@@ -148,28 +148,50 @@ export const usePaymentFlow = () => {
       // Store order ID
       setCreatedOrderId(pedidoTyped.id);
       
-      // Process payment with Stripe Checkout
-      console.log("[Payment Flow] Processing payment via Stripe for order:", pedidoTyped.id);
-      
-      const checkoutUrl = await processStripeCheckout({
-        pedidoId: pedidoTyped.id
-      });
-      
-      // Store checkout info in localStorage
-      localStorage.setItem('lastPedidoId', pedidoTyped.id);
-      localStorage.setItem('lastPaymentMethod', paymentMethodNormalized);
-      localStorage.setItem('lastPaymentTimestamp', new Date().toISOString());
-      localStorage.setItem('lastCompletedOrderId', pedidoTyped.id);
-      
-      // Clear cart
-      handleClearCart();
-      
-      // Dismiss loading toast
-      sonnerToast.dismiss();
-      
-      // Redirect to Stripe Checkout
-      console.log('[Payment Flow] Redirecting to Stripe Checkout');
-      window.location.href = checkoutUrl;
+      // ✅ VERIFICAR MÉTODO DE PAGAMENTO
+      if (paymentMethodNormalized === 'pix') {
+        // 💚 PIX: Navegar para página de QR Code (MercadoPago)
+        console.log("[Payment Flow] Navigating to PIX payment page");
+        
+        // Store info no localStorage
+        localStorage.setItem('lastPedidoId', pedidoTyped.id);
+        localStorage.setItem('lastPaymentMethod', 'pix');
+        localStorage.setItem('lastPaymentTimestamp', new Date().toISOString());
+        
+        // Clear cart
+        handleClearCart();
+        
+        // Dismiss loading toast
+        sonnerToast.dismiss();
+        sonnerToast.success("Gerando QR Code PIX...");
+        
+        // Navigate to PIX payment page
+        navigate(`/pix-payment?pedido=${pedidoTyped.id}`);
+        
+      } else {
+        // 💳 CARTÃO: Processar via Stripe Checkout
+        console.log("[Payment Flow] Processing payment via Stripe for order:", pedidoTyped.id);
+        
+        const checkoutUrl = await processStripeCheckout({
+          pedidoId: pedidoTyped.id
+        });
+        
+        // Store checkout info in localStorage
+        localStorage.setItem('lastPedidoId', pedidoTyped.id);
+        localStorage.setItem('lastPaymentMethod', 'credit_card');
+        localStorage.setItem('lastPaymentTimestamp', new Date().toISOString());
+        localStorage.setItem('lastCompletedOrderId', pedidoTyped.id);
+        
+        // Clear cart
+        handleClearCart();
+        
+        // Dismiss loading toast
+        sonnerToast.dismiss();
+        
+        // Redirect to Stripe Checkout
+        console.log('[Payment Flow] Redirecting to Stripe Checkout');
+        window.location.href = checkoutUrl;
+      }
       
     } catch (error: any) {
       // Comprehensive error handling
