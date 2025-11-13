@@ -9,15 +9,19 @@ import { toast } from 'sonner';
 
 interface PaymentMethodSelectorProps {
   selectedMethod: string;
-  setSelectedMethod: (method: string) => void;
+  setSelectedMethod?: (method: string) => void;
+  onMethodChange?: (method: string) => void;
   totalAmount: number;
 }
 
 const PaymentMethodSelector = ({
   selectedMethod,
   setSelectedMethod,
+  onMethodChange,
   totalAmount
 }: PaymentMethodSelectorProps) => {
+  // Use onMethodChange if provided, fallback to setSelectedMethod for backwards compatibility
+  const handleMethodChange = onMethodChange || setSelectedMethod || (() => {});
   // Aplicar 5% de desconto para pagamentos PIX
   const pixDiscount = 0.05;
   const pixAmount = totalAmount * (1 - pixDiscount);
@@ -33,7 +37,7 @@ const PaymentMethodSelector = ({
       <RadioGroup
         value={selectedMethod}
         onValueChange={(value) => {
-          setSelectedMethod(value);
+          handleMethodChange(value);
           toast.info(`Método de pagamento alterado para ${value === 'pix' ? 'PIX' : 'Cartão de Crédito'}`);
         }}
         className="space-y-4"

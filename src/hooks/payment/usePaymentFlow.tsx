@@ -1,10 +1,9 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { logCheckoutEvent, LogLevel, CheckoutEvent } from '@/services/checkoutDebugService';
 import { useNavigate } from 'react-router-dom';
 import { Panel } from '@/types/panel';
-import { usePaymentInit } from './flows/usePaymentInit';
 import { usePaymentValidator } from './flows/usePaymentValidator';
 import { usePaymentProcessor } from './flows/usePaymentProcessor';
 import { unwrapData } from '@/utils/supabaseUtils';
@@ -31,24 +30,16 @@ interface ProcessPaymentOptions {
 export const usePaymentFlow = () => {
   const navigate = useNavigate();
   
-  // Use the specialized hooks
-  const {
-    isCreatingPayment, 
-    setIsCreatingPayment,
-    createdOrderId,
-    setCreatedOrderId,
-    processingPaymentRef,
-    redirectToMercadoPago,
-    isMercadoPagoReady,
-    isSDKLoaded
-  } = usePaymentInit();
+  // Local state management (replaces usePaymentInit)
+  const [isCreatingPayment, setIsCreatingPayment] = useState<boolean>(false);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const processingPaymentRef = useRef(false);
   
   const { validateForPayment, toast } = usePaymentValidator();
   
   const {
     createPaymentOrder,
-    processPaymentWithEdgeFunction,
-    storeCheckoutInfo
+    processStripeCheckout
   } = usePaymentProcessor();
 
   // Process payment and manage checkout flow
@@ -86,12 +77,12 @@ export const usePaymentFlow = () => {
       // Display processing toast
       sonnerToast.loading("Preparando pagamento...");
       
-      // Validation step
+      // Validation step (removed isSDKLoaded - not needed for Stripe)
       const isValid = validateForPayment({
         acceptTerms,
         unavailablePanels,
         sessionUser,
-        isSDKLoaded,
+        isSDKLoaded: true, // Always true for Stripe
         cartItems
       });
       
@@ -124,61 +115,28 @@ export const usePaymentFlow = () => {
       // Store order ID
       setCreatedOrderId(pedidoTyped.id);
       
-      // Process payment with Edge Function - Fixed: Use correct function signature
-      const paymentResult = await processPaymentWithEdgeFunction({
-        pedidoId: pedidoTyped.id,
-        cartItems,
-        selectedPlan,
-        totalPrice,
-        couponId,
-        sessionUser,
-        paymentMethod: paymentMethodNormalized
+      // Process payment with Stripe Checkout
+      console.log("[Payment Flow] Processing payment via Stripe for order:", pedidoTyped.id);
+      
+      const checkoutUrl = await processStripeCheckout({
+        pedidoId: pedidoTyped.id
       });
       
       // Store checkout info in localStorage
-      if (paymentMethodNormalized === 'credit_card') {
-        const { preferenceId, initPoint } = paymentResult;
-        // Fixed: Use correct function signature
-        storeCheckoutInfo({
-          pedidoId: pedidoTyped.id,
-          paymentMethod: paymentMethodNormalized,
-          preferenceId
-        });
-        
-        // Clear cart
-        handleClearCart();
-        
-        // Execute redirection for credit card payments
-        console.log(`[Payment Flow] Redirecting to MercadoPago checkout with ID: ${preferenceId}`);
-        sonnerToast.dismiss();
-        
-        // IMPORTANT: Store the order ID in localStorage before redirecting
-        localStorage.setItem('lastCompletedOrderId', pedidoTyped.id);
-        
-        // Redirect to MercadoPago with preference ID from the response
-        redirectToMercadoPago(preferenceId, paymentMethodNormalized);
-      } else if (paymentMethodNormalized === 'pix') {
-        // For PIX payments, store info and navigate to PIX payment page
-        const { pixData, pedidoId } = paymentResult;
-        // Fixed: Use correct function signature
-        storeCheckoutInfo({
-          pedidoId,
-          paymentMethod: paymentMethodNormalized
-        });
-        
-        // Clear cart
-        handleClearCart();
-        
-        // IMPORTANT: Store the order ID in localStorage before redirecting
-        localStorage.setItem('lastCompletedOrderId', pedidoId);
-        
-        // Navigate to PIX payment page
-        console.log('[Payment Flow] Navigating to PIX payment page', { pedidoId });
-        sonnerToast.dismiss();
-        
-        // Redirect to PIX payment page
-        navigate(`/pix-payment?pedido=${pedidoId}`);
-      }
+      localStorage.setItem('lastPedidoId', pedidoTyped.id);
+      localStorage.setItem('lastPaymentMethod', paymentMethodNormalized);
+      localStorage.setItem('lastPaymentTimestamp', new Date().toISOString());
+      localStorage.setItem('lastCompletedOrderId', pedidoTyped.id);
+      
+      // Clear cart
+      handleClearCart();
+      
+      // Dismiss loading toast
+      sonnerToast.dismiss();
+      
+      // Redirect to Stripe Checkout
+      console.log('[Payment Flow] Redirecting to Stripe Checkout');
+      window.location.href = checkoutUrl;
       
     } catch (error: any) {
       // Comprehensive error handling
@@ -211,7 +169,6 @@ export const usePaymentFlow = () => {
   return {
     isCreatingPayment,
     processPayment,
-    isMercadoPagoReady,
     createdOrderId
   };
 };

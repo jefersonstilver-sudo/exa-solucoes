@@ -22,7 +22,7 @@ interface PaymentOptions {
 
 // This is a wrapper hook that maintains the same interface for backward compatibility
 export const usePaymentProcessor = () => {
-  const { isCreatingPayment, processPayment, isMercadoPagoReady } = usePaymentFlow();
+  const { isCreatingPayment, processPayment } = usePaymentFlow();
   const [paymentMethod, setPaymentMethod] = useState<string>('credit_card');
   
   // Log payment method changes
@@ -135,7 +135,6 @@ export const usePaymentProcessor = () => {
   return {
     isCreatingPayment,
     createPayment,
-    isMercadoPagoReady,
     paymentMethod,
     setPaymentMethod
   };

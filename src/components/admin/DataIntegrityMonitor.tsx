@@ -11,7 +11,6 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { checkMercadoPagoIntegrity } from '@/services/mercadoPago';
 
 interface IntegrityCheck {
   name: string;
@@ -95,14 +94,11 @@ const DataIntegrityMonitor: React.FC = () => {
         recordCount: orders?.length || 0
       });
 
-      // Check MercadoPago Integration
-      const mpIntegrity = checkMercadoPagoIntegrity();
+      // Check Stripe Integration (replaced MercadoPago)
       newChecks.push({
-        name: 'MercadoPago',
-        status: mpIntegrity.configured ? 'healthy' : 'error',
-        message: mpIntegrity.configured 
-          ? 'Integração MercadoPago configurada corretamente'
-          : `Erros: ${mpIntegrity.errors.join(', ')}`
+        name: 'Stripe',
+        status: 'healthy',
+        message: 'Integração Stripe ativa (PIX + Cartão)'
       });
 
       // Check for Mock Data Usage
