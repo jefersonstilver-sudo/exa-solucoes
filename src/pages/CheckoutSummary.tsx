@@ -47,31 +47,30 @@ const CheckoutSummary = () => {
     isCreatingPayment
   });
 
-  // Verificação de autenticação melhorada
+  // Verificação de autenticação
   useEffect(() => {
-    const init = async () => {
-      if (isLoading) return;
-      
-      // Verificar painéis válidos disponíveis
-      const validPanels = await getValidPanels();
-      if (validPanels.length === 0) {
-        toast.warning('Nenhum painel disponível no momento');
-      }
-      
-      // Verificar autenticação
-      if (!isLoggedIn || !user?.id) {
-        console.log('[CheckoutSummary] User not authenticated, redirecting to login');
-        toast.error("Você precisa estar logado para continuar");
-        navigate('/login?redirect=/checkout/resumo');
-      }
-    };
+    if (isLoading) return;
     
-    init();
+    // Verificar autenticação
+    if (!isLoggedIn || !user?.id) {
+      console.log('[CheckoutSummary] User not authenticated, redirecting to login');
+      toast.error("Você precisa estar logado para continuar");
+      navigate('/login?redirect=/checkout/resumo');
+    }
   }, [isLoggedIn, user?.id, isLoading, navigate]);
 
-  // 🆕 FASE 2: Validação do carrinho com verificação de painéis
+  // 🆕 FASE 2: Validação do carrinho com verificação de prédios
   useEffect(() => {
     if (isLoading || !isLoggedIn || hasValidatedCart) return;
+    
+    // Limpar bloqueio de pagamento duplicado quando entra na página
+    try {
+      localStorage.removeItem('last_payment_submission');
+      console.log('[CheckoutSummary] Bloqueio de pagamento limpo');
+    } catch (e) {
+      console.error('[CheckoutSummary] Erro ao limpar bloqueio:', e);
+    }
+    
     const validateCartTimer = setTimeout(async () => {
       console.log('[CheckoutSummary] Validando carrinho:', {
         cartItemsLength: cartItems?.length || 0,
@@ -81,7 +80,7 @@ const CheckoutSummary = () => {
       
       if (!cartItems || cartItems.length === 0) {
         console.log('[CheckoutSummary] Carrinho vazio detectado');
-        toast.error("Seu carrinho está vazio. Adicione painéis para continuar.", {
+        toast.error("Seu carrinho está vazio. Adicione prédios para continuar.", {
           duration: 5000,
           action: {
             label: "Ir para Loja",
@@ -89,10 +88,10 @@ const CheckoutSummary = () => {
           }
         });
       } else {
-        // Validar se os painéis existem no banco
-        const panelIds = cartItems.map(item => item.panel?.id).filter(Boolean) as string[];
-        if (panelIds.length > 0) {
-          await validateCartPanels(panelIds);
+        // Validar se os prédios existem no banco
+        const buildingIds = cartItems.map(item => item.panel?.buildings?.id).filter(Boolean) as string[];
+        if (buildingIds.length > 0) {
+          await validateCartPanels(buildingIds);
         }
       }
       

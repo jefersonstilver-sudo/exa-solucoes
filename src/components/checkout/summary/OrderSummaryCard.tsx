@@ -1,8 +1,7 @@
 
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Calendar, MapPin, Monitor, Clock } from 'lucide-react';
+import { Building2, Calendar, MapPin, Monitor, Clock, Users } from 'lucide-react';
 import { CartItem } from '@/types/cart';
 import { PlanKey } from '@/types/checkout';
 
@@ -60,6 +59,8 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         nome: buildingName,
         endereco: item.panel.buildings?.endereco || '',
         bairro: item.panel.buildings?.bairro || '',
+        cidade: item.panel.buildings?.cidade || '',
+        estado: item.panel.buildings?.estado || '',
         publico_estimado: item.panel.buildings?.publico_estimado || 0,
         // Pega o número real de telas do prédio do banco de dados
         quantidadeTelas: item.panel.buildings?.quantidade_telas || item.panel.buildings?.numero_elevadores || 0
@@ -138,30 +139,37 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         </h3>
         
         {Object.entries(paineisPorPredio).map(([buildingId, building]: [string, any]) => (
-          <div key={buildingId} className="bg-white border rounded-lg p-2.5 sm:p-3 hover:shadow-sm transition-shadow">
-            <div className="flex items-start space-x-1.5 sm:space-x-2">
-              <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+          <div key={buildingId} className="bg-white border rounded-lg p-3 sm:p-4 hover:shadow-sm transition-shadow">
+            <div className="flex items-start space-x-2">
+              <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-1 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-gray-900 text-xs sm:text-sm mb-1">
+                <h4 className="font-semibold text-gray-900 text-sm sm:text-base mb-1.5">
                   {building.nome}
                 </h4>
-                {building.endereco && (
-                  <p className="text-[10px] sm:text-xs text-gray-600 mb-1.5 sm:mb-2">
-                    {building.endereco}{building.bairro && `, ${building.bairro}`}
-                  </p>
-                )}
                 
-                <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-600">
-                  <span>
-                    <strong className="text-gray-700">{building.quantidadeTelas}</strong> {building.quantidadeTelas === 1 ? 'tela' : 'telas'}
-                  </span>
+                <div className="flex items-start space-x-1.5 mb-2">
+                  <MapPin className="h-3.5 w-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                    {building.endereco}
+                    {building.bairro && `, ${building.bairro}`}
+                    {building.cidade && ` - ${building.cidade}`}
+                    {building.estado && `/${building.estado}`}
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+                  <div className="flex items-center gap-1.5 text-blue-600">
+                    <Monitor className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{building.quantidadeTelas}</span>
+                    <span className="text-gray-600">{building.quantidadeTelas === 1 ? 'tela' : 'telas'}</span>
+                  </div>
+                  
                   {building.publico_estimado > 0 && (
-                    <>
-                      <span>•</span>
-                      <span>
-                        <strong className="text-gray-700">{building.publico_estimado.toLocaleString('pt-BR')}</strong> pessoas
-                      </span>
-                    </>
+                    <div className="flex items-center gap-1.5 text-orange-600">
+                      <Users className="h-3.5 w-3.5" />
+                      <span className="font-semibold">{building.publico_estimado.toLocaleString('pt-BR')}</span>
+                      <span className="text-gray-600">pessoas/mês</span>
+                    </div>
                   )}
                 </div>
               </div>
