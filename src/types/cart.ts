@@ -1,4 +1,3 @@
-
 import { Panel } from '@/types/panel';
 
 export interface CartItem {
