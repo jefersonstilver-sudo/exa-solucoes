@@ -134,64 +134,62 @@ export const useEnhancedPaymentOrderCreator = () => {
       console.log('ℹ️ [ENHANCED_ORDER_CREATOR] Tentativa não é salva aqui para evitar duplicação');
 
       // ENHANCED: Extract panel and building IDs with detailed logging
-      const panelIds = cartItems.map(item => {
-        const panelId = item.panel?.id;
-        console.log('🔍 [ENHANCED_ORDER_CREATOR] Extraindo panel ID:', panelId, 'do item:', item);
-        return panelId;
+      const buildingIds = cartItems.map(item => {
+        const buildingId = item.panel?.buildings?.id || item.panel?.id;
+        console.log('🔍 [ENHANCED_ORDER_CREATOR] Extraindo building ID:', buildingId, 'do item:', item);
+        return buildingId;
       }).filter(Boolean);
       
-      console.log('📊 [ENHANCED_ORDER_CREATOR] Panel IDs extraídos:', panelIds);
+      console.log('📊 [ENHANCED_ORDER_CREATOR] Building IDs extraídos:', buildingIds);
 
-      if (panelIds.length === 0) {
-        throw new Error('Nenhum painel válido encontrado no carrinho');
+      if (buildingIds.length === 0) {
+        throw new Error('Nenhum prédio válido encontrado no carrinho');
       }
 
-      // 🔍 FASE 1: VALIDAR EXISTÊNCIA DOS PAINÉIS ANTES DE CRIAR PEDIDO
-      console.log('🔍 [ENHANCED_ORDER_CREATOR] Validando existência dos painéis no banco...');
+      // 🔍 FASE 1: VALIDAR EXISTÊNCIA DOS PRÉDIOS ANTES DE CRIAR PEDIDO
+      console.log('🔍 [ENHANCED_ORDER_CREATOR] Validando existência dos prédios no banco...');
       
-      const { data: panelData, error: panelError } = await supabase
-        .from('painels')
-        .select('id, building_id')
-        .in('id', panelIds);
+      const { data: buildingData, error: buildingError } = await supabase
+        .from('buildings')
+        .select('id, nome, status')
+        .in('id', buildingIds);
 
-      if (panelError) {
-        console.error('❌ [ENHANCED_ORDER_CREATOR] Erro ao buscar dados dos painéis:', panelError);
-        throw new Error('Erro ao validar painéis selecionados');
+      if (buildingError) {
+        console.error('❌ [ENHANCED_ORDER_CREATOR] Erro ao buscar dados dos prédios:', buildingError);
+        throw new Error('Erro ao validar prédios selecionados');
       }
 
-      // CRÍTICO: Verificar se TODOS os painéis existem
-      if (!panelData || panelData.length === 0) {
-        const errorMsg = `Nenhum dos painéis selecionados foi encontrado no sistema. IDs procurados: ${panelIds.join(', ')}`;
+      // CRÍTICO: Verificar se TODOS os prédios existem E estão ativos
+      if (!buildingData || buildingData.length === 0) {
+        const errorMsg = `Nenhum dos prédios selecionados foi encontrado no sistema. IDs procurados: ${buildingIds.join(', ')}`;
         console.error('❌ [ENHANCED_ORDER_CREATOR]', errorMsg);
         
         // Limpar carrinho automaticamente
         console.log('🧹 [ENHANCED_ORDER_CREATOR] Limpando carrinho com dados inválidos...');
         localStorage.removeItem('simple_cart');
         
-        throw new Error('Os painéis do seu carrinho não estão mais disponíveis. O carrinho foi limpo. Por favor, adicione novos painéis.');
+        throw new Error('Os prédios do seu carrinho não estão mais disponíveis. O carrinho foi limpo. Por favor, adicione novos prédios.');
       }
       
-      // Verificar se ALGUM painel está faltando
-      if (panelData.length < panelIds.length) {
-        const foundIds = panelData.map(p => p.id);
-        const missingIds = panelIds.filter(id => !foundIds.includes(id));
+      // Verificar se ALGUM prédio está faltando
+      if (buildingData.length < buildingIds.length) {
+        const foundIds = buildingData.map(b => b.id);
+        const missingIds = buildingIds.filter(id => !foundIds.includes(id));
         
-        console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Alguns painéis não foram encontrados:', missingIds);
+        console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Alguns prédios não foram encontrados:', missingIds);
         
-        throw new Error(`Alguns painéis não estão mais disponíveis: ${missingIds.join(', ')}. Por favor, remova-os do carrinho.`);
+        throw new Error(`Alguns prédios não estão mais disponíveis: ${missingIds.join(', ')}. Por favor, remova-os do carrinho.`);
       }
-
-      console.log('✅ [ENHANCED_ORDER_CREATOR] Todos os painéis validados com sucesso');
-
-      const buildingIds = [...new Set(
-        panelData.map(p => p.building_id).filter(Boolean)
-      )];
       
-      console.log('🏢 [ENHANCED_ORDER_CREATOR] Building IDs extraídos:', buildingIds);
-
-      if (buildingIds.length === 0) {
-        throw new Error('Nenhum prédio válido encontrado para os painéis selecionados');
+      // Verificar se há prédios inativos
+      const inactiveBuildings = buildingData.filter(b => b.status !== 'ativo');
+      if (inactiveBuildings.length > 0) {
+        const inactiveNames = inactiveBuildings.map(b => b.nome || b.id).join(', ');
+        console.warn('⚠️ [ENHANCED_ORDER_CREATOR] Prédios inativos encontrados:', inactiveNames);
+        throw new Error(`Os seguintes prédios não estão mais ativos: ${inactiveNames}`);
       }
+
+      console.log('✅ [ENHANCED_ORDER_CREATOR] Todos os prédios validados com sucesso');
 
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_PROCESSING,
@@ -200,7 +198,6 @@ export const useEnhancedPaymentOrderCreator = () => {
         { 
           userId: sessionUser.id,
           itemCount: cartItems.length,
-          panelIds: panelIds,
           buildingIds: buildingIds,
           totalPrice,
           selectedPlan,
@@ -216,7 +213,7 @@ export const useEnhancedPaymentOrderCreator = () => {
       // Create the order record with COMPLETE data including source_tentativa_id
       const orderData = {
         client_id: sessionUser.id,
-        lista_paineis: panelIds,
+        lista_paineis: buildingIds, // TEMPORÁRIO: Usando buildingIds aqui até migrar coluna
         lista_predios: buildingIds,
         plano_meses: selectedPlan,
         valor_total: correctTotalPrice,
@@ -237,7 +234,6 @@ export const useEnhancedPaymentOrderCreator = () => {
           anti_duplicate_check: true,
           cart_items_count: cartItems.length,
           user_id_check: sessionUser.id,
-          panel_ids_saved: panelIds,
           building_ids_saved: buildingIds,
           enhanced_creation: true,
           source_tentativa_id: sourceTentativaId,
@@ -310,9 +306,7 @@ export const useEnhancedPaymentOrderCreator = () => {
           orderId: pedido.id,
           totalPrice: correctTotalPrice,
           itemCount: cartItems.length,
-          panelIds: panelIds,
           buildingIds: buildingIds,
-          savedPanelIds: pedido.lista_paineis,
           savedBuildingIds: pedido.lista_predios,
           transactionId,
           paymentKey,
