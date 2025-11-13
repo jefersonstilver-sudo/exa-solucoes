@@ -3831,6 +3831,14 @@ export type Database = {
         Args: { user_email: string; user_id: string; user_role: string }
         Returns: string
       }
+      admin_mark_pedido_as_paid: {
+        Args: {
+          p_admin_notes: string
+          p_payment_id: string
+          p_pedido_id: string
+        }
+        Returns: Json
+      }
       admin_unapprove_video: {
         Args: { p_pedido_video_id: string; p_reason: string }
         Returns: Json
