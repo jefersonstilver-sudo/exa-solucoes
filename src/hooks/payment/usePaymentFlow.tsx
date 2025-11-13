@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { Panel } from '@/types/panel';
 import { usePaymentValidator } from './flows/usePaymentValidator';
-import { usePaymentProcessor } from './usePaymentProcessor.consolidated';
+import { useStripeCheckout } from './useStripeCheckout';
 import { useOrderCreation } from './useOrderCreation';
 import { unwrapData } from '@/utils/supabaseUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,7 +34,7 @@ export const usePaymentFlow = () => {
   const processingPaymentRef = useRef(false);
   
   const { validateForPayment } = usePaymentValidator();
-  const { processStripeCheckout } = usePaymentProcessor();
+  const { createCheckoutSession } = useStripeCheckout();
   const { createPaymentOrder } = useOrderCreation();
 
   const processPayment = async (options: ProcessPaymentOptions) => {
@@ -90,7 +90,7 @@ export const usePaymentFlow = () => {
           });
         }
       } else {
-        const url = await processStripeCheckout({ pedidoId: pedido.id });
+        const { url } = await createCheckoutSession(pedido.id);
         options.handleClearCart();
         window.location.href = url;
       }
