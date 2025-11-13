@@ -97,17 +97,24 @@ export class EmailService {
     console.log(`🔍 [DEBUG] Verificando gradiente: ${html.includes('linear-gradient(135deg, #7D1818') ? '✅ PRESENTE' : '❌ AUSENTE'}`);
     console.log(`🔍 [DEBUG] Verificando header vermelho: ${html.includes('background: linear-gradient(135deg, #7D1818 0%, #9C1E1E 100%)') ? '✅ PRESENTE' : '❌ AUSENTE'}`);
 
-    // ⚡ FORÇA BYPASS DE CACHE: Timestamp único no assunto
-    const timestamp = new Date().toISOString().substring(11, 19).replace(/:/g, 'h');
-    const uniqueSubject = `🎯 Confirme seu email na EXA (${timestamp})`;
+    // ⚡ FORÇA BYPASS TOTAL DE CACHE: Timestamp único + ID único
+    const now = new Date();
+    const timestamp = now.toISOString().substring(11, 19).replace(/:/g, 'h');
+    const uniqueId = Math.random().toString(36).substring(2, 8);
+    const uniqueSubject = `🎯 Confirme seu email - EXA [${timestamp}-${uniqueId}]`;
     
-    console.log(`📬 [EMAIL] Assunto com timestamp: ${uniqueSubject}`);
+    console.log(`📬 [EMAIL] Assunto único: ${uniqueSubject}`);
+    console.log(`🔑 [EMAIL] ID único: ${uniqueId}`);
     
+    // Adicionar header X-Entity-Ref-ID único para forçar Resend a processar como novo
     return await this.resend.emails.send({
       from: 'EXA <noreply@examidia.com.br>',
       to: [userEmail],
       subject: uniqueSubject,
       html,
+      headers: {
+        'X-Entity-Ref-ID': `exa-confirmation-${uniqueId}-${Date.now()}`
+      }
     });
   }
 
