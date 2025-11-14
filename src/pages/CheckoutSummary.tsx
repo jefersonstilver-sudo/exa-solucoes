@@ -312,7 +312,9 @@ const CheckoutSummary = () => {
             selectedPlan={selectedPlan} 
             couponValid={couponValid} 
             couponDiscount={couponDiscount} 
-            paymentMethod={paymentMethod} 
+            paymentMethod={paymentMethod}
+            couponCode={couponCode}
+            couponCategoria={couponCategoria}
           />
 
           {/* Payment Buttons - CORTESIA OU NORMAL */}

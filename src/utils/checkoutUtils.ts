@@ -46,8 +46,15 @@ export const calculateTotalPrice = (
   cartItems: CartItem[],
   couponDiscount: number = 0,
   couponValid: boolean = false,
-  couponCode?: string
+  couponCode?: string,
+  couponCategoria?: string
 ): number => {
+  // 🎁 CUPOM CORTESIA: Força R$ 0,00 SEMPRE
+  if (couponCategoria === 'cortesia' || couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN') {
+    console.log("🎁🎁🎁 [CheckoutUtils] CUPOM CORTESIA DETECTADO - Forçando R$ 0,00");
+    return 0;
+  }
+  
   // 🎯 CUPOM ESPECIAL 573040: Força R$ 0,05 SEMPRE
   if (couponCode === '573040') {
     console.log("🎯🎯🎯 [CheckoutUtils] CUPOM 573040 DETECTADO - Forçando R$ 0,05");
