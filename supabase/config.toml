@@ -150,3 +150,6 @@ verify_jwt = false
 [functions.create-cortesia-order]
 verify_jwt = true
 
+[functions.fix-pedido-lista-paineis]
+verify_jwt = true
+
