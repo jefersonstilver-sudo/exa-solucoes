@@ -29,6 +29,15 @@ const PaineisExa = () => {
             nome,
             endereco,
             bairro
+          ),
+          paineis_status (
+            status,
+            ultimo_heartbeat,
+            url_atual,
+            ip_address,
+            user_agent,
+            device_info,
+            erro_ultimo
           )
         `)
         .order('created_at', { ascending: false });
