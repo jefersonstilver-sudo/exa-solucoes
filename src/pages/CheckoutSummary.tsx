@@ -8,6 +8,7 @@ import PricingBreakdown from '@/components/checkout/summary/PricingBreakdown';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
+import { useAuth } from '@/hooks/useAuth'; // Adicionar import
 import { useCheckout } from '@/hooks/useCheckout';
 import { usePaymentFlow } from '@/hooks/payment/usePaymentFlow';
 import { toast } from 'sonner';
@@ -24,6 +25,9 @@ const CheckoutSummary = () => {
     user,
     isLoading
   } = useUserSession();
+  
+  const { isSuperAdmin } = useAuth(); // Adicionar verificação de super admin
+  
   const [hasValidatedCart, setHasValidatedCart] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
   
@@ -213,6 +217,17 @@ const CheckoutSummary = () => {
       toast.error("Você precisa estar logado");
       return;
     }
+    
+    // 🔒 VERIFICAÇÃO: Apenas super admins podem criar pedidos cortesia
+    if (!isSuperAdmin) {
+      toast.error("Apenas Super Administradores podem criar pedidos cortesia", {
+        description: "Entre em contato com o suporte se você precisa dessa permissão.",
+        duration: 5000
+      });
+      console.error('❌ [CORTESIA] Usuário não é super admin:', { userId: user.id });
+      return;
+    }
+    
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio");
       return;
@@ -301,6 +316,9 @@ const CheckoutSummary = () => {
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-800">Pedido Cortesia</h3>
                   <p className="text-xs sm:text-sm text-slate-600">Isento de cobrança</p>
+                  {!isSuperAdmin && (
+                    <p className="text-xs text-red-600 mt-1">⚠️ Requer permissão de Super Administrador</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -322,11 +340,11 @@ const CheckoutSummary = () => {
             {isCortesia ? (
               <Button 
                 onClick={handleFinalizarCortesia} 
-                disabled={!isLoggedIn || (cartItems?.length || 0) === 0}
-                className="w-full h-14 text-lg font-semibold bg-slate-700 hover:bg-slate-800"
+                disabled={!isLoggedIn || (cartItems?.length || 0) === 0 || !isSuperAdmin}
+                className="w-full h-14 text-lg font-semibold bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
               >
-                Finalizar Pedido Cortesia
+                {!isSuperAdmin ? '🔒 Requer Permissão de Super Admin' : 'Finalizar Pedido Cortesia'}
               </Button>
             ) : (
               <Button 
