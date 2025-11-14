@@ -327,7 +327,7 @@ const CheckoutSummary = () => {
             ) : (
               <Button 
                 onClick={handlePayment} 
-                disabled={isCreatingPayment || !isLoggedIn || (cartItems?.length || 0) === 0 || finalTotal < minimumValue}
+                disabled={isCreatingPayment || !isLoggedIn || (cartItems?.length || 0) === 0 || (!isCupom573040 && finalTotal < minimumValue)}
                 className="w-full h-14 text-lg font-semibold"
                 size="lg"
               >
