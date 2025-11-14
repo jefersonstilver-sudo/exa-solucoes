@@ -2,7 +2,8 @@
 // TEMPLATE DE EMAIL DE CONFIRMAÇÃO - EXA MÍDIA
 // ============================================
 
-const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png';
+// Logo oficial com Signed URL válida por 10 anos (funciona com bucket privado)
+const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL1B1YmxpY2lkYWRlIEludGVsaWdlbnRlICg4MDAgeCAwMCBweCkucG5nIiwiaWF0IjoxNzMxNTk2NDY1LCJleHAiOjIwNDY5NTY0NjV9.VFyY9LhRPwt6Y8f_J3mQoO7xK7qHjHRtD0PxGYcvLrE';
 const EXA_PRIMARY = '#8B1A1A';
 
 export function createResendConfirmationEmailInline(userName: string, confirmationUrl: string): string {
