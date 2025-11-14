@@ -278,7 +278,7 @@ const CheckoutSummary = () => {
   return (
     <CheckoutLayout currentStep={2} maxWidth="6xl">
       {/* Main Content Grid - Mobile Ultra Compacto */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-2 sm:gap-6 mt-2 sm:mt-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-2 sm:gap-6">
         {/* Left Column - Order Details */}
         <div>
           <OrderSummaryCard cartItems={cartItems} selectedPlan={selectedPlan} />
