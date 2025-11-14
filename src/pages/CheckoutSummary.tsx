@@ -113,6 +113,9 @@ const CheckoutSummary = () => {
   // 🆕 FASE 4: Usar valor mínimo correto por método de pagamento
   const minimumValue = getMinimumOrderValue(paymentMethod);
   
+  // 🎯 DETECTAR CUPOM 573040 (teste)
+  const isCupom573040 = couponCode === '573040';
+  
   // 🎁 DETECTAR CUPOM CORTESIA
   const isCortesia = couponCode === 'CORTESIA_ADMIN' && baseTotal === 0;
   
@@ -132,7 +135,8 @@ const CheckoutSummary = () => {
     : baseTotal;
   
   // CRÍTICO: Garantir valor mínimo correto por método
-  const finalTotal = Math.max(totalAfterCoupon, minimumValue);
+  // 🎯 EXCEÇÃO: Cupom 573040 SEMPRE força R$ 0,05 (ignora mínimo)
+  const finalTotal = isCupom573040 ? 0.05 : Math.max(totalAfterCoupon, minimumValue);
 
   // Verificar se foi aplicado o mínimo
   const isPedidoComValorMinimo = finalTotal === minimumValue && totalAfterCoupon < minimumValue;
@@ -279,6 +283,7 @@ const CheckoutSummary = () => {
               selectedMethod={paymentMethod}
               onMethodChange={setPaymentMethod}
               totalAmount={finalTotal}
+              couponCode={couponCode}
             />
           )}
           
