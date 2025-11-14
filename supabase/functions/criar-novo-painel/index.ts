@@ -15,6 +15,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Domínio dinâmico (usar variável de ambiente ou fallback para Lovable)
+    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://64f6806c-c0e0-422b-b85f-955fd5719544.lovableproject.com';
 
     const { numero_painel } = await req.json();
 
@@ -51,10 +54,11 @@ serve(async (req) => {
     // Gerar código de vinculação de 5 dígitos (apenas números)
     const codigo_vinculacao = Math.floor(10000 + Math.random() * 90000).toString();
     
-    // Gerar link de instalação usando domínio de produção
-    const link_instalacao = `https://64f6806c-c0e0-422b-b85f-955fd5719544.lovableproject.com/painel-kiosk/${token_acesso}`;
+    // Gerar link de instalação usando domínio dinâmico
+    const link_instalacao = `${frontendUrl}/painel-kiosk/${token_acesso}`;
 
     console.log('🔵 Link de instalação:', link_instalacao);
+    console.log('🌐 Usando domínio:', frontendUrl);
     console.log('🔑 Código de vinculação:', codigo_vinculacao);
 
     // Criar painel no banco

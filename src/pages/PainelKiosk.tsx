@@ -80,8 +80,8 @@ const PainelKiosk = () => {
           const { data: painelDB, error } = await supabase
             .from('painels')
             .select('*, buildings(*)')
-            .eq('id', storedToken)
-            .single();
+            .eq('token_acesso', storedToken)
+            .maybeSingle();
           
           if (error || !painelDB) {
             console.log('[PAINEL-KIOSK] Painel não encontrado, limpando localStorage');
@@ -125,13 +125,13 @@ const PainelKiosk = () => {
     };
   }, [deviceFingerprint, token]);
 
-  const carregarPainel = async (painelId: string) => {
-    console.log('[PAINEL-KIOSK] Carregando painel:', painelId);
+  const carregarPainel = async (painelToken: string) => {
+    console.log('[PAINEL-KIOSK] Carregando painel com token:', painelToken);
     try {
       const { data: painelDB, error } = await supabase
         .from('painels')
         .select('*, buildings(*)')
-        .eq('id', painelId)
+        .eq('token_acesso', painelToken)
         .maybeSingle();
 
       if (error || !painelDB) {
@@ -178,7 +178,7 @@ const PainelKiosk = () => {
       const { data: painelDB, error: painelError } = await supabase
         .from('painels')
         .select('*, buildings(nome, endereco)')
-        .eq('id', token)
+        .eq('token_acesso', token)
         .eq('codigo_vinculacao', codigoInput)
         .maybeSingle();
 
