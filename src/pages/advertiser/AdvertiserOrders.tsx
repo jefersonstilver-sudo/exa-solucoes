@@ -58,6 +58,21 @@ const AdvertiserOrders = () => {
     };
   }, []);
 
+  // Calcular estatísticas CORRIGIDAS - ANTES do early return para evitar erro de hooks
+  const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
+  const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
+
+  // Detect cortesia order success - DEVE estar antes do early return
+  const { showModal, orderData, closeModal } = useCortesiaSuccessDetection(orders, loading);
+
+  console.log('📋 [ADVERTISER ORDERS] Render state:', {
+    loading,
+    ordersCount: orders?.length,
+    showModal,
+    hasOrderData: !!orderData,
+    isMobile
+  });
+
   // Função para redirecionar para página de pagamento Stripe
   const handlePaymentRedirect = (orderId: string) => {
     console.log('[AdvertiserOrders] Redirecionando para pagamento Stripe:', orderId);
@@ -68,10 +83,6 @@ const AdvertiserOrders = () => {
   if (isMobile) {
     return <MobileAdvertiserOrders />;
   }
-
-  // Calcular estatísticas CORRIGIDAS
-  const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
-  const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
 
   // Verificar se um pedido está dentro do período ativo
   const isWithinActivePeriod = (order: any) => {
@@ -91,16 +102,6 @@ const AdvertiserOrders = () => {
     // Pedidos finalizados: expirados ou fora do período
     pedidosFinalizados: orders.filter(order => order.status === 'expirado' || ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) && !isWithinActivePeriod(order)).length
   };
-
-  // Detect cortesia order success
-  const { showModal, orderData, closeModal } = useCortesiaSuccessDetection(orders, loading);
-
-  console.log('📋 [ADVERTISER ORDERS] Render state:', {
-    loading,
-    ordersCount: orders?.length,
-    showModal,
-    hasOrderData: !!orderData
-  });
 
   // Filtrar itens
   const filteredItems = userOrdersAndAttempts.filter(item => {
