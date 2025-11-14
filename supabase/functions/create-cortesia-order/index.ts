@@ -30,26 +30,6 @@ serve(async (req) => {
       throw new Error('Invalid authentication')
     }
 
-    // Check if user is super_admin
-    const { data: roleData, error: roleError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (roleError || roleData?.role !== 'super_admin') {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Apenas Super Admins podem criar pedidos cortesia. Entre em contato com o suporte.'
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 403
-        }
-      )
-    }
-
     // Parse request body
     const { cartItems, selectedPlan, startDate, endDate, couponId } = await req.json()
 
