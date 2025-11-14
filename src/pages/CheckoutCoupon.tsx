@@ -4,7 +4,9 @@ import CouponStep from '@/components/checkout/CouponStep';
 import CheckoutLayout from '@/components/checkout/CheckoutLayout';
 import CheckoutNavigation from '@/components/checkout/CheckoutNavigation';
 import { useCheckout } from '@/hooks/useCheckout';
+import { useAuth } from '@/hooks/useAuth'; // Adicionar import
 import { formatCurrency } from '@/utils/priceUtils';
+import { toast } from 'sonner'; // Adicionar import
 
 const CheckoutCoupon = () => {
   const {
@@ -26,6 +28,8 @@ const CheckoutCoupon = () => {
     couponCategoria
   } = useCheckout();
   
+  const { isSuperAdmin } = useAuth(); // Adicionar verificação de super admin
+  
   // Calcular total em tempo real
   const currentTotal = calculateTotalPrice();
   
@@ -35,11 +39,22 @@ const CheckoutCoupon = () => {
   // Função wrapper para validateCoupon
   const handleValidateCoupon = () => {
     if (couponCode && selectedPlan) {
+      // 🔒 VERIFICAÇÃO: Bloquear cupom cortesia para não super admins
+      if (couponCode.toUpperCase().trim() === 'CORTESIA_ADMIN' && !isSuperAdmin) {
+        toast.error("Apenas Super Administradores podem usar este cupom", {
+          description: "Entre em contato com o suporte se você precisa dessa permissão.",
+          duration: 5000
+        });
+        console.error('❌ [CORTESIA] Usuário não é super admin tentando usar cupom cortesia');
+        return;
+      }
+      
       console.log('[CheckoutCoupon] Iniciando validação de cupom:', { 
         couponCode, 
         selectedPlan, 
         currentTotal,
-        cartItemsCount: cartItems.length 
+        cartItemsCount: cartItems.length,
+        isSuperAdmin
       });
       validateCoupon(couponCode, selectedPlan);
     } else {
@@ -82,9 +97,11 @@ const CheckoutCoupon = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="font-semibold text-slate-800 text-sm sm:text-base">Pedido Cortesia</p>
-                <p className="text-xs sm:text-sm text-slate-600">Isento de cobrança</p>
+                <p className="text-xs sm:text-sm text-slate-600">
+                  {isSuperAdmin ? 'Isento de cobrança' : '⚠️ Requer permissão de Super Administrador'}
+                </p>
               </div>
             </div>
           </div>
