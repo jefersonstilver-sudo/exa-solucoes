@@ -16,6 +16,9 @@ interface OrderData {
   cupom_id?: string;
   termos_aceitos?: boolean;
   lista_predios?: string[];
+  ip_origem?: string;
+  device_info?: any;
+  expires_at?: string;
 }
 
 interface PanelData {
@@ -293,10 +296,10 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
         {order.log_pagamento && (
           <section className="border border-gray-200 rounded">
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Informações de Pagamento</h2>
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Informações de Pagamento e Auditoria</h2>
             </div>
             
-            <div className="p-4">
+            <div className="p-4 space-y-4">
               <div className="grid grid-cols-3 gap-4 text-xs">
                 <div>
                   <p className="text-gray-500 mb-1">Método de Pagamento</p>
@@ -319,6 +322,40 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                   </div>
                 )}
               </div>
+
+              {/* Auditoria - IP e Device */}
+              {(order.ip_origem || order.device_info) && (
+                <div className="border-t pt-4">
+                  <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Dados de Auditoria
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-xs bg-gray-50 p-3 rounded">
+                    {order.ip_origem && (
+                      <div>
+                        <p className="text-gray-500 mb-1">IP de Origem</p>
+                        <p className="font-mono font-semibold text-gray-900">{order.ip_origem}</p>
+                      </div>
+                    )}
+                    {order.device_info && (
+                      <>
+                        <div>
+                          <p className="text-gray-500 mb-1">Dispositivo</p>
+                          <p className="font-semibold text-gray-900">{order.device_info.deviceType || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Sistema Operacional</p>
+                          <p className="font-semibold text-gray-900">{order.device_info.os || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Navegador</p>
+                          <p className="font-semibold text-gray-900">{order.device_info.browser || 'N/A'}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         )}

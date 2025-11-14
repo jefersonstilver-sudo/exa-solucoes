@@ -1404,6 +1404,62 @@ export type Database = {
         }
         Relationships: []
       }
+      contratos: {
+        Row: {
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          id: string
+          painel_id: string
+          pedido_id: string
+          plano_meses: number
+          predio_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          valor_mensal: number
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          data_fim: string
+          data_inicio: string
+          id?: string
+          painel_id: string
+          pedido_id: string
+          plano_meses: number
+          predio_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          valor_mensal?: number
+          valor_total?: number
+        }
+        Update: {
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          id?: string
+          painel_id?: string
+          pedido_id?: string
+          plano_meses?: number
+          predio_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          valor_mensal?: number
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_security_events: {
         Row: {
           coupon_code: string | null
@@ -2766,6 +2822,7 @@ export type Database = {
           blocked_at: string | null
           blocked_by: string | null
           blocked_reason: string | null
+          checkout_session_id: string | null
           client_id: string
           compliance_data: Json | null
           created_at: string | null
@@ -2773,13 +2830,16 @@ export type Database = {
           cupom_id: string | null
           data_fim: string | null
           data_inicio: string | null
+          device_info: Json | null
           email: string | null
+          expires_at: string | null
           id: string
+          ip_origem: string | null
           is_test_order: boolean | null
           lista_paineis: string[] | null
           lista_predios: string[] | null
           log_pagamento: Json | null
-          mercadopago_transaction_id: string | null
+          metodo_pagamento: string | null
           nome_pedido: string | null
           plano_meses: number
           price_sync_verified: boolean | null
@@ -2794,6 +2854,7 @@ export type Database = {
           blocked_at?: string | null
           blocked_by?: string | null
           blocked_reason?: string | null
+          checkout_session_id?: string | null
           client_id: string
           compliance_data?: Json | null
           created_at?: string | null
@@ -2801,13 +2862,16 @@ export type Database = {
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
+          device_info?: Json | null
           email?: string | null
+          expires_at?: string | null
           id?: string
+          ip_origem?: string | null
           is_test_order?: boolean | null
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
-          mercadopago_transaction_id?: string | null
+          metodo_pagamento?: string | null
           nome_pedido?: string | null
           plano_meses?: number
           price_sync_verified?: boolean | null
@@ -2822,6 +2886,7 @@ export type Database = {
           blocked_at?: string | null
           blocked_by?: string | null
           blocked_reason?: string | null
+          checkout_session_id?: string | null
           client_id?: string
           compliance_data?: Json | null
           created_at?: string | null
@@ -2829,13 +2894,16 @@ export type Database = {
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
+          device_info?: Json | null
           email?: string | null
+          expires_at?: string | null
           id?: string
+          ip_origem?: string | null
           is_test_order?: boolean | null
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
-          mercadopago_transaction_id?: string | null
+          metodo_pagamento?: string | null
           nome_pedido?: string | null
           plano_meses?: number
           price_sync_verified?: boolean | null
@@ -2869,6 +2937,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pedidos_cancelados_log: {
+        Row: {
+          cancelado_em: string
+          client_id: string | null
+          created_at: string
+          dados_pedido: Json
+          device_info: Json | null
+          id: string
+          ip_origem: string | null
+          motivo: string
+          pedido_id: string
+          status_anterior: string | null
+          valor_total: number | null
+        }
+        Insert: {
+          cancelado_em?: string
+          client_id?: string | null
+          created_at: string
+          dados_pedido: Json
+          device_info?: Json | null
+          id?: string
+          ip_origem?: string | null
+          motivo?: string
+          pedido_id: string
+          status_anterior?: string | null
+          valor_total?: number | null
+        }
+        Update: {
+          cancelado_em?: string
+          client_id?: string | null
+          created_at?: string
+          dados_pedido?: Json
+          device_info?: Json | null
+          id?: string
+          ip_origem?: string | null
+          motivo?: string
+          pedido_id?: string
+          status_anterior?: string | null
+          valor_total?: number | null
+        }
+        Relationships: []
       }
       pedidos_deletion_history: {
         Row: {
@@ -3872,6 +3982,7 @@ export type Database = {
         Returns: boolean
       }
       audit_unauthorized_uploads: { Args: never; Returns: Json }
+      auto_cancel_expired_orders: { Args: never; Returns: number }
       auto_cleanup_paid_attempts: { Args: never; Returns: Json }
       auto_fix_lost_transactions: { Args: never; Returns: Json }
       auto_recovery_system: { Args: never; Returns: Json }
