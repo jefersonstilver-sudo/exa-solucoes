@@ -16,6 +16,7 @@ import VideosSitePage from '@/pages/admin/VideosSitePage';
 import LeadsExa from '@/pages/admin/LeadsExa';
 import LogosAdmin from '@/components/admin/LogosAdmin';
 import ProviderBenefits from '@/pages/admin/ProviderBenefits';
+import PaineisExa from '@/pages/admin/PaineisExa';
 import BenefitPurchaseInstructions from '@/pages/admin/BenefitPurchaseInstructions';
 import BenefitManagement from '@/pages/admin/BenefitManagement';
 import FinancialReports from '@/pages/admin/FinancialReports';
@@ -40,6 +41,7 @@ const AdminRoutes = () => {
       {/* ATIVOS */}
       <Route path="predios" element={<BuildingsManagement />} />
       <Route path="paineis" element={<PanelsPage />} />
+      <Route path="paineis-exa" element={<PaineisExa />} />
       
       {/* LEADS & CLIENTES */}
       <Route path="sindicos-interessados" element={<SindicosInteressados />} />
