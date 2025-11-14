@@ -12,19 +12,25 @@ interface PaymentMethodSelectorProps {
   setSelectedMethod?: (method: string) => void;
   onMethodChange?: (method: string) => void;
   totalAmount: number;
+  couponCode?: string;
 }
 
 const PaymentMethodSelector = ({
   selectedMethod,
   setSelectedMethod,
   onMethodChange,
-  totalAmount
+  totalAmount,
+  couponCode
 }: PaymentMethodSelectorProps) => {
   // Use onMethodChange if provided, fallback to setSelectedMethod for backwards compatibility
   const handleMethodChange = onMethodChange || setSelectedMethod || (() => {});
-  // Aplicar 5% de desconto para pagamentos PIX
-  const pixDiscount = 0.05;
-  const pixAmount = totalAmount * (1 - pixDiscount);
+  
+  // 🎯 CUPOM 573040: Força R$ 0,05 sem desconto PIX adicional
+  const isCupom573040 = couponCode === '573040';
+  
+  // Aplicar 5% de desconto para pagamentos PIX (exceto cupom 573040)
+  const pixDiscount = isCupom573040 ? 0 : 0.05;
+  const pixAmount = isCupom573040 ? 0.05 : totalAmount * (1 - pixDiscount);
   
   return (
     <motion.div
@@ -55,7 +61,7 @@ const PaymentMethodSelector = ({
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500 line-through">{formatCurrency(totalAmount)}</p>
+              {!isCupom573040 && <p className="text-sm text-gray-500 line-through">{formatCurrency(totalAmount)}</p>}
               <p className="font-medium text-green-600">{formatCurrency(pixAmount)}</p>
             </div>
           </Label>

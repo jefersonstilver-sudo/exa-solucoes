@@ -53,11 +53,12 @@ const CouponsTable: React.FC<CouponsTableProps> = ({
   const getCategoryBadge = (categoria: string) => {
     const colors = {
       'geral': 'bg-gray-500',
-      'primeira_compra': 'bg-blue-500',
-      'reativacao': 'bg-purple-500',
-      'vip': 'bg-yellow-500 text-black',
-      'evento': 'bg-red-500',
-      'promocional': 'bg-green-500'
+      'primeiro_pedido': 'bg-blue-500',
+      'fidelidade': 'bg-purple-500',
+      'especial': 'bg-yellow-500 text-black',
+      'parceiro': 'bg-red-500',
+      'promocional': 'bg-green-500',
+      'cortesia': 'bg-pink-500'
     };
     
     return (

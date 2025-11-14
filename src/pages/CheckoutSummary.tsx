@@ -16,6 +16,7 @@ import Layout from '@/components/layout/Layout';
 import { useCartValidation } from '@/hooks/useCartValidation';
 import { getValidPanels } from '@/utils/cleanupInvalidData';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
+import { supabase } from '@/integrations/supabase/client';
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const {
@@ -36,7 +37,8 @@ const CheckoutSummary = () => {
     calculateTotalPrice,
     couponValid,
     couponId,
-    couponDiscount
+    couponDiscount,
+    couponCode  // Importar couponCode
   } = useCheckout();
   
   const { isCreatingPayment, processPayment } = usePaymentFlow();
@@ -111,12 +113,17 @@ const CheckoutSummary = () => {
   // 🆕 FASE 4: Usar valor mínimo correto por método de pagamento
   const minimumValue = getMinimumOrderValue(paymentMethod);
   
+  // 🎁 DETECTAR CUPOM CORTESIA
+  const isCortesia = couponCode === 'CORTESIA_ADMIN' && baseTotal === 0;
+  
   console.log('[CheckoutSummary] Preços calculados:', {
     baseTotal,
     couponValid,
     couponDiscount,
     paymentMethod,
-    minimumValue
+    minimumValue,
+    couponCode: couponCode || 'SEM CÓDIGO',
+    isCortesia
   });
   
   // Aplicar cupom se válido
@@ -193,6 +200,51 @@ const CheckoutSummary = () => {
       toast.error(error.message || 'Erro ao processar pagamento');
     }
   };
+  
+  // 🎁 HANDLER PARA FINALIZAR PEDIDO CORTESIA
+  const handleFinalizarCortesia = async () => {
+    if (!isLoggedIn || !user?.id) {
+      toast.error("Você precisa estar logado");
+      return;
+    }
+    if (!cartItems || cartItems.length === 0) {
+      toast.error("Carrinho vazio");
+      return;
+    }
+
+    console.log('🎁 [CORTESIA] Iniciando criação de pedido cortesia');
+
+    try {
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + (selectedPlan || 1));
+
+      const { data, error } = await supabase.functions.invoke('create-cortesia-order', {
+        body: {
+          cartItems,
+          selectedPlan: selectedPlan || 1,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          couponId: couponValid ? couponId : null
+        }
+      });
+
+      if (error) throw error;
+
+      console.log('✅ [CORTESIA] Pedido criado:', data);
+
+      // Limpar carrinho
+      localStorage.removeItem('checkout_cart');
+      localStorage.removeItem('checkout_plan');
+      localStorage.removeItem('checkout_coupon');
+
+      toast.success('🎁 Pedido cortesia criado com sucesso!');
+      navigate('/pedidos');
+    } catch (error: any) {
+      console.error('❌ [CORTESIA] Erro:', error);
+      toast.error(error.message || 'Erro ao criar pedido cortesia');
+    }
+  };
   if (isLoading) {
     return (
       <Layout>
@@ -221,12 +273,31 @@ const CheckoutSummary = () => {
 
         {/* Right Column - Payment (Sticky) */}
         <div className="lg:sticky lg:top-32 space-y-2 sm:space-y-4 h-fit">
-          {/* Payment Method Selector - SEMPRE ATIVO */}
-          <PaymentMethodSelector 
-            selectedMethod={paymentMethod}
-            onMethodChange={setPaymentMethod}
-            totalAmount={finalTotal}
-          />
+          {/* Payment Method Selector - OCULTAR SE CORTESIA */}
+          {!isCortesia && (
+            <PaymentMethodSelector 
+              selectedMethod={paymentMethod}
+              onMethodChange={setPaymentMethod}
+              totalAmount={finalTotal}
+            />
+          )}
+          
+          {/* Mensagem Cortesia */}
+          {isCortesia && (
+            <div className="p-6 bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-300 rounded-lg">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-pink-500 rounded-full">
+                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-pink-700">🎁 Pedido Cortesia</h3>
+                  <p className="text-sm text-pink-600">Gratuito - Sem cobrança</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Pricing Breakdown */}
           <PricingBreakdown 
@@ -237,25 +308,36 @@ const CheckoutSummary = () => {
             paymentMethod={paymentMethod} 
           />
 
-          {/* Payment Buttons - SEMPRE ATIVO */}
+          {/* Payment Buttons - CORTESIA OU NORMAL */}
           <div className="space-y-1.5 sm:space-y-3">
-            <Button 
-              onClick={handlePayment} 
-              disabled={isCreatingPayment || !isLoggedIn || (cartItems?.length || 0) === 0 || finalTotal < minimumValue}
-              className="w-full h-14 text-lg font-semibold"
-              size="lg"
-            >
-              {isCreatingPayment ? (
-                <>
-                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  {paymentMethod === 'pix' ? 'Pagar com PIX' : 'Pagar com Cartão'}
-                </>
-              )}
-            </Button>
+            {isCortesia ? (
+              <Button 
+                onClick={handleFinalizarCortesia} 
+                disabled={!isLoggedIn || (cartItems?.length || 0) === 0}
+                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                size="lg"
+              >
+                🎁 Finalizar Pedido Cortesia
+              </Button>
+            ) : (
+              <Button 
+                onClick={handlePayment} 
+                disabled={isCreatingPayment || !isLoggedIn || (cartItems?.length || 0) === 0 || finalTotal < minimumValue}
+                className="w-full h-14 text-lg font-semibold"
+                size="lg"
+              >
+                {isCreatingPayment ? (
+                  <>
+                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    {paymentMethod === 'pix' ? 'Pagar com PIX' : 'Pagar com Cartão'}
+                  </>
+                )}
+              </Button>
+            )}
 
             {/* Back Link */}
             <button 

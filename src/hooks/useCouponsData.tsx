@@ -26,10 +26,11 @@ export const useCouponsData = () => {
 
       if (error) throw error;
       
-      // Garantir que tipo_desconto seja do tipo correto
+      // Garantir que os tipos sejam corretos
       const normalizedData = (data || []).map(coupon => ({
         ...coupon,
-        tipo_desconto: (coupon.tipo_desconto as 'percentual' | 'valor_fixo') || 'percentual'
+        tipo_desconto: (coupon.tipo_desconto as 'percentual' | 'valor_fixo') || 'percentual',
+        categoria: coupon.categoria as 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia'
       }));
       
       setCoupons(normalizedData);
