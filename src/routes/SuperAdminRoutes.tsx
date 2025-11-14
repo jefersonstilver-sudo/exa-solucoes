@@ -16,6 +16,7 @@ import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import VideoManagement from '@/pages/admin/VideoManagement';
 import VideosSitePage from '@/pages/admin/VideosSitePage';
 import LeadsExa from '@/pages/admin/LeadsExa';
+import PaineisExa from '@/pages/admin/PaineisExa';
 import LogosPage from '@/pages/admin/LogosPage';
 import ProviderBenefits from '@/pages/admin/ProviderBenefits';
 import BenefitPurchaseInstructions from '@/pages/admin/BenefitPurchaseInstructions';
@@ -41,6 +42,7 @@ const SuperAdminRoutes = () => {
       {/* ATIVOS */}
       <Route path="predios" element={<BuildingsManagement />} />
       <Route path="paineis" element={<PanelsPage />} />
+      <Route path="paineis-exa" element={<PaineisExa />} />
       
       {/* LEADS & CLIENTES */}
       <Route path="sindicos-interessados" element={<SindicosInteressados />} />
