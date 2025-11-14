@@ -17,6 +17,7 @@ export const useRealtimePaymentStatus = ({
   onPaymentApproved
 }: UseRealtimePaymentStatusProps) => {
   const [isListening, setIsListening] = useState(false);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
   const navigate = useNavigate();
   const channelsRef = useRef<any[]>([]);
   const isListeningRef = useRef(false);
@@ -36,22 +37,19 @@ export const useRealtimePaymentStatus = ({
       }
     );
     
-    // Mostrar toast de sucesso
-    toast.success("🎉 Pagamento aprovado!", {
-      description: "Seu pedido foi confirmado com sucesso!",
-      duration: 5000
-    });
+    // Show professional overlay instead of toast
+    setShowSuccessOverlay(true);
     
     // Callback personalizado se fornecido
     if (onPaymentApproved) {
       onPaymentApproved();
     }
-    
-    // Redirecionar para página de confirmação após um breve delay
-    setTimeout(() => {
-      navigate(`/pedido-confirmado?id=${orderData.id}`);
-    }, 2000);
-  }, [navigate, onPaymentApproved, userId]);
+  }, [onPaymentApproved, userId]);
+
+  const handleContinueAfterSuccess = useCallback(() => {
+    setShowSuccessOverlay(false);
+    navigate('/anunciante/pedidos');
+  }, [navigate]);
 
   useEffect(() => {
     // Evitar múltiplas execuções
@@ -146,6 +144,8 @@ export const useRealtimePaymentStatus = ({
   }, [userId, handlePaymentApproved]); // Apenas userId e handlePaymentApproved como dependências
 
   return {
-    isListening
+    isListening,
+    showSuccessOverlay,
+    handleContinueAfterSuccess
   };
 };
