@@ -1,65 +1,79 @@
-import { useState } from 'react';
-import { Helmet } from 'react-helmet-async';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Plus, Monitor, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { GerarCodigoDialog } from '@/components/admin/paineis-exa/GerarCodigoDialog';
-import { PaineisTable } from '@/components/admin/paineis-exa/PaineisTable';
-import { PaineisStats } from '@/components/admin/paineis-exa/PaineisStats';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Helmet } from "react-helmet-async";
+import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { PaineisStats } from "@/components/admin/paineis-exa/PaineisStats";
+import { PaineisTable } from "@/components/admin/paineis-exa/PaineisTable";
+import { GerarPainelDialog } from "@/components/admin/paineis-exa/GerarPainelDialog";
+import { GerarCodigoDialog } from "@/components/admin/paineis-exa/GerarCodigoDialog";
+import { Plus, Link2 } from "lucide-react";
+import { toast } from "sonner";
 
 const PaineisExa = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [gerarPainelOpen, setGerarPainelOpen] = useState(false);
+  const [gerarCodigoOpen, setGerarCodigoOpen] = useState(false);
 
-  // Buscar painéis com status
-  const { data: paineis, isLoading, refetch } = useQuery({
+  const { data: paineis = [], isLoading, refetch } = useQuery({
     queryKey: ['paineis-exa'],
     queryFn: async () => {
-      const { data: paineisData, error: paineisError } = await supabase
+      console.log('🔵 Buscando painéis EXA...');
+      
+      const { data, error } = await supabase
         .from('painels')
         .select(`
           *,
-          buildings(id, nome, endereco, bairro)
+          buildings (
+            id,
+            nome,
+            endereco,
+            bairro
+          )
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false});
 
-      if (paineisError) throw paineisError;
+      if (error) {
+        console.error('❌ Erro ao buscar painéis:', error);
+        toast.error('Erro ao carregar painéis');
+        throw error;
+      }
 
-      // Buscar status de cada painel
-      const { data: statusData } = await supabase
-        .from('paineis_status')
-        .select('*');
-
-      const statusMap = new Map(statusData?.map(s => [s.painel_id, s]) || []);
-
-      return paineisData?.map(painel => ({
+      // Adicionar statusInfo a cada painel
+      const paineisComStatus = data?.map(painel => ({
         ...painel,
-        statusInfo: statusMap.get(painel.id) || { status: 'nunca_vinculado' },
-      }));
+        statusInfo: {
+          status: painel.status || 'aguardando_instalacao',
+          ultimo_heartbeat: painel.ultima_sync,
+          url_atual: null,
+          erro_ultimo: null
+        }
+      })) || [];
+
+      console.log('✅ Painéis carregados:', paineisComStatus.length);
+      return paineisComStatus;
     },
-    refetchInterval: 30000, // Refetch a cada 30s
+    refetchInterval: 30000,
   });
 
-  // Calcular estatísticas
+  // Calcular estatísticas reais
   const stats = {
-    total: paineis?.length || 0,
-    online: paineis?.filter(p => p.statusInfo.status === 'online').length || 0,
-    offline: paineis?.filter(p => p.statusInfo.status === 'offline').length || 0,
-    nunca_vinculado: paineis?.filter(p => {
-      const status = p.statusInfo as any;
-      return status.status === 'nunca_vinculado' || !status.ultimo_heartbeat;
-    }).length || 0,
+    total: paineis.length,
+    aguardando_instalacao: paineis.filter(p => p.status_vinculo === 'aguardando_instalacao').length,
+    aguardando_vinculo: paineis.filter(p => p.status_vinculo === 'aguardando_vinculo').length,
+    vinculado: paineis.filter(p => p.status_vinculo === 'vinculado').length,
+    offline: paineis.filter(p => p.status === 'offline').length,
   };
 
-  const handleGerarCodigo = () => {
-    setDialogOpen(true);
+  const handlePainelGerado = () => {
+    setGerarPainelOpen(false);
+    toast.success("Painel criado com sucesso!");
+    refetch();
   };
 
   const handleCodigoGerado = () => {
-    setDialogOpen(false);
-    toast.success('Código de vínculo gerado com sucesso!');
+    setGerarCodigoOpen(false);
+    toast.success("Código gerado com sucesso!");
     refetch();
   };
 
@@ -70,43 +84,52 @@ const PaineisExa = () => {
       </Helmet>
 
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Painéis EXA</h1>
-            <p className="text-muted-foreground mt-2">
-              Gerencie e monitore todos os painéis digitais em tempo real
+            <h1 className="text-3xl font-bold">Painéis EXA</h1>
+            <p className="text-muted-foreground mt-1">
+              Gerencie e monitore todos os painéis digitais - Sistema Beta
             </p>
           </div>
-          <Button onClick={handleGerarCodigo} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Gerar Código de Vínculo
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setGerarCodigoOpen(true)}
+              variant="outline"
+            >
+              <Link2 className="w-4 h-4 mr-2" />
+              Gerar Código de Vínculo
+            </Button>
+            <Button onClick={() => setGerarPainelOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Gerar Novo Painel
+            </Button>
+          </div>
         </div>
 
-        {/* Stats Cards */}
         <PaineisStats stats={stats} />
 
-        {/* Tabela de Painéis */}
         <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Monitor className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">Painéis Cadastrados</h2>
-          </div>
-
+          <h2 className="text-xl font-semibold mb-4">Painéis Cadastrados</h2>
+          
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <PaineisTable paineis={paineis || []} onRefetch={refetch} />
+            <PaineisTable paineis={paineis} onRefetch={refetch} />
           )}
         </Card>
       </div>
 
-      <GerarCodigoDialog 
-        open={dialogOpen} 
-        onOpenChange={setDialogOpen}
+      <GerarPainelDialog
+        open={gerarPainelOpen}
+        onOpenChange={setGerarPainelOpen}
+        onPainelGerado={handlePainelGerado}
+      />
+
+      <GerarCodigoDialog
+        open={gerarCodigoOpen}
+        onOpenChange={setGerarCodigoOpen}
         onSuccess={handleCodigoGerado}
       />
     </>
