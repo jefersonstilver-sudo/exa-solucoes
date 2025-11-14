@@ -13,6 +13,7 @@ import { usePanelDetailsData } from '@/hooks/usePanelDetailsData';
 import PanelStatusCard from './details/PanelStatusCard';
 import PanelTechnicalTab from './details/PanelTechnicalTab';
 import PanelNetworkTab from './details/PanelNetworkTab';
+import PanelDeviceTab from './details/PanelDeviceTab';
 import PanelRemoteTab from './details/PanelRemoteTab';
 import PanelAdditionalTab from './details/PanelAdditionalTab';
 
@@ -54,13 +55,18 @@ const PanelDetailsDialog: React.FC<PanelDetailsDialogProps> = ({
         <div className="space-y-6">
           <PanelStatusCard panel={panel} statusInfo={statusInfo} />
 
-          <Tabs defaultValue="technical" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs defaultValue="device" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="device">Dispositivo</TabsTrigger>
               <TabsTrigger value="technical">Técnico</TabsTrigger>
               <TabsTrigger value="network">Rede</TabsTrigger>
               <TabsTrigger value="remote">Acesso Remoto</TabsTrigger>
               <TabsTrigger value="additional">Adicional</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="device" className="space-y-4">
+              <PanelDeviceTab panel={panel} />
+            </TabsContent>
 
             <TabsContent value="technical" className="space-y-4">
               <PanelTechnicalTab panel={panel} />
