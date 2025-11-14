@@ -54,11 +54,13 @@ const PainelKiosk = () => {
 
   // Tentar reconexão automática quando fingerprint estiver pronto
   useEffect(() => {
-    if (!deviceFingerprint || reconnectAttempted.current || loading) return;
+    if (!deviceFingerprint || reconnectAttempted.current) return;
     
     reconnectAttempted.current = true;
     
     const tryAutoReconnect = async () => {
+      console.log('[PAINEL-KIOSK] useEffect executando - token:', token, 'fingerprint:', deviceFingerprint?.substring(0, 16));
+      
       // Se tem token na URL, tentar carregar painel
       if (token) {
         await carregarPainel(token);
@@ -134,6 +136,8 @@ const PainelKiosk = () => {
         .eq('token_acesso', painelToken)
         .maybeSingle();
 
+      console.log('[PAINEL-KIOSK] Query result:', { painelDB, error });
+
       if (error || !painelDB) {
         console.error('[PAINEL-KIOSK] Painel não encontrado:', error);
         toast.error('Painel não encontrado');
@@ -157,6 +161,7 @@ const PainelKiosk = () => {
       
       // Se não tem fingerprint ou é dispositivo diferente, preparar para código
       setPainelData(painelDB);
+      setLoading(false);
       
     } catch (error) {
       console.error('[PAINEL-KIOSK] Erro ao carregar painel:', error);
