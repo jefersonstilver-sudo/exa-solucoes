@@ -16,8 +16,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Domínio dinâmico (usar variável de ambiente ou fallback para Lovable)
-    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://64f6806c-c0e0-422b-b85f-955fd5719544.lovableproject.com';
+    // Domínio dinâmico (usar variável de ambiente ou fallback para examidia.com.br)
+    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://examidia.com.br';
 
     const { numero_painel } = await req.json();
 
