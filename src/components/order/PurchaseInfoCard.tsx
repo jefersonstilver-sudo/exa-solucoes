@@ -42,15 +42,22 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
   const getPaymentMethod = () => {
     const logPagamento = orderDetails.log_pagamento;
     
+    console.log('[PurchaseInfoCard] Detectando método de pagamento:', {
+      payment_type_id: logPagamento?.payment_type_id,
+      payment_method_id: logPagamento?.payment_method_id,
+      payment_method: logPagamento?.payment_method,
+      metodo_pagamento: orderDetails.metodo_pagamento,
+      tipo: logPagamento?.tipo
+    });
+    
     // Verificar se é pedido cortesia
     if (logPagamento?.tipo === 'CORTESIA' || orderDetails.metodo_pagamento === 'cortesia') {
       return 'Cortesia';
     }
     
-    // CORRIGIDO: Verificar payment_type do Mercado Pago
+    // PRIORIDADE 1: Verificar payment_type_id do Mercado Pago (campo mais confiável)
     if (logPagamento?.payment_type_id) {
-      // payment_type_id: 'pix', 'credit_card', 'debit_card', 'bank_transfer', etc.
-      switch(logPagamento.payment_type_id) {
+      switch(logPagamento.payment_type_id.toLowerCase()) {
         case 'pix':
           return 'PIX';
         case 'credit_card':
@@ -64,12 +71,28 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
       }
     }
     
-    // Fallback: verificar payment_method (campo legado)
-    if (logPagamento?.payment_method) {
-      return logPagamento.payment_method === 'pix' ? 'PIX' : 'Cartão de Crédito';
+    // PRIORIDADE 2: Verificar payment_method_id (método específico do MP)
+    if (logPagamento?.payment_method_id) {
+      if (logPagamento.payment_method_id === 'pix') {
+        return 'PIX';
+      }
+      // Se não for PIX, verificar o tipo
+      return logPagamento.payment_method_id.replace(/_/g, ' ').toUpperCase();
     }
     
-    // Último fallback
+    // PRIORIDADE 3: Verificar metodo_pagamento do pedido
+    if (orderDetails.metodo_pagamento) {
+      if (orderDetails.metodo_pagamento.toLowerCase() === 'pix') {
+        return 'PIX';
+      }
+      if (orderDetails.metodo_pagamento.toLowerCase().includes('credit')) {
+        return 'Cartão de Crédito';
+      }
+      return orderDetails.metodo_pagamento;
+    }
+    
+    // Fallback: PIX (default mais comum)
+    console.warn('[PurchaseInfoCard] Nenhum campo de método de pagamento encontrado, usando PIX como fallback');
     return 'PIX';
   };
   const getTransactionId = () => {

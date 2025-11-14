@@ -218,16 +218,6 @@ const CheckoutSummary = () => {
       return;
     }
     
-    // 🔒 VERIFICAÇÃO: Apenas super admins podem criar pedidos cortesia
-    if (!isSuperAdmin) {
-      toast.error("Apenas Super Administradores podem criar pedidos cortesia", {
-        description: "Este cupom só pode ser aplicado por um administrador. Entre em contato com o suporte.",
-        duration: 5000
-      });
-      console.error('❌ [CORTESIA] Usuário não é super admin:', { userId: user.id });
-      return;
-    }
-    
     if (!cartItems || cartItems.length === 0) {
       toast.error("Carrinho vazio");
       return;
@@ -315,9 +305,7 @@ const CheckoutSummary = () => {
                 </div>
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-800">Pedido Cortesia</h3>
-                  <p className="text-xs sm:text-sm text-slate-600">
-                    {isSuperAdmin ? 'Isento de cobrança - clique para finalizar' : 'Cupom aplicado - aguarde aprovação do administrador'}
-                  </p>
+                  <p className="text-xs sm:text-sm text-slate-600">Isento de cobrança</p>
                 </div>
               </div>
             </div>
@@ -339,11 +327,11 @@ const CheckoutSummary = () => {
             {isCortesia ? (
               <Button 
                 onClick={handleFinalizarCortesia} 
-                disabled={!isLoggedIn || (cartItems?.length || 0) === 0 || !isSuperAdmin}
+                disabled={!isLoggedIn || (cartItems?.length || 0) === 0}
                 className="w-full h-14 text-lg font-semibold bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
               >
-                {!isSuperAdmin ? '🔒 Requer Permissão de Super Admin' : 'Finalizar Pedido Cortesia'}
+                Finalizar Pedido Cortesia
               </Button>
             ) : (
               <Button 
