@@ -43,6 +43,17 @@ serve(async (req) => {
       selectedPlan
     })
 
+    // ✅ CORREÇÃO: Extrair IDs dos painéis e prédios
+    const panelIds = cartItems.map((item: any) => item.panel?.id).filter(Boolean)
+    const buildingIds = cartItems.map((item: any) => item.panel?.buildings?.id).filter(Boolean)
+
+    console.log('📋 [CORTESIA] Panel IDs extraídos:', panelIds)
+    console.log('🏢 [CORTESIA] Building IDs extraídos:', buildingIds)
+
+    if (panelIds.length === 0) {
+      throw new Error('Nenhum painel válido encontrado no carrinho')
+    }
+
     // Create order
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
@@ -55,10 +66,14 @@ serve(async (req) => {
         data_fim: endDate,
         cupom_id: couponId,
         metodo_pagamento: 'cortesia',
+        lista_paineis: panelIds,
+        lista_predios: buildingIds,
         log_pagamento: {
           tipo: 'CORTESIA',
           admin_id: user.id,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          panel_ids: panelIds,
+          building_ids: buildingIds
         }
       })
       .select()

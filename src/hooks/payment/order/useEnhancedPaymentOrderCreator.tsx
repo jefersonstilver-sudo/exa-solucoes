@@ -133,14 +133,25 @@ export const useEnhancedPaymentOrderCreator = () => {
       let sourceTentativaId = null;
       console.log('ℹ️ [ENHANCED_ORDER_CREATOR] Tentativa não é salva aqui para evitar duplicação');
 
-      // ENHANCED: Extract panel and building IDs with detailed logging
+      // ✅ CORREÇÃO: Extrair Panel IDs e Building IDs separadamente
+      const panelIds = cartItems.map(item => {
+        const panelId = item.panel?.id;
+        console.log('🎯 [ENHANCED_ORDER_CREATOR] Extraindo panel ID:', panelId, 'do item:', item);
+        return panelId;
+      }).filter(Boolean);
+
       const buildingIds = cartItems.map(item => {
-        const buildingId = item.panel?.buildings?.id || item.panel?.id;
-        console.log('🔍 [ENHANCED_ORDER_CREATOR] Extraindo building ID:', buildingId, 'do item:', item);
+        const buildingId = item.panel?.buildings?.id;
+        console.log('🏢 [ENHANCED_ORDER_CREATOR] Extraindo building ID:', buildingId, 'do item:', item);
         return buildingId;
       }).filter(Boolean);
       
+      console.log('📊 [ENHANCED_ORDER_CREATOR] Panel IDs extraídos:', panelIds);
       console.log('📊 [ENHANCED_ORDER_CREATOR] Building IDs extraídos:', buildingIds);
+
+      if (panelIds.length === 0) {
+        throw new Error('Nenhum painel válido encontrado no carrinho');
+      }
 
       if (buildingIds.length === 0) {
         throw new Error('Nenhum prédio válido encontrado no carrinho');
@@ -213,8 +224,8 @@ export const useEnhancedPaymentOrderCreator = () => {
       // Create the order record with COMPLETE data including source_tentativa_id
       const orderData = {
         client_id: sessionUser.id,
-        lista_paineis: buildingIds, // TEMPORÁRIO: Usando buildingIds aqui até migrar coluna
-        lista_predios: buildingIds,
+        lista_paineis: panelIds,        // ✅ CORRETO: IDs dos painéis
+        lista_predios: buildingIds,      // ✅ CORRETO: IDs dos prédios
         plano_meses: selectedPlan,
         valor_total: correctTotalPrice,
         cupom_id: couponId,
@@ -234,6 +245,7 @@ export const useEnhancedPaymentOrderCreator = () => {
           anti_duplicate_check: true,
           cart_items_count: cartItems.length,
           user_id_check: sessionUser.id,
+          panel_ids_saved: panelIds,       // ✅ NOVO: Salvar panel IDs no log
           building_ids_saved: buildingIds,
           enhanced_creation: true,
           source_tentativa_id: sourceTentativaId,
