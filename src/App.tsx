@@ -39,6 +39,8 @@ import SuperAdminPage from './pages/SuperAdminPage';
 import AdminPage from './pages/AdminPage';
 import ProviderBenefitChoice from './pages/ProviderBenefitChoice';
 import EmailNotConfirmed from './pages/EmailNotConfirmed';
+import EmailEnviado from './pages/EmailEnviado';
+import OrderConfirmation from './pages/OrderConfirmation';
 
 // Importações diretas para páginas principais (performance otimizada)
 import PaineisPublicitarios from './pages/PaineisPublicitarios';
@@ -65,8 +67,6 @@ const ErrosAnunciarCondominios = lazy(() => import('./pages/blog/ErrosAnunciarCo
 const CaseSucessoAcademia = lazy(() => import('./pages/blog/CaseSucessoAcademia'));
 const PanelStore = lazy(() => import('./pages/PanelStore'));
 const PainelStore = lazy(() => import('./pages/PainelStore'));
-const EmailSent = lazy(() => import('./pages/EmailEnviado'));
-const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 const ValidateOrder = lazy(() => import('./pages/public/ValidateOrder'));
 
 // Lazy load das páginas da área do anunciante
@@ -250,11 +250,7 @@ const AppContent = () => {
             </Suspense>
           } />
           <Route path="/pix-payment" element={<PixPayment />} />
-          <Route path="/pedido-confirmado" element={
-            <Suspense fallback={<GlobalLoadingPage message="Carregando confirmação..." />}>
-              <OrderConfirmation />
-            </Suspense>
-          } />
+          <Route path="/pedido-confirmado" element={<OrderConfirmation />} />
           
           {/* VALIDAÇÃO PÚBLICA DE PEDIDOS */}
           <Route path="/validate-order" element={
@@ -336,11 +332,7 @@ const AppContent = () => {
               <PainelStore />
             </Suspense>
           } />
-          <Route path="/email-enviado" element={
-            <Suspense fallback={<GlobalLoadingPage message="Carregando confirmação..." />}>
-              <EmailSent />
-            </Suspense>
-          } />
+          <Route path="/email-enviado" element={<EmailEnviado />} />
 
           {/* ÁREA DO ANUNCIANTE */}
           <Route path="/anunciante/*" element={
