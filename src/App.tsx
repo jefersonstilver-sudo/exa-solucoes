@@ -261,7 +261,7 @@ const AppContent = () => {
           } />
           
           {/* PAINEL KIOSK - VINCULAÇÃO DE DISPOSITIVOS */}
-          <Route path="/painel-kiosk" element={<PainelKiosk />} />
+          <Route path="/painel-kiosk/:token" element={<PainelKiosk />} />
 
           {/* Rotas com lazy loading */}
           {/* REDIRECTS 301 para novas URLs */}

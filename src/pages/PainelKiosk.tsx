@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const PainelKiosk = () => {
+  const { token } = useParams<{ token: string }>();
   const [vinculado, setVinculado] = useState(false);
   const [loading, setLoading] = useState(true);
   const [codigo, setCodigo] = useState('');
@@ -16,20 +18,86 @@ const PainelKiosk = () => {
   const comandosChannel = useRef<any>(null);
 
   useEffect(() => {
-    // Verificar se já está vinculado
-    const painelToken = localStorage.getItem('painel_token');
-    const painelInfo = localStorage.getItem('painel_info');
+    const inicializar = async () => {
+      // Se tem token na URL, tentar vincular automaticamente
+      if (token) {
+        await vincularComToken(token);
+      } else {
+        // Verificar se já está vinculado via localStorage (fluxo antigo)
+        const painelToken = localStorage.getItem('painel_token');
+        const painelInfo = localStorage.getItem('painel_info');
 
-    if (painelToken && painelInfo) {
-      const info = JSON.parse(painelInfo);
-      setPainelData(info);
+        if (painelToken && painelInfo) {
+          const info = JSON.parse(painelInfo);
+          setPainelData(info);
+          setVinculado(true);
+          iniciarHeartbeat(painelToken);
+          escutarComandos(painelToken);
+          ativarFullscreen();
+        }
+      }
+      setLoading(false);
+    };
+
+    inicializar();
+  }, [token]);
+
+  const vincularComToken = async (accessToken: string) => {
+    setVinculando(true);
+    try {
+      // Buscar dados do painel usando o token
+      const { data: painelDB, error: painelError } = await supabase
+        .from('painels')
+        .select('*, buildings(nome, endereco)')
+        .eq('token_acesso', accessToken)
+        .single();
+
+      if (painelError || !painelDB) {
+        throw new Error('Token inválido ou painel não encontrado');
+      }
+
+      // Atualizar status para vinculado
+      const { error: updateError } = await supabase
+        .from('painels')
+        .update({
+          status_vinculo: 'vinculado',
+          status: 'online',
+          data_vinculacao: new Date().toISOString(),
+          device_info: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            screenResolution: `${window.screen.width}x${window.screen.height}`,
+          }
+        })
+        .eq('id', painelDB.id);
+
+      if (updateError) throw updateError;
+
+      const painelInfo = {
+        painel_id: painelDB.id,
+        numero_painel: painelDB.numero_painel,
+        building: painelDB.buildings,
+        url_painel: 'https://exa.tec.br',
+      };
+
+      localStorage.setItem('painel_token', painelDB.id);
+      localStorage.setItem('painel_info', JSON.stringify(painelInfo));
+
+      setPainelData(painelInfo);
       setVinculado(true);
-      iniciarHeartbeat(painelToken);
-      escutarComandos(painelToken);
+      toast.success(`Painel ${painelDB.numero_painel} vinculado com sucesso!`);
+
+      iniciarHeartbeat(painelDB.id);
+      escutarComandos(painelDB.id);
       ativarFullscreen();
+    } catch (error: any) {
+      console.error('Erro ao vincular com token:', error);
+      toast.error(error.message || 'Erro ao vincular painel');
+      setLoading(false);
+    } finally {
+      setVinculando(false);
     }
-    setLoading(false);
-  }, []);
+  };
 
   const ativarFullscreen = () => {
     if (document.documentElement.requestFullscreen) {
