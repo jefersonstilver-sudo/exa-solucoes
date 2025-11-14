@@ -39,16 +39,6 @@ const CheckoutCoupon = () => {
   // Função wrapper para validateCoupon
   const handleValidateCoupon = () => {
     if (couponCode && selectedPlan) {
-      // 🔒 VERIFICAÇÃO: Bloquear cupom cortesia para não super admins
-      if (couponCode.toUpperCase().trim() === 'CORTESIA_ADMIN' && !isSuperAdmin) {
-        toast.error("Apenas Super Administradores podem usar este cupom", {
-          description: "Entre em contato com o suporte se você precisa dessa permissão.",
-          duration: 5000
-        });
-        console.error('❌ [CORTESIA] Usuário não é super admin tentando usar cupom cortesia');
-        return;
-      }
-      
       console.log('[CheckoutCoupon] Iniciando validação de cupom:', { 
         couponCode, 
         selectedPlan, 
@@ -99,9 +89,7 @@ const CheckoutCoupon = () => {
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-slate-800 text-sm sm:text-base">Pedido Cortesia</p>
-                <p className="text-xs sm:text-sm text-slate-600">
-                  {isSuperAdmin ? 'Isento de cobrança' : '⚠️ Requer permissão de Super Administrador'}
-                </p>
+                <p className="text-xs sm:text-sm text-slate-600">Isento de cobrança</p>
               </div>
             </div>
           </div>

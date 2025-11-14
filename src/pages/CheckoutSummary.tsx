@@ -221,7 +221,7 @@ const CheckoutSummary = () => {
     // 🔒 VERIFICAÇÃO: Apenas super admins podem criar pedidos cortesia
     if (!isSuperAdmin) {
       toast.error("Apenas Super Administradores podem criar pedidos cortesia", {
-        description: "Entre em contato com o suporte se você precisa dessa permissão.",
+        description: "Este cupom só pode ser aplicado por um administrador. Entre em contato com o suporte.",
         duration: 5000
       });
       console.error('❌ [CORTESIA] Usuário não é super admin:', { userId: user.id });
@@ -315,10 +315,9 @@ const CheckoutSummary = () => {
                 </div>
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-800">Pedido Cortesia</h3>
-                  <p className="text-xs sm:text-sm text-slate-600">Isento de cobrança</p>
-                  {!isSuperAdmin && (
-                    <p className="text-xs text-red-600 mt-1">⚠️ Requer permissão de Super Administrador</p>
-                  )}
+                  <p className="text-xs sm:text-sm text-slate-600">
+                    {isSuperAdmin ? 'Isento de cobrança - clique para finalizar' : 'Cupom aplicado - aguarde aprovação do administrador'}
+                  </p>
                 </div>
               </div>
             </div>

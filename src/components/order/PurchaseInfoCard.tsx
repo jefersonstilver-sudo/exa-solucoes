@@ -47,10 +47,29 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
       return 'Cortesia';
     }
     
+    // CORRIGIDO: Verificar payment_type do Mercado Pago
+    if (logPagamento?.payment_type_id) {
+      // payment_type_id: 'pix', 'credit_card', 'debit_card', 'bank_transfer', etc.
+      switch(logPagamento.payment_type_id) {
+        case 'pix':
+          return 'PIX';
+        case 'credit_card':
+          return 'Cartão de Crédito';
+        case 'debit_card':
+          return 'Cartão de Débito';
+        case 'bank_transfer':
+          return 'Transferência Bancária';
+        default:
+          return logPagamento.payment_type_id.replace(/_/g, ' ').toUpperCase();
+      }
+    }
+    
+    // Fallback: verificar payment_method (campo legado)
     if (logPagamento?.payment_method) {
       return logPagamento.payment_method === 'pix' ? 'PIX' : 'Cartão de Crédito';
     }
     
+    // Último fallback
     return 'PIX';
   };
   const getTransactionId = () => {
@@ -188,6 +207,7 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
                     <span className="text-gray-600">Método:</span>
                     <span className="font-medium">{getPaymentMethod()}</span>
                   </div>
+                  
                   <div className="flex justify-between items-start">
                     <span className="text-gray-600">ID Transação:</span>
                     <div className="text-right">
@@ -199,12 +219,91 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
                       </div>
                     </div>
                   </div>
-                  {orderDetails.log_pagamento?.processed_at && <div className="flex justify-between">
-                      <span className="text-gray-600">Processado em:</span>
-                      <span className="text-xs">
-                        {new Date(orderDetails.log_pagamento.processed_at).toLocaleString('pt-BR')}
+                  
+                  {/* Status do Mercado Pago */}
+                  {orderDetails.log_pagamento?.status && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status MP:</span>
+                      <span className="font-medium text-xs capitalize">
+                        {orderDetails.log_pagamento.status}
                       </span>
-                    </div>}
+                    </div>
+                  )}
+                  
+                  {/* Bandeira do Cartão */}
+                  {orderDetails.log_pagamento?.payment_method_id && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Bandeira:</span>
+                      <span className="font-medium text-xs uppercase">
+                        {orderDetails.log_pagamento.payment_method_id}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Últimos 4 dígitos do cartão */}
+                  {orderDetails.log_pagamento?.card?.last_four_digits && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Final do Cartão:</span>
+                      <span className="font-mono text-xs">
+                        •••• {orderDetails.log_pagamento.card.last_four_digits}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Parcelas */}
+                  {orderDetails.log_pagamento?.installments && orderDetails.log_pagamento.installments > 1 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Parcelas:</span>
+                      <span className="font-medium text-xs">
+                        {orderDetails.log_pagamento.installments}x
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Data de processamento */}
+                  {orderDetails.log_pagamento?.date_approved && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Aprovado em:</span>
+                      <span className="text-xs">
+                        {new Date(orderDetails.log_pagamento.date_approved).toLocaleString('pt-BR')}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Taxa do Mercado Pago */}
+                  {orderDetails.log_pagamento?.fee_details && orderDetails.log_pagamento.fee_details.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Taxa MP:</span>
+                      <span className="text-xs text-red-600">
+                        - {formatCurrency(
+                          orderDetails.log_pagamento.fee_details.reduce((sum: number, fee: any) => sum + (fee.amount || 0), 0)
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Valor líquido */}
+                  {orderDetails.log_pagamento?.transaction_amount_refunded !== undefined && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Valor Líquido:</span>
+                      <span className="font-medium text-green-600">
+                        {formatCurrency(
+                          (orderDetails.log_pagamento.transaction_amount || 0) - 
+                          (orderDetails.log_pagamento.transaction_amount_refunded || 0)
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* ID do pagador */}
+                  {orderDetails.log_pagamento?.payer?.id && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">ID Pagador:</span>
+                      <span className="font-mono text-xs">
+                        {orderDetails.log_pagamento.payer.id}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
