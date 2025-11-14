@@ -36,7 +36,8 @@ export const calculatePrice = (
   selectedPlan: PlanKey,
   cartItems: CartItem[],
   couponDiscountPercent: number = 0,
-  applyPixDiscount: boolean = true
+  applyPixDiscount: boolean = true,
+  couponCode?: string
 ): PriceCalculationResult => {
   if (!selectedPlan || !cartItems || cartItems.length === 0) {
     return {
@@ -78,6 +79,16 @@ export const calculatePrice = (
     afterCoupon = subtotal * (1 - couponDiscountPercent / 100);
   }
   
+  // 🎯 CUPOM ESPECIAL 573040: Força R$ 0,05 no PIX para testes reais
+  if (couponCode === '573040' && applyPixDiscount) {
+    return {
+      subtotal: Math.round(subtotal * 100) / 100,
+      pixDiscount: Math.round((subtotal - 0.05) * 100) / 100,
+      finalPrice: 0.05,
+      calculation: `CUPOM DE TESTE 573040: Valor forçado para R$ 0,05 (PIX)`
+    };
+  }
+  
   // Aplicar desconto PIX se solicitado
   const pixDiscount = applyPixDiscount ? afterCoupon * PIX_DISCOUNT_RATE : 0;
   let finalPrice = afterCoupon - pixDiscount;
@@ -110,9 +121,10 @@ export const calculatePrice = (
 export const calculatePixPrice = (
   selectedPlan: PlanKey,
   cartItems: CartItem[],
-  couponDiscountPercent: number = 0
+  couponDiscountPercent: number = 0,
+  couponCode?: string
 ): number => {
-  const result = calculatePrice(selectedPlan, cartItems, couponDiscountPercent, true);
+  const result = calculatePrice(selectedPlan, cartItems, couponDiscountPercent, true, couponCode);
   console.log('💰 [calculatePixPrice] VALOR FINAL PIX COM MESES:', result.finalPrice);
   return result.finalPrice;
 };
@@ -121,9 +133,10 @@ export const calculatePixPrice = (
 export const calculateRegularPrice = (
   selectedPlan: PlanKey,
   cartItems: CartItem[],
-  couponDiscountPercent: number = 0
+  couponDiscountPercent: number = 0,
+  couponCode?: string
 ): number => {
-  const result = calculatePrice(selectedPlan, cartItems, couponDiscountPercent, false);
+  const result = calculatePrice(selectedPlan, cartItems, couponDiscountPercent, false, couponCode);
   return result.finalPrice;
 };
 
