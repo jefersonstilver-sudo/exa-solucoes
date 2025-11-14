@@ -31,7 +31,7 @@ const PaineisExa = () => {
             bairro
           )
         `)
-        .order('created_at', { ascending: false});
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('❌ Erro ao buscar painéis:', error);
@@ -43,7 +43,9 @@ const PaineisExa = () => {
       const paineisComStatus = data?.map(painel => ({
         ...painel,
         statusInfo: {
-          status: painel.status || 'aguardando_instalacao',
+          status: painel.status_vinculo === 'aguardando_codigo' ? 'aguardando_codigo' :
+                  painel.status_vinculo === 'conectado' ? 'conectado' :
+                  painel.status || 'aguardando_instalacao',
           ultimo_heartbeat: painel.ultima_sync,
           url_atual: null,
           erro_ultimo: null

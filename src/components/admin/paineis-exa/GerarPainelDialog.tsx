@@ -72,6 +72,14 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
 
       if (data?.success) {
         console.log('✅ Painel criado:', data);
+        console.log('🔑 Código de vinculação recebido:', data.codigo_vinculacao);
+        
+        // Verificar se o código foi gerado
+        if (!data.codigo_vinculacao) {
+          console.error('❌ Código de vinculação não foi gerado!');
+          throw new Error('Código de vinculação não foi gerado');
+        }
+        
         // Adicionar código ao link para exibição (só para UI, não afeta banco)
         const linkComCodigo = `${data.link_instalacao}?exibir_codigo=${data.codigo_vinculacao}`;
         setLinkGerado(linkComCodigo);
@@ -156,7 +164,17 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
             <div className="bg-[#8B1538] text-white p-6 rounded-lg text-center space-y-2">
               <p className="text-sm font-medium opacity-90">Código de Vinculação</p>
               <p className="text-5xl font-bold tracking-widest" style={{ fontFamily: 'monospace' }}>
-                {new URL(linkGerado).searchParams.get('exibir_codigo') || 'N/A'}
+                {(() => {
+                  try {
+                    const url = new URL(linkGerado);
+                    const codigo = url.searchParams.get('exibir_codigo');
+                    console.log('📱 Exibindo código:', codigo);
+                    return codigo || 'ERRO';
+                  } catch (e) {
+                    console.error('❌ Erro ao extrair código:', e);
+                    return 'ERRO';
+                  }
+                })()}
               </p>
               <p className="text-xs opacity-75">Informe este código ao dispositivo</p>
             </div>
