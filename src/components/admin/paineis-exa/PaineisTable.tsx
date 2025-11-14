@@ -1,18 +1,22 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreVertical, RefreshCw, Link2Off, ExternalLink } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { MoreVertical, RefreshCw, Link2Off, ExternalLink, WifiOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useState } from 'react';
+import { DesconectarPainelDialog } from './DesconectarPainelDialog';
 
 interface PainelWithStatus {
   id: string;
   code: string;
+  numero_painel?: string;
   building_id?: string;
   status: string;
+  status_vinculo?: string;
   created_at: string;
   buildings?: {
     id: string;
@@ -34,7 +38,26 @@ interface PaineisTableProps {
 }
 
 export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
-  const getStatusBadge = (status: string) => {
+  const [desconectarDialogOpen, setDesconectarDialogOpen] = useState(false);
+  const [painelSelecionado, setPainelSelecionado] = useState<{
+    id: string;
+    numero_painel: string;
+    status_vinculo?: string;
+  } | null>(null);
+
+  const getStatusBadge = (status: string, statusVinculo?: string) => {
+    // Priorizar status_vinculo se existir
+    if (statusVinculo === 'aguardando_codigo') {
+      return <Badge variant="secondary">Aguardando Código</Badge>;
+    }
+    if (statusVinculo === 'conectado') {
+      return <Badge className="bg-green-500">Conectado</Badge>;
+    }
+    if (status === 'desconectado') {
+      return <Badge variant="destructive">Desconectado</Badge>;
+    }
+
+    // Fallback para status antigo
     switch (status) {
       case 'online':
         return <Badge className="bg-green-500">Online</Badge>;
@@ -43,8 +66,17 @@ export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
       case 'error':
         return <Badge className="bg-orange-500">Erro</Badge>;
       default:
-        return <Badge variant="secondary">Nunca Vinculado</Badge>;
+        return <Badge variant="secondary">Aguardando Vinculação</Badge>;
     }
+  };
+
+  const handleDesconectar = (painel: PainelWithStatus) => {
+    setPainelSelecionado({
+      id: painel.id,
+      numero_painel: painel.numero_painel || painel.code,
+      status_vinculo: painel.status_vinculo
+    });
+    setDesconectarDialogOpen(true);
   };
 
   const handleComando = async (painelId: string, comando: string) => {
@@ -79,6 +111,7 @@ export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
   }
 
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -105,7 +138,7 @@ export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
                 <span className="text-muted-foreground">Não vinculado</span>
               )}
             </TableCell>
-            <TableCell>{getStatusBadge(painel.statusInfo.status)}</TableCell>
+            <TableCell>{getStatusBadge(painel.statusInfo.status, painel.status_vinculo)}</TableCell>
             <TableCell>
               {painel.statusInfo.ultimo_heartbeat ? (
                 <span className="text-sm">
@@ -142,6 +175,14 @@ export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
                       </a>
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => handleDesconectar(painel)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <WifiOff className="mr-2 h-4 w-4" />
+                    Desconectar Painel
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>
@@ -149,5 +190,16 @@ export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
         ))}
       </TableBody>
     </Table>
+    
+    <DesconectarPainelDialog
+      open={desconectarDialogOpen}
+      onOpenChange={setDesconectarDialogOpen}
+      painel={painelSelecionado}
+      onPainelDesconectado={() => {
+        onRefetch();
+        setPainelSelecionado(null);
+      }}
+    />
+  </>
   );
 };
