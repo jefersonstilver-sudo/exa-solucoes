@@ -78,18 +78,59 @@ serve(async (req: Request) => {
       throw usersError;
     }
 
-    const userExists = users?.some(user => user.email?.toLowerCase() === sanitizedEmail);
+    const authUser = users?.find(user => user.email?.toLowerCase() === sanitizedEmail);
     
-    if (userExists) {
-      console.log('⚠️ [CHECK-EMAIL] Email já cadastrado:', sanitizedEmail);
+    if (authUser) {
+      console.log('⚠️ [CHECK-EMAIL] Email encontrado no auth.users:', sanitizedEmail);
       
-      // Buscar informações adicionais do usuário (sem dados sensíveis)
-      const user = users.find(u => u.email?.toLowerCase() === sanitizedEmail);
-      const isConfirmed = user?.email_confirmed_at !== null;
+      // Verificar se o email também existe na tabela users
+      const { data: dbUser, error: dbError } = await supabaseAdmin
+        .from('users')
+        .select('id, email, role, nome')
+        .eq('email', sanitizedEmail)
+        .maybeSingle();
+
+      if (dbError && dbError.code !== 'PGRST116') {
+        console.error('❌ [CHECK-EMAIL] Erro ao verificar tabela users:', dbError);
+        throw dbError;
+      }
+
+      // Se existe no auth.users mas NÃO na tabela users, é um email órfão
+      if (!dbUser) {
+        console.log('🧹 [CHECK-EMAIL] Email órfão detectado, removendo do auth.users...');
+        
+        try {
+          const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(authUser.id);
+          
+          if (deleteError) {
+            console.error('❌ [CHECK-EMAIL] Erro ao deletar usuário órfão:', deleteError);
+            throw deleteError;
+          }
+          
+          console.log('✅ [CHECK-EMAIL] Email órfão removido com sucesso:', sanitizedEmail);
+          
+          return new Response(JSON.stringify({ 
+            exists: false,
+            message: 'Email disponível para cadastro',
+            was_orphaned: true
+          }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        } catch (cleanupError: any) {
+          console.error('💥 [CHECK-EMAIL] Falha ao limpar email órfão:', cleanupError);
+          // Continua e retorna como email existente se a limpeza falhar
+        }
+      }
+      
+      // Email existe no auth.users E na tabela users
+      const isConfirmed = authUser.email_confirmed_at !== null;
       
       return new Response(JSON.stringify({ 
         exists: true,
         is_confirmed: isConfirmed,
+        role: dbUser?.role,
+        nome: dbUser?.nome,
         message: isConfirmed 
           ? 'Este email já está cadastrado e confirmado. Faça login para acessar sua conta.'
           : 'Este email já está cadastrado mas não foi confirmado. Verifique seu email ou solicite um novo link de confirmação.'
