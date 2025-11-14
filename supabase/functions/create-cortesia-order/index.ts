@@ -47,7 +47,7 @@ serve(async (req) => {
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
       .insert({
-        user_id: user.id,
+        client_id: user.id,
         valor_total: 0,
         status: 'ativo',
         plano_meses: selectedPlan,
