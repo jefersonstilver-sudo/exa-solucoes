@@ -39,6 +39,14 @@ export const calculatePrice = (
   applyPixDiscount: boolean = true,
   couponCode?: string
 ): PriceCalculationResult => {
+  console.log('💰 [calculatePrice] INÍCIO:', { 
+    selectedPlan, 
+    cartItemsLength: cartItems?.length, 
+    couponDiscountPercent, 
+    applyPixDiscount,
+    couponCode: couponCode || 'SEM CÓDIGO'
+  });
+  
   if (!selectedPlan || !cartItems || cartItems.length === 0) {
     return {
       subtotal: 0,
@@ -79,19 +87,27 @@ export const calculatePrice = (
     afterCoupon = subtotal * (1 - couponDiscountPercent / 100);
   }
   
-  // 🎯 CUPOM ESPECIAL 573040: Força R$ 0,05 no PIX para testes reais
-  if (couponCode === '573040' && applyPixDiscount) {
-    return {
-      subtotal: Math.round(subtotal * 100) / 100,
-      pixDiscount: Math.round((subtotal - 0.05) * 100) / 100,
-      finalPrice: 0.05,
-      calculation: `CUPOM DE TESTE 573040: Valor forçado para R$ 0,05 (PIX)`
-    };
-  }
-  
   // Aplicar desconto PIX se solicitado
   const pixDiscount = applyPixDiscount ? afterCoupon * PIX_DISCOUNT_RATE : 0;
   let finalPrice = afterCoupon - pixDiscount;
+  
+  // 🎯 CUPOM ESPECIAL 573040: Força R$ 0,05 SEMPRE (PIX ou Cartão)
+  // DEVE ser checado APÓS todos os cálculos normais para sobrescrever o resultado
+  if (couponCode === '573040') {
+    console.log('🎯🎯🎯 [CUPOM 573040] ATIVADO! Forçando valor final para R$ 0,05', {
+      subtotalOriginal: subtotal,
+      afterCoupon,
+      pixDiscount,
+      finalPriceAntes: finalPrice,
+      finalPriceDepois: 0.05
+    });
+    return {
+      subtotal: Math.round(subtotal * 100) / 100,
+      pixDiscount: 0,
+      finalPrice: 0.05,
+      calculation: `CUPOM TESTE 573040: Valor fixo R$ 0,05 (subtotal original: R$ ${subtotal.toFixed(2)})`
+    };
+  }
   
   // GARANTIR valor mínimo - nunca menos que R$ 0,05
   finalPrice = Math.max(finalPrice, MINIMUM_ORDER_VALUE);

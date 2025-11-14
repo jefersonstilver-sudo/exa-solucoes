@@ -33,6 +33,13 @@ export const transactionSessionManager = {
     try {
       const transactionId = generateTransactionId();
       
+      console.log('🔐 [TransactionSession] Criando sessão com cupom:', {
+        transactionId,
+        couponValid: couponState?.valid,
+        couponCode: couponState?.couponCode || 'SEM CÓDIGO',
+        couponDiscount: couponState?.discountPercent
+      });
+      
       // Calculate price with coupon applied
       const couponDiscount = couponState?.valid ? couponState.discountPercent : 0;
       const couponCode = couponState?.couponCode;
