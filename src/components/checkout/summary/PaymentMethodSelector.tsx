@@ -9,15 +9,18 @@ interface PaymentMethodSelectorProps {
   selectedMethod: 'pix' | 'credit_card';
   onMethodChange: (method: 'pix' | 'credit_card') => void;
   totalAmount: number;
+  couponCode?: string;
 }
 
 const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   selectedMethod,
   onMethodChange,
-  totalAmount
+  totalAmount,
+  couponCode
 }) => {
-  // SEM desconto PIX - mesmo valor para ambos métodos
-  const finalAmount = totalAmount;
+  // 🎯 CUPOM 573040: Força R$ 0,05 sempre
+  const isCupom573040 = couponCode === '573040';
+  const finalAmount = isCupom573040 ? 0.05 : totalAmount;
 
   return (
     <Card className="shadow-sm border">
