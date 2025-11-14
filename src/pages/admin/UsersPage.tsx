@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Users, Shield, Plus, RefreshCw, Search, UserCheck, UserPlus } from 'lucide-react';
+import { Crown, Users, Shield, Plus, RefreshCw, Search, UserCheck, UserPlus, UserCog } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import IndexaTeamSection from '@/components/admin/users/IndexaTeamSection';
@@ -42,6 +42,7 @@ const UsersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [syncingOrphans, setSyncingOrphans] = useState(false);
   const { isMobile } = useAdvancedResponsive();
   const { stats, loading: loadingStats, refetch: refetchStats } = useUserStats();
 
@@ -101,6 +102,41 @@ const UsersPage = () => {
   const handleRefresh = () => {
     fetchUsers();
     refetchStats();
+  };
+
+  const handleSyncOrphanUsers = async () => {
+    try {
+      setSyncingOrphans(true);
+      toast.loading('Sincronizando usuários órfãos...', { id: 'sync-orphans' });
+
+      console.log('🔄 [SYNC] Iniciando sincronização de usuários órfãos...');
+
+      const { data, error } = await supabase.functions.invoke('sync-users', {
+        method: 'POST'
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('✅ [SYNC] Resultado:', data);
+
+      toast.success(data.message || `${data.syncedCount} usuários sincronizados!`, { 
+        id: 'sync-orphans',
+        duration: 5000 
+      });
+
+      // Recarregar lista de usuários
+      if (data.syncedCount > 0) {
+        await fetchUsers();
+        await refetchStats();
+      }
+    } catch (error: any) {
+      console.error('❌ [SYNC] Erro ao sincronizar:', error);
+      toast.error(error.message || 'Erro ao sincronizar usuários órfãos', { id: 'sync-orphans' });
+    } finally {
+      setSyncingOrphans(false);
+    }
   };
 
   const handleViewDetails = (user: User) => {
@@ -164,6 +200,19 @@ const UsersPage = () => {
                 disabled={loading}
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+            
+            {/* Botão Sincronizar Órfãos */}
+            <div className="mt-2">
+              <Button
+                onClick={handleSyncOrphanUsers}
+                disabled={syncingOrphans}
+                size="sm"
+                className="w-full h-9 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-0 text-sm"
+              >
+                <UserCog className={`w-3.5 h-3.5 mr-1.5 ${syncingOrphans ? 'animate-spin' : ''}`} />
+                Sincronizar Órfãos
               </Button>
             </div>
           </div>
@@ -324,6 +373,15 @@ const UsersPage = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            onClick={handleSyncOrphanUsers}
+            variant="outline"
+            disabled={syncingOrphans}
+            className="border-amber-500/30 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-500/10"
+          >
+            <UserCog className={`h-4 w-4 mr-2 ${syncingOrphans ? 'animate-spin' : ''}`} />
+            Sincronizar Órfãos
+          </Button>
           <Button 
             onClick={handleRefresh}
             variant="outline"
