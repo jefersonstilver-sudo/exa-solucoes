@@ -28,22 +28,22 @@ const EmailEnviado: React.FC = () => {
       />
       
       <motion.div 
-        className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-[#3B1E1E]/10 flex items-center justify-center p-4"
+        className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-[#3B1E1E]/10 flex items-center justify-center p-4 pt-24 sm:pt-28"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
         <Card className="w-full max-w-2xl bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
-          <CardContent className="p-8 sm:p-12 text-center">
+          <CardContent className="p-6 sm:p-8 md:p-12 text-center">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="mb-6"
+              className="mb-4 sm:mb-6"
             >
               <div className="relative inline-block">
-                <Mail className="h-24 w-24 text-exa-red mx-auto" />
-                <CheckCircle2 className="h-10 w-10 text-green-500 absolute -bottom-2 -right-2 bg-white rounded-full" />
+                <Mail className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 text-exa-red mx-auto" />
+                <CheckCircle2 className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 text-green-500 absolute -bottom-2 -right-2 bg-white rounded-full" />
               </div>
             </motion.div>
 
@@ -52,34 +52,34 @@ const EmailEnviado: React.FC = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
                 Confirme seu E-mail
               </h1>
               
-              <div className="space-y-4 text-gray-600">
-                <p className="text-lg">
+              <div className="space-y-3 sm:space-y-4 text-gray-600">
+                <p className="text-base sm:text-lg">
                   Enviamos um link de confirmação para:
                 </p>
                 
-                <p className="text-xl font-semibold text-exa-red bg-red-50 py-3 px-4 rounded-lg">
+                <p className="text-lg sm:text-xl font-semibold text-exa-red bg-red-50 py-2 sm:py-3 px-3 sm:px-4 rounded-lg break-all">
                   {email}
                 </p>
                 
-                <div className="pt-4 space-y-3">
-                  <p>
+                <div className="pt-3 sm:pt-4 space-y-3">
+                  <p className="text-sm sm:text-base">
                     Clique no link enviado para ativar sua conta e começar a usar a plataforma EXA.
                   </p>
                   
-                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 text-left">
-                    <p className="text-sm text-blue-900">
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-3 sm:p-4 text-left">
+                    <p className="text-xs sm:text-sm text-blue-900">
                       <strong>Dica:</strong> Verifique também sua pasta de spam ou lixo eletrônico caso não encontre o e-mail na caixa de entrada.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-gray-200 space-y-4">
-                <p className="text-sm text-gray-500">
+              <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200 space-y-3 sm:space-y-4">
+                <p className="text-xs sm:text-sm text-gray-500">
                   Não recebeu o e-mail?
                 </p>
                 
