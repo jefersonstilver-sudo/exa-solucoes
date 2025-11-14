@@ -78,22 +78,29 @@ const PainelKiosk = () => {
 
       if (painelError) {
         console.error('❌ [PAINEL_KIOSK] Erro na query:', painelError);
-        throw new Error(`Erro ao buscar painel: ${painelError.message}`);
-      }
-
-      if (!painelDB) {
-        console.error('❌ [PAINEL_KIOSK] Código inválido');
-        setErroValidacao('Código incorreto. Verifique e tente novamente.');
-        setValidandoCodigo(false);
+        setErroValidacao('Erro ao validar código. Tente novamente.');
         return;
       }
 
-      console.log('✅ [PAINEL_KIOSK] Código validado! Conectando painel:', painelDB.numero_painel);
-      
+      if (!painelDB) {
+        console.log('❌ [PAINEL_KIOSK] Código inválido');
+        setErroValidacao('Código inválido. Verifique e tente novamente.');
+        return;
+      }
+
+      // Verificar se já está conectado em outro lugar
+      if (painelDB.status_vinculo === 'conectado' && painelDB.primeira_conexao_at) {
+        console.log('⚠️ [PAINEL_KIOSK] Painel já conectado em outro dispositivo');
+        setErroValidacao('Este painel já está conectado em outro dispositivo. Desconecte-o primeiro.');
+        return;
+      }
+
+      console.log('✅ [PAINEL_KIOSK] Código válido, conectando painel...');
       await conectarPainel(painelDB);
-    } catch (error: any) {
-      console.error('❌ [PAINEL_KIOSK] Erro ao validar código:', error);
-      setErroValidacao(error.message || 'Erro ao validar código');
+    } catch (error) {
+      console.error('❌ [PAINEL_KIOSK] Erro na validação:', error);
+      setErroValidacao('Erro inesperado. Tente novamente.');
+    } finally {
       setValidandoCodigo(false);
     }
   };
