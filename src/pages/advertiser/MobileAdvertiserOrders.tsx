@@ -6,15 +6,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   Loader2, 
   ShoppingBag, 
-  Search, 
-  Filter,
+  Search,
   Clock,
   CheckCircle,
   AlertTriangle,
-  Calendar,
   Upload,
   Menu,
-  Home
+  X,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -41,19 +40,17 @@ interface Order {
 
 interface OrderStats {
   pedidosAtivos: number;
-  tentativas: number;
   aguardandoVideo: number;
   pedidosFinalizados: number;
 }
 
 const MobileAdvertiserOrders = () => {
-  const { userProfile, logout } = useAuth();
+  const { userProfile } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<OrderStats>({
     pedidosAtivos: 0,
-    tentativas: 0,
     aguardandoVideo: 0,
     pedidosFinalizados: 0
   });
@@ -66,20 +63,11 @@ const MobileAdvertiserOrders = () => {
   const { 
     setupSwipeHandlers, 
     isRefreshing, 
-    isPulling, 
-    pullDistance,
     vibrate 
   } = useMobileOptimization();
 
   // Detect cortesia order success
   const { showModal, orderData, closeModal } = useCortesiaSuccessDetection(orders, loading);
-
-  console.log('📱 [MOBILE ADVERTISER ORDERS] Render state:', {
-    loading,
-    ordersCount: orders?.length,
-    showModal,
-    hasOrderData: !!orderData
-  });
 
   useEffect(() => {
     if (containerRef.current) {
@@ -99,15 +87,6 @@ const MobileAdvertiserOrders = () => {
   useEffect(() => {
     filterOrders();
   }, [searchTerm, orders]);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-    }
-  };
 
   const loadOrders = async () => {
     if (!userProfile?.id) return;
@@ -143,23 +122,25 @@ const MobileAdvertiserOrders = () => {
   };
 
   const calculateStats = (ordersList: Order[]) => {
-    const pedidosAtivos = ordersList.filter(order => 
-      order.status === 'video_aprovado' &&
-      isWithinActivePeriod(order)
-    ).length;
+    const now = new Date();
     
-    const tentativas = 0; // Na versão mobile não temos tentativas separadas no momento
-    
+    const pedidosAtivos = ordersList.filter(order => {
+      if (!order.data_inicio || !order.data_fim) return false;
+      const startDate = new Date(order.data_inicio);
+      const endDate = new Date(order.data_fim);
+      return (order.status === 'video_aprovado' || order.status === 'ativo') && 
+             now >= startDate && now <= endDate;
+    }).length;
+
     const aguardandoVideo = ordersList.filter(order => 
-      ['pago', 'pago_pendente_video'].includes(order.status)
+      order.status === 'pago_pendente_video'
     ).length;
     
     const pedidosFinalizados = ordersList.filter(order => 
-      order.status === 'expirado' || 
-      (['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) && !isWithinActivePeriod(order))
+      order.status === 'finalizado' || order.status === 'expirado'
     ).length;
 
-    setStats({ pedidosAtivos, tentativas, aguardandoVideo, pedidosFinalizados });
+    setStats({ pedidosAtivos, aguardandoVideo, pedidosFinalizados });
   };
 
   const filterOrders = () => {
@@ -231,7 +212,7 @@ const MobileAdvertiserOrders = () => {
         label: 'Pedidos Finalizados', 
         value: stats.pedidosFinalizados, 
         color: 'bg-gray-500',
-        icon: Calendar,
+        icon: CheckCircle,
         detail: 'expirados'
       }
     ];
@@ -298,14 +279,10 @@ const MobileAdvertiserOrders = () => {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/anunciante')}
-              className="flex items-center space-x-2 hover:bg-gray-100 rounded-lg px-2 py-1"
-            >
-              <Home className="h-5 w-5 text-indexa-purple" />
-              <span className="text-lg font-bold text-indexa-purple">Indexa</span>
-            </Button>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Meus Pedidos</h1>
+              <p className="text-xs text-gray-500">{orders.length} pedido{orders.length !== 1 ? 's' : ''}</p>
+            </div>
           </div>
           <Button
             variant="ghost"
@@ -322,8 +299,6 @@ const MobileAdvertiserOrders = () => {
       <MobileDrawerNavigation
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        userProfile={userProfile}
-        onLogout={handleLogout}
       />
 
       {/* Search Bar */}
