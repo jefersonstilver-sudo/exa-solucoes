@@ -86,13 +86,31 @@ const ExistingUserAlert: React.FC<ExistingUserAlertProps> = ({
         .from('users')
         .select('id')
         .eq('email', email)
-        .single();
+        .maybeSingle();
 
-      if (userError || !userData) {
-        throw new Error('Usuário não encontrado');
+      // Se usuário não existe na tabela users, é um email órfão no auth.users
+      if (!userData) {
+        console.log('🧹 Email órfão detectado, limpando do auth.users...');
+        
+        const { data: cleanupResult, error: cleanupError } = await supabase.functions.invoke(
+          'cleanup-orphaned-auth-user',
+          { body: { email } }
+        );
+
+        if (cleanupError) throw cleanupError;
+        
+        if (cleanupResult?.success) {
+          toast.success('✅ Email órfão removido! Agora você pode criar a conta.', { duration: 5000 });
+        } else {
+          toast.info('Email não encontrado no sistema de autenticação.');
+        }
+        
+        onOpenChange(false);
+        if (onDeleted) onDeleted();
+        return;
       }
 
-      // Chamar edge function para deletar
+      // Usuário existe na tabela users, usar deleção normal
       const { error: deleteError } = await supabase.functions.invoke('delete-user-account', {
         body: { userId: userData.id }
       });
