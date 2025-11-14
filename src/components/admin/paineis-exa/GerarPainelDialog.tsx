@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,41 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
   const [loading, setLoading] = useState(false);
   const [linkGerado, setLinkGerado] = useState('');
   const [copiado, setCopiado] = useState(false);
+  const [loadingProximoNumero, setLoadingProximoNumero] = useState(false);
+
+  // Buscar próximo número disponível quando abrir o dialog
+  useEffect(() => {
+    if (open && !numeroPainel) {
+      buscarProximoNumero();
+    }
+  }, [open]);
+
+  const buscarProximoNumero = async () => {
+    setLoadingProximoNumero(true);
+    try {
+      const { data, error } = await supabase
+        .from('painels')
+        .select('numero_painel')
+        .not('numero_painel', 'is', null)
+        .order('numero_painel', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const ultimoNumero = parseInt(data[0].numero_painel) || 0;
+        const proximoNumero = (ultimoNumero + 1).toString().padStart(3, '0');
+        setNumeroPainel(proximoNumero);
+      } else {
+        setNumeroPainel('001');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar próximo número:', error);
+      setNumeroPainel('001');
+    } finally {
+      setLoadingProximoNumero(false);
+    }
+  };
 
   const handleCriarPainel = async () => {
     if (!numeroPainel.trim()) {
@@ -94,9 +129,13 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
                 onChange={(e) => setNumeroPainel(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
                 maxLength={10}
                 className="text-lg"
+                disabled={loadingProximoNumero}
               />
               <p className="text-sm text-muted-foreground">
-                Use apenas números ou letras (máx. 10 caracteres)
+                {loadingProximoNumero 
+                  ? 'Buscando próximo número disponível...'
+                  : 'Use apenas números ou letras (máx. 10 caracteres)'
+                }
               </p>
             </div>
 
