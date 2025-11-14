@@ -21,7 +21,8 @@ import {
   Film,
   Gift,
   UsersRound,
-  FileBarChart
+  FileBarChart,
+  Tv
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -132,6 +133,18 @@ export function ModernAdminSidebar() {
           href: buildPath('predios'),
           icon: Building2,
           permission: 'canManageBuildings'
+        },
+        {
+          title: 'Painéis',
+          href: buildPath('paineis'),
+          icon: MonitorPlay,
+          permission: 'canManagePanels'
+        },
+        {
+          title: 'Painéis EXA',
+          href: buildPath('paineis-exa'),
+          icon: Tv,
+          permission: 'canManagePanels'
         }
       ]
     },
