@@ -49,7 +49,7 @@ serve(async (req) => {
     const code = `EXA-PAINEL-${numero_painel}`;
     
     // Gerar link de instalação usando domínio de produção
-    const link_instalacao = `https://exa.tec.br/painel-kiosk/${token_acesso}`;
+    const link_instalacao = `https://examidia.com.br/painel-kiosk/${token_acesso}`;
 
     console.log('🔵 Link de instalação:', link_instalacao);
 
