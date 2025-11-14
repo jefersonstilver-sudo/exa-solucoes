@@ -48,10 +48,14 @@ serve(async (req) => {
     // Gerar código legível
     const code = `EXA-PAINEL-${numero_painel}`;
     
+    // Gerar código de vinculação de 5 dígitos (apenas números)
+    const codigo_vinculacao = Math.floor(10000 + Math.random() * 90000).toString();
+    
     // Gerar link de instalação usando domínio de produção
     const link_instalacao = `https://64f6806c-c0e0-422b-b85f-955fd5719544.lovableproject.com/painel-kiosk/${token_acesso}`;
 
     console.log('🔵 Link de instalação:', link_instalacao);
+    console.log('🔑 Código de vinculação:', codigo_vinculacao);
 
     // Criar painel no banco
     const { data: newPanel, error: insertError } = await supabase
@@ -60,9 +64,10 @@ serve(async (req) => {
         numero_painel,
         code,
         token_acesso,
+        codigo_vinculacao,
         link_instalacao,
-        status_vinculo: 'aguardando_instalacao',
-        status: 'aguardando_instalacao',
+        status_vinculo: 'aguardando_codigo',
+        status: 'aguardando_codigo',
         resolucao: '1920x1080',
         orientacao: 'horizontal',
         sistema_operacional: 'linux'
@@ -83,8 +88,8 @@ serve(async (req) => {
       .from('paineis_status')
       .insert({
         painel_id: newPanel.id,
-        status: 'aguardando_instalacao',
-        observacao: 'Painel criado, aguardando instalação e conexão'
+        status: 'aguardando_codigo',
+        observacao: 'Painel criado, aguardando código de vinculação'
       });
 
     if (statusError) {
@@ -99,6 +104,7 @@ serve(async (req) => {
         painel_id: newPanel.id,
         numero_painel,
         code,
+        codigo_vinculacao,
         link_instalacao,
         token_acesso,
         qr_code_data: link_instalacao

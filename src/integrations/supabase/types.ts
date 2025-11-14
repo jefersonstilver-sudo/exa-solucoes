@@ -2657,6 +2657,7 @@ export type Database = {
           building_id: string | null
           code: string
           codigo_anydesk: string | null
+          codigo_vinculacao: string | null
           created_at: string | null
           id: string
           ip_interno: string | null
@@ -2670,6 +2671,7 @@ export type Database = {
           observacoes: string | null
           orientacao: string | null
           polegada: string | null
+          primeira_conexao_at: string | null
           resolucao: string | null
           senha_anydesk: string | null
           sistema_operacional: string | null
@@ -2683,6 +2685,7 @@ export type Database = {
           building_id?: string | null
           code: string
           codigo_anydesk?: string | null
+          codigo_vinculacao?: string | null
           created_at?: string | null
           id?: string
           ip_interno?: string | null
@@ -2696,6 +2699,7 @@ export type Database = {
           observacoes?: string | null
           orientacao?: string | null
           polegada?: string | null
+          primeira_conexao_at?: string | null
           resolucao?: string | null
           senha_anydesk?: string | null
           sistema_operacional?: string | null
@@ -2709,6 +2713,7 @@ export type Database = {
           building_id?: string | null
           code?: string
           codigo_anydesk?: string | null
+          codigo_vinculacao?: string | null
           created_at?: string | null
           id?: string
           ip_interno?: string | null
@@ -2722,6 +2727,7 @@ export type Database = {
           observacoes?: string | null
           orientacao?: string | null
           polegada?: string | null
+          primeira_conexao_at?: string | null
           resolucao?: string | null
           senha_anydesk?: string | null
           sistema_operacional?: string | null

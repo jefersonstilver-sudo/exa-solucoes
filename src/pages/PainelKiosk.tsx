@@ -11,6 +11,9 @@ const PainelKiosk = () => {
   const [loading, setLoading] = useState(true);
   const [painelData, setPainelData] = useState<any>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [codigoInput, setCodigoInput] = useState('');
+  const [validandoCodigo, setValidandoCodigo] = useState(false);
+  const [erroValidacao, setErroValidacao] = useState('');
   const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
   const comandosChannel = useRef<any>(null);
 
@@ -29,9 +32,8 @@ const PainelKiosk = () => {
 
   useEffect(() => {
     const inicializar = async () => {
-      if (token) {
-        await vincularComToken(token);
-      } else {
+      if (!token) {
+        // Verificar se já tem dados no localStorage
         const painelToken = localStorage.getItem('painel_token');
         const painelInfo = localStorage.getItem('painel_info');
 
@@ -55,17 +57,24 @@ const PainelKiosk = () => {
     };
   }, [token]);
 
-  const vincularComToken = async (accessToken: string) => {
+  const validarCodigo = async () => {
+    if (!token || codigoInput.length !== 5) {
+      setErroValidacao('Digite um código de 5 dígitos');
+      return;
+    }
+
+    setValidandoCodigo(true);
+    setErroValidacao('');
+
     try {
-      console.log('🔍 [PAINEL_KIOSK] Tentando vincular com token:', accessToken);
+      console.log('🔍 [PAINEL_KIOSK] Validando código:', codigoInput);
       
       const { data: painelDB, error: painelError } = await supabase
         .from('painels')
         .select('*, buildings(nome, endereco)')
-        .eq('token_acesso', accessToken)
+        .eq('token_acesso', token)
+        .eq('codigo_vinculacao', codigoInput)
         .maybeSingle();
-
-      console.log('📊 [PAINEL_KIOSK] Resultado da busca:', { painelDB, painelError });
 
       if (painelError) {
         console.error('❌ [PAINEL_KIOSK] Erro na query:', painelError);
@@ -73,17 +82,31 @@ const PainelKiosk = () => {
       }
 
       if (!painelDB) {
-        console.error('❌ [PAINEL_KIOSK] Painel não encontrado para token:', accessToken);
-        throw new Error('Token inválido ou painel não encontrado');
+        console.error('❌ [PAINEL_KIOSK] Código inválido');
+        setErroValidacao('Código incorreto. Verifique e tente novamente.');
+        setValidandoCodigo(false);
+        return;
       }
 
-      console.log('✅ [PAINEL_KIOSK] Painel encontrado:', painelDB.numero_painel);
+      console.log('✅ [PAINEL_KIOSK] Código validado! Conectando painel:', painelDB.numero_painel);
+      
+      await conectarPainel(painelDB);
+    } catch (error: any) {
+      console.error('❌ [PAINEL_KIOSK] Erro ao validar código:', error);
+      setErroValidacao(error.message || 'Erro ao validar código');
+      setValidandoCodigo(false);
+    }
+  };
+
+  const conectarPainel = async (painelDB: any) => {
+    try {
 
       const { error: updateError } = await supabase
         .from('painels')
         .update({
-          status_vinculo: 'vinculado',
+          status_vinculo: 'conectado',
           status: 'online',
+          primeira_conexao_at: new Date().toISOString(),
           data_vinculacao: new Date().toISOString(),
           device_info: {
             userAgent: navigator.userAgent,
@@ -107,14 +130,17 @@ const PainelKiosk = () => {
 
       setPainelData(painelInfo);
       setVinculado(true);
+      setValidandoCodigo(false);
+      
+      toast.success('Painel conectado com sucesso!');
       
       iniciarHeartbeat(painelDB.id);
       escutarComandos(painelDB.id);
       ativarFullscreen();
     } catch (error: any) {
-      console.error('Erro ao vincular com token:', error);
-      toast.error(error.message || 'Erro ao vincular painel');
-      setLoading(false);
+      console.error('❌ [PAINEL_KIOSK] Erro ao conectar painel:', error);
+      toast.error(error.message || 'Erro ao conectar painel');
+      setValidandoCodigo(false);
     }
   };
 
@@ -222,7 +248,108 @@ const PainelKiosk = () => {
   };
 
   // Tela de aguardando conexão - Fullscreen vermelha com logo EXA
-  if (loading || !vinculado) {
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-[#8B1538] flex items-center justify-center">
+        <div className="text-white text-xl animate-pulse">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!vinculado && token) {
+    return (
+      <div className="fixed inset-0 bg-[#8B1538] flex flex-col items-center justify-center p-8">
+        <Helmet>
+          <title>Painel EXA - Digite o Código</title>
+        </Helmet>
+
+        {/* Indicador de conexão */}
+        <div className="fixed top-6 right-6 flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+          {isOnline ? (
+            <>
+              <Wifi className="w-5 h-5 text-white" />
+              <span className="text-white text-sm font-medium">Online</span>
+            </>
+          ) : (
+            <>
+              <WifiOff className="w-5 h-5 text-white" />
+              <span className="text-white text-sm font-medium">Offline</span>
+            </>
+          )}
+        </div>
+
+        {/* Conteúdo central */}
+        <div className="flex flex-col items-center justify-center gap-8 max-w-md w-full bg-white rounded-2xl p-8 shadow-2xl">
+          {/* Logo EXA */}
+          <div className="text-[#8B1538]">
+            <svg viewBox="0 0 200 80" className="w-48 h-24">
+              <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" className="fill-[#8B1538] font-bold text-5xl">
+                exa
+              </text>
+            </svg>
+          </div>
+
+          <div className="w-full space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Digite o Código de Vinculação
+              </h1>
+              <p className="text-sm text-gray-600">
+                Código de 5 dígitos fornecido pelo administrador
+              </p>
+            </div>
+
+            {/* Input do código */}
+            <div className="space-y-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={5}
+                value={codigoInput}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  setCodigoInput(value);
+                  setErroValidacao('');
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && codigoInput.length === 5) {
+                    validarCodigo();
+                  }
+                }}
+                placeholder="00000"
+                disabled={validandoCodigo}
+                className="w-full text-center text-4xl font-bold tracking-widest px-4 py-4 border-2 border-gray-300 rounded-lg focus:border-[#8B1538] focus:ring-2 focus:ring-[#8B1538]/20 outline-none transition-all disabled:opacity-50"
+              />
+              {erroValidacao && (
+                <p className="text-sm text-red-600 text-center animate-shake">
+                  {erroValidacao}
+                </p>
+              )}
+            </div>
+
+            {/* Botão confirmar */}
+            <button
+              onClick={validarCodigo}
+              disabled={validandoCodigo || codigoInput.length !== 5}
+              className="w-full bg-[#8B1538] hover:bg-[#6B0F2A] text-white font-semibold py-4 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {validandoCodigo ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Validando...
+                </>
+              ) : (
+                'Conectar Painel'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!vinculado) {
     return (
       <>
         <Helmet>
