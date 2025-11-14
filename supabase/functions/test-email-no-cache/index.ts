@@ -6,7 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Logo oficial da EXA - URL pública sem expiração
 const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png';
+const EXA_PRIMARY = '#8B1A1A';
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -68,31 +70,45 @@ serve(async (req: Request) => {
     }
     
     .header {
-      background: linear-gradient(135deg, #7D1818 0%, #9C1E1E 100%);
-      padding: 50px 40px;
+      background: linear-gradient(135deg, ${EXA_PRIMARY} 0%, #A52020 100%);
+      padding: 56px 48px;
       text-align: center;
+      position: relative;
+    }
+    
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
     }
     
     .header-logo {
-      max-width: 220px;
+      max-width: 200px;
       height: auto;
       display: block;
-      margin: 0 auto 20px auto;
+      margin: 0 auto 24px auto;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
     }
     
     .header-title {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 800;
       color: #ffffff;
-      margin: 0 0 10px 0;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      margin: 0 0 12px 0;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      letter-spacing: -0.5px;
     }
     
     .header-subtitle {
-      font-size: 16px;
-      font-weight: 400;
+      font-size: 15px;
+      font-weight: 500;
       color: rgba(255, 255, 255, 0.95);
       margin: 0;
+      letter-spacing: 0.3px;
     }
     
     .content {
