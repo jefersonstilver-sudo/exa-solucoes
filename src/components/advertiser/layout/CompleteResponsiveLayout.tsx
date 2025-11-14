@@ -71,7 +71,7 @@ const CompleteResponsiveLayout = () => {
                   </Button>
                 )}
                 <h1 className="text-xl sm:text-2xl font-bold text-[#3C1361] truncate">
-                  Portal do Anunciante
+                  Meus Pedidos
                 </h1>
               </div>
             </div>

@@ -241,60 +241,51 @@ const AdvertiserOrders = () => {
   }
   return <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Meus Pedidos</h1>
-          <p className="text-gray-600 mt-1">Acompanhe o status e histórico de todas as suas campanhas e tentativas</p>
-        </div>
-        <Button onClick={() => navigate('/paineis-digitais/loja')} className="bg-exa-red hover:bg-exa-red/90">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'itens'}
+        </p>
+        <Button onClick={() => navigate('/paineis-digitais/loja')} size="sm" className="bg-exa-red hover:bg-exa-red/90">
           <ShoppingBag className="h-4 w-4 mr-2" />
           Novo Pedido
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">Pedidos Ativos</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-900">{stats.pedidosAtivos}</div>
-            <p className="text-xs text-green-600">em execução</p>
+      {/* Stats Cards - Compacto */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="border-l-4 border-l-green-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Ativos</p>
+                <p className="text-2xl font-bold text-green-600">{stats.pedidosAtivos}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-green-500 opacity-20" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-800">Tentativas</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-900">{stats.tentativas}</div>
-            <p className="text-xs text-orange-600">não finalizadas</p>
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Aguardando</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.aguardandoVideo}</p>
+              </div>
+              <Upload className="h-8 w-8 text-blue-500 opacity-20" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800">Aguardando Vídeo</CardTitle>
-            <Upload className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{stats.aguardandoVideo}</div>
-            <p className="text-xs text-blue-600">pagos sem vídeo</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-800">Pedidos Finalizados</CardTitle>
-            <Calendar className="h-4 w-4 text-gray-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.pedidosFinalizados}</div>
-            <p className="text-xs text-gray-600">expirados</p>
+        <Card className="border-l-4 border-l-gray-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Finalizados</p>
+                <p className="text-2xl font-bold text-gray-600">{stats.pedidosFinalizados}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-gray-500 opacity-20" />
+            </div>
           </CardContent>
         </Card>
       </div>
