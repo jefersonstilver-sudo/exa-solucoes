@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Copy, Check, QrCode, ExternalLink } from 'lucide-react';
+import { Copy, Check, QrCode, ExternalLink, CheckCircle2, Info } from 'lucide-react';
 
 interface GerarPainelDialogProps {
   open: boolean;
@@ -72,7 +72,9 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
 
       if (data?.success) {
         console.log('✅ Painel criado:', data);
-        setLinkGerado(data.link_instalacao);
+        // Adicionar código ao link para exibição (só para UI, não afeta banco)
+        const linkComCodigo = `${data.link_instalacao}?exibir_codigo=${data.codigo_vinculacao}`;
+        setLinkGerado(linkComCodigo);
         toast.success('Painel criado com sucesso!');
       } else {
         throw new Error(data?.error || 'Erro ao criar painel');
@@ -150,12 +152,21 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
           </div>
         ) : (
           <div className="space-y-6 py-4">
+            {/* Código de vinculação em destaque */}
+            <div className="bg-[#8B1538] text-white p-6 rounded-lg text-center space-y-2">
+              <p className="text-sm font-medium opacity-90">Código de Vinculação</p>
+              <p className="text-5xl font-bold tracking-widest" style={{ fontFamily: 'monospace' }}>
+                {new URL(linkGerado).searchParams.get('exibir_codigo') || 'N/A'}
+              </p>
+              <p className="text-xs opacity-75">Informe este código ao dispositivo</p>
+            </div>
+
             {/* Link de instalação */}
             <div className="space-y-2">
               <Label>Link de Instalação</Label>
               <div className="flex gap-2">
                 <Input
-                  value={linkGerado}
+                  value={linkGerado.split('?')[0]}
                   readOnly
                   className="font-mono text-sm"
                 />
@@ -171,7 +182,7 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
                   )}
                 </Button>
                 <Button
-                  onClick={() => window.open(linkGerado, '_blank')}
+                  onClick={() => window.open(linkGerado.split('?')[0], '_blank')}
                   variant="outline"
                   size="icon"
                 >
@@ -184,21 +195,11 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
               <h4 className="font-semibold text-sm">📋 Próximos passos:</h4>
               <ol className="text-sm space-y-1 list-decimal list-inside text-muted-foreground">
-                <li>Copie o link acima ou abra diretamente no dispositivo</li>
-                <li>No Chrome/Edge, clique em "Instalar app"</li>
-                <li>O painel EXA abrirá em modo fullscreen</li>
-                <li>Aguarde até aparecer "Conectado" na tela</li>
-                <li>Use o código de vínculo para conectar a um prédio</li>
+                <li>Abra o link no dispositivo do painel (TV/Monitor)</li>
+                <li>Digite o código de 5 dígitos exibido acima</li>
+                <li>Aguarde a confirmação da conexão</li>
+                <li>O painel estará disponível para atribuição de prédio</li>
               </ol>
-            </div>
-
-            {/* QR Code placeholder */}
-            <div className="flex justify-center p-6 bg-white rounded-lg border-2 border-dashed">
-              <div className="text-center text-muted-foreground">
-                <QrCode className="w-16 h-16 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">QR Code aqui</p>
-                <p className="text-xs">(implementar biblioteca qrcode)</p>
-              </div>
             </div>
 
             <Button onClick={handleFechar} className="w-full" size="lg">
