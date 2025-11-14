@@ -108,19 +108,57 @@ serve(async (req) => {
       }
 
       case 'delete_user': {
-        const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        console.log('🗑️ [DELETE-USER] Iniciando deleção do usuário:', userId);
+        
+        // 1. Buscar informações do usuário antes de deletar
+        const { data: authUser, error: fetchAuthError } = await supabaseAdmin.auth.admin.getUserById(userId);
+        
+        if (fetchAuthError) {
+          console.error('❌ [DELETE-USER] Erro ao buscar usuário:', fetchAuthError);
+          throw new Error('Usuário não encontrado no auth');
+        }
 
-        if (error) throw error;
+        const userEmail = authUser?.user?.email || 'unknown';
+        console.log('📧 [DELETE-USER] Email do usuário:', userEmail);
 
-        // Log the action
+        // 2. PRIMEIRO: Deletar da tabela users (remove constraints)
+        console.log('🗄️ [DELETE-USER] Deletando da tabela users...');
+        const { error: deleteUsersError } = await supabaseAdmin
+          .from('users')
+          .delete()
+          .eq('id', userId);
+
+        if (deleteUsersError) {
+          console.error('❌ [DELETE-USER] Erro ao deletar da tabela users:', deleteUsersError);
+          throw new Error(`Erro ao deletar da tabela users: ${deleteUsersError.message}`);
+        }
+        console.log('✅ [DELETE-USER] Deletado da tabela users');
+
+        // 3. DEPOIS: Deletar do auth.users (libera o email)
+        console.log('🔐 [DELETE-USER] Deletando do auth.users...');
+        const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+        if (deleteAuthError) {
+          console.error('❌ [DELETE-USER] Erro ao deletar do auth:', deleteAuthError);
+          throw new Error(`Erro ao deletar usuário do auth: ${deleteAuthError.message}`);
+        }
+        console.log('✅ [DELETE-USER] Deletado do auth com sucesso');
+
+        // 4. Log da ação
+        console.log('📝 [DELETE-USER] Registrando em log_eventos_sistema...');
         await supabaseClient
           .from('log_eventos_sistema')
           .insert({
             tipo_evento: 'USER_DELETED',
-            descricao: `Admin ${user.id} deleted user ${userId}`
+            descricao: `Admin ${user.id} deletou usuário ${userId} (${userEmail})`
           });
 
-        result = { success: true, message: 'User deleted successfully' };
+        console.log('🎉 [DELETE-USER] Usuário deletado completamente!');
+        result = { 
+          success: true, 
+          message: 'Usuário deletado com sucesso',
+          email: userEmail 
+        };
         break;
       }
 
