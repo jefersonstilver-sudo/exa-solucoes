@@ -16,6 +16,7 @@ import { FilterChips } from '@/components/admin/shared/FilterChips';
 import { OrderPeriodFilter, filterByPeriod, PeriodFilter } from '@/components/admin/orders/OrderPeriodFilter';
 import { RealtimeOrderNotification } from '@/components/admin/orders/RealtimeOrderNotification';
 import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
+import { FixPedidoListaPaineisButton } from '@/components/admin/FixPedidoListaPaineisButton';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -332,6 +333,9 @@ const OrdersPage = () => {
 
       {/* Enhanced Stats Cards */}
       <OrdersStatsCards stats={filteredStats} activeOrdersCount={activeOrdersCount} />
+
+      {/* Fix Button - Temporary */}
+      <FixPedidoListaPaineisButton />
 
       {/* Filters and Search */}
       <OrdersPageFilters
