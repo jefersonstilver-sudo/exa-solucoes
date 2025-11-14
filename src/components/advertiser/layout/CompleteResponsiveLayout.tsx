@@ -44,22 +44,11 @@ const CompleteResponsiveLayout = () => {
         !(isMobile || isTablet) && (sidebarCollapsed ? 'ml-16' : 'ml-80')
       )}>
         <div className="h-full">
-          {/* Header com botão hambúrguer */}
-          <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-            <div className="px-4 sm:px-6 py-4">
-              <div className="flex items-center space-x-4">
-                {(isMobile || isTablet) && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleSidebarOpen}
-                    className="flex-shrink-0 bg-gradient-to-r from-exa-red to-exa-red/90 text-white hover:from-exa-red/90 hover:to-exa-red shadow-md transition-all duration-300"
-                    aria-label="Abrir menu"
-                  >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                )}
-                {(isDesktop || isXl) && (
+          {/* Header com botão hambúrguer - APENAS DESKTOP */}
+          {(isDesktop || isXl) && (
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+              <div className="px-4 sm:px-6 py-4">
+                <div className="flex items-center space-x-4">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -69,13 +58,37 @@ const CompleteResponsiveLayout = () => {
                   >
                     <Menu className="h-5 w-5" />
                   </Button>
-                )}
-                <h1 className="text-xl sm:text-2xl font-bold text-[#3C1361] truncate">
-                  Meus Pedidos
-                </h1>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#3C1361] truncate">
+                    Meus Pedidos
+                  </h1>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+          
+          {/* Header Mobile/Tablet com botão hambúrguer e busca */}
+          {(isMobile || isTablet) && (
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleSidebarOpen}
+                      className="h-10 w-10 rounded-full bg-gradient-to-r from-exa-red to-exa-red/90 text-white hover:from-exa-red/90 hover:to-exa-red"
+                      aria-label="Abrir menu"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                    <div>
+                      <h1 className="text-lg font-bold text-[#3C1361]">Meus Pedidos</h1>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Conteúdo */}
           <div className="p-4 sm:p-6">
