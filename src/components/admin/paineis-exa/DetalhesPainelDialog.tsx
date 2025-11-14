@@ -25,6 +25,7 @@ interface DetalhesPainelDialogProps {
     resolucao?: string;
     orientacao?: string;
     sistema_operacional?: string;
+    ip_interno?: string;
     created_at: string;
     buildings?: {
       id: string;
@@ -108,7 +109,6 @@ export const DetalhesPainelDialog = ({ open, onOpenChange, painel }: DetalhesPai
                   )}
                 </Button>
               </div>
-              <p className="text-xs opacity-75 mt-2">Use este código para conectar o dispositivo</p>
             </div>
           )}
 
@@ -209,19 +209,6 @@ export const DetalhesPainelDialog = ({ open, onOpenChange, painel }: DetalhesPai
                 </p>
               </div>
             )}
-          </div>
-                <p className="text-xs text-muted-foreground">Orientação</p>
-                <p className="text-sm font-medium capitalize">{painel.orientacao || 'N/A'}</p>
-              </div>
-              <div className="p-3 border rounded-md">
-                <p className="text-xs text-muted-foreground">Sistema Operacional</p>
-                <p className="text-sm font-medium capitalize">{painel.sistema_operacional || 'N/A'}</p>
-              </div>
-              <div className="p-3 border rounded-md">
-                <p className="text-xs text-muted-foreground">Token de Acesso</p>
-                <p className="text-xs font-mono truncate">{painel.token_acesso || 'N/A'}</p>
-              </div>
-            </div>
           </div>
 
           {/* Histórico de Conexões */}
