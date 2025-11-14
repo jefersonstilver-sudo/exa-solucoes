@@ -90,13 +90,25 @@ serve(async (req: Request) => {
         .eq('email', sanitizedEmail)
         .maybeSingle();
 
+      console.log('🔍 [CHECK-EMAIL] Resultado da consulta users:', {
+        dbUser,
+        dbUserType: typeof dbUser,
+        isNull: dbUser === null,
+        isUndefined: dbUser === undefined,
+        isEmpty: dbUser && Object.keys(dbUser).length === 0,
+        hasId: dbUser && dbUser.id
+      });
+
       if (dbError && dbError.code !== 'PGRST116') {
         console.error('❌ [CHECK-EMAIL] Erro ao verificar tabela users:', dbError);
         throw dbError;
       }
 
       // Se existe no auth.users mas NÃO na tabela users, é um email órfão
-      if (!dbUser) {
+      // Verificação robusta: null, undefined, objeto vazio ou sem ID válido
+      const isOrphaned = !dbUser || dbUser === null || (typeof dbUser === 'object' && (!dbUser.id || Object.keys(dbUser).length === 0));
+      
+      if (isOrphaned) {
         console.log('🧹 [CHECK-EMAIL] Email órfão detectado, removendo do auth.users...');
         
         try {
@@ -146,14 +158,38 @@ serve(async (req: Request) => {
           });
         } catch (cleanupError: any) {
           console.error('💥 [CHECK-EMAIL] Falha ao limpar email órfão:', cleanupError);
-          // Continua e retorna como email existente se a limpeza falhar
+          console.error('💥 [CHECK-EMAIL] Detalhes do erro:', JSON.stringify(cleanupError, null, 2));
+          
+          // Mesmo com erro na limpeza, retorna como disponível para evitar bloqueio
+          // O email órfão será tratado no próximo signup
+          return new Response(JSON.stringify({ 
+            exists: false,
+            message: 'Email disponível para cadastro',
+            cleanup_failed: true,
+            error_details: cleanupError.message
+          }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
         }
       }
       
-      // Email existe no auth.users E na tabela users
+      // Email existe no auth.users E na tabela users (verificação extra de segurança)
+      if (!dbUser || !dbUser.id) {
+        console.warn('⚠️ [CHECK-EMAIL] Email no auth.users mas dbUser inválido:', dbUser);
+        return new Response(JSON.stringify({ 
+          exists: false,
+          message: 'Email disponível para cadastro',
+          warning: 'Usuário inconsistente detectado'
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+      
       const isConfirmed = authUser.email_confirmed_at !== null;
       
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         exists: true,
         is_confirmed: isConfirmed,
         role: dbUser?.role,
