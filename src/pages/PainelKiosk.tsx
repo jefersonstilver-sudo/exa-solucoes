@@ -233,41 +233,53 @@ const PainelKiosk = () => {
 
       if (updateError) throw updateError;
 
+      // Inserir registro inicial no paineis_status
+      await supabase
+        .from('paineis_status')
+        .upsert({
+          painel_id: painelDB.id,
+          status: 'online',
+          ultimo_heartbeat: new Date().toISOString(),
+          url_atual: window.location.href,
+          ip_address: await getRealIP(),
+          user_agent: navigator.userAgent,
+          device_info: deviceInfo
+        });
+
       console.log('[PAINEL-KIOSK] ✅ Painel conectado com sucesso! Fingerprint:', deviceFingerprint.substring(0, 16) + '...');
-      toast.success('Painel conectado com sucesso!');
+      toast.success('Painel conectado! Redirecionando...');
 
-      // Obter URL de conteúdo (customizada do prédio ou padrão)
-      const contentUrl = getPainelContentUrl(painelDB.buildings?.imageurl);
+      // Salvar info para reconexão
+      localStorage.setItem('painel_id', painelDB.id);
+      localStorage.setItem('painel_token', painelDB.token_acesso);
+      localStorage.setItem('device_fingerprint', deviceFingerprint);
 
-      // Preparar informações do painel
-      const painelInfo = {
-        id: painelDB.id,
-        numero_painel: painelDB.numero_painel,
-        token_acesso: painelDB.token_acesso,
-        url_conteudo: contentUrl,
-        predio: painelDB.buildings
-      };
-
-      setPainelData(painelInfo);
-      setVinculado(true);
-      
-      // Salvar no localStorage para reconexão automática
-      localStorage.setItem('painel_token', painelDB.id);
-      localStorage.setItem('painel_info', JSON.stringify(painelInfo));
-
-      // Iniciar heartbeat e escutar comandos
-      iniciarHeartbeat(painelDB.id);
-      escutarComandos(painelDB.id);
-
-      // Entrar em fullscreen após breve delay
+      // Aguardar 1 segundo e redirecionar para página de reprodução
       setTimeout(() => {
-        ativarFullscreen();
-      }, 500);
+        if (painelDB.building_id) {
+          // Se tem prédio vinculado, vai para o player do prédio
+          window.location.href = `/painel/${painelDB.building_id}`;
+        } else {
+          // Se não tem prédio, mostra tela de aguardo
+          window.location.href = '/painel-aguardando-vinculo/' + painelDB.id;
+        }
+      }, 1000);
 
     } catch (error: any) {
       console.error('[PAINEL-KIOSK] Erro ao conectar painel:', error);
       toast.error('Erro ao conectar painel: ' + error.message);
       setValidandoCodigo(false);
+    }
+  };
+
+  // Função auxiliar para obter IP real
+  const getRealIP = async (): Promise<string> => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip || 'unknown';
+    } catch {
+      return 'unknown';
     }
   };
 
