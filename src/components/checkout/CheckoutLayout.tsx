@@ -38,7 +38,7 @@ const CheckoutLayout: React.FC<CheckoutLayoutProps> = ({
         )}
 
         {/* Main Content - FIXED padding mobile */}
-        <div className={`container mx-auto px-3 py-4 sm:px-4 sm:py-6 md:py-8 ${maxWidthClasses[maxWidth]}`}>
+        <div className={`container mx-auto px-3 pt-4 pb-4 sm:px-4 sm:py-6 md:py-8 ${maxWidthClasses[maxWidth]}`}>
           {children}
         </div>
       </div>
