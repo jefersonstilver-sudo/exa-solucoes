@@ -289,18 +289,18 @@ const CheckoutSummary = () => {
             />
           )}
           
-          {/* Mensagem Cortesia */}
+          {/* Mensagem Cortesia - Design Corporativo */}
           {isCortesia && (
-            <div className="p-6 bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-300 rounded-lg">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-pink-500 rounded-full">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+            <div className="p-4 sm:p-6 bg-slate-50 border border-slate-300 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-700 rounded">
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-pink-700">🎁 Pedido Cortesia</h3>
-                  <p className="text-sm text-pink-600">Gratuito - Sem cobrança</p>
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-800">Pedido Cortesia</h3>
+                  <p className="text-xs sm:text-sm text-slate-600">Isento de cobrança</p>
                 </div>
               </div>
             </div>
@@ -323,10 +323,10 @@ const CheckoutSummary = () => {
               <Button 
                 onClick={handleFinalizarCortesia} 
                 disabled={!isLoggedIn || (cartItems?.length || 0) === 0}
-                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                className="w-full h-14 text-lg font-semibold bg-slate-700 hover:bg-slate-800"
                 size="lg"
               >
-                🎁 Finalizar Pedido Cortesia
+                Finalizar Pedido Cortesia
               </Button>
             ) : (
               <Button 
