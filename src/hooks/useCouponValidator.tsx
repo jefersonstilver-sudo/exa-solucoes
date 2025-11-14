@@ -8,6 +8,7 @@ interface CouponValidationResult {
   message: string;
   couponId: string | null;
   discountPercent: number;
+  categoria?: 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia';
 }
 
 export function useCouponValidator() {
@@ -102,7 +103,8 @@ export function useCouponValidator() {
         valid?: boolean; 
         error?: string; 
         id?: string; 
-        desconto_percentual?: number; 
+        desconto_percentual?: number;
+        categoria?: 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia';
       };
       
       const isValid = couponData.valid === true;
@@ -117,7 +119,8 @@ export function useCouponValidator() {
         valid: isValid,
         message: isValid ? 'Cupom aplicado com sucesso!' : (couponData.error || 'Cupom inválido'),
         couponId: isValid ? (couponData.id || null) : null,
-        discountPercent: isValid ? (couponData.desconto_percentual || 0) : 0
+        discountPercent: isValid ? (couponData.desconto_percentual || 0) : 0,
+        categoria: isValid ? couponData.categoria : undefined
       };
       
       console.log('[useCouponValidator] Resultado da validação:', validationResult);
