@@ -106,6 +106,13 @@ export function useCouponValidator() {
       };
       
       const isValid = couponData.valid === true;
+      
+      // 🔑 CRITICAL: Salvar o código do cupom quando validação é bem-sucedida
+      if (isValid) {
+        setCouponCode(code);
+        console.log('[useCouponValidator] ✅ Cupom válido - código salvo:', code);
+      }
+      
       const validationResult = {
         valid: isValid,
         message: isValid ? 'Cupom aplicado com sucesso!' : (couponData.error || 'Cupom inválido'),
