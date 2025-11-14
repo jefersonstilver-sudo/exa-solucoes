@@ -125,17 +125,17 @@ const PainelKiosk = () => {
     };
   }, [deviceFingerprint, token]);
 
-  const carregarPainel = async (painelToken: string) => {
-    console.log('[PAINEL-KIOSK] Carregando painel:', painelToken);
+  const carregarPainel = async (painelId: string) => {
+    console.log('[PAINEL-KIOSK] Carregando painel:', painelId);
     try {
       const { data: painelDB, error } = await supabase
         .from('painels')
         .select('*, buildings(*)')
-        .eq('token_acesso', painelToken)
-        .single();
+        .eq('id', painelId)
+        .maybeSingle();
 
       if (error || !painelDB) {
-        console.error('[PAINEL-KIOSK] Painel não encontrado');
+        console.error('[PAINEL-KIOSK] Painel não encontrado:', error);
         toast.error('Painel não encontrado');
         return;
       }
@@ -178,7 +178,7 @@ const PainelKiosk = () => {
       const { data: painelDB, error: painelError } = await supabase
         .from('painels')
         .select('*, buildings(nome, endereco)')
-        .eq('token_acesso', token)
+        .eq('id', token)
         .eq('codigo_vinculacao', codigoInput)
         .maybeSingle();
 

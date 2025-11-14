@@ -17,6 +17,7 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
   const [numeroPainel, setNumeroPainel] = useState('');
   const [loading, setLoading] = useState(false);
   const [linkGerado, setLinkGerado] = useState('');
+  const [codigoVinculacao, setCodigoVinculacao] = useState('');
   const [copiado, setCopiado] = useState(false);
   const [loadingProximoNumero, setLoadingProximoNumero] = useState(false);
 
@@ -80,9 +81,9 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
           throw new Error('Código de vinculação não foi gerado');
         }
         
-        // Adicionar código ao link para exibição (só para UI, não afeta banco)
-        const linkComCodigo = `${data.link_instalacao}?exibir_codigo=${data.codigo_vinculacao}`;
-        setLinkGerado(linkComCodigo);
+        // Salvar link E código separadamente (não expor na URL)
+        setLinkGerado(data.link_instalacao);
+        setCodigoVinculacao(data.codigo_vinculacao);
         toast.success('Painel criado com sucesso!');
       } else {
         throw new Error(data?.error || 'Erro ao criar painel');
@@ -105,6 +106,7 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
   const handleFechar = () => {
     setNumeroPainel('');
     setLinkGerado('');
+    setCodigoVinculacao('');
     setCopiado(false);
     onOpenChange(false);
     if (linkGerado) {
@@ -164,17 +166,7 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
             <div className="bg-[#8B1538] text-white p-6 rounded-lg text-center space-y-2">
               <p className="text-sm font-medium opacity-90">Código de Vinculação</p>
               <p className="text-5xl font-bold tracking-widest" style={{ fontFamily: 'monospace' }}>
-                {(() => {
-                  try {
-                    const url = new URL(linkGerado);
-                    const codigo = url.searchParams.get('exibir_codigo');
-                    console.log('📱 Exibindo código:', codigo);
-                    return codigo || 'ERRO';
-                  } catch (e) {
-                    console.error('❌ Erro ao extrair código:', e);
-                    return 'ERRO';
-                  }
-                })()}
+                {codigoVinculacao || 'ERRO'}
               </p>
               <p className="text-xs opacity-75">Informe este código ao dispositivo</p>
             </div>
@@ -184,7 +176,7 @@ export const GerarPainelDialog = ({ open, onOpenChange, onPainelGerado }: GerarP
               <Label>Link de Instalação</Label>
               <div className="flex gap-2">
                 <Input
-                  value={linkGerado.split('?')[0]}
+                  value={linkGerado}
                   readOnly
                   className="font-mono text-sm"
                 />
