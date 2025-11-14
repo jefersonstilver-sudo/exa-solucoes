@@ -15,7 +15,9 @@ export const useSimplifiedCheckout = () => {
   const proceedToCheckout = async () => {
     console.log('🛒 [SimplifiedCheckout] Iniciando processo de checkout:', {
       isLoggedIn,
+      isSessionLoading,
       userId: user?.id,
+      userEmail: user?.email,
       cartItems: cartItems.length,
       currentPath: window.location.pathname
     });
@@ -26,8 +28,19 @@ export const useSimplifiedCheckout = () => {
       return false;
     }
 
+    // Aguardar se ainda estiver carregando a sessão
+    if (isSessionLoading) {
+      console.log('🛒 [SimplifiedCheckout] Aguardando carregamento da sessão...');
+      toast.info("Verificando sua sessão, aguarde...");
+      return false;
+    }
+
     if (!isLoggedIn || !user?.id) {
-      console.log('🛒 [SimplifiedCheckout] Usuário não logado, redirecionando');
+      console.log('🛒 [SimplifiedCheckout] Usuário não logado:', {
+        isLoggedIn,
+        hasUser: !!user,
+        userId: user?.id
+      });
       toast.info("Faça login ou crie uma conta para continuar");
       navigate('/cadastro?redirect=/selecionar-plano');
       return false;
