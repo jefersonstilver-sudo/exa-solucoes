@@ -26,6 +26,7 @@ const PaymentSuccess = () => {
         console.log('🔍 Buscando pedido para session:', sessionId);
         
         // Buscar pedido pelo payment_external_id (Stripe session_id)
+        // @ts-ignore - Temporary fix for Supabase type issue
         const { data, error } = await supabase
           .from('pedidos')
           .select('id')
@@ -71,6 +72,9 @@ const PaymentSuccess = () => {
         return prev - 1;
       });
     }, 1000);
+
+    return () => clearInterval(interval);
+  }, [pedidoId, loading, navigate]);
 
   if (loading) {
     return (
