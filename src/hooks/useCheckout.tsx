@@ -59,7 +59,14 @@ export const useCheckout = () => {
     }
     
     const couponDiscountPercent = couponValid && validationResult ? validationResult.discountPercent : 0;
-    const result = calculateTotalPrice(selectedPlan, cartItems, couponDiscountPercent, couponValid, couponCode);
+    const result = calculateTotalPrice(
+      selectedPlan, 
+      cartItems, 
+      couponDiscountPercent, 
+      couponValid, 
+      couponCode,
+      validationResult?.categoria
+    );
     
     console.log('[useCheckout] Preço calculado:', {
       selectedPlan,
@@ -67,6 +74,7 @@ export const useCheckout = () => {
       couponDiscountPercent,
       couponValid,
       couponCode: couponCode || 'SEM CÓDIGO',
+      couponCategoria: validationResult?.categoria,
       result
     });
     

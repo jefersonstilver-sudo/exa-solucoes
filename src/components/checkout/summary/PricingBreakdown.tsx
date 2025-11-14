@@ -12,21 +12,30 @@ interface PricingBreakdownProps {
   couponValid?: boolean;
   couponDiscount?: number;
   paymentMethod: 'pix' | 'credit_card';
+  couponCode?: string;
+  couponCategoria?: string;
 }
 const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   cartItems,
   selectedPlan,
   couponValid = false,
   couponDiscount = 0,
-  paymentMethod
+  paymentMethod,
+  couponCode,
+  couponCategoria
 }) => {
   console.log('[PricingBreakdown] Debug:', {
     cartItemsCount: cartItems?.length || 0,
     selectedPlan,
     couponValid,
     couponDiscount,
-    paymentMethod
+    paymentMethod,
+    couponCode,
+    couponCategoria
   });
+  
+  // Detectar cupom cortesia
+  const isCortesia = couponCategoria === 'cortesia' || couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN';
   if (!selectedPlan || !cartItems || cartItems.length === 0) {
     return <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
         <CardContent className="p-6 text-center">
@@ -36,12 +45,12 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   }
 
   // CORREÇÃO: Usar funções centralizadas que aplicam valor mínimo
-  const baseTotal = calculateTotalPrice(selectedPlan, cartItems, 0, false);
+  const baseTotal = calculateTotalPrice(selectedPlan, cartItems, 0, false, undefined, couponCategoria);
   const couponDiscountAmount = couponValid && couponDiscount > 0 ? baseTotal * couponDiscount / 100 : 0;
   const totalAfterCoupon = baseTotal - couponDiscountAmount;
 
-  // CRÍTICO: Total final COM valor mínimo de R$ 0,05
-  const finalTotal = Math.max(totalAfterCoupon, MINIMUM_ORDER_VALUE);
+  // CRÍTICO: Total final COM valor mínimo de R$ 0,05 (exceto cortesia)
+  const finalTotal = isCortesia ? 0 : Math.max(totalAfterCoupon, MINIMUM_ORDER_VALUE);
   const totalSavings = couponDiscountAmount;
 
   console.log('💰 [PricingBreakdown] CÁLCULO COM VALOR MÍNIMO:', {
@@ -99,7 +108,7 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
         </div>
 
         {/* Mensagem de Valor Mínimo */}
-        {totalAfterCoupon < MINIMUM_ORDER_VALUE && (
+        {!isCortesia && totalAfterCoupon < MINIMUM_ORDER_VALUE && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
             <p className="text-[10px] sm:text-xs text-blue-800">
               <strong>Valor mínimo:</strong> R$ 0,05 é o valor simbólico de ativação. Pagamento via PIX.
