@@ -162,3 +162,12 @@ verify_jwt = false
 [functions.test-email-no-cache]
 verify_jwt = false
 
+[functions.gerar-codigo-vinculo]
+verify_jwt = true
+
+[functions.criar-novo-painel]
+verify_jwt = true
+
+[functions.painel-heartbeat]
+verify_jwt = false
+
