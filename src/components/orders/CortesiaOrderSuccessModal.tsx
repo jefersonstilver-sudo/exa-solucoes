@@ -24,8 +24,12 @@ export const CortesiaOrderSuccessModal = ({
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState(5);
 
+  console.log('🎉 [CORTESIA MODAL] Render:', { isOpen, pedidoId, buildingName, panelCount });
+
   useEffect(() => {
     if (!isOpen) return;
+
+    console.log('🎉 [CORTESIA MODAL] Modal opened, starting countdown...');
 
     // Countdown timer
     const interval = setInterval(() => {
@@ -43,6 +47,7 @@ export const CortesiaOrderSuccessModal = ({
   }, [isOpen, pedidoId]);
 
   const handleRedirect = () => {
+    console.log('🎉 [CORTESIA MODAL] Redirecting to:', `/anunciante/pedido/${pedidoId}`);
     onClose();
     navigate(`/anunciante/pedido/${pedidoId}`);
   };
