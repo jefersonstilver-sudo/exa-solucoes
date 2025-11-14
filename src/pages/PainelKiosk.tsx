@@ -3,27 +3,35 @@ import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Wifi, WifiOff } from 'lucide-react';
 
 const PainelKiosk = () => {
   const { token } = useParams<{ token: string }>();
   const [vinculado, setVinculado] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [codigo, setCodigo] = useState('');
-  const [vinculando, setVinculando] = useState(false);
   const [painelData, setPainelData] = useState<any>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
   const comandosChannel = useRef<any>(null);
 
   useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
     const inicializar = async () => {
-      // Se tem token na URL, tentar vincular automaticamente
       if (token) {
         await vincularComToken(token);
       } else {
-        // Verificar se já está vinculado via localStorage (fluxo antigo)
         const painelToken = localStorage.getItem('painel_token');
         const painelInfo = localStorage.getItem('painel_info');
 
@@ -40,12 +48,15 @@ const PainelKiosk = () => {
     };
 
     inicializar();
+
+    return () => {
+      if (heartbeatInterval.current) clearInterval(heartbeatInterval.current);
+      if (comandosChannel.current) supabase.removeChannel(comandosChannel.current);
+    };
   }, [token]);
 
   const vincularComToken = async (accessToken: string) => {
-    setVinculando(true);
     try {
-      // Buscar dados do painel usando o token
       const { data: painelDB, error: painelError } = await supabase
         .from('painels')
         .select('*, buildings(nome, endereco)')
@@ -56,7 +67,6 @@ const PainelKiosk = () => {
         throw new Error('Token inválido ou painel não encontrado');
       }
 
-      // Atualizar status para vinculado
       const { error: updateError } = await supabase
         .from('painels')
         .update({
@@ -85,8 +95,7 @@ const PainelKiosk = () => {
 
       setPainelData(painelInfo);
       setVinculado(true);
-      toast.success(`Painel ${painelDB.numero_painel} vinculado com sucesso!`);
-
+      
       iniciarHeartbeat(painelDB.id);
       escutarComandos(painelDB.id);
       ativarFullscreen();
@@ -94,76 +103,21 @@ const PainelKiosk = () => {
       console.error('Erro ao vincular com token:', error);
       toast.error(error.message || 'Erro ao vincular painel');
       setLoading(false);
-    } finally {
-      setVinculando(false);
     }
   };
 
   const ativarFullscreen = () => {
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.log('Erro ao ativar fullscreen:', err);
-      });
-    }
-  };
-
-  const vincularPainel = async () => {
-    if (!codigo || codigo.length < 7) {
-      toast.error('Digite um código válido');
-      return;
-    }
-
-    setVinculando(true);
-    try {
-      const deviceInfo = {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language,
-        screenResolution: `${window.screen.width}x${window.screen.height}`,
-      };
-
-      const { data, error } = await supabase.functions.invoke('vincular-painel', {
-        body: {
-          codigo: codigo.toUpperCase(),
-          device_info: deviceInfo,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        const painelInfo = {
-          painel_id: data.painel_id,
-          building: data.building,
-          url_painel: data.url_painel,
-        };
-
-        localStorage.setItem('painel_token', data.token);
-        localStorage.setItem('painel_info', JSON.stringify(painelInfo));
-
-        setPainelData(painelInfo);
-        setVinculado(true);
-        toast.success('Painel vinculado com sucesso!');
-
-        iniciarHeartbeat(data.token);
-        escutarComandos(data.token);
-        ativarFullscreen();
-      } else {
-        throw new Error(data?.error || 'Erro ao vincular painel');
+    setTimeout(() => {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.log('Erro ao ativar fullscreen:', err);
+        });
       }
-    } catch (error: any) {
-      console.error('Erro ao vincular:', error);
-      toast.error(error.message || 'Erro ao vincular painel');
-    } finally {
-      setVinculando(false);
-    }
+    }, 1000);
   };
 
   const iniciarHeartbeat = (painelId: string) => {
-    // Enviar heartbeat imediatamente
     enviarHeartbeat(painelId);
-
-    // Configurar intervalo de 30s
     heartbeatInterval.current = setInterval(() => {
       enviarHeartbeat(painelId);
     }, 30000);
@@ -235,97 +189,127 @@ const PainelKiosk = () => {
           break;
       }
 
-      // Marcar comando como executado
       await supabase
         .from('paineis_comandos')
         .update({
           status: 'executado',
           executado_em: new Date().toISOString(),
-          resultado: { success: true },
         })
         .eq('id', comando.id);
     } catch (error) {
       console.error('Erro ao executar comando:', error);
+      await supabase
+        .from('paineis_comandos')
+        .update({
+          status: 'erro',
+          erro: error instanceof Error ? error.message : 'Erro desconhecido',
+        })
+        .eq('id', comando.id);
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (heartbeatInterval.current) clearInterval(heartbeatInterval.current);
-      if (comandosChannel.current) supabase.removeChannel(comandosChannel.current);
-    };
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!vinculado) {
+  // Tela de aguardando conexão - Fullscreen vermelha com logo EXA
+  if (loading || !vinculado) {
     return (
       <>
         <Helmet>
-          <title>Painel EXA - Vínculo</title>
+          <title>EXA Mídia - Sistema de Painéis Digitais</title>
         </Helmet>
-        <div className="h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20">
-          <div className="max-w-md w-full p-8 bg-card rounded-lg shadow-xl space-y-6">
-            <div className="text-center space-y-2">
-              <h1 className="text-4xl font-bold text-primary">EXA Mídia</h1>
-              <p className="text-muted-foreground">Sistema de Painéis Digitais</p>
+        
+        <div className="fixed inset-0 bg-[#8B1538] flex items-center justify-center overflow-hidden">
+          {/* Indicador de conexão no canto superior direito */}
+          <div className="fixed top-6 right-6 z-50">
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+              {isOnline ? (
+                <>
+                  <Wifi className="w-5 h-5 text-white animate-pulse" />
+                  <span className="text-white text-sm font-medium">Online</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-5 h-5 text-white/60" />
+                  <span className="text-white/60 text-sm font-medium">Offline</span>
+                </>
+              )}
             </div>
+          </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Digite o Código de Vínculo
-                </label>
-                <Input
-                  type="text"
-                  placeholder="EXA-XXXX"
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-                  maxLength={8}
-                  className="text-center text-2xl font-mono tracking-wider"
-                />
+          {/* Conteúdo central */}
+          <div className="flex flex-col items-center justify-center gap-8 animate-fade-in">
+            {/* Logo EXA com animação */}
+            <div className="relative">
+              {/* Círculo de pulso ao fundo */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-48 h-48 bg-white/5 rounded-full animate-[ping_3s_ease-in-out_infinite]"></div>
               </div>
-
-              <Button
-                onClick={vincularPainel}
-                disabled={vinculando || codigo.length < 7}
-                className="w-full"
-                size="lg"
-              >
-                {vinculando ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Vinculando...
-                  </>
-                ) : (
-                  'Vincular Painel'
-                )}
-              </Button>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-40 h-40 bg-white/10 rounded-full animate-[ping_2s_ease-in-out_infinite]"></div>
+              </div>
+              
+              {/* Logo EXA */}
+              <div className="relative z-10 animate-[scale-in_0.5s_ease-out]">
+                <svg 
+                  width="200" 
+                  height="200" 
+                  viewBox="0 0 200 200" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="drop-shadow-2xl"
+                >
+                  <text
+                    x="50%"
+                    y="50%"
+                    dominantBaseline="middle"
+                    textAnchor="middle"
+                    fill="white"
+                    fontSize="80"
+                    fontWeight="700"
+                    fontFamily="system-ui, -apple-system, sans-serif"
+                    letterSpacing="-2"
+                  >
+                    exa
+                  </text>
+                </svg>
+              </div>
             </div>
 
-            <p className="text-xs text-center text-muted-foreground">
-              Solicite o código ao administrador do sistema
-            </p>
+            {/* Texto */}
+            <div className="text-center space-y-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <h1 className="text-white text-3xl font-bold tracking-wide">
+                Sistema de Painéis Digitais
+              </h1>
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-white rounded-full animate-[bounce_1s_ease-in-out_infinite]"></div>
+                  <div className="w-2 h-2 bg-white rounded-full animate-[bounce_1s_ease-in-out_infinite_0.2s]"></div>
+                  <div className="w-2 h-2 bg-white rounded-full animate-[bounce_1s_ease-in-out_infinite_0.4s]"></div>
+                </div>
+                <p className="text-white/90 text-xl">
+                  Aguardando conexão
+                </p>
+              </div>
+            </div>
+
+            {/* Barra de progresso animada */}
+            <div className="w-64 h-1 bg-white/20 rounded-full overflow-hidden animate-fade-in" style={{ animationDelay: '0.4s' }}>
+              <div className="h-full bg-white/80 rounded-full animate-[pulse_2s_ease-in-out_infinite]"></div>
+            </div>
           </div>
         </div>
       </>
     );
   }
 
+  // Tela do painel vinculado - iframe fullscreen
   return (
     <>
       <Helmet>
-        <title>Painel EXA - {painelData?.building?.nome}</title>
+        <title>Painel EXA - {painelData?.numero_painel || 'Carregando...'}</title>
       </Helmet>
-      <div className="h-screen w-screen overflow-hidden bg-black">
+
+      <div className="w-screen h-screen overflow-hidden bg-black">
         <iframe
-          src={painelData?.url_painel || '/'}
+          src={painelData?.url_painel || 'https://exa.tec.br'}
           className="w-full h-full border-0"
           title="Conteúdo do Painel"
           allow="autoplay; fullscreen"
