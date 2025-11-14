@@ -45,8 +45,15 @@ export const calculateTotalPrice = (
   selectedPlan: PlanKey | null,
   cartItems: CartItem[],
   couponDiscount: number = 0,
-  couponValid: boolean = false
+  couponValid: boolean = false,
+  couponCode?: string
 ): number => {
+  // 🎯 CUPOM ESPECIAL 573040: Força R$ 0,05 SEMPRE
+  if (couponCode === '573040') {
+    console.log("🎯🎯🎯 [CheckoutUtils] CUPOM 573040 DETECTADO - Forçando R$ 0,05");
+    return 0.05;
+  }
+  
   if (!selectedPlan || !cartItems || cartItems.length === 0) {
     console.log("💰 [CheckoutUtils] CÁLCULO CANCELADO - Dados insuficientes:", {
       selectedPlan,
@@ -60,6 +67,7 @@ export const calculateTotalPrice = (
     cartItemsCount: cartItems.length,
     couponDiscount,
     couponValid,
+    couponCode: couponCode || 'SEM CÓDIGO',
     timestamp: new Date().toISOString()
   });
 

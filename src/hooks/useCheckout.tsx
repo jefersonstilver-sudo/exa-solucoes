@@ -59,18 +59,19 @@ export const useCheckout = () => {
     }
     
     const couponDiscountPercent = couponValid && validationResult ? validationResult.discountPercent : 0;
-    const result = calculateTotalPrice(selectedPlan, cartItems, couponDiscountPercent, couponValid);
+    const result = calculateTotalPrice(selectedPlan, cartItems, couponDiscountPercent, couponValid, couponCode);
     
     console.log('[useCheckout] Preço calculado:', {
       selectedPlan,
       cartItemsCount: cartItems.length,
       couponDiscountPercent,
       couponValid,
+      couponCode: couponCode || 'SEM CÓDIGO',
       result
     });
     
     return result;
-  }, [selectedPlan, cartItems, couponValid, validationResult]);
+  }, [selectedPlan, cartItems, couponValid, validationResult, couponCode]);
 
   // Wrapper para validação de cupom - Agora usa valor do pedido e quantidade de prédios
   const validateCoupon = useCallback(async (code: string, planMonths: number) => {

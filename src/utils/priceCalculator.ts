@@ -92,6 +92,7 @@ export const calculatePrice = (
   let finalPrice = afterCoupon - pixDiscount;
   
   // 🎯 CUPOM ESPECIAL 573040: Força R$ 0,05 SEMPRE (PIX ou Cartão)
+  // 🎁 CUPOM CORTESIA: Força R$ 0,00 SEMPRE
   // DEVE ser checado APÓS todos os cálculos normais para sobrescrever o resultado
   if (couponCode === '573040') {
     console.log('🎯🎯🎯 [CUPOM 573040] ATIVADO! Forçando valor final para R$ 0,05', {
@@ -106,6 +107,20 @@ export const calculatePrice = (
       pixDiscount: 0,
       finalPrice: 0.05,
       calculation: `CUPOM TESTE 573040: Valor fixo R$ 0,05 (subtotal original: R$ ${subtotal.toFixed(2)})`
+    };
+  }
+  
+  if (couponCode === 'CORTESIA_ADMIN') {
+    console.log('🎁🎁🎁 [CUPOM CORTESIA] ATIVADO! Forçando valor final para R$ 0,00', {
+      subtotalOriginal: subtotal,
+      afterCoupon,
+      finalPriceAntes: finalPrice
+    });
+    return {
+      subtotal: Math.round(subtotal * 100) / 100,
+      pixDiscount: 0,
+      finalPrice: 0.00,
+      calculation: `CUPOM CORTESIA: Pedido gratuito (subtotal original: R$ ${subtotal.toFixed(2)})`
     };
   }
   

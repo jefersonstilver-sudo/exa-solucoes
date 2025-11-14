@@ -15,7 +15,7 @@ export interface Coupon {
   valor_minimo_pedido?: number;
   uso_por_usuario?: number;
   data_inicio?: string;
-  categoria: string;
+  categoria: 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia';
   min_predios?: number;
   max_predios?: number;
 }
@@ -50,7 +50,7 @@ export interface CreateCouponData {
   tipo_desconto: 'percentual' | 'valor_fixo';
   valor_minimo_pedido?: number;
   uso_por_usuario?: number;
-  categoria: string;
+  categoria: 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia';
   ativo: boolean;
   min_predios?: number;
   max_predios?: number;

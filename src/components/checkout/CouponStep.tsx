@@ -16,6 +16,7 @@ interface CouponStepProps {
   couponMessage: string;
   couponValid: boolean;
   removeCoupon: () => void;
+  isSuperAdmin?: boolean;
 }
 
 const CouponStep: React.FC<CouponStepProps> = ({
@@ -25,11 +26,18 @@ const CouponStep: React.FC<CouponStepProps> = ({
   isValidatingCoupon,
   couponMessage,
   couponValid,
-  removeCoupon
+  removeCoupon,
+  isSuperAdmin = false
 }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     validateCoupon();
+  };
+  
+  const handleApplyCortesia = () => {
+    setCouponCode('CORTESIA_ADMIN');
+    // Trigger validation immediately
+    setTimeout(() => validateCoupon(), 100);
   };
   
   // Animation variants
@@ -154,6 +162,32 @@ const CouponStep: React.FC<CouponStepProps> = ({
       </motion.form>
       
       <motion.div variants={itemVariants}>
+        {/* Super Admin - Botão Cortesia */}
+        {isSuperAdmin && (
+          <Card className="overflow-hidden shadow-sm border-2 border-pink-300 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-pink-500 rounded-full">
+                    <Gift className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-pink-700">Cupom Cortesia</h3>
+                    <p className="text-xs text-pink-600">Exclusivo para Super Admin</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleApplyCortesia}
+                  variant="default"
+                  className="bg-pink-500 hover:bg-pink-600"
+                >
+                  Aplicar Cortesia
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         <Card className="overflow-hidden shadow-sm border-none bg-gray-50 rounded-lg sm:rounded-2xl">
           <CardContent className="p-3 sm:p-5">
             <h3 className="text-xs sm:text-sm font-medium mb-2 sm:mb-3 text-gray-700">Como conseguir cupons</h3>

@@ -66,11 +66,12 @@ const CouponFiltersComponent: React.FC<CouponFiltersProps> = ({
         <SelectContent>
           <SelectItem value="all">Todas as Categorias</SelectItem>
           <SelectItem value="geral">Geral</SelectItem>
-          <SelectItem value="primeira_compra">Primeira Compra</SelectItem>
-          <SelectItem value="reativacao">Reativação</SelectItem>
-          <SelectItem value="vip">VIP</SelectItem>
-          <SelectItem value="evento">Evento</SelectItem>
+          <SelectItem value="primeiro_pedido">Primeiro Pedido</SelectItem>
+          <SelectItem value="fidelidade">Fidelidade</SelectItem>
+          <SelectItem value="especial">Especial</SelectItem>
+          <SelectItem value="parceiro">Parceiro</SelectItem>
           <SelectItem value="promocional">Promocional</SelectItem>
+          <SelectItem value="cortesia">Cortesia</SelectItem>
         </SelectContent>
       </Select>
     </div>

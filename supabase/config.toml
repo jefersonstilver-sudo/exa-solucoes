@@ -147,3 +147,6 @@ verify_jwt = true
 [functions.mercadopago-card-webhook]
 verify_jwt = false
 
+[functions.create-cortesia-order]
+verify_jwt = true
+

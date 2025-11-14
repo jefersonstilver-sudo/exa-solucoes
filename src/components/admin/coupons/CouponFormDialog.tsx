@@ -81,9 +81,10 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
   const handleGenerateCode = async () => {
     setIsGenerating(true);
     try {
-      const prefix = formData.categoria === 'primeira_compra' ? 'WELCOME' :
-                     formData.categoria === 'vip' ? 'VIP' :
-                     formData.categoria === 'evento' ? 'EVENT' : 'INDEXA';
+      const prefix = formData.categoria === 'primeiro_pedido' ? 'WELCOME' :
+                     formData.categoria === 'fidelidade' ? 'VIP' :
+                     formData.categoria === 'especial' ? 'EVENT' :
+                     formData.categoria === 'cortesia' ? 'CORTESIA' : 'INDEXA';
       
       const newCode = await onGenerateCode(prefix);
       setFormData(prev => ({ ...prev, codigo: newCode }));
@@ -169,18 +170,19 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
             <Label>Categoria</Label>
             <Select 
               value={formData.categoria} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, categoria: value }))}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, categoria: value as 'geral' | 'especial' | 'primeiro_pedido' | 'fidelidade' | 'promocional' | 'parceiro' | 'cortesia' }))}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="geral">Geral</SelectItem>
-                <SelectItem value="primeira_compra">Primeira Compra</SelectItem>
-                <SelectItem value="reativacao">Reativação</SelectItem>
-                <SelectItem value="vip">VIP</SelectItem>
-                <SelectItem value="evento">Evento</SelectItem>
+                <SelectItem value="primeiro_pedido">Primeiro Pedido</SelectItem>
+                <SelectItem value="fidelidade">Fidelidade</SelectItem>
+                <SelectItem value="especial">Especial</SelectItem>
+                <SelectItem value="parceiro">Parceiro</SelectItem>
                 <SelectItem value="promocional">Promocional</SelectItem>
+                <SelectItem value="cortesia">Cortesia (Super Admin)</SelectItem>
               </SelectContent>
             </Select>
           </div>
