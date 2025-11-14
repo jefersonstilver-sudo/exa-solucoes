@@ -4,9 +4,9 @@
 // 🔄 FORÇAR REDEPLOY: 2025-11-13T00:42:00Z
 // ✅ Versão moderna com gradientes e estilos profissionais
 
-// Logo oficial da EXA - Signed URL com validade de 10 anos
-// Esta URL é gerada com createSignedUrl e funciona mesmo com bucket privado
-export const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Publicidade%20Inteligente%20(800%20x%20800%20px).png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL1B1YmxpY2lkYWRlIEludGVsaWdlbnRlICg4MDAgeCAwMCBweCkucG5nIiwiaWF0IjoxNzMxNTk2NDY1LCJleHAiOjIwNDY5NTY0NjV9.VFyY9LhRPwt6Y8f_J3mQoO7xK7qHjHRtD0PxGYcvLrE';
+// Logo oficial da EXA - URL pública do bucket email-assets
+// Este bucket é público e dedicado apenas para assets de email
+export const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-logo.png';
 
 // Cores oficiais da EXA - Brand Identity
 export const EXA_COLORS = {
