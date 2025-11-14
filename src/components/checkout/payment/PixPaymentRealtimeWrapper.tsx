@@ -4,6 +4,7 @@ import PixPaymentDetails from './PixPaymentDetails';
 import { useRealtimePaymentStatus } from '@/hooks/payment/useRealtimePaymentStatus';
 import { usePixPaymentPolling } from '@/hooks/payment/usePixPaymentPolling';
 import PaymentSuccessAnimation from './PaymentSuccessAnimation';
+import PaymentApprovedOverlay from '@/components/payment/PaymentApprovedOverlay';
 import PixPaymentTimer from './PixPaymentTimer';
 
 interface PixPaymentRealtimeWrapperProps {
@@ -38,7 +39,11 @@ const PixPaymentRealtimeWrapper = (props: PixPaymentRealtimeWrapperProps) => {
   };
 
   // Configurar monitoramento em tempo real
-  const { isListening } = useRealtimePaymentStatus({
+  const { 
+    isListening, 
+    showSuccessOverlay, 
+    handleContinueAfterSuccess 
+  } = useRealtimePaymentStatus({
     userId: props.userId,
     pedidoId: props.pedidoId,
     onPaymentApproved: handlePaymentApproved
@@ -52,7 +57,17 @@ const PixPaymentRealtimeWrapper = (props: PixPaymentRealtimeWrapperProps) => {
     intervalMs: 5000 // Verificar a cada 5 segundos
   });
 
-  // Se o pagamento foi aprovado, mostrar animação de sucesso
+  // Show professional overlay when payment is approved via realtime
+  if (showSuccessOverlay) {
+    return (
+      <PaymentApprovedOverlay 
+        onContinue={handleContinueAfterSuccess}
+        autoRedirectTimeout={3000}
+      />
+    );
+  }
+
+  // Show old animation for polling-detected approvals
   if (paymentApproved || props.status === 'approved') {
     return (
       <div className="text-center py-8">
