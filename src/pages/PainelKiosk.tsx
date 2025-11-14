@@ -57,15 +57,27 @@ const PainelKiosk = () => {
 
   const vincularComToken = async (accessToken: string) => {
     try {
+      console.log('🔍 [PAINEL_KIOSK] Tentando vincular com token:', accessToken);
+      
       const { data: painelDB, error: painelError } = await supabase
         .from('painels')
         .select('*, buildings(nome, endereco)')
         .eq('token_acesso', accessToken)
-        .single();
+        .maybeSingle();
 
-      if (painelError || !painelDB) {
+      console.log('📊 [PAINEL_KIOSK] Resultado da busca:', { painelDB, painelError });
+
+      if (painelError) {
+        console.error('❌ [PAINEL_KIOSK] Erro na query:', painelError);
+        throw new Error(`Erro ao buscar painel: ${painelError.message}`);
+      }
+
+      if (!painelDB) {
+        console.error('❌ [PAINEL_KIOSK] Painel não encontrado para token:', accessToken);
         throw new Error('Token inválido ou painel não encontrado');
       }
+
+      console.log('✅ [PAINEL_KIOSK] Painel encontrado:', painelDB.numero_painel);
 
       const { error: updateError } = await supabase
         .from('painels')
@@ -117,6 +129,7 @@ const PainelKiosk = () => {
   };
 
   const iniciarHeartbeat = (painelId: string) => {
+    console.log('💓 [PAINEL_KIOSK] Iniciando heartbeat para painel:', painelId);
     enviarHeartbeat(painelId);
     heartbeatInterval.current = setInterval(() => {
       enviarHeartbeat(painelId);
