@@ -100,14 +100,19 @@ const PaymentApprovedOverlay: React.FC<PaymentApprovedOverlayProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="space-y-3 mb-8"
+            className="space-y-4 mb-8 px-4"
           >
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-              Pagamento Aprovado
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground tracking-tight">
+              Pagamento Confirmado!
             </h1>
-            <p className="text-lg text-muted-foreground max-w-sm">
-              Sua campanha está sendo processada e estará disponível em instantes
-            </p>
+            <div className="space-y-2">
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-md mx-auto">
+                Estamos preparando seu espaço publicitário
+              </p>
+              <p className="text-sm sm:text-base text-muted-foreground/80 max-w-md mx-auto">
+                Seu vídeo entrará no ar em breve
+              </p>
+            </div>
           </motion.div>
 
           {/* Progress Bar */}
@@ -135,9 +140,9 @@ const PaymentApprovedOverlay: React.FC<PaymentApprovedOverlayProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="text-sm text-muted-foreground"
+            className="text-xs sm:text-sm text-muted-foreground"
           >
-            Redirecionando em {countdown}s
+            Redirecionando para Meus Pedidos em {countdown}s...
           </motion.p>
 
           {/* Decorative particles */}
