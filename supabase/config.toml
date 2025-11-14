@@ -171,3 +171,9 @@ verify_jwt = true
 [functions.painel-heartbeat]
 verify_jwt = false
 
+[functions.executar-comando-remoto]
+verify_jwt = true
+
+[functions.desconectar-painel]
+verify_jwt = true
+

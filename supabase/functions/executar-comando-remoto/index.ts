@@ -12,12 +12,24 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Cliente com service role para bypass de RLS
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Cliente para verificar autenticação do usuário
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header is required');
+    }
+
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
@@ -25,18 +37,21 @@ serve(async (req) => {
     // Verificar se é admin
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
-      throw new Error('Unauthorized');
+      throw new Error('Unauthorized - Invalid token');
     }
 
-    const { data: userData } = await supabaseClient
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (!userData || !['admin', 'super_admin'].includes(userData.role)) {
+    if (userError || !userData || !['admin', 'super_admin'].includes(userData.role)) {
+      console.error('❌ User is not admin:', user.id, userData?.role);
       throw new Error('Only admins can execute remote commands');
     }
+
+    console.log('✅ Admin verified:', user.email, userData.role);
 
     const { painel_id, comando, parametros } = await req.json();
 
@@ -50,8 +65,8 @@ serve(async (req) => {
       throw new Error(`Comando inválido. Permitidos: ${comandosValidos.join(', ')}`);
     }
 
-    // Criar comando na tabela
-    const { data: novoComando, error } = await supabaseClient
+    // Criar comando na tabela usando admin client
+    const { data: novoComando, error } = await supabaseAdmin
       .from('paineis_comandos')
       .insert({
         painel_id,
@@ -63,12 +78,15 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Erro ao criar comando:', error);
+      throw error;
+    }
 
     console.log(`📡 Comando enviado: ${comando} para painel ${painel_id}`);
 
     // Log do sistema
-    await supabaseClient
+    await supabaseAdmin
       .from('log_eventos_sistema')
       .insert({
         tipo_evento: 'COMANDO_REMOTO_ENVIADO',
