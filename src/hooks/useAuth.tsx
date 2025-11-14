@@ -121,13 +121,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         
         // Buscar dados completos do usuário
-        const { data: userData, error: userError } = await supabase
+        let userData = null;
+        let userError = null;
+        
+        const userResult = await supabase
           .from('users')
           .select('id, email, nome, cpf, avatar_url, email_verified_at')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
         
-        if (userError) {
+        userData = userResult.data;
+        userError = userResult.error;
+        
+        // FALLBACK: Se usuário não existe em public.users, sincronizar de auth.users
+        if (!userData && !userError) {
+          console.warn('⚠️ [useAuth] Usuário não encontrado em public.users, tentando sincronizar...');
+          
+          try {
+            const { data: syncResult, error: syncError } = await supabase
+              .rpc('sync_auth_user_to_public', { auth_user_id: userId });
+
+            if (syncError) {
+              console.error('❌ [useAuth] Erro ao sincronizar usuário:', syncError);
+              setUserProfile(null);
+              return;
+            }
+
+            console.log('✅ [useAuth] Usuário sincronizado:', syncResult);
+
+            // Tentar buscar novamente após sincronização
+            const retryResult = await supabase
+              .from('users')
+              .select('id, email, nome, cpf, avatar_url, email_verified_at')
+              .eq('id', userId)
+              .maybeSingle();
+
+            userData = retryResult.data;
+            userError = retryResult.error;
+
+            if (!userData || userError) {
+              console.error('❌ [useAuth] Erro ao buscar usuário após sincronização:', userError);
+              setUserProfile(null);
+              return;
+            }
+            
+            console.log('✅ [useAuth] Usuário carregado após sincronização');
+            
+          } catch (syncException) {
+            console.error('❌ [useAuth] Exceção ao sincronizar usuário:', syncException);
+            setUserProfile(null);
+            return;
+          }
+        } else if (userError) {
           console.error('❌ Erro ao buscar dados do usuário:', userError);
           setUserProfile(null);
           return;

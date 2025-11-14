@@ -4795,6 +4795,10 @@ export type Database = {
         Args: { p_pedido_video_id: string }
         Returns: boolean
       }
+      sync_auth_user_to_public: {
+        Args: { auth_user_id: string }
+        Returns: Json
+      }
       unblock_order_secure: {
         Args: { p_pedido_id: string; p_reason?: string }
         Returns: Json
