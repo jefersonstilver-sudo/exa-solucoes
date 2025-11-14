@@ -12,6 +12,8 @@ import { formatCurrency } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { CortesiaOrderSuccessModal } from '@/components/orders/CortesiaOrderSuccessModal';
+import { useCortesiaSuccessDetection } from '@/hooks/useCortesiaSuccessDetection';
 
 const getStatusColor = (status: string) => {
   const statusMap: Record<string, string> = {
@@ -129,6 +131,10 @@ export default function Pedidos() {
   const { user } = useUserSession();
   const { userOrdersAndAttempts, loading } = useUserOrdersAndAttempts(user?.id);
   const { finalizeAttemptToOrder, isProcessing } = useAttemptFinalizer();
+  
+  // Detect cortesia order success
+  const orders = userOrdersAndAttempts?.filter(item => item.type === 'order');
+  const { showModal, orderData, closeModal } = useCortesiaSuccessDetection(orders, loading);
 
   if (loading) {
     return (
@@ -149,16 +155,25 @@ export default function Pedidos() {
     );
   }
 
-  const orders = userOrdersAndAttempts.filter(item => item.type === 'order');
   const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Meus Pedidos</h1>
       
+      {/* Cortesia Success Modal */}
+      <CortesiaOrderSuccessModal
+        isOpen={showModal}
+        pedidoId={orderData?.id || ''}
+        buildingName={orderData?.selected_buildings?.[0]?.nome || orderData?.nomes_predios?.[0]}
+        buildingAddress={orderData?.selected_buildings?.[0]?.endereco}
+        panelCount={orderData?.lista_paineis?.length || orderData?.selected_buildings?.length || 1}
+        onClose={closeModal}
+      />
+      
       <div className="space-y-6">
         {/* Pedidos Completos */}
-        {orders.map((order) => (
+        {orders && orders.map((order) => (
           <Card key={order.id} className="mb-4">
             <CardHeader>
               <div className="flex justify-between items-start">
