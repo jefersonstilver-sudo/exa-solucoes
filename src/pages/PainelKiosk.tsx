@@ -114,12 +114,7 @@ const PainelKiosk = () => {
           status_vinculo: 'conectado',
           status: 'online',
           primeira_conexao_at: new Date().toISOString(),
-          data_vinculacao: new Date().toISOString(),
-          device_info: {
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            screenResolution: `${window.screen.width}x${window.screen.height}`,
-          }
+          data_vinculacao: new Date().toISOString()
         })
         .eq('id', painelDB.id);
 
