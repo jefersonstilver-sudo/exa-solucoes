@@ -48,8 +48,9 @@ serve(async (req) => {
     // Gerar código legível
     const code = `EXA-PAINEL-${numero_painel}`;
     
-    // Gerar link de instalação
-    const link_instalacao = `${supabaseUrl.replace('https://', 'https://').split('.supabase.co')[0].replace('https://', '')}.lovable.app/painel-kiosk/${token_acesso}`;
+    // Gerar link de instalação com protocolo HTTPS
+    const projectRef = supabaseUrl.split('.supabase.co')[0].replace('https://', '');
+    const link_instalacao = `https://${projectRef}.lovable.app/painel-kiosk/${token_acesso}`;
 
     console.log('🔵 Link de instalação:', link_instalacao);
 
