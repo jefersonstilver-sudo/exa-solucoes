@@ -165,7 +165,8 @@ const CheckoutSummary = () => {
       toast.error("Seu carrinho está vazio");
       return;
     }
-    if (finalTotal < minimumValue) {
+    // 🎯 EXCEÇÃO: Cupom 573040 permite valor mínimo de R$ 0,05
+    if (!isCupom573040 && finalTotal < minimumValue) {
       toast.error(`O valor mínimo do pedido é R$ ${minimumValue.toFixed(2)}`);
       return;
     }
