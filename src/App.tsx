@@ -41,6 +41,7 @@ import ProviderBenefitChoice from './pages/ProviderBenefitChoice';
 import EmailNotConfirmed from './pages/EmailNotConfirmed';
 import EmailEnviado from './pages/EmailEnviado';
 import OrderConfirmation from './pages/OrderConfirmation';
+import PainelKiosk from './pages/PainelKiosk';
 
 // Importações diretas para páginas principais (performance otimizada)
 import PaineisPublicitarios from './pages/PaineisPublicitarios';
@@ -258,6 +259,9 @@ const AppContent = () => {
               <ValidateOrder />
             </Suspense>
           } />
+          
+          {/* PAINEL KIOSK - VINCULAÇÃO DE DISPOSITIVOS */}
+          <Route path="/painel-kiosk" element={<PainelKiosk />} />
 
           {/* Rotas com lazy loading */}
           {/* REDIRECTS 301 para novas URLs */}
