@@ -30,31 +30,32 @@ const CheckoutFinish = () => {
 
   return (
     <CheckoutLayout currentStep={4} maxWidth="4xl">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        onClick={handleBack}
-        className="flex items-center text-gray-600 hover:text-gray-800 mb-4 -ml-2"
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Voltar para Pagamento
-      </Button>
+      <div className="mt-2 sm:mt-0">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          onClick={handleBack}
+          className="flex items-center text-gray-600 hover:text-gray-800 mb-4 -ml-2"
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Voltar para Pagamento
+        </Button>
 
-      {/* Success Message */}
-      <div className="text-center mb-6 sm:mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full mb-4">
-          <CheckCircle className="h-8 w-8 sm:h-10 sm:w-10 text-green-600" />
+        {/* Success Message */}
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full mb-4">
+            <CheckCircle className="h-8 w-8 sm:h-10 sm:w-10 text-green-600" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            Pagamento Confirmado!
+          </h1>
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+            Sua campanha foi criada com sucesso. Agora você pode fazer o upload do seu material.
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-          Pagamento Confirmado!
-        </h1>
-        <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-          Sua campanha foi criada com sucesso. Agora você pode fazer o upload do seu material.
-        </p>
-      </div>
 
-      {/* Upload Options */}
-      <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+        {/* Upload Options */}
+        <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
         {/* Upload Now */}
         <div>
           <Card className="border-2 border-[#3C1361] bg-gradient-to-br from-[#3C1361]/5 to-[#00FFAB]/5 hover:shadow-lg transition-shadow h-full">
@@ -115,17 +116,18 @@ const CheckoutFinish = () => {
         </div>
       </div>
 
-      {/* Information Box */}
-      <div className="mt-6 sm:mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6">
-        <h4 className="font-semibold text-blue-900 mb-2">
-          💡 Informações Importantes
-        </h4>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Você pode fazer upload a qualquer momento através do seu painel</li>
-          <li>• Formatos aceitos: MP4, MOV, JPG, PNG (máximo 100MB)</li>
-          <li>• Sua campanha iniciará após aprovação do material</li>
-          <li>• Você receberá notificações sobre o status da sua campanha</li>
-        </ul>
+        {/* Information Box */}
+        <div className="mt-6 sm:mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6">
+          <h4 className="font-semibold text-blue-900 mb-2">
+            💡 Informações Importantes
+          </h4>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• Você pode fazer upload a qualquer momento através do seu painel</li>
+            <li>• Formatos aceitos: MP4, MOV, JPG, PNG (máximo 100MB)</li>
+            <li>• Sua campanha iniciará após aprovação do material</li>
+            <li>• Você receberá notificações sobre o status da sua campanha</li>
+          </ul>
+        </div>
       </div>
     </CheckoutLayout>
   );

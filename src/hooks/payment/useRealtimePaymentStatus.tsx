@@ -48,7 +48,8 @@ export const useRealtimePaymentStatus = ({
 
   const handleContinueAfterSuccess = useCallback(() => {
     setShowSuccessOverlay(false);
-    navigate('/anunciante/pedidos');
+    console.log('💳 [useRealtimePaymentStatus] Navegando para Meus Pedidos após pagamento');
+    navigate('/anunciante/meus-pedidos');
   }, [navigate]);
 
   useEffect(() => {
