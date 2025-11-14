@@ -20,7 +20,7 @@ export const useUnifiedCheckout = () => {
   const navigate = useNavigate();
   const { user } = useUserSession();
   const { cartItems, selectedPlan } = useCheckout();
-  const { couponId, couponValid, couponDiscount, validationResult } = useCouponValidator();
+  const { couponId, couponValid, couponDiscount, validationResult, couponCode } = useCouponValidator();
   const { handleClearCart } = useCartManager();
 
   const {
@@ -64,7 +64,8 @@ export const useUnifiedCheckout = () => {
       const couponState = {
         valid: couponValid,
         discountPercent: couponDiscount,
-        couponId: validationResult.couponId
+        couponId: validationResult.couponId,
+        couponCode: couponCode
       };
       
       const sessionResult = await transactionSessionManager.createTransactionSession(

@@ -7,6 +7,7 @@ interface CouponState {
   valid: boolean;
   discountPercent: number;
   couponId: string | null;
+  couponCode?: string;
 }
 
 interface TransactionSession {
@@ -34,7 +35,8 @@ export const transactionSessionManager = {
       
       // Calculate price with coupon applied
       const couponDiscount = couponState?.valid ? couponState.discountPercent : 0;
-      const priceResult = calculatePrice(selectedPlan, cartItems, couponDiscount, true); // true for PIX discount
+      const couponCode = couponState?.couponCode;
+      const priceResult = calculatePrice(selectedPlan, cartItems, couponDiscount, true, couponCode); // true for PIX discount
       const lockedPrice = priceResult.finalPrice;
       
       // Create session with complete snapshot
@@ -44,7 +46,7 @@ export const transactionSessionManager = {
         sessionData: {
           cartItems: JSON.parse(JSON.stringify(cartItems)), // Deep copy
           selectedPlan,
-          couponSnapshot: couponState || { valid: false, discountPercent: 0, couponId: null },
+          couponSnapshot: couponState || { valid: false, discountPercent: 0, couponId: null, couponCode: undefined },
           timestamp: new Date().toISOString()
         }
       };
