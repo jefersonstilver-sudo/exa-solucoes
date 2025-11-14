@@ -16,6 +16,7 @@ interface PurchaseInfoCardProps {
     lista_paineis?: string[];
     lista_predios?: string[];
     cupom_id?: string;
+    metodo_pagamento?: string;
   };
 }
 export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
@@ -39,10 +40,18 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
     };
   };
   const getPaymentMethod = () => {
-    if (orderDetails.log_pagamento?.payment_method) {
-      return orderDetails.log_pagamento.payment_method === 'pix' ? 'PIX' : 'Cartão de Crédito';
+    const logPagamento = orderDetails.log_pagamento;
+    
+    // 🎁 Verificar se é pedido cortesia
+    if (logPagamento?.tipo === 'CORTESIA' || orderDetails.metodo_pagamento === 'cortesia') {
+      return '🎁 Cortesia';
     }
-    return 'PIX'; // Default baseado no contexto
+    
+    if (logPagamento?.payment_method) {
+      return logPagamento.payment_method === 'pix' ? 'PIX' : 'Cartão de Crédito';
+    }
+    
+    return 'PIX';
   };
   const getTransactionId = () => {
     const logPagamento = orderDetails.log_pagamento;
@@ -143,6 +152,25 @@ export const PurchaseInfoCard: React.FC<PurchaseInfoCardProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Badge Cortesia - Exibir quando for pedido cortesia */}
+        {(orderDetails.log_pagamento?.tipo === 'CORTESIA' || orderDetails.metodo_pagamento === 'cortesia') && (
+          <div className="mt-4">
+            <div className="bg-gradient-to-r from-pink-100 to-purple-100 border-2 border-pink-400 rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-pink-500 rounded-full">
+                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-pink-700 text-lg">Pedido Cortesia</p>
+                  <p className="text-sm text-pink-600">Gratuito - Sem cobrança</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Informações expandidas */}
         {isExpanded && <div className="border-t pt-4 space-y-4">

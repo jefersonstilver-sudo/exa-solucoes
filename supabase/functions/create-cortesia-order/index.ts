@@ -38,7 +38,16 @@ serve(async (req) => {
       .single()
 
     if (roleError || roleData?.role !== 'super_admin') {
-      throw new Error('Only super admins can create courtesy orders')
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Apenas Super Admins podem criar pedidos cortesia. Entre em contato com o suporte.'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403
+        }
+      )
     }
 
     // Parse request body

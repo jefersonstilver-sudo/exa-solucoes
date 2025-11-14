@@ -38,7 +38,8 @@ const CheckoutSummary = () => {
     couponValid,
     couponId,
     couponDiscount,
-    couponCode  // Importar couponCode
+    couponCode,
+    couponCategoria  // Adicionar categoria
   } = useCheckout();
   
   const { isCreatingPayment, processPayment } = usePaymentFlow();
@@ -116,8 +117,8 @@ const CheckoutSummary = () => {
   // 🎯 DETECTAR CUPOM 573040 (teste)
   const isCupom573040 = couponCode === '573040';
   
-  // 🎁 DETECTAR CUPOM CORTESIA
-  const isCortesia = couponCode === 'CORTESIA_ADMIN' && baseTotal === 0;
+  // 🎁 DETECTAR CUPOM CORTESIA - Usar categoria do cupom
+  const isCortesia = couponCategoria === 'cortesia' || (couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN' && baseTotal === 0);
   
   console.log('[CheckoutSummary] Preços calculados:', {
     baseTotal,
