@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { CortesiaOrderSuccessModal } from '@/components/orders/CortesiaOrderSuccessModal';
+import { useCortesiaSuccessDetection } from '@/hooks/useCortesiaSuccessDetection';
 const AdvertiserOrders = () => {
   const {
     userProfile
@@ -89,6 +91,16 @@ const AdvertiserOrders = () => {
     // Pedidos finalizados: expirados ou fora do período
     pedidosFinalizados: orders.filter(order => order.status === 'expirado' || ['pago', 'pago_pendente_video', 'video_aprovado'].includes(order.status) && !isWithinActivePeriod(order)).length
   };
+
+  // Detect cortesia order success
+  const { showModal, orderData, closeModal } = useCortesiaSuccessDetection(orders, loading);
+
+  console.log('📋 [ADVERTISER ORDERS] Render state:', {
+    loading,
+    ordersCount: orders?.length,
+    showModal,
+    hasOrderData: !!orderData
+  });
 
   // Filtrar itens
   const filteredItems = userOrdersAndAttempts.filter(item => {
@@ -337,6 +349,16 @@ const AdvertiserOrders = () => {
       isOpen: false,
       orderId: null
     })} />}
+
+      {/* Cortesia Success Modal */}
+      <CortesiaOrderSuccessModal
+        isOpen={showModal}
+        pedidoId={orderData?.id || ''}
+        buildingName={orderData?.selected_buildings?.[0]?.nome || orderData?.nomes_predios?.[0]}
+        buildingAddress={`${orderData?.selected_buildings?.[0]?.endereco || ''}, ${orderData?.selected_buildings?.[0]?.bairro || ''}`}
+        panelCount={orderData?.lista_paineis?.length || orderData?.selected_buildings?.length || 1}
+        onClose={closeModal}
+      />
     </div>;
 };
 export default AdvertiserOrders;

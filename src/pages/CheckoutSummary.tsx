@@ -252,7 +252,7 @@ const CheckoutSummary = () => {
       toast.success('🎁 Pedido cortesia criado com sucesso!');
       
       // Redirect com parâmetro para mostrar modal de sucesso
-      navigate(`/pedidos?cortesia_success=${data.pedidoId}`);
+      navigate(`/anunciante/pedidos?cortesia_success=${data.pedidoId}`);
     } catch (error: any) {
       console.error('❌ [CORTESIA] Erro:', error);
       toast.error(error.message || 'Erro ao criar pedido cortesia');

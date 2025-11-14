@@ -24,6 +24,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import MobileDrawerNavigation from '@/components/mobile/MobileDrawerNavigation';
+import { CortesiaOrderSuccessModal } from '@/components/orders/CortesiaOrderSuccessModal';
+import { useCortesiaSuccessDetection } from '@/hooks/useCortesiaSuccessDetection';
 
 interface Order {
   id: string;
@@ -68,6 +70,16 @@ const MobileAdvertiserOrders = () => {
     pullDistance,
     vibrate 
   } = useMobileOptimization();
+
+  // Detect cortesia order success
+  const { showModal, orderData, closeModal } = useCortesiaSuccessDetection(orders, loading);
+
+  console.log('📱 [MOBILE ADVERTISER ORDERS] Render state:', {
+    loading,
+    ordersCount: orders?.length,
+    showModal,
+    hasOrderData: !!orderData
+  });
 
   useEffect(() => {
     if (containerRef.current) {
@@ -458,6 +470,16 @@ const MobileAdvertiserOrders = () => {
           )}
         </div>
       </div>
+
+      {/* Cortesia Success Modal */}
+      <CortesiaOrderSuccessModal
+        isOpen={showModal}
+        pedidoId={orderData?.id || ''}
+        buildingName={orderData?.selected_buildings?.[0]?.nome || orderData?.nomes_predios?.[0]}
+        buildingAddress={`${orderData?.selected_buildings?.[0]?.endereco || ''}, ${orderData?.selected_buildings?.[0]?.bairro || ''}`}
+        panelCount={orderData?.lista_paineis?.length || orderData?.selected_buildings?.length || 1}
+        onClose={closeModal}
+      />
     </div>
   );
 };
