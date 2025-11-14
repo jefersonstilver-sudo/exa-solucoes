@@ -168,6 +168,48 @@ export const DetalhesPainelDialog = ({ open, onOpenChange, painel }: DetalhesPai
                 <p className="text-sm font-medium">{painel.resolucao || 'N/A'}</p>
               </div>
               <div className="p-3 border rounded-md">
+                <p className="text-xs text-muted-foreground">Sistema Operacional</p>
+                <p className="text-sm font-medium">{painel.sistema_operacional || 'N/A'}</p>
+              </div>
+              <div className="p-3 border rounded-md">
+                <p className="text-xs text-muted-foreground">Orientação</p>
+                <p className="text-sm font-medium capitalize">{painel.orientacao || 'N/A'}</p>
+              </div>
+              <div className="p-3 border rounded-md">
+                <p className="text-xs text-muted-foreground">IP Interno</p>
+                <p className="text-sm font-medium">{painel.ip_interno || 'N/A'}</p>
+              </div>
+            </div>
+
+            {(painel as any).device_fingerprint && (
+              <div className="mt-4 p-4 border rounded-md bg-green-50 dark:bg-green-950">
+                <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  🔒 Dispositivo Registrado
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Fingerprint:</span>
+                    <span className="font-mono text-xs">{((painel as any).device_fingerprint as string)?.substring(0, 20)}...</span>
+                  </div>
+                  {(painel as any).device_info?.platform && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Plataforma:</span>
+                      <span className="font-medium">{(painel as any).device_info.platform}</span>
+                    </div>
+                  )}
+                  {(painel as any).device_info?.screenResolution && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Resolução:</span>
+                      <span className="font-medium">{(painel as any).device_info.screenResolution}</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-3 italic">
+                  Este painel está travado neste dispositivo e só reconectará automaticamente nele
+                </p>
+              </div>
+            )}
+          </div>
                 <p className="text-xs text-muted-foreground">Orientação</p>
                 <p className="text-sm font-medium capitalize">{painel.orientacao || 'N/A'}</p>
               </div>

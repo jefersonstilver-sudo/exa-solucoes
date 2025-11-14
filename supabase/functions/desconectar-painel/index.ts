@@ -55,7 +55,9 @@ serve(async (req) => {
         codigo_vinculacao: novo_codigo_vinculacao,
         building_id: null,
         primeira_conexao_at: null,
-        ultima_sync: null
+        ultima_sync: null,
+        device_fingerprint: null,
+        device_info: null
       })
       .eq('id', painel_id)
       .select()

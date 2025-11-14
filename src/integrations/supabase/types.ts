@@ -2660,6 +2660,8 @@ export type Database = {
           codigo_vinculacao: string | null
           created_at: string | null
           data_vinculacao: string | null
+          device_fingerprint: string | null
+          device_info: Json | null
           id: string
           ip_interno: string | null
           link_instalacao: string | null
@@ -2689,6 +2691,8 @@ export type Database = {
           codigo_vinculacao?: string | null
           created_at?: string | null
           data_vinculacao?: string | null
+          device_fingerprint?: string | null
+          device_info?: Json | null
           id?: string
           ip_interno?: string | null
           link_instalacao?: string | null
@@ -2718,6 +2722,8 @@ export type Database = {
           codigo_vinculacao?: string | null
           created_at?: string | null
           data_vinculacao?: string | null
+          device_fingerprint?: string | null
+          device_info?: Json | null
           id?: string
           ip_interno?: string | null
           link_instalacao?: string | null
