@@ -39,10 +39,14 @@ export const useCortesiaSuccessDetection = (
   useEffect(() => {
     const cortesiaSuccessId = searchParams.get('cortesia_success');
     
+    console.log('🎁 [CORTESIA DETECTION] Checking URL parameter:', cortesiaSuccessId);
+    
     if (cortesiaSuccessId && !hasShownModalRef.current && orders && !loading) {
+      console.log('🎁 [CORTESIA DETECTION] Found success parameter, searching for order...');
       const order = orders.find((o: any) => o.id === cortesiaSuccessId);
       
       if (order) {
+        console.log('✅ [CORTESIA DETECTION] Order found, showing modal:', order);
         setOrderData(order);
         setShowModal(true);
         hasShownModalRef.current = true;
@@ -50,6 +54,8 @@ export const useCortesiaSuccessDetection = (
         // Remove the parameter from URL
         searchParams.delete('cortesia_success');
         setSearchParams(searchParams, { replace: true });
+      } else {
+        console.warn('⚠️ [CORTESIA DETECTION] Order not found in list:', cortesiaSuccessId);
       }
     }
   }, [searchParams, setSearchParams, orders, loading]);
@@ -58,8 +64,13 @@ export const useCortesiaSuccessDetection = (
   useEffect(() => {
     if (!orders || loading || hasShownModalRef.current) return;
 
+    console.log('🎁 [CORTESIA DETECTION] Checking for new active orders...');
+    
     const activeOrders = orders.filter((order: any) => order.status === 'ativo');
     const currentOrderIds = activeOrders.map((order: any) => order.id);
+    
+    console.log('🎁 [CORTESIA DETECTION] Active orders:', activeOrders.length);
+    console.log('🎁 [CORTESIA DETECTION] Previous orders:', previousOrdersRef.current.length);
     
     // Find new orders that weren't in the previous list
     const newActiveOrders = activeOrders.filter(
@@ -69,6 +80,7 @@ export const useCortesiaSuccessDetection = (
     // If there's a new active order and we've already loaded once (not initial load)
     if (newActiveOrders.length > 0 && previousOrdersRef.current.length > 0) {
       const latestOrder = newActiveOrders[0];
+      console.log('✅ [CORTESIA DETECTION] New active order detected, showing modal:', latestOrder);
       setOrderData(latestOrder);
       setShowModal(true);
       hasShownModalRef.current = true;

@@ -136,6 +136,13 @@ export default function Pedidos() {
   const orders = userOrdersAndAttempts?.filter(item => item.type === 'order');
   const { showModal, orderData, closeModal } = useCortesiaSuccessDetection(orders, loading);
 
+  console.log('📋 [PEDIDOS PAGE] Render state:', {
+    loading,
+    ordersCount: orders?.length,
+    showModal,
+    hasOrderData: !!orderData
+  });
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
