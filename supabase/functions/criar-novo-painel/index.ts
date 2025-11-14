@@ -1,0 +1,116 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { numero_painel } = await req.json();
+
+    console.log('🔵 Criando novo painel:', numero_painel);
+
+    // Validar número do painel
+    if (!numero_painel || numero_painel.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Número do painel é obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verificar se o número já existe
+    const { data: existingPanel } = await supabase
+      .from('painels')
+      .select('id')
+      .eq('numero_painel', numero_painel)
+      .single();
+
+    if (existingPanel) {
+      return new Response(
+        JSON.stringify({ error: 'Este número de painel já existe' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Gerar token único
+    const token_acesso = crypto.randomUUID();
+    
+    // Gerar código legível
+    const code = `EXA-PAINEL-${numero_painel}`;
+    
+    // Gerar link de instalação
+    const link_instalacao = `${supabaseUrl.replace('https://', 'https://').split('.supabase.co')[0].replace('https://', '')}.lovable.app/painel-kiosk/${token_acesso}`;
+
+    console.log('🔵 Link de instalação:', link_instalacao);
+
+    // Criar painel no banco
+    const { data: newPanel, error: insertError } = await supabase
+      .from('painels')
+      .insert({
+        numero_painel,
+        code,
+        token_acesso,
+        link_instalacao,
+        status_vinculo: 'aguardando_instalacao',
+        status: 'aguardando_instalacao',
+        resolucao: '1920x1080',
+        orientacao: 'horizontal',
+        sistema_operacional: 'linux'
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('❌ Erro ao criar painel:', insertError);
+      return new Response(
+        JSON.stringify({ error: 'Erro ao criar painel: ' + insertError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Criar entrada inicial no status
+    const { error: statusError } = await supabase
+      .from('paineis_status')
+      .insert({
+        painel_id: newPanel.id,
+        status: 'aguardando_instalacao',
+        observacao: 'Painel criado, aguardando instalação e conexão'
+      });
+
+    if (statusError) {
+      console.warn('⚠️ Erro ao criar status inicial:', statusError);
+    }
+
+    console.log('✅ Painel criado com sucesso:', newPanel.id);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        painel_id: newPanel.id,
+        numero_painel,
+        code,
+        link_instalacao,
+        token_acesso,
+        qr_code_data: link_instalacao
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('❌ Erro geral:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

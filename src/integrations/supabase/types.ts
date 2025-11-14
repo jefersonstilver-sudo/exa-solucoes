@@ -2660,11 +2660,13 @@ export type Database = {
           created_at: string | null
           id: string
           ip_interno: string | null
+          link_instalacao: string | null
           localizacao: string | null
           mac_address: string | null
           marca: string | null
           modelo: string | null
           modo: string | null
+          numero_painel: string | null
           observacoes: string | null
           orientacao: string | null
           polegada: string | null
@@ -2672,6 +2674,8 @@ export type Database = {
           senha_anydesk: string | null
           sistema_operacional: string | null
           status: string
+          status_vinculo: string | null
+          token_acesso: string | null
           ultima_sync: string | null
           versao_firmware: string | null
         }
@@ -2682,11 +2686,13 @@ export type Database = {
           created_at?: string | null
           id?: string
           ip_interno?: string | null
+          link_instalacao?: string | null
           localizacao?: string | null
           mac_address?: string | null
           marca?: string | null
           modelo?: string | null
           modo?: string | null
+          numero_painel?: string | null
           observacoes?: string | null
           orientacao?: string | null
           polegada?: string | null
@@ -2694,6 +2700,8 @@ export type Database = {
           senha_anydesk?: string | null
           sistema_operacional?: string | null
           status?: string
+          status_vinculo?: string | null
+          token_acesso?: string | null
           ultima_sync?: string | null
           versao_firmware?: string | null
         }
@@ -2704,11 +2712,13 @@ export type Database = {
           created_at?: string | null
           id?: string
           ip_interno?: string | null
+          link_instalacao?: string | null
           localizacao?: string | null
           mac_address?: string | null
           marca?: string | null
           modelo?: string | null
           modo?: string | null
+          numero_painel?: string | null
           observacoes?: string | null
           orientacao?: string | null
           polegada?: string | null
@@ -2716,6 +2726,8 @@ export type Database = {
           senha_anydesk?: string | null
           sistema_operacional?: string | null
           status?: string
+          status_vinculo?: string | null
+          token_acesso?: string | null
           ultima_sync?: string | null
           versao_firmware?: string | null
         }

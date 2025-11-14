@@ -1,62 +1,78 @@
 import { Card } from '@/components/ui/card';
-import { Monitor, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { MonitorPlay, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface PaineisStatsProps {
   stats: {
     total: number;
-    online: number;
+    aguardando_instalacao: number;
+    aguardando_vinculo: number;
+    vinculado: number;
     offline: number;
-    nunca_vinculado: number;
   };
 }
 
 export const PaineisStats = ({ stats }: PaineisStatsProps) => {
-  const cards = [
-    {
-      title: 'Total de Painéis',
-      value: stats.total,
-      icon: Monitor,
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
-    },
-    {
-      title: 'Online',
-      value: stats.online,
-      icon: CheckCircle,
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10',
-    },
-    {
-      title: 'Offline',
-      value: stats.offline,
-      icon: XCircle,
-      color: 'text-red-500',
-      bgColor: 'bg-red-500/10',
-    },
-    {
-      title: 'Nunca Vinculados',
-      value: stats.nunca_vinculado,
-      icon: AlertCircle,
-      color: 'text-yellow-500',
-      bgColor: 'bg-yellow-500/10',
-    },
-  ];
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card) => (
-        <Card key={card.title} className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
-              <p className="text-3xl font-bold mt-2">{card.value}</p>
-            </div>
-            <div className={`${card.bgColor} p-3 rounded-lg`}>
-              <card.icon className={`h-6 w-6 ${card.color}`} />
-            </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <Card className="p-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-primary/10 rounded-lg">
+            <MonitorPlay className="w-6 h-6 text-primary" />
           </div>
-        </Card>
-      ))}
+          <div>
+            <p className="text-sm text-muted-foreground">Total</p>
+            <p className="text-2xl font-bold">{stats.total}</p>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-yellow-100 rounded-lg">
+            <MonitorPlay className="w-6 h-6 text-yellow-600" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Aguardando Instalação</p>
+            <p className="text-2xl font-bold">{stats.aguardando_instalacao}</p>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-blue-100 rounded-lg">
+            <MonitorPlay className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Aguardando Vínculo</p>
+            <p className="text-2xl font-bold">{stats.aguardando_vinculo}</p>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-green-100 rounded-lg">
+            <CheckCircle className="w-6 h-6 text-green-600" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Vinculados</p>
+            <p className="text-2xl font-bold">{stats.vinculado}</p>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-red-100 rounded-lg">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Offline</p>
+            <p className="text-2xl font-bold">{stats.offline}</p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };
