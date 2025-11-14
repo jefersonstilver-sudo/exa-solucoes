@@ -2,13 +2,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreVertical, RefreshCw, Link2Off, ExternalLink, WifiOff } from 'lucide-react';
+import { MoreVertical, RefreshCw, Link2Off, ExternalLink, WifiOff, Info, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { DesconectarPainelDialog } from './DesconectarPainelDialog';
+import { DetalhesPainelDialog } from './DetalhesPainelDialog';
+import { DeletarPainelDialog } from './DeletarPainelDialog';
 
 interface PainelWithStatus {
   id: string;
@@ -17,6 +19,15 @@ interface PainelWithStatus {
   building_id?: string;
   status: string;
   status_vinculo?: string;
+  codigo_vinculacao?: string;
+  link_instalacao?: string;
+  token_acesso?: string;
+  data_vinculacao?: string;
+  primeira_conexao_at?: string;
+  ultima_sync?: string;
+  resolucao?: string;
+  orientacao?: string;
+  sistema_operacional?: string;
   created_at: string;
   buildings?: {
     id: string;
@@ -39,11 +50,9 @@ interface PaineisTableProps {
 
 export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
   const [desconectarDialogOpen, setDesconectarDialogOpen] = useState(false);
-  const [painelSelecionado, setPainelSelecionado] = useState<{
-    id: string;
-    numero_painel: string;
-    status_vinculo?: string;
-  } | null>(null);
+  const [detalhesDialogOpen, setDetalhesDialogOpen] = useState(false);
+  const [deletarDialogOpen, setDeletarDialogOpen] = useState(false);
+  const [painelSelecionado, setPainelSelecionado] = useState<PainelWithStatus | null>(null);
 
   const getStatusBadge = (status: string, statusVinculo?: string) => {
     // Priorizar status_vinculo se existir
@@ -71,12 +80,18 @@ export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
   };
 
   const handleDesconectar = (painel: PainelWithStatus) => {
-    setPainelSelecionado({
-      id: painel.id,
-      numero_painel: painel.numero_painel || painel.code,
-      status_vinculo: painel.status_vinculo
-    });
+    setPainelSelecionado(painel);
     setDesconectarDialogOpen(true);
+  };
+
+  const handleVerDetalhes = (painel: PainelWithStatus) => {
+    setPainelSelecionado(painel);
+    setDetalhesDialogOpen(true);
+  };
+
+  const handleDeletar = (painel: PainelWithStatus) => {
+    setPainelSelecionado(painel);
+    setDeletarDialogOpen(true);
   };
 
   const handleComando = async (painelId: string, comando: string) => {
@@ -159,6 +174,11 @@ export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleVerDetalhes(painel)}>
+                    <Info className="mr-2 h-4 w-4" />
+                    Ver Detalhes
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => handleComando(painel.id, 'reiniciar_app')}>
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Reiniciar App
@@ -178,10 +198,17 @@ export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => handleDesconectar(painel)}
-                    className="text-destructive focus:text-destructive"
+                    className="text-amber-600 focus:text-amber-600"
                   >
                     <WifiOff className="mr-2 h-4 w-4" />
                     Desconectar Painel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleDeletar(painel)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Deletar Painel
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -194,8 +221,32 @@ export const PaineisTable = ({ paineis, onRefetch }: PaineisTableProps) => {
     <DesconectarPainelDialog
       open={desconectarDialogOpen}
       onOpenChange={setDesconectarDialogOpen}
-      painel={painelSelecionado}
+      painel={painelSelecionado ? {
+        id: painelSelecionado.id,
+        numero_painel: painelSelecionado.numero_painel || painelSelecionado.code,
+        status_vinculo: painelSelecionado.status_vinculo
+      } : null}
       onPainelDesconectado={() => {
+        onRefetch();
+        setPainelSelecionado(null);
+      }}
+    />
+
+    <DetalhesPainelDialog
+      open={detalhesDialogOpen}
+      onOpenChange={setDetalhesDialogOpen}
+      painel={painelSelecionado}
+    />
+
+    <DeletarPainelDialog
+      open={deletarDialogOpen}
+      onOpenChange={setDeletarDialogOpen}
+      painel={painelSelecionado ? {
+        id: painelSelecionado.id,
+        numero_painel: painelSelecionado.numero_painel,
+        code: painelSelecionado.code
+      } : null}
+      onPainelDeletado={() => {
         onRefetch();
         setPainelSelecionado(null);
       }}
