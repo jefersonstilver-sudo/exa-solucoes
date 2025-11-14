@@ -18,6 +18,7 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
   const rawBuildingId = propBuildingId || params.buildingId || '';
   const isPlayingRef = useRef(false);
   const isCheckingRef = useRef(false);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
@@ -71,6 +72,52 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     count: activeVideos.length,
     videoIds: activeVideos.map(v => v.video_id).join(',')
   });
+  
+  // ✅ SISTEMA DE HEARTBEAT PARA PAINEL
+  useEffect(() => {
+    // Buscar painelId do localStorage
+    const painelId = localStorage.getItem('painel_id');
+    if (!painelId || !buildingId) return;
+
+    console.log('🔵 [HEARTBEAT] Iniciando sistema de heartbeat para painel:', painelId);
+
+    // Função para enviar heartbeat
+    const enviarHeartbeat = async () => {
+      try {
+        await supabase.functions.invoke('painel-heartbeat', {
+          body: {
+            painel_id: painelId,
+            url_atual: window.location.href,
+            device_info: {
+              userAgent: navigator.userAgent,
+              screen: {
+                width: window.screen.width,
+                height: window.screen.height
+              },
+              language: navigator.language,
+              playing: isPlayingRef.current
+            }
+          }
+        });
+        console.log('✅ [HEARTBEAT] Heartbeat enviado com sucesso');
+      } catch (error) {
+        console.error('❌ [HEARTBEAT] Erro ao enviar heartbeat:', error);
+      }
+    };
+
+    // Enviar heartbeat imediatamente
+    enviarHeartbeat();
+
+    // Enviar heartbeat a cada 30 segundos
+    heartbeatIntervalRef.current = setInterval(enviarHeartbeat, 30000);
+
+    return () => {
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+        console.log('🔴 [HEARTBEAT] Sistema de heartbeat encerrado');
+      }
+    };
+  }, [buildingId]);
   
   // Callbacks estáveis para evitar re-renders infinitos
   const handlePlayingChange = useCallback((playing: boolean) => {

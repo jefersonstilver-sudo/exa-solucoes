@@ -58,6 +58,7 @@ const BuildingDisplayPanel = lazy(() => import('./pages/public/BuildingDisplayPa
 const BuildingDisplayCommercial = lazy(() => import('./pages/public/BuildingDisplayCommercial'));
 const PublicBuildingDisplay = lazy(() => import('./pages/public/PublicBuildingDisplay'));
 const BuildingDisplayEmbed = lazy(() => import('./pages/public/BuildingDisplayEmbed'));
+const PainelAguardandoVinculo = lazy(() => import('./pages/public/PainelAguardandoVinculo'));
 
 // Blog pages
 const BlogIndex = lazy(() => import('./pages/blog/Index'));
@@ -262,6 +263,13 @@ const AppContent = () => {
           
           {/* PAINEL KIOSK - VINCULAÇÃO DE DISPOSITIVOS */}
           <Route path="/painel-kiosk/:token" element={<PainelKiosk />} />
+          
+          {/* PAINEL AGUARDANDO VÍNCULO */}
+          <Route path="/painel-aguardando-vinculo/:painelId" element={
+            <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center bg-black text-white">Carregando...</div>}>
+              <PainelAguardandoVinculo />
+            </Suspense>
+          } />
 
           {/* Rotas com lazy loading */}
           {/* REDIRECTS 301 para novas URLs */}
