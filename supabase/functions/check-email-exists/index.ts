@@ -100,6 +100,33 @@ serve(async (req: Request) => {
         console.log('🧹 [CHECK-EMAIL] Email órfão detectado, removendo do auth.users...');
         
         try {
+          // Primeiro, limpar registros relacionados que podem impedir a deleção
+          console.log('🗑️ [CHECK-EMAIL] Limpando registros relacionados...');
+          
+          // Deletar role_change_audit que pode ter foreign key
+          const { error: auditDeleteError } = await supabaseAdmin
+            .from('role_change_audit')
+            .delete()
+            .eq('user_id', authUser.id);
+          
+          if (auditDeleteError) {
+            console.warn('⚠️ [CHECK-EMAIL] Aviso ao limpar audit:', auditDeleteError);
+            // Continua mesmo com erro, pois pode não haver registros
+          }
+
+          // Deletar user_activity_logs
+          const { error: logsDeleteError } = await supabaseAdmin
+            .from('user_activity_logs')
+            .delete()
+            .eq('user_id', authUser.id);
+          
+          if (logsDeleteError) {
+            console.warn('⚠️ [CHECK-EMAIL] Aviso ao limpar logs:', logsDeleteError);
+          }
+          
+          console.log('✅ [CHECK-EMAIL] Registros relacionados limpos');
+          
+          // Agora deletar o usuário do auth.users
           const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(authUser.id);
           
           if (deleteError) {
