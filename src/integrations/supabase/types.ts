@@ -2475,6 +2475,145 @@ export type Database = {
         }
         Relationships: []
       }
+      paineis_comandos: {
+        Row: {
+          comando: string
+          criado_em: string | null
+          criado_por: string | null
+          executado_em: string | null
+          id: string
+          painel_id: string | null
+          parametros: Json | null
+          resultado: Json | null
+          status: string | null
+        }
+        Insert: {
+          comando: string
+          criado_em?: string | null
+          criado_por?: string | null
+          executado_em?: string | null
+          id?: string
+          painel_id?: string | null
+          parametros?: Json | null
+          resultado?: Json | null
+          status?: string | null
+        }
+        Update: {
+          comando?: string
+          criado_em?: string | null
+          criado_por?: string | null
+          executado_em?: string | null
+          id?: string
+          painel_id?: string | null
+          parametros?: Json | null
+          resultado?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paineis_comandos_painel_id_fkey"
+            columns: ["painel_id"]
+            isOneToOne: false
+            referencedRelation: "painels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paineis_status: {
+        Row: {
+          atualizado_em: string | null
+          device_info: Json | null
+          erro_ultimo: string | null
+          ip_address: unknown
+          painel_id: string
+          status: string | null
+          ultimo_heartbeat: string | null
+          url_atual: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          device_info?: Json | null
+          erro_ultimo?: string | null
+          ip_address?: unknown
+          painel_id: string
+          status?: string | null
+          ultimo_heartbeat?: string | null
+          url_atual?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          device_info?: Json | null
+          erro_ultimo?: string | null
+          ip_address?: unknown
+          painel_id?: string
+          status?: string | null
+          ultimo_heartbeat?: string | null
+          url_atual?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paineis_status_painel_id_fkey"
+            columns: ["painel_id"]
+            isOneToOne: true
+            referencedRelation: "painels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paineis_vinculos: {
+        Row: {
+          building_id: string | null
+          codigo: string
+          criado_em: string | null
+          criado_por: string | null
+          expira_em: string | null
+          id: string
+          painel_id: string | null
+          status: string | null
+          vinculado_em: string | null
+        }
+        Insert: {
+          building_id?: string | null
+          codigo: string
+          criado_em?: string | null
+          criado_por?: string | null
+          expira_em?: string | null
+          id?: string
+          painel_id?: string | null
+          status?: string | null
+          vinculado_em?: string | null
+        }
+        Update: {
+          building_id?: string | null
+          codigo?: string
+          criado_em?: string | null
+          criado_por?: string | null
+          expira_em?: string | null
+          id?: string
+          painel_id?: string | null
+          status?: string | null
+          vinculado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paineis_vinculos_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paineis_vinculos_painel_id_fkey"
+            columns: ["painel_id"]
+            isOneToOne: false
+            referencedRelation: "painels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       painel_logs: {
         Row: {
           created_at: string | null
@@ -4614,6 +4753,7 @@ export type Database = {
       is_super_admin_simple: { Args: never; Returns: boolean }
       is_super_admin_user: { Args: never; Returns: boolean }
       is_user_admin: { Args: { user_id: string }; Returns: boolean }
+      limpar_codigos_expirados: { Args: never; Returns: undefined }
       log_building_action: {
         Args: {
           p_action_type: string
@@ -4673,6 +4813,7 @@ export type Database = {
         }
         Returns: string
       }
+      marcar_paineis_offline: { Args: never; Returns: undefined }
       mark_exa_lead_contacted_secure: {
         Args: { p_lead_id: string }
         Returns: Json
