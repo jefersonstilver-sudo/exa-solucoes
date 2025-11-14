@@ -5,8 +5,6 @@ import { CheckCircle, XCircle, Loader2, Tag, Smartphone, Mail, Gift } from 'luci
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Info } from 'lucide-react';
 
 interface CouponStepProps {
   couponCode: string;
@@ -64,36 +62,10 @@ const CouponStep: React.FC<CouponStepProps> = ({
       className="space-y-3 sm:space-y-6"
     >
       <motion.div variants={itemVariants} className="space-y-1 sm:space-y-2">
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <h2 className="text-lg sm:text-xl font-semibold flex items-center">
-            <Tag className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
-            Cupom de Desconto
-          </h2>
-          <HoverCard openDelay={200}>
-            <HoverCardTrigger asChild>
-              <button className="inline-flex items-center justify-center rounded-full w-5 h-5 sm:w-6 sm:h-6 bg-gray-100 hover:bg-gray-200 transition-colors">
-                <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-600" />
-              </button>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-72 sm:w-80 p-3 sm:p-4 bg-white border shadow-xl">
-              <div className="space-y-2 sm:space-y-3">
-                <div className="flex items-start gap-2">
-                  <div className="rounded-full p-1.5 sm:p-2 bg-gray-100">
-                    <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-gray-700" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-xs sm:text-sm text-gray-900 mb-1">
-                      Como funcionam os cupons?
-                    </h3>
-                    <p className="text-[10px] sm:text-xs text-gray-600 leading-relaxed">
-                      Os cupons podem ter diferentes requisitos como quantidade mínima de prédios, valor mínimo do pedido ou período de contrato específico.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
-        </div>
+        <h2 className="text-lg sm:text-xl font-semibold flex items-center">
+          <Tag className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
+          Cupom de Desconto
+        </h2>
         <p className="text-xs sm:text-sm text-muted-foreground">
           Se você possui um cupom promocional, insira o código abaixo
         </p>

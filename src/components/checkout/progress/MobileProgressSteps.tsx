@@ -10,7 +10,7 @@ interface MobileProgressStepsProps {
 
 const MobileProgressSteps: React.FC<MobileProgressStepsProps> = ({ currentStep }) => {
   return (
-    <div className="flex sm:hidden justify-between items-center mb-2 px-0">
+    <div className="flex sm:hidden justify-between items-center mb-3 px-1 py-2 min-h-[50px]">
       <div className="flex items-center justify-center space-x-0.5 w-full">
         {PROGRESS_STEPS.map((step, index) => {
           const StepIcon = step.icon;
