@@ -6,6 +6,7 @@ import { usePaymentValidation } from '../usePaymentValidation';
 import { usePaymentDeduplication } from '../usePaymentDeduplication';
 import { CreatePaymentOrderParams } from '@/types/order';
 import { useCheckoutDataPersistence } from '@/hooks/useCheckoutDataPersistence';
+import { getAuditInfo } from '@/utils/deviceInfo';
 
 interface PedidoType {
   id: string;
@@ -218,10 +219,19 @@ export const useEnhancedPaymentOrderCreator = () => {
         }
       );
 
+      // Capturar informações de auditoria (IP + Device)
+      console.log('🔍 [ENHANCED_ORDER_CREATOR] Capturando informações de auditoria...');
+      const auditInfo = await getAuditInfo();
+      console.log('✅ [ENHANCED_ORDER_CREATOR] Auditoria capturada:', {
+        ip: auditInfo.ipOrigem,
+        device: auditInfo.deviceInfo.deviceType,
+        os: auditInfo.deviceInfo.os
+      });
+
       // CRITICAL: Ensure correct total price (no division errors)
       const correctTotalPrice = Number(totalPrice.toFixed(2));
 
-      // Create the order record with COMPLETE data including source_tentativa_id
+      // Create the order record with COMPLETE data including audit info
       const orderData = {
         client_id: sessionUser.id,
         lista_paineis: panelIds,        // ✅ CORRETO: IDs dos painéis
@@ -233,9 +243,12 @@ export const useEnhancedPaymentOrderCreator = () => {
         data_fim: endDate.toISOString().split('T')[0],
         status: 'pendente',
         termos_aceitos: true,
-        source_tentativa_id: sourceTentativaId, // NOVO: Vinculação com tentativa
+        source_tentativa_id: sourceTentativaId,
         transaction_id: transactionId,
         price_sync_verified: true,
+        ip_origem: auditInfo.ipOrigem,
+        device_info: auditInfo.deviceInfo,
+        expires_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 dias
         log_pagamento: {
           transaction_id: transactionId,
           payment_key: paymentKey,
