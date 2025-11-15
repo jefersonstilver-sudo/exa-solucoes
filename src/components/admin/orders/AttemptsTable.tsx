@@ -121,12 +121,12 @@ const AttemptsTable: React.FC<AttemptsTableProps> = ({
     const value = formatCurrency(item.valor_total || 0);
     
     if (type === 'email') {
-      const subject = encodeURIComponent('Complete sua compra na Indexa - Oferta especial!');
-      const body = encodeURIComponent(`Olá ${name}!\n\nNotamos que você iniciou uma compra de ${value} em nossa plataforma mas não finalizou o pagamento.\n\nPodemos ajudá-lo a concluir? Temos uma oferta especial para você!\n\nEquipe Indexa`);
+      const subject = encodeURIComponent('Complete sua compra - Oferta especial!');
+      const body = encodeURIComponent(`Olá ${name}!\n\nNotamos que você iniciou uma compra de ${value} em nossa plataforma mas não finalizou o pagamento.\n\nPodemos ajudá-lo a concluir? Temos uma oferta especial para você!\n\nEquipe`);
       window.open(`mailto:${getClientEmail(item)}?subject=${subject}&body=${body}`);
     } else if (type === 'whatsapp') {
       const phone = getClientPhone(item);
-      const message = encodeURIComponent(`Olá ${name}! 👋\n\nVi que você estava interessado em anunciar na Indexa (${value}). Posso te ajudar a finalizar? Tenho uma proposta especial para você! 🎯`);
+      const message = encodeURIComponent(`Olá ${name}! 👋\n\nVi que você estava interessado em anunciar conosco (${value}). Posso te ajudar a finalizar? Tenho uma proposta especial para você! 🎯`);
       
       if (phone) {
         // Limpar o telefone e formatar para WhatsApp

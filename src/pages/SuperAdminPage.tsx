@@ -81,7 +81,7 @@ const SuperAdminPage = () => {
     }
 
     console.log('✅ ACESSO AUTORIZADO: Super admin confirmado');
-    toast.success('Bem-vindo ao Painel Administrativo INDEXA!', {
+    toast.success('Bem-vindo ao Painel Administrativo!', {
       duration: 3000
     });
     
