@@ -54,7 +54,7 @@ const Contato = lazy(() => import('./pages/Contato'));
 const ComparativoOutdoor = lazy(() => import('./pages/ComparativoOutdoor'));
 const QuemSomos = lazy(() => import('./pages/QuemSomos'));
 const MidiaKit = lazy(() => import('./pages/MidiaKit'));
-const BuildingDisplayPanel = lazy(() => import('./pages/public/BuildingDisplayPanel'));
+const MinimalDisplayPanel = lazy(() => import('./pages/public/MinimalDisplayPanel'));
 const BuildingDisplayCommercial = lazy(() => import('./pages/public/BuildingDisplayCommercial'));
 const PublicBuildingDisplay = lazy(() => import('./pages/public/PublicBuildingDisplay'));
 const BuildingDisplayEmbed = lazy(() => import('./pages/public/BuildingDisplayEmbed'));
@@ -222,7 +222,7 @@ const AppContent = () => {
           
           <Route path="/painel/:buildingId" element={
             <Suspense fallback={<GlobalLoadingPage />}>
-              <BuildingDisplayPanel />
+              <MinimalDisplayPanel />
             </Suspense>
           } />
           
