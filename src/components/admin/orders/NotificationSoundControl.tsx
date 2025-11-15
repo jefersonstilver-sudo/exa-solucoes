@@ -9,12 +9,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useNotificationSound } from '@/hooks/useNotificationSound';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useNotificationSound, SOUND_OPTIONS } from '@/hooks/useNotificationSound';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 const NotificationSoundControl: React.FC = () => {
   const { hasAnyPermission } = useUserPermissions();
-  const { enabled, volume, toggleSound, setVolume, playPreview } = useNotificationSound();
+  const { enabled, volume, soundType, toggleSound, setVolume, setSoundType, playPreview } = useNotificationSound();
 
   // Only show for users with orders or financial permissions
   if (!hasAnyPermission(['canViewOrders', 'canViewFinancialReports'])) {
@@ -37,7 +44,7 @@ const NotificationSoundControl: React.FC = () => {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
+      <PopoverContent className="w-96" align="end">
         <div className="space-y-4">
           {/* Header with toggle */}
           <div className="flex items-center justify-between">
@@ -47,6 +54,32 @@ const NotificationSoundControl: React.FC = () => {
               onCheckedChange={toggleSound}
               className="data-[state=checked]:bg-indexa-purple"
             />
+          </div>
+
+          {/* Sound Type Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="sound-type" className="text-sm text-gray-700">
+              Tipo de Som
+            </Label>
+            <Select
+              value={soundType}
+              onValueChange={setSoundType}
+              disabled={!enabled}
+            >
+              <SelectTrigger id="sound-type" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SOUND_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{option.label}</span>
+                      <span className="text-xs text-gray-500">{option.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Volume Control */}
@@ -78,12 +111,12 @@ const NotificationSoundControl: React.FC = () => {
             disabled={!enabled}
           >
             <Play className="h-4 w-4 mr-2" />
-            Testar Som
+            Testar Som Selecionado
           </Button>
 
           {/* Info */}
           <p className="text-xs text-gray-600 leading-relaxed">
-            🔊 Um som de caixa registradora será tocado quando um novo pedido for pago.
+            💰 O som escolhido será tocado quando um novo pedido for pago.
           </p>
         </div>
       </PopoverContent>
