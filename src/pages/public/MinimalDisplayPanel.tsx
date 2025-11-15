@@ -37,6 +37,7 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
   const [buildingName, setBuildingName] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showOffline, setShowOffline] = useState(false);
+  const [playlistCycleCount, setPlaylistCycleCount] = useState(0);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -92,14 +93,67 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
     };
   }, []);
 
-  // ✅ Polling ESPAÇADO (10 minutos)
+  // ✅ Verificação inteligente de mudanças na playlist
+  const checkForPlaylistChanges = useCallback(async () => {
+    try {
+      console.log('🔍 [MINIMAL] Verificando alterações na playlist...');
+      
+      // Buscar vídeos atualizados silenciosamente
+      const { data: pedidos } = await supabase
+        .from('pedidos')
+        .select('id')
+        .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
+        .filter('lista_predios', 'cs', `{${buildingId}}`);
+      
+      if (!pedidos || pedidos.length === 0) return;
+      
+      const pedidoIds = pedidos.map(p => p.id);
+      const videoPromises = pedidoIds.map(async (pedidoId) => {
+        const { data: currentVideo } = await supabase.rpc('get_current_display_video', {
+          p_pedido_id: pedidoId
+        });
+        
+        if (!currentVideo || currentVideo.length === 0) return null;
+        return currentVideo[0].video_id;
+      });
+      
+      const newVideoIds = (await Promise.all(videoPromises))
+        .filter(Boolean)
+        .sort()
+        .join(',');
+      
+      // Comparar IDs dos vídeos
+      const currentVideoIds = videos.map(v => v.video_id).sort().join(',');
+      
+      if (newVideoIds !== currentVideoIds) {
+        console.log('✅ [MINIMAL] Mudança detectada! Atualizando playlist...');
+        console.log('   Antes:', currentVideoIds);
+        console.log('   Depois:', newVideoIds);
+        
+        // Atualizar playlist de forma suave
+        await refresh(true); // silent = true
+        
+        // Resetar índice para começar do início da nova playlist
+        setCurrentIndex(0);
+        setPlaylistCycleCount(0);
+      } else {
+        console.log('✅ [MINIMAL] Nenhuma mudança detectada');
+      }
+      
+    } catch (err) {
+      console.error('❌ [MINIMAL] Erro ao verificar mudanças:', err);
+    }
+  }, [buildingId, videos, refresh]);
+
+  // ✅ Polling de SEGURANÇA (30 minutos - apenas fallback)
   useEffect(() => {
-    console.log('🔄 [MINIMAL] Configurando polling (10min)');
+    console.log('🔄 [MINIMAL] Configurando polling de segurança (30min)');
     
     refreshIntervalRef.current = setInterval(() => {
-      console.log('🔄 [MINIMAL] Refresh automático');
+      console.log('🔄 [MINIMAL] Refresh de segurança');
       refresh();
-    }, 10 * 60 * 1000); // 10 minutos
+      setPlaylistCycleCount(0);
+    }, 30 * 60 * 1000); // 30 minutos
 
     return () => {
       if (refreshIntervalRef.current) {
@@ -108,13 +162,27 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
     };
   }, [refresh]);
 
-  // ✅ Controle de reprodução
+  // ✅ Controle de reprodução com detecção de ciclos
   const handleVideoEnd = useCallback(() => {
     if (videos.length === 0) return;
     
     const nextIndex = (currentIndex + 1) % videos.length;
+    
+    // ✅ Detectar ciclo completo (voltou ao índice 0)
+    if (nextIndex === 0) {
+      const newCycleCount = playlistCycleCount + 1;
+      setPlaylistCycleCount(newCycleCount);
+      console.log('🔄 [MINIMAL] Ciclo completo:', newCycleCount);
+      
+      // 🔄 A cada 3 ciclos completos, verificar mudanças
+      if (newCycleCount % 3 === 0) {
+        console.log('🔄 [MINIMAL] Verificando mudanças após 3 ciclos');
+        checkForPlaylistChanges();
+      }
+    }
+    
     setCurrentIndex(nextIndex);
-  }, [videos.length, currentIndex]);
+  }, [videos.length, currentIndex, playlistCycleCount, checkForPlaylistChanges]);
 
   useEffect(() => {
     const video = videoRef.current;
