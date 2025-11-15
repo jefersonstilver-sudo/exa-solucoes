@@ -12,11 +12,18 @@ interface UseVideoCacheResult {
   };
 }
 
-export function useVideoCache(buildingId: string): UseVideoCacheResult {
+interface UseVideoCacheOptions {
+  enabled?: boolean;
+}
+
+export function useVideoCache(buildingId: string, options: UseVideoCacheOptions = {}): UseVideoCacheResult {
+  const { enabled = true } = options;
   const [isCaching, setIsCaching] = useState(false);
   const [cacheStats, setCacheStats] = useState({ totalSize: 0, videoCount: 0 });
 
   useEffect(() => {
+    if (!enabled) return;
+
     const updateStats = async () => {
       try {
         const stats = await videoCache.getCacheStats();
@@ -33,9 +40,11 @@ export function useVideoCache(buildingId: string): UseVideoCacheResult {
     const interval = setInterval(updateStats, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [enabled]);
 
   const getCachedVideoUrl = async (videoId: string, originalUrl: string): Promise<string> => {
+    if (!enabled) return originalUrl;
+    
     try {
       const cachedUrl = await videoCache.getCachedVideo(videoId);
       if (cachedUrl) return cachedUrl;
@@ -49,7 +58,7 @@ export function useVideoCache(buildingId: string): UseVideoCacheResult {
   };
 
   const preCacheVideos = (videos: BuildingActiveVideo[]) => {
-    if (videos.length === 0 || isCaching) return;
+    if (!enabled || videos.length === 0 || isCaching) return;
 
     setIsCaching(true);
 

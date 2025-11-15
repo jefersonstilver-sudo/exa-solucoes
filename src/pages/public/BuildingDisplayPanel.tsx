@@ -52,13 +52,10 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
   
-  // ✅ OTIMIZAÇÃO CRÍTICA: Só ativar hooks pesados se há vídeos
+  // ✅ SEMPRE chamar hooks (não condicionalmente)
   const hasVideos = activeVideos.length > 0;
   const networkStatus = useNetworkMonitor();
-  const { getCachedVideoUrl, preCacheVideos } = hasVideos ? useVideoCache(buildingId) : {
-    getCachedVideoUrl: async () => '',
-    preCacheVideos: () => {}
-  };
+  const { getCachedVideoUrl, preCacheVideos } = useVideoCache(buildingId, { enabled: hasVideos });
   
   // ✅ Ref estável para refetch
   const refetchRef = useRef(refetch);
@@ -67,13 +64,14 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     refetchRef.current = refetch;
   }, [refetch]);
   
-  // ✅ OTIMIZAÇÃO CRÍTICA: Só ativar proteção se há vídeos
-  const { containerRef: protectionRef } = hasVideos ? useVideoProtection({
+  // ✅ SEMPRE chamar hooks (não condicionalmente)
+  const { containerRef: protectionRef } = useVideoProtection({
     preventDownload: true,
     preventPrint: true,
     preventDevTools: true,
-    preventScreenCapture: true
-  }) : { containerRef: useRef<HTMLDivElement>(null) };
+    preventScreenCapture: true,
+    enabled: hasVideos
+  });
 
   VideoDebugger.logEvent('DISPLAY', 'Vídeos recebidos (Panel)', {
     count: activeVideos.length,

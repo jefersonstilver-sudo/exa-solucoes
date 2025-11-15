@@ -5,6 +5,7 @@ interface VideoProtectionOptions {
   preventPrint?: boolean;
   preventDevTools?: boolean;
   preventScreenCapture?: boolean;
+  enabled?: boolean;
 }
 
 export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
@@ -12,7 +13,8 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
     preventDownload = true,
     preventPrint = true,
     preventDevTools = true,
-    preventScreenCapture = true
+    preventScreenCapture = true,
+    enabled = true
   } = options;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -259,6 +261,8 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
   }, [preventDragDrop]);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const container = containerRef.current;
     if (!container) return;
 
@@ -306,6 +310,7 @@ export const useVideoProtection = (options: VideoProtectionOptions = {}) => {
       document.removeEventListener('drop', preventDragDrop);
     };
   }, [
+    enabled,
     preventDownload,
     preventPrint,
     preventDevTools,
