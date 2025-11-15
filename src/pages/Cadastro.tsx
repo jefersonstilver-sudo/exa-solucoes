@@ -199,7 +199,7 @@ const Cadastro: React.FC = () => {
         description: "Verifique seu e-mail para confirmar sua conta."
       });
 
-      navigate(`/email-enviado?email=${encodeURIComponent(email)}`);
+      navigate(`/email-not-confirmed?email=${encodeURIComponent(email)}`);
     } catch (error: any) {
       console.error("Erro no cadastro:", error);
       
