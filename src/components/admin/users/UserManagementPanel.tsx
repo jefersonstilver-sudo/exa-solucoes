@@ -118,10 +118,21 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
       setCreating(true);
       console.log('🔨 Criando nova conta administrativa:', { email: newUserEmail, role: newUserRole });
 
+      // Gerar senha segura aleatória
+      const generateSecurePassword = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
+        const array = new Uint8Array(20);
+        crypto.getRandomValues(array);
+        return Array.from(array).map(x => chars[x % chars.length]).join('');
+      };
+
+      const temporaryPassword = generateSecurePassword();
+      console.log('🔐 Senha temporária gerada com sucesso');
+
       // Criar usuário no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUserEmail,
-        password: 'indexa2025',
+        password: temporaryPassword,
         options: {
           data: {
             role: newUserRole
@@ -160,13 +171,15 @@ const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ users, loadin
       };
 
       toast.success(`Conta ${roleLabels[newUserRole as keyof typeof roleLabels]} criada com sucesso!`, {
-        description: `Email: ${newUserEmail} | Senha: indexa2025`
+        description: `Email: ${newUserEmail} | Senha temporária gerada e copiada`
       });
 
       // Copiar credenciais para área de transferência
-      const credentials = `Email: ${newUserEmail}\nSenha: indexa2025\nTipo: ${roleLabels[newUserRole as keyof typeof roleLabels]}`;
+      const credentials = `Email: ${newUserEmail}\nSenha: ${temporaryPassword}\nTipo: ${roleLabels[newUserRole as keyof typeof roleLabels]}\n\n⚠️ ATENÇÃO: Altere esta senha no primeiro login!`;
       navigator.clipboard.writeText(credentials);
-      toast.info('Credenciais copiadas para área de transferência');
+      toast.info('Credenciais copiadas para área de transferência', {
+        description: 'Compartilhe a senha de forma segura com o usuário'
+      });
 
       // Limpar formulário e fechar dialog
       setNewUserEmail('');
