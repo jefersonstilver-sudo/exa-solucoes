@@ -98,52 +98,15 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
     try {
       console.log('🔍 [MINIMAL] Verificando alterações na playlist...');
       
-      // Buscar vídeos atualizados silenciosamente
-      const { data: pedidos } = await supabase
-        .from('pedidos')
-        .select('id')
-        .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
-        .filter('lista_predios', 'cs', `{${buildingId}}`);
+      // Simplesmente fazer refresh silencioso - o useEffect vai detectar mudanças
+      await refresh(true);
       
-      if (!pedidos || pedidos.length === 0) return;
-      
-      const pedidoIds = pedidos.map(p => p.id);
-      const videoPromises = pedidoIds.map(async (pedidoId) => {
-        const { data: currentVideo } = await supabase.rpc('get_current_display_video', {
-          p_pedido_id: pedidoId
-        });
-        
-        if (!currentVideo || currentVideo.length === 0) return null;
-        return currentVideo[0].video_id;
-      });
-      
-      const newVideoIds = (await Promise.all(videoPromises))
-        .filter(Boolean)
-        .sort()
-        .join(',');
-      
-      // Comparar IDs dos vídeos
-      const currentVideoIds = videos.map(v => v.video_id).sort().join(',');
-      
-      if (newVideoIds !== currentVideoIds) {
-        console.log('✅ [MINIMAL] Mudança detectada! Atualizando playlist...');
-        console.log('   Antes:', currentVideoIds);
-        console.log('   Depois:', newVideoIds);
-        
-        // Atualizar playlist de forma suave
-        await refresh(true); // silent = true
-        
-        // Resetar índice para começar do início da nova playlist
-        setCurrentIndex(0);
-        setPlaylistCycleCount(0);
-      } else {
-        console.log('✅ [MINIMAL] Nenhuma mudança detectada');
-      }
+      console.log('✅ [MINIMAL] Verificação concluída');
       
     } catch (err) {
       console.error('❌ [MINIMAL] Erro ao verificar mudanças:', err);
     }
-  }, [buildingId, videos, refresh]);
+  }, [refresh]);
 
   // ✅ Polling de SEGURANÇA (30 minutos - apenas fallback)
   useEffect(() => {
@@ -192,7 +155,35 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
     return () => video.removeEventListener('ended', handleVideoEnd);
   }, [handleVideoEnd]);
 
-  // ✅ Resetar índice quando vídeos mudarem
+  // ✅ Detectar mudanças na playlist e resetar player
+  const prevVideosRef = useRef<string>('');
+  useEffect(() => {
+    const currentVideoIds = videos.map(v => v.video_id).sort().join(',');
+    const prevVideoIds = prevVideosRef.current;
+    
+    // Se os vídeos mudaram E não é a primeira carga
+    if (currentVideoIds !== prevVideoIds && prevVideoIds !== '') {
+      console.log('🔄 [MINIMAL] ✅ VÍDEOS MUDARAM - Atualizando player');
+      console.log('   Antes:', prevVideoIds);
+      console.log('   Depois:', currentVideoIds);
+      
+      // Resetar para o início da nova playlist
+      setCurrentIndex(0);
+      setPlaylistCycleCount(0);
+      
+      // Forçar replay do vídeo atual
+      if (videoRef.current) {
+        videoRef.current.load();
+        videoRef.current.play().catch(err => {
+          console.error('❌ [MINIMAL] Erro ao iniciar vídeo:', err);
+        });
+      }
+    }
+    
+    prevVideosRef.current = currentVideoIds;
+  }, [videos]);
+
+  // ✅ Resetar índice quando vídeos mudarem (fallback)
   useEffect(() => {
     if (videos.length > 0 && currentIndex >= videos.length) {
       setCurrentIndex(0);
