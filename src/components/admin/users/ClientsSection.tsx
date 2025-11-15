@@ -57,6 +57,19 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
     (user.raw_user_meta_data?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // 🔒 Invalidar todas as sessões ativas de um usuário
+  const invalidateUserSessions = async (userId: string) => {
+    try {
+      await supabase
+        .from('active_sessions_monitor')
+        .delete()
+        .eq('user_id', userId);
+      console.log('✅ Sessões invalidadas para usuário:', userId);
+    } catch (error) {
+      console.error('❌ Erro ao invalidar sessões:', error);
+    }
+  };
+
   const handleBlockUser = async (userId: string, userEmail: string) => {
     try {
       const { error } = await supabase.functions.invoke('admin-user-management', {
@@ -67,6 +80,9 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
       });
 
       if (error) throw error;
+
+      // 🚨 Invalidar sessões imediatamente
+      await invalidateUserSessions(userId);
 
       toast.success(`Cliente ${userEmail} bloqueado com sucesso`);
       onRefresh();
@@ -95,13 +111,18 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
     }
   };
 
-  const handleResetPassword = async (userEmail: string) => {
+  const handleResetPassword = async (userEmail: string, userId?: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
         redirectTo: `${window.location.origin}/reset-password`
       });
 
       if (error) throw error;
+
+      // 🚨 Invalidar sessões se temos o userId
+      if (userId) {
+        await invalidateUserSessions(userId);
+      }
 
       toast.success(`Email de reset enviado para ${userEmail}`);
     } catch (error) {
@@ -118,6 +139,9 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
     if (!confirmDelete) return;
 
     try {
+      // 🚨 Invalidar sessões ANTES de deletar
+      await invalidateUserSessions(userId);
+
       const { error } = await supabase.functions.invoke('admin-user-management', {
         body: {
           action: 'delete_user',
@@ -363,7 +387,7 @@ const ClientsSection: React.FC<ClientsSectionProps> = ({ users, loading, onRefre
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleResetPassword(user.email)}
+                            onClick={() => handleResetPassword(user.email, user.id)}
                           >
                             <Key className="h-3 w-3 mr-1" />
                             Reset Senha
