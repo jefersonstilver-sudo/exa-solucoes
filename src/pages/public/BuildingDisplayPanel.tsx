@@ -51,8 +51,14 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
   const [showOfflineIndicator, setShowOfflineIndicator] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
+  
+  // ✅ OTIMIZAÇÃO CRÍTICA: Só ativar hooks pesados se há vídeos
+  const hasVideos = activeVideos.length > 0;
   const networkStatus = useNetworkMonitor();
-  const { getCachedVideoUrl, preCacheVideos } = useVideoCache(buildingId);
+  const { getCachedVideoUrl, preCacheVideos } = hasVideos ? useVideoCache(buildingId) : {
+    getCachedVideoUrl: async () => '',
+    preCacheVideos: () => {}
+  };
   
   // ✅ Ref estável para refetch
   const refetchRef = useRef(refetch);
@@ -61,12 +67,13 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     refetchRef.current = refetch;
   }, [refetch]);
   
-  const { containerRef: protectionRef } = useVideoProtection({
+  // ✅ OTIMIZAÇÃO CRÍTICA: Só ativar proteção se há vídeos
+  const { containerRef: protectionRef } = hasVideos ? useVideoProtection({
     preventDownload: true,
     preventPrint: true,
     preventDevTools: true,
     preventScreenCapture: true
-  });
+  }) : { containerRef: useRef<HTMLDivElement>(null) };
 
   VideoDebugger.logEvent('DISPLAY', 'Vídeos recebidos (Panel)', {
     count: activeVideos.length,
@@ -151,7 +158,7 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     fetchBuildingData();
   }, [buildingId]);
   
-  // Monitor de agendamentos - verifica a cada 1 minuto se algum vídeo deve entrar/sair
+  // ✅ OTIMIZAÇÃO CRÍTICA: Só monitorar agendamentos se há vídeos
   useBuildingScheduleMonitor({
     buildingId,
     onScheduleChange: () => {
@@ -159,7 +166,7 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
       refetchRef.current();
     },
     intervalMinutes: 1,
-    enabled: true
+    enabled: hasVideos
   });
 
   // Proteção contra menu de contexto
@@ -176,11 +183,11 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     };
   }, []);
 
-  // ✅ Sistema de polling com refetch estável via ref (2 minutos)
+  // ✅ Sistema de polling com refetch estável via ref (3 minutos) - SÓ SE HÁ VÍDEOS
   useEffect(() => {
-    if (!buildingId) return;
+    if (!buildingId || !hasVideos) return;
 
-    VideoDebugger.logEvent('POLLING', 'Sistema iniciado (Panel - 2 minutos)');
+    VideoDebugger.logEvent('POLLING', 'Sistema iniciado (Panel - 3 minutos)');
 
     const checkForUpdates = async () => {
       if (isPlayingRef.current) {
