@@ -10,7 +10,15 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
-  console.log('📧 [UNIFIED-EMAIL] === INÍCIO ===');
+  const requestStartTime = new Date().toISOString();
+  console.log('🚀 ====================================');
+  console.log('🚀 [UNIFIED-EMAIL] Edge Function INVOKED at:', requestStartTime);
+  console.log('🚀 [UNIFIED-EMAIL] Request received:', {
+    method: req.method,
+    url: req.url,
+    timestamp: requestStartTime
+  });
+  console.log('🚀 ====================================');
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -238,8 +246,23 @@ serve(async (req: Request) => {
 
     } else {
       // EMAIL DE CONFIRMAÇÃO INICIAL (webhook)
-      console.log('📧 [WEBHOOK] Processando confirmação inicial...');
-      console.log('📧 [WEBHOOK] User email:', user?.email);
+      console.log('📨 ====================================');
+      console.log('📨 [WEBHOOK] Processando confirmação inicial...');
+      console.log('📨 [WEBHOOK] Timestamp:', new Date().toISOString());
+      console.log('📨 [WEBHOOK] Action:', action);
+      console.log('📨 [WEBHOOK] User email:', user?.email);
+      console.log('📨 [WEBHOOK] User ID:', user?.id);
+      
+      // Verificar se é um signup específico
+      if (action === 'signup') {
+        console.log('✅ ====================================');
+        console.log('✅ [WEBHOOK] TIPO: SIGNUP DETECTADO!');
+        console.log('✅ [WEBHOOK] Este é um webhook automático do Supabase Auth');
+        console.log('✅ [WEBHOOK] Timestamp:', new Date().toISOString());
+        console.log('✅ [WEBHOOK] Email do usuário:', user?.email);
+        console.log('✅ [WEBHOOK] ID do usuário:', user?.id);
+        console.log('✅ ====================================');
+      }
       console.log('📧 [WEBHOOK] Email action type:', email_data?.email_action_type);
       console.log('🔍 [WEBHOOK] Dados recebidos:', JSON.stringify({
         has_token_hash: !!email_data?.token_hash,
@@ -341,7 +364,13 @@ serve(async (req: Request) => {
         console.log('✅ [WEBHOOK] Nome encontrado no metadata:', userName);
       }
 
-      console.log('📧 [WEBHOOK] Enviando email para:', user.email, 'com nome:', userName);
+      console.log('📧 ====================================');
+      console.log('📧 [WEBHOOK] Preparando envio de email...');
+      console.log('📧 [WEBHOOK] Destinatário:', user.email);
+      console.log('📧 [WEBHOOK] Nome:', userName);
+      console.log('📧 [WEBHOOK] URL de confirmação:', validatedUrl.substring(0, 100) + '...');
+      console.log('📧 [WEBHOOK] Timestamp:', new Date().toISOString());
+      
       const { data: emailData, error: emailError } = await emailService.sendConfirmationEmail(
         user.email, 
         userName, 
@@ -349,11 +378,21 @@ serve(async (req: Request) => {
       );
 
       if (emailError) {
-        console.error('❌ [WEBHOOK] Erro ao enviar email:', emailError);
+        console.error('❌ ====================================');
+        console.error('❌ [WEBHOOK] ERRO ao enviar email!');
+        console.error('❌ [WEBHOOK] Erro:', emailError);
+        console.error('❌ [WEBHOOK] Timestamp:', new Date().toISOString());
+        console.error('❌ ====================================');
         throw emailError;
       }
 
-      console.log('✅ [WEBHOOK] Email enviado com sucesso! ID:', emailData?.id);
+      console.log('✅ ====================================');
+      console.log('✅ [WEBHOOK] EMAIL ENVIADO COM SUCESSO!');
+      console.log('✅ [WEBHOOK] Resend Email ID:', emailData?.id);
+      console.log('✅ [WEBHOOK] Para:', user.email);
+      console.log('✅ [WEBHOOK] Nome:', userName);
+      console.log('✅ [WEBHOOK] Timestamp:', new Date().toISOString());
+      console.log('✅ ====================================');
 
       return new Response(JSON.stringify({ 
         message: 'Email de confirmação enviado',
