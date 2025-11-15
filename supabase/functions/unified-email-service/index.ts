@@ -241,14 +241,20 @@ serve(async (req: Request) => {
       console.log('📧 [WEBHOOK] Processando confirmação inicial...');
       console.log('📧 [WEBHOOK] User email:', user?.email);
       console.log('📧 [WEBHOOK] Email action type:', email_data?.email_action_type);
+      console.log('🔍 [WEBHOOK] Dados recebidos:', JSON.stringify({
+        has_token_hash: !!email_data?.token_hash,
+        has_access_token: !!email_data?.access_token,
+        has_confirmation_url: !!email_data?.confirmation_url,
+        confirmation_url: email_data?.confirmation_url
+      }));
       
-      if (!user?.email || !email_data?.token_hash) {
-        console.error('❌ [WEBHOOK] Dados obrigatórios faltando');
-        throw new Error('User email e token são obrigatórios');
+      if (!user?.email) {
+        console.error('❌ [WEBHOOK] Email do usuário faltando');
+        throw new Error('User email é obrigatório');
       }
       
-      if (email_data.email_action_type !== 'signup') {
-        console.log(`⏭️ [WEBHOOK] Evento ignorado (tipo: ${email_data.email_action_type})`);
+      if (email_data?.email_action_type !== 'signup') {
+        console.log(`⏭️ [WEBHOOK] Evento ignorado (tipo: ${email_data?.email_action_type})`);
         return new Response(JSON.stringify({ 
           message: 'Event ignored',
           success: true 
@@ -258,19 +264,41 @@ serve(async (req: Request) => {
         });
       }
 
-      console.log('🔗 [WEBHOOK] Gerando link de confirmação...');
-      const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
       const redirectUrl = `${baseUrl}/confirmacao`;
-      const originalToken = email_data?.access_token || email_data?.confirmation_url?.match(/access_token=([^&]+)/)?.[1];
-      
       let confirmationUrl;
-      try {
-        confirmationUrl = await linkGenerator.generateConfirmationLink(user.email, originalToken);
-        console.log('✅ [WEBHOOK] Link gerado via LinkGenerator');
-      } catch (linkGenError) {
-        console.warn('⚠️ [WEBHOOK] Falha no LinkGenerator, usando fallback:', linkGenError);
-        confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
+      
+      // ESTRATÉGIA 1: Usar confirmation_url do webhook se disponível
+      if (email_data?.confirmation_url) {
+        console.log('✅ [WEBHOOK] Usando confirmation_url do webhook');
+        // Atualizar o redirect_to na URL
+        const url = new URL(email_data.confirmation_url);
+        url.searchParams.set('redirect_to', redirectUrl);
+        confirmationUrl = url.toString();
       }
+      // ESTRATÉGIA 2: Tentar LinkGenerator com access_token
+      else {
+        console.log('🔗 [WEBHOOK] Tentando gerar link via LinkGenerator...');
+        const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
+        const originalToken = email_data?.access_token;
+        
+        try {
+          confirmationUrl = await linkGenerator.generateConfirmationLink(user.email, originalToken);
+          console.log('✅ [WEBHOOK] Link gerado via LinkGenerator');
+        } catch (linkGenError) {
+          console.warn('⚠️ [WEBHOOK] Falha no LinkGenerator:', linkGenError);
+          
+          // ESTRATÉGIA 3: Fallback com token_hash se disponível
+          if (email_data?.token_hash) {
+            console.log('🔄 [WEBHOOK] Usando fallback com token_hash');
+            confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
+          } else {
+            console.error('❌ [WEBHOOK] Sem token disponível para fallback!');
+            throw new Error('Não foi possível gerar link de confirmação - tokens não disponíveis');
+          }
+        }
+      }
+      
+      console.log('🔗 [WEBHOOK] Link de confirmação gerado:', confirmationUrl.substring(0, 100) + '...');
       
       const validatedUrl = URLValidator.validateAndCorrectUrl(confirmationUrl);
       const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';
