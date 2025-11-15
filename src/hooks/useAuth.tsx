@@ -201,46 +201,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
+    // 🚨 SECURITY: Verificar se usuário ainda existe (não foi deletado)
+    let sessionCheckInterval: NodeJS.Timeout | null = null;
+    
+    const checkUserExists = async (userId: string) => {
+      try {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+          
+        // Se usuário foi deletado, fazer logout IMEDIATO
+        if (!userData || error) {
+          console.warn('⚠️ [useAuth] Usuário foi deletado - fazendo logout automático');
+          if (sessionCheckInterval) clearInterval(sessionCheckInterval);
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setUserProfile(null);
+        }
+      } catch (error) {
+        console.error('❌ [useAuth] Erro ao verificar existência do usuário:', error);
+      }
+    };
+
     // Listener de auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Limpar intervalo anterior
+      if (sessionCheckInterval) {
+        clearInterval(sessionCheckInterval);
+        sessionCheckInterval = null;
+      }
       
       // Buscar profile completo do banco (NÃO apenas JWT)
       if (session?.user) {
         setTimeout(() => {
           fetchUserProfile(session.user.id, session.access_token);
         }, 0);
+        
+        // 🚨 Verificar existência a cada 5 segundos
+        sessionCheckInterval = setInterval(() => {
+          checkUserExists(session.user.id);
+        }, 5000);
+        
+        // Verificar IMEDIATAMENTE também
+        checkUserExists(session.user.id);
       } else {
         setUserProfile(null);
       }
       
       setIsLoading(false);
     });
-
-    // 🚨 SECURITY: Verificar se sessão ainda existe no banco (usuário não foi deletado)
-    let sessionCheckInterval: NodeJS.Timeout | null = null;
-    
-    if (session?.user?.id) {
-      // Verificar a cada 30 segundos se o usuário ainda existe
-      sessionCheckInterval = setInterval(async () => {
-        try {
-          const { data: userData, error } = await supabase
-            .from('users')
-            .select('id')
-            .eq('id', session.user.id)
-            .maybeSingle();
-            
-          // Se usuário foi deletado, fazer logout imediato
-          if (!userData || error) {
-            console.warn('⚠️ [useAuth] Usuário foi deletado - fazendo logout automático');
-            await logout();
-          }
-        } catch (error) {
-          console.error('❌ [useAuth] Erro ao verificar existência do usuário:', error);
-        }
-      }, 30000); // Verificar a cada 30 segundos
-    }
 
     // Verificação inicial da sessão
     supabase.auth.getSession().then(({ data: { session } }) => {
