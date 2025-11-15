@@ -35,11 +35,13 @@ serve(async (req) => {
     if (req.method === 'GET' && path === '') {
       console.log('📋 Fetching active logos for ticker');
       
+      // ✅ FIX: Select apenas colunas necessárias + LIMIT
       const { data: logos, error } = await supabaseClient
         .from('logos')
-        .select('*')
+        .select('id, name, file_url, color_variant, link_url, sort_order, is_active')
         .eq('is_active', true)
-        .order('sort_order', { ascending: true });
+        .order('sort_order', { ascending: true })
+        .limit(20); // Limite razoável para ticker
 
       if (error) {
         console.error('❌ Error fetching logos:', error);
@@ -74,8 +76,13 @@ serve(async (req) => {
         return null; // External URL or unrecognized format
       };
 
-      // Create signed URLs when possible; try decoded + raw; fallback to public URL
-      const signedLogos: (Logo | null)[] = await Promise.all((logos || []).map(async (logo: any) => {
+      // ✅ FIX: Processar em batches de 3 para reduzir requisições simultâneas
+      const BATCH_SIZE = 3;
+      const signedLogos: (Logo | null)[] = [];
+      
+      for (let i = 0; i < (logos || []).length; i += BATCH_SIZE) {
+        const batch = (logos || []).slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(batch.map(async (logo: any) => {
         const info = extractBucketAndPath(logo.file_url);
         if (!info) {
           // External URL - add cache buster

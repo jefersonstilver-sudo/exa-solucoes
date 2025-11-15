@@ -105,12 +105,13 @@ export const getUserBehaviorEvents = async (
   limit: number = 50
 ) => {
   try {
+    // ✅ FIX: Select apenas colunas necessárias
     const { data, error } = await supabase
       .from('user_behavior_tracking')
-      .select('*')
+      .select('id, user_id, event_type, event_data, page_path, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .limit(Math.min(limit, 100)); // Max 100 por request
 
     if (error) {
       console.error('❌ Erro ao buscar eventos:', error);

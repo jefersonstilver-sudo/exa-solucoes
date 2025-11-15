@@ -80,62 +80,73 @@ serve(async (req) => {
     // Estrutura da resposta do Resend: { data: [...emails] }
     const emails: ResendEmail[] = resendData.data || [];
 
-    // Sincronizar com nossa tabela local email_logs
+    // ✅ FIX: Buscar todos IDs existentes de uma vez (batch query)
+    const resendIds = emails.map(e => e.id);
+    const { data: existingEmails } = await supabase
+      .from('email_logs')
+      .select('resend_id')
+      .in('resend_id', resendIds);
+    
+    const existingIds = new Set((existingEmails || []).map(e => e.resend_id));
+    
+    // ✅ FIX: Preparar inserts em batch
+    const emailsToInsert = [];
+    
     for (const email of emails) {
-      // Verificar se já existe
-      const { data: existing } = await supabase
+      if (existingIds.has(email.id)) continue;
+
+      emailsToInsert.push({
+        resend_id: email.id,
+        recipient_email: email.to[0],
+        subject: email.subject,
+        template_id: 'unknown',
+        status: email.last_event || 'sent',
+        sent_at: email.created_at,
+        opened_at: email.last_event === 'opened' || email.last_event === 'clicked' ? new Date().toISOString() : null,
+        clicked_at: email.last_event === 'clicked' ? new Date().toISOString() : null,
+      });
+    }
+    
+    // ✅ FIX: Insert em batch único
+    if (emailsToInsert.length > 0) {
+      const { error: insertError } = await supabase
         .from('email_logs')
-        .select('id')
-        .eq('resend_id', email.id)
-        .single();
+        .insert(emailsToInsert);
 
-      if (!existing) {
-        // Inserir novo registro
-        const { error: insertError } = await supabase
-          .from('email_logs')
-          .insert({
-            resend_id: email.id,
-            recipient_email: email.to[0],
-            subject: email.subject,
-            template_id: 'unknown', // Tentar identificar pelo subject
-            status: email.last_event || 'sent',
-            sent_at: email.created_at,
-            opened_at: email.last_event === 'opened' || email.last_event === 'clicked' ? new Date().toISOString() : null,
-            clicked_at: email.last_event === 'clicked' ? new Date().toISOString() : null,
-          });
-
-        if (insertError) {
-          console.error('Error inserting email log:', insertError);
-        }
+      if (insertError) {
+        console.error('Error batch inserting email logs:', insertError);
       } else {
-        // Atualizar status se necessário
-        const { error: updateError } = await supabase
-          .from('email_logs')
-          .update({
-            status: email.last_event || 'sent',
-            opened_at: email.last_event === 'opened' || email.last_event === 'clicked' ? new Date().toISOString() : null,
-            clicked_at: email.last_event === 'clicked' ? new Date().toISOString() : null,
-          })
-          .eq('resend_id', email.id);
-
-        if (updateError) {
-          console.error('Error updating email log:', updateError);
-        }
+        console.log(`✅ Inserted ${emailsToInsert.length} new emails in batch`);
       }
     }
-
-    // Buscar estatísticas atualizadas
-    const { data: logs, error: logsError } = await supabase
+    
+    // Buscar emails recentes para retornar (com LIMIT)
+    const { data: recentLogs, error: fetchError } = await supabase
       .from('email_logs')
-      .select('*')
+      .select('id, resend_id, recipient_email, subject, status, sent_at, opened_at, clicked_at')
       .order('sent_at', { ascending: false })
       .limit(100);
 
-    if (logsError) {
-      throw logsError;
+    if (fetchError) {
+      console.error('Error fetching recent logs:', fetchError);
     }
 
+    // Remover loop de update individual - já não fazemos update em tempo real
+    // Os updates de status serão feitos na próxima execução
+    
     return new Response(
+      JSON.stringify({
+        success: true,
+        emails: data,
+        recentLogs,
+        synced: emailsToInsert.length,
+        timestamp: new Date().toISOString(),
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    );
       JSON.stringify({
         success: true,
         emails: emails,
