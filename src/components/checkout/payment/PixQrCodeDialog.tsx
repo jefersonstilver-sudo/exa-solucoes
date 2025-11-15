@@ -46,13 +46,15 @@ const PixQrCodeDialog = ({
     onPaymentApproved: () => {
       console.log("🎉 [PixQrCodeDialog] Pagamento aprovado automaticamente!");
       toast.success("🎉 Pagamento aprovado!", {
-        description: "Seu pedido foi confirmado automaticamente!",
+        description: "Redirecionando para seus pedidos...",
         duration: 3000
       });
 
-      // Fechar popup após breve delay para mostrar o sucesso
+      // Limpar carrinhos e redirecionar após breve delay
       setTimeout(() => {
-        handleClose();
+        clearAllCarts();
+        console.log("🔄 [PixQrCodeDialog] Redirecionando para pedidos após aprovação automática");
+        navigate('/anunciante/pedidos');
       }, 2000);
     }
   });
