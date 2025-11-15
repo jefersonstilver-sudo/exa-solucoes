@@ -100,8 +100,24 @@ const AppContent = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(MAINTENANCE_MODE && !hasLaunchTimePassed());
   const isDevSession = typeof window !== 'undefined' && sessionStorage.getItem('exa_dev_session') === 'true';
   
-  // Active session tracking for security monitoring
-  useActiveSession();
+  // ✅ CORREÇÃO CRÍTICA: Detectar se é rota de painel/display público
+  const currentPath = window.location.pathname;
+  const isPublicDisplayRoute = 
+    currentPath.includes('/painel/') || 
+    currentPath.includes('/painel-comercial/') ||
+    currentPath.includes('/embed/') ||
+    currentPath.startsWith('/viena/') ||
+    currentPath === '/painel-aguardando-vinculo';
+  
+  // 🔍 Debug logs para verificação
+  console.log('🔍 [SESSION] Rota atual:', currentPath);
+  console.log('🔍 [SESSION] É display público?', isPublicDisplayRoute);
+  console.log(isPublicDisplayRoute ? '🚫 [SESSION] Tracking desabilitado' : '✅ [SESSION] Tracking ativado');
+  
+  // ⚠️ Active session tracking - DESABILITADO para painéis públicos
+  if (!isPublicDisplayRoute) {
+    useActiveSession();
+  }
   
   // Page transition hook
   const { isLoading: isTransitioning, loadingMessage } = usePageTransition({
