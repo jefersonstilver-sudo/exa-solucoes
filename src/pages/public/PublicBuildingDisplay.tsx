@@ -3,7 +3,7 @@ import { useParams, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { parseBuildingParams } from '@/utils/buildingSlugUtils';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
-import BuildingDisplayPanel from './BuildingDisplayPanel';
+import MinimalDisplayPanel from './MinimalDisplayPanel';
 import BuildingDisplayCommercial from './BuildingDisplayCommercial';
 import BuildingDisplayEmbed from './BuildingDisplayEmbed';
 
@@ -112,7 +112,7 @@ const PublicBuildingDisplay: React.FC<PublicBuildingDisplayProps> = ({
   }
   
   if (variant === 'panel') {
-    return <BuildingDisplayPanel buildingId={buildingId} />;
+    return <MinimalDisplayPanel buildingId={buildingId} />;
   }
 
   return <BuildingDisplayCommercial buildingId={buildingId} />;
