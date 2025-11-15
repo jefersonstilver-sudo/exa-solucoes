@@ -108,8 +108,8 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
     // Enviar heartbeat imediatamente
     enviarHeartbeat();
 
-    // Enviar heartbeat a cada 30 segundos
-    heartbeatIntervalRef.current = setInterval(enviarHeartbeat, 30000);
+    // Enviar heartbeat a cada 5 minutos
+    heartbeatIntervalRef.current = setInterval(enviarHeartbeat, 300000);
 
     return () => {
       if (heartbeatIntervalRef.current) {
@@ -218,7 +218,7 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
       }
     };
 
-    const interval = setInterval(checkForUpdates, 120000); // 2 minutos
+    const interval = setInterval(checkForUpdates, 180000); // 3 minutos
 
     return () => {
       VideoDebugger.logEvent('POLLING', 'Sistema encerrado (Panel)');
@@ -340,9 +340,15 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
   if (activeVideos.length === 0) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center text-gray-600 text-sm">
-          <p>{buildingName || 'Display'}</p>
-          <p className="mt-2 text-xs">Aguardando conteúdo...</p>
+        <div className="text-center text-gray-400 max-w-md px-4">
+          <div className="text-6xl mb-4">📺</div>
+          <p className="text-lg font-medium mb-2">{buildingName || 'Display Painel'}</p>
+          <p className="text-sm opacity-75">
+            Nenhum conteúdo disponível no momento.
+          </p>
+          <p className="text-xs opacity-50 mt-4">
+            Aguardando configuração de vídeos...
+          </p>
         </div>
       </div>
     );
