@@ -230,6 +230,19 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     }
   };
 
+  // 🔒 Invalidar todas as sessões ativas de um usuário
+  const invalidateUserSessions = async (userId: string) => {
+    try {
+      await supabase
+        .from('active_sessions_monitor')
+        .delete()
+        .eq('user_id', userId);
+      console.log('✅ Sessões invalidadas para usuário:', userId);
+    } catch (error) {
+      console.error('❌ Erro ao invalidar sessões:', error);
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!user || !isSuperAdmin) return;
 
@@ -255,6 +268,9 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       });
 
       if (error) throw error;
+
+      // 🚨 Invalidar sessões imediatamente após reset
+      await invalidateUserSessions(user.id);
 
       toast.success(`Senha resetada para: ${securePassword}`, {
         duration: 10000,
@@ -304,6 +320,9 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     try {
       setDeleteLoading(true);
       console.log('🗑️ Deletando usuário:', user.id);
+
+      // 🚨 Invalidar sessões ANTES de deletar
+      await invalidateUserSessions(user.id);
 
       const { data, error } = await supabase.functions.invoke('delete-user-account', {
         body: { userId: user.id }
