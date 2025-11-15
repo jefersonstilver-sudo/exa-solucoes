@@ -33,58 +33,58 @@ const CouponStatsCards: React.FC<CouponStatsCardsProps> = ({ stats, isLoading })
   if (!stats) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total de Cupons</CardTitle>
-          <Ticket className="h-4 w-4 text-muted-foreground" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+      <Card className="overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium text-foreground">Total de Cupons</CardTitle>
+          <Ticket className="h-5 w-5 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.total_cupons}</div>
-          <p className="text-xs text-muted-foreground">
+        <CardContent className="pt-0">
+          <div className="text-3xl font-bold">{stats.total_cupons}</div>
+          <p className="text-xs text-muted-foreground mt-1">
             Cupons criados no sistema
           </p>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Cupons Ativos</CardTitle>
-          <TrendingUp className="h-4 w-4 text-green-600" />
+      <Card className="overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium text-foreground">Cupons Ativos</CardTitle>
+          <TrendingUp className="h-5 w-5 text-green-600" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-600">{stats.cupons_ativos}</div>
-          <p className="text-xs text-muted-foreground">
-            <Badge variant="outline" className="text-green-600 border-green-600">
+        <CardContent className="pt-0">
+          <div className="text-3xl font-bold text-green-600">{stats.cupons_ativos}</div>
+          <p className="text-xs text-muted-foreground mt-1">
+            <Badge variant="outline" className="text-green-600 border-green-600 text-[10px]">
               {stats.cupons_expirados} expirados
             </Badge>
           </p>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total de Usos</CardTitle>
-          <Users className="h-4 w-4 text-blue-600" />
+      <Card className="overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium text-foreground">Total de Usos</CardTitle>
+          <Users className="h-5 w-5 text-blue-600" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{stats.total_usos}</div>
-          <p className="text-xs text-muted-foreground">
+        <CardContent className="pt-0">
+          <div className="text-3xl font-bold text-blue-600">{stats.total_usos}</div>
+          <p className="text-xs text-muted-foreground mt-1">
             Aplicações de cupons
           </p>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Desconto Total</CardTitle>
-          <DollarSign className="h-4 w-4 text-purple-600" />
+      <Card className="overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium text-foreground">Desconto Total</CardTitle>
+          <DollarSign className="h-5 w-5 text-purple-600" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-purple-600">
+        <CardContent className="pt-0">
+          <div className="text-3xl font-bold text-purple-600">
             R$ {stats.receita_com_desconto.toFixed(2)}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-1">
             Em descontos aplicados
           </p>
         </CardContent>
