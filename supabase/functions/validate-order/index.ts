@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +15,19 @@ Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting: 20 order validations per minute per IP
+  const clientId = getClientIdentifier(req);
+  const rateLimitResult = checkRateLimit(clientId, {
+    maxAttempts: 20,
+    windowMs: 60000, // 1 minute
+    blockDurationMs: 300000 // 5 minutes block
+  });
+
+  if (!rateLimitResult.allowed) {
+    console.warn(`🚫 [VALIDATE-ORDER] Rate limit exceeded for ${clientId}`);
+    return createRateLimitResponse(rateLimitResult, corsHeaders);
   }
 
   try {
