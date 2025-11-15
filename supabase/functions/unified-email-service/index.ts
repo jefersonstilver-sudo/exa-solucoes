@@ -301,9 +301,47 @@ serve(async (req: Request) => {
       console.log('🔗 [WEBHOOK] Link de confirmação gerado:', confirmationUrl.substring(0, 100) + '...');
       
       const validatedUrl = URLValidator.validateAndCorrectUrl(confirmationUrl);
-      const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';
+      
+      // Buscar nome do usuário - verificar múltiplas fontes
+      console.log('👤 [WEBHOOK] Verificando fontes de nome do usuário...');
+      console.log('👤 [WEBHOOK] user_metadata:', JSON.stringify(user?.user_metadata));
+      console.log('👤 [WEBHOOK] raw_user_meta_data:', JSON.stringify((user as any)?.raw_user_meta_data));
+      
+      let userName = 
+        user?.user_metadata?.name || 
+        (user as any)?.raw_user_meta_data?.name;
+      
+      if (!userName) {
+        console.log('👤 [WEBHOOK] Nome não encontrado no metadata, buscando no banco...');
+        try {
+          const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+          const supabase = createClient(supabaseUrl, serviceRoleKey);
+          
+          // Aguardar um pouco para o trigger processar
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          const { data: userData } = await supabase
+            .from('users')
+            .select('nome')
+            .eq('email', user.email)
+            .single();
+          
+          if (userData?.nome) {
+            userName = userData.nome;
+            console.log('✅ [WEBHOOK] Nome encontrado no banco:', userName);
+          } else {
+            userName = user?.email?.split('@')[0] || 'Cliente';
+            console.log('⚠️ [WEBHOOK] Nome não encontrado, usando fallback:', userName);
+          }
+        } catch (error) {
+          console.error('⚠️ [WEBHOOK] Erro ao buscar nome no banco:', error);
+          userName = user?.email?.split('@')[0] || 'Cliente';
+        }
+      } else {
+        console.log('✅ [WEBHOOK] Nome encontrado no metadata:', userName);
+      }
 
-      console.log('📧 [WEBHOOK] Enviando email para:', user.email);
+      console.log('📧 [WEBHOOK] Enviando email para:', user.email, 'com nome:', userName);
       const { data: emailData, error: emailError } = await emailService.sendConfirmationEmail(
         user.email, 
         userName, 
