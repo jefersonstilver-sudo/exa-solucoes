@@ -75,45 +75,54 @@ const CouponsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gestão de Cupons</h1>
-          <p className="text-muted-foreground">
+    <div className="container mx-auto py-6 space-y-8 min-h-screen pb-24">
+      {/* Header com título e ações */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Gestão de Cupons</h1>
+          <p className="text-sm text-muted-foreground">
             Crie e gerencie cupons de desconto para os usuários
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={exportCoupons}>
-            <Download className="mr-2 h-4 w-4" />
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={exportCoupons} className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
             Exportar
           </Button>
-          <Button onClick={handleCreateCoupon}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button onClick={handleCreateCoupon} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
             Novo Cupom
           </Button>
         </div>
       </div>
 
-      {/* Estatísticas */}
-      <CouponStatsCards stats={stats} isLoading={isLoading} />
+      {/* Estatísticas - com margem adequada */}
+      <div className="w-full">
+        <CouponStatsCards stats={stats} isLoading={isLoading} />
+      </div>
 
-      {/* Lista de Cupons */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Cupons Cadastrados</CardTitle>
+      {/* Lista de Cupons - card com padding interno */}
+      <Card className="w-full">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl">Cupons Cadastrados</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <CouponFiltersComponent filters={filters} onFiltersChange={setFilters} />
+        <CardContent className="space-y-6 px-6 pb-6">
+          {/* Filtros com espaçamento */}
+          <div className="w-full">
+            <CouponFiltersComponent filters={filters} onFiltersChange={setFilters} />
+          </div>
           
-          <CouponsTable
-            coupons={coupons}
-            isLoading={isLoading}
-            onEdit={handleEditCoupon}
-            onDelete={deleteCoupon}
-            onToggleStatus={handleToggleStatus}
-            onViewUsage={getCouponUsageDetails}
-          />
+          {/* Tabela com scroll horizontal em mobile */}
+          <div className="w-full overflow-x-auto">
+            <CouponsTable
+              coupons={coupons}
+              isLoading={isLoading}
+              onEdit={handleEditCoupon}
+              onDelete={deleteCoupon}
+              onToggleStatus={handleToggleStatus}
+              onViewUsage={getCouponUsageDetails}
+            />
+          </div>
         </CardContent>
       </Card>
 

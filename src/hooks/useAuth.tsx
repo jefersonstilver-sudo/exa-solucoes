@@ -218,6 +218,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(false);
     });
 
+    // 🚨 SECURITY: Verificar se sessão ainda existe no banco (usuário não foi deletado)
+    let sessionCheckInterval: NodeJS.Timeout | null = null;
+    
+    if (session?.user?.id) {
+      // Verificar a cada 30 segundos se o usuário ainda existe
+      sessionCheckInterval = setInterval(async () => {
+        try {
+          const { data: userData, error } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', session.user.id)
+            .maybeSingle();
+            
+          // Se usuário foi deletado, fazer logout imediato
+          if (!userData || error) {
+            console.warn('⚠️ [useAuth] Usuário foi deletado - fazendo logout automático');
+            await logout();
+          }
+        } catch (error) {
+          console.error('❌ [useAuth] Erro ao verificar existência do usuário:', error);
+        }
+      }, 30000); // Verificar a cada 30 segundos
+    }
+
     // Verificação inicial da sessão
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -230,7 +254,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (sessionCheckInterval) {
+        clearInterval(sessionCheckInterval);
+      }
+    };
   }, []);
 
   const value: AuthContextType = {
