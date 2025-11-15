@@ -2,6 +2,7 @@
 // Version: 4.0.0 - API REST direta (compatível com Deno)
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
+import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,19 @@ serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting: 5 payment attempts per minute per IP
+  const clientId = getClientIdentifier(req);
+  const rateLimitResult = checkRateLimit(clientId, {
+    maxAttempts: 5,
+    windowMs: 60000, // 1 minute
+    blockDurationMs: 300000 // 5 minutes block
+  });
+
+  if (!rateLimitResult.allowed) {
+    console.warn(`🚫 [PIX-PROD] Rate limit exceeded for ${clientId}`);
+    return createRateLimitResponse(rateLimitResult, corsHeaders);
   }
 
   try {

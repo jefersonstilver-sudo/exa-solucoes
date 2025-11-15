@@ -2,6 +2,7 @@
 // Version: 3.0.0 - Webhook para pagamentos PIX de produção
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,19 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting: 100 webhook notifications per minute per IP (webhooks can be frequent)
+  const clientId = getClientIdentifier(req);
+  const rateLimitResult = checkRateLimit(clientId, {
+    maxAttempts: 100,
+    windowMs: 60000, // 1 minute
+    blockDurationMs: 600000 // 10 minutes block
+  });
+
+  if (!rateLimitResult.allowed) {
+    console.warn(`🚫 [WEBHOOK-PIX-PROD] Rate limit exceeded for ${clientId}`);
+    return createRateLimitResponse(rateLimitResult, corsHeaders);
   }
 
   try {
