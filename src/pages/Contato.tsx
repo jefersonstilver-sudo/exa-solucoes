@@ -56,7 +56,7 @@ const Contato = () => {
   return (
     <Layout className="bg-gradient-to-br from-gray-50 to-gray-100">
       <SEO title="Síndico: Modernize Seu Condomínio GRÁTIS | Painel Digital EXA" description="Síndico, receba GRÁTIS: Painel digital + WIFI + instalação. WhatsApp (45) 9 9141-5856. Atendimento: Seg-Sex 9h às 18h." keywords="painel digital gratuito condomínio, síndico foz iguaçu, modernizar prédio grátis, comunicação condomínio" />
-      <ExaSection background="light" className="min-h-screen pt-32 pb-24">
+      <ExaSection background="light" className="min-h-screen pt-48 pb-24">
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           <div className="space-y-6">
             <div className="space-y-4">
