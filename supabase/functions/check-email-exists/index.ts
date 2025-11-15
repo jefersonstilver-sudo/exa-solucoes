@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +16,19 @@ serve(async (req: Request) => {
 
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+  }
+
+  // Rate limiting: 10 email checks per minute per IP (prevent enumeration attacks)
+  const clientId = getClientIdentifier(req);
+  const rateLimitResult = checkRateLimit(clientId, {
+    maxAttempts: 10,
+    windowMs: 60000, // 1 minute
+    blockDurationMs: 600000 // 10 minutes block
+  });
+
+  if (!rateLimitResult.allowed) {
+    console.warn(`🚫 [CHECK-EMAIL] Rate limit exceeded for ${clientId}`);
+    return createRateLimitResponse(rateLimitResult, corsHeaders);
   }
 
   try {

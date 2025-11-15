@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +11,19 @@ serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting: 10 financial operations per minute per IP
+  const clientId = getClientIdentifier(req);
+  const rateLimitResult = checkRateLimit(clientId, {
+    maxAttempts: 10,
+    windowMs: 60000, // 1 minute
+    blockDurationMs: 300000 // 5 minutes block
+  });
+
+  if (!rateLimitResult.allowed) {
+    console.warn(`🚫 [FINANCIAL-SECURITY] Rate limit exceeded for ${clientId}`);
+    return createRateLimitResponse(rateLimitResult, corsHeaders);
   }
 
   try {

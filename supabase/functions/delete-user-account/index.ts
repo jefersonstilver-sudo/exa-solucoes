@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { checkRateLimit, getClientIdentifier, createRateLimitResponse } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +10,19 @@ Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting: 3 deletions per hour per IP (very restrictive for account deletion)
+  const clientId = getClientIdentifier(req);
+  const rateLimitResult = checkRateLimit(clientId, {
+    maxAttempts: 3,
+    windowMs: 3600000, // 1 hour
+    blockDurationMs: 7200000 // 2 hours block
+  });
+
+  if (!rateLimitResult.allowed) {
+    console.warn(`🚫 [DELETE-USER] Rate limit exceeded for ${clientId}`);
+    return createRateLimitResponse(rateLimitResult, corsHeaders);
   }
 
   try {
