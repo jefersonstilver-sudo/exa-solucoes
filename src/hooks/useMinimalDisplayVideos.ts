@@ -11,7 +11,7 @@ export interface MinimalVideo {
 export interface UseMinimalDisplayVideosResult {
   videos: MinimalVideo[];
   loading: boolean;
-  refresh: () => Promise<void>;
+  refresh: (silent?: boolean) => Promise<void>;
 }
 
 /**
@@ -26,11 +26,15 @@ export function useMinimalDisplayVideos(buildingId: string): UseMinimalDisplayVi
   const [loading, setLoading] = useState(true);
   const isFetchingRef = useRef(false);
 
-  const fetchVideos = useCallback(async () => {
+  const fetchVideos = useCallback(async (silent = false) => {
     if (!buildingId || isFetchingRef.current) return;
 
     isFetchingRef.current = true;
-    setLoading(true);
+    
+    // Só mostra loading se não for verificação silenciosa
+    if (!silent) {
+      setLoading(true);
+    }
 
     try {
       // 1. Buscar pedidos ativos do prédio
@@ -95,7 +99,9 @@ export function useMinimalDisplayVideos(buildingId: string): UseMinimalDisplayVi
       console.error('❌ [MINIMAL] Erro ao buscar vídeos:', err);
       setVideos([]);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
       isFetchingRef.current = false;
     }
   }, [buildingId]);
