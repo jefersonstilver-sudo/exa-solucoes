@@ -103,12 +103,12 @@ export const useSupabaseData = () => {
   const fetchDataIndividually = async () => {
     try {
       console.log('🔄 Buscando dados individualmente...');
-      // Using users_with_role view for secure role reading
+      // Using users_with_role view for secure role reading + LIMITs
       const [usersResult, buildingsResult, ordersResult, panelsResult] = await Promise.all([
-        supabase.from('users_with_role').select('*'),
-        supabase.from('buildings').select('*'),
-        supabase.from('pedidos').select('*'),
-        supabase.from('painels').select('*')
+        supabase.from('users_with_role').select('*').limit(1000),
+        supabase.from('buildings').select('*').limit(1000),
+        supabase.from('pedidos').select('*').order('created_at', { ascending: false }).limit(500),
+        supabase.from('painels').select('*').limit(1000)
       ]);
 
       const users = usersResult.data || [];

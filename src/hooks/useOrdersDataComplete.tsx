@@ -50,8 +50,11 @@ export const useOrdersDataComplete = () => {
 
       console.log('✅ Usuário autenticado:', user.email);
 
-      // Usar a função corrigida do banco
-      const { data, error } = await supabase.rpc('get_pedidos_com_status_correto' as any) as { data: any[] | null; error: any };
+      // Usar a função corrigida do banco com LIMIT
+      const { data, error } = await supabase.rpc('get_pedidos_com_status_correto' as any, {}, {
+        head: false,
+        count: 'exact'
+      }).limit(500) as { data: any[] | null; error: any };
 
       if (error) {
         console.error('❌ Erro detalhado ao buscar pedidos:', error);

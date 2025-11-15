@@ -39,7 +39,10 @@ export const useRealOrdersData = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase.rpc('get_pedidos_com_clientes');
+      // Adicionar LIMIT para evitar queries pesadas
+      const { data, error } = await supabase
+        .rpc('get_pedidos_com_clientes')
+        .limit(1000); // Limitar a 1000 pedidos mais recentes
       
       if (error) {
         console.error('❌ Erro ao buscar pedidos:', error);

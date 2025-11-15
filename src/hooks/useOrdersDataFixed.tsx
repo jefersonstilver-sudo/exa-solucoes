@@ -49,8 +49,10 @@ export const useOrdersDataFixed = () => {
 
       console.log('✅ Usuário autenticado:', user.email);
 
-      // Usar a função corrigida do banco com nova política RLS
-      const { data, error } = await supabase.rpc('get_pedidos_com_clientes');
+      // Usar a função corrigida do banco com nova política RLS + LIMIT
+      const { data, error } = await supabase
+        .rpc('get_pedidos_com_clientes')
+        .limit(500); // Limitar a 500 pedidos
 
       if (error) {
         console.error('❌ Erro ao buscar pedidos:', error);
