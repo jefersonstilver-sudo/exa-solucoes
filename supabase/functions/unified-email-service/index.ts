@@ -92,7 +92,7 @@ serve(async (req: Request) => {
         
         if (userData?.nome) {
           userName = userData.nome;
-          console.log(`👤 Nome encontrado na tabela users: ${userName}`);
+          console.log(`✅ [2/5] Nome encontrado: ${userName}`);
         } else if (userData?.id) {
           // Se não tem nome na users, buscar na profiles
           const { data: profile } = await supabase
@@ -103,25 +103,29 @@ serve(async (req: Request) => {
           
           if (profile) {
             userName = profile.nome || profile.name || profile.full_name || userName;
-            console.log(`👤 Nome encontrado na tabela profiles: ${userName}`);
+            console.log(`✅ [2/5] Nome encontrado: ${userName}`);
           }
         }
         
-        console.log(`✅ [2/5] Nome encontrado: ${userName}`);
+        if (!userData?.nome && !userData?.id) {
+          console.log(`⚠️ [2/5] Usuário não encontrado no banco, usando fallback: ${userName}`);
+        }
       } catch (error) {
-        console.error('⚠️ Erro ao buscar nome do usuário:', error);
-        console.log(`⚠️ [2/5] Usando fallback: ${userName}`);
+        console.error('⚠️ [2/5] Erro ao buscar nome:', error);
       }
       
-      console.log('📧 [3/5] Gerando HTML do email...');
-      console.log(`🔍 [DEBUG] Template: resend | Deploy: 2025-11-13T00:42:00Z`);
+      console.log('📧 [3/5] Gerando e enviando email...');
+
       const { data: emailData, error: emailError } = await emailService.sendResendConfirmationEmail(
         email, 
         userName, 
         URLValidator.validateAndCorrectUrl(confirmationUrl)
       );
 
-      if (emailError) throw emailError;
+      if (emailError) {
+        console.error('❌ [4/5] Erro ao enviar email:', emailError);
+        throw emailError;
+      }
       
       console.log(`✅ [4/5] Email enviado para Resend - ID: ${emailData?.id}`);
       console.log(`✅ [5/5] Processo completo!`);
@@ -234,11 +238,17 @@ serve(async (req: Request) => {
 
     } else {
       // EMAIL DE CONFIRMAÇÃO INICIAL (webhook)
+      console.log('📧 [WEBHOOK] Processando confirmação inicial...');
+      console.log('📧 [WEBHOOK] User email:', user?.email);
+      console.log('📧 [WEBHOOK] Email action type:', email_data?.email_action_type);
+      
       if (!user?.email || !email_data?.token_hash) {
+        console.error('❌ [WEBHOOK] Dados obrigatórios faltando');
         throw new Error('User email e token são obrigatórios');
       }
       
       if (email_data.email_action_type !== 'signup') {
+        console.log(`⏭️ [WEBHOOK] Evento ignorado (tipo: ${email_data.email_action_type})`);
         return new Response(JSON.stringify({ 
           message: 'Event ignored',
           success: true 
@@ -248,6 +258,7 @@ serve(async (req: Request) => {
         });
       }
 
+      console.log('🔗 [WEBHOOK] Gerando link de confirmação...');
       const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
       const redirectUrl = `${baseUrl}/confirmacao`;
       const originalToken = email_data?.access_token || email_data?.confirmation_url?.match(/access_token=([^&]+)/)?.[1];
@@ -255,20 +266,28 @@ serve(async (req: Request) => {
       let confirmationUrl;
       try {
         confirmationUrl = await linkGenerator.generateConfirmationLink(user.email, originalToken);
+        console.log('✅ [WEBHOOK] Link gerado via LinkGenerator');
       } catch (linkGenError) {
+        console.warn('⚠️ [WEBHOOK] Falha no LinkGenerator, usando fallback:', linkGenError);
         confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(redirectUrl)}`;
       }
       
       const validatedUrl = URLValidator.validateAndCorrectUrl(confirmationUrl);
       const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Cliente';
 
+      console.log('📧 [WEBHOOK] Enviando email para:', user.email);
       const { data: emailData, error: emailError } = await emailService.sendConfirmationEmail(
         user.email, 
         userName, 
         validatedUrl
       );
 
-      if (emailError) throw emailError;
+      if (emailError) {
+        console.error('❌ [WEBHOOK] Erro ao enviar email:', emailError);
+        throw emailError;
+      }
+
+      console.log('✅ [WEBHOOK] Email enviado com sucesso! ID:', emailData?.id);
 
       return new Response(JSON.stringify({ 
         message: 'Email de confirmação enviado',
