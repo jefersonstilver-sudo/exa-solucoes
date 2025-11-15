@@ -1,15 +1,11 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
 
 /**
- * 🎬 EMBED PLAYER OTIMIZADO - Link Limpo 
- * Versão minimalista e super leve
- * - UMA query otimizada no banco
- * - Sem polling agressivo (apenas ao fim da playlist)
- * - Sem proteções pesadas
- * - Sem cache IndexedDB
- * - Transições suaves
+ * 🎬 EMBED PLAYER - Link Limpo (Fullscreen)
+ * Baseado na lógica robusta do link comercial
+ * Sem marca d'água, sem UI, apenas vídeo fullscreen em loop infinito
  */
 
 interface BuildingDisplayEmbedProps {
@@ -20,19 +16,128 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   const params = useParams<{ buildingId: string }>();
   const buildingId = propBuildingId || params.buildingId || '';
   const { videos: activeVideos, refetch } = useBuildingActiveVideos(buildingId);
+  
+  // Estados simples
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isReady, setIsReady] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const nextVideoRef = useRef<HTMLVideoElement>(null);
-  const lastRefetchRef = useRef<number>(0);
-  const REFETCH_COOLDOWN = 30000; // 30 segundos
+  
+  // Refs para callbacks (evitar re-renders)
+  const refetchRef = useRef(refetch);
+  const currentIndexRef = useRef(currentIndex);
+  const videosRef = useRef(activeVideos);
 
-  const currentVideo = activeVideos[currentIndex];
-  const nextVideoIndex = (currentIndex + 1) % activeVideos.length;
-  const nextVideo = activeVideos[nextVideoIndex];
+  // Atualizar refs
+  useEffect(() => {
+    refetchRef.current = refetch;
+    currentIndexRef.current = currentIndex;
+    videosRef.current = activeVideos;
+  }, [refetch, currentIndex, activeVideos]);
 
-  // 🚫 Bloquear menu de contexto
+  // Hash estável para detectar mudanças na playlist
+  const videosHash = useMemo(() => {
+    return activeVideos.map(v => v.video_id).sort().join(',');
+  }, [activeVideos]);
+
+  // Rastrear hash anterior
+  const previousHashRef = useRef(videosHash);
+
+  // Reset APENAS quando hash REALMENTE mudar
+  useEffect(() => {
+    if (previousHashRef.current !== videosHash && activeVideos.length > 0) {
+      console.log('🔄 [EMBED] Playlist mudou - reiniciando');
+      setCurrentIndex(0);
+      setIsBuffering(true);
+      previousHashRef.current = videosHash;
+    }
+  }, [videosHash, activeVideos.length]);
+
+  // Event handlers TOTALMENTE estáveis - SEM dependências
+  const handleLoadStart = useCallback(() => {
+    setIsBuffering(true);
+  }, []);
+
+  const handleLoadedMetadata = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    console.log('📊 [EMBED] Metadados carregados:', video.duration.toFixed(1) + 's');
+  }, []);
+
+  const handlePlaying = useCallback(() => {
+    console.log('▶️ [EMBED] Reproduzindo');
+    setIsBuffering(false);
+  }, []);
+
+  const handleEnded = useCallback(() => {
+    console.log('✅ [EMBED] Vídeo terminou - próximo');
+    
+    // GARANTIR LOOP INFINITO: Sempre avança para o próximo vídeo
+    setCurrentIndex(prev => {
+      const nextIndex = (prev + 1) % videosRef.current.length;
+      
+      if (nextIndex === 0) {
+        console.log('🔄 [EMBED] Ciclo completo - reiniciando playlist');
+        // Refetch ao completar ciclo (silencioso)
+        refetchRef.current().catch(() => {});
+      }
+      
+      return nextIndex;
+    });
+  }, []);
+
+  const handleError = useCallback((e: Event) => {
+    console.error('❌ [EMBED] Erro no vídeo - pulando');
+    
+    // Fallback: tentar próximo vídeo após delay
+    setTimeout(() => {
+      setCurrentIndex(prev => (prev + 1) % videosRef.current.length);
+    }, 2000);
+  }, []);
+
+  const handleWaiting = useCallback(() => {
+    setIsBuffering(true);
+  }, []);
+
+  const handleCanPlay = useCallback(() => {
+    setIsBuffering(false);
+  }, []);
+
+  // Configurar event listeners
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !activeVideos[currentIndex]) return;
+
+    video.addEventListener('loadstart', handleLoadStart);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('playing', handlePlaying);
+    video.addEventListener('ended', handleEnded);
+    video.addEventListener('error', handleError);
+    video.addEventListener('waiting', handleWaiting);
+    video.addEventListener('canplay', handleCanPlay);
+
+    // Tentar reproduzir
+    const playVideo = async () => {
+      try {
+        await video.play();
+      } catch (err) {
+        console.error('❌ [EMBED] Erro ao reproduzir:', err);
+      }
+    };
+
+    playVideo();
+
+    return () => {
+      video.removeEventListener('loadstart', handleLoadStart);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('error', handleError);
+      video.removeEventListener('waiting', handleWaiting);
+      video.removeEventListener('canplay', handleCanPlay);
+    };
+  }, [currentIndex, activeVideos, handleLoadStart, handleLoadedMetadata, handlePlaying, handleEnded, handleError, handleWaiting, handleCanPlay]);
+
+  // Proteção contra menu de contexto
   useEffect(() => {
     const blockContextMenu = (e: MouseEvent) => {
       e.preventDefault();
@@ -46,113 +151,8 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     };
   }, []);
 
-  // ✅ Reset se index inválido
-  useEffect(() => {
-    if (activeVideos.length > 0 && currentIndex >= activeVideos.length) {
-      setCurrentIndex(0);
-    }
-  }, [activeVideos.length, currentIndex]);
-
-  // ⚡ Refetch inteligente: APENAS ao finalizar toda a playlist
-  const handlePlaylistEnd = async () => {
-    const now = Date.now();
-    
-    // Cooldown para evitar refetch excessivo
-    if (now - lastRefetchRef.current < REFETCH_COOLDOWN) {
-      return;
-    }
-    
-    lastRefetchRef.current = now;
-    
-    try {
-      await refetch();
-    } catch (error) {
-      // Silencioso
-    }
-  };
-
-  // 🎬 Gerenciar reprodução do vídeo atual
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !currentVideo) return;
-
-    setIsReady(false);
-    setIsTransitioning(false);
-
-    const handleLoadedData = () => {
-      setIsReady(true);
-      video.play().catch(() => {});
-    };
-
-    const handleCanPlay = () => {
-      video.play().catch(() => {});
-    };
-
-    const handlePlaying = () => {
-      setIsReady(true);
-    };
-
-    const handleTimeUpdate = () => {
-      if (!video || isTransitioning) return;
-      
-      const timeRemaining = video.duration - video.currentTime;
-      
-      // Pre-carregar próximo vídeo quando faltar 5 segundos
-      if (timeRemaining <= 5 && timeRemaining > 4.5 && nextVideoRef.current && nextVideo) {
-        nextVideoRef.current.load();
-      }
-    };
-
-    const handleEnded = () => {
-      if (isTransitioning) return;
-      
-      setIsTransitioning(true);
-      
-      // Se é o último vídeo da playlist, refetch antes de voltar ao início
-      if (currentIndex === activeVideos.length - 1) {
-        handlePlaylistEnd();
-      }
-      
-      // Transição suave
-      setTimeout(() => {
-        setCurrentIndex((prevIndex) => {
-          const nextIdx = (prevIndex + 1) % activeVideos.length;
-          return nextIdx;
-        });
-        setIsTransitioning(false);
-      }, 300);
-    };
-
-    const handleError = (e: Event) => {
-      console.error('❌ [EMBED] Erro no vídeo:', e);
-      // Fallback: tentar próximo vídeo
-      setTimeout(() => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % activeVideos.length);
-      }, 2000);
-    };
-
-    video.addEventListener('loadeddata', handleLoadedData);
-    video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('playing', handlePlaying);
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('ended', handleEnded);
-    video.addEventListener('error', handleError);
-
-    // Iniciar carregamento
-    video.load();
-
-    return () => {
-      video.removeEventListener('loadeddata', handleLoadedData);
-      video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('playing', handlePlaying);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('ended', handleEnded);
-      video.removeEventListener('error', handleError);
-    };
-  }, [currentVideo, currentIndex, activeVideos.length, nextVideo, isTransitioning]);
-
-  // 🎨 Loading State
-  if (!currentVideo) {
+  // Loading State
+  if (activeVideos.length === 0) {
     return (
       <div className="w-screen h-screen bg-black flex items-center justify-center">
         <div className="text-white text-lg">Carregando...</div>
@@ -160,19 +160,19 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     );
   }
 
+  const currentVideo = activeVideos[currentIndex];
+
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
-      {/* Vídeo Atual */}
+      {/* Vídeo Atual - FULLSCREEN */}
       <video
         ref={videoRef}
         src={currentVideo.video_url}
-        className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
-          isReady ? 'opacity-100' : 'opacity-0'
-        }`}
+        className="absolute inset-0 w-full h-full object-cover"
         autoPlay
         muted
         playsInline
-        preload="metadata"
+        preload="auto"
         crossOrigin="anonymous"
         style={{
           pointerEvents: 'none',
@@ -180,20 +180,7 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
         }}
       />
 
-      {/* Pre-load próximo vídeo (oculto) */}
-      {nextVideo && (
-        <video
-          ref={nextVideoRef}
-          src={nextVideo.video_url}
-          className="hidden"
-          preload="metadata"
-          playsInline
-          muted
-          crossOrigin="anonymous"
-        />
-      )}
-
-      {/* Overlay de proteção */}
+      {/* Overlay de proteção (invisível) */}
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -203,6 +190,13 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
           msUserSelect: 'none'
         }}
       />
+
+      {/* Loading indicator (opcional - pode remover) */}
+      {isBuffering && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="text-white text-sm">Carregando...</div>
+        </div>
+      )}
     </div>
   );
 };
