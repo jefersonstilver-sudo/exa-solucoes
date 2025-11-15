@@ -117,7 +117,8 @@ export const getAllPedidos = async () => {
   const { data, error } = await supabase
     .from('pedidos')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(500); // Limitar a 500 pedidos mais recentes
     
   if (error) throw error;
   return data || [];

@@ -48,11 +48,12 @@ export const useOrdersData = () => {
 
       console.log('✅ Usuário autenticado:', user.email);
 
-      // Tentar buscar pedidos com a nova política RLS
+      // Tentar buscar pedidos com a nova política RLS + LIMIT
       const { data, error } = await supabase
         .from('pedidos')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(500); // Limitar a 500 pedidos mais recentes
 
       if (error) {
         console.error('❌ Erro ao buscar pedidos:', error);
