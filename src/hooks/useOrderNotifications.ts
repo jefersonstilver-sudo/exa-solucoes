@@ -14,19 +14,69 @@ interface NewOrderNotification {
 export const useOrderNotifications = () => {
   const [notifications, setNotifications] = useState<NewOrderNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastNotificationRef = useRef<string | null>(null);
 
-  // Initialize notification sound
-  useEffect(() => {
-    // Create a simple notification beep using Web Audio API
-    audioRef.current = new Audio('data:audio/wav;base64,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');
-  }, []);
-
-  // Play notification sound
+  // Play notification sound with settings
   const playNotificationSound = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(err => console.log('Could not play notification sound:', err));
+    try {
+      const settings = JSON.parse(
+        localStorage.getItem('orderNotificationSound') || '{"enabled":true,"volume":80}'
+      );
+      
+      if (!settings.enabled) {
+        return; // Sound is disabled
+      }
+
+      // Create AudioContext for cash register sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const now = audioContext.currentTime;
+      
+      // Master gain for volume control
+      const masterGain = audioContext.createGain();
+      masterGain.gain.setValueAtTime(settings.volume / 100, now);
+      masterGain.connect(audioContext.destination);
+
+      // Bell sound (ding!)
+      const bellOsc = audioContext.createOscillator();
+      const bellGain = audioContext.createGain();
+      bellOsc.type = 'sine';
+      bellOsc.frequency.setValueAtTime(1200, now);
+      bellOsc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+      bellGain.gain.setValueAtTime(0.3, now);
+      bellGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      bellOsc.connect(bellGain);
+      bellGain.connect(masterGain);
+      bellOsc.start(now);
+      bellOsc.stop(now + 0.15);
+
+      // Drawer sound
+      const drawerOsc = audioContext.createOscillator();
+      const drawerGain = audioContext.createGain();
+      drawerOsc.type = 'sawtooth';
+      drawerOsc.frequency.setValueAtTime(200, now + 0.1);
+      drawerOsc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+      drawerGain.gain.setValueAtTime(0, now + 0.1);
+      drawerGain.gain.linearRampToValueAtTime(0.15, now + 0.15);
+      drawerGain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+      drawerOsc.connect(drawerGain);
+      drawerGain.connect(masterGain);
+      drawerOsc.start(now + 0.1);
+      drawerOsc.stop(now + 0.35);
+
+      // Coin sound
+      const coinOsc = audioContext.createOscillator();
+      const coinGain = audioContext.createGain();
+      coinOsc.type = 'square';
+      coinOsc.frequency.setValueAtTime(800, now + 0.15);
+      coinOsc.frequency.exponentialRampToValueAtTime(400, now + 0.25);
+      coinGain.gain.setValueAtTime(0.2, now + 0.15);
+      coinGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+      coinOsc.connect(coinGain);
+      coinGain.connect(masterGain);
+      coinOsc.start(now + 0.15);
+      coinOsc.stop(now + 0.25);
+    } catch (err) {
+      console.error('Could not play notification sound:', err);
     }
   }, []);
 
