@@ -110,11 +110,12 @@ export const useLogosAdmin = () => {
       setLoading(true);
       setError(null);
 
-      // Buscar todas as logos (incluindo inativas) para admin
+      // ✅ FIX: Select apenas colunas necessárias + LIMIT
       const { data, error } = await supabase
         .from('logos')
-        .select('*')
-        .order('sort_order', { ascending: true });
+        .select('id, name, file_url, color_variant, link_url, sort_order, is_active, storage_bucket, storage_key, scale_factor, created_at, updated_at')
+        .order('sort_order', { ascending: true })
+        .limit(50); // Limite razoável para admin
 
       if (error) {
         console.error('❌ Error fetching all logos:', error);
