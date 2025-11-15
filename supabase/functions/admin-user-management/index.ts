@@ -121,7 +121,32 @@ serve(async (req) => {
         const userEmail = authUser?.user?.email || 'unknown';
         console.log('📧 [DELETE-USER] Email do usuário:', userEmail);
 
-        // 2. PRIMEIRO: Deletar da tabela users (remove constraints)
+        // 2. PRIMEIRO: Deletar registros de auditoria (role_change_audit)
+        console.log('📋 [DELETE-USER] Deletando registros de role_change_audit...');
+        
+        // Deletar onde o usuário foi modificado (user_id)
+        const { error: deleteAuditUserError } = await supabaseAdmin
+          .from('role_change_audit')
+          .delete()
+          .eq('user_id', userId);
+
+        if (deleteAuditUserError) {
+          console.warn('⚠️ [DELETE-USER] Aviso ao deletar auditoria (user_id):', deleteAuditUserError);
+        }
+
+        // Deletar onde o usuário foi o modificador (changed_by)
+        const { error: deleteAuditChangedByError } = await supabaseAdmin
+          .from('role_change_audit')
+          .delete()
+          .eq('changed_by', userId);
+
+        if (deleteAuditChangedByError) {
+          console.warn('⚠️ [DELETE-USER] Aviso ao deletar auditoria (changed_by):', deleteAuditChangedByError);
+        }
+
+        console.log('✅ [DELETE-USER] Registros de auditoria deletados');
+
+        // 3. SEGUNDO: Deletar da tabela users (remove constraints)
         console.log('🗄️ [DELETE-USER] Deletando da tabela users...');
         const { error: deleteUsersError } = await supabaseAdmin
           .from('users')
@@ -134,7 +159,7 @@ serve(async (req) => {
         }
         console.log('✅ [DELETE-USER] Deletado da tabela users');
 
-        // 3. DEPOIS: Deletar do auth.users (libera o email)
+        // 4. TERCEIRO: Deletar do auth.users (libera o email)
         console.log('🔐 [DELETE-USER] Deletando do auth.users...');
         const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
