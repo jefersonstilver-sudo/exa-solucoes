@@ -1,13 +1,15 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
-import { useVideoProtection } from '@/hooks/useVideoProtection';
-import { useNetworkMonitor } from '@/hooks/useNetworkMonitor';
 
 /**
- * 🎬 EMBED PLAYER - Link Limpo 
- * Versão minimalista para embed em outros sistemas
- * Sem UI, apenas vídeo em tela cheia com transições suaves
+ * 🎬 EMBED PLAYER OTIMIZADO - Link Limpo 
+ * Versão minimalista e super leve
+ * - UMA query otimizada no banco
+ * - Sem polling agressivo (apenas ao fim da playlist)
+ * - Sem proteções pesadas
+ * - Sem cache IndexedDB
+ * - Transições suaves
  */
 
 interface BuildingDisplayEmbedProps {
@@ -17,29 +19,20 @@ interface BuildingDisplayEmbedProps {
 const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId: propBuildingId }) => {
   const params = useParams<{ buildingId: string }>();
   const buildingId = propBuildingId || params.buildingId || '';
-  const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
+  const { videos: activeVideos, refetch } = useBuildingActiveVideos(buildingId);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isReady, setIsReady] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
-  const hasEndedRef = useRef(false);
-  const isTransitioningRef = useRef(false);
-  const pollingIntervalRef = useRef<NodeJS.Timeout>();
-  const lastPlaylistHashRef = useRef('');
-  const networkStatus = useNetworkMonitor();
-  const [canRefetch, setCanRefetch] = useState(true);
-  const { containerRef: protectionRef } = useVideoProtection({
-    preventDownload: true,
-    preventPrint: true,
-    preventDevTools: true,
-    preventScreenCapture: true
-  });
+  const lastRefetchRef = useRef<number>(0);
+  const REFETCH_COOLDOWN = 30000; // 30 segundos
 
   const currentVideo = activeVideos[currentIndex];
   const nextVideoIndex = (currentIndex + 1) % activeVideos.length;
   const nextVideo = activeVideos[nextVideoIndex];
 
-  // ✅ Sistema de polling inteligente a cada 10 segundos
+  // 🚫 Bloquear menu de contexto
   useEffect(() => {
     const blockContextMenu = (e: MouseEvent) => {
       e.preventDefault();
@@ -48,47 +41,43 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     
     document.addEventListener('contextmenu', blockContextMenu, { capture: true });
     
-    pollingIntervalRef.current = setInterval(async () => {
-      try {
-        const currentHash = activeVideos.map(v => v.video_id).sort().join(',');
-        
-        // Só refetch se playlist terminou E houve mudança
-        if (canRefetch && currentHash !== lastPlaylistHashRef.current) {
-          setCanRefetch(false);
-          await refetch();
-          
-          const newHash = activeVideos.map(v => v.video_id).sort().join(',');
-          if (newHash !== lastPlaylistHashRef.current) {
-            console.log('🔄 [EMBED] Mudança detectada');
-            lastPlaylistHashRef.current = newHash;
-          }
-        }
-      } catch (error) {
-        console.error('❌ [EMBED] Erro:', error);
-      }
-    }, 10000);
-
     return () => {
-      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
       document.removeEventListener('contextmenu', blockContextMenu, { capture: true } as any);
     };
-  }, [refetch, activeVideos]);
+  }, []);
 
-  // ✅ Reset playlist
+  // ✅ Reset se index inválido
   useEffect(() => {
     if (activeVideos.length > 0 && currentIndex >= activeVideos.length) {
       setCurrentIndex(0);
     }
   }, [activeVideos.length, currentIndex]);
 
-  // ✅ Gerenciar reprodução do vídeo atual
+  // ⚡ Refetch inteligente: APENAS ao finalizar toda a playlist
+  const handlePlaylistEnd = async () => {
+    const now = Date.now();
+    
+    // Cooldown para evitar refetch excessivo
+    if (now - lastRefetchRef.current < REFETCH_COOLDOWN) {
+      return;
+    }
+    
+    lastRefetchRef.current = now;
+    
+    try {
+      await refetch();
+    } catch (error) {
+      // Silencioso
+    }
+  };
+
+  // 🎬 Gerenciar reprodução do vídeo atual
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !currentVideo) return;
 
-    hasEndedRef.current = false;
-    isTransitioningRef.current = false;
     setIsReady(false);
+    setIsTransitioning(false);
 
     const handleLoadedData = () => {
       setIsReady(true);
@@ -104,38 +93,42 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     };
 
     const handleTimeUpdate = () => {
-      if (!video || isTransitioningRef.current) return;
+      if (!video || isTransitioning) return;
       
       const timeRemaining = video.duration - video.currentTime;
       
       // Pre-carregar próximo vídeo quando faltar 5 segundos
-      if (timeRemaining <= 5 && timeRemaining > 4.5 && nextVideoRef.current) {
+      if (timeRemaining <= 5 && timeRemaining > 4.5 && nextVideoRef.current && nextVideo) {
         nextVideoRef.current.load();
       }
     };
 
     const handleEnded = () => {
-      if (hasEndedRef.current || isTransitioningRef.current) return;
-
-      hasEndedRef.current = true;
-      isTransitioningRef.current = true;
+      if (isTransitioning) return;
       
-      // Se voltou ao início, pode refetch
-      if (nextVideoIndex === 0) {
-        setCanRefetch(true);
+      setIsTransitioning(true);
+      
+      // Se é o último vídeo da playlist, refetch antes de voltar ao início
+      if (currentIndex === activeVideos.length - 1) {
+        handlePlaylistEnd();
       }
       
-      requestAnimationFrame(() => {
-        setCurrentIndex(nextVideoIndex);
-      });
+      // Transição suave
+      setTimeout(() => {
+        setCurrentIndex((prevIndex) => {
+          const nextIdx = (prevIndex + 1) % activeVideos.length;
+          return nextIdx;
+        });
+        setIsTransitioning(false);
+      }, 300);
     };
 
-    const handleError = () => {
+    const handleError = (e: Event) => {
+      console.error('❌ [EMBED] Erro no vídeo:', e);
+      // Fallback: tentar próximo vídeo
       setTimeout(() => {
-        if (!isTransitioningRef.current) {
-          setCurrentIndex(nextVideoIndex);
-        }
-      }, 1000);
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % activeVideos.length);
+      }, 2000);
     };
 
     video.addEventListener('loadeddata', handleLoadedData);
@@ -145,6 +138,7 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
     video.addEventListener('ended', handleEnded);
     video.addEventListener('error', handleError);
 
+    // Iniciar carregamento
     video.load();
 
     return () => {
@@ -155,83 +149,60 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
       video.removeEventListener('ended', handleEnded);
       video.removeEventListener('error', handleError);
     };
-  }, [currentIndex, currentVideo, nextVideoIndex, activeVideos.length]);
+  }, [currentVideo, currentIndex, activeVideos.length, nextVideo, isTransitioning]);
 
-  if (activeVideos.length === 0) {
-    return <div className="w-full h-full bg-black" />;
+  // 🎨 Loading State
+  if (!currentVideo) {
+    return (
+      <div className="w-screen h-screen bg-black flex items-center justify-center">
+        <div className="text-white text-lg">Carregando...</div>
+      </div>
+    );
   }
 
   return (
-    <div 
-      ref={protectionRef}
-      className="w-full h-full bg-black overflow-hidden"
-      style={{
-        margin: 0,
-        padding: 0,
-        userSelect: 'none',
-        WebkitUserSelect: 'none'
-      }}
-      onContextMenu={(e) => e.preventDefault()}
-      onDragStart={(e) => e.preventDefault()}
-    >
-      {/* Container do vídeo */}
-      <div className="absolute inset-0 w-full h-full">
-        {/* Vídeo principal */}
-        <video
-          key={`video-${currentIndex}-${currentVideo.video_id}`}
-          ref={videoRef}
-          src={currentVideo.video_url}
-          className={`w-full h-full object-cover transition-opacity duration-200 ${
-            isReady ? 'opacity-100' : 'opacity-0'
-          }`}
-          style={{ 
-            margin: 0,
-            padding: 0,
-            display: 'block',
-            pointerEvents: 'none',
-            userSelect: 'none'
-          }}
-          autoPlay
-          muted
-          playsInline
-          preload="auto"
-          controlsList="nodownload noplaybackrate nofullscreen"
-          disablePictureInPicture
-          disableRemotePlayback
-          onContextMenu={(e) => e.preventDefault()}
-        />
+    <div className="relative w-screen h-screen bg-black overflow-hidden">
+      {/* Vídeo Atual */}
+      <video
+        ref={videoRef}
+        src={currentVideo.video_url}
+        className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
+          isReady ? 'opacity-100' : 'opacity-0'
+        }`}
+        autoPlay
+        muted
+        playsInline
+        preload="metadata"
+        crossOrigin="anonymous"
+        style={{
+          pointerEvents: 'none',
+          userSelect: 'none'
+        }}
+      />
 
-        {/* Loading placeholder */}
-        {!isReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black">
-            <div className="text-white text-sm opacity-50">Carregando...</div>
-          </div>
-        )}
-
-        {/* Overlay de proteção invisível */}
-        <div 
-          className="absolute inset-0 z-50"
-          style={{ 
-            background: 'transparent',
-            pointerEvents: 'auto',
-            cursor: 'default'
-          }}
-          onContextMenu={(e) => e.preventDefault()}
-          onMouseDown={(e) => e.button === 2 && e.preventDefault()}
-        />
-      </div>
-
-      {/* Pre-load próximo vídeo (invisível) */}
+      {/* Pre-load próximo vídeo (oculto) */}
       {nextVideo && (
         <video
           ref={nextVideoRef}
           src={nextVideo.video_url}
           className="hidden"
-          preload="auto"
-          muted
+          preload="metadata"
           playsInline
+          muted
+          crossOrigin="anonymous"
         />
       )}
+
+      {/* Overlay de proteção */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          MozUserSelect: 'none',
+          msUserSelect: 'none'
+        }}
+      />
     </div>
   );
 };
