@@ -137,21 +137,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        emails: data,
+        emails: emails,
         recentLogs,
         synced: emailsToInsert.length,
         timestamp: new Date().toISOString(),
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-      JSON.stringify({
-        success: true,
-        emails: emails,
-        logs: logs,
-        synced: emails.length,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
