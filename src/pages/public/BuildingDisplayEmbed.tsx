@@ -15,12 +15,20 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   const params = useParams<{ buildingId: string }>();
   const buildingId = propBuildingId || params.buildingId || '';
   
-  const { videos, refetch } = useBuildingActiveVideos(buildingId);
+  const { videos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   // Estados mínimos
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Debug logs
+  console.log('🎬 [EMBED] Estado:', { 
+    loading, 
+    videosCount: videos.length, 
+    buildingId,
+    currentIndex
+  });
 
   // EFFECT 1: Trocar vídeo quando index mudar
   useEffect(() => {
@@ -90,10 +98,19 @@ const BuildingDisplayEmbed: React.FC<BuildingDisplayEmbedProps> = ({ buildingId:
   }, []);
 
   // Loading inicial
-  if (videos.length === 0) {
+  if (loading) {
     return (
       <div className="w-screen h-screen bg-black flex items-center justify-center">
         <div className="text-white text-lg">Carregando...</div>
+      </div>
+    );
+  }
+
+  // Sem vídeos disponíveis
+  if (videos.length === 0) {
+    return (
+      <div className="w-screen h-screen bg-black flex items-center justify-center">
+        <div className="text-white text-lg">Aguardando conteúdo...</div>
       </div>
     );
   }
