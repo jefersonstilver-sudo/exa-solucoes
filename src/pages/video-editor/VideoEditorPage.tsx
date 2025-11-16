@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Download, Undo, Redo } from 'lucide-react';
 import { toast } from 'sonner';
 import { ClientOnly } from '@/components/ui/client-only';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 
 export default function VideoEditorPage() {
   const { projectId } = useParams();
@@ -152,26 +153,34 @@ export default function VideoEditorPage() {
             onClose={() => setActivePanel(null)} 
           />
           
-          {/* Canvas + Timeline Area */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Canvas */}
-            <div className="flex-1 overflow-hidden">
-              <VideoCanvas />
-            </div>
-            
-            {/* Timeline */}
-            <div className="h-64 border-t">
-              <Timeline />
-            </div>
+          {/* Canvas + Timeline Area with Resizable Properties Panel */}
+          <ResizablePanelGroup direction="horizontal" className="flex-1">
+            {/* Canvas + Timeline */}
+            <ResizablePanel defaultSize={75} minSize={50}>
+              <div className="flex flex-col h-full overflow-hidden">
+                {/* Canvas */}
+                <div className="flex-1 overflow-hidden">
+                  <VideoCanvas />
+                </div>
+                
+                {/* Timeline */}
+                <div className="h-64 border-t">
+                  <Timeline />
+                </div>
 
-            {/* Playback Controls */}
-            <PlaybackControls />
-          </div>
-          
-          {/* Properties Panel */}
-          <div className="w-[300px]">
-            <PropertiesPanel />
-          </div>
+                {/* Playback Controls */}
+                <PlaybackControls />
+              </div>
+            </ResizablePanel>
+            
+            {/* Resizable Handle */}
+            <ResizableHandle withHandle />
+            
+            {/* Properties Panel */}
+            <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+              <PropertiesPanel />
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       </div>
     </ClientOnly>
