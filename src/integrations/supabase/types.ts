@@ -3868,6 +3868,7 @@ export type Database = {
           email_verified_at: string | null
           empresa_aceite_data: string | null
           empresa_aceite_termo: boolean | null
+          empresa_aceite_termo_data: string | null
           empresa_documento: string | null
           empresa_nome: string | null
           empresa_pais: string | null
@@ -3891,6 +3892,7 @@ export type Database = {
           email_verified_at?: string | null
           empresa_aceite_data?: string | null
           empresa_aceite_termo?: boolean | null
+          empresa_aceite_termo_data?: string | null
           empresa_documento?: string | null
           empresa_nome?: string | null
           empresa_pais?: string | null
@@ -3914,6 +3916,7 @@ export type Database = {
           email_verified_at?: string | null
           empresa_aceite_data?: string | null
           empresa_aceite_termo?: boolean | null
+          empresa_aceite_termo_data?: string | null
           empresa_documento?: string | null
           empresa_nome?: string | null
           empresa_pais?: string | null
