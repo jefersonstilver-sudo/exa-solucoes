@@ -103,6 +103,21 @@ export const useRealOrderDetails = (orderId: string) => {
           return;
         }
 
+        // Buscar nome real do cliente via edge function
+        let clientName = order.users?.email?.split('@')[0] || 'Cliente';
+        
+        try {
+          const { data: usersData, error: usersError } = await supabase.functions.invoke('get-users-extended', {
+            body: { userIds: [order.client_id] }
+          });
+          
+          if (!usersError && usersData?.users && usersData.users.length > 0) {
+            clientName = usersData.users[0].name || clientName;
+          }
+        } catch (error) {
+          console.error('Erro ao buscar nome do cliente:', error);
+        }
+
         // Montar objeto completo do pedido
         const orderWithClient: OrderWithClient = {
           id: order.id,
@@ -116,7 +131,7 @@ export const useRealOrderDetails = (orderId: string) => {
           data_fim: order.data_fim,
           client_id: order.client_id,
           client_email: order.users?.email || 'Email não disponível',
-          client_name: order.users?.email?.split('@')[0] || 'Cliente',
+          client_name: clientName,
           video_status: order.status,
           nome_pedido: order.nome_pedido,
           log_pagamento: order.log_pagamento,

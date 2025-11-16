@@ -13,6 +13,7 @@ interface OrderData {
   data_fim?: string;
   plano_meses: number;
   log_pagamento?: any;
+  compliance_data?: any;
   cupom_id?: string;
   termos_aceitos?: boolean;
   lista_predios?: string[];
@@ -300,28 +301,135 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
             </div>
             
             <div className="p-4 space-y-4">
+              {/* Informações Básicas de Pagamento */}
               <div className="grid grid-cols-3 gap-4 text-xs">
                 <div>
                   <p className="text-gray-500 mb-1">Método de Pagamento</p>
                   <p className="font-semibold text-gray-900">
-                    {order.log_pagamento.payment_method === 'pix' ? 'PIX' : 'Cartão de Crédito'}
+                    {order.log_pagamento.method === 'pix' ? 'PIX' : 
+                     order.log_pagamento.payment_method === 'pix' ? 'PIX' : 
+                     'Cartão de Crédito'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-500 mb-1">Status</p>
-                  <p className="font-semibold text-gray-900 capitalize">
-                    {order.log_pagamento.payment_status || 'N/A'}
+                  <p className="text-gray-500 mb-1">Status do Pagamento</p>
+                  <p className="font-semibold text-gray-900">
+                    {order.log_pagamento.payment_status === 'approved' ? 'Aprovado' :
+                     order.log_pagamento.payment_status === 'pending' ? 'Pendente' :
+                     order.log_pagamento.payment_status || 'N/A'}
                   </p>
                 </div>
-                {order.log_pagamento.processed_at && (
+                {order.log_pagamento.pixData?.paymentId && (
                   <div>
-                    <p className="text-gray-500 mb-1">Processado em</p>
-                    <p className="font-semibold text-gray-900">
-                      {formatDate(order.log_pagamento.processed_at)}
+                    <p className="text-gray-500 mb-1">ID da Transação</p>
+                    <p className="font-mono text-xs font-semibold text-gray-900">
+                      {order.log_pagamento.pixData.paymentId}
                     </p>
                   </div>
                 )}
               </div>
+
+              {/* Informações Detalhadas do PIX */}
+              {order.log_pagamento.method === 'pix' && order.log_pagamento.pixData && (
+                <div className="border-t pt-4">
+                  <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Detalhes do PIX
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-xs bg-blue-50 p-3 rounded">
+                    {order.log_pagamento.pixData.createdAt && (
+                      <div>
+                        <p className="text-gray-500 mb-1">Data de Criação</p>
+                        <p className="font-semibold text-gray-900">
+                          {formatDate(order.log_pagamento.pixData.createdAt)}
+                        </p>
+                      </div>
+                    )}
+                    {order.log_pagamento.pixData.approvedAt && (
+                      <div>
+                        <p className="text-gray-500 mb-1">Data de Aprovação</p>
+                        <p className="font-semibold text-green-700">
+                          {formatDate(order.log_pagamento.pixData.approvedAt)}
+                        </p>
+                      </div>
+                    )}
+                    {order.log_pagamento.pixData.transactionAmount && (
+                      <div>
+                        <p className="text-gray-500 mb-1">Valor da Transação</p>
+                        <p className="font-semibold text-gray-900">
+                          {formatCurrency(order.log_pagamento.pixData.transactionAmount)}
+                        </p>
+                      </div>
+                    )}
+                    {order.log_pagamento.pixData.mpResponse?.status && (
+                      <div>
+                        <p className="text-gray-500 mb-1">Status Mercado Pago</p>
+                        <p className="font-semibold text-gray-900 capitalize">
+                          {order.log_pagamento.pixData.mpResponse.status === 'pending' ? 'Pendente' :
+                           order.log_pagamento.pixData.mpResponse.status === 'approved' ? 'Aprovado' :
+                           order.log_pagamento.pixData.mpResponse.status}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Informações do Compliance Data (Mercado Pago) */}
+              {order.compliance_data && Object.keys(order.compliance_data).length > 0 && (
+                <div className="border-t pt-4">
+                  <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Dados de Compliance
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-xs bg-green-50 p-3 rounded">
+                    {order.compliance_data.payer && (
+                      <>
+                        {order.compliance_data.payer.first_name && (
+                          <div>
+                            <p className="text-gray-500 mb-1">Nome do Pagador</p>
+                            <p className="font-semibold text-gray-900">
+                              {order.compliance_data.payer.first_name} {order.compliance_data.payer.last_name}
+                            </p>
+                          </div>
+                        )}
+                        {order.compliance_data.payer.email && (
+                          <div>
+                            <p className="text-gray-500 mb-1">Email do Pagador</p>
+                            <p className="font-semibold text-gray-900">
+                              {order.compliance_data.payer.email}
+                            </p>
+                          </div>
+                        )}
+                        {order.compliance_data.payer.identification && (
+                          <div>
+                            <p className="text-gray-500 mb-1">CPF/CNPJ</p>
+                            <p className="font-mono text-xs font-semibold text-gray-900">
+                              {order.compliance_data.payer.identification.number}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {order.compliance_data.payment_method_id && (
+                      <div>
+                        <p className="text-gray-500 mb-1">Forma de Pagamento</p>
+                        <p className="font-semibold text-gray-900 uppercase">
+                          {order.compliance_data.payment_method_id}
+                        </p>
+                      </div>
+                    )}
+                    {order.compliance_data.transaction_amount && (
+                      <div>
+                        <p className="text-gray-500 mb-1">Valor Transacionado</p>
+                        <p className="font-semibold text-gray-900">
+                          {formatCurrency(order.compliance_data.transaction_amount)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Auditoria - IP e Device */}
               {(order.ip_origem || order.device_info) && (
