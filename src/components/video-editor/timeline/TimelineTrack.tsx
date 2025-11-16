@@ -89,9 +89,16 @@ export const TimelineTrack = ({ layers, trackType, pixelsPerSecond }: TimelineTr
           pixelsPerSecond={pixelsPerSecond}
         />
       ))}
-      {isDragOver && (
+      {layers.length === 0 && !isDragOver && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-xs text-primary font-medium bg-background/90 px-2 py-1 rounded">
+          <span className="text-xs text-muted-foreground/60">
+            Arraste {trackType === 'video' ? 'vídeos' : trackType === 'image' ? 'imagens' : 'textos'} aqui
+          </span>
+        </div>
+      )}
+      {isDragOver && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-primary/10">
+          <span className="text-xs text-primary font-medium bg-background/90 px-3 py-1.5 rounded-md border border-primary/20">
             Solte aqui
           </span>
         </div>
