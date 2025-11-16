@@ -134,23 +134,23 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
   };
 
   return (
-    <Card className={cn('border-2 shadow-lg', config.cardBorder)}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center space-x-2">
-            <StatusIcon className={cn('h-5 w-5', config.iconColor)} />
-            <span>Status do Contrato</span>
-          </CardTitle>
-          <Badge className={cn('border', config.badgeColor)}>
+    <Card className={cn('shadow-sm border-l-4', config.cardBorder)}>
+      <CardHeader className="p-2 sm:p-3 pb-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <StatusIcon className={cn('h-3.5 w-3.5 sm:h-4 sm:w-4', config.iconColor)} />
+            <CardTitle className="text-sm sm:text-base font-semibold">Status</CardTitle>
+          </div>
+          <Badge className={cn('border text-[10px] sm:text-xs px-1.5 py-0.5', config.badgeColor)}>
             {config.badge}
           </Badge>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-6">
-        {/* Contador Principal */}
-        <div className="text-center">
-          <div className="text-4xl font-bold mb-1">
+      <CardContent className="p-2 sm:p-3 pt-0 space-y-2">
+        {/* Contador Principal - Compacto */}
+        <div className="text-center py-1">
+          <div className="text-2xl sm:text-3xl font-bold">
             <span className={cn(
               isExpired ? 'text-red-600' : 
               !hasStarted ? 'text-blue-600' :
@@ -159,22 +159,21 @@ const EnhancedContractStatusCard: React.FC<EnhancedContractStatusCardProps> = ({
               {getMainDisplayValue()}
             </span>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
             {getTimeDisplayText()}
           </p>
         </div>
 
-        {/* Barra de Progresso */}
+        {/* Barra de Progresso - Mais Fina */}
         {hasStarted && isActive && !isExpired && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Progresso do contrato</span>
-              <span>{Math.round(progressPercentage)}%</span>
-            </div>
+          <div className="space-y-1">
             <Progress 
               value={progressPercentage} 
-              className="h-3"
+              className="h-1 sm:h-1.5"
             />
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground text-center">
+              {Math.round(progressPercentage)}% concluído
+            </p>
           </div>
         )}
 
