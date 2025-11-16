@@ -15,6 +15,7 @@ import ComunicacoesPage from '@/pages/admin/ComunicacoesPage';
 import ConfiguracoesPage from '@/pages/admin/ConfiguracoesPage';
 import VideoManagement from '@/pages/admin/VideoManagement';
 import VideosSitePage from '@/pages/admin/VideosSitePage';
+import VideoEditorAccessControl from '@/pages/video-editor/VideoEditorAccessControl';
 import LeadsExa from '@/pages/admin/LeadsExa';
 import PaineisExa from '@/pages/admin/PaineisExa';
 import LogosPage from '@/pages/admin/LogosPage';
@@ -58,6 +59,7 @@ const SuperAdminRoutes = () => {
       {/* CONTEÚDO */}
       <Route path="videos" element={<VideoManagement />} />
       <Route path="videos-site" element={<VideosSitePage />} />
+      <Route path="editor-video-controle" element={<VideoEditorAccessControl />} />
       <Route path="logos" element={<LogosPage />} />
       <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="comunicacoes" element={<ComunicacoesPage />} />
