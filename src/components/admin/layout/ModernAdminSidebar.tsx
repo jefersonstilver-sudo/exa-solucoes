@@ -22,7 +22,8 @@ import {
   Gift,
   UsersRound,
   FileBarChart,
-  Tv
+  Tv,
+  Clapperboard
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -211,6 +212,14 @@ export function ModernAdminSidebar() {
           href: buildPath('videos-site'),
           icon: Film,
           permission: 'canManagePortfolio'
+        },
+        {
+          title: 'Editor de Vídeos',
+          href: buildPath('editor-video-controle'),
+          icon: Clapperboard,
+          permission: 'canManageSystemSettings',
+          requireSuperAdmin: true,
+          badge: 'BETA'
         },
         {
           title: 'Logos EXA',
