@@ -17,6 +17,7 @@ export const VideoCanvas = () => {
   } = useEditorState();
   
   const [canvasSize, setCanvasSize] = useState({ width: 1920, height: 1080 });
+  const [autoZoom, setAutoZoom] = useState(1);
 
   // Initialize canvas size from project
   useEffect(() => {
@@ -27,6 +28,29 @@ export const VideoCanvas = () => {
       });
     }
   }, [currentProject]);
+
+  // Calculate auto-zoom to fit canvas in container
+  useEffect(() => {
+    const updateAutoZoom = () => {
+      if (!containerRef.current) return;
+      
+      const container = containerRef.current;
+      const containerWidth = container.clientWidth - 64; // padding
+      const containerHeight = container.clientHeight - 64;
+      
+      const scaleX = containerWidth / canvasSize.width;
+      const scaleY = containerHeight / canvasSize.height;
+      const scale = Math.min(scaleX, scaleY, 1); // Don't zoom in beyond 100%
+      
+      setAutoZoom(scale);
+      setCanvasZoom(scale);
+    };
+
+    updateAutoZoom();
+    window.addEventListener('resize', updateAutoZoom);
+    
+    return () => window.removeEventListener('resize', updateAutoZoom);
+  }, [canvasSize, setCanvasZoom]);
 
   // Render canvas
   useEffect(() => {

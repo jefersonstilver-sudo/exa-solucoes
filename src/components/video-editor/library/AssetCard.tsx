@@ -21,6 +21,17 @@ const AssetCard = ({ asset, viewMode }: AssetCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const { deleteAsset, isDeleting } = useVideoEditorAssets();
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      assetId: asset.id,
+      assetType: asset.asset_type,
+      fileUrl: asset.file_url,
+      fileName: asset.file_name,
+      metadata: asset.metadata
+    }));
+  };
+
   const getIcon = () => {
     switch (asset.asset_type) {
       case 'video':
@@ -48,11 +59,12 @@ const AssetCard = ({ asset, viewMode }: AssetCardProps) => {
 
   if (viewMode === 'list') {
     return (
-      <motion.div
-        className="flex items-center gap-3 p-3 rounded-lg bg-card border hover:bg-accent/50 transition-colors cursor-pointer"
+      <div
+        draggable
+        onDragStart={handleDragStart}
+        className="flex items-center gap-3 p-3 rounded-lg bg-card border hover:bg-accent/50 transition-colors cursor-grab active:cursor-grabbing hover:scale-[1.01]"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        whileHover={{ scale: 1.01 }}
       >
         {/* Icon */}
         <div className="p-2 bg-muted rounded">
@@ -97,19 +109,20 @@ const AssetCard = ({ asset, viewMode }: AssetCardProps) => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div
+    <div
+      draggable
+      onDragStart={handleDragStart}
       className={cn(
-        "relative group rounded-lg overflow-hidden bg-card border cursor-pointer",
-        "hover:shadow-lg transition-all duration-200"
+        "relative group rounded-lg overflow-hidden bg-card border cursor-grab active:cursor-grabbing",
+        "hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      whileHover={{ scale: 1.02 }}
     >
       {/* Preview */}
       <div className="aspect-video bg-muted flex items-center justify-center relative">
@@ -172,7 +185,7 @@ const AssetCard = ({ asset, viewMode }: AssetCardProps) => {
         <p className="text-xs font-medium truncate">{asset.file_name}</p>
         <p className="text-xs text-muted-foreground">{formatSize(asset.file_size_mb)}</p>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
