@@ -114,11 +114,11 @@ const AssetLibrary = () => {
       </div>
 
       {/* Assets Grid/List */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-3">
         {isLoading ? (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-2'}>
+          <div className="grid grid-cols-1 gap-3">
             {[1, 2, 3, 4].map(i => (
-              <Skeleton key={i} className={viewMode === 'grid' ? 'aspect-video' : 'h-20'} />
+              <Skeleton key={i} className="aspect-video rounded-xl" />
             ))}
           </div>
         ) : assets.length === 0 ? (
@@ -136,7 +136,7 @@ const AssetLibrary = () => {
           </div>
         ) : (
           <>
-            <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-2'}>
+            <div className="grid grid-cols-1 gap-3">
               {assets.map((asset, index) => (
                 <motion.div
                   key={asset.id}

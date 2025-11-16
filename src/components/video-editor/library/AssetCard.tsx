@@ -118,20 +118,21 @@ const AssetCard = ({ asset, viewMode }: AssetCardProps) => {
       draggable
       onDragStart={handleDragStart}
       className={cn(
-        "relative group rounded-lg overflow-hidden bg-card border cursor-grab active:cursor-grabbing",
-        "hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
+        "relative group rounded-xl overflow-hidden bg-card border-2 cursor-grab active:cursor-grabbing",
+        "hover:shadow-xl hover:border-primary/50 hover:scale-[1.03] transition-all duration-200"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Preview */}
-      <div className="aspect-video bg-muted flex items-center justify-center relative">
+      {/* Preview - Larger aspect ratio */}
+      <div className="aspect-video bg-muted flex items-center justify-center relative overflow-hidden">
         {asset.asset_type === 'video' ? (
           <video
             src={asset.file_url}
             className="w-full h-full object-cover"
             muted
             loop
+            playsInline
             onMouseEnter={(e) => e.currentTarget.play()}
             onMouseLeave={(e) => {
               e.currentTarget.pause();
@@ -146,7 +147,7 @@ const AssetCard = ({ asset, viewMode }: AssetCardProps) => {
           />
         ) : (
           <div className="p-8">
-            <Music className="h-12 w-12 text-muted-foreground" />
+            <Music className="h-16 w-16 text-muted-foreground" />
           </div>
         )}
 
@@ -179,11 +180,15 @@ const AssetCard = ({ asset, viewMode }: AssetCardProps) => {
           </motion.div>
         )}
       </div>
-
       {/* Info */}
-      <div className="p-2">
-        <p className="text-xs font-medium truncate">{asset.file_name}</p>
-        <p className="text-xs text-muted-foreground">{formatSize(asset.file_size_mb)}</p>
+      <div className="p-3 bg-background/95">
+        <p className="text-sm font-medium truncate mb-1">{asset.file_name}</p>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{formatSize(asset.file_size_mb)}</span>
+          {asset.metadata.duration && (
+            <span className="font-medium">{formatDuration(asset.metadata.duration)}</span>
+          )}
+        </div>
       </div>
     </div>
   );

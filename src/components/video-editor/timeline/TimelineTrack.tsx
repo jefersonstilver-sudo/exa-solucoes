@@ -53,7 +53,7 @@ export const TimelineTrack = ({ layers, trackType, pixelsPerSecond }: TimelineTr
           height: data.metadata?.height || 360 
         },
         rotation: 0,
-        asset_id: data.assetId,
+        asset_id: data.fileUrl, // Use file URL for video playback
       };
 
       addLayer(newLayer);
