@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,7 +13,6 @@ import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import AvatarUpload from '@/components/ui/avatar-upload';
 import DocumentUpload from '@/components/ui/document-upload';
 import { CompanyBrandSection } from '@/components/settings/CompanyBrandSection';
-
 interface UserSettings {
   email: string;
   name: string;
@@ -31,10 +29,14 @@ interface UserSettings {
     push: boolean;
   };
 }
-
 const AdvertiserSettings = () => {
-  const { userProfile } = useAuth();
-  const { formatDocument, validateDocument } = useDocumentValidation();
+  const {
+    userProfile
+  } = useAuth();
+  const {
+    formatDocument,
+    validateDocument
+  } = useDocumentValidation();
   const [settings, setSettings] = useState<UserSettings>({
     email: '',
     name: '',
@@ -53,29 +55,25 @@ const AdvertiserSettings = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   useEffect(() => {
     loadUserSettings();
   }, [userProfile]);
-
   const loadUserSettings = async () => {
     if (!userProfile) return;
-
     try {
       setLoading(true);
 
       // Buscar dados do usuário do auth e da tabela users
-      const { data: authUser, error: authError } = await supabase.auth.getUser();
+      const {
+        data: authUser,
+        error: authError
+      } = await supabase.auth.getUser();
       if (authError) throw authError;
-
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.user?.id)
-        .single();
-
+      const {
+        data: userData,
+        error: userError
+      } = await supabase.from('users').select('*').eq('id', authUser.user?.id).single();
       if (userError && userError.code !== 'PGRST116') throw userError;
-
       if (authUser.user) {
         setSettings({
           email: authUser.user.email || '',
@@ -86,7 +84,7 @@ const AdvertiserSettings = () => {
           documento_frente_url: userData?.documento_frente_url || '',
           documento_verso_url: userData?.documento_verso_url || '',
           avatar_url: userData?.avatar_url || '',
-          tipo_documento: (userData?.tipo_documento as 'cpf' | 'documento_estrangeiro') || 'cpf',
+          tipo_documento: userData?.tipo_documento as 'cpf' | 'documento_estrangeiro' || 'cpf',
           notifications: {
             email: authUser.user.user_metadata?.notifications?.email ?? true,
             sms: authUser.user.user_metadata?.notifications?.sms ?? false,
@@ -101,7 +99,6 @@ const AdvertiserSettings = () => {
       setLoading(false);
     }
   };
-
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -111,7 +108,6 @@ const AdvertiserSettings = () => {
         toast.error('Por favor, informe um CPF válido');
         return;
       }
-
       if (settings.tipo_documento === 'documento_estrangeiro') {
         if (!settings.documento_estrangeiro.trim()) {
           toast.error('Por favor, informe o número do documento estrangeiro');
@@ -122,45 +118,45 @@ const AdvertiserSettings = () => {
           return;
         }
       }
-
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
       // Atualizar metadados do usuário no auth
-      const { error: authError } = await supabase.auth.updateUser({
+      const {
+        error: authError
+      } = await supabase.auth.updateUser({
         data: {
           name: settings.name,
           phone: settings.phone,
           notifications: settings.notifications
         }
       });
-
       if (authError) throw authError;
 
       // Buscar role atual do usuário
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single();
+      const {
+        data: existingUser
+      } = await supabase.from('users').select('role').eq('id', user.id).single();
 
       // Atualizar dados na tabela users
-      const { error: userError } = await supabase
-        .from('users')
-        .upsert({
-          id: user.id,
-          email: user.email!,
-          role: existingUser?.role || 'client',
-          cpf: settings.tipo_documento === 'cpf' ? settings.cpf : null,
-          documento_estrangeiro: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_estrangeiro : null,
-          documento_frente_url: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_frente_url : null,
-          documento_verso_url: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_verso_url : null,
-          avatar_url: settings.avatar_url,
-          tipo_documento: settings.tipo_documento
-        });
-
+      const {
+        error: userError
+      } = await supabase.from('users').upsert({
+        id: user.id,
+        email: user.email!,
+        role: existingUser?.role || 'client',
+        cpf: settings.tipo_documento === 'cpf' ? settings.cpf : null,
+        documento_estrangeiro: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_estrangeiro : null,
+        documento_frente_url: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_frente_url : null,
+        documento_verso_url: settings.tipo_documento === 'documento_estrangeiro' ? settings.documento_verso_url : null,
+        avatar_url: settings.avatar_url,
+        tipo_documento: settings.tipo_documento
+      });
       if (userError) throw userError;
-
       toast.success('Configurações salvas com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
@@ -169,21 +165,24 @@ const AdvertiserSettings = () => {
       setSaving(false);
     }
   };
-
   const handleInputChange = (field: keyof UserSettings, value: string) => {
     if (field === 'cpf') {
       value = formatDocument(value, 'cpf');
     }
-    setSettings(prev => ({ ...prev, [field]: value }));
+    setSettings(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
-
   const handleNotificationChange = (type: keyof UserSettings['notifications'], value: boolean) => {
     setSettings(prev => ({
       ...prev,
-      notifications: { ...prev.notifications, [type]: value }
+      notifications: {
+        ...prev.notifications,
+        [type]: value
+      }
     }));
   };
-
   const handleDocumentTypeChange = (type: 'cpf' | 'documento_estrangeiro') => {
     setSettings(prev => ({
       ...prev,
@@ -195,18 +194,13 @@ const AdvertiserSettings = () => {
       documento_verso_url: type === 'documento_estrangeiro' ? prev.documento_verso_url : ''
     }));
   };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+    return <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-12 w-12 animate-spin text-exa-red" />
         <p className="ml-2 text-lg">Carregando configurações...</p>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  return <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Configurações do Perfil</h1>
@@ -224,45 +218,28 @@ const AdvertiserSettings = () => {
         <CardContent className="space-y-6 pt-6">
           {/* Foto de Perfil */}
           <div className="flex justify-center">
-            <AvatarUpload
-              value={settings.avatar_url}
-              onChange={(url) => setSettings(prev => ({ ...prev, avatar_url: url || '' }))}
-              userName={settings.name}
-            />
+            <AvatarUpload value={settings.avatar_url} onChange={url => setSettings(prev => ({
+            ...prev,
+            avatar_url: url || ''
+          }))} userName={settings.name} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={settings.email}
-                disabled
-                className="bg-gray-50"
-              />
+              <Input id="email" type="email" value={settings.email} disabled className="bg-gray-50" />
               <p className="text-xs text-gray-500">O email não pode ser alterado</p>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="name">Nome Completo</Label>
-              <Input
-                id="name"
-                value={settings.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Seu nome completo"
-              />
+              <Input id="name" value={settings.name} onChange={e => handleInputChange('name', e.target.value)} placeholder="Seu nome completo" />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="phone">Telefone</Label>
-            <Input
-              id="phone"
-              value={settings.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              placeholder="(11) 99999-9999"
-            />
+            <Input id="phone" value={settings.phone} onChange={e => handleInputChange('phone', e.target.value)} placeholder="(11) 99999-9999" />
           </div>
         </CardContent>
       </Card>
@@ -279,11 +256,7 @@ const AdvertiserSettings = () => {
           {/* Tipo de Documento */}
           <div className="space-y-3">
             <Label>Tipo de Documento</Label>
-            <RadioGroup
-              value={settings.tipo_documento}
-              onValueChange={handleDocumentTypeChange}
-              className="flex flex-col space-y-2"
-            >
+            <RadioGroup value={settings.tipo_documento} onValueChange={handleDocumentTypeChange} className="flex flex-col space-y-2">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="cpf" id="cpf" />
                 <Label htmlFor="cpf">CPF (Brasileiro)</Label>
@@ -296,50 +269,31 @@ const AdvertiserSettings = () => {
           </div>
 
           {/* Campo CPF */}
-          {settings.tipo_documento === 'cpf' && (
-            <div className="space-y-2">
+          {settings.tipo_documento === 'cpf' && <div className="space-y-2">
               <Label htmlFor="cpf">CPF *</Label>
-              <Input
-                id="cpf"
-                value={settings.cpf}
-                onChange={(e) => handleInputChange('cpf', e.target.value)}
-                placeholder="000.000.000-00"
-                maxLength={14}
-              />
-              {settings.cpf && !validateDocument(settings.cpf, 'cpf') && (
-                <p className="text-xs text-red-500">CPF inválido</p>
-              )}
-            </div>
-          )}
+              <Input id="cpf" value={settings.cpf} onChange={e => handleInputChange('cpf', e.target.value)} placeholder="000.000.000-00" maxLength={14} />
+              {settings.cpf && !validateDocument(settings.cpf, 'cpf') && <p className="text-xs text-red-500">CPF inválido</p>}
+            </div>}
 
           {/* Documento Estrangeiro */}
-          {settings.tipo_documento === 'documento_estrangeiro' && (
-            <div className="space-y-4">
+          {settings.tipo_documento === 'documento_estrangeiro' && <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="documento_estrangeiro">Número do Documento *</Label>
-                <Input
-                  id="documento_estrangeiro"
-                  value={settings.documento_estrangeiro}
-                  onChange={(e) => handleInputChange('documento_estrangeiro', e.target.value)}
-                  placeholder="Número do documento de identificação"
-                />
+                <Input id="documento_estrangeiro" value={settings.documento_estrangeiro} onChange={e => handleInputChange('documento_estrangeiro', e.target.value)} placeholder="Número do documento de identificação" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DocumentUpload
-                  label="Frente do Documento *"
-                  value={settings.documento_frente_url}
-                  onChange={(url) => setSettings(prev => ({ ...prev, documento_frente_url: url || '' }))}
-                />
+                <DocumentUpload label="Frente do Documento *" value={settings.documento_frente_url} onChange={url => setSettings(prev => ({
+              ...prev,
+              documento_frente_url: url || ''
+            }))} />
                 
-                <DocumentUpload
-                  label="Verso do Documento *"
-                  value={settings.documento_verso_url}
-                  onChange={(url) => setSettings(prev => ({ ...prev, documento_verso_url: url || '' }))}
-                />
+                <DocumentUpload label="Verso do Documento *" value={settings.documento_verso_url} onChange={url => setSettings(prev => ({
+              ...prev,
+              documento_verso_url: url || ''
+            }))} />
               </div>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
@@ -357,32 +311,17 @@ const AdvertiserSettings = () => {
               <Label className="text-base font-medium">Notificações por Email</Label>
               <p className="text-sm text-gray-500">Receba atualizações sobre suas campanhas por email</p>
             </div>
-            <Switch
-              checked={settings.notifications.email}
-              onCheckedChange={(checked) => handleNotificationChange('email', checked)}
-            />
+            <Switch checked={settings.notifications.email} onCheckedChange={checked => handleNotificationChange('email', checked)} />
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="space-y-0.5">
-              <Label className="text-base font-medium">Notificações SMS</Label>
-              <p className="text-sm text-gray-500">Receba alertas importantes via SMS</p>
-            </div>
-            <Switch
-              checked={settings.notifications.sms}
-              onCheckedChange={(checked) => handleNotificationChange('sms', checked)}
-            />
-          </div>
+          
 
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div className="space-y-0.5">
               <Label className="text-base font-medium">Notificações Push</Label>
               <p className="text-sm text-gray-500">Receba notificações no navegador</p>
             </div>
-            <Switch
-              checked={settings.notifications.push}
-              onCheckedChange={(checked) => handleNotificationChange('push', checked)}
-            />
+            <Switch checked={settings.notifications.push} onCheckedChange={checked => handleNotificationChange('push', checked)} />
           </div>
         </CardContent>
       </Card>
@@ -420,27 +359,16 @@ const AdvertiserSettings = () => {
 
       {/* Botão Salvar */}
       <div className="flex justify-center pt-4">
-        <Button 
-          onClick={handleSave} 
-          disabled={saving}
-          size="lg"
-          className="bg-exa-red hover:bg-exa-red/90 text-white px-12 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
-        >
-          {saving ? (
-            <>
+        <Button onClick={handleSave} disabled={saving} size="lg" className="bg-exa-red hover:bg-exa-red/90 text-white px-12 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all">
+          {saving ? <>
               <Loader2 className="h-5 w-5 mr-2 animate-spin" />
               Salvando...
-            </>
-          ) : (
-            <>
+            </> : <>
               <Save className="h-4 w-4 mr-2" />
               Salvar Alterações
-            </>
-          )}
+            </>}
         </Button>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AdvertiserSettings;
