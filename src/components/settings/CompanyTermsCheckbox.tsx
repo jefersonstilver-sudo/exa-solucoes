@@ -1,11 +1,13 @@
 import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface CompanyTermsCheckboxProps {
   accepted: boolean;
   onAcceptedChange: (accepted: boolean) => void;
+  disabled?: boolean;
 }
 
 const COMPANY_TERMS_TEXT = `
@@ -42,7 +44,8 @@ Declaro que li, compreendi e concordo com os termos acima.
 
 export const CompanyTermsCheckbox: React.FC<CompanyTermsCheckboxProps> = ({ 
   accepted, 
-  onAcceptedChange 
+  onAcceptedChange,
+  disabled = false
 }) => {
   return (
     <div className="border-2 border-amber-500 rounded-lg p-4 bg-amber-50">
@@ -60,11 +63,24 @@ export const CompanyTermsCheckbox: React.FC<CompanyTermsCheckboxProps> = ({
           id="company-terms" 
           checked={accepted}
           onCheckedChange={onAcceptedChange}
+          disabled={disabled}
         />
-        <label htmlFor="company-terms" className="text-sm text-gray-700 cursor-pointer">
+        <label 
+          htmlFor="company-terms" 
+          className={cn(
+            "text-sm cursor-pointer",
+            disabled ? "text-gray-500 cursor-not-allowed" : "text-gray-700"
+          )}
+        >
           Li e concordo com o Termo de Responsabilidade acima <span className="text-red-500">*</span>
         </label>
       </div>
+      {disabled && (
+        <p className="text-xs text-green-600 mt-2 flex items-center">
+          <Check className="h-3 w-3 mr-1" />
+          Termos aceitos permanentemente
+        </p>
+      )}
     </div>
   );
 };
