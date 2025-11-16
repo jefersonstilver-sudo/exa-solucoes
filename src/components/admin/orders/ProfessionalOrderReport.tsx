@@ -3,7 +3,6 @@ import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle,
 import exaLogo from '@/assets/exa-logo.png';
 import { Button } from '@/components/ui/button';
 import { useFixAuditData } from '@/hooks/admin/useFixAuditData';
-
 interface OrderData {
   id: string;
   created_at: string;
@@ -23,14 +22,12 @@ interface OrderData {
   device_info?: any;
   expires_at?: string;
 }
-
 interface PanelData {
   id: string;
   nome: string;
   endereco: string;
   bairro: string;
 }
-
 interface OrderVideo {
   id: string;
   slot_position: number;
@@ -47,13 +44,11 @@ interface OrderVideo {
     orientacao: string;
   };
 }
-
 interface ProfessionalOrderReportProps {
   order: OrderData;
   panels: PanelData[];
   videos: OrderVideo[];
 }
-
 export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = ({
   order,
   panels,
@@ -63,28 +58,26 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   console.log('📋 [PROFESSIONAL REPORT] Panels recebidos:', panels?.length || 0);
   console.log('📋 [PROFESSIONAL REPORT] Panels data:', panels);
   console.log('📋 [PROFESSIONAL REPORT] Videos recebidos:', videos?.length || 0);
-  
-  const { fixOrderAuditData, isFixing } = useFixAuditData();
-  
+  const {
+    fixOrderAuditData,
+    isFixing
+  } = useFixAuditData();
+
   // Verificar se os dados de auditoria estão incompletos
-  const hasIncompleteAuditData = !order.compliance_data || 
-    !order.compliance_data.payer || 
-    order.log_pagamento?.pixData?.mpResponse?.status === 'pending';
-  
+  const hasIncompleteAuditData = !order.compliance_data || !order.compliance_data.payer || order.log_pagamento?.pixData?.mpResponse?.status === 'pending';
+
   // Ordenar vídeos: em exibição primeiro
   const sortedVideos = [...videos].sort((a, b) => {
     if (a.selected_for_display && !b.selected_for_display) return -1;
     if (!a.selected_for_display && b.selected_for_display) return 1;
     return a.slot_position - b.slot_position;
   });
-  
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
   };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -94,7 +87,6 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
       minute: '2-digit'
     });
   };
-
   const formatSimpleDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -103,55 +95,63 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
       year: 'numeric'
     });
   };
-
   const getStatusConfig = (status: string) => {
-    const configs: Record<string, { bg: string, text: string, label: string, icon: React.ReactNode }> = {
-      'pago_pendente_video': { 
-        bg: 'bg-orange-500', 
-        text: 'text-white', 
+    const configs: Record<string, {
+      bg: string;
+      text: string;
+      label: string;
+      icon: React.ReactNode;
+    }> = {
+      'pago_pendente_video': {
+        bg: 'bg-orange-500',
+        text: 'text-white',
         label: 'Aguardando Vídeo',
         icon: <Clock className="h-4 w-4" />
       },
-      'video_enviado': { 
-        bg: 'bg-blue-500', 
-        text: 'text-white', 
+      'video_enviado': {
+        bg: 'bg-blue-500',
+        text: 'text-white',
         label: 'Vídeo Enviado',
         icon: <Video className="h-4 w-4" />
       },
-      'video_aprovado': { 
-        bg: 'bg-green-500', 
-        text: 'text-white', 
+      'video_aprovado': {
+        bg: 'bg-green-500',
+        text: 'text-white',
         label: 'Vídeo Aprovado',
         icon: <CheckCircle2 className="h-4 w-4" />
       },
-      'pago': { 
-        bg: 'bg-green-500', 
-        text: 'text-white', 
+      'pago': {
+        bg: 'bg-green-500',
+        text: 'text-white',
         label: 'Pago',
         icon: <CheckCircle2 className="h-4 w-4" />
       },
-      'ativo': { 
-        bg: 'bg-green-500', 
-        text: 'text-white', 
+      'ativo': {
+        bg: 'bg-green-500',
+        text: 'text-white',
         label: 'Ativo',
         icon: <CheckCircle2 className="h-4 w-4" />
       },
-      'pendente': { 
-        bg: 'bg-gray-500', 
-        text: 'text-white', 
+      'pendente': {
+        bg: 'bg-gray-500',
+        text: 'text-white',
         label: 'Pendente',
         icon: <Clock className="h-4 w-4" />
       },
-      'cancelado': { 
-        bg: 'bg-red-500', 
-        text: 'text-white', 
+      'cancelado': {
+        bg: 'bg-red-500',
+        text: 'text-white',
         label: 'Cancelado',
         icon: <XCircle className="h-4 w-4" />
-      },
+      }
     };
-    return configs[status] || { bg: 'bg-gray-500', text: 'text-white', label: status, icon: <FileText className="h-4 w-4" /> };
+    return configs[status] || {
+      bg: 'bg-gray-500',
+      text: 'text-white',
+      label: status,
+      icon: <FileText className="h-4 w-4" />
+    };
   };
-
   const statusConfig = getStatusConfig(order.status);
   const emittedAt = new Date().toLocaleString('pt-BR', {
     day: '2-digit',
@@ -160,22 +160,15 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
     hour: '2-digit',
     minute: '2-digit'
   });
-
   const subtotal = order.valor_total;
   const desconto = order.cupom_id ? subtotal * 0.1 : 0;
-
-  return (
-    <div className="w-full max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 overflow-hidden">
+  return <div className="w-full max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 overflow-hidden">
       {/* HEADER MINIMALISTA PROFISSIONAL */}
       <div className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] text-white px-6 py-5 border-b-2 border-gray-200">
         <div className="flex justify-between items-center">
           {/* Logo e Info */}
           <div className="flex items-center gap-6">
-            <img 
-              src={exaLogo} 
-              alt="EXA" 
-              className="h-10 w-auto brightness-0 invert"
-            />
+            <img src={exaLogo} alt="EXA" className="h-10 w-auto brightness-0 invert" />
             <div className="border-l border-white/30 pl-6">
               <p className="text-xs text-white/80 mb-0.5">Relatório de Pedido</p>
               <p className="text-sm font-semibold">#{order.id.substring(0, 8).toUpperCase()}</p>
@@ -254,17 +247,13 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <div>
                 <p className="text-gray-500 mb-1">Termos Aceitos</p>
                 <p className="font-semibold text-gray-900">
-                  {order.termos_aceitos ? (
-                    <span className="inline-flex items-center gap-1 text-green-700">
+                  {order.termos_aceitos ? <span className="inline-flex items-center gap-1 text-green-700">
                       <CheckCircle2 className="h-3 w-3" />
                       Sim
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-red-700">
+                    </span> : <span className="inline-flex items-center gap-1 text-red-700">
                       <XCircle className="h-3 w-3" />
                       Não
-                    </span>
-                  )}
+                    </span>}
                 </p>
               </div>
             </div>
@@ -284,15 +273,13 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                 <span className="font-semibold text-gray-900">{formatCurrency(subtotal + desconto)}</span>
               </div>
               
-              {desconto > 0 && (
-                <div className="flex justify-between items-center text-green-700">
+              {desconto > 0 && <div className="flex justify-between items-center text-green-700">
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" />
                     Desconto
                   </span>
                   <span className="font-semibold">-{formatCurrency(desconto)}</span>
-                </div>
-              )}
+                </div>}
               
               <div className="flex justify-between items-center pt-2 border-t-2 border-gray-300">
                 <span className="font-bold text-gray-900">TOTAL</span>
@@ -303,8 +290,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
         </section>
 
         {/* SEÇÃO: INFORMAÇÕES DE PAGAMENTO */}
-        {order.log_pagamento && (
-          <section className="border border-gray-200 rounded">
+        {order.log_pagamento && <section className="border border-gray-200 rounded">
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
               <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Informações de Pagamento e Auditoria</h2>
             </div>
@@ -315,84 +301,58 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                 <div>
                   <p className="text-gray-500 mb-1">Método de Pagamento</p>
                   <p className="font-semibold text-gray-900">
-                    {order.log_pagamento.method === 'pix' ? 'PIX' : 
-                     order.log_pagamento.payment_method === 'pix' ? 'PIX' : 
-                     'Cartão de Crédito'}
+                    {order.log_pagamento.method === 'pix' ? 'PIX' : order.log_pagamento.payment_method === 'pix' ? 'PIX' : 'Cartão de Crédito'}
                   </p>
                 </div>
                 <div>
                   <p className="text-gray-500 mb-1">Status do Pagamento</p>
                   <p className="font-semibold text-gray-900">
-                    {order.log_pagamento.payment_status === 'approved' ? 'Aprovado' :
-                     order.log_pagamento.payment_status === 'pending' ? 'Pendente' :
-                     order.log_pagamento.payment_status || 'N/A'}
+                    {order.log_pagamento.payment_status === 'approved' ? 'Aprovado' : order.log_pagamento.payment_status === 'pending' ? 'Pendente' : order.log_pagamento.payment_status || 'N/A'}
                   </p>
                 </div>
-                {order.log_pagamento.pixData?.paymentId && (
-                  <div>
+                {order.log_pagamento.pixData?.paymentId && <div>
                     <p className="text-gray-500 mb-1">ID da Transação</p>
                     <p className="font-mono text-xs font-semibold text-gray-900">
                       {order.log_pagamento.pixData.paymentId}
                     </p>
-                  </div>
-                )}
+                  </div>}
               </div>
 
               {/* Informações Detalhadas do PIX */}
-              {order.log_pagamento.method === 'pix' && order.log_pagamento.pixData && (
-                <div className="border-t pt-4">
+              {order.log_pagamento.method === 'pix' && order.log_pagamento.pixData && <div className="border-t pt-4">
                   <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-2">
                     <CreditCard className="h-4 w-4" />
                     Detalhes do PIX
                   </h3>
                   <div className="grid grid-cols-2 gap-4 text-xs bg-blue-50 p-3 rounded">
-                    {order.log_pagamento.pixData.createdAt && (
-                      <div>
+                    {order.log_pagamento.pixData.createdAt && <div>
                         <p className="text-gray-500 mb-1">Data de Criação</p>
                         <p className="font-semibold text-gray-900">
                           {formatDate(order.log_pagamento.pixData.createdAt)}
                         </p>
-                      </div>
-                    )}
-                    {order.log_pagamento.pixData.approvedAt && (
-                      <div>
+                      </div>}
+                    {order.log_pagamento.pixData.approvedAt && <div>
                         <p className="text-gray-500 mb-1">Data de Aprovação</p>
                         <p className="font-semibold text-green-700">
                           {formatDate(order.log_pagamento.pixData.approvedAt)}
                         </p>
-                      </div>
-                    )}
-                    {order.log_pagamento.pixData.transactionAmount && (
-                      <div>
+                      </div>}
+                    {order.log_pagamento.pixData.transactionAmount && <div>
                         <p className="text-gray-500 mb-1">Valor da Transação</p>
                         <p className="font-semibold text-gray-900">
                           {formatCurrency(order.log_pagamento.pixData.transactionAmount)}
                         </p>
-                      </div>
-                    )}
-                    {order.log_pagamento.pixData.mpResponse?.status && (
-                      <div>
+                      </div>}
+                    {order.log_pagamento.pixData.mpResponse?.status && <div>
                         <p className="text-gray-500 mb-1">Status Mercado Pago</p>
-                        <p className={`font-semibold capitalize inline-flex items-center gap-1 ${
-                          order.log_pagamento.pixData.mpResponse.status === 'approved' ? 'text-green-700' :
-                          order.log_pagamento.pixData.mpResponse.status === 'pending' ? 'text-yellow-700' :
-                          'text-gray-900'
-                        }`}>
-                          {order.log_pagamento.pixData.mpResponse.status === 'pending' ? (
-                            <>⏳ Pendente</>
-                          ) : order.log_pagamento.pixData.mpResponse.status === 'approved' ? (
-                            <>✅ Aprovado</>
-                          ) : (
-                            order.log_pagamento.pixData.mpResponse.status
-                          )}
+                        <p className={`font-semibold capitalize inline-flex items-center gap-1 ${order.log_pagamento.pixData.mpResponse.status === 'approved' ? 'text-green-700' : order.log_pagamento.pixData.mpResponse.status === 'pending' ? 'text-yellow-700' : 'text-gray-900'}`}>
+                          {order.log_pagamento.pixData.mpResponse.status === 'pending' ? <>⏳ Pendente</> : order.log_pagamento.pixData.mpResponse.status === 'approved' ? <>✅ Aprovado</> : order.log_pagamento.pixData.mpResponse.status}
                         </p>
-                      </div>
-                    )}
+                      </div>}
                   </div>
                   
                   {/* Alerta de dados incompletos */}
-                  {hasIncompleteAuditData && (
-                    <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  {hasIncompleteAuditData && <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0">
                           <Clock className="h-5 w-5 text-yellow-600" />
@@ -405,255 +365,57 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                             Este pedido foi criado antes da implementação do sistema de auditoria completo. 
                             Clique no botão abaixo para buscar e atualizar os dados do Mercado Pago.
                           </p>
-                          <Button
-                            size="sm"
-                            onClick={() => fixOrderAuditData(order.id)}
-                            disabled={isFixing}
-                            className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                          >
-                            {isFixing ? (
-                              <>
+                          <Button size="sm" onClick={() => fixOrderAuditData(order.id)} disabled={isFixing} className="bg-yellow-600 hover:bg-yellow-700 text-white">
+                            {isFixing ? <>
                                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                                 Atualizando...
-                              </>
-                            ) : (
-                              <>
+                              </> : <>
                                 <RefreshCw className="h-4 w-4 mr-2" />
                                 Atualizar Dados de Auditoria
-                              </>
-                            )}
+                              </>}
                           </Button>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    </div>}
+                </div>}
 
               {/* 🔐 AUDITORIA FINANCEIRA COMPLETA */}
-              {order.compliance_data && Object.keys(order.compliance_data).length > 0 && (
-                <div className="border-t pt-6 mt-6">
-                  <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-blue-600" />
-                    Auditoria Financeira Completa
-                  </h3>
-                  
-                  {/* DADOS DO PAGADOR */}
-                  <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                    <h4 className="text-xs font-semibold text-blue-900 mb-3 flex items-center gap-1">
-                      👤 Dados do Pagador
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4 text-xs">
-                      {order.compliance_data.payer && (
-                        <>
-                          {order.compliance_data.payer.first_name && (
-                            <div>
-                              <p className="text-gray-500 mb-1">Nome Completo</p>
-                              <p className="font-semibold text-gray-900">
-                                {order.compliance_data.payer.first_name} {order.compliance_data.payer.last_name}
-                              </p>
-                            </div>
-                          )}
-                          {order.compliance_data.payer.email && (
-                            <div>
-                              <p className="text-gray-500 mb-1">Email</p>
-                              <p className="font-semibold text-gray-900">
-                                {order.compliance_data.payer.email}
-                              </p>
-                            </div>
-                          )}
-                          {order.compliance_data.payer.identification && (
-                            <>
-                              <div>
-                                <p className="text-gray-500 mb-1">Documento</p>
-                                <p className="font-mono text-xs font-semibold text-gray-900">
-                                  {order.compliance_data.payer.identification.type}: {order.compliance_data.payer.identification.number}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-gray-500 mb-1">Tipo de Pessoa</p>
-                                <p className="font-semibold text-gray-900 uppercase">
-                                  {order.compliance_data.payer.entity_type === 'individual' ? 'Pessoa Física' : 'Pessoa Jurídica'}
-                                </p>
-                              </div>
-                            </>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* BANCO PAGADOR */}
-                  {order.compliance_data.transaction_details?.financial_institution && (
-                    <div className="bg-green-50 p-4 rounded-lg mb-4">
-                      <h4 className="text-xs font-semibold text-green-900 mb-3 flex items-center gap-1">
-                        🏦 Banco Pagador
-                      </h4>
-                      <p className="text-lg font-bold text-green-700">
-                        {order.compliance_data.transaction_details.financial_institution}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        Instituição financeira de origem do pagamento
-                      </p>
-                    </div>
-                  )}
-
-                  {/* DETALHES DA TRANSAÇÃO */}
-                  {order.compliance_data.transaction_details && (
-                    <div className="bg-purple-50 p-4 rounded-lg mb-4">
-                      <h4 className="text-xs font-semibold text-purple-900 mb-3 flex items-center gap-1">
-                        💳 Detalhes da Transação
-                      </h4>
-                      <div className="grid grid-cols-3 gap-4 text-xs">
-                        <div>
-                          <p className="text-gray-500 mb-1">Valor Pago</p>
-                          <p className="font-semibold text-gray-900">
-                            R$ {order.compliance_data.transaction_details.total_paid_amount?.toFixed(2)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 mb-1">Valor Recebido</p>
-                          <p className="font-semibold text-green-700">
-                            R$ {order.compliance_data.transaction_details.net_received_amount?.toFixed(2)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 mb-1">Taxa</p>
-                          <p className="font-semibold text-red-600">
-                            R$ {(
-                              (order.compliance_data.transaction_details.total_paid_amount || 0) - 
-                              (order.compliance_data.transaction_details.net_received_amount || 0)
-                            ).toFixed(2)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 mb-1">Método</p>
-                          <p className="font-semibold text-gray-900 uppercase">
-                            {order.compliance_data.payment_method?.id || 'PIX'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 mb-1">ID do Pagamento</p>
-                          <p className="font-mono text-xs text-gray-700">
-                            {order.compliance_data.references?.payment_id}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 mb-1">Status</p>
-                          <p className="font-semibold text-green-700 capitalize">
-                            ✅ {order.compliance_data.status?.current}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* CONTA BENEFICIÁRIA */}
-                  {order.compliance_data.collector && (
-                    <div className="bg-yellow-50 p-4 rounded-lg mb-4">
-                      <h4 className="text-xs font-semibold text-yellow-900 mb-3 flex items-center gap-1">
-                        💰 Conta Beneficiária (Destino)
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4 text-xs">
-                        <div>
-                          <p className="text-gray-500 mb-1">ID da Conta</p>
-                          <p className="font-mono text-xs text-gray-900">
-                            {order.compliance_data.collector.id}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 mb-1">Email</p>
-                          <p className="font-semibold text-gray-900">
-                            {order.compliance_data.collector.email}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ORIGEM DO ACESSO */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="text-xs font-semibold text-gray-900 mb-3 flex items-center gap-1">
-                      🌐 Origem do Acesso
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4 text-xs">
-                      <div>
-                        <p className="text-gray-500 mb-1">Endereço IP</p>
-                        <p className="font-mono text-xs text-gray-900">
-                          {order.ip_origem || 'Não capturado'}
-                        </p>
-                      </div>
-                      {order.device_info && (
-                        <>
-                          <div>
-                            <p className="text-gray-500 mb-1">Dispositivo</p>
-                            <p className="font-semibold text-gray-900">
-                              {order.device_info.deviceType} - {order.device_info.os}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 mb-1">Navegador</p>
-                            <p className="font-semibold text-gray-900">
-                              {order.device_info.browser}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 mb-1">Localização (Timezone)</p>
-                            <p className="font-semibold text-gray-900">
-                              {order.device_info.timezone}
-                            </p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+              {order.compliance_data && Object.keys(order.compliance_data).length > 0}
 
               {/* Dados de Compliance Antigos (fallback) */}
-              {order.compliance_data && !order.compliance_data.payer && order.compliance_data.payment_method_id && (
-                <div className="border-t pt-4">
+              {order.compliance_data && !order.compliance_data.payer && order.compliance_data.payment_method_id && <div className="border-t pt-4">
                   <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-2">
                     <Shield className="h-4 w-4" />
                     Dados de Compliance (Formato Antigo)
                   </h3>
                   <div className="grid grid-cols-2 gap-4 text-xs bg-green-50 p-3 rounded">
-                    {order.compliance_data.payment_method_id && (
-                      <div>
+                    {order.compliance_data.payment_method_id && <div>
                         <p className="text-gray-500 mb-1">Forma de Pagamento</p>
                         <p className="font-semibold text-gray-900 uppercase">
                           {order.compliance_data.payment_method_id}
                         </p>
-                      </div>
-                    )}
-                    {order.compliance_data.transaction_amount && (
-                      <div>
+                      </div>}
+                    {order.compliance_data.transaction_amount && <div>
                         <p className="text-gray-500 mb-1">Valor Transacionado</p>
                         <p className="font-semibold text-gray-900">
                           {formatCurrency(order.compliance_data.transaction_amount)}
                         </p>
-                      </div>
-                    )}
+                      </div>}
                   </div>
-                </div>
-              )}
+                </div>}
 
               {/* Auditoria - IP e Device */}
-              {(order.ip_origem || order.device_info) && (
-                <div className="border-t pt-4">
+              {(order.ip_origem || order.device_info) && <div className="border-t pt-4">
                   <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-2">
                     <Shield className="h-4 w-4" />
                     Dados de Auditoria
                   </h3>
                   <div className="grid grid-cols-2 gap-4 text-xs bg-gray-50 p-3 rounded">
-                    {order.ip_origem && (
-                      <div>
+                    {order.ip_origem && <div>
                         <p className="text-gray-500 mb-1">IP de Origem</p>
                         <p className="font-mono font-semibold text-gray-900">{order.ip_origem}</p>
-                      </div>
-                    )}
-                    {order.device_info && (
-                      <>
+                      </div>}
+                    {order.device_info && <>
                         <div>
                           <p className="text-gray-500 mb-1">Dispositivo</p>
                           <p className="font-semibold text-gray-900">{order.device_info.deviceType || 'N/A'}</p>
@@ -666,18 +428,14 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                           <p className="text-gray-500 mb-1">Navegador</p>
                           <p className="font-semibold text-gray-900">{order.device_info.browser || 'N/A'}</p>
                         </div>
-                      </>
-                    )}
+                      </>}
                   </div>
-                </div>
-              )}
+                </div>}
             </div>
-          </section>
-        )}
+          </section>}
 
         {/* SEÇÃO: LOCAIS CONTRATADOS */}
-        {panels && panels.length > 0 ? (
-          <section className="border border-gray-200 rounded">
+        {panels && panels.length > 0 ? <section className="border border-gray-200 rounded">
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Prédios Contratados</h2>
               <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">
@@ -696,25 +454,18 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                   </tr>
                 </thead>
                 <tbody>
-                  {panels.map((panel, index) => (
-                    <tr 
-                      key={panel.id}
-                      className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                    >
+                  {panels.map((panel, index) => <tr key={panel.id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                       <td className="px-4 py-2">
                         <span className="font-mono text-blue-600 font-semibold">#{panel.id.substring(0, 8)}</span>
                       </td>
                       <td className="px-4 py-2 font-semibold text-gray-900">{panel.nome}</td>
                       <td className="px-4 py-2 text-gray-700">{panel.endereco}</td>
                       <td className="px-4 py-2 text-gray-700">{panel.bairro}</td>
-                    </tr>
-                  ))}
+                    </tr>)}
                 </tbody>
               </table>
             </div>
-          </section>
-        ) : (
-          <section className="border border-red-200 rounded bg-red-50">
+          </section> : <section className="border border-red-200 rounded bg-red-50">
             <div className="bg-red-100 px-4 py-2 border-b border-red-200">
               <h2 className="text-sm font-bold text-red-900 uppercase tracking-wide flex items-center gap-2">
                 <span>⚠️</span> Prédios Contratados
@@ -726,91 +477,58 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <p className="text-xs text-red-600 mb-2">
                 Este pedido tem IDs de prédios registrados, mas eles não existem mais no sistema.
               </p>
-              {order.lista_predios && order.lista_predios.length > 0 && (
-                <div className="mt-3 p-3 bg-white rounded border border-red-200 max-w-md mx-auto">
+              {order.lista_predios && order.lista_predios.length > 0 && <div className="mt-3 p-3 bg-white rounded border border-red-200 max-w-md mx-auto">
                   <p className="text-xs text-gray-600 mb-1 font-semibold">IDs registrados no pedido:</p>
                   <div className="space-y-1">
-                    {order.lista_predios.map((id: string) => (
-                      <p key={id} className="text-xs font-mono text-gray-700">
+                    {order.lista_predios.map((id: string) => <p key={id} className="text-xs font-mono text-gray-700">
                         • {id}
-                      </p>
-                    ))}
+                      </p>)}
                   </div>
                   <p className="text-xs text-red-600 mt-2 font-semibold">
                     ⚠️ Estes prédios podem ter sido removidos do sistema
                   </p>
-                </div>
-              )}
+                </div>}
             </div>
-          </section>
-        )}
+          </section>}
 
         {/* SEÇÃO: VÍDEOS ENVIADOS COM PREVIEW */}
         <section className="border border-gray-200 rounded">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
             <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Relatório de Vídeos</h2>
-            {videos.length > 0 && (
-              <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-semibold">
+            {videos.length > 0 && <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-semibold">
                 {videos.length} {videos.length === 1 ? 'vídeo' : 'vídeos'}
-              </span>
-            )}
+              </span>}
           </div>
           
-          {videos.length === 0 ? (
-            <div className="p-8 text-center">
+          {videos.length === 0 ? <div className="p-8 text-center">
               <Video className="h-10 w-10 text-gray-400 mx-auto mb-2" />
               <p className="text-sm font-medium text-gray-600 mb-1">Nenhum vídeo enviado</p>
               <p className="text-xs text-gray-500">Os vídeos aparecerão aqui quando forem enviados.</p>
-            </div>
-          ) : (
-            <div className="p-4 space-y-4">
+            </div> : <div className="p-4 space-y-4">
               {sortedVideos.map((video, videoIndex) => {
-                const isInDisplay = video.selected_for_display;
-                return (
-                  <div 
-                    key={video.id}
-                    className={`border rounded-lg overflow-hidden transition-all ${
-                      isInDisplay 
-                        ? 'bg-blue-50 border-blue-300 shadow-lg ring-2 ring-blue-200' 
-                        : 'bg-white border-gray-200 hover:shadow-md'
-                    }`}
-                  >
-                    {isInDisplay && (
-                      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-1.5 text-xs font-bold flex items-center gap-2">
+            const isInDisplay = video.selected_for_display;
+            return <div key={video.id} className={`border rounded-lg overflow-hidden transition-all ${isInDisplay ? 'bg-blue-50 border-blue-300 shadow-lg ring-2 ring-blue-200' : 'bg-white border-gray-200 hover:shadow-md'}`}>
+                    {isInDisplay && <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-1.5 text-xs font-bold flex items-center gap-2">
                         <div className="relative flex items-center">
                           <div className="absolute inset-0 bg-white rounded-full animate-ping opacity-75" />
                           <div className="relative w-2 h-2 bg-white rounded-full" />
                         </div>
                         🔴 EM EXIBIÇÃO AGORA
-                      </div>
-                    )}
+                      </div>}
                     <div className="grid grid-cols-12 gap-4">
                       {/* Preview do Vídeo */}
                       <div className="col-span-3">
                         <div className="aspect-video bg-gray-900 relative group">
-                          {video.video_data?.url ? (
-                            <>
-                              <video 
-                                src={video.video_data.url} 
-                                className="w-full h-full object-contain"
-                                controls
-                                preload="metadata"
-                              />
+                          {video.video_data?.url ? <>
+                              <video src={video.video_data.url} className="w-full h-full object-contain" controls preload="metadata" />
                               <div className="absolute top-2 left-2">
-                                <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                                  isInDisplay 
-                                    ? 'bg-blue-600 text-white' 
-                                    : 'bg-black/80 text-white'
-                                }`}>
+                                <span className={`px-2 py-1 rounded text-xs font-semibold ${isInDisplay ? 'bg-blue-600 text-white' : 'bg-black/80 text-white'}`}>
                                   Slot {video.slot_position}
                                 </span>
                               </div>
-                            </>
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-500">
+                            </> : <div className="w-full h-full flex items-center justify-center text-gray-500">
                               <Video className="h-8 w-8" />
-                            </div>
-                          )}
+                            </div>}
                         </div>
                       </div>
                       
@@ -818,9 +536,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                       <div className="col-span-9 p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <h3 className={`font-semibold text-base mb-1 ${
-                              isInDisplay ? 'text-blue-900' : 'text-gray-900'
-                            }`}>
+                            <h3 className={`font-semibold text-base mb-1 ${isInDisplay ? 'text-blue-900' : 'text-gray-900'}`}>
                               {video.video_data?.nome || 'Nome não disponível'}
                             </h3>
                             <div className="flex items-center gap-3 text-xs text-gray-600">
@@ -829,32 +545,25 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                               <span className="capitalize">{video.video_data?.orientacao || 'N/A'}</span>
                               <span>•</span>
                               <span>
-                                Enviado em {video.uploaded_at ? formatDate(video.uploaded_at) : 
-                                video.created_at ? formatDate(video.created_at) : 'N/A'}
+                                Enviado em {video.uploaded_at ? formatDate(video.uploaded_at) : video.created_at ? formatDate(video.created_at) : 'N/A'}
                               </span>
                             </div>
                           </div>
                           
                           {/* Status Badges */}
                           <div className="flex items-center gap-2">
-                            {video.approval_status === 'approved' && (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-semibold">
+                            {video.approval_status === 'approved' && <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-semibold">
                                 <CheckCircle2 className="h-3 w-3" />
                                 Aprovado
-                              </span>
-                            )}
-                            {video.approval_status === 'rejected' && (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs font-semibold">
+                              </span>}
+                            {video.approval_status === 'rejected' && <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs font-semibold">
                                 <XCircle className="h-3 w-3" />
                                 Rejeitado
-                              </span>
-                            )}
-                            {video.approval_status === 'pending' && (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-semibold">
+                              </span>}
+                            {video.approval_status === 'pending' && <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-semibold">
                                 <Clock className="h-3 w-3" />
                                 Pendente
-                              </span>
-                            )}
+                              </span>}
                           </div>
                         </div>
                         
@@ -863,49 +572,35 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                           <div className="flex items-center gap-2">
                             <div className={`w-2 h-2 rounded-full ${video.is_active ? 'bg-green-500' : 'bg-gray-300'}`} />
                             <span className="text-xs text-gray-600">
-                              {video.is_active ? (
-                                <span className="font-semibold text-green-700">Ativo</span>
-                              ) : (
-                                <span className="text-gray-500">Inativo</span>
-                              )}
+                              {video.is_active ? <span className="font-semibold text-green-700">Ativo</span> : <span className="text-gray-500">Inativo</span>}
                             </span>
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            {isInDisplay ? (
-                              <>
+                            {isInDisplay ? <>
                                 <div className="relative">
                                   <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75" />
                                   <div className="relative w-2 h-2 bg-blue-500 rounded-full" />
                                 </div>
                                 <span className="text-xs font-bold text-blue-700">EM EXIBIÇÃO</span>
-                              </>
-                            ) : (
-                              <>
+                              </> : <>
                                 <div className="w-2 h-2 bg-gray-300 rounded-full" />
                                 <span className="text-xs text-gray-500">Na lista de programação</span>
-                              </>
-                            )}
+                              </>}
                           </div>
                           
                           <div className="flex items-center gap-2 justify-end">
                             <span className="text-xs text-gray-500">Slot</span>
-                            <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded ${
-                              isInDisplay 
-                                ? 'bg-blue-600 text-white' 
-                                : 'bg-gray-700 text-white'
-                            }`}>
+                            <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded ${isInDisplay ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'}`}>
                               {video.slot_position}
                             </span>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  </div>;
+          })}
+            </div>}
         </section>
       </div>
 
@@ -922,6 +617,5 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
