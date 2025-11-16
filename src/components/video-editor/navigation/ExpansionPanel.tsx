@@ -84,29 +84,22 @@ export const ExpansionPanel = ({ activePanel, onClose }: ExpansionPanelProps) =>
     }
   };
 
-  return (
-    <div
-      className={cn(
-        "h-full bg-background border-r transition-all duration-300 ease-in-out overflow-hidden flex flex-col",
-        activePanel ? "w-[350px] opacity-100" : "w-0 opacity-0"
-      )}
-    >
-      {activePanel && (
-        <>
-          {/* Header */}
-          <div className="h-14 border-b flex items-center justify-between px-4 flex-shrink-0">
-            <h2 className="font-semibold text-sm">{getPanelTitle(activePanel)}</h2>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+  if (!activePanel) return null;
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto">
-            {renderPanelContent(activePanel)}
-          </div>
-        </>
-      )}
+  return (
+    <div className="h-full w-full bg-background border-r flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="h-14 border-b flex items-center justify-between px-4 flex-shrink-0">
+        <h2 className="font-semibold text-sm">{getPanelTitle(activePanel)}</h2>
+        <Button variant="ghost" size="icon" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {renderPanelContent(activePanel)}
+      </div>
     </div>
   );
 };

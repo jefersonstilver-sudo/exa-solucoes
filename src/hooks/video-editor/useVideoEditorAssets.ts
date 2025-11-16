@@ -113,6 +113,7 @@ export const useVideoEditorAssets = (filters?: {
     hasNextPage,
     isFetchingNextPage,
     deleteAsset: deleteAsset.mutate,
-    isDeleting: deleteAsset.isPending
+    isDeleting: deleteAsset.isPending,
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['video-editor-assets'] })
   };
 };

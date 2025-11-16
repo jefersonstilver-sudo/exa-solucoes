@@ -147,40 +147,55 @@ export default function VideoEditorPage() {
             onPanelChange={handlePanelChange} 
           />
           
-          {/* Expansion Panel */}
-          <ExpansionPanel 
-            activePanel={activePanel} 
-            onClose={() => setActivePanel(null)} 
-          />
-          
-          {/* Canvas + Timeline Area with Resizable Properties Panel */}
+          {/* Expansion Panel + Canvas/Timeline + Properties */}
           <ResizablePanelGroup direction="horizontal" className="flex-1">
-            {/* Canvas + Timeline */}
-            <ResizablePanel defaultSize={75} minSize={50}>
-              <div className="flex flex-col h-full overflow-hidden">
-                {/* Canvas */}
-                <div className="flex-1 overflow-hidden">
-                  <VideoCanvas />
-                </div>
+            {/* Expansion Panel (resizable) */}
+            {activePanel && (
+              <>
+                <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
+                  <ExpansionPanel 
+                    activePanel={activePanel} 
+                    onClose={() => setActivePanel(null)} 
+                  />
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+              </>
+            )}
+            
+            {/* Canvas + Timeline + Properties */}
+            <ResizablePanel defaultSize={activePanel ? 55 : 75} minSize={40}>
+              <ResizablePanelGroup direction="horizontal" className="h-full">
+                {/* Canvas + Timeline (resizable vertically) */}
+                <ResizablePanel defaultSize={75} minSize={50}>
+                  <ResizablePanelGroup direction="vertical" className="h-full">
+                    {/* Canvas */}
+                    <ResizablePanel defaultSize={65} minSize={30}>
+                      <VideoCanvas />
+                    </ResizablePanel>
+                    
+                    {/* Resizable Handle */}
+                    <ResizableHandle withHandle />
+                    
+                    {/* Timeline */}
+                    <ResizablePanel defaultSize={35} minSize={20} maxSize={50}>
+                      <Timeline />
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                </ResizablePanel>
                 
-                {/* Timeline */}
-                <div className="h-64 border-t">
-                  <Timeline />
-                </div>
-
-                {/* Playback Controls */}
-                <PlaybackControls />
-              </div>
-            </ResizablePanel>
-            
-            {/* Resizable Handle */}
-            <ResizableHandle withHandle />
-            
-            {/* Properties Panel */}
-            <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-              <PropertiesPanel />
+                {/* Resizable Handle */}
+                <ResizableHandle withHandle />
+                
+                {/* Properties Panel */}
+                <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+                  <PropertiesPanel />
+                </ResizablePanel>
+              </ResizablePanelGroup>
             </ResizablePanel>
           </ResizablePanelGroup>
+          
+          {/* Playback Controls (fixed at bottom) */}
+          <PlaybackControls />
         </div>
       </div>
     </ClientOnly>

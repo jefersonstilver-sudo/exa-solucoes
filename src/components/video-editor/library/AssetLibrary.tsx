@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Grid3x3, List, Film, Image as ImageIcon, Music } from 'lucide-react';
+import { Search, Grid3x3, List, Film, Image as ImageIcon, Music, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVideoEditorAssets } from '@/hooks/video-editor/useVideoEditorAssets';
 import { AssetType } from '@/types/videoEditor';
 import AssetCard from './AssetCard';
-import UploadZone from '../upload/UploadZone';
+import { CompactUploadButton } from '../upload/CompactUploadButton';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const AssetLibrary = () => {
@@ -21,7 +21,7 @@ const AssetLibrary = () => {
     type: activeTab === 'all' ? undefined : activeTab
   };
 
-  const { assets, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useVideoEditorAssets(filters);
+  const { assets, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useVideoEditorAssets(filters);
 
   // Infinite scroll
   useEffect(() => {
@@ -45,6 +45,21 @@ const AssetLibrary = () => {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-4 space-y-3 border-b">
+        {/* Upload Button */}
+        <div className="flex gap-2">
+          <CompactUploadButton
+            acceptedTypes={activeTab === 'all' ? ['video', 'image', 'audio'] : [activeTab]}
+            onUploadComplete={() => refetch()}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+
         {/* Search and View Toggle */}
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -96,13 +111,6 @@ const AssetLibrary = () => {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-      </div>
-
-      {/* Upload Zone */}
-      <div className="p-4 border-b">
-        <UploadZone
-          acceptedTypes={activeTab === 'all' ? ['video', 'image', 'audio'] : [activeTab]}
-        />
       </div>
 
       {/* Assets Grid/List */}
