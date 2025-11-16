@@ -3859,6 +3859,7 @@ export type Database = {
       users: {
         Row: {
           avatar_url: string | null
+          can_use_video_editor: boolean | null
           cpf: string | null
           data_criacao: string | null
           documento_estrangeiro: string | null
@@ -3880,9 +3881,12 @@ export type Database = {
           telefone: string | null
           terms_accepted_at: string | null
           tipo_documento: string | null
+          video_editor_enabled_at: string | null
+          video_editor_enabled_by: string | null
         }
         Insert: {
           avatar_url?: string | null
+          can_use_video_editor?: boolean | null
           cpf?: string | null
           data_criacao?: string | null
           documento_estrangeiro?: string | null
@@ -3904,9 +3908,12 @@ export type Database = {
           telefone?: string | null
           terms_accepted_at?: string | null
           tipo_documento?: string | null
+          video_editor_enabled_at?: string | null
+          video_editor_enabled_by?: string | null
         }
         Update: {
           avatar_url?: string | null
+          can_use_video_editor?: boolean | null
           cpf?: string | null
           data_criacao?: string | null
           documento_estrangeiro?: string | null
@@ -3928,6 +3935,308 @@ export type Database = {
           telefone?: string | null
           terms_accepted_at?: string | null
           tipo_documento?: string | null
+          video_editor_enabled_at?: string | null
+          video_editor_enabled_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_video_editor_enabled_by_fkey"
+            columns: ["video_editor_enabled_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_video_editor_enabled_by_fkey"
+            columns: ["video_editor_enabled_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_editor_access_logs: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          project_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          project_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          project_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_editor_access_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "video_editor_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_editor_access_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_editor_access_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_editor_assets: {
+        Row: {
+          asset_type: string
+          created_at: string | null
+          deleted_at: string | null
+          file_name: string
+          file_size_mb: number
+          file_url: string
+          folder: string | null
+          id: string
+          is_public: boolean | null
+          is_template: boolean | null
+          metadata: Json | null
+          mime_type: string
+          project_id: string | null
+          tags: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          asset_type: string
+          created_at?: string | null
+          deleted_at?: string | null
+          file_name: string
+          file_size_mb: number
+          file_url: string
+          folder?: string | null
+          id?: string
+          is_public?: boolean | null
+          is_template?: boolean | null
+          metadata?: Json | null
+          mime_type: string
+          project_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          file_name?: string
+          file_size_mb?: number
+          file_url?: string
+          folder?: string | null
+          id?: string
+          is_public?: boolean | null
+          is_template?: boolean | null
+          metadata?: Json | null
+          mime_type?: string
+          project_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_editor_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "video_editor_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_editor_assets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_editor_assets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_editor_projects: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          export_format: string | null
+          export_quality: string | null
+          export_resolution: string | null
+          file_size_mb: number | null
+          id: string
+          last_edited_at: string | null
+          output_url: string | null
+          parent_version_id: string | null
+          progress: number | null
+          project_data: Json
+          rendered_at: string | null
+          status: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          export_format?: string | null
+          export_quality?: string | null
+          export_resolution?: string | null
+          file_size_mb?: number | null
+          id?: string
+          last_edited_at?: string | null
+          output_url?: string | null
+          parent_version_id?: string | null
+          progress?: number | null
+          project_data?: Json
+          rendered_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          export_format?: string | null
+          export_quality?: string | null
+          export_resolution?: string | null
+          file_size_mb?: number | null
+          id?: string
+          last_edited_at?: string | null
+          output_url?: string | null
+          parent_version_id?: string | null
+          progress?: number | null
+          project_data?: Json
+          rendered_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_editor_projects_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "video_editor_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_editor_projects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_editor_projects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_editor_templates: {
+        Row: {
+          aspect_ratio: string | null
+          category: string | null
+          created_at: string | null
+          default_duration: number | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_premium: boolean | null
+          name: string
+          preview_url: string | null
+          sort_order: number | null
+          tags: string[] | null
+          template_data: Json
+          thumbnail_url: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          aspect_ratio?: string | null
+          category?: string | null
+          created_at?: string | null
+          default_duration?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_premium?: boolean | null
+          name: string
+          preview_url?: string | null
+          sort_order?: number | null
+          tags?: string[] | null
+          template_data?: Json
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          aspect_ratio?: string | null
+          category?: string | null
+          created_at?: string | null
+          default_duration?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_premium?: boolean | null
+          name?: string
+          preview_url?: string | null
+          sort_order?: number | null
+          tags?: string[] | null
+          template_data?: Json
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
         }
         Relationships: []
       }
