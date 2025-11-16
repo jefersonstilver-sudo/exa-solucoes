@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Video, HelpCircle, GraduationCap } from 'lucide-react';
+import { Video, HelpCircle, GraduationCap, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoSlotGrid } from '@/components/video-management/VideoSlotGrid';
 import { VideoSlot } from '@/types/videoManagement';
@@ -7,7 +7,6 @@ import { getOrderSecurityStatus } from '@/services/videoUploadSecurityService';
 import { Button } from '@/components/ui/button';
 import { videoScheduleManagementService } from '@/services/videoScheduleManagementService';
 import { TutorialVideoPopup } from '@/components/video-management/TutorialVideoPopup';
-import { VideoInstructionsModal } from '@/components/video-management/VideoInstructionsModal';
 interface VideoManagementCardProps {
   orderStatus: string;
   videoSlots: VideoSlot[];
@@ -38,6 +37,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
 }) => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [instructionsExpanded, setInstructionsExpanded] = useState(false);
   const security = getOrderSecurityStatus(orderStatus);
   const uploadAllowed = security.level === 'allowed' || security.level === 'active';
   const handleScheduleVideo = async (videoId: string, scheduleRules: any[]) => {
@@ -78,14 +78,6 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
             </div>
             <div className="flex items-center gap-1.5">
               <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 w-7 p-0 sm:h-8 sm:w-8" 
-                onClick={() => setShowInstructions(true)}
-              >
-                <HelpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-              </Button>
-              <Button 
                 variant="outline" 
                 size="sm" 
                 className="h-7 px-2 sm:h-8 sm:px-3 text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 text-blue-700" 
@@ -97,6 +89,45 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
             </div>
           </CardTitle>
         </CardHeader>
+        
+        {/* Instruções - Colapsável */}
+        {uploadAllowed && (
+          <div className="px-2 sm:px-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full h-7 justify-between text-[10px] sm:text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setInstructionsExpanded(!instructionsExpanded)}
+            >
+              <span className="flex items-center gap-1.5">
+                <HelpCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                Como funciona?
+              </span>
+              {instructionsExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </Button>
+            
+            {instructionsExpanded && (
+              <div className="pb-2 pt-1 space-y-1.5 text-[10px] sm:text-xs text-muted-foreground">
+                <p className="flex items-start gap-1.5">
+                  <span className="text-blue-600 mt-0.5">1.</span>
+                  <span>Envie até 4 vídeos com títulos descritivos</span>
+                </p>
+                <p className="flex items-start gap-1.5">
+                  <span className="text-yellow-600 mt-0.5">2.</span>
+                  <span>Defina qual será o vídeo principal</span>
+                </p>
+                <p className="flex items-start gap-1.5">
+                  <span className="text-purple-600 mt-0.5">3.</span>
+                  <span>Configure horários específicos (opcional)</span>
+                </p>
+                <p className="flex items-start gap-1.5">
+                  <span className="text-green-600 mt-0.5">4.</span>
+                  <span>Aguarde aprovação para ir ao ar</span>
+                </p>
+              </div>
+            )}
+          </div>
+        )}
         <CardContent className="p-2 sm:p-4 pt-2">
           {uploadAllowed ? (
             <VideoSlotGrid 
@@ -123,10 +154,6 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
         </CardContent>
       </Card>
       
-      <VideoInstructionsModal 
-        isOpen={showInstructions} 
-        onClose={() => setShowInstructions(false)} 
-      />
       <TutorialVideoPopup 
         isOpen={showTutorial} 
         onClose={() => setShowTutorial(false)} 

@@ -407,7 +407,12 @@ const OrderDetails = () => {
           />
         )}
 
-        {/* 1. PRIORIDADE: Gestão de Vídeos - SEMPRE VISÍVEL */}
+        {/* 1. Locais Selecionados - Colapsável e RETRAÍDO (antes da gestão de vídeos) */}
+        {hasLocationData && displayBuildingIds.length > 0 && (
+          <CollapsibleBuildingsSection listaPredios={displayBuildingIds} />
+        )}
+
+        {/* 2. PRIORIDADE: Gestão de Vídeos - SEMPRE VISÍVEL */}
         {contractStatus.isExpired ? (
           <div className="bg-muted/30 p-4 sm:p-6 rounded-lg border-2 border-dashed">
             <div className="text-center">
@@ -436,13 +441,13 @@ const OrderDetails = () => {
           />
         )}
 
-        {/* 2. Status do Contrato - Colapsável e RETRAÍDO */}
+        {/* 3. Status do Contrato - Colapsável e RETRAÍDO */}
         <CollapsibleContractStatus
           orderId={orderDetails.id}
           orderDetails={orderDetails}
         />
 
-        {/* 3. Resumo - Colapsável e RETRAÍDO */}
+        {/* 4. Resumo - Colapsável e RETRAÍDO */}
         <CollapsibleOrderSummary
           orderDetails={orderDetails}
           displayPanels={displayPanels}
@@ -451,13 +456,8 @@ const OrderDetails = () => {
           totalAudience={totalAudience}
         />
 
-        {/* 4. Compra - Colapsável e RETRAÍDO */}
+        {/* 5. Compra - Colapsável e RETRAÍDO */}
         <CollapsiblePurchaseInfo orderDetails={orderDetails} />
-
-        {/* 5. Locais - Colapsável e RETRAÍDO */}
-        {hasLocationData && displayBuildingIds.length > 0 && (
-          <CollapsibleBuildingsSection listaPredios={displayBuildingIds} />
-        )}
 
         {/* 6. Programação Semanal - Colapsável e RETRAÍDO */}
         {!contractStatus.isExpired && (
