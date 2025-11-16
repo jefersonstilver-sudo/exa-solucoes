@@ -1,21 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useVideoEditorProjects } from '@/hooks/video-editor/useVideoEditorProjects';
 import { useEditorState } from '@/hooks/video-editor/useEditorState';
 import { VideoCanvas } from '@/components/video-editor/canvas/VideoCanvas';
 import { Timeline } from '@/components/video-editor/timeline/Timeline';
-import { EditorSidebar } from '@/components/video-editor/sidebar/EditorSidebar';
+import { VerticalNavBar } from '@/components/video-editor/navigation/VerticalNavBar';
+import { ExpansionPanel } from '@/components/video-editor/navigation/ExpansionPanel';
 import { PropertiesPanel } from '@/components/video-editor/properties/PropertiesPanel';
 import { PlaybackControls } from '@/components/video-editor/controls/PlaybackControls';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Download, Undo, Redo } from 'lucide-react';
 import { toast } from 'sonner';
 import { ClientOnly } from '@/components/ui/client-only';
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from '@/components/ui/resizable';
 
 export default function VideoEditorPage() {
   const { projectId } = useParams();
@@ -32,6 +28,12 @@ export default function VideoEditorPage() {
     canUndo,
     canRedo,
   } = useEditorState();
+
+  const [activePanel, setActivePanel] = useState<string | null>('media');
+
+  const handlePanelChange = (panelId: string | null) => {
+    setActivePanel(panelId);
+  };
 
   // Load project data
   useEffect(() => {
@@ -137,42 +139,39 @@ export default function VideoEditorPage() {
         </div>
 
         {/* Main Editor Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <ResizablePanelGroup direction="horizontal" className="flex-1">
-            {/* Sidebar */}
-            <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
-              <EditorSidebar />
-            </ResizablePanel>
+        <div className="flex-1 flex overflow-hidden">
+          {/* Vertical Nav Bar */}
+          <VerticalNavBar 
+            activePanel={activePanel} 
+            onPanelChange={handlePanelChange} 
+          />
+          
+          {/* Expansion Panel */}
+          <ExpansionPanel 
+            activePanel={activePanel} 
+            onClose={() => setActivePanel(null)} 
+          />
+          
+          {/* Canvas + Timeline Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Canvas */}
+            <div className="flex-1 overflow-hidden">
+              <VideoCanvas />
+            </div>
+            
+            {/* Timeline */}
+            <div className="h-64 border-t">
+              <Timeline />
+            </div>
 
-            <ResizableHandle withHandle />
-
-            {/* Center: Canvas + Timeline */}
-            <ResizablePanel defaultSize={60} minSize={40}>
-              <ResizablePanelGroup direction="vertical">
-                {/* Canvas */}
-                <ResizablePanel defaultSize={70} minSize={40}>
-                  <VideoCanvas />
-                </ResizablePanel>
-
-                <ResizableHandle withHandle />
-
-                {/* Timeline */}
-                <ResizablePanel defaultSize={30} minSize={20}>
-                  <Timeline />
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            {/* Properties Panel */}
-            <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
-              <PropertiesPanel />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-
-          {/* Playback Controls */}
-          <PlaybackControls />
+            {/* Playback Controls */}
+            <PlaybackControls />
+          </div>
+          
+          {/* Properties Panel */}
+          <div className="w-[300px]">
+            <PropertiesPanel />
+          </div>
         </div>
       </div>
     </ClientOnly>
