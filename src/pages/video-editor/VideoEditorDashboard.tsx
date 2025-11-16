@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Film, Plus, Clock, TrendingUp } from 'lucide-react';
@@ -8,11 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { useEditorAccess } from '@/hooks/video-editor/useEditorAccess';
 import { useVideoEditorProjects } from '@/hooks/video-editor/useVideoEditorProjects';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CreateProjectDialog } from '@/components/video-editor/dialogs/CreateProjectDialog';
 
 const VideoEditorDashboard = () => {
   const navigate = useNavigate();
   const { hasAccess, isLoading: accessLoading, logAccess } = useEditorAccess();
   const { projects, isLoading: projectsLoading } = useVideoEditorProjects();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Check access and redirect if not authorized
   useEffect(() => {
@@ -68,7 +70,7 @@ const VideoEditorDashboard = () => {
           </div>
           <Button
             size="lg"
-            onClick={() => navigate('/anunciante/editor-video/novo')}
+            onClick={() => setCreateDialogOpen(true)}
             className="gap-2"
           >
             <Plus className="h-5 w-5" />
@@ -210,6 +212,9 @@ const VideoEditorDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Create Project Dialog */}
+      <CreateProjectDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
     </div>
   );
 };
