@@ -8,6 +8,7 @@ import { BuildingCard } from './BuildingCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SelectedBuildingsSectionProps {
   listaPredios: string[];
