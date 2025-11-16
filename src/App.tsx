@@ -52,6 +52,7 @@ import ProfileSettings from './pages/ProfileSettings';
 // Video Editor Pages
 import VideoEditorDashboard from './pages/video-editor/VideoEditorDashboard';
 import VideoEditorAccessControl from './pages/video-editor/VideoEditorAccessControl';
+import VideoEditorPage from './pages/video-editor/VideoEditorPage';
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
@@ -402,8 +403,7 @@ const AppContent = () => {
               </Suspense>
             } />
             <Route path="editor-video" element={<VideoEditorDashboard />} />
-            <Route path="editor-video/novo" element={<div>Editor em construção</div>} />
-            <Route path="editor-video/:projectId" element={<div>Editor em construção</div>} />
+            <Route path="editor-video/:projectId" element={<VideoEditorPage />} />
             <Route path="perfil" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando perfil..." />}>
                 <AdvertiserSettings />
