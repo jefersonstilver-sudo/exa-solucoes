@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Film, Users, TrendingUp, Search, Shield } from 'lucide-react';
+import { Film, Users, TrendingUp, Search, Shield, PlayCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ import { useManageEditorAccess } from '@/hooks/video-editor/useEditorAccess';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const VideoEditorAccessControl = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'enabled' | 'disabled'>('all');
   const { users, isLoading, toggleAccess, isTogglingAccess, stats } = useManageEditorAccess();
@@ -52,14 +54,24 @@ const VideoEditorAccessControl = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center gap-3">
-            <Shield className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-4xl font-bold">Controle de Acesso</h1>
-              <p className="text-muted-foreground mt-1">
-                Gerenciar usuários do Editor de Vídeos Beta
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-4xl font-bold">Controle de Acesso</h1>
+                <p className="text-muted-foreground mt-1">
+                  Gerenciar usuários do Editor de Vídeos Beta
+                </p>
+              </div>
             </div>
+            <Button
+              onClick={() => navigate('/anunciante/editor-video')}
+              size="lg"
+              className="gap-2"
+            >
+              <PlayCircle className="h-5 w-5" />
+              Acessar Editor
+            </Button>
           </div>
         </motion.div>
 
