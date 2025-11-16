@@ -66,27 +66,25 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   return <>
       <Card className="shadow-sm">
         <CardHeader className="p-2 sm:p-4 pb-2">
-          <CardTitle className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+          <CardTitle className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               <Video className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-              <div>
+              <div className="flex-1 min-w-0">
                 <span className="text-sm sm:text-lg font-semibold">Gestão de Vídeos</span>
                 <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                   {uploadAllowed ? "Até 4 vídeos (máx. 15s, 100MB)" : "Upload disponível apenas para pedidos pagos"}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-7 px-2 sm:h-8 sm:px-3 text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 text-blue-700" 
-                onClick={() => setShowTutorial(true)}
-              >
-                <GraduationCap className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1" />
-                <span className="hidden xs:inline">Tutorial</span>
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-7 px-2 sm:h-8 sm:px-3 text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 text-blue-700 flex-shrink-0" 
+              onClick={() => setShowTutorial(true)}
+            >
+              <GraduationCap className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1" />
+              <span className="hidden xs:inline">Tutorial</span>
+            </Button>
           </CardTitle>
         </CardHeader>
         
