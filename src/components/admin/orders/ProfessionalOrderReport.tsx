@@ -1,6 +1,8 @@
 import React from 'react';
-import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield } from 'lucide-react';
+import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw } from 'lucide-react';
 import exaLogo from '@/assets/exa-logo.png';
+import { Button } from '@/components/ui/button';
+import { useFixAuditData } from '@/hooks/admin/useFixAuditData';
 
 interface OrderData {
   id: string;
@@ -61,6 +63,13 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   console.log('📋 [PROFESSIONAL REPORT] Panels recebidos:', panels?.length || 0);
   console.log('📋 [PROFESSIONAL REPORT] Panels data:', panels);
   console.log('📋 [PROFESSIONAL REPORT] Videos recebidos:', videos?.length || 0);
+  
+  const { fixOrderAuditData, isFixing } = useFixAuditData();
+  
+  // Verificar se os dados de auditoria estão incompletos
+  const hasIncompleteAuditData = !order.compliance_data || 
+    !order.compliance_data.payer || 
+    order.log_pagamento?.pixData?.mpResponse?.status === 'pending';
   
   // Ordenar vídeos: em exibição primeiro
   const sortedVideos = [...videos].sort((a, b) => {
@@ -380,6 +389,44 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                       </div>
                     )}
                   </div>
+                  
+                  {/* Alerta de dados incompletos */}
+                  {hasIncompleteAuditData && (
+                    <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0">
+                          <Clock className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-semibold text-yellow-900 mb-1">
+                            Dados de Auditoria Incompletos
+                          </h4>
+                          <p className="text-xs text-yellow-700 mb-3">
+                            Este pedido foi criado antes da implementação do sistema de auditoria completo. 
+                            Clique no botão abaixo para buscar e atualizar os dados do Mercado Pago.
+                          </p>
+                          <Button
+                            size="sm"
+                            onClick={() => fixOrderAuditData(order.id)}
+                            disabled={isFixing}
+                            className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                          >
+                            {isFixing ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                Atualizando...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Atualizar Dados de Auditoria
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
