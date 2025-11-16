@@ -177,3 +177,6 @@ verify_jwt = true
 [functions.desconectar-painel]
 verify_jwt = true
 
+[functions.fix-audit-data]
+verify_jwt = false
+

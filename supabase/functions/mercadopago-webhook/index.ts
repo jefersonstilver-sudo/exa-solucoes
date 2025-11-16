@@ -94,6 +94,7 @@ serve(async (req) => {
     
     console.log('💳 [WEBHOOK-PIX-PROD] Status do pagamento:', payment.status);
     console.log('📋 [WEBHOOK-PIX-PROD] External reference:', payment.external_reference);
+    console.log('💳 [WEBHOOK-PIX-PROD] Dados completos do pagamento:', JSON.stringify(payment, null, 2));
 
     // Verificar se pagamento foi aprovado
     if (payment.status !== 'approved') {
@@ -105,7 +106,7 @@ serve(async (req) => {
 
     // Buscar pedido por external_reference (pedidoId)
     const pedidoId = payment.external_reference;
-
+    
     if (!pedidoId) {
       throw new Error('external_reference (pedidoId) não encontrado no pagamento');
     }
@@ -141,26 +142,101 @@ serve(async (req) => {
       });
     }
 
-    // Atualizar pedido para pago_pendente_video
-    console.log('✅ [WEBHOOK-PIX-PROD] Atualizando pedido para PAGO');
+    // ✅ NOVO: Extrair dados de auditoria completos
+    const auditData = {
+      payer: {
+        id: payment.payer?.id || null,
+        email: payment.payer?.email || null,
+        first_name: payment.payer?.first_name || null,
+        last_name: payment.payer?.last_name || null,
+        phone: payment.payer?.phone || null,
+        identification: {
+          type: payment.payer?.identification?.type || null,
+          number: payment.payer?.identification?.number || null
+        },
+        entity_type: payment.payer?.entity_type || null
+      },
+      payment_method: {
+        id: payment.payment_method_id || null,
+        type: payment.payment_method?.type || null,
+        issuer_id: payment.issuer_id || null
+      },
+      transaction_details: {
+        financial_institution: payment.transaction_details?.financial_institution || null,
+        net_received_amount: payment.transaction_details?.net_received_amount || 0,
+        total_paid_amount: payment.transaction_details?.total_paid_amount || 0,
+        overpaid_amount: payment.transaction_details?.overpaid_amount || 0,
+        installment_amount: payment.transaction_details?.installment_amount || 0
+      },
+      collector: {
+        id: payment.collector_id || null,
+        email: payment.collector?.email || null,
+        nickname: payment.collector?.nickname || null
+      },
+      dates: {
+        created: payment.date_created,
+        approved: payment.date_approved,
+        last_updated: payment.date_last_updated
+      },
+      status: {
+        current: payment.status,
+        detail: payment.status_detail,
+        reason: payment.status_detail || null
+      },
+      amounts: {
+        transaction_amount: payment.transaction_amount,
+        currency_id: payment.currency_id,
+        taxes_amount: payment.taxes_amount || 0
+      },
+      references: {
+        external_reference: payment.external_reference,
+        payment_id: payment.id,
+        operation_type: payment.operation_type
+      },
+      security: {
+        processing_mode: payment.processing_mode,
+        merchant_account_id: payment.merchant_account_id || null
+      }
+    };
 
+    console.log('✅ [WEBHOOK-PIX-PROD] Atualizando pedido para PAGO com dados de auditoria completos');
+
+    // ✅ ATUALIZAR log_pagamento com mpResponse correto e dados completos
     const updatedLogPagamento = {
       ...(pedido.log_pagamento || {}),
       pixData: {
         ...(pedido.log_pagamento?.pixData || {}),
         status: 'approved',
-        approvedAt: new Date().toISOString(),
-        transactionAmount: payment.transaction_amount
+        approvedAt: payment.date_approved || new Date().toISOString(),
+        transactionAmount: payment.transaction_amount,
+        // ✅ CORRIGIR: mpResponse completo e atualizado
+        mpResponse: {
+          id: payment.id,
+          status: payment.status,
+          status_detail: payment.status_detail,
+          currency_id: payment.currency_id,
+          payment_type_id: payment.payment_type_id,
+          payment_method_id: payment.payment_method_id
+        },
+        transactionDetails: auditData.transaction_details,
+        payer: auditData.payer
       },
       payment_status: 'approved',
-      approved_at: new Date().toISOString()
+      approved_at: payment.date_approved || new Date().toISOString(),
+      processing_metadata: {
+        webhook_received_at: new Date().toISOString(),
+        payment_fetched_at: new Date().toISOString(),
+        processing_mode: payment.processing_mode
+      }
     };
 
     const { error: updateError } = await supabase
       .from('pedidos')
       .update({
         status: 'pago_pendente_video',
-        log_pagamento: updatedLogPagamento
+        log_pagamento: updatedLogPagamento,
+        compliance_data: auditData,
+        metodo_pagamento: payment.payment_method_id
       })
       .eq('id', pedidoId);
 
