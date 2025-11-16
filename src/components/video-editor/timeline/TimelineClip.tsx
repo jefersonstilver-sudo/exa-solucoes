@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useEditorState } from '@/hooks/video-editor/useEditorState';
 import { TimelineLayer } from '@/types/videoEditor';
 import { Film, Image, Type, Square } from 'lucide-react';
