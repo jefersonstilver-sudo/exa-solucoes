@@ -508,8 +508,7 @@ const OrderDetails = () => {
         suggestions={conflictModal.suggestions}
         newVideoName={conflictModal.newVideoName}
       />
-        </div>
-      </div>
+    </div>
     </>
   );
 };
