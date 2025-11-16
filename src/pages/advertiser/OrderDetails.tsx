@@ -387,7 +387,9 @@ const OrderDetails = () => {
 
   return (
     <>
-      <div className="space-y-4 md:space-y-6 px-4 md:px-0 py-4">
+      {/* Mobile: Container minimalista com max-width */}
+      <div className="min-h-screen bg-background">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 md:space-y-6">
         {/* Header */}
         <OrderHeader orderId={orderDetails.id} />
 
@@ -506,6 +508,8 @@ const OrderDetails = () => {
         suggestions={conflictModal.suggestions}
         newVideoName={conflictModal.newVideoName}
       />
+        </div>
+      </div>
     </>
   );
 };
