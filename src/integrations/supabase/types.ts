@@ -3245,6 +3245,36 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          company_name: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       provider_benefits: {
         Row: {
           access_token: string

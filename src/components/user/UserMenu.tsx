@@ -394,14 +394,7 @@ const UserMenu = () => {
                               <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-50 text-gray-900 hover:text-gray-700 focus:bg-gray-50 focus:text-gray-700">
                                 <Link to="/configuracoes" className="flex items-center">
                                   <Settings className="mr-3 h-5 w-5 text-gray-600" />
-                                  <span className="font-medium">Configurações da Conta</span>
-                                </Link>
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-50 text-gray-900 hover:text-gray-700 focus:bg-gray-50 focus:text-gray-700">
-                                <Link to="/alterar-senha" className="flex items-center">
-                                  <Lock className="mr-3 h-5 w-5 text-gray-600" />
-                                  <span className="font-medium">Alterar Senha</span>
+                                  <span className="font-medium">Meu Perfil</span>
                                 </Link>
                               </DropdownMenuItem>
                               
