@@ -12,14 +12,14 @@ export const PropertiesPanel = () => {
 
   if (!selectedLayer) {
     return (
-      <div className="w-80 border-l bg-muted/30 flex items-center justify-center">
+      <div className="w-full h-full border-l bg-muted/30 flex items-center justify-center">
         <p className="text-sm text-muted-foreground">Select a layer to edit</p>
       </div>
     );
   }
 
   return (
-    <div className="w-80 border-l bg-background overflow-y-auto">
+    <div className="w-full h-full border-l bg-background overflow-y-auto">
       <div className="p-4 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
