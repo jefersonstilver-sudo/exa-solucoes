@@ -457,6 +457,7 @@ export const CompanyBrandSection: React.FC = () => {
           <CompanyTermsCheckbox 
             accepted={termsAccepted}
             onAcceptedChange={setTermsAccepted}
+            disabled={termsAccepted}
           />
         </div>
 
