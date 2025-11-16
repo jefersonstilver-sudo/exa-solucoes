@@ -101,14 +101,15 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
   );
 
   return (
-    <Card className={className}>
-      <CardHeader>
+    <Card className={cn("shadow-sm", className)}>
+      <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleTrigger asChild>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between cursor-pointer hover:bg-gray-50 rounded p-2 -m-2 gap-2">
-              <CardTitle className="flex items-center text-base sm:text-lg">
-                <Building className="h-5 w-5 mr-2 text-blue-600" />
-                Locais Selecionados
+            <div className="flex items-center justify-between cursor-pointer hover:bg-muted/30 active:bg-muted/50 rounded p-2 -m-2">
+              <CardTitle className="flex items-center text-sm sm:text-base md:text-lg">
+                <Building className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600" />
+                <span className="hidden xs:inline">Locais Selecionados</span>
+                <span className="xs:hidden">Locais</span>
                 {isExpanded ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
               </CardTitle>
               <div className="text-sm text-gray-600 font-normal">

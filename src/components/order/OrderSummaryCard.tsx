@@ -35,38 +35,38 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Resumo do Pedido</CardTitle>
+    <Card className="shadow-sm">
+      <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
+        <CardTitle className="text-sm sm:text-base md:text-lg">Resumo do Pedido</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-          <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-            <Calendar className="h-8 w-8 text-purple-600 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-gray-600">Duração do Contrato</p>
-              <p className="text-xl font-bold text-gray-900">
+      <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+        <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+          <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-purple-50 rounded-lg">
+            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-medium text-purple-600/80">Duração</p>
+              <p className="text-sm sm:text-base md:text-lg font-bold text-purple-900 truncate">
                 {orderDetails.plano_meses} {orderDetails.plano_meses === 1 ? 'mês' : 'meses'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
-            <Calendar className="h-8 w-8 text-orange-600 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-gray-600">Locais Contratados</p>
-              <p className="text-xl font-bold text-gray-900">
+          <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-orange-50 rounded-lg">
+            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-orange-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-medium text-orange-600/80">Locais</p>
+              <p className="text-sm sm:text-base md:text-lg font-bold text-orange-900 truncate">
                 {displayPanels.length} {displayPanels.length === 1 ? 'local' : 'locais'}
               </p>
             </div>
           </div>
           
           {totalScreens > 0 && (
-            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-              <Monitor className="h-8 w-8 text-blue-600 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total de Telas</p>
-                <p className="text-xl font-bold text-gray-900">
+            <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-blue-50 rounded-lg">
+              <Monitor className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-blue-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs font-medium text-blue-600/80">Telas</p>
+                <p className="text-sm sm:text-base md:text-lg font-bold text-blue-900 truncate">
                   {totalScreens} {totalScreens === 1 ? 'tela' : 'telas'}
                 </p>
               </div>
@@ -74,12 +74,12 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
           )}
           
           {totalAudience > 0 && (
-            <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-              <Users className="h-8 w-8 text-green-600 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pessoas Impactadas</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {totalAudience.toLocaleString()}<span className="text-sm font-normal">/mês</span>
+            <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-green-50 rounded-lg">
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-green-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs font-medium text-green-600/80">Pessoas</p>
+                <p className="text-sm sm:text-base md:text-lg font-bold text-green-900 truncate">
+                  {totalAudience.toLocaleString()}<span className="text-[10px] sm:text-xs font-normal">/mês</span>
                 </p>
               </div>
             </div>
