@@ -104,10 +104,10 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
     currentDay: new Date().getDay()
   });
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <VideoSlotStatus videoSlots={videoSlots} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
         {videoSlots.map((slot) => (
           <VideoSlotCard
             key={slot.slot_position}

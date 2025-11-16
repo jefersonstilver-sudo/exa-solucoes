@@ -45,8 +45,11 @@ const OrderDetails: React.FC = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 flex justify-center items-center min-h-[50vh]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">Carregando detalhes...</p>
+          </div>
         </div>
       </Layout>
     );
@@ -55,11 +58,11 @@ const OrderDetails: React.FC = () => {
   if (!orderDetails) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="flex items-center justify-center py-8">
-              <AlertTriangle className="h-8 w-8 text-red-500 mr-3" />
-              <span>Pedido não encontrado</span>
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+          <Card className="mx-2 sm:mx-0">
+            <CardContent className="flex flex-col items-center justify-center py-8 sm:py-12 px-4">
+              <AlertTriangle className="h-10 w-10 sm:h-12 sm:w-12 text-red-500 mb-3" />
+              <span className="text-base sm:text-lg font-medium">Pedido não encontrado</span>
             </CardContent>
           </Card>
         </div>
@@ -71,8 +74,10 @@ const OrderDetails: React.FC = () => {
   if (orderDetails.status === 'bloqueado') {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-2xl font-bold mb-6">Detalhes do Pedido #{orderDetails.id.slice(-8)}</h1>
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+          <h1 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-6 px-2 sm:px-0">
+            Pedido #{orderDetails.id.slice(-8)}
+          </h1>
           <BlockedOrderAlert 
             reason={(orderDetails as any).blocked_reason} 
             blockedAt={(orderDetails as any).blocked_at} 
@@ -84,27 +89,27 @@ const OrderDetails: React.FC = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Header do pedido */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Package className="h-6 w-6 mr-2" />
-              Detalhes do Pedido #{orderDetails.id.slice(-8)}
+      <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-8 space-y-3 sm:space-y-6">
+        {/* Header do pedido - Mobile Otimizado */}
+        <Card className="shadow-sm">
+          <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-4">
+            <CardTitle className="flex items-center text-base sm:text-xl">
+              <Package className="h-5 w-5 sm:h-6 sm:w-6 mr-2 flex-shrink-0" />
+              <span className="truncate">Pedido #{orderDetails.id.slice(-8)}</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Status</p>
-              <p className="font-medium">{orderDetails.status}</p>
+          <CardContent className="p-3 sm:p-6 pt-0 grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
+            <div className="p-2 sm:p-3 bg-muted/30 rounded-lg">
+              <p className="text-[10px] sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">Status</p>
+              <p className="font-semibold text-sm sm:text-base truncate">{orderDetails.status}</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Valor Total</p>
-              <p className="font-medium">R$ {orderDetails.valor_total?.toFixed(2)}</p>
+            <div className="p-2 sm:p-3 bg-muted/30 rounded-lg">
+              <p className="text-[10px] sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">Valor Total</p>
+              <p className="font-semibold text-sm sm:text-base">R$ {orderDetails.valor_total?.toFixed(2)}</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Data do Pedido</p>
-              <p className="font-medium">
+            <div className="p-2 sm:p-3 bg-muted/30 rounded-lg col-span-2 md:col-span-1">
+              <p className="text-[10px] sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">Data do Pedido</p>
+              <p className="font-semibold text-sm sm:text-base">
                 {new Date(orderDetails.created_at).toLocaleDateString('pt-BR')}
               </p>
             </div>

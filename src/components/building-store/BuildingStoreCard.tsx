@@ -102,73 +102,47 @@ const BuildingStoreCard: React.FC<BuildingStoreCardProps> = ({
   }
 
   if (isMobile) {
-    // Layout mobile: Card vertical compacto com título no topo
+    // Layout mobile: Card vertical compacto otimizado para touch
     return (
       <Card 
-        id={`building-${building.id}`} 
-        className="overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-0 group relative" 
-        onMouseEnter={() => setHoveredBuilding?.(building.id)} 
-        onMouseLeave={() => setHoveredBuilding?.(null)} 
+        id={`building-${building.id}`}
+        className="overflow-hidden bg-white shadow-md hover:shadow-xl active:shadow-sm transition-all duration-200 border-0 cursor-pointer touch-manipulation flex flex-col h-full"
         onClick={() => setSelectedBuildingId?.(building.id)}
       >
-        {/* Banner PRÉ-VENDA no topo direito do card */}
+        {/* Banner PRÉ-VENDA - Mobile */}
         {(building.status?.toLowerCase() === 'instalação' || building.status?.toLowerCase() === 'instalacao') && (
-          <div className="absolute top-3 right-3 z-30 transform rotate-12">
-            <div className="bg-blue-600 text-white px-3 py-1.5 text-xs font-bold tracking-wide shadow-xl rounded-lg border-2 border-white">
+          <div className="absolute top-1.5 right-1.5 z-30">
+            <div className="bg-blue-600 text-white px-1.5 py-0.5 text-[9px] font-bold tracking-wide shadow-lg rounded border border-white">
               PRÉ-VENDA
             </div>
           </div>
         )}
-        <CardContent className="p-0 relative">
-          <div className="flex flex-col">
-            {/* Header com Nome e Localização - PRIMEIRO ELEMENTO */}
-            <div className="p-4 pb-2">
+        <CardContent className="p-0 flex flex-col h-full">
+          {/* Imagem no topo - Aspect ratio 16:10 */}
+          <div className="relative w-full aspect-[16/10] flex-shrink-0">
+            <BuildingCardImage building={building} mode="fill" />
+            
+          {/* Badge premium */}
+          {building.padrao_publico === 'alto' && (
+            <div className="absolute bottom-1.5 right-1.5 z-10">
+              <div className="bg-amber-500 text-white px-1.5 py-0.5 rounded text-[10px] font-semibold border border-amber-600 shadow-sm">
+                ⭐ Premium
+              </div>
+            </div>
+          )}
+          </div>
+
+          {/* Conteúdo abaixo - Compacto e organizado */}
+          <div className="flex-1 p-3 flex flex-col min-h-0">
+            <div className="space-y-2 flex-1 min-h-0">
               <BuildingCardHeader building={building} businessLocation={businessLocation} />
+              <BuildingCardMetrics building={building} />
+              <BuildingCardAmenities building={building} />
             </div>
 
-            {/* Imagem Principal - Mobile: Menor altura */}
-            <div className="relative overflow-hidden h-48 mx-4 rounded-lg">
-              <BuildingCardImage building={building} />
-              
-            {/* Badge premium */}
-            {building.padrao_publico === 'alto' && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.3 }}
-                className="absolute bottom-2 right-2 z-10"
-              >
-                <div className="bg-amber-500 text-white px-2 py-1 rounded-md text-xs font-semibold border border-amber-600">
-                  ⭐ Premium
-                </div>
-              </motion.div>
-            )}
-
-              
-            </div>
-
-            {/* Informações - Mobile: Layout compacto */}
-            <div className="p-4 pt-3 space-y-3">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                {/* Métricas Principais */}
-                <div className="mb-3">
-                  <BuildingCardMetrics building={building} />
-                </div>
-
-                {/* Amenities */}
-                <div className="mb-3">
-                  <BuildingCardAmenities building={building} />
-                </div>
-
-                {/* Preço e Ações */}
-                <div className="mt-4">
-                  <BuildingCardActions building={building} />
-                </div>
-              </motion.div>
+            {/* Ações - sempre no final */}
+            <div className="mt-2 pt-2 border-t">
+              <BuildingCardActions building={building} />
             </div>
           </div>
         </CardContent>
