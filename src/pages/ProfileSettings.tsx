@@ -7,13 +7,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, User, Mail, Phone, Building2, Lock, ArrowLeft, Save } from 'lucide-react';
+import { Loader2, User, Mail, Phone, Building2, Lock, ArrowLeft, Save, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { z } from 'zod';
+
+// Validation schemas
+const profileSchema = z.object({
+  full_name: z.string().trim().max(100, 'Nome muito longo').optional(),
+  phone: z.string().trim().max(20, 'Telefone inválido').optional(),
+  company_name: z.string().trim().max(100, 'Nome da empresa muito longo').optional(),
+});
 
 const ProfileSettings = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile, loading, updateProfile, updatePassword } = useProfile();
+  const { profile, loading, updateProfile } = useProfile();
 
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
@@ -21,13 +30,8 @@ const ProfileSettings = () => {
     company_name: profile?.company_name || '',
   });
 
-  const [passwordData, setPasswordData] = useState({
-    newPassword: '',
-    confirmPassword: '',
-  });
-
   const [saving, setSaving] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
+  const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
 
   React.useEffect(() => {
     if (profile) {
@@ -41,6 +45,17 @@ const ProfileSettings = () => {
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate input
+    try {
+      profileSchema.parse(formData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        return;
+      }
+    }
+
     setSaving(true);
 
     try {
@@ -50,26 +65,27 @@ const ProfileSettings = () => {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('As senhas não coincidem');
+  const handlePasswordResetRequest = async () => {
+    if (!user?.email) {
+      toast.error('Email não encontrado');
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
-      return;
-    }
-
-    setChangingPassword(true);
+    setSendingPasswordReset(true);
 
     try {
-      await updatePassword(passwordData.newPassword);
-      setPasswordData({ newPassword: '', confirmPassword: '' });
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast.success('Link de redefinição enviado para seu email!');
+    } catch (error) {
+      console.error('Erro ao solicitar redefinição:', error);
+      toast.error('Erro ao enviar email de redefinição');
     } finally {
-      setChangingPassword(false);
+      setSendingPasswordReset(false);
     }
   };
 
@@ -205,77 +221,51 @@ const ProfileSettings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lock className="h-5 w-5 text-primary" />
-                Segurança
+                Segurança da Conta
               </CardTitle>
               <CardDescription>
-                Altere sua senha para manter sua conta segura
+                Redefina sua senha através de um link seguro enviado por email
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handlePasswordChange} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">Nova Senha</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={passwordData.newPassword}
-                    onChange={(e) =>
-                      setPasswordData({
-                        ...passwordData,
-                        newPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Digite sua nova senha"
-                    minLength={6}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) =>
-                      setPasswordData({
-                        ...passwordData,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Confirme sua nova senha"
-                    minLength={6}
-                  />
-                </div>
-
+              <div className="space-y-4">
                 <div className="bg-muted/50 p-4 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Requisitos da senha:</strong>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Por questões de segurança, você receberá um link por email para redefinir sua senha.
+                    Este link é válido por 1 hora.
                   </p>
-                  <ul className="text-sm text-muted-foreground mt-2 space-y-1">
-                    <li>• Mínimo de 6 caracteres</li>
-                    <li>• Combine letras, números e símbolos para maior segurança</li>
-                  </ul>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{user?.email}</span>
+                  </div>
                 </div>
 
                 <Button
-                  type="submit"
+                  onClick={handlePasswordResetRequest}
                   className="w-full"
-                  disabled={changingPassword}
+                  disabled={sendingPasswordReset}
                   variant="secondary"
                 >
-                  {changingPassword ? (
+                  {sendingPasswordReset ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Alterando Senha...
+                      Enviando...
                     </>
                   ) : (
                     <>
-                      <Lock className="mr-2 h-4 w-4" />
-                      Alterar Senha
+                      <Send className="mr-2 h-4 w-4" />
+                      Enviar Link de Redefinição
                     </>
                   )}
                 </Button>
-              </form>
+
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-900">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    <strong>Dica de segurança:</strong> Escolha uma senha forte com pelo menos 8 caracteres,
+                    incluindo letras maiúsculas, minúsculas, números e símbolos.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -287,7 +277,9 @@ const ProfileSettings = () => {
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center py-2">
                 <span className="text-sm text-muted-foreground">ID da Conta</span>
-                <span className="text-sm font-mono">{user?.id.substring(0, 8)}...</span>
+                <span className="text-sm font-mono bg-muted/50 px-3 py-1 rounded">
+                  {user?.id.substring(0, 5)}***
+                </span>
               </div>
               <Separator />
               <div className="flex justify-between items-center py-2">
