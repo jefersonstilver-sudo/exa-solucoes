@@ -152,7 +152,7 @@ export default function VideoEditorPage() {
             {/* Expansion Panel (resizable) */}
             {activePanel && (
               <>
-                <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
+                <ResizablePanel defaultSize={22} minSize={15} maxSize={35}>
                   <ExpansionPanel 
                     activePanel={activePanel} 
                     onClose={() => setActivePanel(null)} 
@@ -187,7 +187,7 @@ export default function VideoEditorPage() {
                 <ResizableHandle withHandle />
                 
                 {/* Properties Panel */}
-                <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+                <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
                   <PropertiesPanel />
                 </ResizablePanel>
               </ResizablePanelGroup>

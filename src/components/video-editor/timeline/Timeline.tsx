@@ -36,9 +36,9 @@ export const Timeline = () => {
   return (
     <div className="flex flex-col h-full bg-background border-t">
       {/* Timeline Controls */}
-      <div className="flex items-center justify-between p-2 border-b">
+      <div className="flex items-center justify-between p-3 border-b bg-muted/30">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Timeline</span>
+          <span className="text-sm font-semibold">Timeline</span>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -67,26 +67,16 @@ export const Timeline = () => {
           {/* Track Labels */}
           <div className="w-32 flex-shrink-0 border-r bg-muted/30">
             <div className="h-12 border-b" />
-            {videoLayers.length > 0 && (
-              <div className="h-16 border-b flex items-center px-3">
-                <span className="text-sm font-medium">Video</span>
-              </div>
-            )}
-            {imageLayers.length > 0 && (
-              <div className="h-16 border-b flex items-center px-3">
-                <span className="text-sm font-medium">Images</span>
-              </div>
-            )}
-            {textLayers.length > 0 && (
-              <div className="h-16 border-b flex items-center px-3">
-                <span className="text-sm font-medium">Text</span>
-              </div>
-            )}
-            {shapeLayers.length > 0 && (
-              <div className="h-16 border-b flex items-center px-3">
-                <span className="text-sm font-medium">Shapes</span>
-              </div>
-            )}
+            {/* Always show primary tracks */}
+            <div className="h-16 border-b flex items-center px-3">
+              <span className="text-sm font-medium">Video</span>
+            </div>
+            <div className="h-16 border-b flex items-center px-3">
+              <span className="text-sm font-medium">Images</span>
+            </div>
+            <div className="h-16 border-b flex items-center px-3">
+              <span className="text-sm font-medium">Text</span>
+            </div>
           </div>
 
           {/* Timeline Tracks */}
@@ -102,35 +92,22 @@ export const Timeline = () => {
               pixelsPerSecond={pixelsPerSecond} 
             />
 
-            {/* Tracks */}
-            {videoLayers.length > 0 && (
-              <TimelineTrack
-                layers={videoLayers}
-                trackType="video"
-                pixelsPerSecond={pixelsPerSecond}
-              />
-            )}
-            {imageLayers.length > 0 && (
-              <TimelineTrack
-                layers={imageLayers}
-                trackType="image"
-                pixelsPerSecond={pixelsPerSecond}
-              />
-            )}
-            {textLayers.length > 0 && (
-              <TimelineTrack
-                layers={textLayers}
-                trackType="text"
-                pixelsPerSecond={pixelsPerSecond}
-              />
-            )}
-            {shapeLayers.length > 0 && (
-              <TimelineTrack
-                layers={shapeLayers}
-                trackType="shape"
-                pixelsPerSecond={pixelsPerSecond}
-              />
-            )}
+            {/* Tracks - Always render primary tracks */}
+            <TimelineTrack
+              layers={videoLayers}
+              trackType="video"
+              pixelsPerSecond={pixelsPerSecond}
+            />
+            <TimelineTrack
+              layers={imageLayers}
+              trackType="image"
+              pixelsPerSecond={pixelsPerSecond}
+            />
+            <TimelineTrack
+              layers={textLayers}
+              trackType="text"
+              pixelsPerSecond={pixelsPerSecond}
+            />
 
             {/* Playhead */}
             <Playhead 

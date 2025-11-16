@@ -44,12 +44,13 @@ const AssetLibrary = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 space-y-3 border-b">
+      <div className="p-3 space-y-3 border-b bg-background">
         {/* Upload Button */}
         <div className="flex gap-2">
           <CompactUploadButton
             acceptedTypes={activeTab === 'all' ? ['video', 'image', 'audio'] : [activeTab]}
             onUploadComplete={() => refetch()}
+            className="flex-1"
           />
           <Button
             variant="ghost"

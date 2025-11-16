@@ -66,7 +66,7 @@ export const CompactUploadButton = ({
       <Button
         variant="outline"
         size="sm"
-        className="relative overflow-hidden"
+        className="relative overflow-hidden w-full"
         disabled={isUploading}
       >
         <input

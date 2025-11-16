@@ -56,44 +56,38 @@ export const VideoPlayer = () => {
   return (
     <div className="flex flex-col h-full bg-muted/30">
       {/* Controls */}
-      <div className="flex items-center justify-between p-2 border-b bg-background/95 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            {canvasSize.width} x {canvasSize.height}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCanvasZoom(Math.max(0.1, canvasZoom - 0.1))}
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-medium min-w-[60px] text-center">
-            {Math.round(canvasZoom * 100)}%
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCanvasZoom(Math.min(3, canvasZoom + 0.1))}
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCanvasZoom(1)}
-          >
-            <Maximize2 className="h-4 w-4" />
-          </Button>
-        </div>
+      <div className="flex items-center justify-end gap-2 p-3 border-b bg-background/95 flex-shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCanvasZoom(Math.max(0.1, canvasZoom - 0.1))}
+        >
+          <ZoomOut className="h-4 w-4" />
+        </Button>
+        <span className="text-sm font-medium min-w-[60px] text-center">
+          {Math.round(canvasZoom * 100)}%
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCanvasZoom(Math.min(3, canvasZoom + 0.1))}
+        >
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCanvasZoom(1)}
+        >
+          <Maximize2 className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Player Container */}
       <div 
         ref={containerRef}
-        className="flex-1 flex items-center justify-center p-4 overflow-auto bg-black/5"
+        className="flex-1 flex items-center justify-center p-8 overflow-auto"
+        style={{ background: 'radial-gradient(circle, hsl(var(--muted)) 0%, hsl(var(--background)) 100%)' }}
       >
         <div 
           style={{ 
@@ -103,10 +97,14 @@ export const VideoPlayer = () => {
             transformOrigin: 'center',
             position: 'relative',
             backgroundColor: currentProject?.project_data.canvas.background_color || '#000000',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.1)'
           }}
-          className="relative"
+          className="relative rounded-sm overflow-hidden"
         >
+          {/* Canvas dimensions badge */}
+          <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium text-muted-foreground border z-50">
+            {canvasSize.width} × {canvasSize.height}
+          </div>
           {visibleLayers.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
               <div className="text-center space-y-2">
