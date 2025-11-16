@@ -92,7 +92,7 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
         
         {/* Instruções - Colapsável */}
         {uploadAllowed && (
-          <div className="px-2 sm:px-4">
+          <div className="px-2 sm:px-4 pb-2">
             <Button
               variant="ghost"
               size="sm"
@@ -107,22 +107,22 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
             </Button>
             
             {instructionsExpanded && (
-              <div className="pb-2 pt-1 space-y-1.5 text-[10px] sm:text-xs text-muted-foreground">
+              <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2 text-[10px] sm:text-xs text-muted-foreground">
                 <p className="flex items-start gap-1.5">
-                  <span className="text-blue-600 mt-0.5">1.</span>
-                  <span>Envie até 4 vídeos com títulos descritivos</span>
+                  <span className="text-blue-600 mt-0.5 font-semibold">•</span>
+                  <span>Envie até 4 vídeos (máx. 15s, horizontal, 100MB)</span>
                 </p>
                 <p className="flex items-start gap-1.5">
-                  <span className="text-yellow-600 mt-0.5">2.</span>
-                  <span>Defina qual será o vídeo principal</span>
+                  <span className="text-blue-600 mt-0.5 font-semibold">•</span>
+                  <span>Selecione qual vídeo será exibido nos painéis</span>
                 </p>
                 <p className="flex items-start gap-1.5">
-                  <span className="text-purple-600 mt-0.5">3.</span>
-                  <span>Configure horários específicos (opcional)</span>
+                  <span className="text-blue-600 mt-0.5 font-semibold">•</span>
+                  <span>Aguarde aprovação dos administradores</span>
                 </p>
                 <p className="flex items-start gap-1.5">
-                  <span className="text-green-600 mt-0.5">4.</span>
-                  <span>Aguarde aprovação para ir ao ar</span>
+                  <span className="text-blue-600 mt-0.5 font-semibold">•</span>
+                  <span>Vídeo aprovado será ativado automaticamente</span>
                 </p>
               </div>
             )}
