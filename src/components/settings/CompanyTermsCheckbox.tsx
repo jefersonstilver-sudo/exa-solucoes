@@ -8,6 +8,7 @@ interface CompanyTermsCheckboxProps {
   accepted: boolean;
   onAcceptedChange: (accepted: boolean) => void;
   disabled?: boolean;
+  acceptedDate?: string | null;
 }
 
 const COMPANY_TERMS_TEXT = `
@@ -45,8 +46,18 @@ Declaro que li, compreendi e concordo com os termos acima.
 export const CompanyTermsCheckbox: React.FC<CompanyTermsCheckboxProps> = ({ 
   accepted, 
   onAcceptedChange,
-  disabled = false
+  disabled = false,
+  acceptedDate = null
 }) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
   return (
     <div className="border-2 border-amber-500 rounded-lg p-4 bg-amber-50">
       <Label className="font-semibold text-amber-900 mb-2 flex items-center">
@@ -75,10 +86,10 @@ export const CompanyTermsCheckbox: React.FC<CompanyTermsCheckboxProps> = ({
           Li e concordo com o Termo de Responsabilidade acima <span className="text-red-500">*</span>
         </label>
       </div>
-      {disabled && (
+      {disabled && acceptedDate && (
         <p className="text-xs text-green-600 mt-2 flex items-center">
           <Check className="h-3 w-3 mr-1" />
-          Termos aceitos permanentemente
+          Termo aceito dia {formatDate(acceptedDate)}
         </p>
       )}
     </div>

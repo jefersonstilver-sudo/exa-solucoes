@@ -206,6 +206,7 @@ export const CompanyBrandSection: React.FC = () => {
   const [companyDocument, setCompanyDocument] = useState('');
   const [businessSegment, setBusinessSegment] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsAcceptedDate, setTermsAcceptedDate] = useState<string | null>(null);
   const [segmentPopoverOpen, setSegmentPopoverOpen] = useState(false);
 
   React.useEffect(() => {
@@ -219,7 +220,7 @@ export const CompanyBrandSection: React.FC = () => {
 
       const { data, error } = await supabase
         .from('users')
-        .select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_aceite_termo')
+        .select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_aceite_termo, empresa_aceite_termo_data')
         .eq('id', user.id)
         .single();
 
@@ -231,6 +232,7 @@ export const CompanyBrandSection: React.FC = () => {
         setCompanyDocument(data.empresa_documento || '');
         setBusinessSegment(data.empresa_segmento || '');
         setTermsAccepted(data.empresa_aceite_termo || false);
+        setTermsAcceptedDate(data.empresa_aceite_termo_data || null);
       }
     } catch (error) {
       console.error('Erro ao carregar dados da empresa:', error);
@@ -282,19 +284,29 @@ export const CompanyBrandSection: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
+      // Se está aceitando o termo pela primeira vez, salva a data
+      const updateData: any = {
+        empresa_nome: companyName,
+        empresa_pais: companyCountry,
+        empresa_documento: companyDocument,
+        empresa_segmento: businessSegment,
+        empresa_aceite_termo: termsAccepted,
+      };
+
+      // Se está aceitando agora e não tinha data, adiciona a data atual
+      if (termsAccepted && !termsAcceptedDate) {
+        updateData.empresa_aceite_termo_data = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from('users')
-        .update({
-          empresa_nome: companyName,
-          empresa_pais: companyCountry,
-          empresa_documento: companyDocument,
-          empresa_segmento: businessSegment,
-          empresa_aceite_termo: termsAccepted,
-          empresa_aceite_data: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', user.id);
 
       if (error) throw error;
+
+      // Recarrega os dados para atualizar a data no estado
+      await loadCompanyData();
 
       toast.success('Informações da empresa salvas com sucesso!');
     } catch (error) {
@@ -458,6 +470,7 @@ export const CompanyBrandSection: React.FC = () => {
             accepted={termsAccepted}
             onAcceptedChange={setTermsAccepted}
             disabled={termsAccepted}
+            acceptedDate={termsAcceptedDate}
           />
         </div>
 
