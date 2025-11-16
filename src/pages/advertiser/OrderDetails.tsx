@@ -26,6 +26,11 @@ import { useContractStatus } from '@/hooks/useContractStatus';
 import EnhancedContractStatusCard from '@/components/order/EnhancedContractStatusCard';
 import { SelectedBuildingsSection } from '@/components/order/SelectedBuildingsSection';
 import { VideoScheduleManager } from '@/components/video-management/VideoScheduleManager';
+import { CollapsibleContractStatus } from '@/components/order/CollapsibleContractStatus';
+import { CollapsibleOrderSummary } from '@/components/order/CollapsibleOrderSummary';
+import { CollapsiblePurchaseInfo } from '@/components/order/CollapsiblePurchaseInfo';
+import { CollapsibleBuildingsSection } from '@/components/order/CollapsibleBuildingsSection';
+import { CollapsibleScheduleManager } from '@/components/order/CollapsibleScheduleManager';
 import { MigrationFixButton } from '@/components/order/MigrationFixButton';
 import { useVideoScheduleMonitor } from '@/hooks/useVideoScheduleMonitor';
 import { BlockedOrderAlert } from '@/components/order/BlockedOrderAlert';
@@ -387,62 +392,58 @@ const OrderDetails = () => {
 
   return (
     <>
-      {/* Mobile: Container minimalista com max-width */}
-      <div className="min-h-screen bg-background">
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 md:space-y-6">
-        {/* Header */}
-        <OrderHeader orderId={orderDetails.id} />
+      <div className="space-y-2 sm:space-y-3 max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
+        {/* Header Simples */}
+        <div className="mb-3">
+          <h1 className="text-lg sm:text-2xl font-bold">Detalhes do Pedido</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">#{orderDetails.id.substring(0, 8)}</p>
+        </div>
 
-        {/* Nome Personalizado do Pedido */}
-        <OrderNameEdit 
-          orderId={orderDetails.id}
-          currentName={orderDetails.nome_pedido}
-          onNameUpdate={(newName) => {
-            setOrderDetails(prev => prev ? { ...prev, nome_pedido: newName } : null);
-          }}
-        />
-
-        {/* Migration Fix Button - Show if no location data */}
-        {!hasLocationData && (
-          <MigrationFixButton orderId={orderDetails.id} />
+        {/* Alerta se pedido bloqueado */}
+        {orderDetails.blocked_reason && (
+          <BlockedOrderAlert
+            reason={orderDetails.blocked_reason}
+            blockedAt={orderDetails.blocked_at}
+          />
         )}
 
-        {/* Enhanced Contract Status Card */}
-        <EnhancedContractStatusCard
+        {/* 1. PRIORIDADE: Gestão de Vídeos - SEMPRE VISÍVEL */}
+        {contractStatus.isExpired ? (
+          <div className="bg-muted/30 p-4 sm:p-6 rounded-lg border-2 border-dashed">
+            <div className="text-center">
+              <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 text-muted-foreground" />
+              <h3 className="text-sm sm:text-base font-medium mb-1">
+                Gestão Bloqueada
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Contrato expirado. Renove para reativar.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <VideoManagementCard
+            orderStatus={orderDetails.status}
+            videoSlots={videoSlots}
+            uploading={uploading}
+            uploadProgress={uploadProgress}
+            onUpload={handleVideoUpload}
+            onActivate={(slotId) => handleVideoAction(() => activateVideo(slotId))}
+            onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
+            onDownload={handleVideoDownload}
+            onSetBaseVideo={(slotId) => handleVideoAction(() => handleSetBaseVideo(slotId))}
+            onRefreshSlots={refreshSlots}
+            orderId={id || ''}
+          />
+        )}
+
+        {/* 2. Status do Contrato - Colapsável e RETRAÍDO */}
+        <CollapsibleContractStatus
           orderId={orderDetails.id}
           orderDetails={orderDetails}
         />
 
-        {/* Status do Contrato */}
-        <ContractStatusAlert
-          isActive={contractStatus.isActive}
-          isExpired={contractStatus.isExpired}
-          isNearExpiration={contractStatus.isExpiringSoon}
-          daysRemaining={contractStatus.daysRemaining}
-          expiryDate={orderDetails.data_fim}
-          hasStarted={contractStatus.hasStarted}
-        />
-
-
-        {/* Locais Selecionados - Show only if we have building data */}
-        {hasLocationData && displayBuildingIds.length > 0 && (
-          <SelectedBuildingsSection 
-            listaPredios={displayBuildingIds}
-          />
-        )}
-
-        {/* Informações de Compra */}
-        <PurchaseInfoCard orderDetails={orderDetails} />
-
-        {/* Alertas de Status */}
-        <OrderStatusAlerts
-          isRecovered={enhancedData?.isRecovered}
-          enhancedError={enhancedError}
-          videosLoadError={videosLoadError}
-        />
-
-        {/* Resumo do Pedido */}
-        <OrderSummaryCard
+        {/* 3. Resumo - Colapsável e RETRAÍDO */}
+        <CollapsibleOrderSummary
           orderDetails={orderDetails}
           displayPanels={displayPanels}
           isRecovered={enhancedData?.isRecovered}
@@ -450,46 +451,24 @@ const OrderDetails = () => {
           totalAudience={totalAudience}
         />
 
-        {/* Gestão de Vídeos */}
-        {contractStatus.isExpired ? (
-          <div className="bg-gray-100 p-6 rounded-lg border-2 border-gray-300">
-            <div className="text-center">
-              <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-500" />
-              <h3 className="text-lg font-medium text-gray-700 mb-2">
-                Gestão de Vídeos Bloqueada
-              </h3>
-              <p className="text-gray-600">
-                O contrato expirou. Para reativar a gestão de vídeos, renove seu contrato.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <VideoManagementCard
-              orderStatus={orderDetails.status}
-              videoSlots={videoSlots}
-              uploading={uploading}
-              uploadProgress={uploadProgress}
-              onUpload={handleVideoUpload}
-              onActivate={(slotId) => handleVideoAction(() => activateVideo(slotId))}
-              onRemove={(slotId) => handleVideoAction(() => removeVideo(slotId))}
-              onDownload={handleVideoDownload}
-              onSetBaseVideo={(slotId) => handleVideoAction(() => handleSetBaseVideo(slotId))}
-              onRefreshSlots={refreshSlots}
-              orderId={id || ''}
-            />
-            
-            {/* Video Schedule Manager - Always show, just disable editing when needed */}
-            <VideoScheduleManager
-              videoSlots={videoSlots}
-              onScheduleUpdate={async (videoId: string, scheduleRules: any[]) => {
-                console.log('📅 Atualizando programação:', { videoId, scheduleRules });
-                // TODO: Implementar lógica de atualização de programação
-              }}
-              disabled={!contractStatus.isActive || contractStatus.isExpired}
-              orderId={id || ''}
-            />
-          </>
+        {/* 4. Compra - Colapsável e RETRAÍDO */}
+        <CollapsiblePurchaseInfo orderDetails={orderDetails} />
+
+        {/* 5. Locais - Colapsável e RETRAÍDO */}
+        {hasLocationData && displayBuildingIds.length > 0 && (
+          <CollapsibleBuildingsSection listaPredios={displayBuildingIds} />
+        )}
+
+        {/* 6. Programação Semanal - Colapsável e RETRAÍDO */}
+        {!contractStatus.isExpired && (
+          <CollapsibleScheduleManager
+            videoSlots={videoSlots}
+            onScheduleUpdate={async (videoId: string, scheduleRules: any[]) => {
+              console.log('📅 Atualizando programação:', { videoId, scheduleRules });
+            }}
+            disabled={!contractStatus.isActive || contractStatus.isExpired}
+            orderId={id || ''}
+          />
         )}
       </div>
 
@@ -508,7 +487,6 @@ const OrderDetails = () => {
         suggestions={conflictModal.suggestions}
         newVideoName={conflictModal.newVideoName}
       />
-    </div>
     </>
   );
 };
