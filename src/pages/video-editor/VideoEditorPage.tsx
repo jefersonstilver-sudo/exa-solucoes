@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useVideoEditorProjects } from '@/hooks/video-editor/useVideoEditorProjects';
 import { useEditorState } from '@/hooks/video-editor/useEditorState';
-import { VideoCanvas } from '@/components/video-editor/canvas/VideoCanvas';
+import { VideoPlayer } from '@/components/video-editor/canvas/VideoPlayer';
 import { Timeline } from '@/components/video-editor/timeline/Timeline';
 import { VerticalNavBar } from '@/components/video-editor/navigation/VerticalNavBar';
 import { ExpansionPanel } from '@/components/video-editor/navigation/ExpansionPanel';
@@ -168,10 +168,10 @@ export default function VideoEditorPage() {
                 {/* Canvas + Timeline (resizable vertically) */}
                 <ResizablePanel defaultSize={75} minSize={50}>
                   <ResizablePanelGroup direction="vertical" className="h-full">
-                    {/* Canvas */}
-                    <ResizablePanel defaultSize={65} minSize={30}>
-                      <VideoCanvas />
-                    </ResizablePanel>
+                {/* Video Player */}
+                <ResizablePanel defaultSize={65} minSize={30}>
+                  <VideoPlayer />
+                </ResizablePanel>
                     
                     {/* Resizable Handle */}
                     <ResizableHandle withHandle />
