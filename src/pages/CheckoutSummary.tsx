@@ -277,15 +277,15 @@ const CheckoutSummary = () => {
 
   return (
     <CheckoutLayout currentStep={2} maxWidth="6xl">
-      {/* Main Content Grid - Mobile Ultra Compacto */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-2 sm:gap-6">
+      {/* Main Content Grid - Mobile Otimizado */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3 sm:gap-4 lg:gap-6">
         {/* Left Column - Order Details */}
-        <div>
+        <div className="space-y-3 sm:space-y-4">
           <OrderSummaryCard cartItems={cartItems} selectedPlan={selectedPlan} />
         </div>
 
         {/* Right Column - Payment (Sticky) */}
-        <div className="lg:sticky lg:top-32 space-y-2 sm:space-y-4 h-fit">
+        <div className="lg:sticky lg:top-32 space-y-3 sm:space-y-4 h-fit">
           {/* Payment Method Selector - OCULTAR SE CORTESIA */}
           {!isCortesia && (
             <PaymentMethodSelector 

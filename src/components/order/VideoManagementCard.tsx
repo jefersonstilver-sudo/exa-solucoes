@@ -66,22 +66,23 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
     }
   };
   return <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+      <Card className="shadow-sm">
+        <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-4">
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
             <div className="flex items-center">
-              <Video className="h-5 w-5 mr-2" />
-              Gestão de Vídeos
+              <Video className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
+              <span className="text-base sm:text-xl">Gestão de Vídeos</span>
             </div>
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-9 px-4 text-sm font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 text-blue-700 hover:text-blue-800 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105" 
+                className="h-8 sm:h-9 px-3 sm:px-4 text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 text-blue-700 hover:text-blue-800 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105" 
                 onClick={() => setShowTutorial(true)}
               >
-                <GraduationCap className="h-4 w-4 mr-2" />
-                Tutorial
+                <GraduationCap className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                <span className="hidden xs:inline">Tutorial</span>
+                <span className="xs:hidden">Ajuda</span>
               </Button>
               <Collapsible open={showHelp} onOpenChange={setShowHelp}>
                 <CollapsibleTrigger asChild>
@@ -95,17 +96,17 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
               
             </CollapsibleContent>
           </Collapsible>
-          <p className="text-sm text-gray-600">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-2">
             {uploadAllowed ? "Envie até 4 vídeos com títulos descritivos e selecione qual será exibido nos painéis." : "Upload de vídeos disponível apenas para pedidos pagos."}
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-3 sm:p-6 pt-0 space-y-3 sm:space-y-4">
           
           {/* Grid de vídeos - só mostra se upload for permitido */}
-          {uploadAllowed ? <VideoSlotGrid videoSlots={videoSlots} uploading={uploading} uploadProgress={uploadProgress} onUpload={onUpload} onActivate={onActivate} onRemove={onRemove} onDownload={onDownload} onSetBaseVideo={onSetBaseVideo} onScheduleVideo={handleScheduleVideo} orderId={orderId} /> : <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <Video className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-600 font-medium">Upload de vídeos bloqueado</p>
-              <p className="text-sm text-gray-500 mt-2">
+          {uploadAllowed ? <VideoSlotGrid videoSlots={videoSlots} uploading={uploading} uploadProgress={uploadProgress} onUpload={onUpload} onActivate={onActivate} onRemove={onRemove} onDownload={onDownload} onSetBaseVideo={onSetBaseVideo} onScheduleVideo={handleScheduleVideo} orderId={orderId} /> : <div className="text-center py-6 sm:py-8 bg-muted/30 rounded-lg border-2 border-dashed">
+              <Video className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+              <p className="text-sm sm:text-base font-medium mb-1 sm:mb-2">Upload de vídeos bloqueado</p>
+              <p className="text-xs sm:text-sm text-muted-foreground px-4">
                 Complete o pagamento do pedido para liberar o envio de vídeos
               </p>
             </div>}
