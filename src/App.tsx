@@ -47,6 +47,7 @@ import PainelKiosk from './pages/PainelKiosk';
 import PaineisPublicitarios from './pages/PaineisPublicitarios';
 import Exa from './pages/Exa';
 import TestLinks from './pages/TestLinks';
+import ProfileSettings from './pages/ProfileSettings';
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
@@ -402,8 +403,8 @@ const AppContent = () => {
               </Suspense>
             } />
             <Route path="configuracoes" element={
-              <Suspense fallback={<GlobalLoadingPage message="Carregando configurações..." />}>
-                <AdvertiserSettings />
+              <Suspense fallback={<GlobalLoadingPage message="Carregando perfil..." />}>
+                <ProfileSettings />
               </Suspense>
             } />
           </Route>
