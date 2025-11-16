@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { Video, ChevronDown, ChevronUp, HelpCircle, GraduationCap } from 'lucide-react';
+import { Video, HelpCircle, GraduationCap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoSlotGrid } from '@/components/video-management/VideoSlotGrid';
-import { OrderSecurityBanner } from '@/components/order/OrderSecurityBanner';
 import { VideoSlot } from '@/types/videoManagement';
 import { getOrderSecurityStatus } from '@/services/videoUploadSecurityService';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { videoScheduleManagementService } from '@/services/videoScheduleManagementService';
-import { toast } from 'sonner';
 import { TutorialVideoPopup } from '@/components/video-management/TutorialVideoPopup';
+import { VideoInstructionsModal } from '@/components/video-management/VideoInstructionsModal';
 interface VideoManagementCardProps {
   orderStatus: string;
   videoSlots: VideoSlot[];
@@ -38,8 +36,8 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   onRefreshSlots,
   orderId
 }) => {
-  const [showHelp, setShowHelp] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
   const security = getOrderSecurityStatus(orderStatus);
   const uploadAllowed = security.level === 'allowed' || security.level === 'active';
   const handleScheduleVideo = async (videoId: string, scheduleRules: any[]) => {
@@ -67,52 +65,71 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
   };
   return <>
       <Card className="shadow-sm">
-        <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-4">
-          <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
-            <div className="flex items-center">
-              <Video className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
-              <span className="text-base sm:text-xl">Gestão de Vídeos</span>
-            </div>
+        <CardHeader className="p-2 sm:p-4 pb-2">
+          <CardTitle className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
+              <Video className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <div>
+                <span className="text-sm sm:text-lg font-semibold">Gestão de Vídeos</span>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                  {uploadAllowed ? "Até 4 vídeos (máx. 15s, 100MB)" : "Upload disponível apenas para pedidos pagos"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 w-7 p-0 sm:h-8 sm:w-8" 
+                onClick={() => setShowInstructions(true)}
+              >
+                <HelpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-8 sm:h-9 px-3 sm:px-4 text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 text-blue-700 hover:text-blue-800 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105" 
+                className="h-7 px-2 sm:h-8 sm:px-3 text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 text-blue-700" 
                 onClick={() => setShowTutorial(true)}
               >
-                <GraduationCap className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                <GraduationCap className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1" />
                 <span className="hidden xs:inline">Tutorial</span>
-                <span className="xs:hidden">Ajuda</span>
               </Button>
-              <Collapsible open={showHelp} onOpenChange={setShowHelp}>
-                <CollapsibleTrigger asChild>
-                  
-                </CollapsibleTrigger>
-              </Collapsible>
             </div>
           </CardTitle>
-          <Collapsible open={showHelp} onOpenChange={setShowHelp}>
-            <CollapsibleContent>
-              
-            </CollapsibleContent>
-          </Collapsible>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-            {uploadAllowed ? "Envie até 4 vídeos com títulos descritivos e selecione qual será exibido nos painéis." : "Upload de vídeos disponível apenas para pedidos pagos."}
-          </p>
         </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0 space-y-3 sm:space-y-4">
-          
-          {/* Grid de vídeos - só mostra se upload for permitido */}
-          {uploadAllowed ? <VideoSlotGrid videoSlots={videoSlots} uploading={uploading} uploadProgress={uploadProgress} onUpload={onUpload} onActivate={onActivate} onRemove={onRemove} onDownload={onDownload} onSetBaseVideo={onSetBaseVideo} onScheduleVideo={handleScheduleVideo} orderId={orderId} /> : <div className="text-center py-6 sm:py-8 bg-muted/30 rounded-lg border-2 border-dashed">
-              <Video className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
-              <p className="text-sm sm:text-base font-medium mb-1 sm:mb-2">Upload de vídeos bloqueado</p>
-              <p className="text-xs sm:text-sm text-muted-foreground px-4">
-                Complete o pagamento do pedido para liberar o envio de vídeos
+        <CardContent className="p-2 sm:p-4 pt-2">
+          {uploadAllowed ? (
+            <VideoSlotGrid 
+              videoSlots={videoSlots} 
+              uploading={uploading} 
+              uploadProgress={uploadProgress} 
+              onUpload={onUpload} 
+              onActivate={onActivate} 
+              onRemove={onRemove} 
+              onDownload={onDownload} 
+              onSetBaseVideo={onSetBaseVideo} 
+              onScheduleVideo={handleScheduleVideo} 
+              orderId={orderId} 
+            />
+          ) : (
+            <div className="text-center py-6 sm:py-8 bg-muted/30 rounded-lg border-2 border-dashed">
+              <Video className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 text-muted-foreground" />
+              <p className="text-xs sm:text-sm font-medium mb-1">Upload bloqueado</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground px-4">
+                Complete o pagamento para liberar
               </p>
-            </div>}
+            </div>
+          )}
         </CardContent>
       </Card>
       
-      <TutorialVideoPopup isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+      <VideoInstructionsModal 
+        isOpen={showInstructions} 
+        onClose={() => setShowInstructions(false)} 
+      />
+      <TutorialVideoPopup 
+        isOpen={showTutorial} 
+        onClose={() => setShowTutorial(false)} 
+      />
     </>;
 };
