@@ -60,10 +60,36 @@ export const captureRequestMetadata = async () => {
   const ip = await getRealIP();
   const userAgent = navigator.userAgent;
   
+  // ✅ NOVO: Capturar geolocalização do IP
+  let geoData = null;
+  try {
+    if (ip !== 'unknown') {
+      const geoResponse = await fetch(`https://ipapi.co/${ip}/json/`);
+      if (geoResponse.ok) {
+        geoData = await geoResponse.json();
+      }
+    }
+  } catch (error) {
+    console.warn('Falha ao obter geolocalização:', error);
+  }
+  
   return {
     ip,
     user_agent: userAgent,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    // ✅ NOVO: Dados de geolocalização
+    geo: geoData ? {
+      city: geoData.city,
+      region: geoData.region,
+      country: geoData.country_name,
+      country_code: geoData.country_code,
+      postal: geoData.postal,
+      latitude: geoData.latitude,
+      longitude: geoData.longitude,
+      timezone: geoData.timezone,
+      org: geoData.org,
+      asn: geoData.asn
+    } : null
   };
 };
 

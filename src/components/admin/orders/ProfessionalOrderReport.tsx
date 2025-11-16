@@ -364,10 +364,18 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                     {order.log_pagamento.pixData.mpResponse?.status && (
                       <div>
                         <p className="text-gray-500 mb-1">Status Mercado Pago</p>
-                        <p className="font-semibold text-gray-900 capitalize">
-                          {order.log_pagamento.pixData.mpResponse.status === 'pending' ? 'Pendente' :
-                           order.log_pagamento.pixData.mpResponse.status === 'approved' ? 'Aprovado' :
-                           order.log_pagamento.pixData.mpResponse.status}
+                        <p className={`font-semibold capitalize inline-flex items-center gap-1 ${
+                          order.log_pagamento.pixData.mpResponse.status === 'approved' ? 'text-green-700' :
+                          order.log_pagamento.pixData.mpResponse.status === 'pending' ? 'text-yellow-700' :
+                          'text-gray-900'
+                        }`}>
+                          {order.log_pagamento.pixData.mpResponse.status === 'pending' ? (
+                            <>⏳ Pendente</>
+                          ) : order.log_pagamento.pixData.mpResponse.status === 'approved' ? (
+                            <>✅ Aprovado</>
+                          ) : (
+                            order.log_pagamento.pixData.mpResponse.status
+                          )}
                         </p>
                       </div>
                     )}
@@ -375,42 +383,194 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                 </div>
               )}
 
-              {/* Informações do Compliance Data (Mercado Pago) */}
+              {/* 🔐 AUDITORIA FINANCEIRA COMPLETA */}
               {order.compliance_data && Object.keys(order.compliance_data).length > 0 && (
+                <div className="border-t pt-6 mt-6">
+                  <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-blue-600" />
+                    Auditoria Financeira Completa
+                  </h3>
+                  
+                  {/* DADOS DO PAGADOR */}
+                  <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                    <h4 className="text-xs font-semibold text-blue-900 mb-3 flex items-center gap-1">
+                      👤 Dados do Pagador
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      {order.compliance_data.payer && (
+                        <>
+                          {order.compliance_data.payer.first_name && (
+                            <div>
+                              <p className="text-gray-500 mb-1">Nome Completo</p>
+                              <p className="font-semibold text-gray-900">
+                                {order.compliance_data.payer.first_name} {order.compliance_data.payer.last_name}
+                              </p>
+                            </div>
+                          )}
+                          {order.compliance_data.payer.email && (
+                            <div>
+                              <p className="text-gray-500 mb-1">Email</p>
+                              <p className="font-semibold text-gray-900">
+                                {order.compliance_data.payer.email}
+                              </p>
+                            </div>
+                          )}
+                          {order.compliance_data.payer.identification && (
+                            <>
+                              <div>
+                                <p className="text-gray-500 mb-1">Documento</p>
+                                <p className="font-mono text-xs font-semibold text-gray-900">
+                                  {order.compliance_data.payer.identification.type}: {order.compliance_data.payer.identification.number}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500 mb-1">Tipo de Pessoa</p>
+                                <p className="font-semibold text-gray-900 uppercase">
+                                  {order.compliance_data.payer.entity_type === 'individual' ? 'Pessoa Física' : 'Pessoa Jurídica'}
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* BANCO PAGADOR */}
+                  {order.compliance_data.transaction_details?.financial_institution && (
+                    <div className="bg-green-50 p-4 rounded-lg mb-4">
+                      <h4 className="text-xs font-semibold text-green-900 mb-3 flex items-center gap-1">
+                        🏦 Banco Pagador
+                      </h4>
+                      <p className="text-lg font-bold text-green-700">
+                        {order.compliance_data.transaction_details.financial_institution}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Instituição financeira de origem do pagamento
+                      </p>
+                    </div>
+                  )}
+
+                  {/* DETALHES DA TRANSAÇÃO */}
+                  {order.compliance_data.transaction_details && (
+                    <div className="bg-purple-50 p-4 rounded-lg mb-4">
+                      <h4 className="text-xs font-semibold text-purple-900 mb-3 flex items-center gap-1">
+                        💳 Detalhes da Transação
+                      </h4>
+                      <div className="grid grid-cols-3 gap-4 text-xs">
+                        <div>
+                          <p className="text-gray-500 mb-1">Valor Pago</p>
+                          <p className="font-semibold text-gray-900">
+                            R$ {order.compliance_data.transaction_details.total_paid_amount?.toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Valor Recebido</p>
+                          <p className="font-semibold text-green-700">
+                            R$ {order.compliance_data.transaction_details.net_received_amount?.toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Taxa</p>
+                          <p className="font-semibold text-red-600">
+                            R$ {(
+                              (order.compliance_data.transaction_details.total_paid_amount || 0) - 
+                              (order.compliance_data.transaction_details.net_received_amount || 0)
+                            ).toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Método</p>
+                          <p className="font-semibold text-gray-900 uppercase">
+                            {order.compliance_data.payment_method?.id || 'PIX'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">ID do Pagamento</p>
+                          <p className="font-mono text-xs text-gray-700">
+                            {order.compliance_data.references?.payment_id}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Status</p>
+                          <p className="font-semibold text-green-700 capitalize">
+                            ✅ {order.compliance_data.status?.current}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* CONTA BENEFICIÁRIA */}
+                  {order.compliance_data.collector && (
+                    <div className="bg-yellow-50 p-4 rounded-lg mb-4">
+                      <h4 className="text-xs font-semibold text-yellow-900 mb-3 flex items-center gap-1">
+                        💰 Conta Beneficiária (Destino)
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <p className="text-gray-500 mb-1">ID da Conta</p>
+                          <p className="font-mono text-xs text-gray-900">
+                            {order.compliance_data.collector.id}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">Email</p>
+                          <p className="font-semibold text-gray-900">
+                            {order.compliance_data.collector.email}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ORIGEM DO ACESSO */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="text-xs font-semibold text-gray-900 mb-3 flex items-center gap-1">
+                      🌐 Origem do Acesso
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <p className="text-gray-500 mb-1">Endereço IP</p>
+                        <p className="font-mono text-xs text-gray-900">
+                          {order.ip_origem || 'Não capturado'}
+                        </p>
+                      </div>
+                      {order.device_info && (
+                        <>
+                          <div>
+                            <p className="text-gray-500 mb-1">Dispositivo</p>
+                            <p className="font-semibold text-gray-900">
+                              {order.device_info.deviceType} - {order.device_info.os}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">Navegador</p>
+                            <p className="font-semibold text-gray-900">
+                              {order.device_info.browser}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">Localização (Timezone)</p>
+                            <p className="font-semibold text-gray-900">
+                              {order.device_info.timezone}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Dados de Compliance Antigos (fallback) */}
+              {order.compliance_data && !order.compliance_data.payer && order.compliance_data.payment_method_id && (
                 <div className="border-t pt-4">
                   <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-2">
                     <Shield className="h-4 w-4" />
-                    Dados de Compliance
+                    Dados de Compliance (Formato Antigo)
                   </h3>
                   <div className="grid grid-cols-2 gap-4 text-xs bg-green-50 p-3 rounded">
-                    {order.compliance_data.payer && (
-                      <>
-                        {order.compliance_data.payer.first_name && (
-                          <div>
-                            <p className="text-gray-500 mb-1">Nome do Pagador</p>
-                            <p className="font-semibold text-gray-900">
-                              {order.compliance_data.payer.first_name} {order.compliance_data.payer.last_name}
-                            </p>
-                          </div>
-                        )}
-                        {order.compliance_data.payer.email && (
-                          <div>
-                            <p className="text-gray-500 mb-1">Email do Pagador</p>
-                            <p className="font-semibold text-gray-900">
-                              {order.compliance_data.payer.email}
-                            </p>
-                          </div>
-                        )}
-                        {order.compliance_data.payer.identification && (
-                          <div>
-                            <p className="text-gray-500 mb-1">CPF/CNPJ</p>
-                            <p className="font-mono text-xs font-semibold text-gray-900">
-                              {order.compliance_data.payer.identification.number}
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    )}
                     {order.compliance_data.payment_method_id && (
                       <div>
                         <p className="text-gray-500 mb-1">Forma de Pagamento</p>
