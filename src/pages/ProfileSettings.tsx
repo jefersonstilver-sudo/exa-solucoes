@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -11,12 +11,15 @@ import { Loader2, User, Mail, Phone, Building2, Lock, ArrowLeft, Save, Send } fr
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
+import { CompanyInfoSection } from '@/components/auth/registration/CompanyInfoSection';
 
 // Validation schemas
 const profileSchema = z.object({
   full_name: z.string().trim().max(100, 'Nome muito longo').optional(),
   phone: z.string().trim().max(20, 'Telefone inválido').optional(),
   company_name: z.string().trim().max(100, 'Nome da empresa muito longo').optional(),
+  company_country: z.string().optional(),
+  company_document: z.string().trim().max(20, 'Documento inválido').optional(),
 });
 
 const ProfileSettings = () => {
@@ -28,18 +31,51 @@ const ProfileSettings = () => {
     full_name: profile?.full_name || '',
     phone: profile?.phone || '',
     company_name: profile?.company_name || '',
+    company_country: '',
+    company_document: '',
   });
 
   const [saving, setSaving] = useState(false);
   const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
 
-  React.useEffect(() => {
+  // Carregar dados da empresa da tabela users
+  useEffect(() => {
+    const fetchUserCompanyData = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('empresa_pais, empresa_documento, empresa_nome')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setFormData(prev => ({
+            ...prev,
+            company_country: data.empresa_pais || '',
+            company_document: data.empresa_documento || '',
+            company_name: data.empresa_nome || prev.company_name,
+          }));
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados da empresa:', error);
+      }
+    };
+
+    fetchUserCompanyData();
+  }, [user?.id]);
+
+  useEffect(() => {
     if (profile) {
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         full_name: profile.full_name || '',
         phone: profile.phone || '',
         company_name: profile.company_name || '',
-      });
+      }));
     }
   }, [profile]);
 
@@ -59,7 +95,31 @@ const ProfileSettings = () => {
     setSaving(true);
 
     try {
-      await updateProfile(formData);
+      // Atualizar profiles (full_name, phone, company_name)
+      await updateProfile({
+        full_name: formData.full_name,
+        phone: formData.phone,
+        company_name: formData.company_name,
+      });
+
+      // Atualizar users (empresa_pais, empresa_documento, empresa_nome)
+      if (user?.id) {
+        const { error: usersError } = await supabase
+          .from('users')
+          .update({
+            empresa_pais: formData.company_country,
+            empresa_documento: formData.company_document,
+            empresa_nome: formData.company_name,
+          })
+          .eq('id', user.id);
+
+        if (usersError) throw usersError;
+      }
+
+      toast.success('Perfil atualizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
+      toast.error('Erro ao atualizar perfil');
     } finally {
       setSaving(false);
     }
@@ -179,25 +239,26 @@ const ProfileSettings = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="company_name" className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    Empresa
-                  </Label>
-                  <Input
-                    id="company_name"
-                    type="text"
-                    value={formData.company_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, company_name: e.target.value })
-                    }
-                    placeholder="Nome da sua empresa"
-                  />
-                </div>
+                <Separator className="my-6" />
+
+                <CompanyInfoSection
+                  companyName={formData.company_name}
+                  companyCountry={formData.company_country}
+                  companyDocument={formData.company_document}
+                  onCompanyNameChange={(value) =>
+                    setFormData({ ...formData, company_name: value })
+                  }
+                  onCompanyCountryChange={(value) =>
+                    setFormData({ ...formData, company_country: value })
+                  }
+                  onCompanyDocumentChange={(value) =>
+                    setFormData({ ...formData, company_document: value })
+                  }
+                />
 
                 <Button
                   type="submit"
-                  className="w-full"
+                  className="w-full mt-6"
                   disabled={saving}
                 >
                   {saving ? (
