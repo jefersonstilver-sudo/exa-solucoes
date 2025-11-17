@@ -158,7 +158,8 @@ export const VideoPlayer = () => {
             height: `${canvasSize.height * canvasZoom}px`,
             position: 'relative',
             backgroundColor: '#000000',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.1)'
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.1)',
+            pointerEvents: 'auto'
           }}
           className="relative rounded-sm overflow-hidden"
         >
@@ -188,6 +189,7 @@ export const VideoPlayer = () => {
                   border: selectedLayerId === layer.id ? '3px solid #3b82f6' : 'none',
                   zIndex: layer.z_index,
                   opacity: layer.opacity,
+                  pointerEvents: 'auto'
                 }}
               >
                 {layer.type === 'video' && layer.asset_id ? (
@@ -223,7 +225,7 @@ export const VideoPlayer = () => {
       </div>
 
       {/* Playback Controls */}
-      <div className="h-16 border-t bg-background flex items-center gap-4 px-6 flex-shrink-0">
+      <div className="h-16 border-t bg-background flex items-center gap-4 px-6 flex-shrink-0 relative z-50">
         {/* Play Controls */}
         <div className="flex items-center gap-2">
           <Button
@@ -234,12 +236,15 @@ export const VideoPlayer = () => {
             <SkipBack className="h-4 w-4" />
           </Button>
           
-          <Button
-            variant="default"
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => setIsPlaying(!isPlaying)}
-          >
+            <Button
+              variant="default"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => {
+                console.log('🎮 [PLAYER] Play/Pause clicado. Estado atual:', { isPlaying, currentTime, duration });
+                setIsPlaying(!isPlaying);
+              }}
+            >
             {isPlaying ? (
               <Pause className="h-4 w-4" />
             ) : (
