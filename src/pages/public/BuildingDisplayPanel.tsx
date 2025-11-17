@@ -8,6 +8,7 @@ import { useVideoCache } from '@/hooks/useVideoCache';
 import { WifiOff } from 'lucide-react';
 import { VideoDebugger } from '@/utils/videoDebugger';
 import { useBuildingScheduleMonitor } from '@/hooks/useBuildingScheduleMonitor';
+import { UpdateIndicator } from '@/components/display/UpdateIndicator';
 
 interface BuildingDisplayPanelProps {
   buildingId?: string;
@@ -43,7 +44,7 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
   }
 
   const buildingId = rawBuildingId;
-  const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
+  const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
@@ -361,6 +362,9 @@ const BuildingDisplayPanel: React.FC<BuildingDisplayPanelProps> = ({ buildingId:
 
   return (
     <div ref={protectionRef} className="w-full h-screen bg-black overflow-hidden select-none">
+      {/* Indicador de Atualização */}
+      <UpdateIndicator isUpdating={isUpdating} videosCount={activeVideos.length} />
+      
       {/* Indicador Offline Discreto */}
       {showOfflineIndicator && !networkStatus.isOnline && (
         <div className="fixed top-4 right-4 z-50 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">

@@ -14,6 +14,7 @@ import { VideoDebugger } from '@/utils/videoDebugger';
 import { useBuildingScheduleMonitor } from '@/hooks/useBuildingScheduleMonitor';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { UpdateIndicator } from '@/components/display/UpdateIndicator';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -49,7 +50,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
 
   const buildingId = rawBuildingId;
   
-  const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
+  const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
   const [buildingName, setBuildingName] = useState('');
   const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -367,6 +368,23 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       onDragStart={(e) => e.preventDefault()}
       onDrop={(e) => e.preventDefault()}
     >
+      {/* Indicador de Atualização */}
+      <UpdateIndicator isUpdating={isUpdating} videosCount={activeVideos.length} />
+      
+      {/* Indicador de Conexão */}
+      <ConnectionStatusIndicator status={connectionStatus} />
+      
+      {/* Botão de Instalar (apenas se não instalado e há prompt) */}
+      {!isInstalled && deferredPrompt && (
+        <button
+          onClick={handleInstall}
+          className="fixed top-4 left-4 z-50 bg-primary text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 hover:bg-primary/90 transition-all animate-in fade-in slide-in-from-left"
+        >
+          <Download className="h-4 w-4" />
+          <span className="text-sm font-medium">Instalar App</span>
+        </button>
+      )}
+      
       {/* 📱 Header responsivo e adaptativo */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900/95 via-red-800/95 to-red-900/95 backdrop-blur-md shadow-2xl border-b border-white/10">
         <div className="container mx-auto px-2 sm:px-4 md:px-6 h-12 sm:h-14 md:h-16 lg:h-20 flex items-center justify-between">
