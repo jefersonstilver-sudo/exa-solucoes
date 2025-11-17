@@ -13,7 +13,7 @@ const dadosEmpresa = [
   {
     icon: FileText,
     label: 'CNPJ',
-    value: '52.499.450/0001-60',
+    value: '62.878.193/0001-35',
     link: null
   },
   {
