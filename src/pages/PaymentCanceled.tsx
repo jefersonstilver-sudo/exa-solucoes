@@ -14,7 +14,7 @@ const PaymentCanceled = () => {
     if (pedidoId) {
       navigate(`/payment?pedido=${pedidoId}`);
     } else {
-      navigate('/checkout');
+      navigate('/checkout/resumo');
     }
   };
 
@@ -102,13 +102,13 @@ const PaymentCanceled = () => {
                 Tentar Novamente
               </Button>
               <Button
-                onClick={() => navigate('/checkout')}
+                onClick={() => navigate('/checkout/resumo')}
                 variant="outline"
                 size="lg"
                 className="flex-1"
               >
                 <ArrowLeft className="mr-2 h-5 w-5" />
-                Voltar ao Carrinho
+                Voltar ao Resumo
               </Button>
             </motion.div>
 
