@@ -16,12 +16,12 @@ export default function EmailNotConfirmed() {
 
   return (
     <Layout>
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="min-h-screen flex items-center justify-center p-4 pt-32 bg-gradient-to-br from-background via-background to-muted/20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
+          className="w-full max-w-2xl"
         >
           <Card className="border-2 shadow-xl">
             <CardHeader className="text-center space-y-4 pb-4">
