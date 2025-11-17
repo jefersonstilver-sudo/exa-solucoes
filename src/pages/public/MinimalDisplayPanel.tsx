@@ -43,13 +43,37 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
     refetchRef.current = refetch;
   }, [refetch]);
   
-  // Converter para formato minimal
-  const videos = useMemo(() => activeVideos.map(v => ({
-    video_id: v.video_id,
-    video_url: v.video_url,
-    video_duracao: v.video_duracao,
-    slot_position: 0 // Não usado no minimal
-  })), [activeVideos]);
+  // 🔥 CACHE OFFLINE: Salvar última playlist válida para reprodução contínua sem internet
+  const [cachedVideos, setCachedVideos] = useState<Array<{
+    video_id: string;
+    video_url: string;
+    video_duracao: number | null;
+    slot_position: number;
+  }>>([]);
+  
+  // Converter e atualizar cache quando novos vídeos chegam
+  const videos = useMemo(() => {
+    const formattedVideos = activeVideos.map(v => ({
+      video_id: v.video_id,
+      video_url: v.video_url,
+      video_duracao: v.video_duracao,
+      slot_position: 0 // Não usado no minimal
+    }));
+    
+    // ✅ Atualizar cache sempre que houver vídeos válidos
+    if (formattedVideos.length > 0) {
+      console.log('💾 [MINIMAL] Salvando playlist no cache offline:', formattedVideos.length, 'vídeos');
+      setCachedVideos(formattedVideos);
+    }
+    
+    // ✅ Se não há vídeos online mas temos cache, usar cache (modo offline)
+    if (formattedVideos.length === 0 && cachedVideos.length > 0) {
+      console.log('🔄 [MINIMAL] Usando playlist em cache (offline):', cachedVideos.length, 'vídeos');
+      return cachedVideos;
+    }
+    
+    return formattedVideos;
+  }, [activeVideos, cachedVideos]);
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
@@ -198,7 +222,8 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
   }, [currentIndex, videos]);
 
   // 🎬 Renderização
-  if (loading && videos.length === 0) {
+  // ✅ NUNCA mostrar tela vazia se temos cache - player SEMPRE rodando
+  if (loading && videos.length === 0 && cachedVideos.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="text-center space-y-4">
@@ -209,7 +234,8 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
     );
   }
 
-  if (videos.length === 0) {
+  // ✅ Só mostrar "sem conteúdo" se realmente não há nada (nem cache)
+  if (videos.length === 0 && cachedVideos.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="text-center space-y-4 px-4">
