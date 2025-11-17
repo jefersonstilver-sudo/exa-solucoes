@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useBuildingFormData } from '@/hooks/useBuildingFormData';
 import { useBuildingDelete } from '@/hooks/useBuildingDelete';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { supabase } from '@/integrations/supabase/client';
 import BuildingFormLayout from './form/BuildingFormLayout';
 import { Trash2 } from 'lucide-react';
@@ -42,6 +43,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
   const [loadingPanels, setLoadingPanels] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  const { userInfo } = useUserPermissions();
   const {
     formData,
     loading,
@@ -151,7 +153,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                   type="button" 
                   variant="destructive" 
                   onClick={handleDeleteClick}
-                  disabled={loading || loadingPanels || deleting}
+                  disabled={!userInfo.isSuperAdmin && (loading || loadingPanels || deleting)}
                   className="gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
