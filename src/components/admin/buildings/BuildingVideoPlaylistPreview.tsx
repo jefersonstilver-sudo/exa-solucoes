@@ -73,7 +73,7 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl h-[90vh] p-0 gap-0 bg-background flex flex-col overflow-hidden">
+      <DialogContent className="max-w-7xl max-h-[90vh] p-0 gap-0 bg-background flex flex-col">
         {/* Header Fixo */}
         <DialogHeader className="px-4 sm:px-6 py-4 border-b bg-background flex-shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -100,7 +100,7 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
         </DialogHeader>
 
         {/* Conteúdo com Scroll */}
-        <div className="flex-1 overflow-y-auto">
+        <ScrollArea className="flex-1">
           {loading ? (
             <div className="p-4 sm:p-6 space-y-4">
               <ModernSkeleton className="w-full h-48 sm:h-64 rounded-lg" />
@@ -271,7 +271,7 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
               </div>
             </div>
           )}
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
