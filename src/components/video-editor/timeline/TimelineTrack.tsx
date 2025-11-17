@@ -16,15 +16,30 @@ export const TimelineTrack = ({ layers, trackType, pixelsPerSecond }: TimelineTr
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
 
+    console.log('🎬 [TIMELINE DROP] Recebendo drop event');
+
     try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      const dataText = e.dataTransfer.getData('application/json');
+      console.log('📦 [TIMELINE DROP] Data recebida:', dataText);
+      
+      if (!dataText) {
+        console.error('❌ [TIMELINE DROP] Dados vazios');
+        toast.error('Dados inválidos ao arrastar');
+        return;
+      }
+      
+      const data = JSON.parse(dataText);
+      console.log('✅ [TIMELINE DROP] Data parseada:', data);
       
       // Calculate drop position
       const rect = e.currentTarget.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const startTime = Math.max(0, x / pixelsPerSecond);
+      
+      console.log(`⏱️ [TIMELINE DROP] Start time calculado: ${startTime}s`);
       
       // Only accept matching asset types
       const acceptedTypes = {
@@ -34,8 +49,9 @@ export const TimelineTrack = ({ layers, trackType, pixelsPerSecond }: TimelineTr
         'shape': ['shape']
       };
 
-      if (!acceptedTypes[trackType].includes(data.assetType)) {
-        toast.error(`Arraste ${data.assetType === 'video' ? 'vídeos' : data.assetType === 'image' ? 'imagens' : 'áudio'} para a trilha correta`);
+      if (!acceptedTypes[trackType]?.includes(data.assetType)) {
+        console.warn(`⚠️ [TIMELINE DROP] Tipo incompatível: ${data.assetType} para track ${trackType}`);
+        toast.error(`Arraste ${data.assetType === 'video' ? 'vídeos' : data.assetType === 'image' ? 'imagens' : 'textos'} para a trilha correta`);
         return;
       }
 
@@ -47,25 +63,28 @@ export const TimelineTrack = ({ layers, trackType, pixelsPerSecond }: TimelineTr
         duration: data.metadata?.duration || 5,
         z_index: layers.length,
         opacity: 1,
-        position: { x: 100, y: 100 },
+        position: { x: 0, y: 0 },
         size: { 
-          width: data.metadata?.width || 640, 
-          height: data.metadata?.height || 360 
+          width: data.metadata?.width || 1280, 
+          height: data.metadata?.height || 720
         },
         rotation: 0,
-        asset_id: data.fileUrl, // Use file URL for video playback
+        asset_id: data.fileUrl,
       };
 
+      console.log('🎯 [TIMELINE DROP] Novo layer criado:', newLayer);
       addLayer(newLayer);
       toast.success('Asset adicionado à timeline!');
     } catch (error) {
-      console.error('Error parsing drop data:', error);
+      console.error('❌ [TIMELINE DROP] Erro:', error);
       toast.error('Erro ao adicionar asset');
     }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
     setIsDragOver(true);
   };
 

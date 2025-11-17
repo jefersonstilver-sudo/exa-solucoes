@@ -162,7 +162,7 @@ export default function VideoEditorPage() {
             )}
             
             {/* Canvas + Timeline + Properties */}
-            <ResizablePanel defaultSize={activePanel ? 55 : 78} minSize={40}>
+            <ResizablePanel defaultSize={activePanel ? 78 : 100} minSize={40}>
               <ResizablePanelGroup direction="horizontal" className="h-full">
                 {/* Canvas + Timeline (resizable vertically) */}
                 <ResizablePanel defaultSize={78} minSize={50}>
