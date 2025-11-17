@@ -24,10 +24,19 @@ export const SimpleCartProvider: React.FC<SimpleCartProviderProps> = ({ children
     try {
       (window as any).__simpleCart = cartState;
       const ids = cartState.cartItems?.map((i: any) => i?.panel?.id) || [];
+      
+      console.log("🛒 [SimpleCartContext] Cart updated:", {
+        itemCount: cartState.itemCount,
+        panelIds: ids,
+        timestamp: Date.now()
+      });
+      
       window.dispatchEvent(new CustomEvent('cart:updated', {
         detail: { itemCount: cartState.itemCount, ids }
       }));
-    } catch {}
+    } catch (error) {
+      console.error("❌ [SimpleCartContext] Error updating cart:", error);
+    }
   }, [cartState, cartState.cartItems, cartState.itemCount]);
   
   return (

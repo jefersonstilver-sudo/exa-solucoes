@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CouponStep from '@/components/checkout/CouponStep';
 import CheckoutLayout from '@/components/checkout/CheckoutLayout';
@@ -31,6 +31,17 @@ const CheckoutCoupon = () => {
   } = useCheckout();
   
   const { isSuperAdmin } = useAuth();
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  
+  // Aguardar dados carregarem antes de validar
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsDataLoading(false);
+      console.log("🔄 [CheckoutCoupon] Dados carregados, validação liberada");
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Calcular total em tempo real
   const currentTotal = calculateTotalPrice();
@@ -38,21 +49,46 @@ const CheckoutCoupon = () => {
   // Detectar cupom cortesia
   const isCortesia = couponCategoria === 'cortesia' || couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN';
   
-  // CRÍTICO: Verificar se dados do checkout estão disponíveis
+  // CRÍTICO: Verificar se dados do checkout estão disponíveis - COM PROTEÇÃO DE LOADING
   useEffect(() => {
     console.log("🛒 [CheckoutCoupon] Verificando dados:", {
+      isDataLoading,
       cartItemsCount: cartItems?.length || 0,
       selectedPlan,
       currentTotal,
       hasCartItems: !!cartItems && cartItems.length > 0,
       timestamp: new Date().toISOString()
     });
+    
+    // NÃO VALIDAR ATÉ DADOS CARREGAREM
+    if (isDataLoading) {
+      console.log("⏳ [CheckoutCoupon] Aguardando dados carregarem...");
+      return;
+    }
 
-    // Se não há itens no carrinho, tentar recuperar
+    // Se não há itens no carrinho, tentar recuperar ANTES de redirecionar
     if (!cartItems || cartItems.length === 0) {
-      console.error("❌ [CheckoutCoupon] Carrinho vazio - redirecionando");
+      console.error("⚠️ [CheckoutCoupon] Carrinho vazio, tentando recuperar...");
+      
+      // Tentar recuperar do localStorage
+      const savedCart = localStorage.getItem('simple_cart');
+      if (savedCart) {
+        console.log("🔄 [CheckoutCoupon] Carrinho encontrado no localStorage, aguardando context atualizar");
+        // Dar tempo para o context atualizar
+        setTimeout(() => {
+          // Se ainda estiver vazio após recovery, redirecionar
+          if (!cartItems || cartItems.length === 0) {
+            console.error("❌ [CheckoutCoupon] Recovery falhou - redirecionando");
+            toast.error("Seu carrinho está vazio. Adicione painéis antes de continuar.");
+            navigate('/selecionar-plano');
+          }
+        }, 500);
+        return;
+      }
+      
+      console.error("❌ [CheckoutCoupon] Carrinho vazio e sem dados salvos - redirecionando");
       toast.error("Seu carrinho está vazio. Adicione painéis antes de continuar.");
-      setTimeout(() => navigate('/checkout'), 500);
+      setTimeout(() => navigate('/selecionar-plano'), 500);
       return;
     }
 
@@ -63,7 +99,7 @@ const CheckoutCoupon = () => {
       
       if (!savedPlan) {
         toast.error("Selecione um plano antes de continuar.");
-        setTimeout(() => navigate('/checkout/plano'), 500);
+        setTimeout(() => navigate('/selecionar-plano'), 500);
       }
     }
 

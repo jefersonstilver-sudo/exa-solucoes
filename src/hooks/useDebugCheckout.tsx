@@ -41,11 +41,11 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
     }
     
     // Don't navigate if already on the target page
-    if (isCurrentPath('/checkout')) {
+    if (isCurrentPath('/selecionar-plano')) {
       logCheckoutEvent(
         CheckoutEvent.DEBUG_EVENT,
         LogLevel.INFO,
-        "User already on checkout page, not navigating",
+        "User already on plan selection page, not navigating",
         { timestamp: Date.now() }
       );
       return;
@@ -65,28 +65,28 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.INFO,
-        "Direct navigation to checkout",
-        { url: '/checkout', cartItemsCount: cartItems.length, timestamp: Date.now() }
+        "Direct navigation to plan selection",
+        { url: '/selecionar-plano', cartItemsCount: cartItems.length, timestamp: Date.now() }
       );
       
       // Register navigation
-      logNavigation('/checkout', 'direct', true);
+      logNavigation('/selecionar-plano', 'direct', true);
       
-      console.log("Executing direct navigation to /checkout");
+      console.log("Executing direct navigation to /selecionar-plano");
       
       // First attempt with React Router
-      navigate('/checkout');
+      navigate('/selecionar-plano');
       
       // Backup check in case React Router navigation didn't work
       setTimeout(() => {
-        if (!isCurrentPath('/checkout')) {
+        if (!isCurrentPath('/selecionar-plano')) {
           logCheckoutEvent(
             CheckoutEvent.DEBUG_EVENT,
             LogLevel.WARNING,
-            "React Router navigation didn't reach checkout, using direct navigation",
+            "React Router navigation didn't reach plan selection, using direct navigation",
             { timestamp: Date.now() }
           );
-          navigateSafely('/checkout');
+          navigateSafely('/selecionar-plano');
         }
       }, 300);
     } catch (error) {
@@ -99,7 +99,7 @@ export const useDebugCheckout = (cartItems: CartItem[]) => {
       );
       
       // Last resort fallback to window.location
-      navigateSafely('/checkout');
+      navigateSafely('/selecionar-plano');
     }
   };
   

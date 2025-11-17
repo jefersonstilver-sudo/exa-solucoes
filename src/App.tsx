@@ -256,7 +256,8 @@ const AppContent = () => {
             </Suspense>
           } />
           
-          {/* CHECKOUT FLOW CORRIGIDO - REMOVIDA ROTA /checkout ANTIGA */}
+          {/* CHECKOUT FLOW - Redirect antigo checkout para novo fluxo */}
+          <Route path="/checkout" element={<Navigate to="/selecionar-plano" replace />} />
           <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
           <Route path="/checkout/resumo" element={<CheckoutSummary />} />
           <Route path="/checkout/finalizar" element={<CheckoutFinish />} />

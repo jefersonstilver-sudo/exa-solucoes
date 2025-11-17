@@ -18,11 +18,11 @@ const PaymentError = ({ error }: PaymentErrorProps) => {
           <h2 className="text-xl font-bold text-red-700 mb-2">Erro ao carregar pagamento</h2>
           <p className="text-red-600">{error}</p>
           <Button
-            onClick={() => navigate('/checkout')}
+            onClick={() => navigate('/selecionar-plano')}
             className="mt-4"
             variant="outline"
           >
-            Voltar para checkout
+            Voltar para seleção de plano
           </Button>
         </div>
       </div>

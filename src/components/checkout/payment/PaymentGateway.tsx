@@ -65,9 +65,9 @@ const PaymentGateway = ({
     };
   }, [orderId, paymentMethod, userId]);
   
-  // Voltar para o checkout
+  // Voltar para o resumo do checkout
   const handleBack = () => {
-    navigate('/checkout');
+    navigate('/checkout/resumo');
   };
   
   // Atualizar método de pagamento

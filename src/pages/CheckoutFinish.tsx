@@ -25,7 +25,7 @@ const CheckoutFinish = () => {
   };
 
   const handleBack = () => {
-    navigate('/checkout');
+    navigate('/selecionar-plano');
   };
 
   return (

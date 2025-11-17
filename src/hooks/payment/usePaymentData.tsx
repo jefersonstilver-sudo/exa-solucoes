@@ -56,7 +56,7 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
         description: "ID do pedido não fornecido",
         variant: "destructive"
       });
-      navigate('/checkout');
+      navigate('/selecionar-plano');
       return;
     }
     
