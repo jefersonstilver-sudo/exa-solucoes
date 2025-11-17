@@ -7,7 +7,6 @@ import { Timeline } from '@/components/video-editor/timeline/Timeline';
 import { VerticalNavBar } from '@/components/video-editor/navigation/VerticalNavBar';
 import { ExpansionPanel } from '@/components/video-editor/navigation/ExpansionPanel';
 import { PropertiesPanel } from '@/components/video-editor/properties/PropertiesPanel';
-import { PlaybackControls } from '@/components/video-editor/controls/PlaybackControls';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Download, Undo, Redo } from 'lucide-react';
 import { toast } from 'sonner';
@@ -163,15 +162,15 @@ export default function VideoEditorPage() {
             )}
             
             {/* Canvas + Timeline + Properties */}
-            <ResizablePanel defaultSize={activePanel ? 55 : 75} minSize={40}>
+            <ResizablePanel defaultSize={activePanel ? 55 : 78} minSize={40}>
               <ResizablePanelGroup direction="horizontal" className="h-full">
                 {/* Canvas + Timeline (resizable vertically) */}
-                <ResizablePanel defaultSize={75} minSize={50}>
+                <ResizablePanel defaultSize={78} minSize={50}>
                   <ResizablePanelGroup direction="vertical" className="h-full">
-                {/* Video Player */}
-                <ResizablePanel defaultSize={65} minSize={30}>
-                  <VideoPlayer />
-                </ResizablePanel>
+                    {/* Video Player */}
+                    <ResizablePanel defaultSize={65} minSize={30}>
+                      <VideoPlayer />
+                    </ResizablePanel>
                     
                     {/* Resizable Handle */}
                     <ResizableHandle withHandle />
@@ -187,15 +186,12 @@ export default function VideoEditorPage() {
                 <ResizableHandle withHandle />
                 
                 {/* Properties Panel */}
-                <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
+                <ResizablePanel defaultSize={22} minSize={15} maxSize={35}>
                   <PropertiesPanel />
                 </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
           </ResizablePanelGroup>
-          
-          {/* Playback Controls (fixed at bottom) */}
-          <PlaybackControls />
         </div>
       </div>
     </ClientOnly>
