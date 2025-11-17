@@ -3,8 +3,9 @@ import { useEditorState } from '@/hooks/video-editor/useEditorState';
 import { TimelineTrack } from './TimelineTrack';
 import { Playhead } from './Playhead';
 import { TimelineRuler } from './TimelineRuler';
+import { TimelineMarker } from './TimelineMarker';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut, Undo2, Redo2, Magnet, Flag } from 'lucide-react';
 
 export const Timeline = () => {
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -14,7 +15,15 @@ export const Timeline = () => {
     currentTime,
     timelineZoom,
     setTimelineZoom,
-    setCurrentTime 
+    setCurrentTime,
+    markers,
+    addMarker,
+    snapEnabled,
+    setSnapEnabled,
+    undo,
+    redo,
+    canUndo,
+    canRedo
   } = useEditorState();
 
   const pixelsPerSecond = 100 * timelineZoom;
@@ -33,14 +42,59 @@ export const Timeline = () => {
     setCurrentTime(Math.max(0, Math.min(duration, time)));
   };
 
+  const handleAddMarker = () => {
+    addMarker({
+      id: `marker-${Date.now()}`,
+      time: currentTime,
+      label: `Marcador ${markers.length + 1}`,
+      color: 'bg-yellow-500'
+    });
+  };
+
   return (
     <div className="flex flex-col h-full bg-background border-t">
       {/* Timeline Controls */}
       <div className="flex items-center justify-between p-3 border-b bg-muted/30">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">Timeline</span>
+          <div className="h-4 w-px bg-border mx-1" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => undo()}
+            disabled={!canUndo()}
+            title="Desfazer (Ctrl+Z)"
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => redo()}
+            disabled={!canRedo()}
+            title="Refazer (Ctrl+Y)"
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant={snapEnabled ? "default" : "ghost"}
+            size="icon"
+            onClick={() => setSnapEnabled(!snapEnabled)}
+            title="Snap to Grid"
+          >
+            <Magnet className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleAddMarker}
+            title="Adicionar Marcador"
+          >
+            <Flag className="h-4 w-4" />
+          </Button>
+          <div className="h-4 w-px bg-border mx-1" />
           <Button
             variant="ghost"
             size="icon"
@@ -108,6 +162,15 @@ export const Timeline = () => {
               trackType="text"
               pixelsPerSecond={pixelsPerSecond}
             />
+
+            {/* Markers */}
+            {markers.map(marker => (
+              <TimelineMarker
+                key={marker.id}
+                markerId={marker.id}
+                pixelsPerSecond={pixelsPerSecond}
+              />
+            ))}
 
             {/* Playhead */}
             <Playhead 
