@@ -207,14 +207,14 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
 
                 {/* Playlist Lateral */}
                 <div className="lg:col-span-1">
-                  <div className="bg-card rounded-lg border shadow-sm flex flex-col" style={{maxHeight: 'calc(90vh - 200px)'}}>
-                    <div className="p-4 border-b flex-shrink-0">
+                  <div className="bg-card rounded-lg border shadow-sm overflow-hidden" style={{height: 'calc(90vh - 200px)'}}>
+                    <div className="p-4 border-b">
                       <h3 className="text-card-foreground font-semibold flex items-center gap-2">
                         <Video className="h-5 w-5 text-primary" />
                         Playlist ({videos.length})
                       </h3>
                     </div>
-                    <ScrollArea className="flex-1">
+                    <div className="overflow-y-auto" style={{height: 'calc(100% - 60px)'}}>
                       <div className="space-y-2 p-4">
                         {videos.map((video, index) => (
                           <button
@@ -265,7 +265,7 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
                           </button>
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </div>
                 </div>
               </div>
