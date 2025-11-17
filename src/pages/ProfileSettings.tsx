@@ -31,42 +31,11 @@ const ProfileSettings = () => {
     full_name: profile?.full_name || '',
     phone: profile?.phone || '',
     company_name: profile?.company_name || '',
-    company_country: '',
-    company_document: '',
   });
 
   const [saving, setSaving] = useState(false);
   const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
 
-  // Carregar dados da empresa da tabela users
-  useEffect(() => {
-    const fetchUserCompanyData = async () => {
-      if (!user?.id) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('empresa_pais, empresa_documento, empresa_nome')
-          .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-
-        if (data) {
-          setFormData(prev => ({
-            ...prev,
-            company_country: data.empresa_pais || '',
-            company_document: data.empresa_documento || '',
-            company_name: data.empresa_nome || prev.company_name,
-          }));
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados da empresa:', error);
-      }
-    };
-
-    fetchUserCompanyData();
-  }, [user?.id]);
 
   useEffect(() => {
     if (profile) {
@@ -95,26 +64,12 @@ const ProfileSettings = () => {
     setSaving(true);
 
     try {
-      // Atualizar profiles (full_name, phone, company_name)
+      // Atualizar apenas profiles (full_name, phone, company_name)
       await updateProfile({
         full_name: formData.full_name,
         phone: formData.phone,
         company_name: formData.company_name,
       });
-
-      // Atualizar users (empresa_pais, empresa_documento, empresa_nome)
-      if (user?.id) {
-        const { error: usersError } = await supabase
-          .from('users')
-          .update({
-            empresa_pais: formData.company_country,
-            empresa_documento: formData.company_document,
-            empresa_nome: formData.company_name,
-          })
-          .eq('id', user.id);
-
-        if (usersError) throw usersError;
-      }
 
       toast.success('Perfil atualizado com sucesso!');
     } catch (error) {
