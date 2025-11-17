@@ -3,6 +3,7 @@ import { useParams, Navigate } from 'react-router-dom';
 import { useMinimalDisplayVideos } from '@/hooks/useMinimalDisplayVideos';
 import { supabase } from '@/integrations/supabase/client';
 import { WifiOff } from 'lucide-react';
+import { UpdateIndicator } from '@/components/display/UpdateIndicator';
 
 interface MinimalDisplayPanelProps {
   buildingId?: string;
@@ -31,7 +32,7 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
   }
 
   const buildingId = rawBuildingId;
-  const { videos, loading, refresh } = useMinimalDisplayVideos(buildingId);
+  const { videos, loading, isUpdating, refresh } = useMinimalDisplayVideos(buildingId);
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
@@ -40,6 +41,7 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
   const [playlistCycleCount, setPlaylistCycleCount] = useState(0);
   
   const videoRef = useRef<HTMLVideoElement>(null);
+  const nextVideoRef = useRef<HTMLVideoElement>(null);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const offlineTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -236,6 +238,9 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
 
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
+      {/* Indicador de Atualização */}
+      <UpdateIndicator isUpdating={isUpdating} videosCount={videos.length} />
+      
       {/* Indicador de offline */}
       {showOffline && (
         <div className="absolute top-4 right-4 z-50 bg-red-500/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg">
@@ -256,6 +261,14 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
           console.error('❌ [MINIMAL] Erro ao carregar vídeo:', currentVideo.video_id);
           handleVideoEnd();
         }}
+      />
+
+      {/* Vídeo oculto para pre-loading do próximo */}
+      <video
+        ref={nextVideoRef}
+        preload="auto"
+        className="hidden"
+        src={videos.length > 0 ? videos[(currentIndex + 1) % videos.length]?.video_url : ''}
       />
 
       {/* Info (debug) */}

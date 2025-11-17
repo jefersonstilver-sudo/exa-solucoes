@@ -26,7 +26,7 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
   isOpen,
   onClose
 }) => {
-  const { videos, loading, error } = useBuildingActiveVideos(buildingId);
+  const { videos, loading, isUpdating, error } = useBuildingActiveVideos(buildingId);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
@@ -80,7 +80,8 @@ export const BuildingVideoPlaylistPreview: React.FC<BuildingVideoPlaylistPreview
               <DialogTitle className="text-2xl font-bold text-gray-900 mb-1">
                 Vídeos em Exibição - {buildingName}
               </DialogTitle>
-              <DialogDescription className="text-gray-600">
+              <DialogDescription className="text-gray-600 flex items-center gap-2">
+                {isUpdating && <span className="text-blue-500 animate-pulse">🔄 Atualizando...</span>}
                 {loading ? 'Carregando playlist...' : `${videos.length} ${videos.length === 1 ? 'vídeo ativo' : 'vídeos ativos'}`}
               </DialogDescription>
             </div>

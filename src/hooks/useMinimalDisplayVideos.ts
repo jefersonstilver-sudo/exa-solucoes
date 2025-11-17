@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface MinimalVideo {
@@ -11,19 +11,33 @@ export interface MinimalVideo {
 export interface UseMinimalDisplayVideosResult {
   videos: MinimalVideo[];
   loading: boolean;
+  isUpdating: boolean;
   refresh: (silent?: boolean) => Promise<void>;
+}
+
+// Debounce helper
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
 }
 
 /**
  * Hook minimalista para buscar vídeos de display
  * - UMA ÚNICA query eficiente
- * - Sem polling automático (controle manual)
+ * - Realtime automático para novas atualizações
  * - Sem cache complexo
- * - Sem proteções pesadas
+ * - Feedback visual de atualização
  */
 export function useMinimalDisplayVideos(buildingId: string): UseMinimalDisplayVideosResult {
   const [videos, setVideos] = useState<MinimalVideo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
   const isFetchingRef = useRef(false);
 
   const fetchVideos = useCallback(async (silent = false) => {
@@ -106,14 +120,69 @@ export function useMinimalDisplayVideos(buildingId: string): UseMinimalDisplayVi
     }
   }, [buildingId]);
 
+  // Debounced refresh para realtime
+  const debouncedRefresh = useMemo(() => debounce(() => {
+    console.log('🔄 [MINIMAL] Iniciando atualização silenciosa...');
+    setIsUpdating(true);
+    fetchVideos(true).finally(() => {
+      setIsUpdating(false);
+      console.log('✅ [MINIMAL] Atualização concluída');
+    });
+  }, 3000), [fetchVideos]);
+
   // ✅ Buscar vídeos APENAS na montagem inicial
   useEffect(() => {
     fetchVideos();
   }, [fetchVideos]);
 
+  // ✅ REALTIME: Escutar mudanças em pedido_videos e pedidos
+  useEffect(() => {
+    if (!buildingId) return;
+
+    console.log('📡 [MINIMAL] Configurando realtime para prédio:', buildingId.slice(0, 8) + '...');
+
+    const channel = supabase
+      .channel(`minimal-videos-${buildingId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'pedido_videos'
+      }, (payload) => {
+        console.log('📡 [MINIMAL REALTIME] Mudança detectada em pedido_videos:', {
+          event: payload.eventType,
+          videoId: (payload.new as any)?.video_id?.slice(0, 8) + '...' || 'N/A',
+          pedidoId: (payload.new as any)?.pedido_id?.slice(0, 8) + '...' || 'N/A',
+          timestamp: new Date().toLocaleTimeString('pt-BR')
+        });
+        debouncedRefresh();
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'pedidos'
+      }, (payload) => {
+        const newPedido = payload.new as any;
+        if (newPedido.lista_predios?.includes(buildingId)) {
+          console.log('🆕 [MINIMAL REALTIME] Novo pedido para este prédio:', {
+            pedidoId: newPedido.id?.slice(0, 8) + '...',
+            buildingId: buildingId.slice(0, 8) + '...',
+            timestamp: new Date().toLocaleTimeString('pt-BR')
+          });
+          debouncedRefresh();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      console.log('🔌 [MINIMAL] Desconectando realtime');
+      supabase.removeChannel(channel);
+    };
+  }, [buildingId, debouncedRefresh]);
+
   return {
     videos,
     loading,
+    isUpdating,
     refresh: fetchVideos
   };
 }

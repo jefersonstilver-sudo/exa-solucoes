@@ -30,6 +30,7 @@ export interface BuildingActiveVideo {
 export interface UseBuildingActiveVideosResult {
   videos: BuildingActiveVideo[];
   loading: boolean;
+  isUpdating: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
@@ -37,6 +38,7 @@ export interface UseBuildingActiveVideosResult {
 export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVideosResult {
   const [videos, setVideos] = useState<BuildingActiveVideo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Cache para evitar refetch desnecessário
@@ -288,38 +290,86 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
     }
   }, [buildingId]); // ✅ Apenas buildingId como dependência
   
-  // Debounce para refetch via realtime
+  // Debounced refetch para evitar múltiplas chamadas
   const debouncedRefetch = useMemo(() => debounce(() => {
-    fetchActiveVideos();
-  }, 2000), [buildingId]);
+    console.log('🔄 [VIDEOS] Iniciando atualização via realtime...');
+    setIsUpdating(true);
+    fetchActiveVideos().finally(() => {
+      setIsUpdating(false);
+      console.log('✅ [VIDEOS] Atualização realtime concluída');
+    });
+  }, 2000), [fetchActiveVideos]);
 
+  // ✅ REALTIME MELHORADO: Escutar mudanças relevantes em pedido_videos e pedidos
   useEffect(() => {
     fetchActiveVideos();
 
-    // REALTIME: Apenas 1 channel para pedido_videos (suficiente)
+    // Cache de pedido IDs para filtro rápido
+    let cachedPedidoIds: string[] = [];
+    
+    const updateCache = async () => {
+      const { data } = await supabase
+        .from('pedidos')
+        .select('id')
+        .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
+        .filter('lista_predios', 'cs', `{${buildingId}}`);
+      
+      cachedPedidoIds = data?.map(p => p.id) || [];
+      console.log('📦 [VIDEOS] Cache atualizado:', cachedPedidoIds.length, 'pedidos ativos');
+    };
+
+    updateCache();
+    const cacheInterval = setInterval(updateCache, 60000); // Atualizar cache a cada 1 min
+
     const channel = supabase
       .channel(`building-videos-${buildingId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'pedido_videos'
-        },
-        () => {
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'pedido_videos'
+      }, (payload: any) => {
+        // FILTRO: Só reagir se mudança é de pedido deste prédio
+        const pedidoId = payload.new?.pedido_id || payload.old?.pedido_id;
+        if (cachedPedidoIds.includes(pedidoId)) {
+          console.log('📡 [VIDEOS REALTIME] Mudança relevante detectada:', {
+            event: payload.eventType,
+            videoId: payload.new?.video_id?.slice(0, 8) + '...' || 'N/A',
+            pedidoId: pedidoId?.slice(0, 8) + '...',
+            buildingId: buildingId.slice(0, 8) + '...',
+            timestamp: new Date().toLocaleTimeString('pt-BR')
+          });
           debouncedRefetch();
         }
-      )
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'pedidos'
+      }, (payload: any) => {
+        // Novo pedido para este prédio
+        if (payload.new?.lista_predios?.includes(buildingId)) {
+          console.log('🆕 [VIDEOS REALTIME] Novo pedido para este prédio:', {
+            pedidoId: payload.new?.id?.slice(0, 8) + '...',
+            buildingId: buildingId.slice(0, 8) + '...',
+            timestamp: new Date().toLocaleTimeString('pt-BR')
+          });
+          updateCache(); // Atualizar cache imediatamente
+          debouncedRefetch();
+        }
+      })
       .subscribe();
 
     return () => {
+      clearInterval(cacheInterval);
       supabase.removeChannel(channel);
+      console.log('🔌 [VIDEOS] Realtime desconectado');
     };
-  }, [buildingId, debouncedRefetch]);
+  }, [buildingId, debouncedRefetch, fetchActiveVideos]);
 
   return {
     videos,
     loading,
+    isUpdating,
     error,
     refetch: fetchActiveVideos
   };
