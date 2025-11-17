@@ -391,9 +391,6 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                   </div>
                 </div>}
             </div>
-        ) : slot.id ? (
-          // Mostrar placeholder para vídeo que existe mas ainda não foi carregado
-          
 
             {/* Informações do Vídeo */}
             <div className="space-y-2">
@@ -426,7 +423,18 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
             {/* Botões de Ação */}
             <VideoSlotActions slot={slot} onActivate={onActivate} onRemove={onRemove} onDownload={handleDownload} onScheduleVideo={onScheduleVideo} onForceCleanup={handleForceCleanup} totalApprovedVideos={totalApprovedVideos} orderId={orderId} />
-          </div> : <VideoSlotUpload slotPosition={slot.slot_position} uploading={uploading} isUploading={currentProgress !== undefined} onUpload={onUpload} />}
+          </div> : slot.id ? (
+          // Placeholder para vídeo enviado mas ainda não carregado
+          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 text-center space-y-3">
+            <Clock className="h-12 w-12 text-yellow-600 mx-auto" />
+            <div>
+              <p className="font-medium text-yellow-900">Vídeo Enviado</p>
+              <p className="text-sm text-yellow-700 mt-1">Aguardando aprovação dos administradores</p>
+            </div>
+          </div>
+        ) : (
+          <VideoSlotUpload slotPosition={slot.slot_position} uploading={uploading} isUploading={currentProgress !== undefined} onUpload={onUpload} />
+        )}
       </CardContent>
     </Card>;
 
