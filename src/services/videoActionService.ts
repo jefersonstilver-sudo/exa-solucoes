@@ -89,45 +89,76 @@ export const selectVideoForDisplay = async (
 
       const newVideoName = newVideoInfo?.video_data?.nome;
       
-      // 🔔 FASE 1: Notificar API externa automaticamente
+      // 🔔 SINCRONIZAÇÃO SÍNCRONA COM API EXTERNA - Notificar TODOS os vídeos
       try {
-        console.log('🔔 [VIDEO_ACTION] Iniciando notificação da API externa...');
+        console.log('🔔 [VIDEO_ACTION] Iniciando sincronização síncrona com API externa...');
         
-        // Buscar prédios do pedido
-        const { data: pedidoData } = await supabase
+        // 1️⃣ Buscar TODOS os vídeos do pedido
+        const { data: allVideos, error: videosError } = await supabase
+          .from('pedido_videos')
+          .select('id, video_id, is_active, selected_for_display, videos(nome)')
+          .eq('pedido_id', videoData.pedido_id);
+
+        if (videosError) {
+          console.error('❌ [VIDEO_ACTION] Erro ao buscar vídeos:', videosError);
+          throw videosError;
+        }
+
+        // 2️⃣ Buscar prédios do pedido
+        const { data: pedidoData, error: pedidoError } = await supabase
           .from('pedidos')
           .select('lista_predios')
           .eq('id', videoData.pedido_id)
           .single();
 
-        if (pedidoData?.lista_predios && Array.isArray(pedidoData.lista_predios)) {
-          console.log('🏢 [VIDEO_ACTION] Notificando API externa para prédios:', pedidoData.lista_predios);
+        if (pedidoError) {
+          console.error('❌ [VIDEO_ACTION] Erro ao buscar pedido:', pedidoError);
+          throw pedidoError;
+        }
+
+        if (pedidoData?.lista_predios && Array.isArray(pedidoData.lista_predios) && allVideos && allVideos.length > 0) {
+          console.log(`🏢 [VIDEO_ACTION] Notificando ${allVideos.length} vídeos para ${pedidoData.lista_predios.length} prédios`);
           
-          // Notificar cada prédio
+          // 3️⃣ Para cada prédio, notificar TODOS os vídeos
           for (const buildingId of pedidoData.lista_predios) {
-            const videoName = newVideoName || 'Video';
+            console.log(`🔔 [VIDEO_ACTION] Processando prédio ${buildingId}...`);
             
-            const { data: notifyData, error: notifyError } = await supabase.functions.invoke('notify-active', {
-              body: {
-                clientId: buildingId.substring(0, 4),
-                buildingUuid: buildingId,
-                titulo: videoName,
-                ativo: true
+            // 4️⃣ Notificar CADA vídeo individualmente (síncrono)
+            for (const video of allVideos) {
+              const videoName = video.videos?.nome || 'Video';
+              const isActive = video.selected_for_display && video.is_active;
+              
+              console.log(`📹 [VIDEO_ACTION] Notificando vídeo "${videoName}": ativo=${isActive}`);
+              
+              // Chamada SÍNCRONA (await) para garantir ordem
+              const { data: notifyData, error: notifyError } = await supabase.functions.invoke('notify-active', {
+                body: {
+                  clientId: buildingId.substring(0, 4),
+                  buildingUuid: buildingId,
+                  titulo: videoName,
+                  ativo: isActive  // true para o ativo, false para os outros
+                }
+              });
+              
+              if (notifyError) {
+                console.error(`❌ [VIDEO_ACTION] Erro ao notificar "${videoName}":`, notifyError);
+                throw notifyError; // Bloquear se falhar
               }
-            });
-            
-            if (notifyError) {
-              console.warn(`⚠️ [VIDEO_ACTION] Erro ao notificar prédio ${buildingId}:`, notifyError);
-            } else {
-              console.log(`✅ [VIDEO_ACTION] API notificada para prédio ${buildingId}:`, notifyData);
+              
+              console.log(`✅ [VIDEO_ACTION] Vídeo "${videoName}" notificado com ativo=${isActive}`);
             }
+            
+            console.log(`✅ [VIDEO_ACTION] Prédio ${buildingId} sincronizado com sucesso`);
           }
+          
+          console.log('🎉 [VIDEO_ACTION] Sincronização completa com API externa');
         } else {
-          console.warn('⚠️ [VIDEO_ACTION] Nenhum prédio encontrado para notificar');
+          console.warn('⚠️ [VIDEO_ACTION] Nenhum prédio ou vídeo encontrado para notificar');
         }
       } catch (apiError) {
-        console.warn('⚠️ [VIDEO_ACTION] Erro ao notificar API externa (não crítico):', apiError);
-        // Não bloquear o fluxo se a API externa falhar
+        console.error('💥 [VIDEO_ACTION] Erro crítico ao notificar API externa:', apiError);
+        toast.error('Erro ao sincronizar com painéis físicos');
+        throw apiError; // Bloquear fluxo em caso de erro
       }
       
       // Chamar callback de sucesso se fornecido
