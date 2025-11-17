@@ -12,6 +12,8 @@ import { useRealtimeConnection } from '@/hooks/useRealtimeConnection';
 import { ConnectionStatusIndicator } from '@/components/commercial/ConnectionStatusIndicator';
 import { VideoDebugger } from '@/utils/videoDebugger';
 import { useBuildingScheduleMonitor } from '@/hooks/useBuildingScheduleMonitor';
+import { Download } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -50,6 +52,8 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const { videos: activeVideos, loading, refetch } = useBuildingActiveVideos(buildingId);
   const [buildingName, setBuildingName] = useState('');
   const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
   
   // ✅ CORREÇÃO 1: Ref estável para refetch
   const refetchRef = useRef(refetch);
@@ -130,6 +134,93 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       document.removeEventListener('contextmenu', blockContextMenu, { capture: true } as any);
     };
   }, []);
+
+  // PWA: Capturar evento de instalação
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      VideoDebugger.logEvent('PWA', 'Prompt de instalação disponível');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Verificar se já está instalado
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+      VideoDebugger.logEvent('PWA', 'App já instalado');
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  // PWA: Fullscreen automático quando instalado
+  useEffect(() => {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+    
+    if (isPWA && !isInstalled) {
+      setIsInstalled(true);
+    }
+
+    if (isPWA) {
+      VideoDebugger.logEvent('PWA', 'Ativando fullscreen automático');
+      
+      const enterFullscreen = () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.().catch(err => {
+            VideoDebugger.logEvent('PWA', 'Erro ao entrar em fullscreen', { error: err });
+          });
+        }
+      };
+
+      // Tentar fullscreen após 2 segundos
+      const timer = setTimeout(enterFullscreen, 2000);
+
+      // Manter fullscreen ao perder foco
+      const handleFullscreenChange = () => {
+        if (!document.fullscreenElement && isPWA) {
+          VideoDebugger.logEvent('PWA', 'Fullscreen perdido, reativando...');
+          setTimeout(enterFullscreen, 500);
+        }
+      };
+
+      document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      };
+    }
+  }, [isInstalled]);
+
+  // Handler de instalação PWA
+  const handleInstall = async () => {
+    if (!deferredPrompt) {
+      toast.error('Instalação não disponível neste momento');
+      return;
+    }
+
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        toast.success('App instalado com sucesso!');
+        setIsInstalled(true);
+        VideoDebugger.logEvent('PWA', 'App instalado pelo usuário');
+      } else {
+        toast.info('Instalação cancelada');
+        VideoDebugger.logEvent('PWA', 'Instalação cancelada pelo usuário');
+      }
+      
+      setDeferredPrompt(null);
+    } catch (error) {
+      VideoDebugger.logEvent('PWA', 'Erro na instalação', { error });
+      toast.error('Erro ao instalar o app');
+    }
+  };
 
   // ✅ CORREÇÃO 1: Polling com refetch estável via ref
   useEffect(() => {
@@ -254,8 +345,24 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
             </div>
           )}
 
-          {/* Status de conexão em tempo real */}
-          <ConnectionStatusIndicator status={connectionStatus} />
+          {/* Botão de instalação PWA */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {deferredPrompt && !isInstalled && (
+              <button
+                onClick={handleInstall}
+                className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all duration-300 border border-white/20 hover:border-white/40 group"
+                title="Instalar aplicativo"
+              >
+                <Download className="w-3 h-3 sm:w-4 sm:h-4 text-white group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-white text-xs sm:text-sm font-medium">
+                  Instalar
+                </span>
+              </button>
+            )}
+            
+            {/* Status de conexão em tempo real */}
+            <ConnectionStatusIndicator status={connectionStatus} />
+          </div>
         </div>
       </header>
 
