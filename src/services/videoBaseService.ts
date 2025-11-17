@@ -287,6 +287,103 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
       schedules_removed: result.schedules_removed
     });
     
+    // 🔔 NOTIFICAR API EXTERNA - Buscar todos os slots e notificar
+    console.log('🔔 [SET_BASE_VIDEO] Iniciando notificação da API externa...');
+    videoLogger.log('info', 'EXTERNAL_API_START', 'Iniciando notificação API externa', { 
+      pedido_id: result.pedido_id 
+    });
+
+    try {
+      // 1️⃣ Buscar todos os slots do pedido
+      const slotsResponse = await fetchAllPedidoSlots(result.pedido_id);
+      
+      if (slotsResponse.error || !slotsResponse.data) {
+        console.warn('⚠️ [SET_BASE_VIDEO] Erro ao buscar slots para notificação:', slotsResponse.error);
+        videoLogger.log('warn', 'EXTERNAL_API_FETCH_ERROR', 'Erro ao buscar slots', { 
+          error: slotsResponse.error 
+        });
+        // Não bloquear o retorno se falhar a busca
+      } else {
+        const slots = slotsResponse.data as PedidoVideosRow[];
+        console.log(`📦 [SET_BASE_VIDEO] Encontrados ${slots.length} slots para notificar`);
+        
+        // 2️⃣ Extrair lista de prédios (do primeiro slot que tiver)
+        const listaPredios = slots[0]?.pedidos?.lista_predios || [];
+        
+        if (listaPredios.length === 0) {
+          console.warn('⚠️ [SET_BASE_VIDEO] Nenhum prédio encontrado no pedido');
+          videoLogger.log('warn', 'EXTERNAL_API_NO_BUILDINGS', 'Nenhum prédio no pedido', { 
+            pedido_id: result.pedido_id 
+          });
+        } else {
+          console.log(`🏢 [SET_BASE_VIDEO] Notificando ${listaPredios.length} prédios`);
+          
+          // 3️⃣ Para cada prédio, notificar TODOS os vídeos
+          for (const buildingId of listaPredios) {
+            console.log(`🏢 [SET_BASE_VIDEO] Notificando prédio ${buildingId}...`);
+            
+            // 4️⃣ Notificar cada slot individualmente (SÍNCRONO)
+            for (const slot of slots) {
+              const videoName = extractTitulo(slot.videos?.nome || slot.videos?.url) || 'Video';
+              
+              // Determinar se este slot deve estar ativo
+              // (é o novo base OU já era base antes)
+              const isActive = slot.id === result.new_base_id;
+              
+              console.log(`🔔 [SET_BASE_VIDEO] Notificando slot ${slot.slot_position} (${videoName}): ativo=${isActive}`);
+              videoLogger.log('debug', 'EXTERNAL_API_NOTIFY_VIDEO', 'Notificando vídeo', {
+                buildingId,
+                slotId: slot.id,
+                videoName,
+                isActive
+              });
+              
+              // Chamada SÍNCRONA (await) para garantir ordem
+              const notifyResult = await safeInvokeNotifyActive(
+                buildingId,
+                videoName,
+                isActive
+              );
+              
+              if (!notifyResult.success) {
+                console.error(`❌ [SET_BASE_VIDEO] Erro ao notificar ${videoName}:`, notifyResult.error);
+                videoLogger.log('error', 'EXTERNAL_API_NOTIFY_ERROR', 'Erro ao notificar vídeo', {
+                  buildingId,
+                  videoName,
+                  error: notifyResult.error
+                });
+                // ⚠️ DECISÃO: Não bloquear o retorno se a API externa falhar
+                // O vídeo já foi trocado no banco com sucesso
+              } else {
+                console.log(`✅ [SET_BASE_VIDEO] Vídeo ${videoName} notificado com sucesso (ativo=${isActive})`);
+                videoLogger.log('info', 'EXTERNAL_API_NOTIFY_SUCCESS', 'Vídeo notificado', {
+                  buildingId,
+                  videoName,
+                  isActive
+                });
+              }
+            }
+            
+            console.log(`✅ [SET_BASE_VIDEO] Prédio ${buildingId} notificado com sucesso`);
+          }
+          
+          console.log('✅ [SET_BASE_VIDEO] Todos os prédios notificados');
+          videoLogger.log('info', 'EXTERNAL_API_COMPLETE', 'Notificação completa', { 
+            pedido_id: result.pedido_id,
+            total_buildings: listaPredios.length,
+            total_slots: slots.length
+          });
+        }
+      }
+    } catch (apiError: any) {
+      console.error('💥 [SET_BASE_VIDEO] Erro ao notificar API externa:', apiError);
+      videoLogger.log('error', 'EXTERNAL_API_EXCEPTION', 'Exceção ao notificar API', {
+        error: apiError.message,
+        stack: apiError.stack
+      });
+      // Não bloquear o retorno - API externa é secundária
+    }
+    
     return {
       success: true,
       timestamp: now(),
