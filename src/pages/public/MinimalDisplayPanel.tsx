@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { useMinimalDisplayVideos } from '@/hooks/useMinimalDisplayVideos';
+import { useBuildingActiveVideos } from '@/hooks/useBuildingActiveVideos';
+import { useBuildingScheduleMonitor } from '@/hooks/useBuildingScheduleMonitor';
 import { supabase } from '@/integrations/supabase/client';
 import { WifiOff } from 'lucide-react';
 import { UpdateIndicator } from '@/components/display/UpdateIndicator';
@@ -11,10 +12,10 @@ interface MinimalDisplayPanelProps {
 
 /**
  * Player MINIMALISTA para displays públicos
- * - Sem hooks pesados
- * - Polling manual controlado (10min)
- * - Performance otimizada
- * - Sem requisições desnecessárias
+ * - Realtime automático sincronizado com link comercial
+ * - Mesma lógica de atualização
+ * - Interface limpa sem elementos visuais extras
+ * - Agendamento sincronizado
  */
 const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: propBuildingId }) => {
   const params = useParams<{ buildingId: string }>();
@@ -32,7 +33,23 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
   }
 
   const buildingId = rawBuildingId;
-  const { videos, loading, isUpdating, refresh } = useMinimalDisplayVideos(buildingId);
+  
+  // ✅ Hook com realtime automático (igual ao comercial)
+  const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
+  
+  // ✅ Ref estável para refetch
+  const refetchRef = useRef(refetch);
+  useEffect(() => {
+    refetchRef.current = refetch;
+  }, [refetch]);
+  
+  // Converter para formato minimal
+  const videos = useMemo(() => activeVideos.map(v => ({
+    video_id: v.video_id,
+    video_url: v.video_url,
+    video_duracao: v.video_duracao,
+    slot_position: 0 // Não usado no minimal
+  })), [activeVideos]);
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [buildingName, setBuildingName] = useState('');
@@ -42,8 +59,18 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const offlineTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // ✅ Monitor de agendamentos (igual ao comercial)
+  useBuildingScheduleMonitor({
+    buildingId,
+    onScheduleChange: () => {
+      console.log('🔄 [MINIMAL] Mudança de agendamento - atualizando');
+      refetchRef.current();
+    },
+    intervalMinutes: 1,
+    enabled: true
+  });
 
   // ✅ Buscar nome do prédio (UMA VEZ)
   useEffect(() => {
@@ -95,38 +122,6 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
     };
   }, []);
 
-  // ✅ Verificação inteligente de mudanças na playlist
-  const checkForPlaylistChanges = useCallback(async () => {
-    try {
-      console.log('🔍 [MINIMAL] Verificando alterações na playlist...');
-      
-      // Simplesmente fazer refresh silencioso - o useEffect vai detectar mudanças
-      await refresh(true);
-      
-      console.log('✅ [MINIMAL] Verificação concluída');
-      
-    } catch (err) {
-      console.error('❌ [MINIMAL] Erro ao verificar mudanças:', err);
-    }
-  }, [refresh]);
-
-  // ✅ Polling de SEGURANÇA (30 minutos - apenas fallback)
-  useEffect(() => {
-    console.log('🔄 [MINIMAL] Configurando polling de segurança (30min)');
-    
-    refreshIntervalRef.current = setInterval(() => {
-      console.log('🔄 [MINIMAL] Refresh de segurança');
-      refresh();
-      setPlaylistCycleCount(0);
-    }, 30 * 60 * 1000); // 30 minutos
-
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [refresh]);
-
   // ✅ Controle de reprodução com detecção de ciclos
   const handleVideoEnd = useCallback(() => {
     if (videos.length === 0) return;
@@ -138,16 +133,10 @@ const MinimalDisplayPanel: React.FC<MinimalDisplayPanelProps> = ({ buildingId: p
       const newCycleCount = playlistCycleCount + 1;
       setPlaylistCycleCount(newCycleCount);
       console.log('🔄 [MINIMAL] Ciclo completo:', newCycleCount);
-      
-      // 🔄 A cada 3 ciclos completos, verificar mudanças
-      if (newCycleCount % 3 === 0) {
-        console.log('🔄 [MINIMAL] Verificando mudanças após 3 ciclos');
-        checkForPlaylistChanges();
-      }
     }
     
     setCurrentIndex(nextIndex);
-  }, [videos.length, currentIndex, playlistCycleCount, checkForPlaylistChanges]);
+  }, [videos.length, currentIndex, playlistCycleCount]);
 
   useEffect(() => {
     const video = videoRef.current;
