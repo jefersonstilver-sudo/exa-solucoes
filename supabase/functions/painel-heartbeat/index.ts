@@ -23,6 +23,20 @@ serve(async (req) => {
       throw new Error('painel_id é obrigatório');
     }
 
+    // Extrair apenas o primeiro IP válido do header x-forwarded-for
+    const extractFirstValidIp = (forwardedFor: string | null): string => {
+      if (!forwardedFor || forwardedFor === 'unknown') return 'unknown';
+      
+      // Extrair apenas o PRIMEIRO IP válido da lista
+      const ips = forwardedFor.split(',').map(ip => ip.trim());
+      const firstValidIp = ips.find(ip => {
+        // Validação básica de IPv4
+        return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip);
+      });
+      
+      return firstValidIp || 'unknown';
+    };
+
     // Atualizar status do painel
     const { error } = await supabaseClient
       .from('paineis_status')
@@ -33,7 +47,7 @@ serve(async (req) => {
         url_atual,
         device_info,
         erro_ultimo: erro || null,
-        ip_address: req.headers.get('x-forwarded-for') || 'unknown',
+        ip_address: extractFirstValidIp(req.headers.get('x-forwarded-for')),
         user_agent: req.headers.get('user-agent') || 'unknown',
         atualizado_em: new Date().toISOString(),
       });
