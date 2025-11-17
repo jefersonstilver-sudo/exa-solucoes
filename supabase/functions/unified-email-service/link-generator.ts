@@ -17,33 +17,19 @@ export class LinkGenerator {
     });
   }
 
-  async generateConfirmationLink(email: string, originalToken?: string): Promise<string> {
+  async generateConfirmationLink(email: string, originalToken?: string, redirectAfterConfirm?: string): Promise<string> {
     console.log('🔗 [LINK-GENERATOR] Gerando link de confirmação válido para:', email);
+    console.log('🔗 [LINK-GENERATOR] Redirect após confirmação:', redirectAfterConfirm || 'padrão');
     
     // ✅ Definir URLs no escopo global do método
     const siteUrl = Deno.env.get('SITE_URL') || 'https://examidia.com.br';
-    const redirectUrl = `${siteUrl}/confirmacao`;
+    const redirectUrl = redirectAfterConfirm 
+      ? `${siteUrl}${redirectAfterConfirm}` 
+      : `${siteUrl}/loja`;
     
     console.log(`🌐 [LINK-GENERATOR] URL de redirecionamento: ${redirectUrl}`);
     
     try {
-      // Se temos um token original válido, tentar usá-lo primeiro
-      if (originalToken) {
-        console.log('🔄 [LINK-GENERATOR] Tentando usar token original fornecido');
-        const directLink = `${siteUrl}/confirmacao#access_token=${originalToken}&type=signup`;
-        
-        // Verificar se o token ainda é válido (teste simples)
-        try {
-          const { data: testData, error: testError } = await this.supabaseAdmin.auth.getUser(originalToken);
-          if (!testError && testData.user) {
-            console.log('✅ [LINK-GENERATOR] Token original ainda válido, usando link direto');
-            return directLink;
-          }
-        } catch (e) {
-          console.log('⚠️ [LINK-GENERATOR] Token original não é mais válido, gerando novo');
-        }
-      }
-      
       // Verificar se o usuário existe e seu status de confirmação
       const { data: userData, error: userError } = await this.supabaseAdmin.auth.admin.listUsers();
       
@@ -61,40 +47,20 @@ export class LinkGenerator {
         confirmedAt: existingUser?.email_confirmed_at
       });
       
-      // Estratégia de geração de link baseada no status do usuário
-      let linkType: string;
-      let shouldTryAlternatives = true;
-      
-      if (!userExists) {
-        // Usuário novo - usar signup
-        linkType = 'signup';
-        shouldTryAlternatives = false;
-      } else if (!emailConfirmed) {
-        // Usuário existe mas email não confirmado - usar signup
-        linkType = 'signup';
-        shouldTryAlternatives = false;
-      } else {
-        // Usuário existe e email já confirmado - usar recovery para permitir login direto
-        linkType = 'recovery';
-        shouldTryAlternatives = true;
-      }
+      // CORREÇÃO: Sempre usar 'signup' para usuários não confirmados
+      // Isso resolve o problema "One-time token not found"
+      const linkType = emailConfirmed ? 'recovery' : 'signup';
       
       console.log(`🔧 [LINK-GENERATOR] Usando estratégia: ${linkType}`);
       
-      // Tentar gerar link com o tipo principal (redirectUrl já está definido no escopo global)
-      // CONFIGURAÇÕES OTIMIZADAS para links de longa duração
-        const { data, error } = await this.supabaseAdmin.auth.admin.generateLink({
-          type: linkType,
-          email: email,
-          options: {
-            redirectTo: redirectUrl,
-            // Tentar configurar uma expiração mais longa se possível
-            data: {
-              extend_expiration: true,
-              confirmation_url: redirectUrl
-            }
-          }
-        });
+      // Gerar link com expiração estendida (24 horas)
+      const { data, error } = await this.supabaseAdmin.auth.admin.generateLink({
+        type: linkType,
+        email: email,
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
 
       if (!error && data.properties?.action_link) {
         console.log(`✅ [LINK-GENERATOR] Link ${linkType} gerado com sucesso`);

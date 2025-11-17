@@ -181,13 +181,14 @@ const Cadastro: React.FC = () => {
           emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
             name,
-            phone: `${phoneCode}${phone.replace(/\D/g, '')}`, // Salva com código do país
+            phone: `${phoneCode}${phone.replace(/\D/g, '')}`,
             phoneCountry,
             document,
             documentType,
             country: documentType === 'documento_estrangeiro' ? country : null,
             documentFrontUrl: documentType === 'documento_estrangeiro' ? documentFrontUrl : null,
-            documentBackUrl: documentType === 'documento_estrangeiro' ? documentBackUrl : null
+            documentBackUrl: documentType === 'documento_estrangeiro' ? documentBackUrl : null,
+            redirectAfterConfirm: redirectTo // Salvar para usar no reenvio de email
           }
         }
       });
