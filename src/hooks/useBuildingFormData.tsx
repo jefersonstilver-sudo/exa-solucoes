@@ -153,70 +153,31 @@ export const useBuildingFormData = (building: any, open: boolean) => {
 
         if (error) throw error;
 
-        // Chamar Edge Function (proxy) para criar cliente - COM RETRY LOGIC
+        // Chamar Edge Function (proxy) para criar cliente - SE FALHAR, CANCELA TUDO
         try {
           const clienteId = data.id.replace(/-/g, '').substring(0, 4);
           
-          console.log('[CREATE BUILDING] Criando cliente externo:', { clienteId, nome: formData.nome });
+          console.log('[EDGE FUNCTION PROXY] Criando cliente externo via Edge Function:', { clienteId, nome: formData.nome });
           
-          let lastError;
-          let attempts = 0;
-          const MAX_RETRIES = 3;
-          const TIMEOUT_MS = 15000; // 15 segundos
-          const RETRY_DELAY_MS = 2000; // 2 segundos entre tentativas
-          
-          while (attempts < MAX_RETRIES) {
-            attempts++;
-            
-            try {
-              console.log(`[CREATE BUILDING] Tentativa ${attempts}/${MAX_RETRIES}...`);
-              
-              // Criar promise com timeout
-              const invokePromise = supabase.functions.invoke('create-building-client', {
-                body: {
-                  cliente_id: clienteId,
-                  cliente_name: formData.nome
-                }
-              });
-              
-              const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout: API externa não respondeu em 15s')), TIMEOUT_MS)
-              );
-              
-              const { data: edgeFunctionData, error: edgeFunctionError } = await Promise.race([
-                invokePromise,
-                timeoutPromise
-              ]) as any;
-
-              if (edgeFunctionError) {
-                throw new Error(`Edge Function falhou: ${edgeFunctionError.message}`);
-              }
-
-              if (!edgeFunctionData?.success) {
-                throw new Error(edgeFunctionData?.error || 'Erro desconhecido ao criar cliente');
-              }
-
-              console.log('[CREATE BUILDING] ✅ Cliente criado com sucesso na tentativa', attempts);
-              break; // Sucesso! Sair do loop
-              
-            } catch (retryError: any) {
-              lastError = retryError;
-              console.warn(`[CREATE BUILDING] ❌ Tentativa ${attempts}/${MAX_RETRIES} falhou:`, retryError.message);
-              
-              if (attempts < MAX_RETRIES) {
-                console.log(`[CREATE BUILDING] ⏳ Aguardando ${RETRY_DELAY_MS}ms antes da próxima tentativa...`);
-                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-              }
+          const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('create-building-client', {
+            body: {
+              cliente_id: clienteId,
+              cliente_name: formData.nome
             }
+          });
+
+          if (edgeFunctionError) {
+            throw new Error(`Edge Function falhou: ${edgeFunctionError.message}`);
           }
-          
-          // Se todas as tentativas falharam
-          if (attempts === MAX_RETRIES && lastError) {
-            throw lastError;
+
+          if (!edgeFunctionData?.success) {
+            throw new Error(edgeFunctionData?.error || 'Erro desconhecido ao criar cliente');
           }
+
+          console.log('[EDGE FUNCTION PROXY] Cliente criado com sucesso:', edgeFunctionData);
 
         } catch (apiError: any) {
-          console.error('[CREATE BUILDING] 🔴 ERRO CRÍTICO após todas tentativas:', apiError);
+          console.error('[EDGE FUNCTION PROXY] ERRO CRÍTICO ao criar cliente:', apiError);
           
           // ROLLBACK: Deletar o prédio criado
           await supabase
@@ -226,8 +187,8 @@ export const useBuildingFormData = (building: any, open: boolean) => {
           
           console.error('[ROLLBACK] Prédio deletado devido a falha na API externa');
           
-          // Mostrar erro detalhado ao usuário
-          throw new Error(`Falha ao criar cliente externo após ${3} tentativas: ${apiError.message}`);
+          // Mostrar erro ao usuário
+          throw new Error(`Falha ao criar cliente externo: ${apiError.message}`);
         }
 
         await supabase.rpc('log_building_action', {
