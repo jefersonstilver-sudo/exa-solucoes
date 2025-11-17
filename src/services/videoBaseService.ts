@@ -290,12 +290,38 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
     // 🔔 NOTIFICAR API EXTERNA - Buscar todos os slots e notificar
     console.log('🔔 [SET_BASE_VIDEO] Iniciando notificação da API externa...');
     videoLogger.log('info', 'EXTERNAL_API_START', 'Iniciando notificação API externa', { 
-      pedido_id: result.pedido_id 
+      slotId 
     });
 
     try {
-      // 1️⃣ Buscar todos os slots do pedido
-      const slotsResponse = await fetchAllPedidoSlots(result.pedido_id);
+      // 1️⃣ PRIMEIRO: Buscar o slot específico para obter o pedido_id
+      console.log('🔍 [SET_BASE_VIDEO] Buscando slot para obter pedido_id:', slotId);
+      
+      const { data: currentSlot, error: slotError } = await supabase
+        .from('pedido_videos')
+        .select('pedido_id')
+        .eq('id', slotId)
+        .single();
+      
+      if (slotError || !currentSlot?.pedido_id) {
+        console.error('❌ [SET_BASE_VIDEO] Erro ao buscar pedido_id:', slotError);
+        videoLogger.log('error', 'EXTERNAL_API_NO_PEDIDO_ID', 'Não foi possível obter pedido_id', { 
+          slotId,
+          error: slotError 
+        });
+        // Não bloquear o retorno - API externa é secundária
+        return {
+          success: true,
+          timestamp: now(),
+          message: result.message || 'Vídeo definido como principal'
+        };
+      }
+      
+      const pedidoId = currentSlot.pedido_id;
+      console.log('✅ [SET_BASE_VIDEO] pedido_id obtido:', pedidoId);
+      
+      // 2️⃣ AGORA SIM: Buscar todos os slots do pedido
+      const slotsResponse = await fetchAllPedidoSlots(pedidoId);
       
       if (slotsResponse.error || !slotsResponse.data) {
         console.warn('⚠️ [SET_BASE_VIDEO] Erro ao buscar slots para notificação:', slotsResponse.error);
