@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useEditorState } from '@/hooks/video-editor/useEditorState';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { ZoomIn, ZoomOut, Maximize2, Play, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 
 export const VideoPlayer = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -15,7 +16,10 @@ export const VideoPlayer = () => {
     canvasZoom,
     setCanvasZoom,
     currentProject,
-    isPlaying 
+    isPlaying,
+    setIsPlaying,
+    setCurrentTime,
+    duration
   } = useEditorState();
   
   // Sync video playback with currentTime
@@ -44,6 +48,33 @@ export const VideoPlayer = () => {
     height: currentProject?.project_data.canvas.height || 1080
   };
 
+  // Playback loop
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      const newTime = currentTime + 0.033; // ~30fps
+      if (newTime >= duration) {
+        setIsPlaying(false);
+        setCurrentTime(duration);
+      } else {
+        setCurrentTime(newTime);
+      }
+    }, 33);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, currentTime, duration, setCurrentTime, setIsPlaying]);
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleSeek = (value: number[]) => {
+    setCurrentTime(value[0]);
+  };
+
   // Get visible video layers
   const visibleLayers = layers
     .filter(layer => 
@@ -54,7 +85,7 @@ export const VideoPlayer = () => {
     .sort((a, b) => a.z_index - b.z_index);
 
   return (
-    <div className="flex flex-col h-full bg-muted/30">
+    <div className="flex flex-col h-full bg-background">
       {/* Controls */}
       <div className="flex items-center justify-end gap-2 p-3 border-b bg-background/95 flex-shrink-0">
         <Button
@@ -157,6 +188,70 @@ export const VideoPlayer = () => {
               </div>
             ))
           )}
+        </div>
+      </div>
+
+      {/* Playback Controls */}
+      <div className="h-16 border-t bg-background flex items-center gap-4 px-6 flex-shrink-0">
+        {/* Play Controls */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCurrentTime(Math.max(0, currentTime - 1))}
+          >
+            <SkipBack className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant="default"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => setIsPlaying(!isPlaying)}
+          >
+            {isPlaying ? (
+              <Pause className="h-4 w-4" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCurrentTime(Math.min(duration, currentTime + 1))}
+          >
+            <SkipForward className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Time Display */}
+        <div className="text-sm font-mono text-muted-foreground min-w-[100px]">
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </div>
+
+        {/* Seek Bar */}
+        <div className="flex-1 flex items-center gap-3">
+          <Slider
+            value={[currentTime]}
+            onValueChange={handleSeek}
+            max={duration}
+            step={0.1}
+            className="flex-1"
+          />
+        </div>
+
+        {/* Volume */}
+        <div className="flex items-center gap-2 min-w-[120px]">
+          <Button variant="ghost" size="icon">
+            <Volume2 className="h-4 w-4" />
+          </Button>
+          <Slider
+            defaultValue={[80]}
+            max={100}
+            step={1}
+            className="w-20"
+          />
         </div>
       </div>
     </div>
