@@ -11,15 +11,13 @@ import { Loader2, User, Mail, Phone, Building2, Lock, ArrowLeft, Save, Send } fr
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
-import { CompanyInfoSection } from '@/components/auth/registration/CompanyInfoSection';
+import { CompanyBrandSection } from '@/components/settings/CompanyBrandSection';
 
 // Validation schemas
 const profileSchema = z.object({
   full_name: z.string().trim().max(100, 'Nome muito longo').optional(),
   phone: z.string().trim().max(20, 'Telefone inválido').optional(),
   company_name: z.string().trim().max(100, 'Nome da empresa muito longo').optional(),
-  company_country: z.string().optional(),
-  company_document: z.string().trim().max(20, 'Documento inválido').optional(),
 });
 
 const ProfileSettings = () => {
@@ -194,23 +192,6 @@ const ProfileSettings = () => {
                   />
                 </div>
 
-                <Separator className="my-6" />
-
-                <CompanyInfoSection
-                  companyName={formData.company_name}
-                  companyCountry={formData.company_country}
-                  companyDocument={formData.company_document}
-                  onCompanyNameChange={(value) =>
-                    setFormData({ ...formData, company_name: value })
-                  }
-                  onCompanyCountryChange={(value) =>
-                    setFormData({ ...formData, company_country: value })
-                  }
-                  onCompanyDocumentChange={(value) =>
-                    setFormData({ ...formData, company_document: value })
-                  }
-                />
-
                 <Button
                   type="submit"
                   className="w-full mt-6"
@@ -231,6 +212,9 @@ const ProfileSettings = () => {
               </form>
             </CardContent>
           </Card>
+
+          {/* Informações da Empresa - Seção Completa */}
+          <CompanyBrandSection />
 
           {/* Alteração de Senha */}
           <Card className="shadow-lg border-muted">
