@@ -51,6 +51,30 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   const buildingId = rawBuildingId;
   
   const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
+  
+  // 🔥 CACHE OFFLINE: Salvar última playlist válida para reprodução contínua sem internet
+  const [cachedVideos, setCachedVideos] = useState<typeof activeVideos>([]);
+  
+  // ✅ Atualizar cache sempre que novos vídeos chegam
+  useEffect(() => {
+    if (activeVideos.length > 0) {
+      VideoDebugger.logEvent('CACHE', 'Salvando playlist offline', { count: activeVideos.length });
+      setCachedVideos(activeVideos);
+    }
+  }, [activeVideos]);
+  
+  // ✅ Usar cache quando offline (NUNCA parar o player)
+  const displayVideos = useMemo(() => {
+    if (activeVideos.length > 0) {
+      return activeVideos;
+    }
+    if (cachedVideos.length > 0) {
+      VideoDebugger.logEvent('CACHE', 'Usando playlist em cache (offline)', { count: cachedVideos.length });
+      return cachedVideos;
+    }
+    return [];
+  }, [activeVideos, cachedVideos]);
+  
   const [buildingName, setBuildingName] = useState('');
   const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -64,13 +88,14 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   }, [refetch]);
   
   const activeVideoIds = useMemo(() => 
-    activeVideos.map(v => v.video_id).sort().join(','),
-    [activeVideos]
+    displayVideos.map(v => v.video_id).sort().join(','),
+    [displayVideos]
   );
 
-  VideoDebugger.logEvent('DISPLAY', 'Vídeos recebidos', {
-    count: activeVideos.length,
-    videoIds: activeVideoIds
+  VideoDebugger.logEvent('DISPLAY', 'Vídeos em exibição', {
+    count: displayVideos.length,
+    videoIds: activeVideoIds,
+    usingCache: activeVideos.length === 0 && displayVideos.length > 0
   });
   
   // Callbacks estáveis para evitar re-renders infinitos
@@ -289,13 +314,13 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       isCheckingRef.current = true;
 
       try {
-        const currentVideoIds = activeVideos
+        const currentVideoIds = displayVideos
           .map(v => v.video_id)
           .sort()
           .join(',');
 
         VideoDebugger.logEvent('POLLING', 'Verificando atualizações', {
-          currentCount: activeVideos.length,
+          currentCount: displayVideos.length,
           currentIds: currentVideoIds
         });
 
@@ -437,9 +462,10 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
           {/* 📺 Vídeo principal - 60% da altura */}
           <div className="flex-[60] min-h-0 w-full">
             <div className="h-full w-full bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-md rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl border border-white/5 overflow-hidden">
-              {activeVideos.length > 0 ? (
+              {/* ✅ NUNCA parar: usar displayVideos que inclui cache offline */}
+              {displayVideos.length > 0 ? (
                 <CommercialVideoHero 
-                  videos={activeVideos.map(v => ({
+                  videos={displayVideos.map(v => ({
                     id: v.video_id || '',
                     video_url: v.video_url,
                     video_nome: v.video_name || ''
@@ -449,7 +475,12 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                   onPlaylistEnd={handlePlaylistEnd}
                 />
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-white">Carregando...</div>
+                <div className="h-full w-full flex items-center justify-center text-white">
+                  <div className="text-center space-y-4">
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white mx-auto" />
+                    <p className="text-xl">Aguardando primeiro carregamento...</p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
