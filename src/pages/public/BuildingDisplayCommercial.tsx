@@ -15,6 +15,7 @@ import { useBuildingScheduleMonitor } from '@/hooks/useBuildingScheduleMonitor';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { UpdateIndicator } from '@/components/display/UpdateIndicator';
+import { usePendingPlaylistUpdates } from '@/hooks/usePendingPlaylistUpdates';
 
 interface BuildingDisplayCommercialProps {
   buildingId?: string;
@@ -52,8 +53,22 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   
   const { videos: activeVideos, loading, isUpdating, refetch } = useBuildingActiveVideos(buildingId);
   
+  // 📦 SISTEMA DE PENDING UPDATES - Atualizações só aplicam no fim do ciclo
+  const {
+    hasPendingUpdates,
+    setPendingUpdate,
+    applyPendingUpdates,
+    updateCurrentHash,
+    pendingVideosCount
+  } = usePendingPlaylistUpdates<typeof activeVideos[0]>({
+    getPlaylistHash: (videos) => videos.map(v => v.video_id).sort().join(',')
+  });
+  
   // 🔥 CACHE OFFLINE: Salvar última playlist válida para reprodução contínua sem internet
   const [cachedVideos, setCachedVideos] = useState<typeof activeVideos>([]);
+  
+  // 🎬 Playlist atual em reprodução (pode ser diferente de activeVideos se houver pending)
+  const [currentPlaylist, setCurrentPlaylist] = useState<typeof activeVideos>([]);
   
   // ✅ Atualizar cache sempre que novos vídeos chegam
   useEffect(() => {
@@ -65,15 +80,24 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   
   // ✅ Usar cache quando offline (NUNCA parar o player)
   const displayVideos = useMemo(() => {
+    // Se tem playlist atual em reprodução, usar ela
+    if (currentPlaylist.length > 0) {
+      return currentPlaylist;
+    }
+    
+    // Senão, tentar usar activeVideos
     if (activeVideos.length > 0) {
       return activeVideos;
     }
+    
+    // Último recurso: cache offline
     if (cachedVideos.length > 0) {
       VideoDebugger.logEvent('CACHE', 'Usando playlist em cache (offline)', { count: cachedVideos.length });
       return cachedVideos;
     }
+    
     return [];
-  }, [activeVideos, cachedVideos]);
+  }, [currentPlaylist, activeVideos, cachedVideos]);
   
   const [buildingName, setBuildingName] = useState('');
   const [lastCheckTime, setLastCheckTime] = useState<Date>(new Date());
@@ -82,11 +106,34 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   
   // ✅ CORREÇÃO 1: Ref estável para refetch
   const refetchRef = useRef(refetch);
+  const playlistCycleInProgress = useRef(false);
   
   useEffect(() => {
     refetchRef.current = refetch;
   }, [refetch]);
   
+  // 🎯 Inicializar playlist atual quando activeVideos chegar pela primeira vez
+  useEffect(() => {
+    if (activeVideos.length > 0 && currentPlaylist.length === 0) {
+      console.log('🎬 [INIT] Inicializando primeira playlist:', activeVideos.length, 'vídeos');
+      setCurrentPlaylist(activeVideos);
+      updateCurrentHash(activeVideos);
+    }
+  }, [activeVideos, currentPlaylist.length, updateCurrentHash]);
+  
+  // 📦 Quando activeVideos mudar, salvar em pending (NÃO aplicar imediatamente)
+  useEffect(() => {
+    if (activeVideos.length > 0 && currentPlaylist.length > 0) {
+      const currentHash = currentPlaylist.map(v => v.video_id).sort().join(',');
+      const newHash = activeVideos.map(v => v.video_id).sort().join(',');
+      
+      if (currentHash !== newHash) {
+        console.log('📦 [UPDATE] Nova playlist detectada - salvando em pending');
+        setPendingUpdate(activeVideos);
+      }
+    }
+  }, [activeVideos, currentPlaylist, setPendingUpdate]);
+
   const activeVideoIds = useMemo(() => 
     displayVideos.map(v => v.video_id).sort().join(','),
     [displayVideos]
@@ -95,16 +142,43 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
   VideoDebugger.logEvent('DISPLAY', 'Vídeos em exibição', {
     count: displayVideos.length,
     videoIds: activeVideoIds,
+    hasPending: hasPendingUpdates,
+    pendingCount: pendingVideosCount,
     usingCache: activeVideos.length === 0 && displayVideos.length > 0
   });
   
   // Callbacks estáveis para evitar re-renders infinitos
   const handlePlayingChange = useCallback((playing: boolean) => {
     isPlayingRef.current = playing;
+    playlistCycleInProgress.current = playing;
   }, []);
 
+  // 🎯 Aplicar pending updates APENAS quando ciclo completo terminar
   const handlePlaylistEnd = useCallback(() => {
     isPlayingRef.current = false;
+    playlistCycleInProgress.current = false;
+    
+    console.group('🎯 [CYCLE END] Ciclo da playlist completo');
+    console.log('📦 Tem pending updates?', hasPendingUpdates);
+    
+    if (hasPendingUpdates) {
+      const newPlaylist = applyPendingUpdates();
+      if (newPlaylist && newPlaylist.length > 0) {
+        console.log('✅ Aplicando nova playlist:', newPlaylist.length, 'vídeos');
+        setCurrentPlaylist(newPlaylist);
+        console.groupEnd();
+        return;
+      }
+    }
+    
+    console.log('🔁 Sem updates - recomeçando mesma playlist');
+    console.groupEnd();
+  }, [hasPendingUpdates, applyPendingUpdates]);
+  
+  // 📦 Callback quando vídeos externos mudarem (salva em pending)
+  const handleVideosChange = useCallback((newVideos: any[]) => {
+    console.log('📦 [VIDEOS CHANGE] Novos vídeos disponíveis - salvando em pending');
+    // Já é gerenciado pelo useEffect de activeVideos, mas mantém a assinatura
   }, []);
   
   // Status de conexão em tempo real (apenas para indicador visual)
@@ -294,18 +368,13 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     }
   };
 
-  // ✅ CORREÇÃO 1: Polling com refetch estável via ref
+  // ✅ CORREÇÃO 1: Polling com refetch estável via ref (salva em pending)
   useEffect(() => {
     if (!buildingId) return;
 
     VideoDebugger.logEvent('POLLING', 'Sistema iniciado (2 minutos)');
 
     const checkForUpdates = async () => {
-      if (isPlayingRef.current) {
-        VideoDebugger.logEvent('POLLING', 'Pulando - vídeo reproduzindo');
-        return;
-      }
-
       if (isCheckingRef.current) {
         VideoDebugger.logEvent('POLLING', 'Pulando - verificação em andamento');
         return;
@@ -324,10 +393,10 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
           currentIds: currentVideoIds
         });
 
-        await refetchRef.current(); // ✅ Usar ref estável
+        await refetchRef.current(); // ✅ Busca novos dados (irão para pending automaticamente)
         setLastCheckTime(new Date());
         
-        VideoDebugger.logEvent('POLLING', 'Verificação concluída');
+        VideoDebugger.logEvent('POLLING', 'Verificação concluída - mudanças salvas em pending');
       } catch (error) {
         VideoDebugger.logEvent('POLLING', 'Erro ao verificar', { 
           error: error instanceof Error ? error.message : 'Erro desconhecido' 
@@ -343,7 +412,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       VideoDebugger.logEvent('POLLING', 'Sistema encerrado');
       clearInterval(interval);
     };
-  }, [buildingId]); // ✅ Apenas buildingId como dependência
+  }, [buildingId, displayVideos]); // ✅ Incluir displayVideos para comparação
 
 
   // Loading - Tela profissional enquanto busca vídeos
@@ -473,6 +542,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
                   className="h-full w-full"
                   onPlayingChange={handlePlayingChange}
                   onPlaylistEnd={handlePlaylistEnd}
+                  onVideosChange={handleVideosChange}
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-white">
