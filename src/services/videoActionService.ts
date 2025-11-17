@@ -89,8 +89,46 @@ export const selectVideoForDisplay = async (
 
       const newVideoName = newVideoInfo?.video_data?.nome;
       
-      // API externa será sincronizada automaticamente pelo videoBaseService.ts
-      console.log('✅ [VIDEO_ACTION] API externa será sincronizada automaticamente');
+      // 🔔 FASE 1: Notificar API externa automaticamente
+      try {
+        console.log('🔔 [VIDEO_ACTION] Iniciando notificação da API externa...');
+        
+        // Buscar prédios do pedido
+        const { data: pedidoData } = await supabase
+          .from('pedidos')
+          .select('lista_predios')
+          .eq('id', videoData.pedido_id)
+          .single();
+
+        if (pedidoData?.lista_predios && Array.isArray(pedidoData.lista_predios)) {
+          console.log('🏢 [VIDEO_ACTION] Notificando API externa para prédios:', pedidoData.lista_predios);
+          
+          // Notificar cada prédio
+          for (const buildingId of pedidoData.lista_predios) {
+            const videoName = newVideoName || 'Video';
+            
+            const { data: notifyData, error: notifyError } = await supabase.functions.invoke('notify-active', {
+              body: {
+                clientId: buildingId.substring(0, 4),
+                buildingUuid: buildingId,
+                titulo: videoName,
+                ativo: true
+              }
+            });
+            
+            if (notifyError) {
+              console.warn(`⚠️ [VIDEO_ACTION] Erro ao notificar prédio ${buildingId}:`, notifyError);
+            } else {
+              console.log(`✅ [VIDEO_ACTION] API notificada para prédio ${buildingId}:`, notifyData);
+            }
+          }
+        } else {
+          console.warn('⚠️ [VIDEO_ACTION] Nenhum prédio encontrado para notificar');
+        }
+      } catch (apiError) {
+        console.warn('⚠️ [VIDEO_ACTION] Erro ao notificar API externa (não crítico):', apiError);
+        // Não bloquear o fluxo se a API externa falhar
+      }
       
       // Chamar callback de sucesso se fornecido
       if (onSuccess) {

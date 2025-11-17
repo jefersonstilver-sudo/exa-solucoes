@@ -21,7 +21,10 @@ serve(async (req: Request): Promise<Response> => {
       ativo: true
     }));
 
+    console.log('🔔 [NOTIFY-ACTIVE] Payload recebido:', { clientId, buildingUuid, titulo, ativo });
+
     if (!clientId || typeof clientId !== 'string' || clientId.length < 1) {
+      console.error('❌ [NOTIFY-ACTIVE] clientId inválido:', clientId);
       return new Response(JSON.stringify({ ok: false, error: 'clientId inválido ou ausente' }), {
         status: 400,
         headers: corsHeaders
@@ -29,6 +32,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     if (!titulo || typeof titulo !== 'string') {
+      console.error('❌ [NOTIFY-ACTIVE] titulo inválido:', titulo);
       return new Response(JSON.stringify({ ok: false, error: 'titulo inválido ou ausente' }), {
         status: 400,
         headers: corsHeaders
@@ -41,7 +45,7 @@ serve(async (req: Request): Promise<Response> => {
       ativo: ativo === true
     };
 
-    console.log('[notify-active] PATCH', { url, buildingUuid, clientId, body });
+    console.log('🌐 [NOTIFY-ACTIVE] Enviando PATCH para API externa:', { url, buildingUuid, clientId, body });
 
     const res = await fetch(url, { 
       method: 'PATCH',
@@ -53,7 +57,11 @@ serve(async (req: Request): Promise<Response> => {
     
     const text = await res.text().catch(() => '');
 
-    console.log('[notify-active] response', { status: res.status, statusText: res.statusText, responseBody: text });
+    console.log(`${res.ok ? '✅' : '❌'} [NOTIFY-ACTIVE] Resposta da API externa:`, { 
+      status: res.status, 
+      statusText: res.statusText, 
+      responseBody: text 
+    });
 
     return new Response(
       JSON.stringify({ 
@@ -68,7 +76,7 @@ serve(async (req: Request): Promise<Response> => {
       { status: 200, headers: corsHeaders }
     );
   } catch (e: any) {
-    console.error('[notify-active] error', e?.message || e);
+    console.error('💥 [NOTIFY-ACTIVE] Erro fatal:', e?.message || e);
     return new Response(JSON.stringify({ ok: false, error: e?.message || 'unknown error' }), {
       status: 500,
       headers: corsHeaders
