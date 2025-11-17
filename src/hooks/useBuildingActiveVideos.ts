@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { debounce } from '@/utils/debounce';
+import { pollingCoordinator } from '@/utils/pollingCoordinator';
 
 export interface ScheduleRule {
   days_of_week: number[];
@@ -41,9 +42,9 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Cache para evitar refetch desnecessário
+  // ⚡ Cache otimizado para reduzir queries (aumentado de 3s para 30s)
   const lastCheckRef = useRef({ videoIds: '', timestamp: 0 });
-  const CACHE_TTL = 3000; // 3 segundos
+  const CACHE_TTL = 30000; // 30 segundos - reduzir sobrecarga
 
   // ✅ CORREÇÃO 2: Estabilizar fetchActiveVideos com useCallback
   const fetchActiveVideos = useCallback(async () => {
@@ -54,6 +55,9 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
 
     setLoading(true);
     setError(null);
+
+    // ⚡ Performance tracking
+    const perfStart = performance.now();
 
     try {
 
@@ -282,6 +286,14 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
 
       setVideos(activeVideos);
 
+      // ⚡ Log de performance
+      const duration = Math.round(performance.now() - perfStart);
+      if (duration > 2000) {
+        console.warn(`⚠️ [VIDEOS] Query LENTA: ${duration}ms para ${activeVideos.length} vídeos`);
+      } else {
+        console.log(`✅ [VIDEOS] Query OK: ${duration}ms para ${activeVideos.length} vídeos`);
+      }
+
     } catch (error: any) {
       console.error('❌ [VIDEOS] Erro:', error.message);
       setError(error.message || 'Erro ao carregar vídeos ativos');
@@ -307,19 +319,23 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
     // Cache de pedido IDs para filtro rápido
     let cachedPedidoIds: string[] = [];
     
+    // ⚡ Atualizar cache de pedido IDs a cada 5 minutos (reduzido de 1 min)
     const updateCache = async () => {
-      const { data } = await supabase
-        .from('pedidos')
-        .select('id')
-        .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
-        .filter('lista_predios', 'cs', `{${buildingId}}`);
-      
-      cachedPedidoIds = data?.map(p => p.id) || [];
-      console.log('📦 [VIDEOS] Cache atualizado:', cachedPedidoIds.length, 'pedidos ativos');
+      const key = `building-videos-cache-${buildingId}`;
+      if (pollingCoordinator.canFetch(key)) {
+        const { data } = await supabase
+          .from('pedidos')
+          .select('id')
+          .in('status', ['ativo', 'video_aprovado', 'pago_pendente_video', 'video_enviado', 'pago'])
+          .filter('lista_predios', 'cs', `{${buildingId}}`);
+        
+        cachedPedidoIds = data?.map(p => p.id) || [];
+        console.log('📦 [VIDEOS] Cache atualizado:', cachedPedidoIds.length, 'pedidos ativos');
+      }
     };
 
     updateCache();
-    const cacheInterval = setInterval(updateCache, 60000); // Atualizar cache a cada 1 min
+    const cacheInterval = setInterval(updateCache, 300000); // 5 minutos (antes: 1 min)
 
     const channel = supabase
       .channel(`building-videos-${buildingId}`)
@@ -338,7 +354,12 @@ export function useBuildingActiveVideos(buildingId: string): UseBuildingActiveVi
             buildingId: buildingId.slice(0, 8) + '...',
             timestamp: new Date().toLocaleTimeString('pt-BR')
           });
-          debouncedRefetch();
+          
+          // ⚡ Usar polling coordinator para evitar refetch excessivo
+          const key = `building-videos-realtime-${buildingId}`;
+          if (pollingCoordinator.canFetch(key)) {
+            debouncedRefetch();
+          }
         }
       })
       .on('postgres_changes', {

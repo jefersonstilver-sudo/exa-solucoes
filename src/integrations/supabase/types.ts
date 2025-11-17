@@ -4548,6 +4548,7 @@ export type Database = {
       }
       cleanup_expired_blocked_ips: { Args: never; Returns: undefined }
       cleanup_expired_sessions: { Args: never; Returns: undefined }
+      cleanup_old_logs: { Args: never; Returns: undefined }
       cleanup_orphaned_users: { Args: never; Returns: Json }
       cleanup_unauthorized_uploads: { Args: never; Returns: Json }
       daily_financial_reconciliation: { Args: never; Returns: Json }
