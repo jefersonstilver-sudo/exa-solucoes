@@ -350,7 +350,8 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
             
             // 4️⃣ Notificar cada slot individualmente (SÍNCRONO)
             for (const slot of slots) {
-              const videoName = extractTitulo(slot.videos?.nome || slot.videos?.url) || 'Video';
+              // 🎯 SEMPRE usar a URL para extrair o nome real do arquivo (sem extensão)
+              const videoName = extractTitulo(slot.videos?.url) || 'Video';
               
               // Determinar se este slot deve estar ativo
               // (é o novo base OU já era base antes)
