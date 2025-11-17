@@ -45,9 +45,10 @@ export const VideoPlayer = () => {
     });
   }, [currentTime, layers, isPlaying]);
 
+  // Canvas fixo em 16:9 (1280x720)
   const canvasSize = {
-    width: currentProject?.project_data.canvas.width || 1920,
-    height: currentProject?.project_data.canvas.height || 1080
+    width: 1280,
+    height: 720
   };
 
   // Playback loop
@@ -77,62 +78,23 @@ export const VideoPlayer = () => {
     setCurrentTime(value[0]);
   };
 
-  // Calculate layer transform based on fit mode
+  // Calculate layer style - SEMPRE horizontal 16:9
   const calculateLayerStyle = (layer: typeof layers[0]) => {
-    const layerAspect = layer.size.width / layer.size.height;
-    const canvasAspect = canvasSize.width / canvasSize.height;
-
     let style: React.CSSProperties = {
       position: 'absolute',
+      width: '100%',
+      height: '100%',
       transform: `rotate(${layer.rotation}deg)`,
       opacity: layer.opacity,
       zIndex: layer.z_index,
     };
 
-    switch (fitMode) {
-      case 'fit': {
-        const scale = layerAspect > canvasAspect 
-          ? canvasSize.width / layer.size.width 
-          : canvasSize.height / layer.size.height;
-        const width = layer.size.width * scale;
-        const height = layer.size.height * scale;
-        style.width = `${width * canvasZoom}px`;
-        style.height = `${height * canvasZoom}px`;
-        style.left = `${((canvasSize.width - width) / 2 + layer.position.x) * canvasZoom}px`;
-        style.top = `${((canvasSize.height - height) / 2 + layer.position.y) * canvasZoom}px`;
-        style.objectFit = 'contain';
-        break;
-      }
-      case 'fill': {
-        const scale = layerAspect > canvasAspect
-          ? canvasSize.height / layer.size.height
-          : canvasSize.width / layer.size.width;
-        const width = layer.size.width * scale;
-        const height = layer.size.height * scale;
-        style.width = `${width * canvasZoom}px`;
-        style.height = `${height * canvasZoom}px`;
-        style.left = `${((canvasSize.width - width) / 2 + layer.position.x) * canvasZoom}px`;
-        style.top = `${((canvasSize.height - height) / 2 + layer.position.y) * canvasZoom}px`;
-        style.objectFit = 'cover';
-        break;
-      }
-      case 'stretch': {
-        style.width = `${canvasSize.width * canvasZoom}px`;
-        style.height = `${canvasSize.height * canvasZoom}px`;
-        style.left = `${layer.position.x * canvasZoom}px`;
-        style.top = `${layer.position.y * canvasZoom}px`;
-        style.objectFit = 'fill';
-        break;
-      }
-      case 'original': {
-        style.width = `${layer.size.width * canvasZoom}px`;
-        style.height = `${layer.size.height * canvasZoom}px`;
-        style.left = `${layer.position.x * canvasZoom}px`;
-        style.top = `${layer.position.y * canvasZoom}px`;
-        style.objectFit = 'none';
-        break;
-      }
-    }
+    // Sempre usar contain para manter aspect ratio correto
+    style.objectFit = 'contain';
+
+    // Aplicar posição do layer
+    style.left = `${layer.position.x}px`;
+    style.top = `${layer.position.y}px`;
 
     return style;
   };
@@ -184,20 +146,18 @@ export const VideoPlayer = () => {
         </div>
       </div>
 
-      {/* Player Container */}
+      {/* Player Container - SEMPRE 16:9 */}
       <div 
         ref={containerRef}
         className="flex-1 flex items-center justify-center p-8 overflow-auto"
         style={{ background: 'radial-gradient(circle, hsl(var(--muted)) 0%, hsl(var(--background)) 100%)' }}
       >
         <div 
-          style={{ 
-            width: canvasSize.width,
-            height: canvasSize.height,
-            transform: `scale(${canvasZoom})`,
-            transformOrigin: 'center',
+          style={{
+            width: `${canvasSize.width * canvasZoom}px`,
+            height: `${canvasSize.height * canvasZoom}px`,
             position: 'relative',
-            backgroundColor: currentProject?.project_data.canvas.background_color || '#000000',
+            backgroundColor: '#000000',
             boxShadow: '0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.1)'
           }}
           className="relative rounded-sm overflow-hidden"
@@ -214,39 +174,50 @@ export const VideoPlayer = () => {
               </div>
             </div>
            ) : (
-            visibleLayers.map((layer) => {
-              const layerStyle = calculateLayerStyle(layer);
-              return (
-                <div
-                  key={layer.id}
-                  onClick={() => setSelectedLayerId(layer.id)}
-                  style={{
-                    ...layerStyle,
-                    cursor: 'pointer',
-                    border: selectedLayerId === layer.id ? '3px solid #3b82f6' : 'none',
-                  }}
-                >
-                  {layer.type === 'video' && layer.asset_id ? (
-                    <video
-                      ref={(el) => {
-                        if (el) videoRefs.current.set(layer.id, el);
-                        else videoRefs.current.delete(layer.id);
-                      }}
-                      src={layer.asset_id}
-                      style={{ width: '100%', height: '100%', objectFit: layerStyle.objectFit as any }}
-                      muted
-                      playsInline
-                    />
-                  ) : layer.type === 'image' && layer.asset_id ? (
-                    <img
-                      src={layer.asset_id}
-                      alt="Layer"
-                      style={{ width: '100%', height: '100%', objectFit: layerStyle.objectFit as any }}
-                    />
-                  ) : null}
-                </div>
-              );
-            })
+            visibleLayers.map((layer) => (
+              <div
+                key={layer.id}
+                onClick={() => setSelectedLayerId(layer.id)}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  cursor: 'pointer',
+                  border: selectedLayerId === layer.id ? '3px solid #3b82f6' : 'none',
+                  zIndex: layer.z_index,
+                  opacity: layer.opacity,
+                }}
+              >
+                {layer.type === 'video' && layer.asset_id ? (
+                  <video
+                    ref={(el) => {
+                      if (el) videoRefs.current.set(layer.id, el);
+                      else videoRefs.current.delete(layer.id);
+                    }}
+                    src={layer.asset_id}
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'contain'
+                    }}
+                    muted
+                    playsInline
+                  />
+                ) : layer.type === 'image' && layer.asset_id ? (
+                  <img
+                    src={layer.asset_id}
+                    alt="Layer"
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'contain'
+                    }}
+                  />
+                ) : null}
+              </div>
+            ))
           )}
         </div>
       </div>
