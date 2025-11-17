@@ -17,7 +17,6 @@ type PedidoVideosRow = {
   id: string;
   pedido_id?: string;
   video_id?: string | null;
-  video_titulo?: string | null;
   slot_position?: number | null;
   approval_status?: string | null;
   pedidos?: { lista_predios?: string[] } | null;
@@ -49,7 +48,6 @@ const fetchAllPedidoSlots = async (pedidoId: string) => {
     .select(`
       id,
       video_id,
-      video_titulo,
       slot_position,
       pedidos!inner ( lista_predios ),
       videos ( nome, url )
@@ -352,7 +350,7 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
             
             // 4️⃣ Notificar cada slot individualmente (SÍNCRONO)
             for (const slot of slots) {
-              const videoName = slot.video_titulo || extractTitulo(slot.videos?.nome || slot.videos?.url) || 'Video';
+              const videoName = extractTitulo(slot.videos?.nome || slot.videos?.url) || 'Video';
               
               // Determinar se este slot deve estar ativo
               // (é o novo base OU já era base antes)
