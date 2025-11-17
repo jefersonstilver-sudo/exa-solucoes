@@ -35,7 +35,9 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
 
       if (videoError) {
         console.error(`❌ [VIDEO_SLOTS] Erro ao buscar video ${pv.video_id}:`, videoError);
-        return null;
+        // Não retornar null - manter o slot com dados parciais para que apareça como "aguardando"
+        console.warn(`⚠️ [VIDEO_SLOTS] Mantendo slot ${pv.slot_position} com dados parciais`);
+        return { pedidoVideo: pv, video: null, scheduleRules: [] };
       }
 
       // Buscar regras de agendamento diretamente por video_id
@@ -91,12 +93,29 @@ export const loadVideoSlots = async (orderId: string): Promise<VideoSlot[]> => {
       
       if (matchingResult) {
         const { pedidoVideo, video, scheduleRules } = matchingResult;
-        console.log(`🎯 [VIDEO_SLOTS] Slot ${position} preenchido com:`, { pedidoVideo, video, scheduleRules });
+        console.log(`🎯 [VIDEO_SLOTS] Slot ${position} preenchido com:`, { pedidoVideo, video: video ? 'loaded' : 'null (pending upload)', scheduleRules });
         
         // 🔧 CORREÇÃO: Normalizar dados inconsistentes - vídeos base SEMPRE devem estar ativos e em exibição
         const isBase = pedidoVideo.is_base_video || false;
         const normalizedIsActive = isBase ? true : (pedidoVideo.is_active || false);
         const normalizedSelectedForDisplay = isBase ? true : (pedidoVideo.selected_for_display || false);
+        
+        // Se video está null (erro ao carregar), retornar slot com dados parciais
+        if (!video) {
+          console.warn(`⚠️ [VIDEO_SLOTS] Slot ${position} sem dados de vídeo - provavelmente upload recente`);
+          return {
+            id: pedidoVideo.id,
+            slot_position: position,
+            video_id: pedidoVideo.video_id,
+            is_active: normalizedIsActive,
+            selected_for_display: normalizedSelectedForDisplay,
+            is_base_video: isBase,
+            approval_status: (pedidoVideo.approval_status as 'pending' | 'approved' | 'rejected') || 'pending',
+            rejection_reason: pedidoVideo.rejection_reason,
+            video_data: undefined, // Será undefined para mostrar como "aguardando"
+            schedule_rules: []
+          };
+        }
         
         if (isBase && (pedidoVideo.is_active !== true || pedidoVideo.selected_for_display !== true)) {
           console.warn('⚠️ [VIDEO_SLOTS] Dados inconsistentes corrigidos no frontend:', {

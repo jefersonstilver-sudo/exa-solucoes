@@ -476,6 +476,25 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 </div>
               )}
             </div>
+        ) : slot.id ? (
+          // Mostrar placeholder para vídeo que existe mas ainda não foi carregado
+          <div className="space-y-4">
+            <div className="aspect-video rounded-lg bg-yellow-50 border-2 border-yellow-200 flex items-center justify-center">
+              <div className="text-center text-yellow-700">
+                <Clock className="h-12 w-12 mx-auto mb-3 animate-pulse" />
+                <p className="text-sm font-medium">Vídeo Enviado</p>
+                <p className="text-xs mt-1">Aguardando aprovação</p>
+              </div>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4 text-yellow-600" />
+                <p className="text-yellow-800 text-sm">
+                  Seu vídeo foi enviado e está aguardando aprovação dos administradores.
+                </p>
+              </div>
+            </div>
+          </div>
 
             {/* Informações do Vídeo */}
             <div className="space-y-2">
