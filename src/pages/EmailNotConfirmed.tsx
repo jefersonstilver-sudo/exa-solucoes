@@ -90,14 +90,14 @@ export default function EmailNotConfirmed() {
 
               <div className="flex flex-col gap-3">
                 <Button
-                  onClick={handleResendEmail}
-                  disabled={resending}
+                  onClick={() => resendConfirmationEmail(email)}
+                  disabled={isResending}
                   className="w-full"
                   size="lg"
                 >
-                  {resending ? (
+                  {isResending ? (
                     <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
                       Reenviando...
                     </>
                   ) : (
