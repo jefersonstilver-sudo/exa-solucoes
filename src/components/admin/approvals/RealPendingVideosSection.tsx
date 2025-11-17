@@ -52,6 +52,9 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
     try {
       setLoadingVideos(true);
       
+      console.log('🔍 [PENDING VIDEOS] Buscando vídeos pendentes...');
+      
+      // ✅ Remover !inner para capturar TODOS os vídeos pending
       const { data: pendingData, error: pendingError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -60,12 +63,12 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           video_id,
           slot_position,
           created_at,
-          pedidos!inner (
+          pedidos (
             id,
             valor_total,
             client_id
           ),
-          videos!inner (
+          videos (
             id,
             nome,
             url,
@@ -73,8 +76,11 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
             orientacao
           )
         `)
-        .eq('approval_status', 'pending');
-
+        .eq('approval_status', 'pending')
+        .order('created_at', { ascending: false });
+      
+      console.log('📊 [PENDING VIDEOS] Resultado:', pendingData?.length || 0, 'vídeos encontrados');
+      
       if (pendingError) throw pendingError;
 
       if (!pendingData || pendingData.length === 0) {
