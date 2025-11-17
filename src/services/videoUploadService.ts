@@ -223,66 +223,37 @@ export const uploadVideo = async (
     console.log('✅ Registro de vídeo criado com sucesso:', videoRecord);
     onProgress?.(95);
 
-    // Verificar se já existe entrada para este slot
-    const { data: existingSlot, error: checkError } = await supabase
+    // Usar UPSERT para evitar race conditions em uploads simultâneos
+    // Isso substitui a entrada existente OU cria uma nova automaticamente
+    console.log('💾 Salvando/atualizando slot com UPSERT');
+    const { error: slotError } = await supabase
       .from('pedido_videos')
-      .select('id')
-      .eq('pedido_id', orderId)
-      .eq('slot_position', slotPosition)
-      .maybeSingle();
+      .upsert({
+        pedido_id: orderId,
+        video_id: videoRecord.id,
+        slot_position: slotPosition,
+        approval_status: 'pending',
+        selected_for_display: false,
+        is_active: false,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'pedido_id,slot_position', // Unique constraint columns
+        ignoreDuplicates: false // Always update on conflict
+      });
 
-    if (checkError) {
-      console.error('❌ Erro ao verificar slot existente:', checkError);
-    }
-
-    let slotResult;
-    if (existingSlot) {
-      // Atualizar entrada existente
-      console.log('🔄 Atualizando slot existente:', existingSlot.id);
-      const { error: updateError } = await supabase
-        .from('pedido_videos')
-        .update({
-          video_id: videoRecord.id,
-          approval_status: 'pending',
-          selected_for_display: false,
-          is_active: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingSlot.id);
-
-      if (updateError) {
-        console.error('❌ Erro ao atualizar slot:', updateError);
-        throw new Error(`Erro ao atualizar slot: ${updateError.message}`);
-      }
-      slotResult = { error: null };
-    } else {
-      // Criar nova entrada (o trigger do banco validará automaticamente)
-      console.log('➕ Criando nova entrada no slot');
-      const { error: insertError } = await supabase
-        .from('pedido_videos')
-        .insert({
-          pedido_id: orderId,
-          video_id: videoRecord.id,
-          slot_position: slotPosition,
-          approval_status: 'pending',
-          selected_for_display: false,
-          is_active: false
-        });
-
-      slotResult = { error: insertError };
-    }
-
-    if (slotResult.error) {
-      console.error('❌ Erro ao gerenciar slot:', slotResult.error);
+    if (slotError) {
+      console.error('❌ Erro ao gerenciar slot:', slotError);
       
       // Verificar se é erro de segurança do trigger
-      if (slotResult.error.message?.includes('não permitido para pedidos não pagos')) {
+      if (slotError.message?.includes('não permitido para pedidos não pagos')) {
         toast.error('Upload não permitido: pedido não foi pago');
         return false;
       }
       
-      throw new Error(`Erro ao salvar no slot: ${slotResult.error.message}`);
+      throw new Error(`Erro ao salvar no slot: ${slotError.message}`);
     }
+
+    console.log('✅ Slot salvo/atualizado com sucesso');
 
 
     // Salvar regras de agendamento se fornecidas
