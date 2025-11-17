@@ -121,6 +121,47 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     fetchBuildingData();
   }, [buildingId]);
 
+  // Generate dynamic manifest for specific building URL
+  useEffect(() => {
+    if (!buildingName) return;
+    
+    const currentUrl = window.location.href;
+    const manifest = {
+      name: `EXA Display - ${buildingName}`,
+      short_name: `EXA ${buildingName}`,
+      description: `Display comercial - ${buildingName}`,
+      start_url: currentUrl,
+      scope: currentUrl,
+      display: "fullscreen",
+      orientation: "landscape",
+      background_color: "#0F172A",
+      theme_color: "#FF4430",
+      icons: [
+        {
+          src: "/favicon.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "any maskable"
+        }
+      ]
+    };
+
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    
+    const existingManifest = document.querySelector('link[rel="manifest"]');
+    if (existingManifest) existingManifest.remove();
+    
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = manifestURL;
+    document.head.appendChild(link);
+
+    console.log('Dynamic manifest for:', currentUrl);
+    
+    return () => URL.revokeObjectURL(manifestURL);
+  }, [buildingName]);
+
   // Proteção contra menu de contexto
   useEffect(() => {
     const blockContextMenu = (e: MouseEvent) => {
@@ -156,41 +197,46 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
     };
   }, []);
 
-  // PWA: Fullscreen automático quando instalado
+  // PWA: Fullscreen automático em modo kiosk
   useEffect(() => {
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  window.matchMedia('(display-mode: fullscreen)').matches;
     
     if (isPWA && !isInstalled) {
       setIsInstalled(true);
     }
 
     if (isPWA) {
-      VideoDebugger.logEvent('PWA', 'Ativando fullscreen automático');
+      VideoDebugger.logEvent('PWA', 'Modo kiosk ativado');
       
       const enterFullscreen = () => {
         if (!document.fullscreenElement) {
           document.documentElement.requestFullscreen?.().catch(err => {
-            VideoDebugger.logEvent('PWA', 'Erro ao entrar em fullscreen', { error: err });
+            VideoDebugger.logEvent('PWA', 'Erro fullscreen', { error: err });
           });
         }
       };
 
-      // Tentar fullscreen após 2 segundos
-      const timer = setTimeout(enterFullscreen, 2000);
+      setTimeout(enterFullscreen, 500);
 
-      // Manter fullscreen ao perder foco
       const handleFullscreenChange = () => {
         if (!document.fullscreenElement && isPWA) {
-          VideoDebugger.logEvent('PWA', 'Fullscreen perdido, reativando...');
           setTimeout(enterFullscreen, 500);
         }
       };
 
+      const preventKeys = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' || e.key === 'F11') {
+          e.preventDefault();
+        }
+      };
+
       document.addEventListener('fullscreenchange', handleFullscreenChange);
+      document.addEventListener('keydown', preventKeys);
 
       return () => {
-        clearTimeout(timer);
         document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        document.removeEventListener('keydown', preventKeys);
       };
     }
   }, [isInstalled]);
