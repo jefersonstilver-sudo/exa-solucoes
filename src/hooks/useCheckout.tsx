@@ -54,7 +54,20 @@ export const useCheckout = () => {
 
   // Calcular preço total usando função centralizada
   const calculateTotalPriceWrapper = useCallback(() => {
+    console.log("💰 [useCheckout] Calculando preço total:", {
+      selectedPlan,
+      cartItemsCount: cartItems?.length || 0,
+      couponValid,
+      couponCode: couponCode || 'NENHUM',
+      timestamp: new Date().toISOString()
+    });
+
     if (!selectedPlan || !cartItems || cartItems.length === 0) {
+      console.warn("⚠️ [useCheckout] Dados insuficientes para calcular preço:", {
+        hasSelectedPlan: !!selectedPlan,
+        hasCartItems: !!cartItems,
+        cartItemsLength: cartItems?.length || 0
+      });
       return 0;
     }
     
@@ -68,14 +81,19 @@ export const useCheckout = () => {
       validationResult?.categoria
     );
     
-    console.log('[useCheckout] Preço calculado:', {
+    console.log("✅ [useCheckout] Preço calculado:", {
       selectedPlan,
       cartItemsCount: cartItems.length,
       couponDiscountPercent,
       couponValid,
       couponCode: couponCode || 'SEM CÓDIGO',
       couponCategoria: validationResult?.categoria,
-      result
+      result,
+      cartDetails: cartItems.map(item => ({
+        panelId: item.panel.id,
+        buildingName: item.panel.buildings?.nome,
+        preco_base: item.panel.buildings?.preco_base
+      }))
     });
     
     return result;
