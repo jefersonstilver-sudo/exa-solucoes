@@ -80,39 +80,46 @@ export const useCheckoutAuth = (setSessionUser: (user: any) => void) => {
     
     // Configura o listener para mudanças no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("useCheckoutAuth: Auth state mudou:", event);
+      console.log("🔐 [useCheckoutAuth] Auth state mudou:", event, "Session:", !!session);
       
-      // Verificação de perda de sessão durante o checkout
-      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || !session) {
-        logCheckoutEvent(
-          CheckoutEvent.AUTH_EVENT,
-          LogLevel.INFO,
-          `Auth state changed in checkout: ${event}`,
-          { event, hasSession: !!session, timestamp: new Date().toISOString() }
-        );
-      }
+      // Log todos os eventos para diagnóstico
+      logCheckoutEvent(
+        CheckoutEvent.AUTH_EVENT,
+        LogLevel.INFO,
+        `Auth state changed: ${event}`,
+        { event, hasSession: !!session, timestamp: new Date().toISOString() }
+      );
       
-      if (event === 'SIGNED_IN') {
-        if (mounted) setSessionUser(session?.user || null);
-      } else if (event === 'SIGNED_OUT') {
-        if (mounted) {
-          setSessionUser(null);
-          navigate('/login?redirect=/checkout');
-        }
+      if (event === 'SIGNED_IN' && session) {
+        console.log("✅ [useCheckoutAuth] Usuário logado com sucesso");
+        if (mounted) setSessionUser(session.user);
       } else if (event === 'TOKEN_REFRESHED' && session) {
-        // Atualizar o usuário quando o token for atualizado
+        // TOKEN_REFRESHED é um evento POSITIVO - apenas atualizar o usuário
+        console.log("🔄 [useCheckoutAuth] Token atualizado - mantendo sessão");
         if (mounted) setSessionUser(session.user);
         
         logCheckoutEvent(
           CheckoutEvent.AUTH_EVENT,
           LogLevel.INFO,
-          "Token refreshed in checkout flow",
+          "Token refreshed successfully",
           { 
             userId: session.user.id,
             email: session.user.email,
-            timestamp: new Date().toISOString() 
+            timestamp: new Date().toISOString()
           }
         );
+      } else if (event === 'SIGNED_OUT') {
+        // Apenas SIGNED_OUT deve fazer logout
+        console.log("⚠️ [useCheckoutAuth] Usuário deslogado - redirecionando");
+        if (mounted) {
+          setSessionUser(null);
+          toast({
+            title: "Sessão encerrada",
+            description: "Você foi desconectado. Faça login novamente.",
+            variant: "destructive"
+          });
+          navigate('/login?redirect=/checkout');
+        }
       }
     });
     

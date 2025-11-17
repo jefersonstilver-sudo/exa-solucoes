@@ -1,14 +1,16 @@
 
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CouponStep from '@/components/checkout/CouponStep';
 import CheckoutLayout from '@/components/checkout/CheckoutLayout';
 import CheckoutNavigation from '@/components/checkout/CheckoutNavigation';
 import { useCheckout } from '@/hooks/useCheckout';
-import { useAuth } from '@/hooks/useAuth'; // Adicionar import
+import { useAuth } from '@/hooks/useAuth';
 import { formatCurrency } from '@/utils/priceUtils';
-import { toast } from 'sonner'; // Adicionar import
+import { toast } from 'sonner';
 
 const CheckoutCoupon = () => {
+  const navigate = useNavigate();
   const {
     couponCode,
     setCouponCode,
@@ -28,13 +30,54 @@ const CheckoutCoupon = () => {
     couponCategoria
   } = useCheckout();
   
-  const { isSuperAdmin } = useAuth(); // Adicionar verificação de super admin
+  const { isSuperAdmin } = useAuth();
   
   // Calcular total em tempo real
   const currentTotal = calculateTotalPrice();
   
   // Detectar cupom cortesia
   const isCortesia = couponCategoria === 'cortesia' || couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN';
+  
+  // CRÍTICO: Verificar se dados do checkout estão disponíveis
+  useEffect(() => {
+    console.log("🛒 [CheckoutCoupon] Verificando dados:", {
+      cartItemsCount: cartItems?.length || 0,
+      selectedPlan,
+      currentTotal,
+      hasCartItems: !!cartItems && cartItems.length > 0,
+      timestamp: new Date().toISOString()
+    });
+
+    // Se não há itens no carrinho, tentar recuperar
+    if (!cartItems || cartItems.length === 0) {
+      console.error("❌ [CheckoutCoupon] Carrinho vazio - redirecionando");
+      toast.error("Seu carrinho está vazio. Adicione painéis antes de continuar.");
+      setTimeout(() => navigate('/checkout'), 500);
+      return;
+    }
+
+    // Se não há plano selecionado, tentar recuperar do localStorage
+    if (!selectedPlan) {
+      const savedPlan = localStorage.getItem('selectedPlan');
+      console.warn("⚠️ [CheckoutCoupon] Plano não selecionado. Tentando recuperar:", savedPlan);
+      
+      if (!savedPlan) {
+        toast.error("Selecione um plano antes de continuar.");
+        setTimeout(() => navigate('/checkout/plano'), 500);
+      }
+    }
+
+    // Verificar se o cálculo está funcionando
+    if (cartItems.length > 0 && selectedPlan && currentTotal === 0) {
+      console.error("❌ [CheckoutCoupon] Total é R$ 0,00 com dados válidos:", {
+        cartItems: cartItems.map(item => ({
+          id: item.panel.id,
+          preco_base: item.panel.buildings?.preco_base
+        })),
+        selectedPlan
+      });
+    }
+  }, [cartItems, selectedPlan, currentTotal, navigate]);
   
   // Função wrapper para validateCoupon
   const handleValidateCoupon = () => {
@@ -51,13 +94,6 @@ const CheckoutCoupon = () => {
       console.warn('[CheckoutCoupon] Dados insuficientes para validação:', { couponCode, selectedPlan });
     }
   };
-  
-  // Validação de estado crítico
-  useEffect(() => {
-    if (cartItems.length === 0) {
-      console.warn("⚠️ Carrinho vazio na página de cupons");
-    }
-  }, [cartItems.length]);
 
   return (
     <CheckoutLayout currentStep={1} maxWidth="4xl">
