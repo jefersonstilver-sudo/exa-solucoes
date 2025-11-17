@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,23 +12,24 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { CompanyBrandSection } from '@/components/settings/CompanyBrandSection';
+import { cn } from '@/lib/utils';
 
 // Validation schemas
 const profileSchema = z.object({
-  full_name: z.string().trim().max(100, 'Nome muito longo').optional(),
-  phone: z.string().trim().max(20, 'Telefone inválido').optional(),
+  nome: z.string().trim().max(100, 'Nome muito longo').optional(),
+  telefone: z.string().trim().max(20, 'Telefone inválido').optional(),
   company_name: z.string().trim().max(100, 'Nome da empresa muito longo').optional(),
 });
 
 const ProfileSettings = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile, loading, updateProfile } = useProfile();
+  const { settings, loading, updateSettings } = useUserSettings();
 
   const [formData, setFormData] = useState({
-    full_name: profile?.full_name || '',
-    phone: profile?.phone || '',
-    company_name: profile?.company_name || '',
+    nome: '',
+    telefone: '',
+    company_name: '',
   });
 
   const [saving, setSaving] = useState(false);
@@ -36,15 +37,14 @@ const ProfileSettings = () => {
 
 
   useEffect(() => {
-    if (profile) {
-      setFormData(prev => ({
-        ...prev,
-        full_name: profile.full_name || '',
-        phone: profile.phone || '',
-        company_name: profile.company_name || '',
-      }));
+    if (settings) {
+      setFormData({
+        nome: settings.nome || '',
+        telefone: settings.telefone || '',
+        company_name: settings.company_name || '',
+      });
     }
-  }, [profile]);
+  }, [settings]);
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,17 +62,14 @@ const ProfileSettings = () => {
     setSaving(true);
 
     try {
-      // Atualizar apenas profiles (full_name, phone, company_name)
-      await updateProfile({
-        full_name: formData.full_name,
-        phone: formData.phone,
+      // Atualizar users (nome, telefone) e profiles (company_name)
+      await updateSettings({
+        nome: formData.nome,
+        telefone: formData.telefone,
         company_name: formData.company_name,
       });
-
-      toast.success('Perfil atualizado com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
-      toast.error('Erro ao atualizar perfil');
     } finally {
       setSaving(false);
     }
@@ -161,34 +158,40 @@ const ProfileSettings = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="full_name" className="flex items-center gap-2">
+                  <Label htmlFor="nome" className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
                     Nome Completo
                   </Label>
                   <Input
-                    id="full_name"
+                    id="nome"
                     type="text"
-                    value={formData.full_name}
+                    value={formData.nome}
                     onChange={(e) =>
-                      setFormData({ ...formData, full_name: e.target.value })
+                      setFormData({ ...formData, nome: e.target.value })
                     }
                     placeholder="Seu nome completo"
+                    className={cn(
+                      formData.nome && "bg-green-50 border-green-300 dark:bg-green-950/20 dark:border-green-800"
+                    )}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2">
+                  <Label htmlFor="telefone" className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     Telefone
                   </Label>
                   <Input
-                    id="phone"
+                    id="telefone"
                     type="tel"
-                    value={formData.phone}
+                    value={formData.telefone}
                     onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
+                      setFormData({ ...formData, telefone: e.target.value })
                     }
                     placeholder="(00) 00000-0000"
+                    className={cn(
+                      formData.telefone && "bg-green-50 border-green-300 dark:bg-green-950/20 dark:border-green-800"
+                    )}
                   />
                 </div>
 
@@ -285,18 +288,16 @@ const ProfileSettings = () => {
               <div className="flex justify-between items-center py-2">
                 <span className="text-sm text-muted-foreground">Criado em</span>
                 <span className="text-sm">
-                  {profile?.created_at
-                    ? new Date(profile.created_at).toLocaleDateString('pt-BR')
+                  {user?.created_at
+                    ? new Date(user.created_at).toLocaleDateString('pt-BR')
                     : '-'}
                 </span>
               </div>
               <Separator />
               <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-muted-foreground">Última atualização</span>
+                <span className="text-sm text-muted-foreground">Email verificado</span>
                 <span className="text-sm">
-                  {profile?.updated_at
-                    ? new Date(profile.updated_at).toLocaleDateString('pt-BR')
-                    : '-'}
+                  {user?.email_confirmed_at ? 'Sim' : 'Não'}
                 </span>
               </div>
             </CardContent>
