@@ -3,6 +3,7 @@ import { useEditorState } from '@/hooks/video-editor/useEditorState';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { ZoomIn, ZoomOut, Maximize2, Play, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
+import { FitModeSelector } from './FitModeSelector';
 
 export const VideoPlayer = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -19,7 +20,8 @@ export const VideoPlayer = () => {
     isPlaying,
     setIsPlaying,
     setCurrentTime,
-    duration
+    duration,
+    fitMode
   } = useEditorState();
   
   // Sync video playback with currentTime
@@ -75,6 +77,66 @@ export const VideoPlayer = () => {
     setCurrentTime(value[0]);
   };
 
+  // Calculate layer transform based on fit mode
+  const calculateLayerStyle = (layer: typeof layers[0]) => {
+    const layerAspect = layer.size.width / layer.size.height;
+    const canvasAspect = canvasSize.width / canvasSize.height;
+
+    let style: React.CSSProperties = {
+      position: 'absolute',
+      transform: `rotate(${layer.rotation}deg)`,
+      opacity: layer.opacity,
+      zIndex: layer.z_index,
+    };
+
+    switch (fitMode) {
+      case 'fit': {
+        const scale = layerAspect > canvasAspect 
+          ? canvasSize.width / layer.size.width 
+          : canvasSize.height / layer.size.height;
+        const width = layer.size.width * scale;
+        const height = layer.size.height * scale;
+        style.width = `${width * canvasZoom}px`;
+        style.height = `${height * canvasZoom}px`;
+        style.left = `${((canvasSize.width - width) / 2 + layer.position.x) * canvasZoom}px`;
+        style.top = `${((canvasSize.height - height) / 2 + layer.position.y) * canvasZoom}px`;
+        style.objectFit = 'contain';
+        break;
+      }
+      case 'fill': {
+        const scale = layerAspect > canvasAspect
+          ? canvasSize.height / layer.size.height
+          : canvasSize.width / layer.size.width;
+        const width = layer.size.width * scale;
+        const height = layer.size.height * scale;
+        style.width = `${width * canvasZoom}px`;
+        style.height = `${height * canvasZoom}px`;
+        style.left = `${((canvasSize.width - width) / 2 + layer.position.x) * canvasZoom}px`;
+        style.top = `${((canvasSize.height - height) / 2 + layer.position.y) * canvasZoom}px`;
+        style.objectFit = 'cover';
+        break;
+      }
+      case 'stretch': {
+        style.width = `${canvasSize.width * canvasZoom}px`;
+        style.height = `${canvasSize.height * canvasZoom}px`;
+        style.left = `${layer.position.x * canvasZoom}px`;
+        style.top = `${layer.position.y * canvasZoom}px`;
+        style.objectFit = 'fill';
+        break;
+      }
+      case 'original': {
+        style.width = `${layer.size.width * canvasZoom}px`;
+        style.height = `${layer.size.height * canvasZoom}px`;
+        style.left = `${layer.position.x * canvasZoom}px`;
+        style.top = `${layer.position.y * canvasZoom}px`;
+        style.objectFit = 'none';
+        break;
+      }
+    }
+
+    return style;
+  };
+
   // Get visible video layers
   const visibleLayers = layers
     .filter(layer => 
@@ -87,31 +149,39 @@ export const VideoPlayer = () => {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Controls */}
-      <div className="flex items-center justify-end gap-2 p-3 border-b bg-background/95 flex-shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCanvasZoom(Math.max(0.1, canvasZoom - 0.1))}
-        >
-          <ZoomOut className="h-4 w-4" />
-        </Button>
-        <span className="text-sm font-medium min-w-[60px] text-center">
-          {Math.round(canvasZoom * 100)}%
-        </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCanvasZoom(Math.min(3, canvasZoom + 0.1))}
-        >
-          <ZoomIn className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCanvasZoom(1)}
-        >
-          <Maximize2 className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center justify-between gap-2 p-3 border-b bg-background/95 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="bg-muted/30 rounded-md px-3 py-1.5">
+            <span className="text-sm font-medium">{canvasSize.width} × {canvasSize.height}</span>
+          </div>
+          <FitModeSelector />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCanvasZoom(Math.max(0.1, canvasZoom - 0.1))}
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium min-w-[60px] text-center">
+            {Math.round(canvasZoom * 100)}%
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCanvasZoom(Math.min(3, canvasZoom + 0.1))}
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCanvasZoom(1)}
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Player Container */}
@@ -143,50 +213,40 @@ export const VideoPlayer = () => {
                 <p className="text-sm">Arraste vídeos ou imagens da biblioteca</p>
               </div>
             </div>
-          ) : (
-            visibleLayers.map((layer) => (
-              <div
-                key={layer.id}
-                onClick={() => setSelectedLayerId(layer.id)}
-                style={{
-                  position: 'absolute',
-                  left: layer.position.x,
-                  top: layer.position.y,
-                  width: layer.size.width,
-                  height: layer.size.height,
-                  transform: `rotate(${layer.rotation}deg)`,
-                  opacity: layer.opacity,
-                  cursor: 'pointer',
-                  border: selectedLayerId === layer.id ? '3px solid #3b82f6' : 'none',
-                  zIndex: layer.z_index
-                }}
-              >
-                {layer.type === 'video' && layer.asset_id ? (
-                  <video
-                    ref={(el) => {
-                      if (el) videoRefs.current.set(layer.id, el);
-                      else videoRefs.current.delete(layer.id);
-                    }}
-                    src={layer.asset_id}
-                    className="w-full h-full object-cover"
-                    muted
-                    playsInline
-                  />
-                ) : layer.type === 'image' && layer.asset_id ? (
-                  <img
-                    src={layer.asset_id}
-                    alt="Layer"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-muted/50 flex items-center justify-center">
-                    <span className="text-xs text-muted-foreground">
-                      {layer.type}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))
+           ) : (
+            visibleLayers.map((layer) => {
+              const layerStyle = calculateLayerStyle(layer);
+              return (
+                <div
+                  key={layer.id}
+                  onClick={() => setSelectedLayerId(layer.id)}
+                  style={{
+                    ...layerStyle,
+                    cursor: 'pointer',
+                    border: selectedLayerId === layer.id ? '3px solid #3b82f6' : 'none',
+                  }}
+                >
+                  {layer.type === 'video' && layer.asset_id ? (
+                    <video
+                      ref={(el) => {
+                        if (el) videoRefs.current.set(layer.id, el);
+                        else videoRefs.current.delete(layer.id);
+                      }}
+                      src={layer.asset_id}
+                      style={{ width: '100%', height: '100%', objectFit: layerStyle.objectFit as any }}
+                      muted
+                      playsInline
+                    />
+                  ) : layer.type === 'image' && layer.asset_id ? (
+                    <img
+                      src={layer.asset_id}
+                      alt="Layer"
+                      style={{ width: '100%', height: '100%', objectFit: layerStyle.objectFit as any }}
+                    />
+                  ) : null}
+                </div>
+              );
+            })
           )}
         </div>
       </div>

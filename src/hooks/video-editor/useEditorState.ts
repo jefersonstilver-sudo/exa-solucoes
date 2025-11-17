@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { TimelineLayer, VideoEditorProject } from '@/types/videoEditor';
 
+export type FitMode = 'fit' | 'fill' | 'stretch' | 'original';
+
+interface TimelineMarker {
+  id: string;
+  time: number;
+  label: string;
+  color?: string;
+}
+
 interface EditorState {
   // Project
   currentProject: VideoEditorProject | null;
@@ -25,10 +34,25 @@ interface EditorState {
   // Canvas
   canvasZoom: number;
   setCanvasZoom: (zoom: number) => void;
+  fitMode: FitMode;
+  setFitMode: (mode: FitMode) => void;
+  
+  // Timeline Markers
+  markers: TimelineMarker[];
+  addMarker: (marker: TimelineMarker) => void;
+  updateMarker: (id: string, updates: Partial<TimelineMarker>) => void;
+  removeMarker: (id: string) => void;
+  
+  // Snap Settings
+  snapEnabled: boolean;
+  setSnapEnabled: (enabled: boolean) => void;
+  snapTolerance: number;
+  setSnapTolerance: (tolerance: number) => void;
   
   // Layers
   layers: TimelineLayer[];
   addLayer: (layer: TimelineLayer) => void;
+  splitLayer: (id: string, splitTime: number) => void;
   updateLayer: (id: string, updates: Partial<TimelineLayer>) => void;
   removeLayer: (id: string) => void;
   setLayers: (layers: TimelineLayer[]) => void;
@@ -67,12 +91,58 @@ export const useEditorState = create<EditorState>((set, get) => ({
   // Canvas
   canvasZoom: 1,
   setCanvasZoom: (zoom) => set({ canvasZoom: Math.max(0.1, Math.min(5, zoom)) }),
+  fitMode: 'fit',
+  setFitMode: (mode) => set({ fitMode: mode }),
+  
+  // Timeline Markers
+  markers: [],
+  addMarker: (marker) => set((state) => ({ markers: [...state.markers, marker] })),
+  updateMarker: (id, updates) => set((state) => ({
+    markers: state.markers.map(m => m.id === id ? { ...m, ...updates } : m)
+  })),
+  removeMarker: (id) => set((state) => ({
+    markers: state.markers.filter(m => m.id !== id)
+  })),
+  
+  // Snap Settings
+  snapEnabled: true,
+  setSnapEnabled: (enabled) => set({ snapEnabled: enabled }),
+  snapTolerance: 0.1,
+  setSnapTolerance: (tolerance) => set({ snapTolerance: tolerance }),
   
   // Layers
   layers: [],
   addLayer: (layer) => {
     set((state) => ({
       layers: [...state.layers, layer],
+    }));
+    get().pushHistory();
+  },
+  splitLayer: (id: string, splitTime: number) => {
+    const state = get();
+    const layer = state.layers.find(l => l.id === id);
+    if (!layer || splitTime <= layer.start_time || splitTime >= layer.end_time) return;
+    
+    const leftPart: TimelineLayer = {
+      ...layer,
+      id: `${layer.id}-${Date.now()}-left`,
+      end_time: splitTime,
+      duration: splitTime - layer.start_time
+    };
+    
+    const rightPart: TimelineLayer = {
+      ...layer,
+      id: `${layer.id}-${Date.now()}-right`,
+      start_time: splitTime,
+      duration: layer.end_time - splitTime
+    };
+    
+    set((state) => ({
+      layers: [
+        ...state.layers.filter(l => l.id !== id),
+        leftPart,
+        rightPart
+      ]
     }));
     get().pushHistory();
   },
