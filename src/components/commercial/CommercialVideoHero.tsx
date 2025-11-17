@@ -14,13 +14,15 @@ interface CommercialVideoHeroProps {
   className?: string;
   onPlaylistEnd?: () => void;
   onPlayingChange?: (playing: boolean) => void;
+  onVideosChange?: (videos: Video[]) => void; // Notifica quando vídeos externos mudarem
 }
 
 export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   videos,
   className = '',
   onPlaylistEnd,
-  onPlayingChange
+  onPlayingChange,
+  onVideosChange
 }) => {
   // Estados simples
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -30,6 +32,7 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   // Refs para callbacks externos (evitar re-renders)
   const onPlayingChangeRef = useRef(onPlayingChange);
   const onPlaylistEndRef = useRef(onPlaylistEnd);
+  const onVideosChangeRef = useRef(onVideosChange);
 
   // ✅ CORREÇÃO 3: Refs para acessar valores atuais sem causar re-render
   const currentIndexRef = useRef(currentIndex);
@@ -39,9 +42,10 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   useEffect(() => {
     onPlayingChangeRef.current = onPlayingChange;
     onPlaylistEndRef.current = onPlaylistEnd;
+    onVideosChangeRef.current = onVideosChange;
     currentIndexRef.current = currentIndex;
     videosRef.current = videos;
-  }, [onPlayingChange, onPlaylistEnd, currentIndex, videos]);
+  }, [onPlayingChange, onPlaylistEnd, onVideosChange, currentIndex, videos]);
 
   // Hash estável para detectar mudanças na playlist
   const videosHash = useMemo(() => {
@@ -51,20 +55,23 @@ export const CommercialVideoHero: React.FC<CommercialVideoHeroProps> = ({
   // ✅ CORREÇÃO 4: Rastrear hash anterior para evitar resets desnecessários
   const previousHashRef = useRef(videosHash);
 
-  // Reset APENAS quando hash REALMENTE mudar
+  // 🚨 NOTIFICAR quando vídeos externos mudarem (NÃO aplicar diretamente)
   useEffect(() => {
-    if (previousHashRef.current !== videosHash) {
-      VideoDebugger.logEvent('PLAYLIST', 'Mudança detectada - reiniciando', {
+    if (previousHashRef.current !== videosHash && previousHashRef.current !== '') {
+      VideoDebugger.logEvent('PLAYLIST', '📦 Mudança detectada - notificando parent', {
         count: videos.length,
         oldHash: previousHashRef.current,
         newHash: videosHash
       });
       
-      setCurrentIndex(0);
-      setIsBuffering(true);
+      // Notifica parent que há novos vídeos (parent decide quando aplicar)
+      onVideosChangeRef.current?.(videos);
+      previousHashRef.current = videosHash;
+    } else if (previousHashRef.current === '') {
+      // Primeira vez - inicializar
       previousHashRef.current = videosHash;
     }
-  }, [videosHash, videos.length]);
+  }, [videosHash, videos]);
 
   // ✅ CORREÇÃO 3 & 5: Event handlers TOTALMENTE estáveis - SEM dependências
   const handleLoadStart = useCallback(() => {
