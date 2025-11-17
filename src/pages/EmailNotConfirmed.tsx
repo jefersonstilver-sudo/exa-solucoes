@@ -1,57 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { motion } from 'framer-motion';
+import { useEmailConfirmation } from '@/hooks/useEmailConfirmation';
 
 export default function EmailNotConfirmed() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
-  const [resending, setResending] = useState(false);
+  const { resendConfirmationEmail, isResending } = useEmailConfirmation();
   const navigate = useNavigate();
-
-  const handleResendEmail = async () => {
-    if (!email) {
-      toast.error('Email não encontrado');
-      return;
-    }
-
-    try {
-      setResending(true);
-      
-      console.log('🔄 Reenviando email via unified-email-service para:', email);
-      
-      // ✅ CORREÇÃO: Usar edge function unificada
-      const { data, error } = await supabase.functions.invoke('unified-email-service', {
-        body: { 
-          action: 'resend', 
-          email 
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast.success('Email de confirmação reenviado!', {
-          description: `Verifique sua caixa de entrada em ${email}`
-        });
-      } else {
-        throw new Error(data?.error || 'Erro ao reenviar');
-      }
-    } catch (error: any) {
-      console.error('❌ Erro ao reenviar:', error);
-      toast.error('Erro ao reenviar email', {
-        description: error.message
-      });
-    } finally {
-      setResending(false);
-    }
-  };
 
   return (
     <Layout>

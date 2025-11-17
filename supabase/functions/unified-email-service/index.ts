@@ -81,7 +81,26 @@ serve(async (req: Request) => {
 
       console.log('🔗 [1/5] Gerando link de confirmação...');
       const linkGenerator = new LinkGenerator(supabaseUrl, serviceRoleKey);
-      const confirmationUrl = await linkGenerator.generateConfirmationLink(email);
+      
+      // Buscar redirect preference do usuário (se existir)
+      let redirectAfterConfirm = '/loja';
+      try {
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabase = createClient(supabaseUrl, serviceRoleKey);
+        const { data: userData } = await supabase
+          .from('users')
+          .select('metadata')
+          .eq('email', email)
+          .single();
+        
+        if (userData?.metadata?.redirectAfterConfirm) {
+          redirectAfterConfirm = userData.metadata.redirectAfterConfirm;
+        }
+      } catch (e) {
+        console.log('⚠️ [RESEND] Usando redirect padrão');
+      }
+      
+      const confirmationUrl = await linkGenerator.generateConfirmationLink(email, undefined, redirectAfterConfirm);
       console.log('✅ [1/5] Link gerado');
       
       console.log('👤 [2/5] Buscando nome do usuário...');
