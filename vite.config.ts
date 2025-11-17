@@ -17,29 +17,8 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
-      manifest: {
-        name: 'EXA Display Comercial',
-        short_name: 'EXA Display',
-        description: 'Display comercial para exibição de vídeos em prédios',
-        theme_color: '#FF4430',
-        background_color: '#0F172A',
-        display: 'standalone',
-        orientation: 'landscape',
-        start_url: '/',
-        icons: [
-          {
-            src: '/favicon.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          },
-          {
-            src: '/apple-touch-icon.png',
-            sizes: '180x180',
-            type: 'image/png'
-          }
-        ]
-      },
+      // Don't use static manifest - we generate it dynamically per building
+      manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,mp4,webm}'],
         maximumFileSizeToCacheInBytes: 100 * 1024 * 1024, // 100MB
