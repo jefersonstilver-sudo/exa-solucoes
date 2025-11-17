@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { Clock } from 'lucide-react';
 
 export const LiveClock: React.FC = () => {
   const [time, setTime] = useState(new Date());
+  const { screenSize, isMobile, isTablet } = useResponsiveLayout();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -12,26 +14,44 @@ export const LiveClock: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Cálculo dinâmico baseado na tela
+  const scaleFactor = Math.min(screenSize.width / 1920, 1);
+  const minScale = isMobile ? 0.6 : isTablet ? 0.75 : 0.85;
+  const finalScale = Math.max(scaleFactor, minScale);
+
+  const sizes = {
+    clockFontSize: `clamp(1.5rem, ${finalScale * 4}rem, 5rem)`,
+    dateFontSize: `clamp(0.625rem, ${finalScale * 0.875}rem, 1rem)`,
+    padding: `clamp(0.5rem, ${finalScale * 1.5}rem, 2rem)`,
+  };
+
   return (
     <div className="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-md rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl border border-white/5 h-full w-full overflow-hidden">
-      <div className="h-full flex flex-col justify-between p-2 sm:p-3 md:p-4">
+      <div className="h-full flex flex-col justify-center items-center" style={{ padding: sizes.padding }}>
         {/* Header com ícone */}
-        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 mb-2 sm:mb-3">
-          <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-red-500/10 rounded-full border border-red-500/20 flex-shrink-0">
-            <Clock className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-red-400" />
-          </div>
-          <div className="text-[10px] sm:text-xs md:text-sm text-white/50 font-medium uppercase tracking-wider">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <Clock className="text-red-400 flex-shrink-0" style={{ width: finalScale * 32, height: finalScale * 32 }} />
+          <div 
+            className="text-white/50 font-medium uppercase tracking-wider"
+            style={{ fontSize: `clamp(0.625rem, ${finalScale * 0.875}rem, 1rem)` }}
+          >
             Horário
           </div>
         </div>
 
-        {/* Relógio */}
-        <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-white tracking-tight font-mono leading-none mb-1.5 sm:mb-2 md:mb-3">
+        {/* Relógio - Centralizado */}
+        <div 
+          className="font-bold text-white tracking-tight font-mono leading-none mb-2 text-center"
+          style={{ fontSize: sizes.clockFontSize }}
+        >
           {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
 
         {/* Data completa */}
-        <div className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-white/70 font-medium capitalize leading-tight">
+        <div 
+          className="text-white/70 font-medium capitalize text-center"
+          style={{ fontSize: sizes.dateFontSize }}
+        >
           {time.toLocaleDateString('pt-BR', { 
             weekday: 'long', 
             day: 'numeric', 
