@@ -67,7 +67,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.notify-video-toggle]
-verify_jwt = true
+verify_jwt = false
 
 [functions.video-schedule-sync]
 verify_jwt = false

@@ -25,39 +25,50 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get authenticated user from JWT
+    // Aceitar chamadas de edge functions internas OU de usuários autenticados
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
-    }
+    let isAuthenticated = false;
+    let user: any = null;
+    let isAdmin = false;
 
-    const token = authHeader.replace('Bearer ', '');
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.49.4');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      console.error('❌ [WEBHOOK] Auth error:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
+    // Se houver header de autenticação, validar JWT
+    if (authHeader) {
+      console.log('🔐 [WEBHOOK] Autenticação via JWT detectada');
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !authUser) {
+        console.error('❌ [WEBHOOK] Auth error:', authError);
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+
+      user = authUser;
+      isAuthenticated = true;
+
+      // Check if user has permission (admin or owns the buildings being toggled)
+      const { data: userRole } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      isAdmin = userRole && ['admin', 'super_admin'].includes(userRole.role);
+      console.log('✅ [WEBHOOK] Usuário autenticado:', user.id, 'Admin:', isAdmin);
+    } else {
+      // Se não houver header de auth, assumir que é chamada interna (de outra edge function)
+      console.log('🔓 [WEBHOOK] Chamada interna (sem autenticação) - permitida');
+      isAuthenticated = true; // Permitir edge functions internas
+      isAdmin = true; // Edge functions internas têm privilégios de admin
     }
-
-    // Check if user has permission (admin or owns the buildings being toggled)
-    const { data: userRole } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    const isAdmin = userRole && ['admin', 'super_admin'].includes(userRole.role);
 
     const body = await req.json().catch(() => ({}));
     const actions = Array.isArray(body?.actions) ? body.actions : [];
@@ -72,8 +83,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Validate building ownership for non-admins
-    if (!isAdmin) {
+    // Validate building ownership for non-admins (apenas se houver usuário autenticado via JWT)
+    if (!isAdmin && user) {
       const buildingIds = actions
         .map((a: any) => a?.predio_id ?? a?.predioId ?? a?.building_id)
         .filter(Boolean);
