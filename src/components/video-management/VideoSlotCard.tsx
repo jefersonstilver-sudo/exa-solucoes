@@ -345,10 +345,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
             {slot.is_base_video && totalApprovedVideos === 1 && <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center space-x-1 bg-red-50 border border-red-200 text-red-700 px-2 py-1 rounded-md text-xs cursor-help">
-                      <Shield className="h-3 w-3" />
-                      <span>Protegido</span>
-                    </div>
+                    
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-xs bg-red-900 text-white">
                     <p className="text-sm font-medium">⚠️ Não Pode Ser Removido</p>
@@ -423,18 +420,15 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
             {/* Botões de Ação */}
             <VideoSlotActions slot={slot} onActivate={onActivate} onRemove={onRemove} onDownload={handleDownload} onScheduleVideo={onScheduleVideo} onForceCleanup={handleForceCleanup} totalApprovedVideos={totalApprovedVideos} orderId={orderId} />
-          </div> : slot.id ? (
-          // Placeholder para vídeo enviado mas ainda não carregado
-          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 text-center space-y-3">
+          </div> : slot.id ?
+      // Placeholder para vídeo enviado mas ainda não carregado
+      <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 text-center space-y-3">
             <Clock className="h-12 w-12 text-yellow-600 mx-auto" />
             <div>
               <p className="font-medium text-yellow-900">Vídeo Enviado</p>
               <p className="text-sm text-yellow-700 mt-1">Aguardando aprovação dos administradores</p>
             </div>
-          </div>
-        ) : (
-          <VideoSlotUpload slotPosition={slot.slot_position} uploading={uploading} isUploading={currentProgress !== undefined} onUpload={onUpload} />
-        )}
+          </div> : <VideoSlotUpload slotPosition={slot.slot_position} uploading={uploading} isUploading={currentProgress !== undefined} onUpload={onUpload} />}
       </CardContent>
     </Card>;
 
