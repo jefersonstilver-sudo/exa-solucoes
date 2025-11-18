@@ -148,7 +148,10 @@ const ModernCartLayout = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onRemove(item.id)}
+                  onClick={() => {
+                    console.log('🗑️ [ModernCartLayout] Removendo item:', item.panel.id);
+                    onRemove(item.panel.id);
+                  }}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"
                 >
                   <X className="h-4 w-4" />
