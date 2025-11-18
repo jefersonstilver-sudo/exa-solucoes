@@ -92,17 +92,31 @@ const notifyExternalAPI = async (pedidoId: string, activeVideoId: string) => {
     const buildingIds = pedidoData.lista_predios;
     videoLogger.log("info", "NOTIFY_API_BUILDINGS", `Encontrados ${buildingIds.length} prédios`, { pedidoId, buildingIds });
 
-    // 3️⃣ Montar array de actions para cada prédio
+    // 3️⃣ Determinar qual vídeo está realmente ativo
+    // REGRA: Sempre deve haver UM vídeo ativo por pedido
+    let finalActiveVideoId = activeVideoId;
+    
+    // Se activeVideoId não for válido, usar primeiro vídeo como fallback
+    if (!finalActiveVideoId || !(allSlots as PedidoVideosRow[]).some(s => s.video_id === activeVideoId)) {
+      finalActiveVideoId = (allSlots as PedidoVideosRow[])[0]?.video_id;
+      
+      videoLogger.log("warn", "NOTIFY_API_FALLBACK", "activeVideoId inválido, usando primeiro vídeo", { 
+        originalActiveVideoId: activeVideoId,
+        fallbackVideoId: finalActiveVideoId 
+      });
+    }
+
+    // 4️⃣ Montar array de actions para cada prédio
     const actions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
 
     buildingIds.forEach((buildingId: string) => {
       (allSlots as PedidoVideosRow[]).forEach(slot => {
-        const titulo = extractTitulo(slot.videos?.url); // ✅ Usar URL para extrair nome do arquivo
+        const titulo = extractTitulo(slot.videos?.url);
         if (!titulo) return;
 
         actions.push({
           titulo,
-          ativo: slot.video_id === activeVideoId, // true apenas para o vídeo ativo
+          ativo: slot.video_id === finalActiveVideoId, // ✅ Sempre haverá 1 vídeo true
           predio_id: buildingId
         });
       });

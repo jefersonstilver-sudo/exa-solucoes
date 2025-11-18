@@ -269,12 +269,21 @@ serve(async (req) => {
             } else {
               const buildingIds = pedidoData.lista_predios;
               
+              // REGRA: Sempre deve haver UM vídeo ativo por pedido
+              let finalActiveVideoId = videoParaExibir;
+              
+              // Se videoParaExibir não for válido, usar primeiro vídeo como fallback
+              if (!finalActiveVideoId || !allPedidoVideos.some((pv: any) => pv.video_id === videoParaExibir)) {
+                finalActiveVideoId = allPedidoVideos[0]?.video_id;
+                log.warn(`⚠️ [VIDEO_SYNC] videoParaExibir inválido, usando primeiro vídeo: ${finalActiveVideoId}`);
+              }
+              
               // Montar array de actions
               const actions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
               
               buildingIds.forEach((buildingId: string) => {
                 allPedidoVideos.forEach((pv: any) => {
-                  const videoUrl = pv.videos?.url; // ✅ Usar URL, não nome/título
+                  const videoUrl = pv.videos?.url;
                   if (!videoUrl) return;
                   
                   // Extrair nome do arquivo limpo (sem extensão)
@@ -283,7 +292,7 @@ serve(async (req) => {
 
                   actions.push({
                     titulo,
-                    ativo: pv.video_id === videoParaExibir, // true apenas para o novo vídeo em exibição
+                    ativo: pv.video_id === finalActiveVideoId, // ✅ Sempre haverá 1 vídeo true
                     predio_id: buildingId
                   });
                 });
