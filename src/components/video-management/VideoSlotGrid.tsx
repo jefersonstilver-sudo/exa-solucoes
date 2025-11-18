@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { VideoSlotCard } from './VideoSlotCard';
 import { VideoSlotStatus } from './VideoSlotStatus';
 import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
@@ -57,7 +57,15 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   onScheduleVideo,
   orderId
 }) => {
-  const { currentVideo } = useCurrentVideoDisplay({ orderId, enabled: true });
+  const { currentVideo, refreshCurrentVideo } = useCurrentVideoDisplay({ orderId, enabled: true });
+
+  // Atualizar currentVideo quando videoSlots mudar (importante para mudanças de vídeo base)
+  useEffect(() => {
+    if (videoSlots.length > 0) {
+      console.log('🔄 [GRID] Slots atualizados, forçando refresh do vídeo atual');
+      refreshCurrentVideo();
+    }
+  }, [videoSlots, refreshCurrentVideo]);
 
   // Log para debug do re-render
   console.log('🔄 [GRID] VideoSlotGrid renderizando:', {
