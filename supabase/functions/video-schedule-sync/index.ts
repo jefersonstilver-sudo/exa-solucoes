@@ -299,14 +299,22 @@ serve(async (req) => {
               });
 
               log.info(`🔔 [VIDEO_SYNC] Passo 1: Desativando ${deactivateActions.length} vídeos`);
+              log.info(`🔔 [VIDEO_SYNC] Payload desativar:`, JSON.stringify(deactivateActions, null, 2));
 
               // Chamar API: desativar todos
-              const { error: deactivateError } = await supabase.functions.invoke('notify-video-toggle', {
+              const deactivateInvokeResult = await supabase.functions.invoke('notify-video-toggle', {
                 body: { actions: deactivateActions }
               });
 
-              if (deactivateError) {
-                log.error('❌ [VIDEO_SYNC] Erro ao desativar vídeos:', deactivateError);
+              log.info(`🔔 [VIDEO_SYNC] Resposta deactivate (completa):`, JSON.stringify(deactivateInvokeResult, null, 2));
+              log.info(`🔔 [VIDEO_SYNC] Resposta deactivate - error:`, deactivateInvokeResult.error);
+              log.info(`🔔 [VIDEO_SYNC] Resposta deactivate - data:`, deactivateInvokeResult.data);
+
+              if (deactivateInvokeResult.error) {
+                log.error('❌ [VIDEO_SYNC] ERRO CRÍTICO ao desativar vídeos:', deactivateInvokeResult.error);
+                log.error('❌ [VIDEO_SYNC] Erro detalhado:', JSON.stringify(deactivateInvokeResult.error, null, 2));
+              } else {
+                log.info('✅ [VIDEO_SYNC] Passo 1 concluído: Todos os vídeos desativados');
               }
 
               // Passo 2: Ativar APENAS o vídeo correto
@@ -330,11 +338,26 @@ serve(async (req) => {
               });
 
               log.info(`🔔 [VIDEO_SYNC] Passo 2: Ativando ${activateActions.length} vídeo(s)`);
+              log.info(`🔔 [VIDEO_SYNC] Payload ativar:`, JSON.stringify(activateActions, null, 2));
 
               // Chamar API: ativar o vídeo correto
-              const { data: notifyResult, error: notifyError } = await supabase.functions.invoke('notify-video-toggle', {
+              const activateInvokeResult = await supabase.functions.invoke('notify-video-toggle', {
                 body: { actions: activateActions }
               });
+
+              log.info(`🔔 [VIDEO_SYNC] Resposta activate (completa):`, JSON.stringify(activateInvokeResult, null, 2));
+              log.info(`🔔 [VIDEO_SYNC] Resposta activate - error:`, activateInvokeResult.error);
+              log.info(`🔔 [VIDEO_SYNC] Resposta activate - data:`, activateInvokeResult.data);
+
+              if (activateInvokeResult.error) {
+                log.error('❌ [VIDEO_SYNC] ERRO CRÍTICO ao ativar vídeo:', activateInvokeResult.error);
+                log.error('❌ [VIDEO_SYNC] Erro detalhado:', JSON.stringify(activateInvokeResult.error, null, 2));
+              } else {
+                log.info('✅ [VIDEO_SYNC] Passo 2 concluído: Vídeo ativado com sucesso');
+              }
+
+              const notifyResult = activateInvokeResult.data;
+              const notifyError = activateInvokeResult.error;
 
               if (notifyError) {
                 log.error(`❌ [VIDEO_SYNC] Erro ao notificar API externa:`, notifyError);

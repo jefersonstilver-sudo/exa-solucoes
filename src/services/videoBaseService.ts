@@ -67,6 +67,94 @@ const fetchAllPedidoSlots = async (pedidoId: string) => {
 // 🔔 Notificar API externa sobre mudança de vídeos
 const notifyExternalAPI = async (pedidoId: string, activeVideoId: string) => {
   try {
+    console.log('🔔 [NOTIFY_API] ====== INÍCIO ======');
+    console.log('🔔 [NOTIFY_API] Pedido:', pedidoId);
+    console.log('🔔 [NOTIFY_API] Video ativo:', activeVideoId);
+    console.log('🔔 [NOTIFY_API] Supabase client:', !!supabase);
+    console.log('🔔 [NOTIFY_API] Supabase functions:', !!supabase.functions);
+    
+    videoLogger.log("info", "NOTIFY_API_START", "Iniciando notificação API externa", { pedidoId, activeVideoId });
+
+    const { data: allSlots, error: slotsError } = await fetchAllPedidoSlots(pedidoId);
+    
+    if (slotsError || !allSlots || allSlots.length === 0) {
+      console.error('❌ [NOTIFY_API] Erro ao buscar slots:', slotsError);
+      throw new Error(`Erro ao buscar slots: ${JSON.stringify(slotsError)}`);
+    }
+
+    console.log('✅ [NOTIFY_API] Slots encontrados:', allSlots.length);
+
+    const { data: pedidoData, error: pedidoError } = await supabase
+      .from('pedidos')
+      .select('lista_predios')
+      .eq('id', pedidoId)
+      .single();
+
+    if (pedidoError || !pedidoData?.lista_predios) {
+      console.error('❌ [NOTIFY_API] Erro ao buscar prédios:', pedidoError);
+      throw new Error(`Erro ao buscar prédios: ${JSON.stringify(pedidoError)}`);
+    }
+
+    const buildingIds = pedidoData.lista_predios;
+    console.log('✅ [NOTIFY_API] Prédios:', buildingIds);
+
+    let finalActiveVideoId = activeVideoId;
+    if (!finalActiveVideoId || !(allSlots as PedidoVideosRow[]).some(s => s.video_id === activeVideoId)) {
+      finalActiveVideoId = (allSlots as PedidoVideosRow[])[0]?.video_id;
+      console.warn(`⚠️ [NOTIFY_API] Fallback para:`, finalActiveVideoId);
+    }
+
+    // Passo 1: Desativar TODOS
+    const deactivateActions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
+    buildingIds.forEach((buildingId: string) => {
+      (allSlots as PedidoVideosRow[]).forEach(slot => {
+        const titulo = extractTitulo(slot.videos?.url);
+        if (!titulo) return;
+        deactivateActions.push({ titulo, ativo: false, predio_id: buildingId });
+      });
+    });
+
+    console.log('🔔 [NOTIFY_API] PASSO 1: Desativando', deactivateActions.length, 'vídeos');
+    const deactivateResult = await supabase.functions.invoke("notify-video-toggle", {
+      body: { actions: deactivateActions }
+    });
+
+    console.log('🔔 [NOTIFY_API] Resposta desativar:', deactivateResult);
+    if (deactivateResult.error) {
+      console.error('❌ [NOTIFY_API] Erro ao desativar:', deactivateResult.error);
+      throw new Error(`Erro ao desativar: ${JSON.stringify(deactivateResult.error)}`);
+    }
+
+    // Passo 2: Ativar apenas UM
+    const activateActions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
+    buildingIds.forEach((buildingId: string) => {
+      (allSlots as PedidoVideosRow[]).forEach(slot => {
+        const titulo = extractTitulo(slot.videos?.url);
+        if (!titulo || slot.video_id !== finalActiveVideoId) return;
+        activateActions.push({ titulo, ativo: true, predio_id: buildingId });
+      });
+    });
+
+    console.log('🔔 [NOTIFY_API] PASSO 2: Ativando', activateActions.length, 'vídeo(s)');
+    const activateResult = await supabase.functions.invoke("notify-video-toggle", {
+      body: { actions: activateActions }
+    });
+
+    console.log('🔔 [NOTIFY_API] Resposta ativar:', activateResult);
+    if (activateResult.error) {
+      console.error('❌ [NOTIFY_API] Erro ao ativar:', activateResult.error);
+      throw new Error(`Erro ao ativar: ${JSON.stringify(activateResult.error)}`);
+    }
+
+    console.log('✅ [NOTIFY_API] ====== SUCESSO ======');
+    return { success: true, data: activateResult.data };
+    
+  } catch (err: any) {
+    console.error('💥 [NOTIFY_API] EXCEÇÃO:', err.message);
+    throw err;
+  }
+};
+  try {
     videoLogger.log("info", "NOTIFY_API_START", "Iniciando notificação API externa", { pedidoId, activeVideoId });
 
     // 1️⃣ Buscar TODOS os vídeos do pedido
@@ -407,11 +495,24 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
       });
 
       // Chamar função centralizada de notificação
-      await notifyExternalAPI(currentSlot.pedido_id, currentSlot.video_id);
-
-    } catch (err) {
-      console.error('❌ [SET_BASE_VIDEO] Erro ao notificar API externa:', err);
-      // Não bloquear o retorno - API externa é secundária
+      console.log('🔔 [SET_BASE_VIDEO] Chamando notifyExternalAPI...');
+      const notifyResult = await notifyExternalAPI(currentSlot.pedido_id, currentSlot.video_id);
+      console.log('✅ [SET_BASE_VIDEO] API externa notificada com sucesso:', notifyResult);
+    } catch (err: any) {
+      console.error('❌ [SET_BASE_VIDEO] ERRO CRÍTICO ao notificar API externa:', err);
+      console.error('❌ [SET_BASE_VIDEO] Erro detalhado:', {
+        message: err.message,
+        stack: err.stack,
+        error: err
+      });
+      
+      // MOSTRAR ERRO PARA O USUÁRIO
+      const { toast } = await import("@/hooks/use-toast");
+      toast({
+        title: "⚠️ Vídeo definido, mas API externa não foi atualizada",
+        description: `Erro: ${err.message}. Entre em contato com o suporte.`,
+        variant: "destructive"
+      });
     }
     
     return {
