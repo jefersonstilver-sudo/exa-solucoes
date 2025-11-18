@@ -70,87 +70,29 @@ const notifyExternalAPI = async (pedidoId: string, activeVideoId: string) => {
     console.log('🔔 [NOTIFY_API] ====== INÍCIO ======');
     console.log('🔔 [NOTIFY_API] Pedido:', pedidoId);
     console.log('🔔 [NOTIFY_API] Video ativo:', activeVideoId);
-    console.log('🔔 [NOTIFY_API] Supabase client:', !!supabase);
-    console.log('🔔 [NOTIFY_API] Supabase functions:', !!supabase.functions);
     
-    videoLogger.log("info", "NOTIFY_API_START", "Iniciando notificação API externa", { pedidoId, activeVideoId });
+    videoLogger.log("info", "NOTIFY_API_START", "Iniciando sincronização AWS", { pedidoId, activeVideoId });
 
-    const { data: allSlots, error: slotsError } = await fetchAllPedidoSlots(pedidoId);
+    const { data, error } = await supabase.functions.invoke('sync-video-status-to-aws', {
+      body: { pedidoId, activeVideoId }
+    });
+
+    console.log('📥 [NOTIFY_API] Resposta AWS sync:', { data, error });
+
+    if (error) {
+      console.error('❌ [NOTIFY_API] Erro ao sincronizar AWS:', error);
+      videoLogger.log("error", "NOTIFY_API_ERROR", "Erro ao sincronizar AWS", { pedidoId, error });
+      throw new Error(`Falha ao sincronizar AWS: ${JSON.stringify(error)}`);
+    }
+
+    console.log('✅ [NOTIFY_API] ====== SUCESSO ======', data);
+    videoLogger.log("info", "NOTIFY_API_SUCCESS", "AWS sincronizada com sucesso", { pedidoId, data });
     
-    if (slotsError || !allSlots || allSlots.length === 0) {
-      console.error('❌ [NOTIFY_API] Erro ao buscar slots:', slotsError);
-      throw new Error(`Erro ao buscar slots: ${JSON.stringify(slotsError)}`);
-    }
-
-    console.log('✅ [NOTIFY_API] Slots encontrados:', allSlots.length);
-
-    const { data: pedidoData, error: pedidoError } = await supabase
-      .from('pedidos')
-      .select('lista_predios')
-      .eq('id', pedidoId)
-      .single();
-
-    if (pedidoError || !pedidoData?.lista_predios) {
-      console.error('❌ [NOTIFY_API] Erro ao buscar prédios:', pedidoError);
-      throw new Error(`Erro ao buscar prédios: ${JSON.stringify(pedidoError)}`);
-    }
-
-    const buildingIds = pedidoData.lista_predios;
-    console.log('✅ [NOTIFY_API] Prédios:', buildingIds);
-
-    let finalActiveVideoId = activeVideoId;
-    if (!finalActiveVideoId || !(allSlots as PedidoVideosRow[]).some(s => s.video_id === activeVideoId)) {
-      finalActiveVideoId = (allSlots as PedidoVideosRow[])[0]?.video_id;
-      console.warn(`⚠️ [NOTIFY_API] Fallback para:`, finalActiveVideoId);
-    }
-
-    // Passo 1: Desativar TODOS
-    const deactivateActions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
-    buildingIds.forEach((buildingId: string) => {
-      (allSlots as PedidoVideosRow[]).forEach(slot => {
-        const titulo = extractTitulo(slot.videos?.url);
-        if (!titulo) return;
-        deactivateActions.push({ titulo, ativo: false, predio_id: buildingId });
-      });
-    });
-
-    console.log('🔔 [NOTIFY_API] PASSO 1: Desativando', deactivateActions.length, 'vídeos');
-    const deactivateResult = await supabase.functions.invoke("notify-video-toggle", {
-      body: { actions: deactivateActions }
-    });
-
-    console.log('🔔 [NOTIFY_API] Resposta desativar:', deactivateResult);
-    if (deactivateResult.error) {
-      console.error('❌ [NOTIFY_API] Erro ao desativar:', deactivateResult.error);
-      throw new Error(`Erro ao desativar: ${JSON.stringify(deactivateResult.error)}`);
-    }
-
-    // Passo 2: Ativar apenas UM
-    const activateActions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
-    buildingIds.forEach((buildingId: string) => {
-      (allSlots as PedidoVideosRow[]).forEach(slot => {
-        const titulo = extractTitulo(slot.videos?.url);
-        if (!titulo || slot.video_id !== finalActiveVideoId) return;
-        activateActions.push({ titulo, ativo: true, predio_id: buildingId });
-      });
-    });
-
-    console.log('🔔 [NOTIFY_API] PASSO 2: Ativando', activateActions.length, 'vídeo(s)');
-    const activateResult = await supabase.functions.invoke("notify-video-toggle", {
-      body: { actions: activateActions }
-    });
-
-    console.log('🔔 [NOTIFY_API] Resposta ativar:', activateResult);
-    if (activateResult.error) {
-      console.error('❌ [NOTIFY_API] Erro ao ativar:', activateResult.error);
-      throw new Error(`Erro ao ativar: ${JSON.stringify(activateResult.error)}`);
-    }
-
-    console.log('✅ [NOTIFY_API] ====== SUCESSO ======');
-    return { success: true, data: activateResult.data };
+    return { success: true, data };
     
   } catch (err: any) {
     console.error('💥 [NOTIFY_API] EXCEÇÃO:', err.message);
+    videoLogger.log("error", "NOTIFY_API_EXCEPTION", "Exceção ao sincronizar AWS", { pedidoId, error: err });
     throw err;
   }
 };
