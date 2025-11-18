@@ -97,7 +97,7 @@ const notifyExternalAPI = async (pedidoId: string, activeVideoId: string) => {
 
     buildingIds.forEach((buildingId: string) => {
       (allSlots as PedidoVideosRow[]).forEach(slot => {
-        const titulo = extractTitulo(slot.videos?.nome);
+        const titulo = extractTitulo(slot.videos?.url); // ✅ Usar URL para extrair nome do arquivo
         if (!titulo) return;
 
         actions.push({

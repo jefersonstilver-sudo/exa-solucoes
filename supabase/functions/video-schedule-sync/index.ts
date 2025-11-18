@@ -274,11 +274,11 @@ serve(async (req) => {
               
               buildingIds.forEach((buildingId: string) => {
                 allPedidoVideos.forEach((pv: any) => {
-                  const videoNome = pv.videos?.nome;
-                  if (!videoNome) return;
+                  const videoUrl = pv.videos?.url; // ✅ Usar URL, não nome/título
+                  if (!videoUrl) return;
                   
-                  // Extrair título limpo
-                  const titulo = videoNome.split('/').pop()?.split('?')[0].split('#')[0].replace(/\.[^.]+$/, '').trim();
+                  // Extrair nome do arquivo limpo (sem extensão)
+                  const titulo = videoUrl.split('/').pop()?.split('?')[0].split('#')[0].replace(/\.[^.]+$/, '').trim();
                   if (!titulo) return;
 
                   actions.push({
