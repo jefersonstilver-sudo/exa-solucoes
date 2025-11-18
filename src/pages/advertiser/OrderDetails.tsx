@@ -119,6 +119,40 @@ const OrderDetails = () => {
   useEffect(() => {
     if (id && userProfile?.id) {
       loadOrderDetails();
+
+      // 🔥 Real-time subscription para detectar deleção e updates
+      const channel = supabase
+        .channel(`order-detail-${id}`)
+        .on('postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'pedidos',
+            filter: `id=eq.${id}`
+          },
+          (payload) => {
+            console.log('🗑️ [ORDER_DETAILS] Pedido deletado:', payload);
+            toast.error('Este pedido foi removido pelo administrador');
+            navigate('/anunciante/pedidos');
+          }
+        )
+        .on('postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'pedidos',
+            filter: `id=eq.${id}`
+          },
+          (payload) => {
+            console.log('🔄 [ORDER_DETAILS] Pedido atualizado');
+            loadOrderDetails(); // Refetch
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else {
       setLoading(false);
     }
@@ -150,7 +184,7 @@ const OrderDetails = () => {
 
       if (!userOrder) {
         console.error('❌ [ORDER_DETAILS] Pedido não encontrado');
-        toast.error('Pedido não encontrado');
+        toast.error('Pedido não encontrado. Pode ter sido removido.');
         navigate('/anunciante/pedidos');
         return;
       }

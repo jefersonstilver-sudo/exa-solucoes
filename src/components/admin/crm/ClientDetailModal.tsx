@@ -16,6 +16,7 @@ import { ClientAttemptsTab } from './tabs/ClientAttemptsTab';
 import { ClientAIAnalysisTab } from './tabs/ClientAIAnalysisTab';
 import { ClientBehaviorTab } from './tabs/ClientBehaviorTab';
 import { ClientNotesTab } from './tabs/ClientNotesTab';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClientDetailModalProps {
   clientId: string;
@@ -32,6 +33,39 @@ export function ClientDetailModal({ clientId, open, onClose }: ClientDetailModal
   useEffect(() => {
     if (open && clientId) {
       fetchClientData();
+      
+      // 🔥 Real-time subscription para detectar mudanças em pedidos e tentativas
+      const channel = supabase
+        .channel(`client-detail-${clientId}`)
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'pedidos',
+            filter: `client_id=eq.${clientId}`
+          }, 
+          (payload) => {
+            console.log('🔄 [CRM] Mudança em pedidos detectada:', payload);
+            fetchClientData(); // Refetch automático
+          }
+        )
+        .on('postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tentativas_compra',
+            filter: `user_id=eq.${clientId}`
+          },
+          (payload) => {
+            console.log('🔄 [CRM] Mudança em tentativas detectada:', payload);
+            fetchClientData();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [open, clientId]);
 
