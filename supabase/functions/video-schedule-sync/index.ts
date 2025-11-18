@@ -238,80 +238,73 @@ serve(async (req) => {
 
         log.info(`✅ [VIDEO_SYNC] Successfully switched video for pedido ${pedidoId}`);
         
-        // Enviar POSTs para o webhook n8n após troca automática bem-sucedida
+        // 🔔 Notificar API externa usando edge function centralizada
         try {
-          // Buscar lista de prédios do pedido
-          const { data: pedidoData, error: pedidoError } = await supabase
-            .from('pedidos')
-            .select('lista_predios')
-            .eq('id', pedidoId)
-            .single();
-          
-          if (pedidoError) {
-            log.warn(`⚠️ [VIDEO_SYNC][POST] Erro ao buscar prédios do pedido ${pedidoId}:`, pedidoError);
-          } else if (pedidoData?.lista_predios && Array.isArray(pedidoData.lista_predios)) {
-            const buildingIds = pedidoData.lista_predios;
-            log.info(`🏢 [VIDEO_SYNC][POST] Enviando POSTs para ${buildingIds.length} prédios do pedido ${pedidoId}`);
-            
-            // Buscar títulos dos vídeos para os POSTs
-            const oldVideoTitle = videoAtualmenteExibindo?.title || null;
-            const newVideoData = pedidoVideos?.find(v => v.video_id === videoParaExibir);
-            const newVideoTitle = newVideoData?.title || null;
-            
-            // Enviar POSTs para cada prédio
-            const postPromises: Promise<Response>[] = [];
-            
-            // POST de desativação para vídeo anterior (se houver)
-            if (oldVideoTitle) {
-              buildingIds.forEach((buildingId: string) => {
-                postPromises.push(
-                  fetch('https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      titulo: oldVideoTitle,
-                      ativo: false,
-                      predio_id: buildingId
-                    })
-                  })
-                );
-              });
-            }
-            
-            // POST de ativação para novo vídeo
-            if (newVideoTitle) {
-              buildingIds.forEach((buildingId: string) => {
-                postPromises.push(
-                  fetch('https://stilver.app.n8n.cloud/webhook/ATIVAR/DESATIVAR', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      titulo: newVideoTitle,
-                      ativo: true,
-                      predio_id: buildingId
-                    })
-                  })
-                );
-              });
-            }
-            
-            // Executar todos os POSTs
-            if (postPromises.length > 0) {
-              const postResults = await Promise.allSettled(postPromises);
-              const successCount = postResults.filter(r => r.status === 'fulfilled' && r.value.ok).length;
-              const failureCount = postResults.length - successCount;
+          log.info(`🔔 [VIDEO_SYNC] Notificando API externa para pedido ${pedidoId}`);
+
+          // Buscar TODOS os vídeos do pedido
+          const { data: allPedidoVideos, error: allVideosError } = await supabase
+            .from('pedido_videos')
+            .select(`
+              id,
+              video_id,
+              slot_position,
+              videos ( nome, url )
+            `)
+            .eq('pedido_id', pedidoId)
+            .not('video_id', 'is', null);
+
+          if (allVideosError || !allPedidoVideos || allPedidoVideos.length === 0) {
+            log.warn(`⚠️ [VIDEO_SYNC] Erro ao buscar vídeos do pedido ${pedidoId}:`, allVideosError);
+          } else {
+            // Buscar lista de prédios
+            const { data: pedidoData, error: pedidoError } = await supabase
+              .from('pedidos')
+              .select('lista_predios')
+              .eq('id', pedidoId)
+              .single();
+
+            if (pedidoError || !pedidoData?.lista_predios) {
+              log.warn(`⚠️ [VIDEO_SYNC] Erro ao buscar prédios do pedido ${pedidoId}:`, pedidoError);
+            } else {
+              const buildingIds = pedidoData.lista_predios;
               
-              if (failureCount > 0) {
-                log.warn(`⚠️ [VIDEO_SYNC][POST] ${failureCount}/${postResults.length} POSTs falharam para pedido ${pedidoId}`);
+              // Montar array de actions
+              const actions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
+              
+              buildingIds.forEach((buildingId: string) => {
+                allPedidoVideos.forEach((pv: any) => {
+                  const videoNome = pv.videos?.nome;
+                  if (!videoNome) return;
+                  
+                  // Extrair título limpo
+                  const titulo = videoNome.split('/').pop()?.split('?')[0].split('#')[0].replace(/\.[^.]+$/, '').trim();
+                  if (!titulo) return;
+
+                  actions.push({
+                    titulo,
+                    ativo: pv.video_id === videoParaExibir, // true apenas para o novo vídeo em exibição
+                    predio_id: buildingId
+                  });
+                });
+              });
+
+              log.info(`🔔 [VIDEO_SYNC] Montadas ${actions.length} actions (${actions.filter(a => a.ativo).length} ativas)`);
+
+              // Chamar edge function notify-video-toggle
+              const { data: notifyResult, error: notifyError } = await supabase.functions.invoke('notify-video-toggle', {
+                body: { actions }
+              });
+
+              if (notifyError) {
+                log.error(`❌ [VIDEO_SYNC] Erro ao notificar API externa:`, notifyError);
               } else {
-                log.info(`✅ [VIDEO_SYNC][POST] Todos os ${postResults.length} POSTs enviados com sucesso para pedido ${pedidoId}`);
+                log.info(`✅ [VIDEO_SYNC] API externa notificada com sucesso:`, notifyResult);
               }
             }
-          } else {
-            log.info(`ℹ️ [VIDEO_SYNC][POST] Pedido ${pedidoId} sem lista de prédios - não enviando POSTs`);
           }
-        } catch (postError) {
-          log.error(`❌ [VIDEO_SYNC][POST] Erro ao enviar POSTs para pedido ${pedidoId}:`, postError);
+        } catch (notifyException) {
+          log.error(`❌ [VIDEO_SYNC] Exceção ao notificar API externa:`, notifyException);
         }
 
         return { 
