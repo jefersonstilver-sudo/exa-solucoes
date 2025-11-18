@@ -73,6 +73,11 @@ const FinancialReports = () => {
           />
 
           <Button variant="outline" onClick={refetch}>
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Atualizar Dados
+          </Button>
+
+          <Button variant="outline" onClick={refetch}>
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
