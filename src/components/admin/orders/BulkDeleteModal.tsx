@@ -100,6 +100,15 @@ const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({
               </ul>
             </div>
 
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-800 mb-2">🌐 Limpeza Externa</h4>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Vídeos serão deletados da AWS</li>
+                <li>• Arquivos serão removidos de todos os prédios</li>
+                <li>• Pode levar alguns segundos por vídeo</li>
+              </ul>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="justification">
                 Justificativa <span className="text-red-500">*</span>
