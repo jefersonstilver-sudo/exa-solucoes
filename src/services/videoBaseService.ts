@@ -106,40 +106,72 @@ const notifyExternalAPI = async (pedidoId: string, activeVideoId: string) => {
       });
     }
 
-    // 4️⃣ Montar array de actions para cada prédio
-    const actions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
-
+    // 4️⃣ SEQUÊNCIA OBRIGATÓRIA: Primeiro desativar TODOS, depois ativar apenas UM
+    
+    // Passo 1: Desativar TODOS os vídeos
+    const deactivateActions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
     buildingIds.forEach((buildingId: string) => {
       (allSlots as PedidoVideosRow[]).forEach(slot => {
         const titulo = extractTitulo(slot.videos?.url);
         if (!titulo) return;
-
-        actions.push({
+        deactivateActions.push({
           titulo,
-          ativo: slot.video_id === finalActiveVideoId, // ✅ Sempre haverá 1 vídeo true
+          ativo: false, // ❌ TODOS false primeiro
           predio_id: buildingId
         });
       });
     });
 
-    videoLogger.log("info", "NOTIFY_API_ACTIONS", `Montadas ${actions.length} actions`, { 
+    videoLogger.log("info", "NOTIFY_API_STEP1", "Desativando TODOS os vídeos primeiro", { 
       pedidoId, 
-      activeVideoId,
-      totalActions: actions.length,
-      activeActions: actions.filter(a => a.ativo).length
+      totalActions: deactivateActions.length
     });
 
-    // 4️⃣ Chamar edge function notify-video-toggle
+    // Chamar API: desativar todos
+    const { error: deactivateError } = await supabase.functions.invoke("notify-video-toggle", {
+      body: { actions: deactivateActions }
+    });
+
+    if (deactivateError) {
+      videoLogger.log("error", "NOTIFY_API_DEACTIVATE_ERROR", "Erro ao desativar vídeos", { pedidoId, error: deactivateError });
+      return { success: false, error: deactivateError };
+    }
+
+    // Passo 2: Ativar APENAS o vídeo correto
+    const activateActions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
+    buildingIds.forEach((buildingId: string) => {
+      (allSlots as PedidoVideosRow[]).forEach(slot => {
+        const titulo = extractTitulo(slot.videos?.url);
+        if (!titulo) return;
+        
+        // Apenas o vídeo ativo vai como true
+        if (slot.video_id === finalActiveVideoId) {
+          activateActions.push({
+            titulo,
+            ativo: true, // ✅ Somente este como true
+            predio_id: buildingId
+          });
+        }
+      });
+    });
+
+    videoLogger.log("info", "NOTIFY_API_STEP2", "Ativando vídeo em exibição", { 
+      pedidoId,
+      activeVideoId: finalActiveVideoId,
+      totalActions: activateActions.length
+    });
+
+    // Chamar API: ativar o vídeo correto
     const { data: fnData, error: fnError } = await supabase.functions.invoke("notify-video-toggle", {
-      body: { actions }
+      body: { actions: activateActions }
     });
 
     if (fnError) {
-      videoLogger.log("error", "NOTIFY_API_ERROR", "Erro ao chamar notify-video-toggle", { pedidoId, error: fnError });
+      videoLogger.log("error", "NOTIFY_API_ACTIVATE_ERROR", "Erro ao ativar vídeo", { pedidoId, error: fnError });
       return { success: false, error: fnError };
     }
 
-    videoLogger.log("info", "NOTIFY_API_SUCCESS", "API externa notificada com sucesso", { pedidoId, response: fnData });
+    videoLogger.log("info", "NOTIFY_API_SUCCESS", "✅ Sequência completa: API externa sincronizada", { pedidoId, response: fnData });
     return { success: true, data: fnData };
 
   } catch (err) {
