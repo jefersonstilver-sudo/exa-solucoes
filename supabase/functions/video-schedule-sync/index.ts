@@ -238,136 +238,28 @@ serve(async (req) => {
 
         log.info(`✅ [VIDEO_SYNC] Successfully switched video for pedido ${pedidoId}`);
         
-        // 🔔 Notificar API externa usando edge function centralizada
+        // 🔔 Sincronizar status dos vídeos com AWS
         try {
-          log.info(`🔔 [VIDEO_SYNC] Notificando API externa para pedido ${pedidoId}`);
+          log.info(`🔔 [VIDEO_SYNC] Sincronizando com AWS: pedido ${pedidoId}`);
 
-          // Buscar TODOS os vídeos do pedido
-          const { data: allPedidoVideos, error: allVideosError } = await supabase
-            .from('pedido_videos')
-            .select(`
-              id,
-              video_id,
-              slot_position,
-              videos ( nome, url )
-            `)
-            .eq('pedido_id', pedidoId)
-            .not('video_id', 'is', null);
-
-          if (allVideosError || !allPedidoVideos || allPedidoVideos.length === 0) {
-            log.warn(`⚠️ [VIDEO_SYNC] Erro ao buscar vídeos do pedido ${pedidoId}:`, allVideosError);
-          } else {
-            // Buscar lista de prédios
-            const { data: pedidoData, error: pedidoError } = await supabase
-              .from('pedidos')
-              .select('lista_predios')
-              .eq('id', pedidoId)
-              .single();
-
-            if (pedidoError || !pedidoData?.lista_predios) {
-              log.warn(`⚠️ [VIDEO_SYNC] Erro ao buscar prédios do pedido ${pedidoId}:`, pedidoError);
-            } else {
-              const buildingIds = pedidoData.lista_predios;
-              
-              // REGRA: Sempre deve haver UM vídeo ativo por pedido
-              let finalActiveVideoId = videoParaExibir;
-              
-              // Se videoParaExibir não for válido, usar primeiro vídeo como fallback
-              if (!finalActiveVideoId || !allPedidoVideos.some((pv: any) => pv.video_id === videoParaExibir)) {
-                finalActiveVideoId = allPedidoVideos[0]?.video_id;
-                log.warn(`⚠️ [VIDEO_SYNC] videoParaExibir inválido, usando primeiro vídeo: ${finalActiveVideoId}`);
-              }
-              
-              // SEQUÊNCIA OBRIGATÓRIA: Primeiro desativar TODOS, depois ativar apenas UM
-              
-              // Passo 1: Desativar TODOS os vídeos
-              const deactivateActions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
-              buildingIds.forEach((buildingId: string) => {
-                allPedidoVideos.forEach((pv: any) => {
-                  const videoUrl = pv.videos?.url;
-                  if (!videoUrl) return;
-                  
-                  const titulo = videoUrl.split('/').pop()?.split('?')[0].split('#')[0].replace(/\.[^.]+$/, '').trim();
-                  if (!titulo) return;
-
-                  deactivateActions.push({
-                    titulo,
-                    ativo: false, // ❌ TODOS false primeiro
-                    predio_id: buildingId
-                  });
-                });
-              });
-
-              log.info(`🔔 [VIDEO_SYNC] Passo 1: Desativando ${deactivateActions.length} vídeos`);
-              log.info(`🔔 [VIDEO_SYNC] Payload desativar:`, JSON.stringify(deactivateActions, null, 2));
-
-              // Chamar API: desativar todos
-              const deactivateInvokeResult = await supabase.functions.invoke('notify-video-toggle', {
-                body: { actions: deactivateActions }
-              });
-
-              log.info(`🔔 [VIDEO_SYNC] Resposta deactivate (completa):`, JSON.stringify(deactivateInvokeResult, null, 2));
-              log.info(`🔔 [VIDEO_SYNC] Resposta deactivate - error:`, deactivateInvokeResult.error);
-              log.info(`🔔 [VIDEO_SYNC] Resposta deactivate - data:`, deactivateInvokeResult.data);
-
-              if (deactivateInvokeResult.error) {
-                log.error('❌ [VIDEO_SYNC] ERRO CRÍTICO ao desativar vídeos:', deactivateInvokeResult.error);
-                log.error('❌ [VIDEO_SYNC] Erro detalhado:', JSON.stringify(deactivateInvokeResult.error, null, 2));
-              } else {
-                log.info('✅ [VIDEO_SYNC] Passo 1 concluído: Todos os vídeos desativados');
-              }
-
-              // Passo 2: Ativar APENAS o vídeo correto
-              const activateActions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
-              buildingIds.forEach((buildingId: string) => {
-                allPedidoVideos.forEach((pv: any) => {
-                  if (pv.video_id !== finalActiveVideoId) return; // Apenas o vídeo ativo
-                  
-                  const videoUrl = pv.videos?.url;
-                  if (!videoUrl) return;
-                  
-                  const titulo = videoUrl.split('/').pop()?.split('?')[0].split('#')[0].replace(/\.[^.]+$/, '').trim();
-                  if (!titulo) return;
-
-                  activateActions.push({
-                    titulo,
-                    ativo: true, // ✅ Somente este como true
-                    predio_id: buildingId
-                  });
-                });
-              });
-
-              log.info(`🔔 [VIDEO_SYNC] Passo 2: Ativando ${activateActions.length} vídeo(s)`);
-              log.info(`🔔 [VIDEO_SYNC] Payload ativar:`, JSON.stringify(activateActions, null, 2));
-
-              // Chamar API: ativar o vídeo correto
-              const activateInvokeResult = await supabase.functions.invoke('notify-video-toggle', {
-                body: { actions: activateActions }
-              });
-
-              log.info(`🔔 [VIDEO_SYNC] Resposta activate (completa):`, JSON.stringify(activateInvokeResult, null, 2));
-              log.info(`🔔 [VIDEO_SYNC] Resposta activate - error:`, activateInvokeResult.error);
-              log.info(`🔔 [VIDEO_SYNC] Resposta activate - data:`, activateInvokeResult.data);
-
-              if (activateInvokeResult.error) {
-                log.error('❌ [VIDEO_SYNC] ERRO CRÍTICO ao ativar vídeo:', activateInvokeResult.error);
-                log.error('❌ [VIDEO_SYNC] Erro detalhado:', JSON.stringify(activateInvokeResult.error, null, 2));
-              } else {
-                log.info('✅ [VIDEO_SYNC] Passo 2 concluído: Vídeo ativado com sucesso');
-              }
-
-              const notifyResult = activateInvokeResult.data;
-              const notifyError = activateInvokeResult.error;
-
-              if (notifyError) {
-                log.error(`❌ [VIDEO_SYNC] Erro ao notificar API externa:`, notifyError);
-              } else {
-                log.info(`✅ [VIDEO_SYNC] API externa notificada com sucesso:`, notifyResult);
-              }
+          const { data: awsResult, error: awsError } = await supabase.functions.invoke('sync-video-status-to-aws', {
+            body: { 
+              pedidoId: pedidoId,
+              activeVideoId: videoParaExibir
             }
+          });
+
+          if (awsError) {
+            log.error('❌ [VIDEO_SYNC] Erro ao sincronizar AWS:', awsError);
+            resultados.erros.push(`Pedido ${pedidoId}: Falha ao sincronizar AWS - ${JSON.stringify(awsError)}`);
+          } else {
+            log.info('✅ [VIDEO_SYNC] AWS sincronizada com sucesso:', awsResult);
+            resultados.videos_desativados += awsResult.deactivated || 0;
+            resultados.videos_ativados += awsResult.activated || 0;
           }
+
         } catch (notifyException) {
-          log.error(`❌ [VIDEO_SYNC] Exceção ao notificar API externa:`, notifyException);
+          log.error(`❌ [VIDEO_SYNC] Exceção ao sincronizar AWS:`, notifyException);
         }
 
         return { 
