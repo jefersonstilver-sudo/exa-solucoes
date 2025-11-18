@@ -173,70 +173,70 @@ serve(async (req) => {
           return { success: true, pedidoId, skipped: true, reason: 'no_video' };
         }
 
-        // Verificar se já está correto
+        // Verificar se já está correto no banco
         const videoAtualmenteExibindo = pedidoVideos?.find(v => v.selected_for_display);
+        const precisaTrocarNoBanco = videoAtualmenteExibindo?.video_id !== videoParaExibir;
         
-        if (videoAtualmenteExibindo?.video_id === videoParaExibir) {
-          log.info(`✅ [VIDEO_SYNC] Video already correct for pedido ${pedidoId}`);
-          return { success: true, pedidoId, skipped: true, reason: 'already_correct' };
+        if (precisaTrocarNoBanco) {
+          log.info(`🔄 [VIDEO_SYNC] Switching video for pedido ${pedidoId}: from ${videoAtualmenteExibindo?.video_id || 'none'} to ${videoParaExibir}`);
+
+          // Encontrar o pedido_video_id (slot ID) do vídeo que queremos ativar
+          const videoSlotParaAtivar = pedidoVideos?.find(v => v.video_id === videoParaExibir);
+          
+          if (!videoSlotParaAtivar) {
+            log.error(`❌ [VIDEO_SYNC] Video slot not found for video ${videoParaExibir} in pedido ${pedidoId}`);
+            return { success: false, pedidoId, error: 'Video slot not found' };
+          }
+
+          // Usar RPC select_video_for_display para fazer a troca de forma segura
+          // Este RPC já lida com triggers e validações automaticamente
+          const { data: rpcResult, error: rpcError } = await supabase
+            .rpc('select_video_for_display', {
+              p_pedido_video_id: videoSlotParaAtivar.id
+            });
+
+          if (rpcError) {
+            log.error(`❌ [VIDEO_SYNC] Error calling select_video_for_display RPC for pedido ${pedidoId}:`, rpcError);
+            return { success: false, pedidoId, error: rpcError.message };
+          }
+
+          if (!rpcResult) {
+            log.error(`❌ [VIDEO_SYNC] RPC returned false for pedido ${pedidoId}`);
+            return { success: false, pedidoId, error: 'RPC returned false' };
+          }
+
+          // Registrar no log
+          const logDetails = {
+            sync_time: brasiliaTime.toISOString(),
+            current_day: currentDay,
+            current_time: currentTime,
+            previous_video: videoAtualmenteExibindo?.video_id || null,
+            new_video: videoParaExibir,
+            reason: ruleAtiva ? 'scheduled' : 'base_video',
+            rule_id: ruleAtiva?.id || null,
+            schedule_time: ruleAtiva ? `${ruleAtiva.start_time}-${ruleAtiva.end_time}` : null
+          };
+
+          const { error: logError } = await supabase
+            .from('video_management_logs')
+            .insert({
+              pedido_id: pedidoId,
+              action_type: 'automatic_video_sync',
+              slot_from: videoAtualmenteExibindo?.slot_position || null,
+              slot_to: slotParaExibir,
+              video_from_id: videoAtualmenteExibindo?.video_id || null,
+              video_to_id: videoParaExibir,
+              details: logDetails
+            });
+
+          if (logError) {
+            log.error(`❌ [VIDEO_SYNC] Error logging for pedido ${pedidoId}:`, logError);
+          }
+
+          log.info(`✅ [VIDEO_SYNC] Successfully switched video for pedido ${pedidoId}`);
+        } else {
+          log.info(`✅ [VIDEO_SYNC] Video already correct in DB for pedido ${pedidoId}, but will sync with AWS anyway`);
         }
-
-        log.info(`🔄 [VIDEO_SYNC] Switching video for pedido ${pedidoId}: from ${videoAtualmenteExibindo?.video_id || 'none'} to ${videoParaExibir}`);
-
-        // Encontrar o pedido_video_id (slot ID) do vídeo que queremos ativar
-        const videoSlotParaAtivar = pedidoVideos?.find(v => v.video_id === videoParaExibir);
-        
-        if (!videoSlotParaAtivar) {
-          log.error(`❌ [VIDEO_SYNC] Video slot not found for video ${videoParaExibir} in pedido ${pedidoId}`);
-          return { success: false, pedidoId, error: 'Video slot not found' };
-        }
-
-        // Usar RPC select_video_for_display para fazer a troca de forma segura
-        // Este RPC já lida com triggers e validações automaticamente
-        const { data: rpcResult, error: rpcError } = await supabase
-          .rpc('select_video_for_display', {
-            p_pedido_video_id: videoSlotParaAtivar.id
-          });
-
-        if (rpcError) {
-          log.error(`❌ [VIDEO_SYNC] Error calling select_video_for_display RPC for pedido ${pedidoId}:`, rpcError);
-          return { success: false, pedidoId, error: rpcError.message };
-        }
-
-        if (!rpcResult) {
-          log.error(`❌ [VIDEO_SYNC] RPC returned false for pedido ${pedidoId}`);
-          return { success: false, pedidoId, error: 'RPC returned false' };
-        }
-
-        // Registrar no log
-        const logDetails = {
-          sync_time: brasiliaTime.toISOString(),
-          current_day: currentDay,
-          current_time: currentTime,
-          previous_video: videoAtualmenteExibindo?.video_id || null,
-          new_video: videoParaExibir,
-          reason: ruleAtiva ? 'scheduled' : 'base_video',
-          rule_id: ruleAtiva?.id || null,
-          schedule_time: ruleAtiva ? `${ruleAtiva.start_time}-${ruleAtiva.end_time}` : null
-        };
-
-        const { error: logError } = await supabase
-          .from('video_management_logs')
-          .insert({
-            pedido_id: pedidoId,
-            action_type: 'automatic_video_sync',
-            slot_from: videoAtualmenteExibindo?.slot_position || null,
-            slot_to: slotParaExibir,
-            video_from_id: videoAtualmenteExibindo?.video_id || null,
-            video_to_id: videoParaExibir,
-            details: logDetails
-          });
-
-        if (logError) {
-          log.error(`❌ [VIDEO_SYNC] Error logging for pedido ${pedidoId}:`, logError);
-        }
-
-        log.info(`✅ [VIDEO_SYNC] Successfully switched video for pedido ${pedidoId}`);
         
         // 🔔 Sincronizar status dos vídeos com AWS
         try {
