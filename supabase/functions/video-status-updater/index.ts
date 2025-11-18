@@ -157,6 +157,28 @@ serve(async (req) => {
 
       activatedCount++;
       console.log(`✅ [VIDEO_STATUS] Vídeo agendado ${videoId} ativado para exibição (Pedido: ${pedidoId})`);
+      
+      // 🔔 SINCRONIZAR COM AWS IMEDIATAMENTE
+      console.log(`🔔 [VIDEO_STATUS] Sincronizando com AWS: pedido ${pedidoId}, vídeo ${videoId}`);
+      try {
+        const { data: awsResult, error: awsError } = await supabase.functions.invoke(
+          'sync-video-status-to-aws',
+          {
+            body: { 
+              pedidoId,
+              activeVideoId: videoId
+            }
+          }
+        );
+
+        if (awsError) {
+          console.error(`❌ [VIDEO_STATUS] Erro ao sincronizar com AWS:`, awsError);
+        } else {
+          console.log(`✅ [VIDEO_STATUS] AWS sincronizada:`, awsResult);
+        }
+      } catch (awsCallError) {
+        console.error(`❌ [VIDEO_STATUS] Erro ao chamar sync-video-status-to-aws:`, awsCallError);
+      }
     }
 
     // ⏹️ DESATIVAR VÍDEOS AGENDADOS E REATIVAR VÍDEO BASE
@@ -194,6 +216,28 @@ serve(async (req) => {
       } else {
         deactivatedCount++;
         console.log(`✅ [VIDEO_STATUS] Vídeo base reativado para pedido ${pedidoId}`);
+        
+        // 🔔 SINCRONIZAR COM AWS ao reativar vídeo base
+        console.log(`🔔 [VIDEO_STATUS] Sincronizando com AWS após reativar base: pedido ${pedidoId}`);
+        try {
+          const { data: awsResult, error: awsError } = await supabase.functions.invoke(
+            'sync-video-status-to-aws',
+            {
+              body: { 
+                pedidoId,
+                activeVideoId: null // Will determine from database
+              }
+            }
+          );
+
+          if (awsError) {
+            console.error(`❌ [VIDEO_STATUS] Erro ao sincronizar com AWS:`, awsError);
+          } else {
+            console.log(`✅ [VIDEO_STATUS] AWS sincronizada após base:`, awsResult);
+          }
+        } catch (awsCallError) {
+          console.error(`❌ [VIDEO_STATUS] Erro ao chamar sync-video-status-to-aws:`, awsCallError);
+        }
       }
     }
 
