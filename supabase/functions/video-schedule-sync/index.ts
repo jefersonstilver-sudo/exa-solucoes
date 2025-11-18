@@ -278,31 +278,62 @@ serve(async (req) => {
                 log.warn(`⚠️ [VIDEO_SYNC] videoParaExibir inválido, usando primeiro vídeo: ${finalActiveVideoId}`);
               }
               
-              // Montar array de actions
-              const actions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
+              // SEQUÊNCIA OBRIGATÓRIA: Primeiro desativar TODOS, depois ativar apenas UM
               
+              // Passo 1: Desativar TODOS os vídeos
+              const deactivateActions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
               buildingIds.forEach((buildingId: string) => {
                 allPedidoVideos.forEach((pv: any) => {
                   const videoUrl = pv.videos?.url;
                   if (!videoUrl) return;
                   
-                  // Extrair nome do arquivo limpo (sem extensão)
                   const titulo = videoUrl.split('/').pop()?.split('?')[0].split('#')[0].replace(/\.[^.]+$/, '').trim();
                   if (!titulo) return;
 
-                  actions.push({
+                  deactivateActions.push({
                     titulo,
-                    ativo: pv.video_id === finalActiveVideoId, // ✅ Sempre haverá 1 vídeo true
+                    ativo: false, // ❌ TODOS false primeiro
                     predio_id: buildingId
                   });
                 });
               });
 
-              log.info(`🔔 [VIDEO_SYNC] Montadas ${actions.length} actions (${actions.filter(a => a.ativo).length} ativas)`);
+              log.info(`🔔 [VIDEO_SYNC] Passo 1: Desativando ${deactivateActions.length} vídeos`);
 
-              // Chamar edge function notify-video-toggle
+              // Chamar API: desativar todos
+              const { error: deactivateError } = await supabase.functions.invoke('notify-video-toggle', {
+                body: { actions: deactivateActions }
+              });
+
+              if (deactivateError) {
+                log.error('❌ [VIDEO_SYNC] Erro ao desativar vídeos:', deactivateError);
+              }
+
+              // Passo 2: Ativar APENAS o vídeo correto
+              const activateActions: Array<{ titulo: string; ativo: boolean; predio_id: string }> = [];
+              buildingIds.forEach((buildingId: string) => {
+                allPedidoVideos.forEach((pv: any) => {
+                  if (pv.video_id !== finalActiveVideoId) return; // Apenas o vídeo ativo
+                  
+                  const videoUrl = pv.videos?.url;
+                  if (!videoUrl) return;
+                  
+                  const titulo = videoUrl.split('/').pop()?.split('?')[0].split('#')[0].replace(/\.[^.]+$/, '').trim();
+                  if (!titulo) return;
+
+                  activateActions.push({
+                    titulo,
+                    ativo: true, // ✅ Somente este como true
+                    predio_id: buildingId
+                  });
+                });
+              });
+
+              log.info(`🔔 [VIDEO_SYNC] Passo 2: Ativando ${activateActions.length} vídeo(s)`);
+
+              // Chamar API: ativar o vídeo correto
               const { data: notifyResult, error: notifyError } = await supabase.functions.invoke('notify-video-toggle', {
-                body: { actions }
+                body: { actions: activateActions }
               });
 
               if (notifyError) {
