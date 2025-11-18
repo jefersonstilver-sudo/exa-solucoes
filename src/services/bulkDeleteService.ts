@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { fetchVideosToDelete, deleteVideosFromExternalAPI } from './videoExternalDeletionService';
 
 export interface BulkDeleteResult {
   success: boolean;
@@ -96,7 +96,7 @@ export const superAdminBulkDeletePedidos = async (
     const ipAddress = 'client-side';
 
     console.log(`\n${logSeparator}`);
-    console.log(`🚀 [${getTimestamp()}] INICIANDO SUPER ADMIN DELETE`);
+    console.log(`🚀 [${getTimestamp()}] INICIANDO SUPER ADMIN DELETE COM AWS CLEANUP`);
     console.log(logSeparator);
     console.log(`📊 Total de pedidos: ${pedidoIds.length}`);
     console.log(`📋 Justificativa: "${justificativa}"`);
@@ -104,6 +104,39 @@ export const superAdminBulkDeletePedidos = async (
     console.log(`🌐 User Agent: ${userAgent.substring(0, 50)}...`);
     console.log(`📍 IP Address: ${ipAddress}`);
     console.log(logSeparator);
+
+    // ✅ FASE 1: Buscar todos os vídeos
+    console.log(`\n📹 [${getTimestamp()}] FASE 1: Buscando vídeos para deletar da AWS`);
+    const videosToDelete = await fetchVideosToDelete(pedidoIds);
+    console.log(`   Encontrados ${videosToDelete.length} vídeo(s) para deletar`);
+
+    if (videosToDelete.length > 0) {
+      // ✅ FASE 2: Deletar da AWS ANTES do banco
+      console.log(`\n🗑️ [${getTimestamp()}] FASE 2: Deletando vídeos da AWS...`);
+      const awsResult = await deleteVideosFromExternalAPI(videosToDelete);
+      
+      console.log(`   AWS Resultado:`);
+      console.log(`   ✅ Deletados: ${awsResult.deleted_count}`);
+      console.log(`   ❌ Falhas: ${awsResult.failed_count}`);
+      
+      if (awsResult.failed_count > 0) {
+        console.warn(`   ⚠️ Erros na AWS:`, awsResult.errors);
+        toast.warning(
+          `⚠️ ${awsResult.failed_count} vídeo(s) falharam na AWS. Verifique os logs.`
+        );
+      }
+
+      if (awsResult.deleted_count > 0) {
+        toast.success(
+          `✅ ${awsResult.deleted_count} vídeo(s) deletado(s) da AWS`
+        );
+      }
+    } else {
+      console.log(`   ℹ️ Nenhum vídeo para deletar da AWS`);
+    }
+
+    // ✅ FASE 3: Deletar do banco
+    console.log(`\n🗑️ [${getTimestamp()}] FASE 3: Deletando do banco Supabase...`);
 
     console.log(`\n📞 [${getTimestamp()}] CHAMANDO RPC: super_admin_bulk_delete_pedidos`);
     console.log(`   Parameters:`, {
