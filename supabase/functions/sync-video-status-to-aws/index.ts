@@ -25,8 +25,12 @@ serve(async (req) => {
     console.log('🔄 [AWS_SYNC] Pedido:', pedidoId);
     console.log('🔄 [AWS_SYNC] Video ativo:', activeVideoId);
 
-    if (!pedidoId || !activeVideoId) {
-      throw new Error('pedidoId e activeVideoId são obrigatórios');
+    if (!pedidoId) {
+      throw new Error('pedidoId é obrigatório');
+    }
+    
+    if (!activeVideoId) {
+      throw new Error('activeVideoId é obrigatório');
     }
 
     const supabase = createClient(
