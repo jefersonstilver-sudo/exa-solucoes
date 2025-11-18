@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ActiveCampaign } from './useBuildingActiveCampaigns/types';
 import { fetchAllCampaignData } from './useBuildingActiveCampaigns/dataFetchers';
 import { processCampaignsData } from './useBuildingActiveCampaigns/dataProcessor';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useBuildingActiveCampaigns = (buildingId: string) => {
   const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([]);
@@ -50,6 +51,43 @@ export const useBuildingActiveCampaigns = (buildingId: string) => {
     if (buildingId) {
       fetchActiveCampaigns();
     }
+
+    // 🔄 Real-time subscription para atualizar quando pedidos mudam
+    const channel = supabase
+      .channel('active-campaigns-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pedidos'
+        },
+        (payload) => {
+          console.log('🔄 [ACTIVE CAMPAIGNS] Mudança em pedidos detectada:', payload.eventType);
+          if (buildingId) {
+            fetchActiveCampaigns();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pedido_videos'
+        },
+        (payload) => {
+          console.log('🔄 [ACTIVE CAMPAIGNS] Mudança em pedido_videos detectada:', payload.eventType);
+          if (buildingId) {
+            fetchActiveCampaigns();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [buildingId]);
 
   return {
