@@ -2686,6 +2686,7 @@ export type Database = {
           has_audio: boolean | null
           has_image: boolean | null
           id: string
+          raw_payload: Json | null
         }
         Insert: {
           body: string
@@ -2696,6 +2697,7 @@ export type Database = {
           has_audio?: boolean | null
           has_image?: boolean | null
           id?: string
+          raw_payload?: Json | null
         }
         Update: {
           body?: string
@@ -2706,6 +2708,7 @@ export type Database = {
           has_audio?: boolean | null
           has_image?: boolean | null
           id?: string
+          raw_payload?: Json | null
         }
         Relationships: [
           {
