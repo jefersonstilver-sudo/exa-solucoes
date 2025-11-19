@@ -19,14 +19,11 @@
  * - last_seen: timestamp
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { RefreshCw, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Device,
-  DevicesFilters,
-  DevicesSort,
-  fetchDevices,
   calculateDeviceStats,
   createDevice,
   updateDevice,
@@ -34,56 +31,30 @@ import {
 import { PanelCard } from '../components/PanelCard';
 import { PanelDetailModal } from '../components/PanelDetailModal';
 import { FiltersBar } from '../components/FiltersBar';
+import { useDevices } from '../hooks/useDevices';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const PaineisPage = () => {
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const {
+    devices,
+    loading,
+    lastUpdate,
+    page,
+    setPage,
+    total,
+    filters,
+    setFilters,
+    sort,
+    setSort,
+    refresh,
+  } = useDevices(0, 30);
+
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
-  const [filters, setFilters] = useState<DevicesFilters>({});
-  const [sort, setSort] = useState<DevicesSort>({
-    field: 'name',
-    order: 'asc',
-  });
-  const [page, setPage] = useState(0);
-  const [total, setTotal] = useState(0);
-
-  // Auto-refresh a cada 5 minutos
-  useEffect(() => {
-    loadDevices();
-    const interval = setInterval(() => {
-      loadDevices();
-    }, 5 * 60 * 1000); // 300000ms = 5 minutos
-
-    return () => clearInterval(interval);
-  }, [page, filters, sort]);
-
-  const loadDevices = async () => {
-    setLoading(true);
-    try {
-      const { devices: data, total: totalCount } = await fetchDevices(
-        page,
-        30,
-        filters,
-        sort
-      );
-      setDevices(data);
-      setTotal(totalCount);
-      setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Erro ao carregar painéis:', error);
-      toast.error('Erro ao carregar painéis');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleRefresh = () => {
-    toast.info('Atualizando painéis...');
-    loadDevices();
+    refresh();
   };
 
   const stats = calculateDeviceStats(devices);
@@ -190,7 +161,7 @@ export const PaineisPage = () => {
         <PanelDetailModal
           device={selectedDevice}
           onClose={() => setSelectedDevice(null)}
-          onUpdate={loadDevices}
+          onUpdate={refresh}
         />
       )}
 
@@ -200,7 +171,7 @@ export const PaineisPage = () => {
           onClose={() => setShowNewModal(false)}
           onSuccess={() => {
             setShowNewModal(false);
-            loadDevices();
+            refresh();
           }}
         />
       )}

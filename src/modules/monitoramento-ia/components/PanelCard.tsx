@@ -1,6 +1,5 @@
 import { Device } from '../utils/devices';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { humanizeDate } from '../utils/formatters';
 
 interface PanelCardProps {
   device: Device;
@@ -30,12 +29,7 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
     }
   };
 
-  const lastOnline = device.last_online_at
-    ? formatDistanceToNow(new Date(device.last_online_at), {
-        addSuffix: true,
-        locale: ptBR,
-      })
-    : 'Nunca';
+  const lastOnline = humanizeDate(device.last_online_at);
 
   return (
     <div
