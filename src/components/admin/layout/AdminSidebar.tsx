@@ -169,6 +169,14 @@ const AdminSidebar = () => {
       section: 'system',
       permission: 'canManageSystemSettings'
     },
+    {
+      label: 'Monitoramento IA',
+      icon: <Shield className="h-5 w-5" />,
+      href: '/monitoramento-ia/alertas',
+      requireSuperAdmin: true,
+      section: 'system',
+      permission: 'canManageSystemSettings'
+    },
     
     // CONTEÚDO
     {
