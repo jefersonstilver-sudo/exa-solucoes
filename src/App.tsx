@@ -442,7 +442,8 @@ const AppContent = () => {
 
           {/* Módulo Monitoramento IA */}
           <Route path="/admin/monitoramento-ia" element={<MonitoramentoIALayout />}>
-            <Route index element={<MonitoramentoIADashboard />} />
+            <Route index element={<Navigate to="/admin/monitoramento-ia/dashboard" replace />} />
+            <Route path="dashboard" element={<MonitoramentoIADashboard />} />
             <Route path="base-agente" element={<BaseAgentePage />} />
             <Route path="diretores" element={<DiretoresPage />} />
             <Route path="paineis" element={<PaineisPage />} />

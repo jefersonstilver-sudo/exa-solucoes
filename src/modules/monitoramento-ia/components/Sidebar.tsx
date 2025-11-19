@@ -7,6 +7,7 @@ import {
   MessageSquare,
   Terminal,
   Sparkles,
+  LayoutDashboard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +17,11 @@ interface SidebarProps {
 }
 
 const menuItems = [
+  {
+    title: 'Dashboard',
+    icon: LayoutDashboard,
+    path: '/admin/monitoramento-ia/dashboard',
+  },
   {
     title: 'Base da Agente',
     icon: Database,
