@@ -134,10 +134,9 @@ const CheckoutSummary = () => {
     isCortesia
   });
   
-  // Aplicar cupom se válido
-  const totalAfterCoupon = couponValid && couponDiscount > 0 
-    ? baseTotal - (baseTotal * couponDiscount / 100)
-    : baseTotal;
+  // ✅ baseTotal JÁ inclui o desconto do cupom (calculado em calculateTotalPrice)
+  // NÃO reaplicar o desconto aqui para evitar dupla aplicação!
+  const totalAfterCoupon = baseTotal;
   
   // CRÍTICO: Garantir valor mínimo correto por método
   // 🎯 EXCEÇÃO: Cupom 573040 SEMPRE força R$ 0,05 (ignora mínimo)
