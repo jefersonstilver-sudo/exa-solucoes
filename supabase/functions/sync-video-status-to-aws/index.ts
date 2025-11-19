@@ -19,11 +19,12 @@ serve(async (req) => {
   }
 
   try {
-    const { pedidoId, activeVideoId } = await req.json();
+    const { pedidoId, activeVideoId, previousVideoId } = await req.json();
 
     console.log('🔄 [AWS_SYNC] ====== INÍCIO ======');
     console.log('🔄 [AWS_SYNC] Pedido:', pedidoId);
     console.log('🔄 [AWS_SYNC] Video ativo:', activeVideoId);
+    console.log('🔄 [AWS_SYNC] Video anterior:', previousVideoId || 'nenhum');
 
     if (!pedidoId) {
       throw new Error('pedidoId é obrigatório');
@@ -38,25 +39,30 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Buscar o vídeo ATUALMENTE ATIVO (para desativar) e o novo vídeo
-    const { data: currentActiveVideo, error: currentError } = await supabase
-      .from('pedido_videos')
-      .select(`
-        id,
-        video_id,
-        slot_position,
-        videos ( id, nome, url )
-      `)
-      .eq('pedido_id', pedidoId)
-      .eq('is_active', true)
-      .not('video_id', 'is', null)
-      .maybeSingle();
+    // 1. Buscar dados do vídeo anterior (se fornecido)
+    let previousVideoData = null;
+    if (previousVideoId) {
+      const { data: prevVideo, error: prevError } = await supabase
+        .from('pedido_videos')
+        .select(`
+          id,
+          video_id,
+          slot_position,
+          videos ( id, nome, url )
+        `)
+        .eq('pedido_id', pedidoId)
+        .eq('video_id', previousVideoId)
+        .maybeSingle();
 
-    if (currentError) {
-      console.error('❌ [AWS_SYNC] Erro ao buscar vídeo ativo:', currentError);
+      if (prevError) {
+        console.error('❌ [AWS_SYNC] Erro ao buscar vídeo anterior:', prevError);
+      } else {
+        previousVideoData = prevVideo;
+        console.log('🔍 [AWS_SYNC] Vídeo anterior encontrado:', previousVideoData?.video_id);
+      }
+    } else {
+      console.log('🔍 [AWS_SYNC] Nenhum vídeo anterior para desativar');
     }
-
-    console.log('🔍 [AWS_SYNC] Vídeo atualmente ativo:', currentActiveVideo ? currentActiveVideo.video_id : 'nenhum');
 
     // 2. Buscar o novo vídeo a ser ativado
     const { data: newActiveVideo, error: newVideoError } = await supabase
@@ -110,16 +116,16 @@ serve(async (req) => {
       return cleaned || null;
     };
 
-    // 6. PASSO 1: Desativar APENAS o vídeo que estava ativo
+    // 6. PASSO 1: Desativar o vídeo anterior (se existir)
     console.log('🔄 [AWS_SYNC] ====== PASSO 1: DESATIVAR VÍDEO ANTERIOR ======');
     
     const deactivatePromises = [];
 
-    if (currentActiveVideo && currentActiveVideo.video_id !== activeVideoId) {
-      const tituloAnterior = extractTitulo(currentActiveVideo.videos?.url);
+    if (previousVideoData) {
+      const tituloAnterior = extractTitulo(previousVideoData.videos?.url);
       
       if (tituloAnterior) {
-        console.log(`🔄 [AWS_SYNC] Desativando vídeo anterior: "${tituloAnterior}" (${currentActiveVideo.video_id})`);
+        console.log(`🔄 [AWS_SYNC] Desativando vídeo anterior: "${tituloAnterior}" (${previousVideoData.video_id})`);
 
         for (const { clientId } of buildingClients) {
           const url = `${AWS_API_BASE}/ativo/${clientId}`;
@@ -164,7 +170,7 @@ serve(async (req) => {
         }
       }
     } else {
-      console.log('ℹ️ [AWS_SYNC] Nenhum vídeo anterior para desativar (ou é o mesmo vídeo)');
+      console.log('ℹ️ [AWS_SYNC] Nenhum vídeo anterior para desativar');
     }
 
     if (deactivatePromises.length > 0) {

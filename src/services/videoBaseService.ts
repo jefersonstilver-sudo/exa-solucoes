@@ -65,16 +65,17 @@ const fetchAllPedidoSlots = async (pedidoId: string) => {
 };
 
 // 🔔 Notificar API externa sobre mudança de vídeos
-const notifyExternalAPI = async (pedidoId: string, activeVideoId: string) => {
+const notifyExternalAPI = async (pedidoId: string, activeVideoId: string, previousVideoId?: string | null) => {
   try {
     console.log('🔔 [NOTIFY_API] ====== INÍCIO ======');
     console.log('🔔 [NOTIFY_API] Pedido:', pedidoId);
     console.log('🔔 [NOTIFY_API] Video ativo:', activeVideoId);
+    console.log('🔔 [NOTIFY_API] Video anterior:', previousVideoId || 'nenhum');
     
-    videoLogger.log("info", "NOTIFY_API_START", "Iniciando sincronização AWS", { pedidoId, activeVideoId });
+    videoLogger.log("info", "NOTIFY_API_START", "Iniciando sincronização AWS", { pedidoId, activeVideoId, previousVideoId });
 
     const { data, error } = await supabase.functions.invoke('sync-video-status-to-aws', {
-      body: { pedidoId, activeVideoId }
+      body: { pedidoId, activeVideoId, previousVideoId }
     });
 
     console.log('📥 [NOTIFY_API] Resposta AWS sync:', { data, error });
@@ -204,6 +205,42 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
   });
 
   try {
+    // 🔍 BUSCAR O VÍDEO ANTERIOR (ANTES DA RPC MODIFICAR O BANCO)
+    console.log('🔍 [SET_BASE_VIDEO] Buscando vídeo anterior...');
+    
+    // Primeiro, buscar o pedido_id do slot atual
+    const { data: currentSlotData, error: currentSlotError } = await supabase
+      .from('pedido_videos')
+      .select('pedido_id')
+      .eq('id', slotId)
+      .single();
+    
+    if (currentSlotError || !currentSlotData?.pedido_id) {
+      console.error('❌ [SET_BASE_VIDEO] Erro ao buscar pedido_id do slot:', currentSlotError);
+      throw new Error('Não foi possível encontrar o pedido associado ao slot');
+    }
+
+    const pedidoId = currentSlotData.pedido_id;
+
+    // Buscar o vídeo ATUALMENTE ATIVO para este pedido
+    const { data: previousActiveVideo, error: previousError } = await supabase
+      .from('pedido_videos')
+      .select('video_id')
+      .eq('pedido_id', pedidoId)
+      .eq('is_active', true)
+      .not('video_id', 'is', null)
+      .maybeSingle();
+    
+    const previousVideoId = previousActiveVideo?.video_id || null;
+    
+    console.log('🔍 [SET_BASE_VIDEO] Vídeo anterior identificado:', previousVideoId || 'nenhum');
+    
+    videoLogger.logRPC('set_base_video_previous_video', 'Vídeo anterior identificado', { 
+      slotId,
+      pedidoId,
+      previousVideoId
+    });
+
     // Chamar nova RPC safe_set_base_video (com proteção contra remoção do último base)
     console.log('🔄 [SET_BASE_VIDEO] Chamando RPC safe_set_base_video...');
     videoLogger.logRPC('set_base_video_rpc_call', 'Chamando RPC safe_set_base_video', { slotId });
@@ -320,12 +357,13 @@ export const setBaseVideo = async (slotId: string): Promise<SetBaseVideoResult> 
 
       console.log('🔔 [SET_BASE_VIDEO] Notificando API externa:', {
         pedidoId: currentSlot.pedido_id,
-        activeVideoId: currentSlot.video_id
+        activeVideoId: currentSlot.video_id,
+        previousVideoId
       });
 
       // Chamar função centralizada de notificação
       console.log('🔔 [SET_BASE_VIDEO] Chamando notifyExternalAPI...');
-      const notifyResult = await notifyExternalAPI(currentSlot.pedido_id, currentSlot.video_id);
+      const notifyResult = await notifyExternalAPI(currentSlot.pedido_id, currentSlot.video_id, previousVideoId);
       console.log('✅ [SET_BASE_VIDEO] API externa notificada com sucesso:', notifyResult);
     } catch (err: any) {
       console.error('❌ [SET_BASE_VIDEO] ERRO CRÍTICO ao notificar API externa:', err);
