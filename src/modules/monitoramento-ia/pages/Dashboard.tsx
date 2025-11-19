@@ -1,29 +1,124 @@
+import { useState, useEffect } from 'react';
+import { Monitor, AlertTriangle, CheckCircle2, Activity } from 'lucide-react';
+import { useDevices } from '../hooks/useDevices';
+import { calculateDeviceStats } from '../utils/devices';
+import { StatCard } from '../components/StatCard';
+import { PanelCard } from '../components/PanelCard';
+import { PanelsTable } from '../components/PanelsTable';
+import { PanelDetailModal } from '../components/PanelDetailModal';
+import { ViewToggle } from '../components/ViewToggle';
+import { ExportCsvButton } from '../components/ExportCsvButton';
+import { FiltersBar } from '../components/FiltersBar';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Device } from '../utils/devices';
+
 export const MonitoramentoIADashboard = () => {
+  const { devices, loading, lastUpdate, filters, setFilters, sort, setSort, refresh } = useDevices();
+  const [view, setView] = useState<'cards' | 'table'>('cards');
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+
+  const stats = calculateDeviceStats(devices);
+
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8">
-        <h1 className="text-2xl lg:text-3xl font-bold text-[#0A0A0A] mb-2">
-          IA & Monitoramento EXA
-        </h1>
-        <p className="text-gray-600">
-          Módulo administrativo criado. Conteúdo funcional será implementado em etapas seguintes.
-        </p>
+      {/* Header */}
+      <div className="bg-card rounded-xl border border-border p-6 lg:p-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
+              IA & Monitoramento EXA
+            </h1>
+            <p className="text-muted-foreground">
+              Monitoramento em tempo real dos painéis via AnyDesk
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Última atualização: {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <ExportCsvButton devices={devices} />
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-[#FFD000]">
-          <h3 className="font-semibold text-[#0A0A0A] mb-2">Status do Sistema</h3>
-          <p className="text-sm text-gray-600">Operacional</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-[#FFD000]">
-          <h3 className="font-semibold text-[#0A0A0A] mb-2">Painéis Ativos</h3>
-          <p className="text-sm text-gray-600">0</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-[#FFD000]">
-          <h3 className="font-semibold text-[#0A0A0A] mb-2">Alertas Pendentes</h3>
-          <p className="text-sm text-gray-600">0</p>
-        </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Online"
+          value={stats.online}
+          icon={CheckCircle2}
+          iconColor="text-green-600"
+        />
+        <StatCard
+          title="Offline"
+          value={stats.offline}
+          icon={AlertTriangle}
+          iconColor="text-red-600"
+        />
+        <StatCard
+          title="Total de Painéis"
+          value={stats.total}
+          icon={Monitor}
+          iconColor="text-primary"
+        />
+        <StatCard
+          title="Status do Sistema"
+          value="Operacional"
+          icon={Activity}
+          iconColor="text-green-600"
+        />
       </div>
+
+      {/* Filters & View Toggle */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <FiltersBar
+          filters={filters}
+          sort={sort}
+          onFiltersChange={setFilters}
+          onSortChange={setSort}
+          onNewPanel={() => {}}
+        />
+        <ViewToggle view={view} onViewChange={setView} />
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : view === 'cards' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {devices.map((device) => (
+            <PanelCard
+              key={device.id}
+              device={device}
+              onClick={() => setSelectedDevice(device)}
+            />
+          ))}
+        </div>
+      ) : (
+        <PanelsTable
+          devices={devices}
+          onViewDetails={setSelectedDevice}
+        />
+      )}
+
+      {devices.length === 0 && !loading && (
+        <div className="bg-card rounded-xl border border-border p-12 text-center">
+          <Monitor className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground">Nenhum painel cadastrado</p>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {selectedDevice && (
+        <PanelDetailModal
+          device={selectedDevice}
+          onClose={() => setSelectedDevice(null)}
+          onUpdate={refresh}
+        />
+      )}
     </div>
   );
 };
