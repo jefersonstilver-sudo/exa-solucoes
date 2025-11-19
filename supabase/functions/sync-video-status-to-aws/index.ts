@@ -120,6 +120,7 @@ serve(async (req) => {
     console.log('🔄 [AWS_SYNC] ====== PASSO 1: DESATIVAR VÍDEO ANTERIOR ======');
     
     const deactivatePromises = [];
+    let deactivateResults: any[] = [];
 
     if (previousVideoData) {
       const tituloAnterior = extractTitulo(previousVideoData.videos?.url);
@@ -175,7 +176,7 @@ serve(async (req) => {
 
     if (deactivatePromises.length > 0) {
       console.log(`🔄 [AWS_SYNC] Desativando vídeo anterior em ${deactivatePromises.length} prédios...`);
-      const deactivateResults = await Promise.allSettled(deactivatePromises);
+      deactivateResults = await Promise.allSettled(deactivatePromises);
 
       const deactivateSuccess = deactivateResults.filter(r => r.status === 'fulfilled' && r.value.ok).length;
       const deactivateFailed = deactivateResults.length - deactivateSuccess;
