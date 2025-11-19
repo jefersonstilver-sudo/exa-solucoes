@@ -7,6 +7,8 @@ interface PanelCardProps {
 }
 
 export const PanelCard = ({ device, onClick }: PanelCardProps) => {
+  const hasCriticalAlert = (device as any).has_critical_alert === true;
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
@@ -34,7 +36,11 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 overflow-hidden group"
+      className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border overflow-hidden group ${
+        hasCriticalAlert 
+          ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200' 
+          : 'border-gray-100'
+      }`}
     >
       {/* Corpo do card */}
       <div className="p-6 text-center">

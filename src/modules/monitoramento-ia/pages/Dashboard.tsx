@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Monitor, AlertTriangle, CheckCircle2, Activity } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useDevices } from '../hooks/useDevices';
 import { calculateDeviceStats } from '../utils/devices';
 import { StatCard } from '../components/StatCard';
@@ -9,6 +10,7 @@ import { PanelDetailModal } from '../components/PanelDetailModal';
 import { ViewToggle } from '../components/ViewToggle';
 import { ExportCsvButton } from '../components/ExportCsvButton';
 import { FiltersBar } from '../components/FiltersBar';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Device } from '../utils/devices';
@@ -19,6 +21,7 @@ export const MonitoramentoIADashboard = () => {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
   const stats = calculateDeviceStats(devices);
+  const criticalCount = devices.filter(d => (d as any).has_critical_alert === true).length;
 
   return (
     <div className="space-y-6">
@@ -41,6 +44,28 @@ export const MonitoramentoIADashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Critical Alert Banner */}
+      {criticalCount > 0 && (
+        <div className="bg-red-600 text-white px-6 py-4 rounded-xl flex items-center justify-between animate-pulse shadow-lg">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-6 h-6" />
+            <div>
+              <p className="font-bold text-lg">
+                {criticalCount} Alerta{criticalCount > 1 ? 's' : ''} Crítico{criticalCount > 1 ? 's' : ''}
+              </p>
+              <p className="text-sm opacity-90">
+                Requer atenção imediata
+              </p>
+            </div>
+          </div>
+          <Link to="/admin/monitoramento-ia/alertas">
+            <Button variant="secondary" size="sm">
+              Ver Alertas
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

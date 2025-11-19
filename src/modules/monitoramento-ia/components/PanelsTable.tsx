@@ -64,10 +64,15 @@ export const PanelsTable = ({ devices, onViewDetails, onSchedule }: PanelsTableP
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {devices.map((device) => (
+            {devices.map((device) => {
+              const hasCriticalAlert = (device as any).has_critical_alert === true;
+              
+              return (
               <tr
                 key={device.id}
-                className="hover:bg-muted/30 transition-colors cursor-pointer"
+                className={`hover:bg-muted/30 transition-colors cursor-pointer ${
+                  hasCriticalAlert ? 'bg-red-50 border-l-4 border-l-red-600' : ''
+                }`}
                 onClick={() => onViewDetails(device)}
               >
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -144,7 +149,7 @@ export const PanelsTable = ({ devices, onViewDetails, onSchedule }: PanelsTableP
                   </div>
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>

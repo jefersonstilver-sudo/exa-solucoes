@@ -8,11 +8,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from '@/components/ui/use-toast';
 import { Search, Plus, Trash2, Edit } from 'lucide-react';
 
+interface NotificationPreferences {
+  critical?: boolean;
+  offline?: boolean;
+  temperature?: boolean;
+  daily_summary?: boolean;
+  [key: string]: boolean | undefined;
+}
+
 interface Director {
   id: string;
   name: string;
   phone: string;
   is_active: boolean;
+  notify_preferences?: NotificationPreferences | null;
   created_at: string;
 }
 
@@ -25,7 +34,22 @@ export const DiretoresPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingDirector, setEditingDirector] = useState<Director | null>(null);
   const [deleteDirectorId, setDeleteDirectorId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', phone: '', is_active: true });
+  const [formData, setFormData] = useState<{ 
+    name: string; 
+    phone: string; 
+    is_active: boolean;
+    notify_preferences: NotificationPreferences;
+  }>({ 
+    name: '', 
+    phone: '', 
+    is_active: true,
+    notify_preferences: {
+      critical: true,
+      offline: false,
+      temperature: false,
+      daily_summary: false,
+    }
+  });
   const [loading, setLoading] = useState(false);
 
   const itemsPerPage = 10;
@@ -49,7 +73,12 @@ export const DiretoresPage = () => {
       return;
     }
 
-    setDirectors(data || []);
+    if (!error && data) {
+      setDirectors(data.map(d => ({
+        ...d,
+        notify_preferences: d.notify_preferences as NotificationPreferences | null
+      })));
+    }
   };
 
   const filterDirectors = () => {
@@ -77,7 +106,17 @@ export const DiretoresPage = () => {
 
   const openCreateModal = () => {
     setEditingDirector(null);
-    setFormData({ name: '', phone: '', is_active: true });
+    setFormData({ 
+      name: '', 
+      phone: '', 
+      is_active: true,
+      notify_preferences: {
+        critical: true,
+        offline: false,
+        temperature: false,
+        daily_summary: false,
+      }
+    });
     setIsModalOpen(true);
   };
 
@@ -87,6 +126,12 @@ export const DiretoresPage = () => {
       name: director.name,
       phone: director.phone,
       is_active: director.is_active,
+      notify_preferences: director.notify_preferences || {
+        critical: true,
+        offline: false,
+        temperature: false,
+        daily_summary: false,
+      }
     });
     setIsModalOpen(true);
   };
@@ -104,7 +149,12 @@ export const DiretoresPage = () => {
       if (editingDirector) {
         const { error } = await supabase
           .from('directors')
-          .update({ name: formData.name, phone: formattedPhone, is_active: formData.is_active })
+          .update({ 
+            name: formData.name, 
+            phone: formattedPhone, 
+            is_active: formData.is_active,
+            notify_preferences: formData.notify_preferences as any
+          })
           .eq('id', editingDirector.id);
 
         if (error) {
@@ -121,7 +171,12 @@ export const DiretoresPage = () => {
       } else {
         const { error } = await supabase
           .from('directors')
-          .insert({ name: formData.name, phone: formattedPhone, is_active: formData.is_active });
+          .insert([{ 
+            name: formData.name, 
+            phone: formattedPhone, 
+            is_active: formData.is_active,
+            notify_preferences: formData.notify_preferences as any
+          }]);
 
         if (error) {
           if (error.code === '23505') {
@@ -370,6 +425,35 @@ export const DiretoresPage = () => {
                 }
               />
               <label className="text-sm font-medium">Ativo</label>
+            </div>
+
+            {/* WhatsApp Notifications Section */}
+            <div className="space-y-3 pt-4 border-t">
+              <label className="text-sm font-medium block">Notificações WhatsApp</label>
+              <div className="space-y-2">
+                {[
+                  { key: 'critical', label: 'Alertas Críticos' },
+                  { key: 'offline', label: 'Painéis Offline > 30min' },
+                  { key: 'temperature', label: 'Temperatura Alta' },
+                  { key: 'daily_summary', label: 'Resumo Diário' },
+                ].map(option => (
+                  <div key={option.key} className="flex items-center gap-2">
+                    <Switch
+                      checked={formData.notify_preferences?.[option.key] ?? false}
+                      onCheckedChange={(checked) => 
+                        setFormData({
+                          ...formData,
+                          notify_preferences: {
+                            ...formData.notify_preferences,
+                            [option.key]: checked
+                          }
+                        })
+                      }
+                    />
+                    <span className="text-sm">{option.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
