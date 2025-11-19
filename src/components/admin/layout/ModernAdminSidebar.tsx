@@ -192,7 +192,7 @@ export function ModernAdminSidebar() {
         },
         {
           title: 'Monitoramento IA',
-          href: '/monitoramento-ia/alertas',
+          href: '/admin/monitoramento-ia',
           icon: Brain,
           permission: 'canManageSystemSettings',
           requireSuperAdmin: true
