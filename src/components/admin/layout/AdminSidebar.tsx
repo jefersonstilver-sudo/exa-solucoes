@@ -172,7 +172,7 @@ const AdminSidebar = () => {
     {
       label: 'Monitoramento IA',
       icon: <Shield className="h-5 w-5" />,
-      href: '/admin/monitoramento-ia',
+      href: '/admin/monitoramento-ia/dashboard',
       requireSuperAdmin: true,
       section: 'system',
       permission: 'canManageSystemSettings'
