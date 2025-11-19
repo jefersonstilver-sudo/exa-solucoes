@@ -80,6 +80,27 @@ export type Database = {
           },
         ]
       }
+      agent_context: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       ai_debug_analysis_history: {
         Row: {
           ai_analysis: Json
@@ -169,6 +190,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      analyses: {
+        Row: {
+          analysis_at: string | null
+          conversation_id: string
+          id: string
+          intent: string | null
+          opportunity: boolean | null
+          raw_payload: Json | null
+          response_quality_score: number | null
+          sla_violations: Json | null
+          suggested_reply: string | null
+          summary: string | null
+        }
+        Insert: {
+          analysis_at?: string | null
+          conversation_id: string
+          id?: string
+          intent?: string | null
+          opportunity?: boolean | null
+          raw_payload?: Json | null
+          response_quality_score?: number | null
+          sla_violations?: Json | null
+          suggested_reply?: string | null
+          summary?: string | null
+        }
+        Update: {
+          analysis_at?: string | null
+          conversation_id?: string
+          id?: string
+          intent?: string | null
+          opportunity?: boolean | null
+          raw_payload?: Json | null
+          response_quality_score?: number | null
+          sla_violations?: Json | null
+          suggested_reply?: string | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analyses_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       api_rate_limits: {
         Row: {
@@ -1460,6 +1528,42 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          contact_name: string | null
+          contact_phone: string
+          contact_type: string | null
+          created_at: string | null
+          external_id: string | null
+          first_message_at: string | null
+          id: string
+          last_message_at: string | null
+          status: string | null
+        }
+        Insert: {
+          contact_name?: string | null
+          contact_phone: string
+          contact_type?: string | null
+          created_at?: string | null
+          external_id?: string | null
+          first_message_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          contact_name?: string | null
+          contact_phone?: string
+          contact_type?: string | null
+          created_at?: string | null
+          external_id?: string | null
+          first_message_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       coupon_security_events: {
         Row: {
           coupon_code: string | null
@@ -1833,6 +1937,104 @@ export type Database = {
           id?: string
           is_active?: boolean
           token_hash?: string
+        }
+        Relationships: []
+      }
+      device_alerts: {
+        Row: {
+          alert_type: string
+          closed_at: string | null
+          created_at: string | null
+          device_id: string
+          evidence: Json | null
+          id: string
+          opened_at: string | null
+          severity: string | null
+          status: string | null
+        }
+        Insert: {
+          alert_type: string
+          closed_at?: string | null
+          created_at?: string | null
+          device_id: string
+          evidence?: Json | null
+          id?: string
+          opened_at?: string | null
+          severity?: string | null
+          status?: string | null
+        }
+        Update: {
+          alert_type?: string
+          closed_at?: string | null
+          created_at?: string | null
+          device_id?: string
+          evidence?: Json | null
+          id?: string
+          opened_at?: string | null
+          severity?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_alerts_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devices: {
+        Row: {
+          anydesk_client_id: string
+          condominio_name: string
+          created_at: string | null
+          id: string
+          last_online_at: string | null
+          name: string
+          status: string | null
+        }
+        Insert: {
+          anydesk_client_id: string
+          condominio_name: string
+          created_at?: string | null
+          id?: string
+          last_online_at?: string | null
+          name: string
+          status?: string | null
+        }
+        Update: {
+          anydesk_client_id?: string
+          condominio_name?: string
+          created_at?: string | null
+          id?: string
+          last_online_at?: string | null
+          name?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      directors: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string
         }
         Relationships: []
       }
@@ -2253,6 +2455,38 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_console_messages: {
+        Row: {
+          created_at: string | null
+          director_id: string
+          id: string
+          message: string
+          role: string
+        }
+        Insert: {
+          created_at?: string | null
+          director_id: string
+          id?: string
+          message: string
+          role: string
+        }
+        Update: {
+          created_at?: string | null
+          director_id?: string
+          id?: string
+          message?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_console_messages_director_id_fkey"
+            columns: ["director_id"]
+            isOneToOne: false
+            referencedRelation: "directors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_data_access_logs: {
         Row: {
           created_at: string
@@ -2438,6 +2672,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string | null
+          from_role: string
+          has_audio: boolean | null
+          has_image: boolean | null
+          id: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string | null
+          from_role: string
+          has_audio?: boolean | null
+          has_image?: boolean | null
+          id?: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string | null
+          from_role?: string
+          has_audio?: boolean | null
+          has_image?: boolean | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
