@@ -106,7 +106,14 @@ const CouponFormDialog: React.FC<CouponFormDialogProps> = ({
     setIsSubmitting(true);
     
     try {
-      const success = await onSubmit(formData);
+      // ✅ Limpar campos de data vazios (converter string vazia para null)
+      const cleanedData = {
+        ...formData,
+        expira_em: formData.expira_em || null,
+        data_inicio: (formData as any).data_inicio || null
+      };
+      
+      const success = await onSubmit(cleanedData);
       if (success) {
         onClose();
       }
