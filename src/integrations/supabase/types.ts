@@ -2020,6 +2020,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          notify_preferences: Json | null
           phone: string
         }
         Insert: {
@@ -2027,6 +2028,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          notify_preferences?: Json | null
           phone: string
         }
         Update: {
@@ -2034,6 +2036,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          notify_preferences?: Json | null
           phone?: string
         }
         Relationships: []
@@ -2678,6 +2681,7 @@ export type Database = {
           body: string
           conversation_id: string
           created_at: string | null
+          external_message_id: string | null
           from_role: string
           has_audio: boolean | null
           has_image: boolean | null
@@ -2687,6 +2691,7 @@ export type Database = {
           body: string
           conversation_id: string
           created_at?: string | null
+          external_message_id?: string | null
           from_role: string
           has_audio?: boolean | null
           has_image?: boolean | null
@@ -2696,6 +2701,7 @@ export type Database = {
           body?: string
           conversation_id?: string
           created_at?: string | null
+          external_message_id?: string | null
           from_role?: string
           has_audio?: boolean | null
           has_image?: boolean | null
@@ -3732,6 +3738,33 @@ export type Database = {
           responsavel_contato?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sync_runs: {
+        Row: {
+          created_at: string | null
+          errors: Json | null
+          finished_at: string | null
+          id: string
+          processed_count: number | null
+          started_at: string
+        }
+        Insert: {
+          created_at?: string | null
+          errors?: Json | null
+          finished_at?: string | null
+          id?: string
+          processed_count?: number | null
+          started_at: string
+        }
+        Update: {
+          created_at?: string | null
+          errors?: Json | null
+          finished_at?: string | null
+          id?: string
+          processed_count?: number | null
+          started_at?: string
         }
         Relationships: []
       }
