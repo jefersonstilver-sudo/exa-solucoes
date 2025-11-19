@@ -54,6 +54,16 @@ import VideoEditorDashboard from './pages/video-editor/VideoEditorDashboard';
 import VideoEditorAccessControl from './pages/video-editor/VideoEditorAccessControl';
 import VideoEditorPage from './pages/video-editor/VideoEditorPage';
 
+// Monitoramento IA Module
+import { MonitoramentoIALayout } from './modules/monitoramento-ia/layout/MonitoramentoIALayout';
+import { MonitoramentoIADashboard } from './modules/monitoramento-ia/pages/Dashboard';
+import { BaseAgentePage } from './modules/monitoramento-ia/pages/BaseAgente';
+import { DiretoresPage } from './modules/monitoramento-ia/pages/Diretores';
+import { PaineisPage } from './modules/monitoramento-ia/pages/Paineis';
+import { AlertasPage } from './modules/monitoramento-ia/pages/Alertas';
+import { ConversasPage } from './modules/monitoramento-ia/pages/Conversas';
+import { ConsoleIAPage } from './modules/monitoramento-ia/pages/ConsoleIA';
+
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
 const Contato = lazy(() => import('./pages/Contato'));
@@ -429,6 +439,17 @@ const AppContent = () => {
 
           {/* Página de teste de links */}
           <Route path="/test-links" element={<TestLinks />} />
+
+          {/* Módulo Monitoramento IA */}
+          <Route path="/admin/monitoramento-ia" element={<MonitoramentoIALayout />}>
+            <Route index element={<MonitoramentoIADashboard />} />
+            <Route path="base-agente" element={<BaseAgentePage />} />
+            <Route path="diretores" element={<DiretoresPage />} />
+            <Route path="paineis" element={<PaineisPage />} />
+            <Route path="alertas" element={<AlertasPage />} />
+            <Route path="conversas" element={<ConversasPage />} />
+            <Route path="console-ia" element={<ConsoleIAPage />} />
+          </Route>
 
           {/* Rotas administrativas */}
           <Route path="/super_admin/*" element={<SuperAdminPage />} />
