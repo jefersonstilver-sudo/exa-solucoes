@@ -38,8 +38,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Buscar todos os vídeos do pedido
-    const { data: allPedidoVideos, error: videosError } = await supabase
+    // 1. Buscar o vídeo ATUALMENTE ATIVO (para desativar) e o novo vídeo
+    const { data: currentActiveVideo, error: currentError } = await supabase
       .from('pedido_videos')
       .select(`
         id,
@@ -48,16 +48,37 @@ serve(async (req) => {
         videos ( id, nome, url )
       `)
       .eq('pedido_id', pedidoId)
-      .not('video_id', 'is', null);
+      .eq('is_active', true)
+      .not('video_id', 'is', null)
+      .maybeSingle();
 
-    if (videosError || !allPedidoVideos || allPedidoVideos.length === 0) {
-      console.error('❌ [AWS_SYNC] Erro ao buscar vídeos:', videosError);
-      throw new Error(`Erro ao buscar vídeos: ${JSON.stringify(videosError)}`);
+    if (currentError) {
+      console.error('❌ [AWS_SYNC] Erro ao buscar vídeo ativo:', currentError);
     }
 
-    console.log(`✅ [AWS_SYNC] Encontrados ${allPedidoVideos.length} vídeos`);
+    console.log('🔍 [AWS_SYNC] Vídeo atualmente ativo:', currentActiveVideo ? currentActiveVideo.video_id : 'nenhum');
 
-    // 2. Buscar lista de prédios
+    // 2. Buscar o novo vídeo a ser ativado
+    const { data: newActiveVideo, error: newVideoError } = await supabase
+      .from('pedido_videos')
+      .select(`
+        id,
+        video_id,
+        slot_position,
+        videos ( id, nome, url )
+      `)
+      .eq('pedido_id', pedidoId)
+      .eq('video_id', activeVideoId)
+      .single();
+
+    if (newVideoError || !newActiveVideo) {
+      console.error('❌ [AWS_SYNC] Erro ao buscar novo vídeo:', newVideoError);
+      throw new Error(`Novo vídeo não encontrado: ${activeVideoId}`);
+    }
+
+    console.log(`✅ [AWS_SYNC] Novo vídeo: ${newActiveVideo.video_id}`);
+
+    // 3. Buscar lista de prédios
     const { data: pedidoData, error: pedidoError } = await supabase
       .from('pedidos')
       .select('lista_predios')
@@ -72,7 +93,7 @@ serve(async (req) => {
     const buildingIds = pedidoData.lista_predios as string[];
     console.log(`✅ [AWS_SYNC] Encontrados ${buildingIds.length} prédios`);
 
-    // 3. Extrair clientId de cada prédio (primeiros 4 dígitos do UUID)
+    // 4. Extrair clientId de cada prédio (primeiros 4 dígitos do UUID)
     const buildingClients = buildingIds.map(uuid => ({
       buildingId: uuid,
       clientId: uuid.substring(0, 4)
@@ -80,7 +101,7 @@ serve(async (req) => {
 
     console.log('📋 [AWS_SYNC] Client IDs:', buildingClients.map(b => b.clientId));
 
-    // 4. Helper para extrair título do vídeo
+    // 5. Helper para extrair título do vídeo
     const extractTitulo = (videoUrl?: string | null): string | null => {
       if (!videoUrl) return null;
       const base = String(videoUrl).split("/").pop() || "";
@@ -89,84 +110,83 @@ serve(async (req) => {
       return cleaned || null;
     };
 
-    // 5. PASSO 1: Desativar TODOS os vídeos
-    console.log('🔄 [AWS_SYNC] ====== PASSO 1: DESATIVAR TODOS ======');
+    // 6. PASSO 1: Desativar APENAS o vídeo que estava ativo
+    console.log('🔄 [AWS_SYNC] ====== PASSO 1: DESATIVAR VÍDEO ANTERIOR ======');
     
     const deactivatePromises = [];
-    const deactivateRequests = [];
 
-    for (const { clientId } of buildingClients) {
-      for (const video of allPedidoVideos) {
-        const titulo = extractTitulo(video.videos?.url);
-        if (!titulo) continue;
+    if (currentActiveVideo && currentActiveVideo.video_id !== activeVideoId) {
+      const tituloAnterior = extractTitulo(currentActiveVideo.videos?.url);
+      
+      if (tituloAnterior) {
+        console.log(`🔄 [AWS_SYNC] Desativando vídeo anterior: "${tituloAnterior}" (${currentActiveVideo.video_id})`);
 
-        const url = `${AWS_API_BASE}/ativo/${clientId}`;
-        const payload: VideoPayload = { titulo, ativo: false };
+        for (const { clientId } of buildingClients) {
+          const url = `${AWS_API_BASE}/ativo/${clientId}`;
+          const payload: VideoPayload = { titulo: tituloAnterior, ativo: false };
 
-        deactivateRequests.push({ url, payload, clientId, titulo });
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+          const promise = fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          })
+          .then(async (response) => {
+            clearTimeout(timeoutId);
+            const responseText = await response.text().catch(() => '(sem body)');
+            
+            console.log(`📤 [AWS_SYNC][DEACTIVATE] PATCH /ativo/${clientId}`, payload);
+            console.log(`📥 [AWS_SYNC][DEACTIVATE] Status: ${response.status} ${response.statusText}`);
+            console.log(`📥 [AWS_SYNC][DEACTIVATE] Response:`, responseText);
 
-        const promise = fetch(url, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        })
-        .then(async (response) => {
-          clearTimeout(timeoutId);
-          const responseText = await response.text().catch(() => '(sem body)');
-          
-          console.log(`📤 [AWS_SYNC][DEACTIVATE] PATCH /ativo/${clientId}`, payload);
-          console.log(`📥 [AWS_SYNC][DEACTIVATE] Status: ${response.status} ${response.statusText}`);
-          console.log(`📥 [AWS_SYNC][DEACTIVATE] Response:`, responseText);
+            if (!response.ok) {
+              console.error(`❌ [AWS_SYNC][DEACTIVATE] ERRO: ${response.status} - ${responseText}`);
+            } else {
+              console.log(`✅ [AWS_SYNC][DEACTIVATE] SUCESSO`);
+            }
 
-          if (!response.ok) {
-            console.error(`❌ [AWS_SYNC][DEACTIVATE] ERRO: ${response.status} - ${responseText}`);
-          } else {
-            console.log(`✅ [AWS_SYNC][DEACTIVATE] SUCESSO`);
-          }
+            return { ok: response.ok, status: response.status, clientId, titulo: tituloAnterior };
+          })
+          .catch((err) => {
+            clearTimeout(timeoutId);
+            if (err.name === 'AbortError') {
+              console.error(`⏱️ [AWS_SYNC][DEACTIVATE] TIMEOUT após 10s - ${clientId}/${tituloAnterior}`);
+            } else {
+              console.error(`💥 [AWS_SYNC][DEACTIVATE] EXCEÇÃO:`, err.message);
+            }
+            return { ok: false, status: 0, clientId, titulo: tituloAnterior };
+          });
 
-          return { ok: response.ok, status: response.status, clientId, titulo };
-        })
-        .catch((err) => {
-          clearTimeout(timeoutId);
-          if (err.name === 'AbortError') {
-            console.error(`⏱️ [AWS_SYNC][DEACTIVATE] TIMEOUT após 10s - ${clientId}/${titulo}`);
-          } else {
-            console.error(`💥 [AWS_SYNC][DEACTIVATE] EXCEÇÃO:`, err.message);
-          }
-          throw err;
-        });
-
-        deactivatePromises.push(promise);
+          deactivatePromises.push(promise);
+        }
       }
+    } else {
+      console.log('ℹ️ [AWS_SYNC] Nenhum vídeo anterior para desativar (ou é o mesmo vídeo)');
     }
 
-    console.log(`🔄 [AWS_SYNC] Desativando ${deactivatePromises.length} vídeos...`);
-    const deactivateResults = await Promise.allSettled(deactivatePromises);
+    if (deactivatePromises.length > 0) {
+      console.log(`🔄 [AWS_SYNC] Desativando vídeo anterior em ${deactivatePromises.length} prédios...`);
+      const deactivateResults = await Promise.allSettled(deactivatePromises);
 
-    const deactivateSuccess = deactivateResults.filter(r => r.status === 'fulfilled' && r.value.ok).length;
-    const deactivateFailed = deactivateResults.length - deactivateSuccess;
+      const deactivateSuccess = deactivateResults.filter(r => r.status === 'fulfilled' && r.value.ok).length;
+      const deactivateFailed = deactivateResults.length - deactivateSuccess;
 
-    console.log(`📊 [AWS_SYNC] Desativar: ${deactivateSuccess} sucesso, ${deactivateFailed} falhas`);
+      console.log(`📊 [AWS_SYNC] Desativar: ${deactivateSuccess} sucesso, ${deactivateFailed} falhas`);
+    }
 
-    // 6. Aguardar 500ms antes de ativar
+    // 7. Aguardar 500ms antes de ativar
     console.log('⏳ [AWS_SYNC] Aguardando 500ms...');
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // 7. PASSO 2: Ativar APENAS o vídeo correto
-    console.log('🔄 [AWS_SYNC] ====== PASSO 2: ATIVAR VÍDEO CORRETO ======');
+    // 8. PASSO 2: Ativar o novo vídeo
+    console.log('🔄 [AWS_SYNC] ====== PASSO 2: ATIVAR NOVO VÍDEO ======');
 
-    const activeVideo = allPedidoVideos.find(v => v.video_id === activeVideoId);
-    if (!activeVideo) {
-      throw new Error(`Vídeo ativo não encontrado: ${activeVideoId}`);
-    }
-
-    const tituloAtivo = extractTitulo(activeVideo.videos?.url);
+    const tituloAtivo = extractTitulo(newActiveVideo.videos?.url);
     if (!tituloAtivo) {
-      throw new Error(`Não foi possível extrair título do vídeo: ${activeVideo.videos?.url}`);
+      throw new Error(`Não foi possível extrair título do vídeo: ${newActiveVideo.videos?.url}`);
     }
 
     console.log(`✅ [AWS_SYNC] Vídeo para ativar: "${tituloAtivo}" (${activeVideoId})`);
