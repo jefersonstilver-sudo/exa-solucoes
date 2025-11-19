@@ -2,15 +2,18 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, RefreshCw } from 'lucide-react';
 import { useCouponsData } from '@/hooks/useCouponsData';
 import CouponStatsCards from '@/components/admin/coupons/CouponStatsCards';
 import CouponFiltersComponent from '@/components/admin/coupons/CouponFilters';
 import CouponsTable from '@/components/admin/coupons/CouponsTable';
 import CouponFormDialog from '@/components/admin/coupons/CouponFormDialog';
 import { Coupon } from '@/types/coupon';
+import { useQueryClient } from '@tanstack/react-query';
 
 const CouponsPage: React.FC = () => {
+  const queryClient = useQueryClient();
+  
   const {
     coupons,
     stats,
@@ -26,6 +29,13 @@ const CouponsPage: React.FC = () => {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ['coupons'] });
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
 
   const handleCreateCoupon = () => {
     setEditingCoupon(null);
@@ -85,6 +95,16 @@ const CouponsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-2"
+            title="Atualizar dados"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
           <Button variant="outline" onClick={exportCoupons} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Exportar
