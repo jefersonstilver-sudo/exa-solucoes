@@ -23,7 +23,8 @@ import {
   UsersRound,
   FileBarChart,
   Tv,
-  Clapperboard
+  Clapperboard,
+  Brain
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -186,6 +187,13 @@ export function ModernAdminSidebar() {
           title: 'Segurança',
           href: buildPath('seguranca'),
           icon: Shield,
+          permission: 'canManageSystemSettings',
+          requireSuperAdmin: true
+        },
+        {
+          title: 'Monitoramento IA',
+          href: '/monitoramento-ia/alertas',
+          icon: Brain,
           permission: 'canManageSystemSettings',
           requireSuperAdmin: true
         },
