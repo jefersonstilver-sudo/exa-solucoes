@@ -60,15 +60,15 @@ export const PaineisPage = () => {
   const stats = calculateDeviceStats(devices);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0A0A0A]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-[#1A1A1A] border-b border-[#2A2A2A] px-6 py-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-[#0A0A0A]">
+            <h1 className="text-2xl lg:text-3xl font-bold text-white">
               Painéis
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-[#A0A0A0] mt-1">
               Última atualização:{' '}
               {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
             </p>
@@ -77,12 +77,12 @@ export const PaineisPage = () => {
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 border border-[#2A2A2A] text-white rounded-lg hover:bg-[#9C1E1E] hover:border-[#9C1E1E] transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </button>
-            <div className="text-xs text-gray-500 hidden lg:block">
+            <div className="text-xs text-[#A0A0A0] hidden lg:block">
               Auto-atualização: 5 min
             </div>
           </div>
@@ -110,8 +110,8 @@ export const PaineisPage = () => {
         {/* Loading state */}
         {loading && devices.length === 0 ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFD000]"></div>
-            <p className="mt-4 text-gray-500">Carregando painéis...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#9C1E1E]"></div>
+            <p className="mt-4 text-[#A0A0A0]">Carregando painéis...</p>
           </div>
         ) : devices.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl shadow-sm">

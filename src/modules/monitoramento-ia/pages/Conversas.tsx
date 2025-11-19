@@ -97,41 +97,41 @@ export const ConversasPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-[#0A0A0A] mb-2">
+      <div className="bg-[#1A1A1A] rounded-xl border border-[#2A2A2A] p-6">
+        <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
           Conversas Analisadas
         </h1>
-        <p className="text-gray-600">
+        <p className="text-[#A0A0A0]">
           Histórico de conversas do ManyChat vinculadas aos painéis
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 bg-white">
+        <Card className="p-4 bg-[#1A1A1A] border-[#2A2A2A]">
           <div className="flex items-center gap-3">
-            <MessageSquare className="w-8 h-8 text-blue-600" />
+            <MessageSquare className="w-8 h-8 text-[#9C1E1E]" />
             <div>
-              <p className="text-sm text-gray-600">Total de Conversas</p>
-              <p className="text-2xl font-bold text-[#0A0A0A]">{statsData.total}</p>
+              <p className="text-sm text-[#A0A0A0]">Total de Conversas</p>
+              <p className="text-2xl font-bold text-white">{statsData.total}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-white">
+        <Card className="p-4 bg-[#1A1A1A] border-[#2A2A2A]">
           <div className="flex items-center gap-3">
-            <MessageSquare className="w-8 h-8 text-green-600" />
+            <MessageSquare className="w-8 h-8 text-green-500" />
             <div>
-              <p className="text-sm text-gray-600">Última Hora</p>
-              <p className="text-2xl font-bold text-[#0A0A0A]">{statsData.lastHour}</p>
+              <p className="text-sm text-[#A0A0A0]">Última Hora</p>
+              <p className="text-2xl font-bold text-white">{statsData.lastHour}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-white">
+        <Card className="p-4 bg-[#1A1A1A] border-[#2A2A2A]">
           <div className="flex items-center gap-3">
-            <MessageSquare className="w-8 h-8 text-orange-600" />
+            <MessageSquare className="w-8 h-8 text-orange-500" />
             <div>
-              <p className="text-sm text-gray-600">Pendentes</p>
-              <p className="text-2xl font-bold text-[#0A0A0A]">{statsData.pending}</p>
+              <p className="text-sm text-[#A0A0A0]">Pendentes</p>
+              <p className="text-2xl font-bold text-white">{statsData.pending}</p>
             </div>
           </div>
         </Card>
@@ -139,43 +139,43 @@ export const ConversasPage = () => {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B7280]" />
         <Input
           placeholder="Buscar por nome, telefone ou condomínio..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-white"
+          className="pl-10 bg-[#1A1A1A] border-[#2A2A2A] text-white placeholder:text-[#6B7280]"
         />
       </div>
 
       {/* Conversations List */}
       {loading ? (
         <div className="text-center py-12">
-          <p className="text-gray-500">Carregando conversas...</p>
+          <p className="text-[#A0A0A0]">Carregando conversas...</p>
         </div>
       ) : filteredConversations.length === 0 ? (
         <div className="text-center py-12">
-          <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">
+          <MessageSquare className="w-12 h-12 text-[#6B7280] mx-auto mb-4" />
+          <p className="text-[#A0A0A0]">
             {searchTerm ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa registrada'}
           </p>
         </div>
       ) : (
         <div className="space-y-3">
           {filteredConversations.map((conv) => (
-            <Card key={conv.id} className="p-4 bg-white hover:shadow-md transition-shadow">
+            <Card key={conv.id} className="p-4 bg-[#1A1A1A] border-[#2A2A2A] hover:shadow-lg hover:shadow-[#9C1E1E]/10 transition-all">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-5 h-5 text-[#9C1E1E]" />
-                    <span className="font-semibold text-[#0A0A0A]">
+                    <span className="font-semibold text-white">
                       {conv.contact_name || conv.contact_phone}
                     </span>
                     <Badge variant="outline" className={getStatusColor(conv.status)}>
                       {conv.status || 'unknown'}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-4 text-sm text-[#A0A0A0]">
                     <div className="flex items-center gap-1">
                       <Building2 className="w-4 h-4" />
                       <span>{conv.condominio_name}</span>
@@ -183,7 +183,7 @@ export const ConversasPage = () => {
                     <span>•</span>
                     <span>{conv.device_name}</span>
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-[#6B7280]">
                     Última mensagem: {formatLastMessage(conv.last_message_at)}
                   </div>
                 </div>

@@ -66,8 +66,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       {/* Header */}
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#FFD000] rounded-lg flex items-center justify-center">
-            <Sparkles className="text-[#0A0A0A]" size={24} />
+          <div className="w-10 h-10 bg-[#9C1E1E] rounded-lg flex items-center justify-center">
+            <Sparkles className="text-white" size={24} />
           </div>
           <div>
             <h1 className="text-lg font-bold">IA & Monitoramento</h1>
@@ -86,9 +86,9 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
-                'hover:bg-white/5',
+                'hover:bg-[#9C1E1E]/20',
                 isActive
-                  ? 'bg-[#FFD000] text-[#0A0A0A] font-medium'
+                  ? 'bg-[#9C1E1E] text-white font-medium'
                   : 'text-white/80'
               )
             }

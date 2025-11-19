@@ -46,7 +46,7 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
       <div className="p-6 text-center">
         {/* Número do painel - destaque central */}
         <div className="mb-2">
-          <div className="text-3xl font-bold text-[#0A0A0A] group-hover:text-[#FFD000] transition-colors">
+          <div className="text-3xl font-bold text-[#0A0A0A] group-hover:text-[#9C1E1E] transition-colors">
             {device.name}
           </div>
         </div>

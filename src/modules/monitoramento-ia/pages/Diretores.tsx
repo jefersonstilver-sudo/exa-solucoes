@@ -242,60 +242,87 @@ export const DiretoresPage = () => {
   const totalPages = Math.ceil(filteredDirectors.length / itemsPerPage);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 lg:p-8">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
-        <h1 className="text-2xl lg:text-3xl font-bold text-[#0A0A0A]">
-          Diretores Autorizados
-        </h1>
-        <Button
-          onClick={openCreateModal}
-          className="bg-[#FFD000] hover:bg-[#FFD000]/90 text-[#0A0A0A] font-semibold"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Diretor
-        </Button>
-      </div>
-
-      <div className="mb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="Buscar por nome ou telefone..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-[#1A1A1A] rounded-xl border border-[#2A2A2A] p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-white">
+              Diretores Autorizados
+            </h1>
+            <p className="text-[#A0A0A0] mt-1">
+              Gerenciar notificações via WhatsApp para diretores
+            </p>
+          </div>
+          <Button
+            onClick={openCreateModal}
+            className="bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white font-semibold"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Diretor
+          </Button>
         </div>
       </div>
 
-      <div className="hidden lg:block overflow-x-auto">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-[#1A1A1A] rounded-lg border border-[#2A2A2A] p-4">
+          <p className="text-sm text-[#A0A0A0]">Total de Diretores</p>
+          <p className="text-2xl font-bold text-white">{directors.length}</p>
+        </div>
+        <div className="bg-[#1A1A1A] rounded-lg border border-[#2A2A2A] p-4">
+          <p className="text-sm text-[#A0A0A0]">Ativos</p>
+          <p className="text-2xl font-bold text-green-500">
+            {directors.filter(d => d.is_active).length}
+          </p>
+        </div>
+        <div className="bg-[#1A1A1A] rounded-lg border border-[#2A2A2A] p-4">
+          <p className="text-sm text-[#A0A0A0]">Inativos</p>
+          <p className="text-2xl font-bold text-[#6B7280]">
+            {directors.filter(d => !d.is_active).length}
+          </p>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6B7280] w-4 h-4" />
+        <Input
+          placeholder="Buscar por nome ou telefone..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 bg-[#1A1A1A] border-[#2A2A2A] text-white placeholder:text-[#6B7280]"
+        />
+      </div>
+
+      <div className="bg-[#1A1A1A] rounded-xl border border-[#2A2A2A] overflow-hidden hidden lg:block">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Telefone</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Criado em</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+            <TableRow className="border-[#2A2A2A] hover:bg-[#0A0A0A]/50">
+              <TableHead className="text-[#A0A0A0]">Nome</TableHead>
+              <TableHead className="text-[#A0A0A0]">Telefone</TableHead>
+              <TableHead className="text-[#A0A0A0]">Status</TableHead>
+              <TableHead className="text-[#A0A0A0]">Criado em</TableHead>
+              <TableHead className="text-right text-[#A0A0A0]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedDirectors.map((director) => (
-              <TableRow key={director.id}>
-                <TableCell className="font-medium">{director.name}</TableCell>
-                <TableCell>{director.phone}</TableCell>
+              <TableRow key={director.id} className="border-[#2A2A2A] hover:bg-[#0A0A0A]/30">
+                <TableCell className="font-medium text-white">{director.name}</TableCell>
+                <TableCell className="text-[#A0A0A0]">{director.phone}</TableCell>
                 <TableCell>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-semibold ${
                       director.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : 'bg-[#6B7280]/20 text-[#6B7280] border border-[#6B7280]/30'
                     }`}
                   >
                     {director.is_active ? 'Ativo' : 'Inativo'}
                   </span>
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-[#A0A0A0]">
                   {new Date(director.created_at).toLocaleDateString('pt-BR')}
                 </TableCell>
                 <TableCell className="text-right space-x-2">
@@ -307,13 +334,15 @@ export const DiretoresPage = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => openEditModal(director)}
+                    className="border-[#2A2A2A] text-white hover:bg-[#9C1E1E] hover:border-[#9C1E1E]"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
                   <Button
                     size="sm"
-                    variant="destructive"
+                    variant="outline"
                     onClick={() => openDeleteModal(director.id)}
+                    className="border-[#2A2A2A] text-red-400 hover:bg-red-500/20 hover:border-red-500"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -326,17 +355,17 @@ export const DiretoresPage = () => {
 
       <div className="lg:hidden space-y-4">
         {paginatedDirectors.map((director) => (
-          <div key={director.id} className="border rounded-lg p-4 space-y-3">
+          <div key={director.id} className="border border-[#2A2A2A] bg-[#1A1A1A] rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="font-semibold text-[#0A0A0A]">{director.name}</h3>
-                <p className="text-sm text-gray-600">{director.phone}</p>
+                <h3 className="font-semibold text-white">{director.name}</h3>
+                <p className="text-sm text-[#A0A0A0]">{director.phone}</p>
               </div>
               <span
                 className={`px-2 py-1 rounded-full text-xs font-semibold ${
                   director.is_active
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                    : 'bg-[#6B7280]/20 text-[#6B7280] border border-[#6B7280]/30'
                 }`}
               >
                 {director.is_active ? 'Ativo' : 'Inativo'}
@@ -355,13 +384,15 @@ export const DiretoresPage = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => openEditModal(director)}
+                  className="border-[#2A2A2A] text-white hover:bg-[#9C1E1E] hover:border-[#9C1E1E]"
                 >
                   <Edit className="w-4 h-4" />
                 </Button>
                 <Button
                   size="sm"
-                  variant="destructive"
+                  variant="outline"
                   onClick={() => openDeleteModal(director.id)}
+                  className="border-[#2A2A2A] text-red-400 hover:bg-red-500/20 hover:border-red-500"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -377,16 +408,18 @@ export const DiretoresPage = () => {
             variant="outline"
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
+            className="border-[#2A2A2A] text-white hover:bg-[#9C1E1E] hover:border-[#9C1E1E]"
           >
             Anterior
           </Button>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-[#A0A0A0]">
             Página {currentPage} de {totalPages}
           </span>
           <Button
             variant="outline"
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
+            className="border-[#2A2A2A] text-white hover:bg-[#9C1E1E] hover:border-[#9C1E1E]"
           >
             Próximo
           </Button>

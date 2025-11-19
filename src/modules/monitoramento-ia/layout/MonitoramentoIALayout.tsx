@@ -7,7 +7,7 @@ export const MonitoramentoIALayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex">
+    <div className="min-h-screen bg-[#0A0A0A] flex">
       {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
