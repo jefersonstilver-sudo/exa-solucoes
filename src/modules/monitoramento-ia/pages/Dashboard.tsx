@@ -26,16 +26,16 @@ export const MonitoramentoIADashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-card rounded-xl border border-border p-6 lg:p-8">
+      <div className="bg-[#1A1A1A] rounded-xl border border-[#2A2A2A] p-6 lg:p-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
+            <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
               IA & Monitoramento EXA
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-[#A0A0A0]">
               Monitoramento em tempo real dos painéis via AnyDesk
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-[#6B7280] mt-1">
               Última atualização: {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
             </p>
           </div>
@@ -73,25 +73,25 @@ export const MonitoramentoIADashboard = () => {
           title="Online"
           value={stats.online}
           icon={CheckCircle2}
-          iconColor="text-green-600"
+          iconColor="text-green-500"
         />
         <StatCard
           title="Offline"
           value={stats.offline}
           icon={AlertTriangle}
-          iconColor="text-red-600"
+          iconColor="text-red-500"
         />
         <StatCard
           title="Total de Painéis"
           value={stats.total}
           icon={Monitor}
-          iconColor="text-primary"
+          iconColor="text-[#9C1E1E]"
         />
         <StatCard
           title="Status do Sistema"
           value="Operacional"
           icon={Activity}
-          iconColor="text-green-600"
+          iconColor="text-green-500"
         />
       </div>
 
