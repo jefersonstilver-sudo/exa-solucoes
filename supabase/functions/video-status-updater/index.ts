@@ -133,7 +133,7 @@ serve(async (req) => {
         .from('pedido_videos')
         .select('video_id')
         .eq('pedido_id', pedidoId)
-        .eq('selected_for_display', true)
+        .eq('is_active', true)
         .not('video_id', 'is', null)
         .maybeSingle();
 
@@ -209,7 +209,7 @@ serve(async (req) => {
         .from('pedido_videos')
         .select('video_id')
         .eq('pedido_id', pedidoId)
-        .eq('selected_for_display', true)
+        .eq('is_active', true)
         .not('video_id', 'is', null)
         .maybeSingle();
 
