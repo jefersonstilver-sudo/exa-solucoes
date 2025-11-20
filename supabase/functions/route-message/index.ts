@@ -34,12 +34,11 @@ serve(async (req) => {
     
     console.log(`[ROUTE] Processing message: ${message.substring(0, 50)}...`);
 
-    // 1. Buscar todos os agentes ativos ordenados por prioridade
+    // 1. Buscar todos os agentes ativos
     const { data: agents, error: agentsError } = await supabase
       .from('agents')
       .select('*')
-      .eq('is_active', true)
-      .order('priority', { ascending: false });
+      .eq('is_active', true);
 
     if (agentsError) throw agentsError;
 
