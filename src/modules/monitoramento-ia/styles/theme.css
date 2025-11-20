@@ -40,6 +40,7 @@
   --text-secondary: #A0A0A0;
   --text-tertiary: #6B7280;
   --text-muted: rgba(255, 255, 255, 0.5);
+  --text-accent: #9C1E1E;
   
   /* Placeholders */
   --placeholder: #6B7280;
@@ -81,6 +82,7 @@
   --text-secondary: #4B5563;
   --text-tertiary: #6B7280;
   --text-muted: rgba(0, 0, 0, 0.5);
+  --text-accent: #9C1E1E;
   
   /* Placeholders */
   --placeholder: #9CA3AF;
@@ -122,6 +124,7 @@
 .text-module-secondary { color: var(--text-secondary); }
 .text-module-tertiary { color: var(--text-tertiary); }
 .text-module-muted { color: var(--text-muted); }
+.text-module-accent { color: var(--text-accent); }
 
 /* Placeholder */
 .placeholder\:text-module-muted::placeholder { color: var(--placeholder); }
