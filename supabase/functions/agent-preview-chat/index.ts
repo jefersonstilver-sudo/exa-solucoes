@@ -104,12 +104,22 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('[PREVIEW] OpenAI error:', errorText);
       
-      // Parse error para detectar rate limit
+      // Parse error para detectar tipos específicos
       try {
         const errorData = JSON.parse(errorText);
-        if (errorData.error?.code === 'rate_limit_exceeded') {
+        const errorCode = errorData.error?.code;
+        
+        if (errorCode === 'rate_limit_exceeded') {
           return new Response(JSON.stringify({ 
             response: '⏰ Aguarde um momento... Limite de requisições atingido. Tente novamente em alguns segundos.' 
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
+        if (errorCode === 'insufficient_quota') {
+          return new Response(JSON.stringify({ 
+            response: '⚠️ Créditos do OpenAI esgotados. Configure uma nova API key em Settings → Edge Functions → Secrets (OPENAI_API_KEY)' 
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
@@ -172,12 +182,22 @@ serve(async (req) => {
           const errorText = await finalResponse.text();
           console.error('[PREVIEW] OpenAI error on final response:', errorText);
           
-          // Parse error para detectar rate limit
+          // Parse error para detectar tipos específicos
           try {
             const errorData = JSON.parse(errorText);
-            if (errorData.error?.code === 'rate_limit_exceeded') {
+            const errorCode = errorData.error?.code;
+            
+            if (errorCode === 'rate_limit_exceeded') {
               return new Response(JSON.stringify({ 
                 response: '⏰ Aguarde um momento... Limite de requisições atingido. Tente novamente em alguns segundos.' 
+              }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              });
+            }
+            
+            if (errorCode === 'insufficient_quota') {
+              return new Response(JSON.stringify({ 
+                response: '⚠️ Créditos do OpenAI esgotados. Configure uma nova API key em Settings → Edge Functions → Secrets (OPENAI_API_KEY)' 
               }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
               });
