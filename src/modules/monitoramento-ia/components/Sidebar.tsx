@@ -6,12 +6,14 @@ import {
   Bell,
   MessageSquare,
   Terminal,
-  Sparkles,
   LayoutDashboard,
   ArrowLeft,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getThemeClasses } from '../hooks/useModuleTheme';
+
+const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -64,22 +66,29 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
   return (
     <aside
       className={cn(
-        `fixed top-0 left-0 h-full w-64 ${tc.bgCard} ${tc.textPrimary} transition-transform duration-300 ease-in-out z-40`,
+        `fixed top-0 left-0 h-full w-64 ${tc.bgCard} ${tc.textPrimary} transition-transform duration-300 ease-in-out z-40 ${tc.border} border-r`,
         'lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
       {/* Header */}
-      <div className={`p-6 border-b ${tc.border}`}>
+      <div className={`p-6 border-b ${tc.border} flex items-center justify-between`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#9C1E1E] rounded-lg flex items-center justify-center">
-            <Sparkles className="text-white" size={24} />
-          </div>
+          <img 
+            src={EXA_LOGO_URL} 
+            alt="EXA" 
+            className="h-8 w-auto"
+          />
           <div>
-            <h1 className={`text-lg font-bold ${tc.textPrimary}`}>IA & Monitoramento</h1>
-            <p className={`text-xs ${tc.textMuted}`}>EXA Platform</p>
+            <h1 className={`text-sm font-bold ${tc.textPrimary}`}>IA & Monitoramento</h1>
           </div>
         </div>
+        <button
+          onClick={onClose}
+          className={`lg:hidden p-1.5 ${tc.textPrimary} ${tc.bgHover} rounded-lg`}
+        >
+          <X size={18} />
+        </button>
       </div>
 
       {/* Navigation */}

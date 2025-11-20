@@ -1,8 +1,10 @@
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
-import { Menu, Sun, Moon, Sparkles } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { useState } from 'react';
 import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
+
+const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
 
 export const MonitoramentoIALayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -16,33 +18,22 @@ export const MonitoramentoIALayout = () => {
 
       {/* Main Content */}
       <main className="flex-1 lg:ml-64">
-        {/* Module Header com Logo + Toggle */}
+        {/* Module Header com Logo EXA + Toggle */}
         <div className={`sticky top-0 z-40 ${tc.bgCard} ${tc.border} border-b`}>
           <div className="px-4 lg:px-8 py-4 flex items-center justify-between">
-            {/* Logo EXA + Título do Módulo */}
+            {/* Logo EXA */}
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className={`lg:hidden p-2 ${tc.textPrimary} ${tc.bgHover} rounded-lg`}
-              >
-                <Menu size={20} />
-              </button>
-              
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#9C1E1E] rounded-lg flex items-center justify-center">
-                  <Sparkles className="text-white" size={22} />
-                </div>
-                <div className="hidden sm:block">
-                  <h1 className={`text-lg font-bold ${tc.textPrimary}`}>IA & Monitoramento</h1>
-                  <p className={`text-xs ${tc.textMuted}`}>EXA Platform</p>
-                </div>
-              </div>
+              <img 
+                src={EXA_LOGO_URL} 
+                alt="EXA" 
+                className="h-10 w-auto"
+              />
             </div>
 
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
-              className={`flex items-center gap-2 px-4 py-2 ${tc.bgInput} ${tc.border} border ${tc.textPrimary} rounded-lg ${tc.bgHover} transition-colors shadow-sm`}
+              className={`flex items-center gap-2 px-4 py-2 ${tc.bgInput} ${tc.border} border ${tc.textPrimary} rounded-lg ${tc.bgHover} transition-colors`}
               title={theme === 'dark' ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro'}
             >
               {theme === 'dark' ? (
