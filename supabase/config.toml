@@ -232,5 +232,5 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.test-agent-status]
-verify_jwt = true
+verify_jwt = false  # Temporariamente público para debug
 

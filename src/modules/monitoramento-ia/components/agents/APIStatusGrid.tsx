@@ -1,6 +1,8 @@
-import { CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AgentStatus } from '../../hooks/useAgentStatus';
+import { AgentDebugPanel } from './AgentDebugPanel';
 
 interface APIStatusGridProps {
   agents: Array<{
@@ -33,6 +35,8 @@ const getProviderName = (provider: string | null) => {
 };
 
 export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGridProps) => {
+  const [debugAgent, setDebugAgent] = useState<{ key: string; name: string } | null>(null);
+  
   const getStatusIcon = (status?: string) => {
     switch (status) {
       case 'online':
@@ -151,29 +155,47 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
                 </div>
               )}
 
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onTest(agent.key, agent.display_name)}
-                disabled={isLoading}
-                className="w-full"
-              >
-                {isLoading ? (
-                  <>
-                    <RefreshCw className="w-3 h-3 mr-2 animate-spin" />
-                    Testando...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-3 h-3 mr-2" />
-                    Testar Conexão
-                  </>
-                )}
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onTest(agent.key, agent.display_name)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="w-3 h-3 mr-2 animate-spin" />
+                      Testando...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3 h-3 mr-2" />
+                      Testar
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setDebugAgent({ key: agent.key, name: agent.display_name })}
+                >
+                  <Bug className="w-3 h-3 mr-2" />
+                  Debug
+                </Button>
+              </div>
             </div>
           );
         })}
       </div>
+
+      {debugAgent && (
+        <AgentDebugPanel
+          agentKey={debugAgent.key}
+          displayName={debugAgent.name}
+          open={!!debugAgent}
+          onClose={() => setDebugAgent(null)}
+        />
+      )}
     </div>
   );
 };
