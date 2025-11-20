@@ -165,48 +165,94 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
     fetchMessages(conversationId);
   };
 
-  // Realtime subscriptions
+  // Realtime subscriptions (OTIMIZADO)
   useEffect(() => {
     fetchConversations();
 
+    // Subscription para conversas - Atualiza lista incrementalmente
     const conversationsChannel = supabase
-      .channel('conversations-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'conversations'
-        },
-        () => {
-          fetchConversations();
-        }
-      )
-      .subscribe();
-
-    const messagesChannel = supabase
-      .channel('messages-changes')
+      .channel('conversations-realtime')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages',
-          filter: selectedConversationId ? `conversation_id=eq.${selectedConversationId}` : undefined
+          table: 'conversations'
         },
-        () => {
-          if (selectedConversationId) {
-            fetchMessages(selectedConversationId);
-          }
+        (payload) => {
+          const newConv = payload.new as Conversation;
+          setConversations(prev => [newConv, ...prev]);
+          setMetrics(prev => ({ ...prev, total: prev.total + 1 }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversations'
+        },
+        (payload) => {
+          const updatedConv = payload.new as Conversation;
+          setConversations(prev => 
+            prev.map(c => c.id === updatedConv.id ? updatedConv : c)
+              .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
+          );
+          
+          // Recalcular métricas
+          setConversations(convs => {
+            const newMetrics: CRMMetrics = {
+              total: convs.length,
+              unread: convs.filter(c => c.awaiting_response).length,
+              critical: convs.filter(c => c.is_critical).length,
+              hotLeads: convs.filter(c => c.is_hot_lead).length,
+              awaiting: convs.filter(c => c.awaiting_response).length,
+              avgResponseTime: 0
+            };
+            setMetrics(newMetrics);
+            return convs;
+          });
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(conversationsChannel);
+    };
+  }, [filters]);
+
+  // Subscription separada para mensagens da conversa selecionada
+  useEffect(() => {
+    if (!selectedConversationId) return;
+
+    const messagesChannel = supabase
+      .channel(`messages-${selectedConversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedConversationId}`
+        },
+        (payload) => {
+          const newMessage = payload.new as Message;
+          setMessages(prev => [...prev, newMessage]);
+          
+          // Atualizar última mensagem na lista de conversas
+          setConversations(prev => prev.map(conv => 
+            conv.id === newMessage.conversation_id 
+              ? { ...conv, last_message_at: newMessage.created_at }
+              : conv
+          ));
+        }
+      )
+      .subscribe();
+
+    return () => {
       supabase.removeChannel(messagesChannel);
     };
-  }, [filters, selectedConversationId]);
+  }, [selectedConversationId]);
 
   return {
     conversations,

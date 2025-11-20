@@ -21,7 +21,9 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
   const [showNotes, setShowNotes] = useState(false);
   const [showTags, setShowTags] = useState(false);
   const [conversation, setConversation] = useState<any>(null);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingChannelRef = useRef<any>(null);
 
   useEffect(() => {
     if (conversationId) {
@@ -43,9 +45,30 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
     }
   };
 
+  // Subscription para typing indicator
+  useEffect(() => {
+    if (!conversationId) return;
+
+    typingChannelRef.current = supabase
+      .channel(`typing:${conversationId}`)
+      .on('presence', { event: 'sync' }, () => {
+        const state = typingChannelRef.current?.presenceState();
+        const presence = Object.values(state || {}).flat();
+        const someoneTyping = presence.some((p: any) => p.typing === true);
+        setIsTyping(someoneTyping);
+      })
+      .subscribe();
+
+    return () => {
+      if (typingChannelRef.current) {
+        typingChannelRef.current.unsubscribe();
+      }
+    };
+  }, [conversationId]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isTyping]);
 
   if (!conversationId) {
     return (
@@ -150,6 +173,21 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
               </div>
             ))
           )}
+          
+          {/* Typing Indicator */}
+          {isTyping && (
+            <div className="flex items-center gap-2 px-4 py-2">
+              <div className="bg-muted rounded-lg px-4 py-2 flex items-center gap-2">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.1s]" />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                </div>
+                <span className="text-sm text-muted-foreground">Digitando...</span>
+              </div>
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
 
@@ -157,7 +195,8 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
         {conversation && (
           <MessageComposer 
             phoneNumber={conversation.contact_phone} 
-            agentKey={conversation.agent_key} 
+            agentKey={conversation.agent_key}
+            conversationId={conversationId!}
             onMessageSent={onRefresh} 
           />
         )}

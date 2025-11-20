@@ -18,6 +18,7 @@ export interface Agent {
   phoneNumber: string | null;
   whatsappProvider?: 'manychat' | 'zapi' | 'none';
   whatsappNumber?: string | null;
+  aiAutoResponse?: boolean;
   zapiConfig?: {
     instance_id: string;
     token: string;

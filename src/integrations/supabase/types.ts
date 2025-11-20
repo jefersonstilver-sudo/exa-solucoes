@@ -193,6 +193,7 @@ export type Database = {
       }
       agents: {
         Row: {
+          ai_auto_response: boolean | null
           created_at: string
           description: string
           display_name: string
@@ -211,6 +212,7 @@ export type Database = {
           zapi_config: Json | null
         }
         Insert: {
+          ai_auto_response?: boolean | null
           created_at?: string
           description: string
           display_name: string
@@ -229,6 +231,7 @@ export type Database = {
           zapi_config?: Json | null
         }
         Update: {
+          ai_auto_response?: boolean | null
           created_at?: string
           description?: string
           display_name?: string
