@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, CheckCircle2, XCircle, Clock, Zap, Database, MessageSquare, Phone, Brain } from 'lucide-react';
+import { RefreshCw, CheckCircle2, XCircle, Clock, Zap, Database, MessageSquare, Brain, FileText, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { APIDetailsModal } from '@/modules/monitoramento-ia/components/apis/APIDetailsModal';
+import { APIConfigModal } from '@/modules/monitoramento-ia/components/apis/APIConfigModal';
 
 interface APIStatus {
   name: string;
@@ -71,6 +73,8 @@ export const MonitorAPIs = () => {
   ]);
 
   const [testing, setTesting] = useState(false);
+  const [detailsModal, setDetailsModal] = useState<{ open: boolean; api: APIStatus | null }>({ open: false, api: null });
+  const [configModal, setConfigModal] = useState<{ open: boolean; api: APIStatus | null }>({ open: false, api: null });
 
   const testAPI = async (apiName: string) => {
     const api = apis.find(a => a.name === apiName);
@@ -293,14 +297,35 @@ export const MonitorAPIs = () => {
                   </div>
                 </div>
 
-                <Button 
-                  onClick={() => testAPI(api.name)}
-                  variant="outline"
-                  className="w-full border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E] hover:text-white"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Testar Agora
-                </Button>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button 
+                    onClick={() => setDetailsModal({ open: true, api })}
+                    variant="outline"
+                    className="border-module-accent text-module-accent hover:bg-module-accent hover:text-white"
+                    size="sm"
+                  >
+                    <FileText className="w-4 h-4 mr-1" />
+                    Detalhes
+                  </Button>
+                  <Button 
+                    onClick={() => setConfigModal({ open: true, api })}
+                    variant="outline"
+                    className="border-module-accent text-module-accent hover:bg-module-accent hover:text-white"
+                    size="sm"
+                  >
+                    <Settings className="w-4 h-4 mr-1" />
+                    Config
+                  </Button>
+                  <Button 
+                    onClick={() => testAPI(api.name)}
+                    variant="outline"
+                    className="border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E] hover:text-white"
+                    size="sm"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-1" />
+                    Testar
+                  </Button>
+                </div>
               </div>
             </Card>
           );
@@ -336,6 +361,27 @@ export const MonitorAPIs = () => {
             ))}
         </div>
       </Card>
+
+      {/* Modals */}
+      {detailsModal.api && (
+        <APIDetailsModal
+          open={detailsModal.open}
+          onOpenChange={(open) => setDetailsModal({ open, api: null })}
+          apiName={detailsModal.api.name}
+          functionName={detailsModal.api.endpoint.replace('/functions/v1/', '')}
+          onTest={() => testAPI(detailsModal.api!.name)}
+          testing={testing}
+        />
+      )}
+
+      {configModal.api && (
+        <APIConfigModal
+          open={configModal.open}
+          onOpenChange={(open) => setConfigModal({ open, api: null })}
+          apiName={configModal.api.name}
+          functionName={configModal.api.endpoint.replace('/functions/v1/', '')}
+        />
+      )}
     </div>
   );
 };

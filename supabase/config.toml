@@ -231,3 +231,6 @@ verify_jwt = false
 [functions.zapi-send-message]
 verify_jwt = true
 
+[functions.test-agent-status]
+verify_jwt = true
+
