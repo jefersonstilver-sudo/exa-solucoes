@@ -25,6 +25,27 @@
     min-height: 100vh;
     background-color: hsl(var(--background));
   }
+
+  /* Select/Dropdown Styles */
+  select {
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    position: relative;
+    z-index: 10;
+  }
+
+  select option {
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    padding: 0.5rem;
+  }
+
+  /* Ensure dropdowns appear above other elements */
+  [role="listbox"],
+  [role="menu"],
+  [data-radix-popper-content-wrapper] {
+    z-index: 50 !important;
+  }
 }
 
 /* Optimized custom properties - Removed unused variables */
