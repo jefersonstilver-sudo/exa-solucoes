@@ -82,18 +82,18 @@ export const AlertasPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className={`${tc.bgCard} rounded-xl ${tc.border} border p-6`}>
+      <div className="bg-module-card rounded-xl border-module border p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className={`text-3xl lg:text-4xl font-bold ${tc.textPrimary} mb-2`}>
+            <h1 className="text-3xl lg:text-4xl font-bold text-module-primary mb-2">
               Alertas de Painéis
             </h1>
-            <p className={tc.textSecondary}>
+            <p className="text-module-secondary">
               Monitoramento técnico em tempo real da rede EXA.
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <div className={`flex items-center gap-2 text-sm ${tc.textTertiary}`}>
+            <div className="flex items-center gap-2 text-sm text-module-tertiary">
               <Clock className="w-4 h-4" />
               <span>
                 Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
@@ -104,7 +104,7 @@ export const AlertasPage = () => {
               disabled={loading}
               variant="outline"
               size="sm"
-              className={`${tc.bgAccent} ${tc.bgAccentHover} text-white border-0`}
+              className="bg-module-accent hover:bg-module-accent-hover text-white border-0"
             >
               <RefreshCw
                 className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`}
@@ -128,13 +128,13 @@ export const AlertasPage = () => {
 
       {/* Loading State */}
       {loading && alerts.length === 0 ? (
-        <div className={`text-center py-12 ${tc.bgCard} rounded-xl ${tc.border} border`}>
+        <div className="text-center py-12 bg-module-card rounded-xl border-module border">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#9C1E1E]"></div>
-          <p className={`mt-4 ${tc.textSecondary}`}>Carregando alertas...</p>
+          <p className="mt-4 text-module-secondary">Carregando alertas...</p>
         </div>
       ) : alerts.length === 0 ? (
-        <div className={`text-center py-12 ${tc.bgCard} rounded-xl ${tc.border} border`}>
-          <p className={tc.textSecondary}>Nenhum alerta encontrado</p>
+        <div className="text-center py-12 bg-module-card rounded-xl border-module border">
+          <p className="text-module-secondary">Nenhum alerta encontrado</p>
         </div>
       ) : (
         <>

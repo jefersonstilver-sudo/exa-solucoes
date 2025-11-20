@@ -18,15 +18,15 @@ export const AlertsFilters = ({
   onClearFilters 
 }: AlertsFiltersProps) => {
   return (
-    <div className={`${tc.bgCard} rounded-lg p-4 mb-6 space-y-4 border ${tc.border}`}>
+    <div className="bg-module-card rounded-xl p-4 mb-6 space-y-4 border border-module">
       {/* Search */}
       <div className="relative">
-        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${tc.textMuted}`} />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-module-muted" />
         <Input
           placeholder="Buscar por painel, condomínio ou tipo..."
           value={filters.search || ''}
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-          className={`pl-10 ${tc.bgInput} ${tc.border} border ${tc.textPrimary} ${tc.placeholder}`}
+          className="pl-10 bg-module-input border-module border text-module-primary placeholder-module-muted"
         />
       </div>
 
@@ -42,10 +42,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className={`${tc.bgInput} ${tc.border} border ${tc.textPrimary}`}>
+          <SelectTrigger className="bg-module-input border-module border text-module-primary">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
-          <SelectContent className={`${tc.bgCard} ${tc.border} border z-50`}>
+          <SelectContent className="bg-module-card border-module border z-50">
             <SelectItem value="all">Todos os status</SelectItem>
             <SelectItem value="open">Abertos</SelectItem>
             <SelectItem value="scheduled">Agendados</SelectItem>
@@ -63,10 +63,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className={`${tc.bgInput} ${tc.border} border ${tc.textPrimary}`}>
+          <SelectTrigger className="bg-module-input border-module border text-module-primary">
             <SelectValue placeholder="Severidade" />
           </SelectTrigger>
-          <SelectContent className={`${tc.bgCard} ${tc.border} border z-50`}>
+          <SelectContent className="bg-module-card border-module border z-50">
             <SelectItem value="all">Todas as severidades</SelectItem>
             <SelectItem value="high">Alta</SelectItem>
             <SelectItem value="medium">Média</SelectItem>
@@ -84,10 +84,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className={`${tc.bgInput} ${tc.border} border ${tc.textPrimary}`}>
+          <SelectTrigger className="bg-module-input border-module border text-module-primary">
             <SelectValue placeholder="Condomínio" />
           </SelectTrigger>
-          <SelectContent className={`${tc.bgCard} ${tc.border} border z-50`}>
+          <SelectContent className="bg-module-card border-module border z-50">
             <SelectItem value="all">Todos os condomínios</SelectItem>
             {condominios.map((cond) => (
               <SelectItem key={cond} value={cond}>{cond}</SelectItem>
@@ -105,10 +105,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className={`${tc.bgInput} ${tc.border} border ${tc.textPrimary}`}>
+          <SelectTrigger className="bg-module-input border-module border text-module-primary">
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
-          <SelectContent className={`${tc.bgCard} ${tc.border} border z-50`}>
+          <SelectContent className="bg-module-card border-module border z-50">
             <SelectItem value="severity">Severidade</SelectItem>
             <SelectItem value="opened_at">Tempo aberto</SelectItem>
             <SelectItem value="status">Status</SelectItem>
@@ -122,7 +122,7 @@ export const AlertsFilters = ({
         variant="outline"
         size="sm"
         onClick={onClearFilters}
-        className={`w-full md:w-auto ${tc.bgInput} ${tc.border} border ${tc.textPrimary} ${tc.bgAccentHover}`}
+        className="w-full md:w-auto bg-module-input border-module border text-module-primary hover:bg-module-accent-hover"
       >
         <X className="w-4 h-4 mr-2" />
         Limpar filtros

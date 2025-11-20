@@ -17,11 +17,11 @@ export const FiltersBar = ({
   onNewPanel,
 }: FiltersBarProps) => {
   return (
-    <div className={`${tc.bgCard} ${tc.border} border rounded-xl shadow-sm p-4 lg:p-6 mb-6`}>
+    <div className="bg-module-card border-module border rounded-xl shadow-sm p-4 lg:p-6 mb-6">
       {/* Linha 1: Busca e botão novo */}
       <div className="flex flex-col lg:flex-row gap-4 mb-4">
         <div className="flex-1 relative">
-          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${tc.textTertiary}`} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-module-tertiary" />
           <input
             type="text"
             placeholder="Buscar por nome, prédio ou AnyDesk ID..."
@@ -29,12 +29,12 @@ export const FiltersBar = ({
             onChange={(e) =>
               onFiltersChange({ ...filters, search: e.target.value })
             }
-            className={`w-full pl-10 pr-4 py-2.5 ${tc.bgInput} ${tc.border} border rounded-lg ${tc.textPrimary} ${tc.placeholder} focus:outline-none focus:ring-2 ${tc.focusRing} focus:border-transparent`}
+            className="w-full pl-10 pr-4 py-2.5 bg-module-input border-module border rounded-lg text-module-primary placeholder-module-muted focus:outline-none focus:ring-2 focus:ring-module-accent focus:border-transparent"
           />
         </div>
         <button
           onClick={onNewPanel}
-          className={`${tc.bgAccent} ${tc.bgAccentHover} text-white font-semibold px-6 py-2.5 rounded-lg transition-colors whitespace-nowrap`}
+          className="bg-module-accent hover:bg-module-accent-hover text-white font-semibold px-6 py-2.5 rounded-lg transition-colors whitespace-nowrap"
         >
           + Novo Painel
         </button>
@@ -44,14 +44,14 @@ export const FiltersBar = ({
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Filtro de Status */}
         <div className="flex items-center gap-2">
-          <Filter className={`w-4 h-4 ${tc.textSecondary}`} />
+          <Filter className="w-4 h-4 text-module-secondary" />
           <select
             value={filters.status?.[0] || ''}
             onChange={(e) => {
               const value = e.target.value;
               onFiltersChange({ ...filters, status: value ? [value] : [] });
             }}
-            className={`${tc.bgInput} ${tc.border} border rounded-lg px-3 py-2 text-sm ${tc.textPrimary} focus:outline-none focus:ring-2 ${tc.focusRing}`}
+            className="bg-module-input border-module border rounded-lg px-3 py-2 text-sm text-module-primary focus:outline-none focus:ring-2 focus:ring-module-accent"
           >
             <option value="">Todos os status</option>
             <option value="online">Online</option>
@@ -68,7 +68,7 @@ export const FiltersBar = ({
           onChange={(e) =>
             onFiltersChange({ ...filters, condominio: e.target.value })
           }
-          className={`${tc.bgInput} ${tc.border} border rounded-lg px-3 py-2 text-sm ${tc.textPrimary} ${tc.placeholder} focus:outline-none focus:ring-2 ${tc.focusRing}`}
+          className="bg-module-input border-module border rounded-lg px-3 py-2 text-sm text-module-primary placeholder-module-muted focus:outline-none focus:ring-2 focus:ring-module-accent"
         />
 
         {/* Filtro de Torre */}
@@ -79,12 +79,12 @@ export const FiltersBar = ({
           onChange={(e) =>
             onFiltersChange({ ...filters, torre: e.target.value })
           }
-          className={`${tc.bgInput} ${tc.border} border rounded-lg px-3 py-2 text-sm ${tc.textPrimary} ${tc.placeholder} focus:outline-none focus:ring-2 ${tc.focusRing}`}
+          className="bg-module-input border-module border rounded-lg px-3 py-2 text-sm text-module-primary placeholder-module-muted focus:outline-none focus:ring-2 focus:ring-module-accent"
         />
 
         {/* Ordenação */}
         <div className="flex items-center gap-2">
-          <ArrowUpDown className={`w-4 h-4 ${tc.textSecondary}`} />
+          <ArrowUpDown className="w-4 h-4 text-module-secondary" />
           <select
             value={`${sort.field}-${sort.order}`}
             onChange={(e) => {
@@ -94,7 +94,7 @@ export const FiltersBar = ({
                 order: order as DevicesSort['order'],
               });
             }}
-            className={`${tc.bgInput} ${tc.border} border rounded-lg px-3 py-2 text-sm ${tc.textPrimary} focus:outline-none focus:ring-2 ${tc.focusRing}`}
+            className="bg-module-input border-module border rounded-lg px-3 py-2 text-sm text-module-primary focus:outline-none focus:ring-2 focus:ring-module-accent"
           >
             <option value="name-asc">Nome (A-Z)</option>
             <option value="name-desc">Nome (Z-A)</option>

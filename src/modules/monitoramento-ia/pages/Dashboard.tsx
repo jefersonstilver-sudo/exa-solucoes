@@ -130,9 +130,9 @@ export const MonitoramentoIADashboard = () => {
       )}
 
       {devices.length === 0 && !loading && (
-        <div className={`${tc.bgCard} rounded-xl ${tc.border} border p-12 text-center`}>
-          <Monitor className={`w-12 h-12 mx-auto mb-4 ${tc.textSecondary}`} />
-          <p className={tc.textSecondary}>Nenhum painel cadastrado</p>
+        <div className="bg-module-card rounded-xl border-module border p-12 text-center">
+          <Monitor className="w-12 h-12 mx-auto mb-4 text-module-secondary" />
+          <p className="text-module-secondary">Nenhum painel cadastrado</p>
         </div>
       )}
 
