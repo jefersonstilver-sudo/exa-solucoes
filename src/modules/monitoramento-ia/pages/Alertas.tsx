@@ -15,6 +15,7 @@ import {
   type AlertStats,
   type AlertFilters,
 } from '../utils/alerts';
+import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 export const AlertasPage = () => {
   const [alerts, setAlerts] = useState<DeviceAlert[]>([]);
@@ -31,6 +32,8 @@ export const AlertasPage = () => {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedAlert, setSelectedAlert] = useState<DeviceAlert | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { theme } = useModuleTheme();
+  const tc = getThemeClasses(theme);
 
   const loadData = async () => {
     try {
@@ -80,20 +83,20 @@ export const AlertasPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white p-4 lg:p-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+      <div className={`${tc.bgCard} rounded-xl ${tc.border} border p-6`}>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2">
+            <h1 className={`text-3xl lg:text-4xl font-bold ${tc.textPrimary} mb-2`}>
               Alertas de Painéis
             </h1>
-            <p className="text-white/70">
+            <p className={tc.textSecondary}>
               Monitoramento técnico em tempo real da rede EXA.
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-white/50">
+            <div className={`flex items-center gap-2 text-sm ${tc.textTertiary}`}>
               <Clock className="w-4 h-4" />
               <span>
                 Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
@@ -102,9 +105,13 @@ export const AlertasPage = () => {
             <Button
               onClick={handleRefresh}
               disabled={loading}
-              className="bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white"
+              variant="outline"
+              size="sm"
+              className={`${tc.bgAccent} ${tc.bgAccentHover} text-white border-0`}
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+              />
               Atualizar
             </Button>
           </div>
@@ -117,51 +124,50 @@ export const AlertasPage = () => {
       {/* Filters */}
       <AlertsFilters
         filters={filters}
-        condominios={condominios}
         onFiltersChange={setFilters}
         onClearFilters={handleClearFilters}
+        condominios={condominios}
       />
 
       {/* Loading State */}
-      {loading && (
-        <div className="text-center py-12">
-          <RefreshCw className="w-8 h-8 animate-spin text-[#E30613] mx-auto mb-4" />
-          <p className="text-white/70">Carregando alertas...</p>
+      {loading && alerts.length === 0 ? (
+        <div className={`text-center py-12 ${tc.bgCard} rounded-xl ${tc.border} border`}>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#9C1E1E]"></div>
+          <p className={`mt-4 ${tc.textSecondary}`}>Carregando alertas...</p>
         </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && alerts.length === 0 && (
-        <div className="bg-[#1A1A1A] rounded-lg p-12 text-center">
-          <p className="text-white/70 text-lg">Nenhum alerta encontrado.</p>
+      ) : alerts.length === 0 ? (
+        <div className={`text-center py-12 ${tc.bgCard} rounded-xl ${tc.border} border`}>
+          <p className={tc.textSecondary}>Nenhum alerta encontrado</p>
         </div>
-      )}
+      ) : (
+        <>
+          {/* Mobile: Cards */}
+          <div className="block md:hidden space-y-4">
+            {alerts.map((alert) => (
+              <AlertCard
+                key={alert.id}
+                alert={alert}
+                onClick={() => handleViewDetails(alert)}
+              />
+            ))}
+          </div>
 
-      {/* Cards View (Mobile) */}
-      {!loading && alerts.length > 0 && (
-        <div className="md:hidden grid grid-cols-1 gap-4 mb-6">
-          {alerts.map((alert) => (
-            <AlertCard
-              key={alert.id}
-              alert={alert}
-              onClick={() => handleViewDetails(alert)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Table View (Desktop) */}
-      {!loading && alerts.length > 0 && (
-        <AlertsTable alerts={alerts} onViewDetails={handleViewDetails} />
+          {/* Desktop: Table */}
+          <div className="hidden md:block">
+            <AlertsTable alerts={alerts} onViewDetails={handleViewDetails} />
+          </div>
+        </>
       )}
 
       {/* Detail Modal */}
-      <AlertDetailModal
-        alert={selectedAlert}
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onUpdate={handleAlertUpdate}
-      />
+      {isModalOpen && selectedAlert && (
+        <AlertDetailModal
+          isOpen={isModalOpen}
+          alert={selectedAlert}
+          onClose={handleModalClose}
+          onUpdate={handleAlertUpdate}
+        />
+      )}
     </div>
   );
 };
