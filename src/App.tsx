@@ -62,6 +62,7 @@ import { DiretoresPage } from './modules/monitoramento-ia/pages/Diretores';
 import { PaineisPage } from './modules/monitoramento-ia/pages/Paineis';
 import { AlertasPage } from './modules/monitoramento-ia/pages/Alertas';
 import { ConversasPage } from './modules/monitoramento-ia/pages/Conversas';
+import { ConversasCRM } from './modules/monitoramento-ia/pages/ConversasCRM';
 import { ConsoleIAPage } from './modules/monitoramento-ia/pages/ConsoleIA';
 import { Agentes } from './modules/monitoramento-ia/pages/Agentes';
 
@@ -450,6 +451,7 @@ const AppContent = () => {
             <Route path="paineis" element={<PaineisPage />} />
             <Route path="alertas" element={<AlertasPage />} />
             <Route path="conversas" element={<ConversasPage />} />
+            <Route path="crm" element={<ConversasCRM />} />
             <Route path="console-ia" element={<ConsoleIAPage />} />
             
             {/* Painel Unificado de Agentes */}
