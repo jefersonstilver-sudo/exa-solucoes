@@ -130,12 +130,42 @@ serve(async (req) => {
       }
     }
 
+    // 6. Se a mensagem veio de um agente Z-API, processar com IA e retornar resposta
+    let aiResponse = null;
+    if (metadata?.source === 'zapi' && selectedAgent.whatsapp_provider === 'zapi') {
+      console.log('[ROUTE] Processing Z-API message with AI...');
+      
+      try {
+        const { data: aiResult, error: aiError } = await supabase.functions.invoke('ia-console', {
+          body: {
+            agentKey: selectedAgent.key,
+            message: message,
+            context: {
+              conversationId,
+              source: 'zapi',
+              phone: metadata.phone
+            }
+          }
+        });
+
+        if (aiError) {
+          console.error('[ROUTE] AI error:', aiError);
+        } else {
+          aiResponse = aiResult?.response;
+          console.log('[ROUTE] AI response generated:', aiResponse?.substring(0, 100));
+        }
+      } catch (error) {
+        console.error('[ROUTE] Failed to get AI response:', error);
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true,
         routed_to: selectedAgent.key,
         rule_used: matchedRule.name,
-        actions_executed: matchedRule.actions
+        actions_executed: matchedRule.actions,
+        response: aiResponse // Incluir resposta da IA se disponível
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
@@ -185,29 +215,64 @@ async function notifyDirectors(supabase: any, agent: any, message: string) {
 }
 
 async function notifyWhatsApp(supabase: any, agent: any, message: string, metadata: any) {
-  const whatsappKey = Deno.env.get('WHATSAPP_API_KEY');
-  const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
+  console.log(`[ACTION] Sending WhatsApp notification via ${agent.whatsapp_provider}...`);
   
-  if (!whatsappKey || !phoneNumberId) {
-    console.log('[PLACEHOLDER] WhatsApp notification pending - missing credentials');
-    console.log('[PLACEHOLDER] Required: WHATSAPP_API_KEY, WHATSAPP_PHONE_NUMBER_ID');
-    
-    // Criar notificação pendente no DB
-    await supabase.from('agent_logs').insert({
-      agent_key: agent.key,
-      event_type: 'whatsapp_notification_pending',
-      metadata: {
-        message: message.substring(0, 200),
-        target_number: agent.whatsapp_number,
-        reason: 'Missing WHATSAPP_API_KEY or WHATSAPP_PHONE_NUMBER_ID',
-        status: 'pending',
-        metadata: metadata
-      }
-    });
+  // Determinar provedor do agente
+  const provider = agent.whatsapp_provider;
+  const targetPhone = metadata?.phone || agent.whatsapp_number;
+
+  if (!targetPhone) {
+    console.error('[NOTIFY] No target phone number found');
     return;
   }
-  
-  // Se credenciais existirem, fazer chamada real
-  console.log(`[ACTION] Sending WhatsApp to ${agent.whatsapp_number}`);
-  // TODO: Implementar chamada real quando credenciais estiverem configuradas
+
+  try {
+    if (provider === 'zapi') {
+      // Enviar via Z-API
+      console.log('[NOTIFY] Sending via Z-API to:', targetPhone);
+      
+      await supabase.functions.invoke('zapi-send-message', {
+        body: {
+          agentKey: agent.key,
+          phone: targetPhone,
+          message: message
+        }
+      });
+
+      console.log('[NOTIFY] Z-API notification sent successfully');
+
+    } else if (provider === 'manychat') {
+      // Enviar via ManyChat (Eduardo)
+      console.log('[NOTIFY] Sending via ManyChat - PLACEHOLDER');
+      
+      // PLACEHOLDER: Implementar integração ManyChat quando necessário
+      await supabase.from('agent_logs').insert({
+        agent_key: agent.key,
+        event_type: 'manychat_notification_pending',
+        metadata: {
+          message: message.substring(0, 200),
+          target_number: targetPhone,
+          reason: 'ManyChat API not yet configured',
+          status: 'pending'
+        }
+      });
+
+    } else {
+      console.log('[NOTIFY] No valid WhatsApp provider configured for agent:', agent.key);
+    }
+
+  } catch (error) {
+    console.error('[NOTIFY] Failed to send WhatsApp notification:', error);
+    
+    await supabase.from('agent_logs').insert({
+      agent_key: agent.key,
+      event_type: 'whatsapp_notification_failed',
+      metadata: {
+        message: message.substring(0, 200),
+        target_number: targetPhone,
+        provider,
+        error: error.message
+      }
+    });
+  }
 }

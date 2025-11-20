@@ -8,6 +8,7 @@ export type IntegrationProvider = 'none' | 'manychat' | 'string';
 
 export interface Agent {
   id: string;
+  key: string;
   name: string;
   type: AgentType;
   avatar: string;
@@ -15,6 +16,15 @@ export interface Agent {
   status: 'active' | 'inactive';
   provider: IntegrationProvider;
   phoneNumber: string | null;
+  whatsappProvider?: 'manychat' | 'zapi' | 'none';
+  whatsappNumber?: string | null;
+  zapiConfig?: {
+    instance_id: string;
+    token: string;
+    api_url: string;
+    webhook_url: string;
+    status: 'connected' | 'pending_setup';
+  } | null;
   createdAt: string;
   updatedAt: string;
   config: {
