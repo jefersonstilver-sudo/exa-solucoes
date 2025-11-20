@@ -102,7 +102,7 @@ export const AlertasPage = () => {
             <Button
               onClick={handleRefresh}
               disabled={loading}
-              className="bg-[#E30613] hover:bg-[#E30613]/80 text-white"
+              className="bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
