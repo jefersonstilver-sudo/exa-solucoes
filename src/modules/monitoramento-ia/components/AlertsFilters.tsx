@@ -26,7 +26,7 @@ export const AlertsFilters = ({
           placeholder="Buscar por painel, condomínio ou tipo..."
           value={filters.search || ''}
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-          className="pl-10 bg-[#0A0A0A] border-[#2C2C2C] text-white placeholder:text-white/50"
+          className="pl-10 bg-[#0A0A0A] border-[#2A2A2A] text-white placeholder:text-white/50"
         />
       </div>
 
@@ -42,10 +42,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className="bg-[#0A0A0A] border-[#2C2C2C] text-white">
+          <SelectTrigger className="bg-[#0A0A0A] border-[#2A2A2A] text-white">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
-          <SelectContent className="bg-[#1A1A1A] border-[#2C2C2C]">
+          <SelectContent className="bg-[#1A1A1A] border-[#2A2A2A]">
             <SelectItem value="all">Todos os status</SelectItem>
             <SelectItem value="open">Abertos</SelectItem>
             <SelectItem value="scheduled">Agendados</SelectItem>
@@ -63,10 +63,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className="bg-[#0A0A0A] border-[#2C2C2C] text-white">
+          <SelectTrigger className="bg-[#0A0A0A] border-[#2A2A2A] text-white">
             <SelectValue placeholder="Severidade" />
           </SelectTrigger>
-          <SelectContent className="bg-[#1A1A1A] border-[#2C2C2C]">
+          <SelectContent className="bg-[#1A1A1A] border-[#2A2A2A]">
             <SelectItem value="all">Todas as severidades</SelectItem>
             <SelectItem value="high">Alta</SelectItem>
             <SelectItem value="medium">Média</SelectItem>
@@ -84,10 +84,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className="bg-[#0A0A0A] border-[#2C2C2C] text-white">
+          <SelectTrigger className="bg-[#0A0A0A] border-[#2A2A2A] text-white">
             <SelectValue placeholder="Condomínio" />
           </SelectTrigger>
-          <SelectContent className="bg-[#1A1A1A] border-[#2C2C2C]">
+          <SelectContent className="bg-[#1A1A1A] border-[#2A2A2A]">
             <SelectItem value="all">Todos os condomínios</SelectItem>
             {condominios.map((cond) => (
               <SelectItem key={cond} value={cond}>{cond}</SelectItem>
@@ -105,10 +105,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className="bg-[#0A0A0A] border-[#2C2C2C] text-white">
+          <SelectTrigger className="bg-[#0A0A0A] border-[#2A2A2A] text-white">
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
-          <SelectContent className="bg-[#1A1A1A] border-[#2C2C2C]">
+          <SelectContent className="bg-[#1A1A1A] border-[#2A2A2A]">
             <SelectItem value="severity">Severidade</SelectItem>
             <SelectItem value="opened_at">Tempo aberto</SelectItem>
             <SelectItem value="status">Status</SelectItem>
