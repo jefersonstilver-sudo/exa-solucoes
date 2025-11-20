@@ -38,6 +38,7 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState(agent || {} as Agent);
   const [showPreview, setShowPreview] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
 
   if (!agent) {
     return (
@@ -57,6 +58,9 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
         whatsapp_number: config.whatsapp_number,
         is_active: config.is_active
       });
+      // Força reload do preview com nova configuração
+      setPreviewKey(prev => prev + 1);
+      toast.success('Configurações salvas! Preview atualizado.');
     } finally {
       setLoading(false);
     }
@@ -107,6 +111,7 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
       </div>
 
       <AgentChatPreview
+        key={previewKey}
         agent={agent}
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
