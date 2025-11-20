@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Bug } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Bug, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AgentStatus } from '../../hooks/useAgentStatus';
 import { AgentDebugPanel } from './AgentDebugPanel';
+import { ZAPICredentialsModal } from './ZAPICredentialsModal';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface APIStatusGridProps {
   agents: Array<{
@@ -36,6 +39,8 @@ const getProviderName = (provider: string | null) => {
 
 export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGridProps) => {
   const [debugAgent, setDebugAgent] = useState<{ key: string; name: string } | null>(null);
+  const [configAgent, setConfigAgent] = useState<{ key: string; config: any } | null>(null);
+  const [loadingConfig, setLoadingConfig] = useState(false);
   
   const getStatusIcon = (status?: string) => {
     switch (status) {
@@ -67,6 +72,49 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
         return 'text-red-500';
       default:
         return 'text-yellow-500';
+    }
+  };
+
+  const handleConfigureAgent = async (agentKey: string) => {
+    setLoadingConfig(true);
+    try {
+      const { data, error } = await supabase
+        .from('agents')
+        .select('zapi_config')
+        .eq('key', agentKey)
+        .single();
+
+      if (error) throw error;
+
+      setConfigAgent({ key: agentKey, config: data?.zapi_config || {} });
+    } catch (error) {
+      console.error('Erro ao carregar configuração:', error);
+      toast.error('Erro ao carregar configuração do agente');
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
+
+  const handleSaveConfig = async (agentKey: string, config: any) => {
+    try {
+      const { error } = await supabase
+        .from('agents')
+        .update({ zapi_config: config })
+        .eq('key', agentKey);
+
+      if (error) throw error;
+
+      toast.success('Configuração salva com sucesso');
+      setConfigAgent(null);
+      
+      // Re-testar o agente após salvar
+      const agent = agents.find(a => a.key === agentKey);
+      if (agent) {
+        setTimeout(() => onTest(agentKey, agent.display_name), 500);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar configuração:', error);
+      toast.error('Erro ao salvar configuração');
     }
   };
 
@@ -155,7 +203,7 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Button
                   size="sm"
                   variant="outline"
@@ -164,13 +212,11 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
                 >
                   {isLoading ? (
                     <>
-                      <RefreshCw className="w-3 h-3 mr-2 animate-spin" />
-                      Testando...
+                      <RefreshCw className="w-3 h-3 animate-spin" />
                     </>
                   ) : (
                     <>
-                      <RefreshCw className="w-3 h-3 mr-2" />
-                      Testar
+                      <RefreshCw className="w-3 h-3" />
                     </>
                   )}
                 </Button>
@@ -179,8 +225,15 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
                   variant="outline"
                   onClick={() => setDebugAgent({ key: agent.key, name: agent.display_name })}
                 >
-                  <Bug className="w-3 h-3 mr-2" />
-                  Debug
+                  <Bug className="w-3 h-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleConfigureAgent(agent.key)}
+                  disabled={loadingConfig}
+                >
+                  <Settings className="w-3 h-3" />
                 </Button>
               </div>
             </div>
@@ -194,6 +247,15 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
           displayName={debugAgent.name}
           open={!!debugAgent}
           onClose={() => setDebugAgent(null)}
+        />
+      )}
+
+      {configAgent && (
+        <ZAPICredentialsModal
+          open={true}
+          onOpenChange={(open) => !open && setConfigAgent(null)}
+          currentConfig={configAgent.config}
+          onSave={(config) => handleSaveConfig(configAgent.key, config)}
         />
       )}
     </div>

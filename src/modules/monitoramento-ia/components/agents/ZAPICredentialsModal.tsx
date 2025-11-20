@@ -10,13 +10,14 @@ import { supabase } from '@/integrations/supabase/client';
 interface ZAPICredentialsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  agentKey: string;
-  currentConfig: {
-    instance_id: string;
-    token: string;
-    api_url: string;
+  agentKey?: string;
+  currentConfig?: {
+    instance_id?: string;
+    token?: string;
+    api_url?: string;
+    client_token?: string;
   } | null;
-  onSave: () => void;
+  onSave: (config?: any) => void | Promise<void>;
 }
 
 export const ZAPICredentialsModal = ({
@@ -50,28 +51,36 @@ export const ZAPICredentialsModal = ({
 
     setSaving(true);
     try {
+      const updatedConfig = {
+        zapi_config: {
+          instance_id: instanceId.trim(),
+          token: token.trim(),
+          client_token: clientToken.trim(),
+          api_url: apiUrl.trim(),
+          webhook_url: `/functions/v1/zapi-webhook`,
+          status: 'connected'
+        }
+      };
+
       const { error } = await supabase
         .from('agents')
-        .update({
-          zapi_config: {
-            instance_id: instanceId.trim(),
-            token: token.trim(),
-            client_token: clientToken.trim(),
-            api_url: apiUrl.trim(),
-            webhook_url: `/functions/v1/zapi-webhook`,
-            status: 'connected'
-          }
-        })
-        .eq('key', agentKey);
+        .update(updatedConfig)
+        .eq('key', agentKey || '');
 
       if (error) throw error;
-
-      toast.success('✅ Credenciais Z-API salvas com sucesso!');
-      onSave();
+      
+      toast.success('Credenciais Z-API atualizadas com sucesso!');
+      
+      // Chama onSave e espera se for promise
+      const saveResult = onSave(agentKey ? undefined : updatedConfig.zapi_config);
+      if (saveResult && typeof saveResult === 'object' && 'then' in saveResult) {
+        await saveResult;
+      }
+      
       onOpenChange(false);
-    } catch (error: any) {
-      console.error('Erro ao salvar credenciais:', error);
-      toast.error('Erro ao salvar credenciais: ' + error.message);
+    } catch (error) {
+      console.error('Erro ao salvar credenciais Z-API:', error);
+      toast.error('Erro ao salvar credenciais Z-API');
     } finally {
       setSaving(false);
     }
