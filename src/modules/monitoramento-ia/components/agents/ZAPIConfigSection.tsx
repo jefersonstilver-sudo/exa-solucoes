@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Copy, Check, ExternalLink } from 'lucide-react';
+import { Copy, Check, ExternalLink, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { ZAPICredentialsModal } from './ZAPICredentialsModal';
 
 interface ZAPIConfigSectionProps {
   agentKey: string;
@@ -13,10 +14,12 @@ interface ZAPIConfigSectionProps {
     status: 'connected' | 'pending_setup';
   } | null;
   whatsappNumber: string | null;
+  onConfigUpdate?: () => void;
 }
 
-export const ZAPIConfigSection = ({ agentKey, zapiConfig, whatsappNumber }: ZAPIConfigSectionProps) => {
+export const ZAPIConfigSection = ({ agentKey, zapiConfig, whatsappNumber, onConfigUpdate }: ZAPIConfigSectionProps) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -43,12 +46,23 @@ export const ZAPIConfigSection = ({ agentKey, zapiConfig, whatsappNumber }: ZAPI
     <div className="bg-module-card rounded-[14px] border border-module p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-module-primary">Configuração Z-API (WhatsApp)</h3>
-        <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-          isPending 
-            ? 'bg-yellow-500/10 text-yellow-500' 
-            : 'bg-green-500/10 text-green-500'
-        }`}>
-          {isPending ? '⚠️ Configuração Pendente' : '✓ Conectado'}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCredentialsModal(true)}
+            className="border-module text-module-secondary hover:text-module-primary"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Configurar Credenciais
+          </Button>
+          <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+            isPending 
+              ? 'bg-yellow-500/10 text-yellow-500' 
+              : 'bg-green-500/10 text-green-500'
+          }`}>
+            {isPending ? '⚠️ Configuração Pendente' : '✓ Conectado'}
+          </div>
         </div>
       </div>
 
@@ -178,6 +192,17 @@ export const ZAPIConfigSection = ({ agentKey, zapiConfig, whatsappNumber }: ZAPI
           Docs Z-API
         </Button>
       </div>
+
+      {/* Modal de Credenciais */}
+      <ZAPICredentialsModal
+        open={showCredentialsModal}
+        onOpenChange={setShowCredentialsModal}
+        agentKey={agentKey}
+        currentConfig={zapiConfig}
+        onSave={() => {
+          if (onConfigUpdate) onConfigUpdate();
+        }}
+      />
     </div>
   );
 };

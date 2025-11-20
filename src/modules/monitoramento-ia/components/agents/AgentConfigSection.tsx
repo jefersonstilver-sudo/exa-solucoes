@@ -451,11 +451,12 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
         <TabsContent value="connections" className="space-y-4 pt-4">
           {/* Z-API Configuration */}
           {agent.whatsapp_provider === 'zapi' && (
-            <ZAPIConfigSection
-              agentKey={agent.key}
-              zapiConfig={agent.zapi_config}
-              whatsappNumber={agent.whatsapp_number}
-            />
+              <ZAPIConfigSection 
+                agentKey={agent.key} 
+                zapiConfig={agent.zapi_config}
+                whatsappNumber={agent.whatsapp_number}
+                onConfigUpdate={() => setPreviewKey(prev => prev + 1)}
+              />
           )}
 
           {/* ManyChat Configuration */}
