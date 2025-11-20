@@ -118,21 +118,20 @@ serve(async (req) => {
       )
       .join('\n');
 
-    // 5. Montar prompt para IA
-    const systemPrompt = `Você é ${agent.display_name}, ${agent.description}.
+    // 5. Montar prompt para IA usando o prompt do banco
+    const baseSystemPrompt = agent.openai_config?.system_prompt || 
+      `Você é ${agent.display_name}, ${agent.description}.`;
 
-**Conhecimento Base:**
-${knowledgeContext}
+    const knowledgeSection = knowledgeContext ? 
+      `\n\n## BASE DE CONHECIMENTO\n${knowledgeContext}` : '';
 
-**Histórico da Conversa:**
-${historyContext}
+    const historySection = historyContext ? 
+      `\n\n## HISTÓRICO DA CONVERSA\n${historyContext}` : '';
 
-**Instruções:**
-- Responda de forma natural e profissional
-- Use o conhecimento base para responder perguntas
-- Seja conciso e objetivo
-- Se não souber a resposta, seja honesto
-- Mantenha o tom amigável e prestativo`;
+    const systemPrompt = `${baseSystemPrompt}${knowledgeSection}${historySection}
+
+## MENSAGEM ATUAL DO CLIENTE
+${message}`;
 
     console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
       knowledgeItemsCount: (agentKnowledge || []).length,

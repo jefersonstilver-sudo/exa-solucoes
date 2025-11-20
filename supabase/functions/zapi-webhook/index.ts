@@ -118,6 +118,36 @@ serve(async (req) => {
       });
     }
 
+    // ========== DEDUPLICAÇÃO POR CONTEÚDO ==========
+    // Verificação adicional: mesma mensagem + telefone em janela de 10 segundos
+    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+
+    const { data: recentSimilarLog } = await supabase
+      .from('zapi_logs')
+      .select('id, created_at')
+      .eq('phone_number', phone)
+      .eq('message_text', messageText)
+      .eq('direction', 'inbound')
+      .gte('created_at', tenSecondsAgo)
+      .maybeSingle();
+
+    if (recentSimilarLog) {
+      console.log('[ZAPI-WEBHOOK] ⚠️ CONTENT DUPLICATE - Same message recently:', {
+        messageText,
+        phone,
+        recentLogId: recentSimilarLog.id,
+        secondsAgo: (Date.now() - new Date(recentSimilarLog.created_at).getTime()) / 1000
+      });
+      
+      return new Response(JSON.stringify({ 
+        success: true,
+        contentDuplicate: true,
+        recentLogId: recentSimilarLog.id
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // ========== RATE LIMITING POR TELEFONE ==========
     const cacheKey = `${phone}_${agent.key}`;
     const lastProcessed = processingCache.get(cacheKey);
