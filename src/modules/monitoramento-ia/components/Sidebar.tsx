@@ -68,16 +68,19 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
   return (
     <aside
       className={cn(
-        `fixed top-0 left-0 h-full w-64 text-module-primary transition-transform duration-300 ease-in-out z-40 border-module border-r`,
+        `fixed top-0 left-0 h-full w-64 transition-transform duration-300 ease-in-out z-40 border-r`,
         theme === 'dark' 
-          ? 'bg-gradient-to-b from-[#9C1E1E] via-[#4A0F0F] to-[#0A0A0A]'
-          : 'bg-module-card',
+          ? 'bg-gradient-to-b from-[#9C1E1E] via-[#4A0F0F] to-[#0A0A0A] border-[#2A2A2A] text-white'
+          : 'bg-[#9C1E1E] border-[#8A1A1A] text-white',
         'lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
       {/* Header */}
-      <div className="p-6 border-b border-module flex items-center justify-between">
+      <div className={cn(
+        "p-6 border-b flex items-center justify-between",
+        theme === 'dark' ? 'border-[#2A2A2A]' : 'border-[#8A1A1A]'
+      )}>
         <div className="flex items-center gap-3">
           <img 
             src={EXA_LOGO_URL} 
@@ -90,7 +93,7 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
         </div>
         <button
           onClick={onClose}
-          className="lg:hidden p-1.5 text-module-primary hover-module-bg rounded-lg"
+          className="lg:hidden p-1.5 text-white hover:bg-white/10 rounded-lg transition-colors"
         >
           <X size={18} />
         </button>
@@ -102,7 +105,10 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
           // Divisor
           if ('divider' in item && item.divider) {
             return (
-              <div key={`divider-${index}`} className="my-4 border-t border-module opacity-20" />
+              <div key={`divider-${index}`} className={cn(
+                "my-4 border-t opacity-20",
+                theme === 'dark' ? 'border-white/20' : 'border-white/30'
+              )} />
             );
           }
           
@@ -110,7 +116,7 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
           if ('sectionTitle' in item && item.sectionTitle) {
             return (
               <div key={`section-${index}`} className="px-4 py-2 mt-4">
-                <p className="text-xs font-bold text-module-tertiary uppercase tracking-wider">
+                <p className="text-xs font-bold text-white/70 uppercase tracking-wider">
                   {item.sectionTitle}
                 </p>
               </div>
@@ -126,10 +132,9 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
-                  'hover-module-bg',
                   isActive
-                    ? 'bg-module-accent text-white font-medium'
-                    : 'text-module-secondary'
+                    ? 'bg-white/20 text-white font-medium'
+                    : 'text-white/80 hover:bg-white/10'
                 )
               }
             >
@@ -144,7 +149,12 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
       <div className="absolute bottom-16 left-0 right-0 px-4">
         <button
           onClick={() => navigate('/admin')}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-module-card border border-module text-module-primary rounded-lg hover-module-bg hover:border-module-accent transition-colors"
+          className={cn(
+            "w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-colors",
+            theme === 'dark'
+              ? 'bg-black/20 border-white/20 text-white hover:bg-black/30'
+              : 'bg-white/10 border-white/30 text-white hover:bg-white/20'
+          )}
         >
           <ArrowLeft size={20} />
           <span className="text-sm">Sair do Módulo</span>
@@ -152,8 +162,11 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
       </div>
 
       {/* Footer */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-module">
-        <p className="text-xs text-module-muted text-center">
+      <div className={cn(
+        "absolute bottom-0 left-0 right-0 p-4 border-t",
+        theme === 'dark' ? 'border-white/20' : 'border-white/30'
+      )}>
+        <p className="text-xs text-white/60 text-center">
           Módulo Administrativo v1.0
         </p>
       </div>
