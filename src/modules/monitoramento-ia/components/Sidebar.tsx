@@ -9,6 +9,12 @@ import {
   LayoutDashboard,
   ArrowLeft,
   X,
+  Settings,
+  FileText,
+  BookOpen,
+  Zap,
+  MessageCircle,
+  Plug,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -27,16 +33,6 @@ const menuItems = [
     path: '/admin/monitoramento-ia/dashboard',
   },
   {
-    title: 'Base da Agente',
-    icon: Database,
-    path: '/admin/monitoramento-ia/base-agente',
-  },
-  {
-    title: 'Diretores Autorizados',
-    icon: Users,
-    path: '/admin/monitoramento-ia/diretores',
-  },
-  {
     title: 'Painéis',
     icon: Monitor,
     path: '/admin/monitoramento-ia/paineis',
@@ -52,9 +48,51 @@ const menuItems = [
     path: '/admin/monitoramento-ia/conversas',
   },
   {
+    title: 'Diretores Autorizados',
+    icon: Users,
+    path: '/admin/monitoramento-ia/diretores',
+  },
+  {
     title: 'Console da IA',
     icon: Terminal,
     path: '/admin/monitoramento-ia/console-ia',
+  },
+  { divider: true },
+  { sectionTitle: '🤖 AGENTE IA' },
+  {
+    title: 'Configurações da Agente',
+    icon: Settings,
+    path: '/admin/monitoramento-ia/agente/configuracoes',
+  },
+  {
+    title: 'Instruções (Prompt Base)',
+    icon: FileText,
+    path: '/admin/monitoramento-ia/agente/instrucoes',
+  },
+  {
+    title: 'Base de Conhecimento',
+    icon: BookOpen,
+    path: '/admin/monitoramento-ia/agente/base-conhecimento',
+  },
+  {
+    title: 'Regras de Ação',
+    icon: Zap,
+    path: '/admin/monitoramento-ia/agente/regras-acao',
+  },
+  {
+    title: 'Integração ManyChat',
+    icon: MessageCircle,
+    path: '/admin/monitoramento-ia/agente/integracao-manychat',
+  },
+  {
+    title: 'Integração STRING.com',
+    icon: Plug,
+    path: '/admin/monitoramento-ia/agente/integracao-string',
+  },
+  {
+    title: 'Base da Agente',
+    icon: Database,
+    path: '/admin/monitoramento-ia/base-agente',
   },
 ];
 
