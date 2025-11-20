@@ -189,7 +189,7 @@ export const MonitorAPIs = () => {
           <Button 
             onClick={testAllAPIs}
             disabled={testing}
-            className="bg-[#9C1E1E] hover:bg-[#7A1616] text-white"
+            className="bg-module-accent hover:bg-module-accent-hover text-white"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${testing ? 'animate-spin' : ''}`} />
             {testing ? 'Testando...' : 'Testar Todas'}

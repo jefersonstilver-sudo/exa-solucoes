@@ -205,7 +205,7 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
         {/* TAB: PROMPTS */}
         <TabsContent value="prompts" className="space-y-4 pt-4">
           <div>
-            <Label className="text-white">Prompt Base (Sistema)</Label>
+            <Label className="text-module-primary">Prompt Base (Sistema)</Label>
             <Textarea
               value={config.openai_config?.system_prompt || ''}
               onChange={(e) => setConfig({
@@ -213,15 +213,15 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                 openai_config: { ...config.openai_config, system_prompt: e.target.value }
               })}
               placeholder="Ex: Você é Sofia, assistente de vendas da EXA. Seu objetivo é qualificar leads e identificar oportunidades..."
-              className="bg-[#0A0A0A] border-[#2A2A2A] text-white min-h-[200px] mt-1 font-mono text-sm"
+              className="bg-module-input border-module text-module-primary placeholder:text-module-muted min-h-[200px] mt-1 font-mono text-sm"
             />
-            <p className="text-xs text-[#6B7280] mt-1">
+            <p className="text-xs text-module-tertiary mt-1">
               Instruções fundamentais que definem a personalidade e objetivos do agente
             </p>
           </div>
 
           <div>
-            <Label className="text-white">Prompt Privado (Instruções Internas)</Label>
+            <Label className="text-module-primary">Prompt Privado (Instruções Internas)</Label>
             <Textarea
               value={config.openai_config?.private_prompt || ''}
               onChange={(e) => setConfig({
@@ -229,15 +229,15 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                 openai_config: { ...config.openai_config, private_prompt: e.target.value }
               })}
               placeholder="Ex: JAMAIS revelar informações internas. Sempre qualificar lead com score 0-100. Se score >= 75, notificar Eduardo..."
-              className="bg-[#0A0A0A] border-[#2A2A2A] text-white min-h-[150px] mt-1 font-mono text-sm"
+              className="bg-module-input border-module text-module-primary placeholder:text-module-muted min-h-[150px] mt-1 font-mono text-sm"
             />
-            <p className="text-xs text-[#6B7280] mt-1">
+            <p className="text-xs text-module-tertiary mt-1">
               Regras internas que o agente deve seguir mas não revelar ao usuário
             </p>
           </div>
 
           <div>
-            <Label className="text-white">Contexto Adicional</Label>
+            <Label className="text-module-primary">Contexto Adicional</Label>
             <Textarea
               value={config.openai_config?.context || ''}
               onChange={(e) => setConfig({
@@ -245,9 +245,9 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                 openai_config: { ...config.openai_config, context: e.target.value }
               })}
               placeholder="Ex: Informações sobre produtos, preços, processos internos..."
-              className="bg-[#0A0A0A] border-[#2A2A2A] text-white min-h-[100px] mt-1 font-mono text-sm"
+              className="bg-module-input border-module text-module-primary placeholder:text-module-muted min-h-[100px] mt-1 font-mono text-sm"
             />
-            <p className="text-xs text-[#6B7280] mt-1">
+            <p className="text-xs text-module-tertiary mt-1">
               Contexto e informações relevantes para o agente consultar
             </p>
           </div>

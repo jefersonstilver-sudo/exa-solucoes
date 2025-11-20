@@ -87,8 +87,8 @@ export const AIConsole = ({ agents }: AIConsoleProps) => {
   const selectedAgent = agents.find(a => a.key === selectedAgentKey);
 
   return (
-    <div className="bg-[#1A1A1A] rounded-[14px] border border-[#2A2A2A] p-6">
-      <h2 className="text-xl font-bold text-white mb-4">Console de IA</h2>
+    <div className="bg-module-card rounded-[14px] border border-module p-6">
+      <h2 className="text-xl font-bold text-module-primary mb-4">Console de IA</h2>
 
       <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
         <div className="flex items-start gap-3">
@@ -97,7 +97,7 @@ export const AIConsole = ({ agents }: AIConsoleProps) => {
             <p className="text-sm text-yellow-500 font-medium mb-1">
               Console requer OPENAI_API_KEY
             </p>
-            <p className="text-xs text-[#A0A0A0]">
+            <p className="text-xs text-module-secondary">
               Configure no Supabase: Settings → Edge Functions → Secrets
             </p>
           </div>
@@ -105,11 +105,11 @@ export const AIConsole = ({ agents }: AIConsoleProps) => {
       </div>
 
       <div className="mb-4">
-        <Label className="text-white">Selecionar Agente</Label>
+        <Label className="text-module-primary">Selecionar Agente</Label>
         <select
           value={selectedAgentKey}
           onChange={(e) => setSelectedAgentKey(e.target.value)}
-          className="w-full bg-[#0A0A0A] border border-[#2A2A2A] text-white rounded-md p-2 mt-1"
+          className="w-full bg-module-input border border-module text-module-primary rounded-md p-2 mt-1"
         >
           {agents.filter(a => a.type === 'ai').map(agent => (
             <option key={agent.key} value={agent.key}>
@@ -119,9 +119,9 @@ export const AIConsole = ({ agents }: AIConsoleProps) => {
         </select>
       </div>
 
-      <div className="bg-[#0A0A0A] rounded-lg border border-[#2A2A2A] p-4 h-96 overflow-y-auto mb-4">
+      <div className="bg-module-input rounded-lg border border-module p-4 h-96 overflow-y-auto mb-4">
         {messages.length === 0 ? (
-          <p className="text-[#A0A0A0] text-center mt-20">
+          <p className="text-module-secondary text-center mt-20">
             Nenhuma mensagem ainda. Envie uma mensagem para começar.
           </p>
         ) : (
@@ -131,21 +131,21 @@ export const AIConsole = ({ agents }: AIConsoleProps) => {
                 key={index}
                 className={`${
                   msg.role === 'user'
-                    ? 'bg-[#9C1E1E]/20 ml-12'
-                    : 'bg-[#2A2A2A] mr-12'
+                    ? 'bg-module-accent/20 ml-12'
+                    : 'bg-module-secondary mr-12'
                 } rounded-lg p-3`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-white">
+                  <span className="text-xs font-medium text-module-primary">
                     {msg.role === 'user' ? 'Você' : selectedAgent?.display_name}
                   </span>
-                  <span className="text-xs text-[#666]">
+                  <span className="text-xs text-module-tertiary">
                     {new Date(msg.timestamp).toLocaleTimeString('pt-BR')}
                   </span>
                 </div>
-                <p className="text-sm text-white whitespace-pre-wrap">{msg.content}</p>
+                <p className="text-sm text-module-primary whitespace-pre-wrap">{msg.content}</p>
                 {msg.metadata && (
-                  <div className="flex gap-4 mt-2 text-xs text-[#666]">
+                  <div className="flex gap-4 mt-2 text-xs text-module-tertiary">
                     {msg.metadata.tokens && <span>Tokens: {msg.metadata.tokens}</span>}
                     {msg.metadata.latency && <span>Latência: {msg.metadata.latency}ms</span>}
                     {msg.metadata.model && <span>Modelo: {msg.metadata.model}</span>}
@@ -168,13 +168,13 @@ export const AIConsole = ({ agents }: AIConsoleProps) => {
             }
           }}
           placeholder="Digite sua mensagem... (Enter para enviar)"
-          className="bg-[#0A0A0A] border-[#2A2A2A] text-white"
+          className="bg-module-input border-module text-module-primary placeholder:text-module-muted"
           rows={3}
         />
         <Button
           onClick={handleSend}
           disabled={loading || !input.trim()}
-          className="bg-[#9C1E1E] hover:bg-[#7A1616]"
+          className="bg-module-accent hover:bg-module-accent-hover text-white"
         >
           <Send className="w-4 h-4" />
         </Button>

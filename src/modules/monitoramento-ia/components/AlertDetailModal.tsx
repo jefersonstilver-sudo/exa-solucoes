@@ -56,36 +56,36 @@ export const AlertDetailModal = ({ alert, isOpen, onClose, onUpdate }: AlertDeta
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[#0A0A0A] border-[#2C2C2C] text-white">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-module-card border-module text-module-primary">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-white flex items-center gap-3">
+          <DialogTitle className="text-2xl font-bold text-module-primary flex items-center gap-3">
             <AlertCircle className="w-6 h-6 text-[#E30613]" />
             Detalhes do Alerta
           </DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-[#1A1A1A]">
-            <TabsTrigger value="overview" className="text-white data-[state=active]:bg-[#E30613]">
+          <TabsList className="grid w-full grid-cols-5 bg-module-input border-module">
+            <TabsTrigger value="overview" className="text-module-primary data-[state=active]:bg-module-accent data-[state=active]:text-white">
               Overview
             </TabsTrigger>
-            <TabsTrigger value="timeline" className="text-white data-[state=active]:bg-[#E30613]">
+            <TabsTrigger value="timeline" className="text-module-primary data-[state=active]:bg-module-accent data-[state=active]:text-white">
               Timeline
             </TabsTrigger>
-            <TabsTrigger value="conversations" className="text-white data-[state=active]:bg-[#E30613]">
+            <TabsTrigger value="conversations" className="text-module-primary data-[state=active]:bg-module-accent data-[state=active]:text-white">
               Conversas
             </TabsTrigger>
-            <TabsTrigger value="metrics" className="text-white data-[state=active]:bg-[#E30613]">
+            <TabsTrigger value="metrics" className="text-module-primary data-[state=active]:bg-module-accent data-[state=active]:text-white">
               Métricas
             </TabsTrigger>
-            <TabsTrigger value="actions" className="text-white data-[state=active]:bg-[#E30613]">
+            <TabsTrigger value="actions" className="text-module-primary data-[state=active]:bg-module-accent data-[state=active]:text-white">
               Ações
             </TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW TAB */}
           <TabsContent value="overview" className="space-y-4">
-            <div className="bg-[#1A1A1A] rounded-lg p-6 space-y-4">
+            <div className="bg-module-input rounded-lg p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-white/50 mb-1">Status</p>
@@ -115,8 +115,8 @@ export const AlertDetailModal = ({ alert, isOpen, onClose, onUpdate }: AlertDeta
 
               {alert.evidence && (
                 <div>
-                  <p className="text-sm text-white/50 mb-2">Evidências</p>
-                  <pre className="bg-[#0A0A0A] p-4 rounded text-xs text-white/70 overflow-auto">
+                  <p className="text-sm text-module-secondary mb-2">Evidências</p>
+                  <pre className="bg-module-input p-4 rounded text-xs text-module-secondary overflow-auto">
                     {JSON.stringify(alert.evidence, null, 2)}
                   </pre>
                 </div>
@@ -126,13 +126,13 @@ export const AlertDetailModal = ({ alert, isOpen, onClose, onUpdate }: AlertDeta
 
           {/* TIMELINE TAB */}
           <TabsContent value="timeline" className="space-y-4">
-            <div className="bg-[#1A1A1A] rounded-lg p-6">
+            <div className="bg-module-input rounded-lg p-6">
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-2 h-2 rounded-full bg-[#E30613] mt-2" />
+                  <div className="w-2 h-2 rounded-full bg-module-accent mt-2" />
                   <div className="flex-1">
-                    <p className="text-white font-medium">Alerta aberto</p>
-                    <p className="text-sm text-white/50">
+                    <p className="text-module-primary font-medium">Alerta aberto</p>
+                    <p className="text-sm text-module-secondary">
                       {format(new Date(alert.opened_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                     </p>
                   </div>
@@ -142,8 +142,8 @@ export const AlertDetailModal = ({ alert, isOpen, onClose, onUpdate }: AlertDeta
                   <div className="flex items-start gap-4">
                     <div className="w-2 h-2 rounded-full bg-green-500 mt-2" />
                     <div className="flex-1">
-                      <p className="text-white font-medium">Alerta fechado</p>
-                      <p className="text-sm text-white/50">
+                      <p className="text-module-primary font-medium">Alerta fechado</p>
+                      <p className="text-sm text-module-secondary">
                         {format(new Date(alert.closed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                       </p>
                     </div>
@@ -155,12 +155,12 @@ export const AlertDetailModal = ({ alert, isOpen, onClose, onUpdate }: AlertDeta
 
           {/* CONVERSATIONS TAB */}
           <TabsContent value="conversations" className="space-y-4">
-            <div className="bg-[#1A1A1A] rounded-lg p-6 text-center">
-              <MessageSquare className="w-12 h-12 text-white/30 mx-auto mb-4" />
-              <p className="text-white/70">
+            <div className="bg-module-input rounded-lg p-6 text-center">
+              <MessageSquare className="w-12 h-12 text-module-tertiary mx-auto mb-4" />
+              <p className="text-module-secondary">
                 Integração com conversas será implementada futuramente.
               </p>
-              <p className="text-sm text-white/50 mt-2">
+              <p className="text-sm text-module-tertiary mt-2">
                 Aqui aparecerão mensagens relacionadas ao device_id: {alert.device_id}
               </p>
             </div>
@@ -168,19 +168,19 @@ export const AlertDetailModal = ({ alert, isOpen, onClose, onUpdate }: AlertDeta
 
           {/* METRICS TAB */}
           <TabsContent value="metrics" className="space-y-4">
-            <div className="bg-[#1A1A1A] rounded-lg p-6 space-y-4">
-              <h3 className="text-lg font-semibold text-white mb-4">Métricas do Sistema</h3>
+            <div className="bg-module-input rounded-lg p-6 space-y-4">
+              <h3 className="text-lg font-semibold text-module-primary mb-4">Métricas do Sistema</h3>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#0A0A0A] p-4 rounded">
-                  <p className="text-sm text-white/50 mb-1">Status do dispositivo</p>
-                  <p className="text-lg font-semibold text-white capitalize">
+                <div className="bg-module-card p-4 rounded border border-module">
+                  <p className="text-sm text-module-secondary mb-1">Status do dispositivo</p>
+                  <p className="text-lg font-semibold text-module-primary capitalize">
                     {alert.devices?.status || 'Desconhecido'}
                   </p>
                 </div>
-                <div className="bg-[#0A0A0A] p-4 rounded">
-                  <p className="text-sm text-white/50 mb-1">Última conexão</p>
-                  <p className="text-lg font-semibold text-white">
+                <div className="bg-module-card p-4 rounded border border-module">
+                  <p className="text-sm text-module-secondary mb-1">Última conexão</p>
+                  <p className="text-lg font-semibold text-module-primary">
                     {alert.devices?.last_online_at 
                       ? formatDistanceToNow(new Date(alert.devices.last_online_at), { 
                           addSuffix: true, 
@@ -191,9 +191,9 @@ export const AlertDetailModal = ({ alert, isOpen, onClose, onUpdate }: AlertDeta
                 </div>
               </div>
 
-              <div className="bg-[#0A0A0A] p-4 rounded">
-                <p className="text-sm text-white/50 mb-2">Metadados AnyDesk</p>
-                <p className="text-xs text-white/30">
+              <div className="bg-module-card p-4 rounded border border-module">
+                <p className="text-sm text-module-secondary mb-2">Metadados AnyDesk</p>
+                <p className="text-xs text-module-tertiary">
                   Integração futura: temperatura, uptime, OS, IP, etc.
                 </p>
               </div>
@@ -202,7 +202,7 @@ export const AlertDetailModal = ({ alert, isOpen, onClose, onUpdate }: AlertDeta
 
           {/* ACTIONS TAB */}
           <TabsContent value="actions" className="space-y-4">
-            <div className="bg-[#1A1A1A] rounded-lg p-6 space-y-3">
+            <div className="bg-module-input rounded-lg p-6 space-y-3">
               <Button
                 onClick={() => handleStatusChange('resolved')}
                 disabled={loading || alert.status === 'resolved'}
