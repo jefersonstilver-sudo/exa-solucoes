@@ -102,8 +102,13 @@ serve(async (req) => {
           .single();
 
         if (convError) {
-          console.error('[MANYCHAT-WEBHOOK] Error creating conversation:', convError);
-          throw convError;
+          console.error('[MANYCHAT-WEBHOOK] ❌ Conversation upsert error:', convError);
+          throw new Error(`Failed to upsert conversation: ${convError.message}`);
+        }
+
+        if (!conversation) {
+          console.error('[MANYCHAT-WEBHOOK] ❌ Conversation returned null without error');
+          throw new Error('Conversation returned null');
         }
 
         console.log('[MANYCHAT-WEBHOOK] ✅ Conversation created/updated:', conversation.id);
