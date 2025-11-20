@@ -55,6 +55,11 @@ export interface Agent {
       apiToken?: string;
       botId?: string;
       webhookUrl?: string;
+      verifyToken?: string;
+      secret?: string;
+      status?: 'pending' | 'connected' | 'error';
+      lastSync?: string | null;
+      errorMessage?: string;
     };
     string?: {
       agentId?: string;
