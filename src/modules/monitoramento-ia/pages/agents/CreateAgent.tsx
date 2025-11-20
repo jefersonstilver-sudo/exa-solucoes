@@ -29,7 +29,6 @@ export const CreateAgent = () => {
     { value: 'none', label: 'Nenhum' },
     { value: 'manychat', label: 'ManyChat' },
     { value: 'string', label: 'STRING.com' },
-    { value: 'whatsapp-api', label: 'WhatsApp API Provider' },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
