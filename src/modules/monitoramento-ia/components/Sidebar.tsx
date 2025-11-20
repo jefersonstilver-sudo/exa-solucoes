@@ -140,7 +140,7 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
       </div>
 
       {/* Navigation */}
-      <nav className="p-4 space-y-2 pb-32">
+      <nav className="p-4 space-y-2 pb-32 overflow-y-auto max-h-[calc(100vh-240px)]">
         {menuItems.map((item, index) => {
           // Divisor
           if ('divider' in item && item.divider) {
