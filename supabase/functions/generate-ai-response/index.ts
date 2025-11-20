@@ -6,37 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper para dividir mensagens longas em chunks
-function splitMessageIntoChunks(message: string, maxLength = 150): string[] {
-  // Dividir por quebras de linha primeiro
-  const paragraphs = message.split('\n\n').filter(p => p.trim());
-  
-  const chunks: string[] = [];
-  
-  for (const paragraph of paragraphs) {
-    if (paragraph.length <= maxLength) {
-      chunks.push(paragraph.trim());
-    } else {
-      // Dividir parágrafo longo em sentenças
-      const sentences = paragraph.split(/[.!?]\s+/);
-      let currentChunk = '';
-      
-      for (const sentence of sentences) {
-        if ((currentChunk + sentence).length <= maxLength) {
-          currentChunk += (currentChunk ? ' ' : '') + sentence;
-        } else {
-          if (currentChunk) chunks.push(currentChunk.trim());
-          currentChunk = sentence;
-        }
-      }
-      
-      if (currentChunk) chunks.push(currentChunk.trim());
-    }
-  }
-  
-  return chunks.length > 0 ? chunks : [message]; // fallback para mensagem original
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -242,7 +211,7 @@ ${message}`;
       metadata: {
         message_preview: message.substring(0, 100),
         response_preview: aiResponse.substring(0, 100),
-        chunks_sent: messageChunks.length,
+        chunks_sent: 1, // ✅ CORRIGIDO: sempre 1 mensagem completa agora
         success: true,
         timestamp: new Date().toISOString()
       }
