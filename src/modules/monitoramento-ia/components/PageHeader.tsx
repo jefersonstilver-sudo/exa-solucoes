@@ -4,6 +4,7 @@
  */
 
 import { ReactNode } from 'react';
+import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 interface PageHeaderProps {
   title: string;
@@ -18,18 +19,21 @@ export const PageHeader = ({
   actions, 
   lastUpdate 
 }: PageHeaderProps) => {
+  const { theme } = useModuleTheme();
+  const tc = getThemeClasses(theme);
+  
   return (
-    <div className="bg-[#1A1A1A] rounded-xl border border-[#2A2A2A] p-6 lg:p-8 mb-6">
+    <div className={`${tc.bgCard} rounded-xl ${tc.border} border p-6 lg:p-8 mb-6`}>
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
+          <h1 className={`text-2xl lg:text-3xl font-bold ${tc.textPrimary} mb-2`}>
             {title}
           </h1>
           {description && (
-            <p className="text-[#A0A0A0]">{description}</p>
+            <p className={tc.textSecondary}>{description}</p>
           )}
           {lastUpdate && (
-            <p className="text-xs text-[#6B7280] mt-1">
+            <p className={`text-xs ${tc.textTertiary} mt-1`}>
               Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
             </p>
           )}
