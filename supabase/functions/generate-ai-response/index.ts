@@ -6,6 +6,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper para dividir mensagens longas em chunks
+function splitMessageIntoChunks(message: string, maxLength = 150): string[] {
+  // Dividir por quebras de linha primeiro
+  const paragraphs = message.split('\n\n').filter(p => p.trim());
+  
+  const chunks: string[] = [];
+  
+  for (const paragraph of paragraphs) {
+    if (paragraph.length <= maxLength) {
+      chunks.push(paragraph.trim());
+    } else {
+      // Dividir parágrafo longo em sentenças
+      const sentences = paragraph.split(/[.!?]\s+/);
+      let currentChunk = '';
+      
+      for (const sentence of sentences) {
+        if ((currentChunk + sentence).length <= maxLength) {
+          currentChunk += (currentChunk ? ' ' : '') + sentence;
+        } else {
+          if (currentChunk) chunks.push(currentChunk.trim());
+          currentChunk = sentence;
+        }
+      }
+      
+      if (currentChunk) chunks.push(currentChunk.trim());
+    }
+  }
+  
+  return chunks.length > 0 ? chunks : [message]; // fallback para mensagem original
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -109,7 +140,24 @@ ${historyContext}
       systemPromptLength: systemPrompt.length
     });
 
-    // 6. Chamar OpenAI via ia-console
+    // 6. Enviar indicador de "digitando..." ANTES de chamar IA
+    console.log('[AI-RESPONSE] ⌨️ Starting typing indicator...');
+    try {
+      await supabase.functions.invoke('send-typing-indicator', {
+        body: {
+          phone: phoneNumber,
+          agentKey,
+          action: 'start'
+        }
+      });
+    } catch (typingError) {
+      console.error('[AI-RESPONSE] ⚠️ Typing indicator error (non-blocking):', typingError);
+    }
+
+    // Aguardar delay realista (simular digitação humana)
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // 7. Chamar OpenAI via ia-console
     console.log('[AI-RESPONSE] 🧠 Calling ia-console...');
     
     const { data: aiResult, error: aiError } = await supabase.functions.invoke('ia-console', {
@@ -140,28 +188,57 @@ ${historyContext}
       responsePreview: aiResponse.substring(0, 100)
     });
 
-    // 7. Enviar resposta via Z-API
-    console.log('[AI-RESPONSE] 📤 Sending response via WhatsApp...');
-    
-    const { data: sendResult, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
-      body: {
-        agentKey,
-        phone: phoneNumber,
-        message: aiResponse
-      }
-    });
+    // 8. Dividir resposta em chunks para envio gradual
+    const messageChunks = splitMessageIntoChunks(aiResponse);
+    console.log('[AI-RESPONSE] 📨 Sending', messageChunks.length, 'message chunks...');
 
-    if (sendError) {
-      console.error('[AI-RESPONSE] ❌ Send error:', sendError);
-      throw new Error('Failed to send response');
+    // 9. Enviar cada chunk com delays realistas
+    for (let i = 0; i < messageChunks.length; i++) {
+      const chunk = messageChunks[i];
+      
+      // Typing indicator antes de cada mensagem
+      try {
+        await supabase.functions.invoke('send-typing-indicator', {
+          body: { phone: phoneNumber, agentKey, action: 'start' }
+        });
+      } catch (e) {
+        console.error('[AI-RESPONSE] ⚠️ Typing start error (non-blocking):', e);
+      }
+      
+      // Delay realista (1-2 segundos por mensagem)
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+      
+      // Parar typing antes de enviar
+      try {
+        await supabase.functions.invoke('send-typing-indicator', {
+          body: { phone: phoneNumber, agentKey, action: 'stop' }
+        });
+      } catch (e) {
+        console.error('[AI-RESPONSE] ⚠️ Typing stop error (non-blocking):', e);
+      }
+      
+      // Enviar mensagem
+      const { data: sendResult, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+        body: {
+          agentKey,
+          phone: phoneNumber,
+          message: chunk
+        }
+      });
+
+      if (sendError) {
+        console.error('[AI-RESPONSE] ❌ Send error on chunk', i + 1, ':', sendError);
+      } else {
+        console.log('[AI-RESPONSE] ✅ Chunk', i + 1, '/', messageChunks.length, 'sent successfully');
+      }
+      
+      // Pequeno delay entre mensagens (300-500ms)
+      if (i < messageChunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 200));
+      }
     }
 
-    console.log('[AI-RESPONSE] ✅ Message sent successfully:', {
-      messageId: sendResult?.messageId,
-      phone: phoneNumber
-    });
-
-    // 8. Registrar no log
+    // 10. Registrar no log
     console.log('[AI-RESPONSE] 📊 Logging event...');
     
     await supabase.from('agent_logs').insert({
@@ -171,6 +248,7 @@ ${historyContext}
       metadata: {
         message_preview: message.substring(0, 100),
         response_preview: aiResponse.substring(0, 100),
+        chunks_sent: messageChunks.length,
         success: true,
         timestamp: new Date().toISOString()
       }
