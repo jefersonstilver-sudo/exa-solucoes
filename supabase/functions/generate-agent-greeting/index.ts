@@ -81,7 +81,19 @@ serve(async (req) => {
     }
 
     // Construir prompt para geração de saudação
-    const systemPrompt = `Você é ${agent.display_name}, um agente de atendimento.
+    // Primeiro buscar instruções da base de conhecimento
+    const instructions = knowledge?.filter(k => k.section === 'instrucoes') || [];
+    
+    let basePrompt = '';
+    if (instructions.length > 0) {
+      instructions.forEach(instruction => {
+        basePrompt += `${instruction.content}\n\n`;
+      });
+    } else {
+      basePrompt = `Você é ${agent.display_name}, um agente de atendimento.\n\n`;
+    }
+    
+    const systemPrompt = `${basePrompt}
 
 BASE DE CONHECIMENTO - SAUDAÇÃO:
 ${greetingKnowledge.content}
@@ -117,8 +129,24 @@ Gere a saudação agora:`;
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error('[GREETING] OpenAI error:', error);
+      const errorText = await response.text();
+      console.error('[GREETING] OpenAI error:', errorText);
+      
+      // Parse error para detectar rate limit
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error?.code === 'rate_limit_exceeded') {
+          // Em caso de rate limit, usar saudação padrão
+          const defaultGreeting = getDefaultGreeting(agentKey, agent.display_name);
+          const messages = defaultGreeting.split('\n\n').filter(m => m.trim());
+          return new Response(JSON.stringify({ messages }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      } catch (e) {
+        // Se não for JSON, continua com fallback padrão
+      }
+      
       const defaultGreeting = getDefaultGreeting(agentKey, agent.display_name);
       return new Response(JSON.stringify({ messages: [defaultGreeting] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -101,8 +101,23 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error('[PREVIEW] OpenAI error:', error);
+      const errorText = await response.text();
+      console.error('[PREVIEW] OpenAI error:', errorText);
+      
+      // Parse error para detectar rate limit
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error?.code === 'rate_limit_exceeded') {
+          return new Response(JSON.stringify({ 
+            response: '⏰ Aguarde um momento... Limite de requisições atingido. Tente novamente em alguns segundos.' 
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      } catch (e) {
+        // Se não for JSON, continua com erro genérico
+      }
+      
       throw new Error('OpenAI API error');
     }
 
@@ -154,8 +169,23 @@ serve(async (req) => {
         });
         
         if (!finalResponse.ok) {
-          const error = await finalResponse.text();
-          console.error('[PREVIEW] OpenAI error on final response:', error);
+          const errorText = await finalResponse.text();
+          console.error('[PREVIEW] OpenAI error on final response:', errorText);
+          
+          // Parse error para detectar rate limit
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.error?.code === 'rate_limit_exceeded') {
+              return new Response(JSON.stringify({ 
+                response: '⏰ Aguarde um momento... Limite de requisições atingido. Tente novamente em alguns segundos.' 
+              }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              });
+            }
+          } catch (e) {
+            // Se não for JSON, continua com erro genérico
+          }
+          
           throw new Error('OpenAI API error');
         }
         
@@ -197,11 +227,26 @@ serve(async (req) => {
 });
 
 function buildSystemPrompt(agent: any, knowledge: any[]): string {
-  let prompt = `Você é ${agent.display_name}. ${agent.description}\n\n`;
+  // Separar instruções da base de conhecimento
+  const instructions = knowledge.filter(k => k.section === 'instrucoes');
+  const otherKnowledge = knowledge.filter(k => k.section !== 'instrucoes');
   
-  if (knowledge.length > 0) {
-    prompt += '## BASE DE CONHECIMENTO\n\n';
-    knowledge.forEach(k => {
+  let prompt = '';
+  
+  // Construir prompt a partir das instruções
+  if (instructions.length > 0) {
+    instructions.forEach(instruction => {
+      prompt += `${instruction.content}\n\n`;
+    });
+  } else {
+    // Fallback se não houver instruções
+    prompt = `Você é ${agent.display_name}. ${agent.description}\n\n`;
+  }
+  
+  // Adicionar resto da base de conhecimento
+  if (otherKnowledge.length > 0) {
+    prompt += '## BASE DE CONHECIMENTO ADICIONAL\n\n';
+    otherKnowledge.forEach(k => {
       prompt += `### ${k.title}\n${k.content}\n\n`;
     });
   }

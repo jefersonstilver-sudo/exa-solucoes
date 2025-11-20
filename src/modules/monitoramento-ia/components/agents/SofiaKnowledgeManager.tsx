@@ -132,6 +132,8 @@ export const SofiaKnowledgeManager = () => {
   };
 
   const sections = [
+    { key: 'instrucoes', label: '📝 Instruções do Agente', icon: '🔒' },
+    { key: 'greeting', label: 'Saudação Inicial', icon: '👋' },
     { key: 'perfil', label: 'Perfil & Identidade', icon: '🎀' },
     { key: 'missao', label: 'Missão', icon: '🎯' },
     { key: 'regras_obrigatorias', label: 'Regras Obrigatórias', icon: '📋' },
