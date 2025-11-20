@@ -7,7 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Save, Plus, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Save, Plus, Trash2, Eye, Copy } from 'lucide-react';
+import { AgentChatPreview } from './AgentChatPreview';
+import { toast } from 'sonner';
 
 interface AgentConfigSectionProps {
   agent: Agent | undefined;
@@ -33,6 +36,7 @@ const AVAILABLE_CHANNELS = [
 export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps) => {
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState(agent || {} as Agent);
+  const [showPreview, setShowPreview] = useState(false);
 
   if (!agent) {
     return (
@@ -75,9 +79,22 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
           <div>
             <h2 className="text-2xl font-bold text-module-primary">{agent.display_name}</h2>
             <p className="text-sm text-module-secondary">{agent.description}</p>
+            {agent.manychat_connected ? (
+              <Badge className="bg-green-500 mt-2">✓ Conectado ao ManyChat</Badge>
+            ) : (
+              <Badge variant="outline" className="border-yellow-500 text-yellow-600 mt-2">
+                ⏳ Aguardando Número do ManyChat
+              </Badge>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {agent.name !== 'Eduardo' && (
+            <Button variant="outline" onClick={() => setShowPreview(true)}>
+              <Eye className="w-4 h-4 mr-2" />
+              Preview
+            </Button>
+          )}
           <Label className="text-module-primary">Ativo</Label>
           <Switch
             checked={config.is_active}
@@ -85,6 +102,12 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
           />
         </div>
       </div>
+
+      <AgentChatPreview
+        agent={agent}
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+      />
 
       <Tabs defaultValue="config" className="w-full">
         <TabsList className="bg-module-input border-module w-full">
