@@ -9,6 +9,8 @@ export interface Agent {
   description: string;
   type: 'ai' | 'human' | 'notification';
   whatsapp_number: string | null;
+  whatsapp_provider: string | null;
+  zapi_config: any;
   openai_config: any;
   manychat_connected: boolean;
   manychat_config: any;

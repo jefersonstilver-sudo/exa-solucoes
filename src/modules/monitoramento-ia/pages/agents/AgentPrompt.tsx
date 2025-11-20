@@ -341,6 +341,8 @@ export const AgentPrompt = () => {
             description: agent.description,
             is_active: agent.status === 'active',
             whatsapp_number: agent.phoneNumber,
+            whatsapp_provider: agent.whatsappProvider || null,
+            zapi_config: agent.zapiConfig || null,
             openai_config: config.openai_config,
             routing_rules: [],
             manychat_config: config.manychat_config,
