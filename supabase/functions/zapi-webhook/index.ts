@@ -330,7 +330,31 @@ Obrigado pela compreensão!`;
 
         console.log('[ZAPI-WEBHOOK] ✅ Route result:', routeResult);
 
-        // Se route-message retornou uma resposta, enviá-la via Z-API
+        // Verificar se precisa chamar IA automaticamente
+        if (agent.ai_auto_response && routeResult?.routed_to) {
+          console.log('[ZAPI-WEBHOOK] 🤖 AI auto-response enabled, calling generate-ai-response...');
+          
+          try {
+            const { data: aiResult, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
+              body: {
+                conversationId: conversation.id,
+                message: messageText,
+                agentKey: agent.key,
+                phoneNumber: phone
+              }
+            });
+
+            if (aiError) {
+              console.error('[ZAPI-WEBHOOK] ❌ AI generation error:', aiError);
+            } else {
+              console.log('[ZAPI-WEBHOOK] ✅ AI response generated successfully');
+            }
+          } catch (aiError) {
+            console.error('[ZAPI-WEBHOOK] ❌ AI invocation failed:', aiError);
+          }
+        }
+
+        // Se route-message retornou uma resposta manual (ações), enviá-la
         if (routeResult?.response) {
           await supabase.functions.invoke('zapi-send-message', {
             body: {
