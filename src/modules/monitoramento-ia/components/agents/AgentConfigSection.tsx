@@ -272,7 +272,17 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
             <Label className="text-module-primary text-sm">Ativo</Label>
             <Switch
               checked={config.is_active}
-              onCheckedChange={(checked) => setConfig({ ...config, is_active: checked })}
+              onCheckedChange={async (checked) => {
+                setConfig({ ...config, is_active: checked });
+                // Salvar automaticamente no banco
+                try {
+                  await onUpdate(agent.key, { is_active: checked });
+                  toast.success(checked ? 'Agente ativado!' : 'Agente desativado!');
+                } catch (error) {
+                  toast.error('Erro ao atualizar status do agente');
+                  console.error(error);
+                }
+              }}
             />
           </div>
         </div>

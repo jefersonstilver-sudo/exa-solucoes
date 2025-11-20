@@ -133,6 +133,21 @@ export const MessageBubble = ({
             : '0 1px 2px rgba(0,0,0,0.05)'
         }}
       >
+        {/* Badge indicador de origem */}
+        {isOutbound && (
+          <div className="flex items-center gap-1 mb-1">
+            <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+              🤖 <span className="font-medium">Agente</span>
+            </span>
+          </div>
+        )}
+        {!isOutbound && (
+          <div className="flex items-center gap-1 mb-1">
+            <span className="text-[10px] bg-black/10 dark:bg-white/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+              📱 <span className="font-medium">WhatsApp</span>
+            </span>
+          </div>
+        )}
         {status === 'error' && (
           <div className="flex items-center gap-2 mb-2 text-red-300">
             <AlertCircle className="w-4 h-4" />
