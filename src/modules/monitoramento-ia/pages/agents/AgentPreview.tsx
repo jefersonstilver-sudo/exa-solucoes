@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAgents } from '../../hooks/useAgents';
+import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
 import { toast } from 'sonner';
 
 interface Message {
@@ -14,7 +14,7 @@ interface Message {
 export const AgentPreview = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getAgentById } = useAgents();
+  const { getAgentById } = useSupabaseAgents();
   
   const [agent, setAgent] = useState<ReturnType<typeof getAgentById>>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);

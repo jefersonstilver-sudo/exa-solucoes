@@ -3,13 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { KnowledgeCard } from '../../components/KnowledgeCard';
-import { useAgents } from '../../hooks/useAgents';
+import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
 import { toast } from 'sonner';
 
 export const AgentKnowledge = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getAgentById } = useAgents();
+  const { getAgentById } = useSupabaseAgents();
   
   const [agent, setAgent] = useState<ReturnType<typeof getAgentById>>(undefined);
 

@@ -15,8 +15,10 @@ export const useAgents = () => {
   };
 
   const createAgent = (data: AgentFormData): Agent => {
+    const key = data.name.toLowerCase().replace(/\s+/g, '_');
     const newAgent: Agent = {
       id: `agent-${Date.now()}`,
+      key,
       ...data,
       status: 'active',
       createdAt: new Date().toISOString(),

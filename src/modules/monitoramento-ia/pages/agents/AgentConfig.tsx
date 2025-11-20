@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, MessageCircle, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAgents } from '../../hooks/useAgents';
+import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
 import { ZAPIConfigSection } from '../../components/agents/ZAPIConfigSection';
 import { toast } from 'sonner';
 import type { Agent, AgentType, IntegrationProvider } from '../../types/multiAgentTypes';
@@ -10,7 +10,7 @@ import type { Agent, AgentType, IntegrationProvider } from '../../types/multiAge
 export const AgentConfig = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getAgentById, updateAgent } = useAgents();
+  const { getAgentById, updateAgent } = useSupabaseAgents();
   
   const [agent, setAgent] = useState<Agent | null>(null);
   const [formData, setFormData] = useState({
