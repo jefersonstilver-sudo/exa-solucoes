@@ -76,12 +76,12 @@ export const ZAPICredentialsModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] bg-module-card border-module">
+      <DialogContent className="sm:max-w-[600px] !bg-white dark:!bg-gray-900 border-2 border-gray-200 dark:border-gray-700 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="text-module-primary flex items-center gap-2">
+          <DialogTitle className="text-gray-900 dark:text-gray-100 flex items-center gap-2 text-xl font-bold">
             🔐 Configurar Credenciais Z-API
           </DialogTitle>
-          <DialogDescription className="text-module-secondary">
+          <DialogDescription className="text-gray-600 dark:text-gray-400">
             Configure as credenciais da sua instância Z-API para conectar o agente ao WhatsApp
           </DialogDescription>
         </DialogHeader>
@@ -89,7 +89,7 @@ export const ZAPICredentialsModal = ({
         <div className="space-y-6 py-4">
           {/* Instance ID */}
           <div className="space-y-2">
-            <Label htmlFor="instanceId" className="text-module-primary font-medium">
+            <Label htmlFor="instanceId" className="text-gray-900 dark:text-gray-100 font-medium text-sm">
               Instance ID *
             </Label>
             <Input
@@ -97,16 +97,16 @@ export const ZAPICredentialsModal = ({
               value={instanceId}
               onChange={(e) => setInstanceId(e.target.value)}
               placeholder="Ex: 3C6B8F4A-1234-5678-90AB-CDEF12345678"
-              className="bg-module-input border-module text-module-primary"
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
             />
-            <p className="text-xs text-module-tertiary">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Encontre no painel Z-API em "Minhas Instâncias"
             </p>
           </div>
 
           {/* Token */}
           <div className="space-y-2">
-            <Label htmlFor="token" className="text-module-primary font-medium">
+            <Label htmlFor="token" className="text-gray-900 dark:text-gray-100 font-medium text-sm">
               Token *
             </Label>
             <Input
@@ -114,16 +114,16 @@ export const ZAPICredentialsModal = ({
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="Ex: 1A2B3C4D5E6F7G8H9I0J"
-              className="bg-module-input border-module text-module-primary font-mono text-sm"
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 font-mono text-sm placeholder:text-gray-400"
             />
-            <p className="text-xs text-module-tertiary">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Token de autenticação da instância
             </p>
           </div>
 
           {/* API URL */}
           <div className="space-y-2">
-            <Label htmlFor="apiUrl" className="text-module-primary font-medium">
+            <Label htmlFor="apiUrl" className="text-gray-900 dark:text-gray-100 font-medium text-sm">
               API URL
             </Label>
             <Input
@@ -131,19 +131,19 @@ export const ZAPICredentialsModal = ({
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
               placeholder="https://api.z-api.io"
-              className="bg-module-input border-module text-module-primary"
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
             />
-            <p className="text-xs text-module-tertiary">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               URL base da API (geralmente não precisa alterar)
             </p>
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-            <p className="text-sm text-blue-400 font-medium mb-2">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-2">
               💡 Como obter essas informações?
             </p>
-            <ol className="text-xs text-blue-300 space-y-1 list-decimal list-inside">
+            <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
               <li>Acesse o painel Z-API</li>
               <li>Vá em "Minhas Instâncias"</li>
               <li>Selecione a instância desejada</li>
@@ -152,12 +152,12 @@ export const ZAPICredentialsModal = ({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={saving}
-            className="border-module text-module-secondary"
+            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <X className="w-4 h-4 mr-2" />
             Cancelar
@@ -165,7 +165,7 @@ export const ZAPICredentialsModal = ({
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="bg-[#9C1E1E] hover:bg-[#7A1616] text-white"
+            className="bg-[#9C1E1E] hover:bg-[#7A1616] text-white border-0"
           >
             <Save className="w-4 h-4 mr-2" />
             {saving ? 'Salvando...' : 'Salvar Credenciais'}
