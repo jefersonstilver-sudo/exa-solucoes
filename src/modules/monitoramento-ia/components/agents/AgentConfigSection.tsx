@@ -89,7 +89,7 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {agent.name !== 'Eduardo' && (
+          {agent.key !== 'eduardo' && (
             <Button variant="outline" onClick={() => setShowPreview(true)}>
               <Eye className="w-4 h-4 mr-2" />
               Preview
