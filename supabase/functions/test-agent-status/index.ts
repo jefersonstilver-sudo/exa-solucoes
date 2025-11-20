@@ -104,10 +104,10 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Testar endpoint Z-API
+      // Testar endpoint Z-API (restore-session é o endpoint correto para verificar status)
       try {
-        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/status`;
-        console.log('🌐 [EDGE] Chamando Z-API:', zapiUrl);
+        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/restore-session`;
+        console.log('🌐 [EDGE] Chamando Z-API restore-session:', zapiUrl);
         
         const startTime = Date.now();
         const response = await fetch(zapiUrl);
