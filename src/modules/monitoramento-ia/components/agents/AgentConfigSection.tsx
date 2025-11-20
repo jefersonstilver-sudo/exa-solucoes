@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Save, Plus, Trash2, Eye, Copy } from 'lucide-react';
 import { AgentChatPreview } from './AgentChatPreview';
 import { SofiaKnowledgeManager } from './SofiaKnowledgeManager';
+import { ZAPIConfigSection } from './ZAPIConfigSection';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -120,13 +121,55 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
           <div className="min-w-0">
             <h2 className="text-xl lg:text-2xl font-bold text-module-primary truncate">{agent.display_name}</h2>
             <p className="text-sm text-module-secondary line-clamp-2">{agent.description}</p>
-            {agent.manychat_connected ? (
-              <Badge className="bg-green-500 mt-2 text-white">✓ Conectado ao ManyChat</Badge>
-            ) : (
-              <Badge variant="outline" className="border-yellow-500 text-yellow-600 mt-2">
-                ⏳ Aguardando Número do ManyChat
-              </Badge>
-            )}
+            
+            {/* Badges de Status e Provedor */}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {/* Badge Z-API */}
+              {agent.whatsapp_provider === 'zapi' && agent.zapi_config?.status === 'connected' && (
+                <Badge className="bg-green-500 text-white">
+                  🤖 Conectado via Z-API
+                </Badge>
+              )}
+              
+              {agent.whatsapp_provider === 'zapi' && agent.zapi_config?.status === 'pending_setup' && (
+                <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+                  ⚠️ Z-API Pendente de Configuração
+                </Badge>
+              )}
+              
+              {/* Badge ManyChat */}
+              {agent.whatsapp_provider === 'manychat' && agent.manychat_connected && (
+                <Badge className="bg-green-500 text-white">
+                  📱 Conectado ao ManyChat
+                </Badge>
+              )}
+              
+              {agent.whatsapp_provider === 'manychat' && !agent.manychat_connected && (
+                <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+                  ⏳ Aguardando Número do ManyChat
+                </Badge>
+              )}
+              
+              {/* Badge sem integração */}
+              {!agent.whatsapp_provider && (
+                <Badge variant="outline" className="border-gray-500 text-gray-600">
+                  ⚪ Sem integração WhatsApp
+                </Badge>
+              )}
+              
+              {/* Badge do Provedor */}
+              {agent.whatsapp_provider === 'zapi' && (
+                <Badge variant="outline" className="border-blue-500 text-blue-600">
+                  🤖 Z-API
+                </Badge>
+              )}
+              
+              {agent.whatsapp_provider === 'manychat' && (
+                <Badge variant="outline" className="border-purple-500 text-purple-600">
+                  📱 ManyChat
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
@@ -406,67 +449,92 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
 
         {/* TAB: CONEXÕES */}
         <TabsContent value="connections" className="space-y-4 pt-4">
-          {/* WhatsApp Config - Especial para Eduardo */}
-          {agent.key === 'eduardo' && (
-            <div className="bg-module-card rounded-lg border border-module p-4">
-              <Label className="text-module-primary text-lg mb-3 block">WhatsApp Business</Label>
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-module-secondary text-sm">Número WhatsApp</Label>
-                  <Input
-                    value={config.whatsapp_number || '+5545991415856'}
-                    onChange={(e) => setConfig({ ...config, whatsapp_number: e.target.value })}
-                    className="bg-module-input border-module text-module-primary mt-1"
-                    placeholder="+55 45 99141-5856"
-                  />
-                </div>
-                <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-green-500 text-sm">Conectado ao ManyChat</span>
-                </div>
-              </div>
-            </div>
+          {/* Z-API Configuration */}
+          {agent.whatsapp_provider === 'zapi' && (
+            <ZAPIConfigSection
+              agentKey={agent.key}
+              zapiConfig={agent.zapi_config}
+              whatsappNumber={agent.whatsapp_number}
+            />
           )}
 
-          {/* ManyChat Config */}
-          <div className="bg-module-card rounded-lg border border-module p-4">
-            <Label className="text-module-primary text-lg mb-3 block">ManyChat</Label>
-            <div className="space-y-3">
-              <div>
-                <Label className="text-module-secondary text-sm">Flow ID</Label>
-                <Input
-                  value={config.manychat_config?.flowId || ''}
-                  onChange={(e) => setConfig({
-                    ...config,
-                    manychat_config: { ...config.manychat_config, flowId: e.target.value }
-                  })}
-                  className="bg-module-input border-module text-module-primary mt-1"
-                  placeholder="Flow ID do ManyChat"
-                />
+          {/* ManyChat Configuration */}
+          {agent.whatsapp_provider === 'manychat' && (
+            <>
+              {/* WhatsApp Config - Especial para Eduardo */}
+              {agent.key === 'eduardo' && (
+                <div className="bg-module-card rounded-lg border border-module p-4">
+                  <Label className="text-module-primary text-lg mb-3 block">WhatsApp Business</Label>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-module-secondary text-sm">Número WhatsApp</Label>
+                      <Input
+                        value={config.whatsapp_number || '+5545991415856'}
+                        onChange={(e) => setConfig({ ...config, whatsapp_number: e.target.value })}
+                        className="bg-module-input border-module text-module-primary mt-1"
+                        placeholder="+55 45 99141-5856"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-green-500 text-sm">Conectado ao ManyChat</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ManyChat Config */}
+              <div className="bg-module-card rounded-lg border border-module p-4">
+                <Label className="text-module-primary text-lg mb-3 block">ManyChat</Label>
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-module-secondary text-sm">Flow ID</Label>
+                    <Input
+                      value={config.manychat_config?.flowId || ''}
+                      onChange={(e) => setConfig({
+                        ...config,
+                        manychat_config: { ...config.manychat_config, flowId: e.target.value }
+                      })}
+                      className="bg-module-input border-module text-module-primary mt-1"
+                      placeholder="Flow ID do ManyChat"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-module-secondary text-sm">Channel ID</Label>
+                    <Input
+                      value={config.manychat_config?.channelId || ''}
+                      onChange={(e) => setConfig({
+                        ...config,
+                        manychat_config: { ...config.manychat_config, channelId: e.target.value }
+                      })}
+                      className="bg-module-input border-module text-module-primary mt-1"
+                      placeholder="Channel ID do ManyChat"
+                    />
+                  </div>
+                  {agent.key === 'eduardo' ? (
+                    <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-green-500 text-sm">Conectado ao ManyChat</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                      <span className="text-yellow-600 text-sm">Desconectado</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <Label className="text-module-secondary text-sm">Channel ID</Label>
-                <Input
-                  value={config.manychat_config?.channelId || ''}
-                  onChange={(e) => setConfig({
-                    ...config,
-                    manychat_config: { ...config.manychat_config, channelId: e.target.value }
-                  })}
-                  className="bg-module-input border-module text-module-primary mt-1"
-                  placeholder="Channel ID do ManyChat"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={config.manychat_connected || false}
-                  onCheckedChange={(checked) => setConfig({ ...config, manychat_connected: checked })}
-                />
-                <Label className="text-module-primary text-sm">
-                  {config.manychat_connected ? 'Conectado' : 'Desconectado'}
-                </Label>
-              </div>
+            </>
+          )}
+
+          {/* Sem integração configurada */}
+          {!agent.whatsapp_provider && (
+            <div className="bg-module-card rounded-lg border border-module p-6 text-center">
+              <p className="text-module-secondary">
+                Este agente não possui integração WhatsApp configurada.
+              </p>
             </div>
-          </div>
+          )}
 
           {/* Base de Conhecimento */}
           <div className="bg-module-card rounded-lg border border-module p-4">
