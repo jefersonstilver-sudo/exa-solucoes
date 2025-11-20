@@ -39,7 +39,7 @@ serve(async (req) => {
       .from('agents')
       .select('*')
       .eq('whatsapp_provider', 'zapi')
-      .filter('zapi_config->instance_id', 'eq', instanceId)
+      .eq('zapi_config->>instance_id', instanceId)
       .single();
 
     if (agentError || !agent) {
@@ -50,7 +50,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('[ZAPI-WEBHOOK] Message for agent:', agent.key);
+    console.log('[ZAPI-WEBHOOK] ✅ Agent found:', agent.key, '- Instance:', instanceId);
 
     // Log inbound message
     await supabase.from('zapi_logs').insert({
@@ -140,10 +140,10 @@ Obrigado pela compreensão!`;
       throw new Error('Failed to create/update conversation');
     }
 
-    console.log('[ZAPI-WEBHOOK] Conversation:', conversation.id);
+    console.log('[ZAPI-WEBHOOK] ✅ Conversation created/updated:', conversation.id);
 
     // Salvar mensagem
-    await supabase.from('messages').insert({
+    const { data: savedMessage, error: messageError } = await supabase.from('messages').insert({
       conversation_id: conversation.id,
       agent_key: agent.key,
       provider: 'zapi',
@@ -151,7 +151,14 @@ Obrigado pela compreensão!`;
       from_role: 'user',
       body: messageText,
       raw_payload: payload
-    });
+    }).select().single();
+
+    if (messageError) {
+      console.error('[ZAPI-WEBHOOK] ❌ Error saving message:', messageError);
+      throw messageError;
+    }
+
+    console.log('[ZAPI-WEBHOOK] ✅ Message saved:', savedMessage.id);
 
     // Normalizar payload para formato interno do route-message
     const normalizedPayload = {
@@ -167,17 +174,18 @@ Obrigado pela compreensão!`;
     };
 
     // Chamar route-message para processar e responder
+    console.log('[ZAPI-WEBHOOK] ✅ Calling route-message...');
     const { data: routeResult, error: routeError } = await supabase.functions.invoke(
       'route-message',
       { body: normalizedPayload }
     );
 
     if (routeError) {
-      console.error('[ZAPI-WEBHOOK] Route error:', routeError);
+      console.error('[ZAPI-WEBHOOK] ❌ Route error:', routeError);
       throw routeError;
     }
 
-    console.log('[ZAPI-WEBHOOK] Route result:', routeResult);
+    console.log('[ZAPI-WEBHOOK] ✅ Route result:', routeResult);
 
     // Se route-message retornou uma resposta, enviá-la via Z-API
     if (routeResult?.response) {

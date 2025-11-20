@@ -54,12 +54,14 @@ serve(async (req) => {
         .single();
 
       if (agentError || !agent) {
-        console.error('[MANYCHAT-WEBHOOK] Agente não encontrado:', agentId);
+        console.error('[MANYCHAT-WEBHOOK] ❌ Agent not found:', agentId);
         return new Response(
           JSON.stringify({ error: 'Agente não encontrado' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      console.log('[MANYCHAT-WEBHOOK] ✅ Agent found:', agent.key);
 
       // Extrair dados do ManyChat
       const {
@@ -104,10 +106,10 @@ serve(async (req) => {
           throw convError;
         }
 
-        console.log('[MANYCHAT-WEBHOOK] Conversation:', conversation.id);
+        console.log('[MANYCHAT-WEBHOOK] ✅ Conversation created/updated:', conversation.id);
 
         // 2. Salvar mensagem
-        await supabase.from('messages').insert({
+        const { data: savedMessage, error: messageError } = await supabase.from('messages').insert({
           conversation_id: conversation.id,
           agent_key: agentId,
           provider: 'manychat',
@@ -116,9 +118,17 @@ serve(async (req) => {
           body: text,
           external_message_id: payload.message_id,
           raw_payload: payload
-        });
+        }).select().single();
+
+        if (messageError) {
+          console.error('[MANYCHAT-WEBHOOK] ❌ Error saving message:', messageError);
+          throw messageError;
+        }
+
+        console.log('[MANYCHAT-WEBHOOK] ✅ Message saved:', savedMessage.id);
 
         // 3. Chamar route-message com metadata correto
+        console.log('[MANYCHAT-WEBHOOK] ✅ Calling route-message...');
         const { data: routeData } = await supabase.functions.invoke('route-message', {
           body: {
             message: text,
@@ -133,7 +143,7 @@ serve(async (req) => {
           }
         });
 
-        console.log('[MANYCHAT-WEBHOOK] Route result:', routeData);
+        console.log('[MANYCHAT-WEBHOOK] ✅ Route result:', routeData);
 
         // 4. Se route-message retornou resposta, enviar via ManyChat
         if (routeData?.response) {
