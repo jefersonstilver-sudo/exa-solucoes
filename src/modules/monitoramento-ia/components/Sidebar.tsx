@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUnreadCount } from '../hooks/useUnreadCount';
 
 const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
 
@@ -80,6 +81,7 @@ const menuItems = [
 
 export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }: SidebarProps) => {
   const navigate = useNavigate();
+  const { unreadCount } = useUnreadCount();
   
   return (
     <aside
@@ -189,7 +191,18 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
               {!collapsed && (
                 <>
                   <span className="text-sm">{item.title}</span>
-                  {item.badge && (
+                  {/* Badge de mensagens não lidas - apenas para CRM */}
+                  {item.path === '/admin/monitoramento-ia/crm' && unreadCount > 0 && (
+                    <span className={cn(
+                      "ml-auto text-xs font-bold px-2 py-1 rounded-full",
+                      "bg-red-500 text-white",
+                      "animate-pulse shadow-lg shadow-red-500/50"
+                    )}>
+                      {unreadCount}
+                    </span>
+                  )}
+                  {/* Badge padrão (NOVO, BETA) - só mostra se não tiver unread */}
+                  {item.badge && !(item.path === '/admin/monitoramento-ia/crm' && unreadCount > 0) && (
                     <span className={cn(
                       "ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded",
                       theme === 'dark'
