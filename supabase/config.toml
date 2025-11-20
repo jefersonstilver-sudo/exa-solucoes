@@ -210,6 +210,9 @@ verify_jwt = true
 [functions.agent-preview-chat]
 verify_jwt = true
 
+[functions.generate-agent-greeting]
+verify_jwt = true
+
 [functions.get-buildings-for-agent]
 verify_jwt = false
 

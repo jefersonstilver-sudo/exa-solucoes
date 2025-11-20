@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Agent } from '../../hooks/useAgentConfig';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Save, Plus, Trash2, Eye, Copy } from 'lucide-react';
 import { AgentChatPreview } from './AgentChatPreview';
 import { SofiaKnowledgeManager } from './SofiaKnowledgeManager';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AgentConfigSectionProps {
   agent: Agent | undefined;
@@ -39,6 +40,41 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
   const [config, setConfig] = useState(agent || {} as Agent);
   const [showPreview, setShowPreview] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
+
+  // Realtime sync - detectar mudanças na base de conhecimento
+  useEffect(() => {
+    const channel = supabase
+      .channel(`agent-knowledge-${agent.key}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'agent_knowledge',
+          filter: `agent_key=eq.${agent.key}`
+        },
+        (payload) => {
+          console.log('[REALTIME] Agent knowledge changed:', payload);
+          setSyncStatus('syncing');
+          
+          // Forçar reload do preview
+          setPreviewKey(prev => prev + 1);
+          
+          setTimeout(() => {
+            setSyncStatus('synced');
+            toast.success('Preview atualizado automaticamente', {
+              description: 'Base de conhecimento sincronizada'
+            });
+          }, 1000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [agent.key]);
 
   if (!agent) {
     return (
@@ -93,7 +129,27 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+          {/* Status de Sincronização */}
+          {syncStatus === 'synced' && (
+            <Badge variant="outline" className="border-green-500 text-green-600 gap-1">
+              <span className="text-xs">✅</span>
+              <span className="text-xs">Preview Sincronizado</span>
+            </Badge>
+          )}
+          {syncStatus === 'syncing' && (
+            <Badge variant="outline" className="border-yellow-500 text-yellow-600 gap-1">
+              <span className="text-xs">⏳</span>
+              <span className="text-xs">Aplicando mudanças...</span>
+            </Badge>
+          )}
+          {syncStatus === 'error' && (
+            <Badge variant="outline" className="border-red-500 text-red-600 gap-1">
+              <span className="text-xs">❌</span>
+              <span className="text-xs">Erro na sincronização</span>
+            </Badge>
+          )}
+          
           {agent.key !== 'eduardo' && (
             <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
               <Eye className="w-4 h-4 mr-2" />

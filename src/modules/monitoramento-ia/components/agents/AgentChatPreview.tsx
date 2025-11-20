@@ -26,19 +26,52 @@ export const AgentChatPreview = ({ agent, isOpen, onClose }: AgentChatPreviewPro
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingGreeting, setLoadingGreeting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Carregar saudação dinâmica quando abrir
   useEffect(() => {
     if (isOpen) {
-      // Reiniciar conversa quando abrir
-      const greeting = getInitialGreeting(agent.key);
-      setMessages([{
-        role: 'assistant',
-        content: greeting,
-        timestamp: new Date()
-      }]);
+      loadInitialGreeting();
     }
   }, [isOpen, agent.key]);
+
+  const loadInitialGreeting = async () => {
+    setLoadingGreeting(true);
+    setMessages([]);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-agent-greeting', {
+        body: { agentKey: agent.key }
+      });
+
+      if (error) throw error;
+
+      // Criar mensagens quebradas (simulando WhatsApp)
+      const greetingMessages: Message[] = data.messages.map((content: string, index: number) => ({
+        role: 'assistant' as const,
+        content,
+        timestamp: new Date(Date.now() + index * 800) // Delay simulado entre mensagens
+      }));
+
+      // Adicionar mensagens progressivamente
+      for (let i = 0; i < greetingMessages.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, i === 0 ? 0 : 800));
+        setMessages(prev => [...prev, greetingMessages[i]]);
+      }
+    } catch (error) {
+      console.error('Error loading greeting:', error);
+      // Fallback para saudação padrão
+      setMessages([{
+        role: 'assistant',
+        content: `Olá! Sou ${agent.display_name}. Como posso ajudar?`,
+        timestamp: new Date()
+      }]);
+      toast.error('Erro ao carregar saudação do agente');
+    } finally {
+      setLoadingGreeting(false);
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -47,7 +80,7 @@ export const AgentChatPreview = ({ agent, isOpen, onClose }: AgentChatPreviewPro
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || loadingGreeting) return;
 
     const userMessage: Message = {
       role: 'user',
@@ -114,6 +147,13 @@ export const AgentChatPreview = ({ agent, isOpen, onClose }: AgentChatPreviewPro
 
         {/* Messages */}
         <ScrollArea className="flex-1 p-4 bg-[#efeae2]" ref={scrollRef}>
+          {loadingGreeting && messages.length === 0 && (
+            <div className="flex justify-start mb-3">
+              <div className="bg-white rounded-lg p-3 shadow-sm">
+                <Loader2 className="w-4 h-4 animate-spin" />
+              </div>
+            </div>
+          )}
           {messages.map((msg, idx) => (
             <div
               key={idx}
@@ -150,11 +190,11 @@ export const AgentChatPreview = ({ agent, isOpen, onClose }: AgentChatPreviewPro
             onKeyPress={handleKeyPress}
             placeholder="Digite uma mensagem..."
             className="flex-1"
-            disabled={isLoading}
+            disabled={isLoading || loadingGreeting}
           />
           <Button
             onClick={handleSend}
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || loadingGreeting || !input.trim()}
             className="bg-[#075e54] hover:bg-[#064e47]"
           >
             <Send className="w-4 h-4" />
@@ -165,17 +205,4 @@ export const AgentChatPreview = ({ agent, isOpen, onClose }: AgentChatPreviewPro
   );
 };
 
-function getInitialGreeting(agentKey: string): string {
-  switch (agentKey) {
-    case 'sofia':
-      return 'Olá! Seja bem-vindo(a) à EXA 😊\n\nSou a Sofia, especialista em mídia Out of Home. Vejo que você está interessado em divulgar sua marca através dos nossos painéis digitais.\n\nPara eu entender melhor suas necessidades, me conta: qual o principal objetivo da sua campanha?';
-    case 'iris':
-      return 'Olá. Sou a IRIS, assistente da diretoria. Como posso auxiliá-lo hoje?';
-    case 'exa_alert':
-      return 'Sistema EXA Alert ativo. Pronto para receber comandos de notificação.';
-    case 'eduardo':
-      return 'Olá! Sou o Eduardo, especialista em mídia Out of Home. Como posso ajudá-lo?';
-    default:
-      return 'Olá! Como posso ajudar?';
-  }
-}
+// Função removida - agora usa saudação dinâmica da base de conhecimento
