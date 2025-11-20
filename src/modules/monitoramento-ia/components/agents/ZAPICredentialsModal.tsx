@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,10 +26,19 @@ export const ZAPICredentialsModal = ({
   currentConfig,
   onSave
 }: ZAPICredentialsModalProps) => {
-  const [instanceId, setInstanceId] = useState(currentConfig?.instance_id || '');
-  const [token, setToken] = useState(currentConfig?.token || '');
-  const [apiUrl, setApiUrl] = useState(currentConfig?.api_url || 'https://api.z-api.io');
+  const [instanceId, setInstanceId] = useState('');
+  const [token, setToken] = useState('');
+  const [apiUrl, setApiUrl] = useState('https://api.z-api.io');
   const [saving, setSaving] = useState(false);
+
+  // Reseta os valores quando o modal abre ou quando a config muda
+  useEffect(() => {
+    if (open) {
+      setInstanceId(currentConfig?.instance_id || '');
+      setToken(currentConfig?.token || '');
+      setApiUrl(currentConfig?.api_url || 'https://api.z-api.io');
+    }
+  }, [open, currentConfig]);
 
   const handleSave = async () => {
     if (!instanceId.trim() || !token.trim()) {
