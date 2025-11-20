@@ -8,7 +8,7 @@ import { Send, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Agent } from '../../types/multiAgentTypes';
+import { Agent } from '../../hooks/useAgentConfig';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -30,14 +30,14 @@ export const AgentChatPreview = ({ agent, isOpen, onClose }: AgentChatPreviewPro
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const greeting = getInitialGreeting(agent.name);
+      const greeting = getInitialGreeting(agent.key);
       setMessages([{
         role: 'assistant',
         content: greeting,
         timestamp: new Date()
       }]);
     }
-  }, [isOpen, agent.name]);
+  }, [isOpen, agent.key]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -61,7 +61,7 @@ export const AgentChatPreview = ({ agent, isOpen, onClose }: AgentChatPreviewPro
     try {
       const { data, error } = await supabase.functions.invoke('agent-preview-chat', {
         body: {
-          agentKey: agent.name.toLowerCase().replace(/\s+/g, '_'),
+          agentKey: agent.key,
           messages: [...messages, userMessage].map(m => ({
             role: m.role,
             content: m.content
@@ -99,11 +99,11 @@ export const AgentChatPreview = ({ agent, isOpen, onClose }: AgentChatPreviewPro
         {/* Header tipo WhatsApp */}
         <div className="bg-[#075e54] text-white p-4 flex items-center gap-3">
           <Avatar>
-            <AvatarImage src={agent.avatar} />
-            <AvatarFallback>{agent.name[0]}</AvatarFallback>
+            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${agent.key}`} />
+            <AvatarFallback>{agent.display_name[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <p className="font-semibold">{agent.name}</p>
+            <p className="font-semibold">{agent.display_name}</p>
             <p className="text-xs opacity-80">Preview Mode - Simulação</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/20">
@@ -164,20 +164,17 @@ export const AgentChatPreview = ({ agent, isOpen, onClose }: AgentChatPreviewPro
   );
 };
 
-function getInitialGreeting(agentName: string): string {
-  const lowerName = agentName.toLowerCase();
-  
-  if (lowerName.includes('sofia')) {
-    return 'Olá! Seja bem-vindo(a) à EXA 😊\n\nSou a Sofia, especialista em mídia Out of Home. Vejo que você está interessado em divulgar sua marca através dos nossos painéis digitais.\n\nPara eu entender melhor suas necessidades, me conta: qual o principal objetivo da sua campanha?';
+function getInitialGreeting(agentKey: string): string {
+  switch (agentKey) {
+    case 'sofia':
+      return 'Olá! Seja bem-vindo(a) à EXA 😊\n\nSou a Sofia, especialista em mídia Out of Home. Vejo que você está interessado em divulgar sua marca através dos nossos painéis digitais.\n\nPara eu entender melhor suas necessidades, me conta: qual o principal objetivo da sua campanha?';
+    case 'iris':
+      return 'Olá. Sou a IRIS, assistente da diretoria. Como posso auxiliá-lo hoje?';
+    case 'exa_alert':
+      return 'Sistema EXA Alert ativo. Pronto para receber comandos de notificação.';
+    case 'eduardo':
+      return 'Olá! Sou o Eduardo, especialista em mídia Out of Home. Como posso ajudá-lo?';
+    default:
+      return 'Olá! Como posso ajudar?';
   }
-  
-  if (lowerName.includes('iris')) {
-    return 'Olá. Sou a IRIS, assistente da diretoria. Como posso auxiliá-lo hoje?';
-  }
-  
-  if (lowerName.includes('exa') || lowerName.includes('alert')) {
-    return 'Sistema EXA Alert ativo. Pronto para receber comandos de notificação.';
-  }
-  
-  return 'Olá! Como posso ajudar?';
 }

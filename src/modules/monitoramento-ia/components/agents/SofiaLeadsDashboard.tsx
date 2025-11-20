@@ -12,11 +12,23 @@ interface Lead {
   id: string;
   contact_name: string | null;
   contact_number: string;
+  conversation_id: string;
   score: number;
   profile_type: string | null;
   classification: string;
-  risk_of_loss: boolean;
+  budget_range: string | null;
+  timeline: string | null;
+  interest_areas: string[] | null;
+  notes: string | null;
+  spin_situation: number | null;
+  spin_problem: number | null;
+  spin_implication: number | null;
+  spin_need: number | null;
+  risk_of_loss: boolean | null;
+  reason_for_risk: string | null;
+  qualified_by: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export const SofiaLeadsDashboard = () => {
@@ -28,29 +40,39 @@ export const SofiaLeadsDashboard = () => {
   }, [filter]);
 
   const fetchLeads = async () => {
-    let query = supabase
-      .from('lead_qualifications')
-      .select('*')
-      .eq('qualified_by', 'sofia')
-      .order('created_at', { ascending: false });
-
-    if (filter === 'quente') {
-      query = query.gte('score', 71).lt('score', 90);
-    } else if (filter === 'muito_quente') {
-      query = query.gte('score', 90);
-    } else if (filter === 'risco') {
-      query = query.eq('risk_of_loss', true);
+    try {
+      const { data, error } = await supabase
+        .from('lead_qualifications')
+        .select('*')
+        .eq('qualified_by', 'sofia')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching leads:', error);
+        return;
+      }
+      
+      let filteredData: any[] = data || [];
+      
+      if (filter === 'quente') {
+        filteredData = filteredData.filter((l: any) => l.score >= 71 && l.score < 90);
+      } else if (filter === 'muito_quente') {
+        filteredData = filteredData.filter((l: any) => l.score >= 90);
+      } else if (filter === 'risco') {
+        filteredData = filteredData.filter((l: any) => l.risk_of_loss === true);
+      }
+      
+      setLeads(filteredData);
+    } catch (error) {
+      console.error('Error in fetchLeads:', error);
     }
-
-    const { data } = await query;
-    setLeads(data || []);
   };
 
   const stats = {
     total: leads.length,
-    quentes: leads.filter(l => l.score >= 71 && l.score < 90).length,
-    muitoQuentes: leads.filter(l => l.score >= 90).length,
-    risco: leads.filter(l => l.risk_of_loss).length
+    quentes: leads.filter((l: any) => l.score >= 71 && l.score < 90).length,
+    muitoQuentes: leads.filter((l: any) => l.score >= 90).length,
+    risco: leads.filter((l: any) => l.risk_of_loss).length
   };
 
   const getScoreBadge = (score: number) => {
