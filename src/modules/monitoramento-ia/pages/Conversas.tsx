@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Search, Building2, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 interface Conversation {
   id: string;
@@ -27,8 +26,6 @@ export const ConversasPage = () => {
   const [filteredConversations, setFilteredConversations] = useState<ConversationWithDevice[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
 
   useEffect(() => {
     fetchConversations();

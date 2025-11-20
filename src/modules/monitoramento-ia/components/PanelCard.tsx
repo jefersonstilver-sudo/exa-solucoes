@@ -1,6 +1,5 @@
 import { Device } from '../utils/devices';
 import { humanizeDate } from '../utils/formatters';
-import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 interface PanelCardProps {
   device: Device;
@@ -8,8 +7,6 @@ interface PanelCardProps {
 }
 
 export const PanelCard = ({ device, onClick }: PanelCardProps) => {
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
   const hasCriticalAlert = (device as any).has_critical_alert === true;
 
   const getStatusColor = (status: string) => {
@@ -39,28 +36,28 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
   return (
     <div
       onClick={onClick}
-      className={`${tc.bgCard} rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border overflow-hidden group ${
+      className={`bg-module-card rounded-[14px] shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border overflow-hidden group ${
         hasCriticalAlert 
           ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200' 
-          : tc.border
+          : 'border-module'
       }`}
     >
       {/* Corpo do card */}
       <div className="p-6 text-center">
         {/* Número do painel - destaque central */}
         <div className="mb-2">
-          <div className={`text-3xl font-bold ${tc.textPrimary} group-hover:text-[#9C1E1E] transition-colors`}>
+          <div className="text-3xl font-bold text-module-primary group-hover:text-[#9C1E1E] transition-colors">
             {device.name}
           </div>
         </div>
 
         {/* Nome do prédio */}
         <div className="mb-4">
-          <div className={`text-base ${tc.textSecondary} font-medium`}>
+          <div className="text-base text-module-secondary font-medium">
             {device.condominio_name}
           </div>
           {device.metadata?.torre && (
-            <div className={`text-sm ${tc.textTertiary} mt-1`}>
+            <div className="text-sm text-module-tertiary mt-1">
               Torre {device.metadata.torre}
               {device.metadata?.elevador && ` - Elevador ${device.metadata.elevador}`}
             </div>
@@ -68,20 +65,20 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
         </div>
 
         {/* AnyDesk ID */}
-        <div className={`mb-4 text-xs ${tc.textTertiary} font-mono`}>
+        <div className="mb-4 text-xs text-module-tertiary font-mono">
           {device.anydesk_client_id}
         </div>
       </div>
 
       {/* Rodapé com status */}
-      <div className={`${tc.bgInput} px-6 py-3 flex items-center justify-between border-t ${tc.border}`}>
+      <div className="bg-module-input px-6 py-3 flex items-center justify-between border-t border-module">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${getStatusColor(device.status)}`} />
-          <span className={`text-sm font-medium ${tc.textSecondary}`}>
+          <span className="text-sm font-medium text-module-secondary">
             {getStatusLabel(device.status)}
           </span>
         </div>
-        <div className={`text-xs ${tc.textTertiary}`}>
+        <div className="text-xs text-module-tertiary">
           {lastOnline}
         </div>
       </div>

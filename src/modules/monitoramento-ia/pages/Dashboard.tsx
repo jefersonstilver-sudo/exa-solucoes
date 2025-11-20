@@ -14,14 +14,11 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Device } from '../utils/devices';
-import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 export const MonitoramentoIADashboard = () => {
   const { devices, loading, lastUpdate, filters, setFilters, sort, setSort, refresh } = useDevices();
   const [view, setView] = useState<'cards' | 'table'>('cards');
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
 
   const stats = calculateDeviceStats(devices);
   const criticalCount = devices.filter(d => (d as any).has_critical_alert === true).length;

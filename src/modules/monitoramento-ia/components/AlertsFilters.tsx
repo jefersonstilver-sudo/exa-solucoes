@@ -3,7 +3,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import type { AlertFilters } from '../utils/alerts';
-import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 interface AlertsFiltersProps {
   filters: AlertFilters;
@@ -18,9 +17,6 @@ export const AlertsFilters = ({
   onFiltersChange,
   onClearFilters 
 }: AlertsFiltersProps) => {
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
-  
   return (
     <div className={`${tc.bgCard} rounded-lg p-4 mb-6 space-y-4 border ${tc.border}`}>
       {/* Search */}

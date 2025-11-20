@@ -1,6 +1,5 @@
 import { Search, Filter, ArrowUpDown } from 'lucide-react';
 import { DevicesFilters, DevicesSort } from '../utils/devices';
-import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 interface FiltersBarProps {
   filters: DevicesFilters;
@@ -17,9 +16,6 @@ export const FiltersBar = ({
   onSortChange,
   onNewPanel,
 }: FiltersBarProps) => {
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
-  
   return (
     <div className={`${tc.bgCard} ${tc.border} border rounded-xl shadow-sm p-4 lg:p-6 mb-6`}>
       {/* Linha 1: Busca e botão novo */}
