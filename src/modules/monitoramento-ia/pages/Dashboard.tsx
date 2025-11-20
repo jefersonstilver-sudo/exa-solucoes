@@ -33,7 +33,7 @@ export const MonitoramentoIADashboard = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className={`text-2xl lg:text-3xl font-bold ${tc.textPrimary} mb-2`}>
-              IA & Monitoramento EXA
+              Dashboard
             </h1>
             <p className={tc.textSecondary}>
               Monitoramento em tempo real dos painéis via AnyDesk

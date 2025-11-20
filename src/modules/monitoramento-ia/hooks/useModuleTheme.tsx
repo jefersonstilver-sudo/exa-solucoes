@@ -33,26 +33,26 @@ export const useModuleTheme = () => {
 export const getThemeClasses = (theme: ModuleTheme) => {
   if (theme === 'dark') {
     return {
-      // Backgrounds
-      bgPage: 'bg-[#0A0A0A]',
-      bgCard: 'bg-[#1A1A1A]',
-      bgInput: 'bg-[#0A0A0A]',
-      bgHover: 'hover:bg-[#9C1E1E]/20',
+      // Backgrounds (Dark mode com toques de vermelho)
+      bgPage: 'bg-gradient-to-br from-[#1A0A0A] via-[#0F0505] to-[#0A0A0A]',
+      bgCard: 'bg-gradient-to-br from-[#2A1515] to-[#1A1A1A]',
+      bgInput: 'bg-[#1A0808]',
+      bgHover: 'hover:bg-[#9C1E1E]/30',
       bgAccent: 'bg-[#9C1E1E]',
-      bgAccentHover: 'hover:bg-[#9C1E1E]/90',
+      bgAccentHover: 'hover:bg-[#B82525]',
       
       // Borders
-      border: 'border-[#2A2A2A]',
+      border: 'border-[#3A1A1A]',
       borderAccent: 'border-[#9C1E1E]',
       
       // Text
       textPrimary: 'text-white',
-      textSecondary: 'text-[#A0A0A0]',
-      textTertiary: 'text-[#6B7280]',
-      textMuted: 'text-white/40',
+      textSecondary: 'text-[#D4A5A5]',
+      textTertiary: 'text-[#A08585]',
+      textMuted: 'text-white/50',
       
       // Placeholder
-      placeholder: 'placeholder:text-[#6B7280]',
+      placeholder: 'placeholder:text-[#8B6666]',
       
       // Focus
       focusRing: 'focus:ring-[#9C1E1E]',
