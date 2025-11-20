@@ -73,15 +73,15 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
   };
 
   return (
-    <div className="bg-module-card rounded-[14px] border border-module p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">{getAgentIcon()}</span>
-          <div>
-            <h2 className="text-2xl font-bold text-module-primary">{agent.display_name}</h2>
-            <p className="text-sm text-module-secondary">{agent.description}</p>
+    <div className="bg-module-card rounded-[14px] border border-module p-4 lg:p-6 max-w-full">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div className="flex items-start gap-3">
+          <span className="text-3xl flex-shrink-0">{getAgentIcon()}</span>
+          <div className="min-w-0">
+            <h2 className="text-xl lg:text-2xl font-bold text-module-primary truncate">{agent.display_name}</h2>
+            <p className="text-sm text-module-secondary line-clamp-2">{agent.description}</p>
             {agent.manychat_connected ? (
-              <Badge className="bg-green-500 mt-2">✓ Conectado ao ManyChat</Badge>
+              <Badge className="bg-green-500 mt-2 text-white">✓ Conectado ao ManyChat</Badge>
             ) : (
               <Badge variant="outline" className="border-yellow-500 text-yellow-600 mt-2">
                 ⏳ Aguardando Número do ManyChat
@@ -89,18 +89,20 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {agent.key !== 'eduardo' && (
-            <Button variant="outline" onClick={() => setShowPreview(true)}>
+            <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
               <Eye className="w-4 h-4 mr-2" />
               Preview
             </Button>
           )}
-          <Label className="text-module-primary">Ativo</Label>
-          <Switch
-            checked={config.is_active}
-            onCheckedChange={(checked) => setConfig({ ...config, is_active: checked })}
-          />
+          <div className="flex items-center gap-2">
+            <Label className="text-module-primary text-sm">Ativo</Label>
+            <Switch
+              checked={config.is_active}
+              onCheckedChange={(checked) => setConfig({ ...config, is_active: checked })}
+            />
+          </div>
         </div>
       </div>
 
@@ -111,65 +113,67 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
       />
 
       <Tabs defaultValue="config" className="w-full">
-        <TabsList className="bg-module-input border-module w-full">
-          <TabsTrigger 
-            value="config" 
-            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
-          >
-            Configurações
-          </TabsTrigger>
-          <TabsTrigger 
-            value="prompts"
-            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
-          >
-            Prompts
-          </TabsTrigger>
-          <TabsTrigger 
-            value="rules" 
-            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
-          >
-            Regras de Decisão
-          </TabsTrigger>
-          <TabsTrigger 
-            value="tools" 
-            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
-          >
-            Ferramentas & Canais
-          </TabsTrigger>
-          <TabsTrigger 
-            value="connections" 
-            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
-          >
-            Conexões
-          </TabsTrigger>
-          {agent.key === 'sofia' && (
+        <div className="mb-6 overflow-x-auto">
+          <TabsList className="bg-module-card border border-module inline-flex min-w-full lg:min-w-0 flex-nowrap gap-1 p-1">
             <TabsTrigger 
-              value="knowledge" 
-              className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
+              value="config" 
+              className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
             >
-              Base de Conhecimento 🧠
+              Configurações
             </TabsTrigger>
-          )}
-          <TabsTrigger 
-            value="info" 
-            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
-          >
-            Informações
-          </TabsTrigger>
-        </TabsList>
+            <TabsTrigger 
+              value="prompts"
+              className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Prompts
+            </TabsTrigger>
+            <TabsTrigger 
+              value="rules" 
+              className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Regras de Decisão
+            </TabsTrigger>
+            <TabsTrigger 
+              value="tools" 
+              className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Ferramentas & Canais
+            </TabsTrigger>
+            <TabsTrigger 
+              value="connections" 
+              className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Conexões
+            </TabsTrigger>
+            {agent.key === 'sofia' && (
+              <TabsTrigger 
+                value="knowledge" 
+                className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+              >
+                Base de Conhecimento 🧠
+              </TabsTrigger>
+            )}
+            <TabsTrigger 
+              value="info" 
+              className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Informações
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* TAB: CONFIGURAÇÕES BÁSICAS */}
-        <TabsContent value="config" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-module-primary">Modelo OpenAI</Label>
+        <TabsContent value="config" className="space-y-6 pt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-module-primary font-medium">Modelo OpenAI</Label>
               <select
                 value={config.openai_config?.model || 'gpt-4-turbo-preview'}
                 onChange={(e) => setConfig({
                   ...config,
                   openai_config: { ...config.openai_config, model: e.target.value }
                 })}
-                className="w-full bg-module-input border border-module text-module-primary rounded-md p-2 mt-1"
+                className="w-full bg-module-card border border-module text-module-primary rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-module-accent"
               >
                 <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
                 <option value="gpt-4">GPT-4</option>
@@ -177,15 +181,15 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
               </select>
             </div>
 
-            <div>
-              <Label className="text-module-primary">Tom de Voz</Label>
+            <div className="space-y-2">
+              <Label className="text-module-primary font-medium">Tom de Voz</Label>
               <select
                 value={config.openai_config?.tone || 'friendly'}
                 onChange={(e) => setConfig({
                   ...config,
                   openai_config: { ...config.openai_config, tone: e.target.value }
                 })}
-                className="w-full bg-module-input border border-module text-module-primary rounded-md p-2 mt-1"
+                className="w-full bg-module-card border border-module text-module-primary rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-module-accent"
               >
                 <option value="friendly">Amigável</option>
                 <option value="formal">Formal</option>
@@ -195,8 +199,11 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
             </div>
           </div>
 
-          <div>
-            <Label className="text-module-primary">Temperatura ({config.openai_config?.temperature || 0.7})</Label>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-module-primary font-medium">Temperatura</Label>
+              <span className="text-sm font-semibold text-module-accent">{config.openai_config?.temperature || 0.7}</span>
+            </div>
             <Input
               type="range"
               min="0"
@@ -207,15 +214,15 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                 ...config,
                 openai_config: { ...config.openai_config, temperature: parseFloat(e.target.value) }
               })}
-              className="bg-module-input border-module text-module-primary mt-1"
+              className="w-full accent-module-accent"
             />
-            <p className="text-xs text-module-tertiary mt-1">
+            <p className="text-xs text-module-tertiary">
               0 = Mais preciso e determinístico | 2 = Mais criativo e variado
             </p>
           </div>
 
-          <div>
-            <Label className="text-module-primary">Max Tokens</Label>
+          <div className="space-y-3">
+            <Label className="text-module-primary font-medium">Max Tokens</Label>
             <Input
               type="number"
               min="100"
@@ -226,9 +233,9 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                 ...config,
                 openai_config: { ...config.openai_config, max_tokens: parseInt(e.target.value) }
               })}
-              className="bg-module-input border-module text-module-primary mt-1"
+              className="bg-module-card border-module text-module-primary"
             />
-            <p className="text-xs text-module-tertiary mt-1">
+            <p className="text-xs text-module-tertiary">
               Máximo de tokens na resposta (aprox. 4 tokens = 3 palavras)
             </p>
           </div>
@@ -512,14 +519,16 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
         )}
       </Tabs>
 
-      <Button
-        onClick={handleSave}
-        disabled={loading}
-        className="w-full mt-6 bg-module-accent hover:bg-module-accent-hover text-white"
-      >
-        <Save className="w-4 h-4 mr-2" />
-        {loading ? 'Salvando...' : 'Salvar Todas as Alterações'}
-      </Button>
+      <div className="sticky bottom-0 left-0 right-0 bg-module-primary pt-4 pb-4 border-t border-module mt-6">
+        <Button
+          onClick={handleSave}
+          disabled={loading}
+          className="w-full bg-module-accent hover:bg-module-accent-hover text-white font-semibold py-6 shadow-lg"
+        >
+          <Save className="w-5 h-5 mr-2" />
+          {loading ? 'Salvando Alterações...' : 'Salvar Todas as Alterações'}
+        </Button>
+      </div>
     </div>
   );
 };

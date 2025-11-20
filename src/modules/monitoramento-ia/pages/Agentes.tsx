@@ -25,12 +25,12 @@ export const Agentes = () => {
   }
 
   return (
-    <div className="min-h-screen bg-module-primary p-6 space-y-6">
+    <div className="min-h-screen bg-module-primary p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
       {/* HEADER */}
-      <div className="bg-module-card rounded-[14px] border border-module p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-module-card rounded-[14px] border border-module p-4 lg:p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-module-primary flex items-center gap-3">
+            <h1 className="text-2xl lg:text-3xl font-bold text-module-primary flex items-center gap-3">
               🤖 Agentes Inteligentes
             </h1>
             <p className="text-module-secondary mt-2">
@@ -40,7 +40,7 @@ export const Agentes = () => {
           <Button 
             onClick={testAllAPIs}
             disabled={Object.values(testing).some(t => t)}
-            className="bg-[#9C1E1E] hover:bg-[#7A1616] text-white"
+            className="bg-[#9C1E1E] hover:bg-[#7A1616] text-white whitespace-nowrap"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Testar Integridade
@@ -50,32 +50,58 @@ export const Agentes = () => {
 
       {/* TABS */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-module-card border border-module">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
-            Visão Geral
-          </TabsTrigger>
-          <TabsTrigger value="apis" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
-            Monitor de APIs
-          </TabsTrigger>
-          <TabsTrigger value="sofia" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
-            Sofia 🟣
-          </TabsTrigger>
-          <TabsTrigger value="iris" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
-            IRIS 💼
-          </TabsTrigger>
-          <TabsTrigger value="exa_alert" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
-            EXA Alert 🔔
-          </TabsTrigger>
-          <TabsTrigger value="eduardo" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
-            Eduardo 👨‍💼
-          </TabsTrigger>
-          <TabsTrigger value="console" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
-            Console IA
-          </TabsTrigger>
-          <TabsTrigger value="knowledge" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
-            Base de Conhecimento
-          </TabsTrigger>
-        </TabsList>
+        <div className="mb-6 overflow-x-auto pb-2">
+          <TabsList className="bg-module-card border border-module inline-flex min-w-full lg:min-w-0 flex-nowrap gap-1 p-1">
+            <TabsTrigger 
+              value="overview" 
+              className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger 
+              value="apis" 
+              className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Monitor de APIs
+            </TabsTrigger>
+            <TabsTrigger 
+              value="sofia" 
+              className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Sofia 🟣
+            </TabsTrigger>
+            <TabsTrigger 
+              value="iris" 
+              className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              IRIS 💼
+            </TabsTrigger>
+            <TabsTrigger 
+              value="exa_alert" 
+              className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              EXA Alert 🔔
+            </TabsTrigger>
+            <TabsTrigger 
+              value="eduardo" 
+              className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Eduardo 👨‍💼
+            </TabsTrigger>
+            <TabsTrigger 
+              value="console" 
+              className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Console IA
+            </TabsTrigger>
+            <TabsTrigger 
+              value="knowledge" 
+              className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
+            >
+              Base de Conhecimento
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="space-y-6">
           <APIStatusGrid statuses={statuses} testing={testing} onTest={testAPI} />
