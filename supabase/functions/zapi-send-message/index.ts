@@ -52,8 +52,12 @@ serve(async (req) => {
 
     // Buscar Client Token do Z-API
     const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+    
+    console.log('[ZAPI-SEND] 🔍 DEBUG - Client Token present:', !!zapiClientToken);
+    console.log('[ZAPI-SEND] 🔍 DEBUG - Client Token length:', zapiClientToken?.length || 0);
+    
     if (!zapiClientToken) {
-      console.error('[ZAPI-SEND] ZAPI_CLIENT_TOKEN not configured');
+      console.error('[ZAPI-SEND] ❌ ZAPI_CLIENT_TOKEN not configured in environment');
       return new Response(JSON.stringify({ error: 'Z-API Client Token not configured in secrets' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -66,7 +70,8 @@ serve(async (req) => {
     console.log('[ZAPI-SEND] Sending message via Z-API:', {
       agent: agentKey,
       phone,
-      messagePreview: message.substring(0, 50) + '...'
+      messagePreview: message.substring(0, 50) + '...',
+      hasClientToken: !!zapiClientToken
     });
 
     // Enviar mensagem via Z-API (com Client-Token no header)
