@@ -109,8 +109,18 @@ Deno.serve(async (req) => {
         const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/me`;
         console.log('🌐 [EDGE] Chamando Z-API /me:', zapiUrl);
         
+        const headers: Record<string, string> = {};
+        
+        // Adicionar Client-Token se estiver configurado
+        if (zapiConfig.client_token) {
+          headers['Client-Token'] = zapiConfig.client_token;
+          console.log('🔐 [EDGE] Client-Token presente');
+        } else {
+          console.warn('⚠️ [EDGE] Client-Token NÃO configurado - isso pode causar erro 400');
+        }
+        
         const startTime = Date.now();
-        const response = await fetch(zapiUrl);
+        const response = await fetch(zapiUrl, { headers });
         const latency = Date.now() - startTime;
         const data = await response.json();
         

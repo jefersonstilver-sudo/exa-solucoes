@@ -28,6 +28,7 @@ export const ZAPICredentialsModal = ({
 }: ZAPICredentialsModalProps) => {
   const [instanceId, setInstanceId] = useState('');
   const [token, setToken] = useState('');
+  const [clientToken, setClientToken] = useState('');
   const [apiUrl, setApiUrl] = useState('https://api.z-api.io');
   const [saving, setSaving] = useState(false);
 
@@ -36,13 +37,14 @@ export const ZAPICredentialsModal = ({
     if (open) {
       setInstanceId(currentConfig?.instance_id || '');
       setToken(currentConfig?.token || '');
+      setClientToken((currentConfig as any)?.client_token || '');
       setApiUrl(currentConfig?.api_url || 'https://api.z-api.io');
     }
   }, [open, currentConfig]);
 
   const handleSave = async () => {
-    if (!instanceId.trim() || !token.trim()) {
-      toast.error('Preencha Instance ID e Token');
+    if (!instanceId.trim() || !token.trim() || !clientToken.trim()) {
+      toast.error('Preencha Instance ID, Token e Client-Token');
       return;
     }
 
@@ -54,6 +56,7 @@ export const ZAPICredentialsModal = ({
           zapi_config: {
             instance_id: instanceId.trim(),
             token: token.trim(),
+            client_token: clientToken.trim(),
             api_url: apiUrl.trim(),
             webhook_url: `/functions/v1/zapi-webhook`,
             status: 'connected'
@@ -121,6 +124,24 @@ export const ZAPICredentialsModal = ({
             </p>
           </div>
 
+          {/* Client-Token */}
+          <div className="space-y-2">
+            <Label htmlFor="clientToken" className="text-gray-900 dark:text-gray-100 font-medium text-sm">
+              Client-Token (Token de Segurança da Conta) *
+            </Label>
+            <Input
+              id="clientToken"
+              type="password"
+              value={clientToken}
+              onChange={(e) => setClientToken(e.target.value)}
+              placeholder="Ex: E29F7B3C..."
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 font-mono text-sm placeholder:text-gray-400"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Token de segurança da conta (encontre em: Segurança → Token de Segurança)
+            </p>
+          </div>
+
           {/* API URL */}
           <div className="space-y-2">
             <Label htmlFor="apiUrl" className="text-gray-900 dark:text-gray-100 font-medium text-sm">
@@ -145,9 +166,9 @@ export const ZAPICredentialsModal = ({
             </p>
             <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
               <li>Acesse o painel Z-API</li>
-              <li>Vá em "Minhas Instâncias"</li>
-              <li>Selecione a instância desejada</li>
-              <li>Copie o Instance ID e o Token</li>
+              <li>Vá em "Minhas Instâncias" e copie Instance ID e Token</li>
+              <li>Vá em "Segurança" → "Token de Segurança da Conta"</li>
+              <li>Copie o Client-Token (token de segurança)</li>
             </ol>
           </div>
         </div>
