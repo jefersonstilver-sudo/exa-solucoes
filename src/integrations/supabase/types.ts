@@ -1717,6 +1717,80 @@ export type Database = {
           },
         ]
       }
+      conversation_analytics: {
+        Row: {
+          agent_key: string
+          conversation_id: string | null
+          conversion_type: string | null
+          converted: boolean | null
+          converted_at: string | null
+          created_at: string | null
+          id: string
+          interest_level: string | null
+          lead_qualified: boolean | null
+          lead_score: number | null
+          lead_type: string | null
+          message_count: number | null
+          phone_number: string
+          response_time_avg_ms: number | null
+          session_duration_seconds: number | null
+          session_end: string | null
+          session_start: string | null
+          updated_at: string | null
+          user_initiated: boolean | null
+        }
+        Insert: {
+          agent_key: string
+          conversation_id?: string | null
+          conversion_type?: string | null
+          converted?: boolean | null
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string
+          interest_level?: string | null
+          lead_qualified?: boolean | null
+          lead_score?: number | null
+          lead_type?: string | null
+          message_count?: number | null
+          phone_number: string
+          response_time_avg_ms?: number | null
+          session_duration_seconds?: number | null
+          session_end?: string | null
+          session_start?: string | null
+          updated_at?: string | null
+          user_initiated?: boolean | null
+        }
+        Update: {
+          agent_key?: string
+          conversation_id?: string | null
+          conversion_type?: string | null
+          converted?: boolean | null
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string
+          interest_level?: string | null
+          lead_qualified?: boolean | null
+          lead_score?: number | null
+          lead_type?: string | null
+          message_count?: number | null
+          phone_number?: string
+          response_time_avg_ms?: number | null
+          session_duration_seconds?: number | null
+          session_end?: string | null
+          session_start?: string | null
+          updated_at?: string | null
+          user_initiated?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_analytics_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_events: {
         Row: {
           conversation_id: string
@@ -6063,6 +6137,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_conversation_analytics: {
+        Args: {
+          p_agent_key: string
+          p_conversation_id: string
+          p_phone: string
+        }
+        Returns: undefined
       }
       insert_system_log: {
         Args: {

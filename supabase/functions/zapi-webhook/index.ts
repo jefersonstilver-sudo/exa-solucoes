@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting cache (in-memory)
+const processingCache = new Map<string, number>();
+const DEBOUNCE_MS = 2000; // 2 seconds
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -94,21 +98,50 @@ serve(async (req) => {
     // ========== VERIFICAÇÃO DE DEDUPLICAÇÃO ==========
     const { data: existingLog } = await supabase
       .from('zapi_logs')
-      .select('id')
+      .select('id, created_at')
       .eq('zapi_message_id', messageId)
       .maybeSingle();
 
     if (existingLog) {
-      console.log('[ZAPI-WEBHOOK] ⚠️ Message already processed, ignoring:', messageId);
+      console.log('[ZAPI-WEBHOOK] ⚠️ DUPLICATE DETECTED - Already processed:', {
+        messageId,
+        existingLogId: existingLog.id,
+        existingLogTime: existingLog.created_at
+      });
       return new Response(JSON.stringify({ 
         success: true,
-        message: 'Already processed',
+        duplicate: true,
         messageId,
-        deduplication: true
+        originalProcessedAt: existingLog.created_at
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    // ========== RATE LIMITING POR TELEFONE ==========
+    const cacheKey = `${phone}_${agent.key}`;
+    const lastProcessed = processingCache.get(cacheKey);
+    const now = Date.now();
+
+    if (lastProcessed && (now - lastProcessed) < DEBOUNCE_MS) {
+      console.log('[ZAPI-WEBHOOK] 🚫 Rate limit - Too fast:', {
+        phone,
+        timeSinceLastMs: now - lastProcessed
+      });
+      
+      return new Response(JSON.stringify({ 
+        success: true,
+        rateLimited: true,
+        waitMs: DEBOUNCE_MS - (now - lastProcessed)
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    processingCache.set(cacheKey, now);
+    // Limpar cache após 5 segundos
+    setTimeout(() => processingCache.delete(cacheKey), 5000);
 
     // Log inbound message COM messageId para deduplicação
     const { error: logError } = await supabase.from('zapi_logs').insert({
