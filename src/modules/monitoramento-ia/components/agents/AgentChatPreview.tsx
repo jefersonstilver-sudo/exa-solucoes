@@ -29,7 +29,8 @@ export const AgentChatPreview = ({ agent, isOpen, onClose }: AgentChatPreviewPro
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen) {
+      // Reiniciar conversa quando abrir
       const greeting = getInitialGreeting(agent.key);
       setMessages([{
         role: 'assistant',
