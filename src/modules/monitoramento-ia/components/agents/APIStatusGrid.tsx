@@ -1,22 +1,38 @@
 import { CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { APIStatus } from '../../hooks/useAPIStatus';
+import { AgentStatus } from '../../hooks/useAgentStatus';
 
 interface APIStatusGridProps {
-  statuses: Record<string, APIStatus>;
+  agents: Array<{
+    key: string;
+    display_name: string;
+    description: string;
+    is_active: boolean;
+    whatsapp_provider: string | null;
+  }>;
+  statuses: Record<string, AgentStatus>;
   testing: Record<string, boolean>;
-  onTest: (apiName: string, functionName: string) => Promise<any>;
+  onTest: (agentKey: string, displayName: string) => Promise<any>;
 }
 
-const apiConfigs = [
-  { name: 'ManyChat Webhook', functionName: 'manychat-webhook-test', description: 'Webhook de recebimento ManyChat' },
-  { name: 'OpenAI', functionName: 'openai-test', description: 'API de IA para Console e Agentes' },
-  { name: 'Supabase', functionName: 'supabase-test', description: 'Conexão com banco de dados' },
-  { name: 'WhatsApp', functionName: 'whatsapp-test', description: 'Notificações WhatsApp para Eduardo' },
-  { name: 'Knowledge Indexer', functionName: 'knowledge-indexer-test', description: 'Indexador de base de conhecimento' }
-];
+const getAgentIcon = (key: string) => {
+  const icons: Record<string, string> = {
+    sofia: '🟣',
+    iris: '💼',
+    exa_alert: '🔔',
+    eduardo: '👨‍💼'
+  };
+  return icons[key] || '🤖';
+};
 
-export const APIStatusGrid = ({ statuses, testing, onTest }: APIStatusGridProps) => {
+const getProviderName = (provider: string | null) => {
+  if (!provider) return 'Não configurado';
+  if (provider === 'zapi') return 'Z-API';
+  if (provider === 'manychat') return 'ManyChat';
+  return provider;
+};
+
+export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGridProps) => {
   const getStatusIcon = (status?: string) => {
     switch (status) {
       case 'online':
@@ -50,31 +66,50 @@ export const APIStatusGrid = ({ statuses, testing, onTest }: APIStatusGridProps)
     }
   };
 
+  const activeAgents = agents.filter(agent => agent.is_active);
+
+  if (activeAgents.length === 0) {
+    return (
+      <div className="bg-module-card rounded-[14px] border border-module p-6">
+        <h2 className="text-xl font-bold text-module-primary mb-4">Status dos Agentes</h2>
+        <p className="text-module-secondary">Nenhum agente ativo. Ative os agentes nas respectivas abas.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-module-card rounded-[14px] border border-module p-6">
-      <h2 className="text-xl font-bold text-module-primary mb-4">Status das Integrações</h2>
+      <h2 className="text-xl font-bold text-module-primary mb-4">Status dos Agentes</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {apiConfigs.map((api) => {
-          const status = statuses[api.name];
-          const isLoading = testing[api.name];
+        {activeAgents.map((agent) => {
+          const status = statuses[agent.key];
+          const isLoading = testing[agent.key];
 
           return (
             <div 
-              key={api.name}
+              key={agent.key}
               className="bg-module-input rounded-lg border border-module p-4 hover:border-module-muted transition-colors"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  {getStatusIcon(status?.status)}
-                  <span className="text-module-primary font-medium">{api.name}</span>
+                  <span className="text-2xl">{getAgentIcon(agent.key)}</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(status?.status)}
+                      <span className="text-module-primary font-medium">{agent.display_name}</span>
+                    </div>
+                    <p className="text-xs text-module-tertiary mt-0.5">
+                      {getProviderName(agent.whatsapp_provider)}
+                    </p>
+                  </div>
                 </div>
                 <span className={`text-xs font-medium ${getStatusColor(status?.status)}`}>
                   {getStatusText(status?.status)}
                 </span>
               </div>
 
-              <p className="text-sm text-module-secondary mb-3">{api.description}</p>
+              <p className="text-sm text-module-secondary mb-3">{agent.description}</p>
 
               {status?.lastCheck && (
                 <p className="text-xs text-module-tertiary mb-2">
@@ -88,6 +123,12 @@ export const APIStatusGrid = ({ statuses, testing, onTest }: APIStatusGridProps)
                 </p>
               )}
 
+              {status?.instanceId && (
+                <p className="text-xs text-module-tertiary mb-2">
+                  Instância: {status.instanceId.substring(0, 8)}...
+                </p>
+              )}
+
               {status?.credentialsPresent === false && (
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-2 mb-3">
                   <p className="text-xs text-yellow-500">
@@ -96,16 +137,24 @@ export const APIStatusGrid = ({ statuses, testing, onTest }: APIStatusGridProps)
                 </div>
               )}
 
-              {status?.errorMessage && status?.status !== 'pending' && (
-                <p className="text-xs text-red-400 mb-3">
-                  {status.errorMessage}
-                </p>
+              {status?.errorMessage && (
+                <div className={`rounded p-2 mb-3 ${
+                  status.status === 'pending' 
+                    ? 'bg-yellow-500/10 border border-yellow-500/20' 
+                    : 'bg-red-500/10 border border-red-500/20'
+                }`}>
+                  <p className={`text-xs ${
+                    status.status === 'pending' ? 'text-yellow-500' : 'text-red-400'
+                  }`}>
+                    {status.errorMessage}
+                  </p>
+                </div>
               )}
 
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onTest(api.name, api.functionName)}
+                onClick={() => onTest(agent.key, agent.display_name)}
                 disabled={isLoading}
                 className="w-full"
               >
@@ -117,7 +166,7 @@ export const APIStatusGrid = ({ statuses, testing, onTest }: APIStatusGridProps)
                 ) : (
                   <>
                     <RefreshCw className="w-3 h-3 mr-2" />
-                    Testar
+                    Testar Conexão
                   </>
                 )}
               </Button>
