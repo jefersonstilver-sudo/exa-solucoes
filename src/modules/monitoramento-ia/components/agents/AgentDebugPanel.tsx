@@ -78,10 +78,31 @@ export const AgentDebugPanel = ({ agentKey, displayName, open, onClose }: AgentD
             console.log('🌐 [DEBUG PANEL] Testando Z-API direto...');
             const zapiUrl = `https://api.z-api.io/instances/${config.instance_id}/token/${config.token}/status`;
             const response = await fetch(zapiUrl);
-            zapiResponse = await response.json();
+            const data = await response.json();
+            
+            zapiResponse = {
+              url: zapiUrl,
+              httpStatus: response.status,
+              ok: response.ok,
+              data
+            };
+            
             console.log('✅ [DEBUG PANEL] Resposta Z-API:', zapiResponse);
+            
+            // Adicionar erro específico se credenciais inválidas
+            if (!response.ok) {
+              if (data.error?.includes('client-token is not configured')) {
+                errors.push('❌ CREDENCIAIS Z-API INVÁLIDAS - Instance ID ou Token incorretos');
+              } else if (response.status === 401) {
+                errors.push('❌ TOKEN Z-API INVÁLIDO');
+              } else if (response.status === 404) {
+                errors.push('❌ INSTÂNCIA Z-API NÃO ENCONTRADA');
+              } else {
+                errors.push(`Erro Z-API (${response.status}): ${data.error || data.message || 'Erro desconhecido'}`);
+              }
+            }
           } catch (error: any) {
-            errors.push(`Erro no Z-API: ${error.message}`);
+            errors.push(`Erro ao conectar Z-API: ${error.message}`);
             console.error('❌ [DEBUG PANEL] Erro no Z-API:', error);
           }
         }
