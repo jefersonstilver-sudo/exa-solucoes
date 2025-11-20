@@ -179,58 +179,22 @@ serve(async (req) => {
       }
     }
 
-    // 6. Se AI auto-response está ativada, processar com IA
-    console.log(`[ROUTE] 🤖 AI Auto-Response Check:`, {
+    // ✅ FASE 4: ROUTE-MESSAGE NÃO CHAMA IA (EVITA DUPLICAÇÃO)
+    // A IA é chamada diretamente pelo webhook (zapi-webhook ou manychat-webhook)
+    // quando agent.ai_auto_response = true
+    console.log(`[ROUTE] ℹ️ Routing complete - AI call handled by webhook`, {
       agentKey: selectedAgent?.key,
       aiAutoResponseEnabled: selectedAgent?.ai_auto_response,
       source: metadata?.source,
-      willTriggerAI: selectedAgent?.ai_auto_response && metadata?.source === 'zapi'
+      note: 'AI is called by webhook, not by route-message'
     });
-
-    let aiResponse = null;
-    if (selectedAgent.ai_auto_response && metadata?.source === 'zapi') {
-      console.log(`[ROUTE] ✅ AI auto-response ENABLED for agent ${selectedAgent.key}, calling generate-ai-response`);
-      console.log(`[ROUTE] 📤 Invoking generate-ai-response with:`, {
-        agentKey: selectedAgent.key,
-        conversationId,
-        phoneNumber: metadata.phone,
-        messagePreview: message.substring(0, 50)
-      });
-      
-      try {
-        const { data: aiResult, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
-          body: {
-            agentKey: selectedAgent.key,
-            conversationId,
-            message,
-            phoneNumber: metadata.phone
-          }
-        });
-
-        if (aiError) {
-          console.error(`[ROUTE] ❌ AI response error:`, aiError);
-        } else {
-          aiResponse = aiResult?.response;
-          console.log(`[ROUTE] ✅ AI response triggered successfully:`, {
-            responsePreview: aiResponse?.substring(0, 100)
-          });
-        }
-      } catch (error) {
-        console.error(`[ROUTE] ❌ Error triggering AI response:`, error);
-      }
-    } else if (metadata?.source === 'zapi') {
-      console.log(`[ROUTE] ⏸️ AI auto-response DISABLED for agent ${selectedAgent?.key}`);
-    } else {
-      console.log(`[ROUTE] ⏸️ AI auto-response skipped - source is ${metadata?.source}, not zapi`);
-    }
 
     return new Response(
       JSON.stringify({ 
         success: true,
         routed_to: selectedAgent.key,
         rule_used: matchedRule.name,
-        actions_executed: matchedRule.actions,
-        response: aiResponse // Incluir resposta da IA se disponível
+        actions_executed: matchedRule.actions
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );

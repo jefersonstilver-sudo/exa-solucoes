@@ -132,6 +132,40 @@ serve(async (req) => {
       metadata: { response: zapiResult }
     });
 
+    // ✅ FASE 1: SALVAR EM MESSAGES PARA APARECER NO CRM
+    console.log('[ZAPI-SEND] 💾 Saving outbound message to messages table...');
+    
+    // Buscar conversation_id baseado em phone + agent
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('contact_phone', phone)
+      .eq('agent_key', agentKey)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (conversation) {
+      await supabase.from('messages').insert({
+        conversation_id: conversation.id,
+        agent_key: agentKey,
+        provider: 'zapi',
+        direction: 'outbound',
+        from_role: 'agent',
+        body: message,
+        is_automated: true,
+        raw_payload: { 
+          zapi_message_id: zapiResult.messageId,
+          sent_at: new Date().toISOString(),
+          media_url: mediaUrl || null
+        }
+      });
+      
+      console.log('[ZAPI-SEND] ✅ Outbound message saved to messages table for CRM');
+    } else {
+      console.warn('[ZAPI-SEND] ⚠️ No conversation found for phone:', phone);
+    }
+
     // Log no agent_logs também
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,

@@ -187,55 +187,50 @@ ${message}`;
       responsePreview: aiResponse.substring(0, 100)
     });
 
-    // 8. Dividir resposta em chunks para envio gradual
-    const messageChunks = splitMessageIntoChunks(aiResponse);
-    console.log('[AI-RESPONSE] 📨 Sending', messageChunks.length, 'message chunks...');
+    // ✅ FASE 2: ENVIAR MENSAGEM COMPLETA (SEM CHUNKS)
+    console.log('[AI-RESPONSE] 📨 Sending complete message (no chunks)...', {
+      messageLength: aiResponse.length,
+      agentKey,
+      phoneNumber
+    });
 
-    // 9. Enviar cada chunk com delays realistas
-    for (let i = 0; i < messageChunks.length; i++) {
-      const chunk = messageChunks[i];
-      
-      // Typing indicator antes de cada mensagem
-      try {
-        await supabase.functions.invoke('send-typing-indicator', {
-          body: { phone: phoneNumber, agentKey, action: 'start' }
-        });
-      } catch (e) {
-        console.error('[AI-RESPONSE] ⚠️ Typing start error (non-blocking):', e);
-      }
-      
-      // Delay realista (1-2 segundos por mensagem)
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
-      
-      // Parar typing antes de enviar
-      try {
-        await supabase.functions.invoke('send-typing-indicator', {
-          body: { phone: phoneNumber, agentKey, action: 'stop' }
-        });
-      } catch (e) {
-        console.error('[AI-RESPONSE] ⚠️ Typing stop error (non-blocking):', e);
-      }
-      
-      // Enviar mensagem
-      const { data: sendResult, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
-        body: {
-          agentKey,
-          phone: phoneNumber,
-          message: chunk
-        }
+    // Typing indicator antes de enviar
+    try {
+      await supabase.functions.invoke('send-typing-indicator', {
+        body: { phone: phoneNumber, agentKey, action: 'start' }
       });
-
-      if (sendError) {
-        console.error('[AI-RESPONSE] ❌ Send error on chunk', i + 1, ':', sendError);
-      } else {
-        console.log('[AI-RESPONSE] ✅ Chunk', i + 1, '/', messageChunks.length, 'sent successfully');
-      }
-      
-      // Pequeno delay entre mensagens (300-500ms)
-      if (i < messageChunks.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 200));
-      }
+    } catch (e) {
+      console.error('[AI-RESPONSE] ⚠️ Typing start error (non-blocking):', e);
     }
+
+    // Delay realista (2-3 segundos para simular digitação humana)
+    const typingDelay = 2000 + Math.random() * 1000;
+    await new Promise(resolve => setTimeout(resolve, typingDelay));
+
+    // Parar typing indicator
+    try {
+      await supabase.functions.invoke('send-typing-indicator', {
+        body: { phone: phoneNumber, agentKey, action: 'stop' }
+      });
+    } catch (e) {
+      console.error('[AI-RESPONSE] ⚠️ Typing stop error (non-blocking):', e);
+    }
+
+    // Enviar mensagem COMPLETA de uma vez
+    const { data: sendResult, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+      body: {
+        agentKey,
+        phone: phoneNumber,
+        message: aiResponse, // Mensagem COMPLETA, sem dividir
+      }
+    });
+
+    if (sendError) {
+      console.error('[AI-RESPONSE] ❌ Send error:', sendError);
+      throw new Error('Failed to send message');
+    }
+
+    console.log('[AI-RESPONSE] ✅ Complete message sent successfully');
 
     // 10. Registrar no log
     console.log('[AI-RESPONSE] 📊 Logging event...');
