@@ -322,6 +322,45 @@ export type Database = {
           },
         ]
       }
+      api_logs: {
+        Row: {
+          api_name: string
+          created_at: string | null
+          endpoint: string
+          error_message: string | null
+          id: string
+          request_payload: Json | null
+          response_data: Json | null
+          response_time_ms: number | null
+          status_code: number | null
+          success: boolean
+        }
+        Insert: {
+          api_name: string
+          created_at?: string | null
+          endpoint: string
+          error_message?: string | null
+          id?: string
+          request_payload?: Json | null
+          response_data?: Json | null
+          response_time_ms?: number | null
+          status_code?: number | null
+          success?: boolean
+        }
+        Update: {
+          api_name?: string
+          created_at?: string | null
+          endpoint?: string
+          error_message?: string | null
+          id?: string
+          request_payload?: Json | null
+          response_data?: Json | null
+          response_time_ms?: number | null
+          status_code?: number | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       api_rate_limits: {
         Row: {
           created_at: string | null

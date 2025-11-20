@@ -4,7 +4,7 @@
 
 export type AgentType = 'vendas' | 'diretoria' | 'notificacao' | 'personalizado';
 
-export type IntegrationProvider = 'none' | 'manychat' | 'string' | 'whatsapp-api';
+export type IntegrationProvider = 'none' | 'manychat' | 'string';
 
 export interface Agent {
   id: string;
@@ -65,11 +65,6 @@ export interface Agent {
       agentId?: string;
       apiKey?: string;
       endpoint?: string;
-    };
-    whatsappApi?: {
-      phoneNumberId?: string;
-      accessToken?: string;
-      webhookUrl?: string;
     };
   };
 }

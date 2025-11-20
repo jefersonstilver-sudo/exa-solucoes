@@ -45,18 +45,6 @@ export const MonitorAPIs = () => {
       description: 'Processamento de IA para agentes inteligentes'
     },
     {
-      name: 'WhatsApp API',
-      endpoint: '/functions/v1/whatsapp-test',
-      status: 'unknown',
-      lastCheck: null,
-      lastSuccess: null,
-      responseTime: null,
-      totalRequests: 0,
-      failedRequests: 0,
-      icon: Phone,
-      description: 'Notificações para Eduardo via WhatsApp'
-    },
-    {
       name: 'Supabase Database',
       endpoint: '/rest/v1/agents',
       status: 'unknown',
@@ -105,8 +93,6 @@ export const MonitorAPIs = () => {
         response = await supabase.functions.invoke('manychat-webhook-test');
       } else if (apiName === 'OpenAI API') {
         response = await supabase.functions.invoke('openai-test');
-      } else if (apiName === 'WhatsApp API') {
-        response = await supabase.functions.invoke('whatsapp-test');
       } else if (apiName === 'Route Message') {
         response = await supabase.functions.invoke('route-message', {
           body: { message: 'test', conversationId: 'test-health-check' }
