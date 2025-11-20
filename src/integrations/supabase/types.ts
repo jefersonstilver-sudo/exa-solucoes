@@ -101,6 +101,90 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_logs: {
+        Row: {
+          agent_key: string
+          conversation_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          message_id: string | null
+          metadata: Json | null
+          rule_used: string | null
+        }
+        Insert: {
+          agent_key: string
+          conversation_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          rule_used?: string | null
+        }
+        Update: {
+          agent_key?: string
+          conversation_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          rule_used?: string | null
+        }
+        Relationships: []
+      }
+      agents: {
+        Row: {
+          created_at: string
+          description: string
+          display_name: string
+          id: string
+          is_active: boolean | null
+          kb_ids: Json | null
+          key: string
+          manychat_config: Json | null
+          manychat_connected: boolean | null
+          openai_config: Json | null
+          routing_rules: Json | null
+          type: string
+          updated_at: string
+          whatsapp_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          display_name: string
+          id?: string
+          is_active?: boolean | null
+          kb_ids?: Json | null
+          key: string
+          manychat_config?: Json | null
+          manychat_connected?: boolean | null
+          openai_config?: Json | null
+          routing_rules?: Json | null
+          type: string
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean | null
+          kb_ids?: Json | null
+          key?: string
+          manychat_config?: Json | null
+          manychat_connected?: boolean | null
+          openai_config?: Json | null
+          routing_rules?: Json | null
+          type?: string
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
       ai_debug_analysis_history: {
         Row: {
           ai_analysis: Json
@@ -2489,6 +2573,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      knowledge_base: {
+        Row: {
+          agent_key: string | null
+          created_at: string
+          file_name: string
+          id: string
+          metadata: Json | null
+          mime_type: string
+          size: number
+          status: string
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          agent_key?: string | null
+          created_at?: string
+          file_name: string
+          id?: string
+          metadata?: Json | null
+          mime_type: string
+          size: number
+          status?: string
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          agent_key?: string | null
+          created_at?: string
+          file_name?: string
+          id?: string
+          metadata?: Json | null
+          mime_type?: string
+          size?: number
+          status?: string
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       lead_data_access_logs: {
         Row: {
