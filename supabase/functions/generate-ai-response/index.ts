@@ -145,13 +145,19 @@ ${message}`;
       throw new Error('Failed to generate AI response');
     }
 
-    const aiResponse = aiResult?.response;
+    let aiResponse = aiResult?.response;
 
     if (!aiResponse) {
       throw new Error('No response from AI');
     }
 
-    console.log('[AI-RESPONSE] ✅ AI response generated:', {
+    // SANITIZAÇÃO: Remover quebras de linha múltiplas e forçar mensagem única
+    aiResponse = aiResponse
+      .replace(/\n\n+/g, ' ')  // Substituir quebras duplas por espaço
+      .replace(/\n/g, ' ')     // Substituir quebras simples por espaço
+      .trim();
+
+    console.log('[AI-RESPONSE] ✅ AI response generated and sanitized:', {
       responseLength: aiResponse.length,
       responsePreview: aiResponse.substring(0, 100)
     });

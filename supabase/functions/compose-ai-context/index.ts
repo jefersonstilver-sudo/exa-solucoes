@@ -31,20 +31,22 @@ serve(async (req) => {
       throw new Error('Agent not found');
     }
 
-    // 2. Buscar configurações de conhecimento
+    // 2. Buscar configurações de conhecimento (OTIMIZADO: apenas seções core)
+    const relevantSections = ['perfil', 'fluxo_comercial']; // Seções essenciais
     const { data: agentKnowledge } = await supabase
       .from('agent_knowledge')
       .select('*')
       .eq('agent_key', agentKey)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .in('section', relevantSections);
 
-    // 3. Buscar histórico da conversa (últimas 10 mensagens)
+    // 3. Buscar histórico da conversa (OTIMIZADO: apenas últimas 5 mensagens)
     const { data: conversationHistory } = await supabase
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(5);
 
     // 4. Buscar conversation para contexto
     const { data: conversation } = await supabase
@@ -69,27 +71,23 @@ serve(async (req) => {
           .join('\n')
       : 'Início da conversa.';
 
-    // 8. Construir prompt final
+    // 8. Construir prompt final (OTIMIZADO: apenas essencial)
     const finalPrompt = `${systemPrompt}
 
 ## BASE DE CONHECIMENTO
 ${knowledgeContext}
 
-## HISTÓRICO DA CONVERSA
+## HISTÓRICO RECENTE
 ${historyFormatted}
-
-## CONTEXTO ATUAL
-- Sentimento: ${conversation?.sentiment || 'neutro'}
-- Humor (0-100): ${conversation?.mood_score || 50}
-- Lead Score: ${conversation?.lead_score || 0}
-- Urgência: ${conversation?.urgency_level || 0}/10
-- É síndico: ${conversation?.is_sindico ? 'Sim' : 'Não'}
-- Aguardando resposta: ${conversation?.awaiting_response ? 'Sim' : 'Não'}
 
 ## MENSAGEM ATUAL DO CLIENTE
 ${userMessage}
 
-## SUA RESPOSTA:`;
+## INSTRUÇÕES DE RESPOSTA:
+- Responda em UMA mensagem curta (máx 80 caracteres)
+- Sem quebras de linha múltiplas
+- Máximo 1 emoji (usar raramente)
+- Tom natural e direto`;
 
     console.log('[COMPOSE-AI-CONTEXT] Context composed, estimated tokens:', Math.floor(finalPrompt.length / 4));
 

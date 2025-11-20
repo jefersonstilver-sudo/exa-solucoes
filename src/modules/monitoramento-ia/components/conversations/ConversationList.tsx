@@ -55,10 +55,21 @@ export const ConversationList = ({
             }`}
           >
             <div className="flex items-start gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isSelected ? 'bg-module-accent text-white' : 'bg-module-input'
-              }`}>
-                <Phone className="w-5 h-5" />
+              {/* Avatar colorido por agente */}
+              <div 
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                  conv.agent_key === 'sofia' ? 'bg-purple-500 text-white' :
+                  conv.agent_key === 'iris' ? 'bg-blue-500 text-white' :
+                  conv.agent_key === 'eduardo' ? 'bg-green-500 text-white' :
+                  conv.agent_key === 'exa_alert' ? 'bg-orange-500 text-white' :
+                  'bg-gray-500 text-white'
+                }`}
+              >
+                {conv.agent_key === 'sofia' ? '🟣' :
+                 conv.agent_key === 'iris' ? '💼' :
+                 conv.agent_key === 'eduardo' ? '👨‍💼' :
+                 conv.agent_key === 'exa_alert' ? '🔔' :
+                 '🤖'}
               </div>
               
               <div className="flex-1 min-w-0">
