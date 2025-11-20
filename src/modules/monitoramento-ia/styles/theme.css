@@ -59,8 +59,8 @@
    ======================================== */
 .theme-light {
   /* Backgrounds */
-  --bg-primary: #FFFFFF;
-  --bg-secondary: #F7F7F7;
+  --bg-primary: #F9FAFB;
+  --bg-secondary: #F3F4F6;
   --bg-card: #FFFFFF;
   --bg-input: #FFFFFF;
   --bg-hover: rgba(156, 30, 30, 0.05);
@@ -68,15 +68,15 @@
   --bg-accent-hover: #B82525;
   
   /* Borders */
-  --border-default: #D8D8D8;
+  --border-default: #E5E7EB;
   --border-accent: #9C1E1E;
-  --border-light: #E8E8E8;
+  --border-light: #F3F4F6;
   
   /* Text */
-  --text-primary: #0A0A0A;
-  --text-secondary: #4B4B4B;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
   --text-tertiary: #6B7280;
-  --text-muted: rgba(0, 0, 0, 0.4);
+  --text-muted: rgba(0, 0, 0, 0.5);
   
   /* Placeholders */
   --placeholder: #9CA3AF;
