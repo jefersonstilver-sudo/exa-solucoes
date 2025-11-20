@@ -1,7 +1,7 @@
-import { Phone, MessageCircle, AlertCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { Phone, MessageCircle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import type { ZAPILog } from '../../hooks/useConversations';
+import { MessageBubble } from './MessageBubble';
 
 interface ConversationDetailProps {
   messages: ZAPILog[];
@@ -16,6 +16,16 @@ export const ConversationDetail = ({
   phoneNumber,
   agentKey 
 }: ConversationDetailProps) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   if (!phoneNumber || !agentKey) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
@@ -39,68 +49,44 @@ export const ConversationDetail = ({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#e5ddd5] dark:bg-[#0b141a]">
       {/* Header */}
-      <div className="p-4 border-b border-module bg-module-card">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1f2c33] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-module-accent flex items-center justify-center text-white">
-            <Phone className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+            <Phone className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </div>
           <div>
-            <h3 className="font-semibold text-module-primary">{phoneNumber}</h3>
-            <p className="text-xs text-module-secondary">
-              Agente: {agentKey.replace('_', ' ').toUpperCase()}
+            <h3 className="font-semibold text-gray-900 dark:text-white">{phoneNumber}</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              {agentKey.replace('_', ' ').toUpperCase()}
             </p>
           </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar bg-[#e5ddd5] dark:bg-[#0b141a]">
         {messages.length === 0 ? (
-          <div className="text-center text-module-secondary py-8">
+          <div className="text-center text-gray-600 dark:text-gray-400 py-8">
             Nenhuma mensagem nesta conversa
           </div>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[70%] rounded-lg p-3 ${
-                  message.direction === 'outbound'
-                    ? 'bg-module-accent text-white'
-                    : 'bg-module-input text-module-primary'
-                }`}
-              >
-                {message.status === 'error' && (
-                  <div className="flex items-center gap-2 mb-2 text-red-400">
-                    <AlertCircle className="w-4 h-4" />
-                    <span className="text-xs">Erro ao enviar</span>
-                  </div>
-                )}
-                
-                <p className="text-sm whitespace-pre-wrap break-words">
-                  {message.message_text}
-                </p>
-                
-                <div className={`text-xs mt-2 ${
-                  message.direction === 'outbound' 
-                    ? 'text-white/70' 
-                    : 'text-module-tertiary'
-                }`}>
-                  {format(new Date(message.created_at), "d 'de' MMM 'às' HH:mm", { locale: ptBR })}
-                </div>
-
-                {message.error_message && (
-                  <p className="text-xs mt-2 text-red-300">
-                    {message.error_message}
-                  </p>
-                )}
-              </div>
-            </div>
-          ))
+          <>
+            {messages.map((message) => (
+              <MessageBubble
+                key={message.id}
+                direction={message.direction}
+                messageText={message.message_text}
+                mediaUrl={message.media_url}
+                mediaType={message.metadata?.media_type}
+                status={message.status}
+                errorMessage={message.error_message}
+                createdAt={message.created_at}
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </>
         )}
       </div>
     </div>

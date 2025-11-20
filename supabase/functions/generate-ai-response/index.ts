@@ -27,13 +27,10 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // 1. Buscar configuração do agente e conhecimento
+    // 1. Buscar configuração do agente
     const { data: agent, error: agentError } = await supabase
       .from('agents')
-      .select(`
-        *,
-        agent_knowledge (*)
-      `)
+      .select('*')
       .eq('key', agentKey)
       .single();
 
@@ -45,9 +42,21 @@ serve(async (req) => {
     console.log('[AI-RESPONSE] ✅ Agent found:', {
       key: agent.key,
       name: agent.display_name,
-      aiAutoResponse: agent.ai_auto_response,
-      hasKnowledge: !!agent.agent_knowledge?.length
+      aiAutoResponse: agent.ai_auto_response
     });
+
+    // 1.1. Buscar conhecimento do agente separadamente
+    const { data: agentKnowledge, error: knowledgeError } = await supabase
+      .from('agent_knowledge')
+      .select('*')
+      .eq('agent_key', agentKey)
+      .eq('is_active', true);
+
+    if (knowledgeError) {
+      console.error('[AI-RESPONSE] ⚠️ Error fetching knowledge:', knowledgeError);
+    }
+
+    console.log('[AI-RESPONSE] ✅ Knowledge items found:', agentKnowledge?.length || 0);
 
     if (!agent.ai_auto_response) {
       console.log('[AI-RESPONSE] ⏸️ AI auto-response disabled for agent');
@@ -66,8 +75,7 @@ serve(async (req) => {
       .limit(10);
 
     // 3. Construir contexto do conhecimento
-    const knowledgeContext = (agent.agent_knowledge || [])
-      .filter((k: any) => k.is_active)
+    const knowledgeContext = (agentKnowledge || [])
       .map((k: any) => `### ${k.title}\n${k.content}`)
       .join('\n\n');
 
@@ -96,7 +104,7 @@ ${historyContext}
 - Mantenha o tom amigável e prestativo`;
 
     console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
-      knowledgeItemsCount: (agent.agent_knowledge || []).filter((k: any) => k.is_active).length,
+      knowledgeItemsCount: (agentKnowledge || []).length,
       historyMessagesCount: (conversationHistory || []).length,
       systemPromptLength: systemPrompt.length
     });

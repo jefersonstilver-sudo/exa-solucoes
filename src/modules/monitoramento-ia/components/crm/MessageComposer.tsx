@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -98,26 +98,37 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   };
 
   return (
-    <div className="flex gap-2 p-4 border-t bg-background">
-      <Textarea
-        placeholder="Digite sua mensagem... (Enter para enviar, Shift+Enter para quebra de linha)"
-        value={message}
-        onChange={(e) => {
-          setMessage(e.target.value);
-          handleTyping();
-        }}
-        onKeyDown={handleKeyDown}
-        rows={2}
-        className="resize-none flex-1"
-        disabled={sending}
-      />
+    <div className="flex gap-2 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1f2c33]">
+      <div className="flex-1 relative">
+        <Textarea
+          placeholder="Digite uma mensagem"
+          value={message}
+          onChange={(e) => {
+            setMessage(e.target.value);
+            handleTyping();
+          }}
+          onKeyDown={handleKeyDown}
+          rows={1}
+          className="resize-none pr-12 rounded-3xl border-gray-300 dark:border-gray-700 focus:border-[#25D366] dark:focus:border-[#25D366] bg-white dark:bg-[#2a3942]"
+          disabled={sending}
+        />
+        {message.length > 0 && (
+          <span className="absolute right-3 bottom-2 text-xs text-gray-400">
+            {message.length}
+          </span>
+        )}
+      </div>
       <Button
         onClick={handleSend}
         disabled={!message.trim() || sending}
         size="icon"
-        className="self-end"
+        className="self-end rounded-full bg-[#25D366] hover:bg-[#20bd5a] w-10 h-10"
       >
-        <Send className="w-4 h-4" />
+        {sending ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Send className="w-4 h-4" />
+        )}
       </Button>
     </div>
   );

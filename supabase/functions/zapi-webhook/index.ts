@@ -22,9 +22,41 @@ serve(async (req) => {
 
     // Z-API envia mensagens no formato:
     // { phone: "5545991415920", text: { message: "texto" }, instanceId: "..." }
+    // Também pode enviar: sticker, image, audio, video, document
     const phone = payload.phone || payload.remoteJid?.replace('@s.whatsapp.net', '');
-    const messageText = payload.text?.message || payload.body || '';
     const instanceId = payload.instanceId;
+
+    // Detectar tipo de mensagem e extrair conteúdo
+    let messageText = '';
+    let mediaUrl = null;
+    let mediaType = 'text';
+
+    if (payload.text?.message) {
+      messageText = payload.text.message;
+      mediaType = 'text';
+    } else if (payload.image?.imageUrl) {
+      messageText = payload.image.caption || '[Imagem]';
+      mediaUrl = payload.image.imageUrl;
+      mediaType = 'image';
+    } else if (payload.audio?.audioUrl) {
+      messageText = '[Áudio]';
+      mediaUrl = payload.audio.audioUrl;
+      mediaType = 'audio';
+    } else if (payload.sticker?.stickerUrl) {
+      messageText = '[Figurinha]';
+      mediaUrl = payload.sticker.stickerUrl;
+      mediaType = 'sticker';
+    } else if (payload.video?.videoUrl) {
+      messageText = payload.video.caption || '[Vídeo]';
+      mediaUrl = payload.video.videoUrl;
+      mediaType = 'video';
+    } else if (payload.document?.documentUrl) {
+      messageText = payload.document.fileName || '[Documento]';
+      mediaUrl = payload.document.documentUrl;
+      mediaType = 'document';
+    } else {
+      messageText = payload.body || '';
+    }
 
     if (!phone || !messageText) {
       console.log('[ZAPI-WEBHOOK] Invalid payload, missing phone or message');
@@ -33,6 +65,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    console.log('[ZAPI-WEBHOOK] 📨 Message type:', mediaType, mediaUrl ? '(has media)' : '(text only)');
 
     // Identificar qual agente recebeu a mensagem baseado no instanceId
     const { data: agent, error: agentError } = await supabase
@@ -58,8 +92,12 @@ serve(async (req) => {
       direction: 'inbound',
       phone_number: phone,
       message_text: messageText,
+      media_url: mediaUrl,
       status: 'received',
-      metadata: { raw_payload: payload }
+      metadata: { 
+        raw_payload: payload,
+        media_type: mediaType
+      }
     });
 
     // VALIDAÇÃO ESPECIAL PARA IRIS (somente diretores autorizados)
