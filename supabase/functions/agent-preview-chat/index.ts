@@ -57,6 +57,30 @@ serve(async (req) => {
       });
     }
 
+    // Se for Sofia, adicionar ferramenta de consulta de prédios
+    const tools = agentKey === 'sofia' ? [
+      {
+        type: 'function',
+        function: {
+          name: 'consultar_predios',
+          description: 'Consulta a lista de prédios disponíveis na EXA. Use quando o cliente perguntar sobre prédios, localização, bairros ou quiser ver opções disponíveis.',
+          parameters: {
+            type: 'object',
+            properties: {
+              query: {
+                type: 'string',
+                description: 'Nome do prédio ou termo de busca (opcional)'
+              },
+              bairro: {
+                type: 'string',
+                description: 'Filtrar por bairro específico (opcional)'
+              }
+            }
+          }
+        }
+      }
+    ] : undefined;
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -70,7 +94,9 @@ serve(async (req) => {
         messages: [
           { role: 'system', content: systemPrompt },
           ...messages
-        ]
+        ],
+        tools: tools,
+        tool_choice: tools ? 'auto' : undefined
       })
     });
 
@@ -81,7 +107,75 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const assistantResponse = data.choices[0].message.content;
+    const assistantMessage = data.choices[0].message;
+
+    // Se a IA decidiu usar a ferramenta, executar
+    if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      const toolCall = assistantMessage.tool_calls[0];
+      
+      if (toolCall.function.name === 'consultar_predios') {
+        console.log('[PREVIEW] Consultando prédios...');
+        const args = JSON.parse(toolCall.function.arguments);
+        
+        // Chamar edge function de prédios
+        const { data: buildingsData, error: buildingsError } = await supabase.functions.invoke('get-buildings-for-agent', {
+          body: {
+            query: args.query,
+            filters: { bairro: args.bairro }
+          }
+        });
+        
+        if (buildingsError) {
+          console.error('[PREVIEW] Error fetching buildings:', buildingsError);
+        }
+        
+        // Adicionar resultado ao contexto e pedir resposta final
+        const finalResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: agent.openai_config?.model || 'gpt-4o-mini',
+            temperature: agent.openai_config?.temperature || 0.7,
+            max_tokens: agent.openai_config?.max_tokens || 1500,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...messages,
+              assistantMessage,
+              {
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(buildingsData || { buildings: [], total: 0 })
+              }
+            ]
+          })
+        });
+        
+        if (!finalResponse.ok) {
+          const error = await finalResponse.text();
+          console.error('[PREVIEW] OpenAI error on final response:', error);
+          throw new Error('OpenAI API error');
+        }
+        
+        const finalData = await finalResponse.json();
+        const assistantResponse = finalData.choices[0].message.content;
+
+        // Salvar histórico do preview
+        await supabase.from('agent_preview_conversations').insert({
+          agent_key: agentKey,
+          messages: JSON.stringify([...messages, { role: 'assistant', content: assistantResponse }])
+        });
+
+        return new Response(JSON.stringify({ response: assistantResponse }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // Resposta normal sem tool calling
+    const assistantResponse = assistantMessage.content;
 
     // Salvar histórico do preview
     await supabase.from('agent_preview_conversations').insert({

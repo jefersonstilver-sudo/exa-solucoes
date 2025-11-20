@@ -2791,6 +2791,8 @@ export type Database = {
           notes: string | null
           profile_type: string | null
           qualified_by: string | null
+          reason_for_risk: string | null
+          risk_of_loss: boolean | null
           score: number | null
           spin_implication: number | null
           spin_need: number | null
@@ -2811,6 +2813,8 @@ export type Database = {
           notes?: string | null
           profile_type?: string | null
           qualified_by?: string | null
+          reason_for_risk?: string | null
+          risk_of_loss?: boolean | null
           score?: number | null
           spin_implication?: number | null
           spin_need?: number | null
@@ -2831,6 +2835,8 @@ export type Database = {
           notes?: string | null
           profile_type?: string | null
           qualified_by?: string | null
+          reason_for_risk?: string | null
+          risk_of_loss?: boolean | null
           score?: number | null
           spin_implication?: number | null
           spin_need?: number | null
