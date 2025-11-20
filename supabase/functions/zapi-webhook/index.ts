@@ -26,6 +26,11 @@ serve(async (req) => {
     const phone = payload.phone || payload.remoteJid?.replace('@s.whatsapp.net', '');
     const instanceId = payload.instanceId;
 
+    // Extrair ID único da mensagem para deduplicação
+    const messageId = payload.messageId || payload.id || payload.key?.id || `${phone}_${Date.now()}`;
+    
+    console.log('[ZAPI-WEBHOOK] 🔑 Message ID:', messageId);
+
     // Detectar tipo de mensagem e extrair conteúdo
     let messageText = '';
     let mediaUrl = null;
@@ -86,13 +91,33 @@ serve(async (req) => {
 
     console.log('[ZAPI-WEBHOOK] ✅ Agent found:', agent.key, '- Instance:', instanceId);
 
-    // Log inbound message
-    await supabase.from('zapi_logs').insert({
+    // ========== VERIFICAÇÃO DE DEDUPLICAÇÃO ==========
+    const { data: existingLog } = await supabase
+      .from('zapi_logs')
+      .select('id')
+      .eq('zapi_message_id', messageId)
+      .maybeSingle();
+
+    if (existingLog) {
+      console.log('[ZAPI-WEBHOOK] ⚠️ Message already processed, ignoring:', messageId);
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: 'Already processed',
+        messageId,
+        deduplication: true
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Log inbound message COM messageId para deduplicação
+    const { error: logError } = await supabase.from('zapi_logs').insert({
       agent_key: agent.key,
       direction: 'inbound',
       phone_number: phone,
       message_text: messageText,
       media_url: mediaUrl,
+      zapi_message_id: messageId,
       status: 'received',
       metadata: { 
         raw_payload: payload,
@@ -100,155 +125,175 @@ serve(async (req) => {
       }
     });
 
-    // VALIDAÇÃO ESPECIAL PARA IRIS (somente diretores autorizados)
-    if (agent.key === 'iris') {
-      const { data: director } = await supabase
-        .from('iris_authorized_directors')
-        .select('*')
-        .eq('phone_number', phone)
-        .eq('is_active', true)
-        .single();
+    if (logError) {
+      console.error('[ZAPI-WEBHOOK] ❌ Error logging message:', logError);
+    }
 
-      if (!director) {
-        console.log('[ZAPI-WEBHOOK] IRIS: Unauthorized number:', phone);
-        
-        // Log tentativa de acesso não autorizado
-        await supabase.from('agent_logs').insert({
-          agent_key: 'iris',
-          event_type: 'unauthorized_access_attempt',
-          metadata: { phone, message: messageText }
-        });
+    console.log('[ZAPI-WEBHOOK] ✅ Message logged with ID:', messageId);
 
-        // Enviar mensagem de rejeição educada
-        const rejectMessage = `Olá! Este é um canal exclusivo da Diretoria INDEXA. 
+    // Responder IMEDIATAMENTE para evitar retry da Z-API
+    const immediateResponse = new Response(JSON.stringify({ 
+      success: true,
+      agent: agent.key,
+      messageId,
+      processing: 'async'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+    // Processar tudo de forma ASSÍNCRONA (não bloqueia resposta)
+    (async () => {
+      try {
+        console.log('[ZAPI-WEBHOOK] 🔄 Starting async processing...');
+
+        // VALIDAÇÃO ESPECIAL PARA IRIS (somente diretores autorizados)
+        if (agent.key === 'iris') {
+          const { data: director } = await supabase
+            .from('iris_authorized_directors')
+            .select('*')
+            .eq('phone_number', phone)
+            .eq('is_active', true)
+            .single();
+
+          if (!director) {
+            console.log('[ZAPI-WEBHOOK] IRIS: Unauthorized number:', phone);
+            
+            // Log tentativa de acesso não autorizado
+            await supabase.from('agent_logs').insert({
+              agent_key: 'iris',
+              event_type: 'unauthorized_access_attempt',
+              metadata: { phone, message: messageText }
+            });
+
+            // Enviar mensagem de rejeição educada
+            const rejectMessage = `Olá! Este é um canal exclusivo da Diretoria INDEXA. 
 
 Para suporte comercial, entre em contato com nossa equipe através do +55 45 99141-5920 (Sofia).
 
 Obrigado pela compreensão!`;
 
-        await supabase.functions.invoke('zapi-send-message', {
-          body: {
-            agentKey: 'iris',
-            phone,
-            message: rejectMessage
+            await supabase.functions.invoke('zapi-send-message', {
+              body: {
+                agentKey: 'iris',
+                phone,
+                message: rejectMessage
+              }
+            });
+
+            return;
           }
-        });
 
-        return new Response(JSON.stringify({ 
-          status: 'rejected',
-          reason: 'unauthorized_number' 
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      console.log('[ZAPI-WEBHOOK] IRIS: Authorized director:', director.director_name);
-    }
-
-    // BLOQUEIO PARA EXA ALERT (notification-only)
-    if (agent.key === 'exa_alert') {
-      console.log('[ZAPI-WEBHOOK] EXA Alert: ignoring inbound (notification-only)');
-      return new Response(JSON.stringify({ 
-        status: 'ignored',
-        reason: 'notification_only_agent' 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Criar/Atualizar conversation
-    const { data: conversation, error: convError } = await supabase
-      .from('conversations')
-      .upsert({
-        external_id: phone,
-        contact_phone: phone,
-        contact_name: payload.senderName || null,
-        agent_key: agent.key,
-        provider: 'zapi',
-        status: 'open',
-        last_message_at: new Date().toISOString()
-      }, {
-        onConflict: 'external_id,agent_key',
-        ignoreDuplicates: false
-      })
-      .select()
-      .single();
-
-    if (convError) {
-      console.error('[ZAPI-WEBHOOK] ❌ Conversation upsert error:', convError);
-      throw new Error(`Failed to upsert conversation: ${convError.message}`);
-    }
-
-    if (!conversation) {
-      console.error('[ZAPI-WEBHOOK] ❌ Conversation returned null without error');
-      throw new Error('Conversation returned null');
-    }
-
-    console.log('[ZAPI-WEBHOOK] ✅ Conversation created/updated:', conversation.id);
-
-    // Salvar mensagem
-    const { data: savedMessage, error: messageError } = await supabase.from('messages').insert({
-      conversation_id: conversation.id,
-      agent_key: agent.key,
-      provider: 'zapi',
-      direction: 'inbound',
-      from_role: 'user',
-      body: messageText,
-      raw_payload: payload
-    }).select().single();
-
-    if (messageError) {
-      console.error('[ZAPI-WEBHOOK] ❌ Error saving message:', messageError);
-      throw messageError;
-    }
-
-    console.log('[ZAPI-WEBHOOK] ✅ Message saved:', savedMessage.id);
-
-    // Normalizar payload para formato interno do route-message
-    const normalizedPayload = {
-      message: messageText,
-      conversationId: conversation.id,
-      metadata: {
-        source: 'zapi',
-        agentKey: agent.key,
-        phone,
-        instanceId,
-        timestamp: new Date().toISOString()
-      }
-    };
-
-    // Chamar route-message para processar e responder
-    console.log('[ZAPI-WEBHOOK] ✅ Calling route-message...');
-    const { data: routeResult, error: routeError } = await supabase.functions.invoke(
-      'route-message',
-      { body: normalizedPayload }
-    );
-
-    if (routeError) {
-      console.error('[ZAPI-WEBHOOK] ❌ Route error:', routeError);
-      throw routeError;
-    }
-
-    console.log('[ZAPI-WEBHOOK] ✅ Route result:', routeResult);
-
-    // Se route-message retornou uma resposta, enviá-la via Z-API
-    if (routeResult?.response) {
-      await supabase.functions.invoke('zapi-send-message', {
-        body: {
-          agentKey: agent.key,
-          phone,
-          message: routeResult.response
+          console.log('[ZAPI-WEBHOOK] IRIS: Authorized director:', director.director_name);
         }
-      });
-    }
 
-    return new Response(JSON.stringify({ 
-      success: true,
-      agent: agent.key,
-      processed: true 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+        // BLOQUEIO PARA EXA ALERT (notification-only)
+        if (agent.key === 'exa_alert') {
+          console.log('[ZAPI-WEBHOOK] EXA Alert: ignoring inbound (notification-only)');
+          return;
+        }
+
+        // Criar/Atualizar conversation
+        const { data: conversation, error: convError } = await supabase
+          .from('conversations')
+          .upsert({
+            external_id: phone,
+            contact_phone: phone,
+            contact_name: payload.senderName || null,
+            agent_key: agent.key,
+            provider: 'zapi',
+            status: 'open',
+            last_message_at: new Date().toISOString()
+          }, {
+            onConflict: 'external_id,agent_key',
+            ignoreDuplicates: false
+          })
+          .select()
+          .single();
+
+        if (convError) {
+          console.error('[ZAPI-WEBHOOK] ❌ Conversation upsert error:', convError);
+          throw new Error(`Failed to upsert conversation: ${convError.message}`);
+        }
+
+        if (!conversation) {
+          console.error('[ZAPI-WEBHOOK] ❌ Conversation returned null without error');
+          throw new Error('Conversation returned null');
+        }
+
+        console.log('[ZAPI-WEBHOOK] ✅ Conversation created/updated:', conversation.id);
+
+        // Salvar mensagem
+        const { data: savedMessage, error: messageError } = await supabase.from('messages').insert({
+          conversation_id: conversation.id,
+          agent_key: agent.key,
+          provider: 'zapi',
+          direction: 'inbound',
+          from_role: 'user',
+          body: messageText,
+          raw_payload: payload
+        }).select().single();
+
+        if (messageError) {
+          console.error('[ZAPI-WEBHOOK] ❌ Error saving message:', messageError);
+          throw messageError;
+        }
+
+        console.log('[ZAPI-WEBHOOK] ✅ Message saved:', savedMessage.id);
+
+        // Normalizar payload para formato interno do route-message
+        const normalizedPayload = {
+          message: messageText,
+          conversationId: conversation.id,
+          metadata: {
+            source: 'zapi',
+            agentKey: agent.key,
+            phone,
+            instanceId,
+            timestamp: new Date().toISOString()
+          }
+        };
+
+        // Chamar route-message para processar e responder
+        console.log('[ZAPI-WEBHOOK] ✅ Calling route-message...');
+        const { data: routeResult, error: routeError } = await supabase.functions.invoke(
+          'route-message',
+          { body: normalizedPayload }
+        );
+
+        if (routeError) {
+          console.error('[ZAPI-WEBHOOK] ❌ Route error:', routeError);
+          throw routeError;
+        }
+
+        console.log('[ZAPI-WEBHOOK] ✅ Route result:', routeResult);
+
+        // Se route-message retornou uma resposta, enviá-la via Z-API
+        if (routeResult?.response) {
+          await supabase.functions.invoke('zapi-send-message', {
+            body: {
+              agentKey: agent.key,
+              phone,
+              message: routeResult.response
+            }
+          });
+        }
+
+        console.log('[ZAPI-WEBHOOK] ✅ Async processing completed');
+      } catch (error) {
+        console.error('[ZAPI-WEBHOOK] ❌ Async processing error:', error);
+        // Log erro mas não falha (resposta já foi enviada)
+        await supabase.from('api_logs').insert({
+          api_name: 'zapi-webhook',
+          endpoint: '/zapi-webhook',
+          success: false,
+          error_message: error.message,
+          request_payload: { messageId, phone, agent: agent?.key }
+        });
+      }
+    })();
+
+    // Retornar resposta imediata
+    return immediateResponse;
 
   } catch (error) {
     console.error('[ZAPI-WEBHOOK] Error:', error);
