@@ -119,7 +119,7 @@ Obrigado pela compreensão!`;
     }
 
     // Criar/Atualizar conversation
-    const { data: conversation } = await supabase
+    const { data: conversation, error: convError } = await supabase
       .from('conversations')
       .upsert({
         external_id: phone,
@@ -136,8 +136,14 @@ Obrigado pela compreensão!`;
       .select()
       .single();
 
+    if (convError) {
+      console.error('[ZAPI-WEBHOOK] ❌ Conversation upsert error:', convError);
+      throw new Error(`Failed to upsert conversation: ${convError.message}`);
+    }
+
     if (!conversation) {
-      throw new Error('Failed to create/update conversation');
+      console.error('[ZAPI-WEBHOOK] ❌ Conversation returned null without error');
+      throw new Error('Conversation returned null');
     }
 
     console.log('[ZAPI-WEBHOOK] ✅ Conversation created/updated:', conversation.id);
