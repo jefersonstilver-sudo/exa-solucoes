@@ -1714,6 +1714,89 @@ export type Database = {
           },
         ]
       }
+      conversation_notes: {
+        Row: {
+          agent_key: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          note_text: string
+          phone_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_key: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          note_text: string
+          phone_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_key?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          note_text?: string
+          phone_number?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      conversation_tag_assignments: {
+        Row: {
+          agent_key: string
+          created_at: string | null
+          id: string
+          phone_number: string
+          tag_id: string | null
+        }
+        Insert: {
+          agent_key: string
+          created_at?: string | null
+          id?: string
+          phone_number: string
+          tag_id?: string | null
+        }
+        Update: {
+          agent_key?: string
+          created_at?: string | null
+          id?: string
+          phone_number?: string
+          tag_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_tags: {
+        Row: {
+          color: string
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color: string
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           contact_name: string | null
@@ -5083,10 +5166,12 @@ export type Database = {
           direction: string
           error_message: string | null
           id: string
+          is_read: boolean | null
           media_url: string | null
           message_text: string | null
           metadata: Json | null
           phone_number: string
+          read_at: string | null
           status: string
           zapi_message_id: string | null
         }
@@ -5096,10 +5181,12 @@ export type Database = {
           direction: string
           error_message?: string | null
           id?: string
+          is_read?: boolean | null
           media_url?: string | null
           message_text?: string | null
           metadata?: Json | null
           phone_number: string
+          read_at?: string | null
           status?: string
           zapi_message_id?: string | null
         }
@@ -5109,10 +5196,12 @@ export type Database = {
           direction?: string
           error_message?: string | null
           id?: string
+          is_read?: boolean | null
           media_url?: string | null
           message_text?: string | null
           metadata?: Json | null
           phone_number?: string
+          read_at?: string | null
           status?: string
           zapi_message_id?: string | null
         }

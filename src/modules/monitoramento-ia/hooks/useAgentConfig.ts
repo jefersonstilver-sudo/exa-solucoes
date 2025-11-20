@@ -1,25 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-export interface Agent {
-  id: string;
-  key: string;
-  display_name: string;
-  description: string;
-  type: 'ai' | 'human' | 'notification';
-  whatsapp_number: string | null;
-  whatsapp_provider: string | null;
-  zapi_config: any;
-  openai_config: any;
-  manychat_connected: boolean;
-  manychat_config: any;
-  routing_rules: any[];
-  kb_ids: string[];
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { Agent } from '../types/multiAgentTypes';
 
 export const useAgentConfig = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -38,7 +20,7 @@ export const useAgentConfig = () => {
 
       if (error) throw error;
       
-      setAgents((data || []) as Agent[]);
+      setAgents((data || []) as any as Agent[]);
     } catch (err: any) {
       setError(err.message);
       toast.error('Erro ao carregar agentes');
