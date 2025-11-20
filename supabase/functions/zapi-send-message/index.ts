@@ -50,6 +50,16 @@ serve(async (req) => {
       });
     }
 
+    // Buscar Client Token do Z-API
+    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+    if (!zapiClientToken) {
+      console.error('[ZAPI-SEND] ZAPI_CLIENT_TOKEN not configured');
+      return new Response(JSON.stringify({ error: 'Z-API Client Token not configured in secrets' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Construir URL da API Z-API para envio de mensagem
     const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
 
@@ -59,11 +69,12 @@ serve(async (req) => {
       messagePreview: message.substring(0, 50) + '...'
     });
 
-    // Enviar mensagem via Z-API
+    // Enviar mensagem via Z-API (com Client-Token no header)
     const zapiResponse = await fetch(sendUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Client-Token': zapiClientToken, // ✅ CRÍTICO: Client-Token necessário
       },
       body: JSON.stringify({
         phone: phone.replace(/\D/g, ''), // Remove caracteres não numéricos
