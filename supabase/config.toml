@@ -186,3 +186,24 @@ verify_jwt = false
 [functions.manychat-pull-sync]
 verify_jwt = false
 
+[functions.route-message]
+verify_jwt = false
+
+[functions.manychat-webhook-test]
+verify_jwt = true
+
+[functions.openai-test]
+verify_jwt = true
+
+[functions.supabase-test]
+verify_jwt = true
+
+[functions.whatsapp-test]
+verify_jwt = true
+
+[functions.knowledge-indexer-test]
+verify_jwt = true
+
+[functions.ia-console]
+verify_jwt = true
+

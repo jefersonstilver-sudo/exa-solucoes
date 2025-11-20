@@ -63,20 +63,7 @@ import { PaineisPage } from './modules/monitoramento-ia/pages/Paineis';
 import { AlertasPage } from './modules/monitoramento-ia/pages/Alertas';
 import { ConversasPage } from './modules/monitoramento-ia/pages/Conversas';
 import { ConsoleIAPage } from './modules/monitoramento-ia/pages/ConsoleIA';
-import { ConfiguracoesAgentePage } from './modules/monitoramento-ia/pages/ConfiguracoesAgente';
-import { InstrucoesAgentePage } from './modules/monitoramento-ia/pages/InstrucoesAgente';
-import { AgentsList } from './modules/monitoramento-ia/pages/agents/AgentsList';
-import { CreateAgent } from './modules/monitoramento-ia/pages/agents/CreateAgent';
-import { AgentConfig } from './modules/monitoramento-ia/pages/agents/AgentConfig';
-import { AgentPrompt } from './modules/monitoramento-ia/pages/agents/AgentPrompt';
-import { AgentKnowledge } from './modules/monitoramento-ia/pages/agents/AgentKnowledge';
-import { AgentRules } from './modules/monitoramento-ia/pages/agents/AgentRules';
-import { AgentPreview } from './modules/monitoramento-ia/pages/agents/AgentPreview';
-import { BaseConhecimentoPage } from './modules/monitoramento-ia/pages/BaseConhecimento';
-import { RegrasAcaoPage } from './modules/monitoramento-ia/pages/RegrasAcao';
-import { IntegracaoManyChatPage } from './modules/monitoramento-ia/pages/IntegracaoManyChat';
-import { IntegracaoStringPage } from './modules/monitoramento-ia/pages/IntegracaoString';
-import { IntegracoesApisPage } from './modules/monitoramento-ia/pages/IntegracoesApisPage';
+import { Agentes } from './modules/monitoramento-ia/pages/Agentes';
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
@@ -465,23 +452,8 @@ const AppContent = () => {
             <Route path="conversas" element={<ConversasPage />} />
             <Route path="console-ia" element={<ConsoleIAPage />} />
             
-            {/* Agente IA Routes */}
-            <Route path="agente/configuracoes" element={<ConfiguracoesAgentePage />} />
-            <Route path="agente/instrucoes" element={<InstrucoesAgentePage />} />
-            <Route path="agente/base-conhecimento" element={<BaseConhecimentoPage />} />
-            <Route path="agente/regras-acao" element={<RegrasAcaoPage />} />
-            <Route path="agente/integracao-manychat" element={<IntegracaoManyChatPage />} />
-            <Route path="agente/integracao-string" element={<IntegracaoStringPage />} />
-            <Route path="agente/apis" element={<IntegracoesApisPage />} />
-            
-            {/* Multi-Agent System Routes */}
-            <Route path="agentes" element={<AgentsList />} />
-            <Route path="agentes/novo" element={<CreateAgent />} />
-            <Route path="agentes/:id/configuracoes" element={<AgentConfig />} />
-            <Route path="agentes/:id/prompt" element={<AgentPrompt />} />
-            <Route path="agentes/:id/conhecimento" element={<AgentKnowledge />} />
-            <Route path="agentes/:id/regras" element={<AgentRules />} />
-            <Route path="agentes/:id/preview" element={<AgentPreview />} />
+            {/* Painel Unificado de Agentes */}
+            <Route path="agentes" element={<Agentes />} />
           </Route>
 
           {/* Rotas administrativas */}
