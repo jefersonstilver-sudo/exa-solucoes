@@ -4,6 +4,7 @@ import { Save, ArrowLeft, MessageCircle, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
 import { ZAPIConfigSection } from '../../components/agents/ZAPIConfigSection';
+import { AIAutoResponseToggle } from '../../components/agents/AIAutoResponseToggle';
 import { toast } from 'sonner';
 import type { Agent, AgentType, IntegrationProvider } from '../../types/multiAgentTypes';
 
@@ -106,6 +107,21 @@ export const AgentConfig = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* AI Auto Response Toggle */}
+        {agent && (
+          <AIAutoResponseToggle
+            agentId={agent.id}
+            agentKey={agent.key}
+            agentName={agent.name}
+            whatsappProvider={agent.whatsappProvider}
+            aiAutoResponse={agent.aiAutoResponse || false}
+            onUpdate={() => {
+              const updatedAgent = getAgentById(id!);
+              if (updatedAgent) setAgent(updatedAgent);
+            }}
+          />
+        )}
+
         {/* Informações Gerais */}
         <div className="bg-module-card rounded-[14px] border border-module p-6">
           <h2 className="text-lg font-bold text-module-primary mb-4">Informações Gerais</h2>

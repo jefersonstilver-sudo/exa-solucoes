@@ -19,7 +19,13 @@ serve(async (req) => {
 
     const { agentKey, conversationId, message, phoneNumber } = await req.json();
 
-    console.log('[AI-RESPONSE] Processing AI response for:', { agentKey, conversationId });
+    console.log('[AI-RESPONSE] 🤖 Starting AI response generation:', {
+      agentKey,
+      conversationId,
+      phoneNumber,
+      messagePreview: message.substring(0, 50),
+      timestamp: new Date().toISOString()
+    });
 
     // 1. Buscar configuração do agente e conhecimento
     const { data: agent, error: agentError } = await supabase
@@ -32,12 +38,19 @@ serve(async (req) => {
       .single();
 
     if (agentError || !agent) {
-      console.error('[AI-RESPONSE] Agent not found:', agentError);
+      console.error('[AI-RESPONSE] ❌ Agent not found:', agentKey, agentError);
       throw new Error('Agent not found');
     }
 
+    console.log('[AI-RESPONSE] ✅ Agent found:', {
+      key: agent.key,
+      name: agent.display_name,
+      aiAutoResponse: agent.ai_auto_response,
+      hasKnowledge: !!agent.agent_knowledge?.length
+    });
+
     if (!agent.ai_auto_response) {
-      console.log('[AI-RESPONSE] AI auto-response disabled for agent');
+      console.log('[AI-RESPONSE] ⏸️ AI auto-response disabled for agent');
       return new Response(
         JSON.stringify({ success: false, message: 'AI auto-response disabled' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -82,7 +95,15 @@ ${historyContext}
 - Se não souber a resposta, seja honesto
 - Mantenha o tom amigável e prestativo`;
 
+    console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
+      knowledgeItemsCount: (agent.agent_knowledge || []).filter((k: any) => k.is_active).length,
+      historyMessagesCount: (conversationHistory || []).length,
+      systemPromptLength: systemPrompt.length
+    });
+
     // 6. Chamar OpenAI via ia-console
+    console.log('[AI-RESPONSE] 🧠 Calling ia-console...');
+    
     const { data: aiResult, error: aiError } = await supabase.functions.invoke('ia-console', {
       body: {
         agentKey,
@@ -96,7 +117,7 @@ ${historyContext}
     });
 
     if (aiError) {
-      console.error('[AI-RESPONSE] AI error:', aiError);
+      console.error('[AI-RESPONSE] ❌ AI error:', aiError);
       throw new Error('Failed to generate AI response');
     }
 
@@ -106,9 +127,14 @@ ${historyContext}
       throw new Error('No response from AI');
     }
 
-    console.log('[AI-RESPONSE] AI response generated:', aiResponse.substring(0, 100));
+    console.log('[AI-RESPONSE] ✅ AI response generated:', {
+      responseLength: aiResponse.length,
+      responsePreview: aiResponse.substring(0, 100)
+    });
 
     // 7. Enviar resposta via Z-API
+    console.log('[AI-RESPONSE] 📤 Sending response via WhatsApp...');
+    
     const { data: sendResult, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
       body: {
         agentKey,
@@ -118,13 +144,18 @@ ${historyContext}
     });
 
     if (sendError) {
-      console.error('[AI-RESPONSE] Send error:', sendError);
+      console.error('[AI-RESPONSE] ❌ Send error:', sendError);
       throw new Error('Failed to send response');
     }
 
-    console.log('[AI-RESPONSE] Response sent successfully');
+    console.log('[AI-RESPONSE] ✅ Message sent successfully:', {
+      messageId: sendResult?.messageId,
+      phone: phoneNumber
+    });
 
     // 8. Registrar no log
+    console.log('[AI-RESPONSE] 📊 Logging event...');
+    
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,
       event_type: 'ai_response_sent',
@@ -132,9 +163,12 @@ ${historyContext}
       metadata: {
         message_preview: message.substring(0, 100),
         response_preview: aiResponse.substring(0, 100),
-        success: true
+        success: true,
+        timestamp: new Date().toISOString()
       }
     });
+
+    console.log('[AI-RESPONSE] 🎉 Complete! AI response flow finished successfully');
 
     return new Response(
       JSON.stringify({ 
@@ -145,11 +179,13 @@ ${historyContext}
     );
 
   } catch (error) {
-    console.error('[AI-RESPONSE] Error:', error);
+    console.error('[AI-RESPONSE] 💥 FATAL ERROR:', error);
+    console.error('[AI-RESPONSE] Error stack:', error.stack);
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        success: false 
+        success: false,
+        timestamp: new Date().toISOString()
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

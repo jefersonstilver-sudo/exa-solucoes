@@ -67,11 +67,14 @@ serve(async (req) => {
     // Construir URL da API Z-API para envio de mensagem
     const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
 
-    console.log('[ZAPI-SEND] Sending message via Z-API:', {
+    console.log('[ZAPI-SEND] 📤 Sending message via Z-API:', {
       agent: agentKey,
       phone,
       messagePreview: message.substring(0, 50) + '...',
-      hasClientToken: !!zapiClientToken
+      messageLength: message.length,
+      hasClientToken: !!zapiClientToken,
+      instanceId: zapiConfig.instance_id,
+      timestamp: new Date().toISOString()
     });
 
     // Enviar mensagem via Z-API (com Client-Token no header)
@@ -90,7 +93,11 @@ serve(async (req) => {
     const zapiResult = await zapiResponse.json();
 
     if (!zapiResponse.ok) {
-      console.error('[ZAPI-SEND] Z-API error:', zapiResult);
+      console.error('[ZAPI-SEND] ❌ Z-API error:', {
+        status: zapiResponse.status,
+        statusText: zapiResponse.statusText,
+        result: zapiResult
+      });
       
       // Log falha
       await supabase.from('zapi_logs').insert({
@@ -106,7 +113,12 @@ serve(async (req) => {
       throw new Error(`Z-API error: ${JSON.stringify(zapiResult)}`);
     }
 
-    console.log('[ZAPI-SEND] Message sent successfully:', zapiResult);
+    console.log('[ZAPI-SEND] ✅ Message sent successfully:', {
+      messageId: zapiResult.messageId,
+      phone,
+      agent: agentKey,
+      timestamp: new Date().toISOString()
+    });
 
     // Log sucesso
     await supabase.from('zapi_logs').insert({
