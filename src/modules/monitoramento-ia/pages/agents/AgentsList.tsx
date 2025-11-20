@@ -117,6 +117,7 @@ export const AgentsList = () => {
             onPreview={() => navigate(`/admin/monitoramento-ia/agentes/${agent.id}/preview`)}
             onDuplicate={() => handleDuplicate(agent.id)}
             onDelete={() => handleDelete(agent.id)}
+            onRefresh={() => window.location.reload()}
           />
         ))}
       </div>

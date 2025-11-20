@@ -1,5 +1,9 @@
-import { Settings, Eye, Copy, Trash2 } from 'lucide-react';
+import { Settings, Eye, Copy, Trash2, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useState } from 'react';
 import type { Agent } from '../types/multiAgentTypes';
 
 interface AgentCardProps {
@@ -8,15 +12,46 @@ interface AgentCardProps {
   onPreview: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onRefresh?: () => void;
 }
 
-export const AgentCard = ({ agent, onManage, onPreview, onDuplicate, onDelete }: AgentCardProps) => {
+export const AgentCard = ({ agent, onManage, onPreview, onDuplicate, onDelete, onRefresh }: AgentCardProps) => {
+  const [aiAutoResponse, setAiAutoResponse] = useState(agent.aiAutoResponse || false);
+  const [updating, setUpdating] = useState(false);
+
   const getProviderLabel = (provider: string) => {
     switch (provider) {
       case 'manychat': return 'ManyChat';
       case 'string': return 'STRING.com';
       case 'whatsapp-api': return 'WhatsApp API';
+      case 'zapi': return 'Z-API';
       default: return 'Nenhum';
+    }
+  };
+
+  const handleToggleAI = async (checked: boolean) => {
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('agents')
+        .update({ ai_auto_response: checked })
+        .eq('id', agent.id);
+
+      if (error) throw error;
+
+      setAiAutoResponse(checked);
+      toast.success(
+        checked 
+          ? '🤖 IA ativada! Agente responderá automaticamente'
+          : 'IA desativada'
+      );
+      
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      console.error('Error toggling AI:', error);
+      toast.error('Erro ao atualizar IA: ' + error.message);
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -65,6 +100,31 @@ export const AgentCard = ({ agent, onManage, onPreview, onDuplicate, onDelete }:
           </span>
         </div>
       </div>
+
+      {/* Toggle IA Auto-Response */}
+      {agent.whatsappProvider === 'zapi' && (
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-1">
+              <Bot className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-blue-900 dark:text-blue-100">
+                  🤖 Resposta Automática IA
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  Responde automaticamente usando IA treinada
+                </p>
+              </div>
+            </div>
+            <Switch 
+              checked={aiAutoResponse}
+              onCheckedChange={handleToggleAI}
+              disabled={updating}
+              className="data-[state=checked]:bg-blue-600"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         <Button 

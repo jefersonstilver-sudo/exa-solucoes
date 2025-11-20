@@ -173,32 +173,29 @@ serve(async (req) => {
       }
     }
 
-    // 6. Se a mensagem veio de um agente Z-API, processar com IA e retornar resposta
+    // 6. Se AI auto-response está ativada, processar com IA
     let aiResponse = null;
-    if (metadata?.source === 'zapi' && selectedAgent.whatsapp_provider === 'zapi') {
-      console.log('[ROUTE] Processing Z-API message with AI...');
+    if (selectedAgent.ai_auto_response && metadata?.source === 'zapi') {
+      console.log('[ROUTE] AI auto-response enabled, generating response...');
       
       try {
-        const { data: aiResult, error: aiError } = await supabase.functions.invoke('ia-console', {
+        const { data: aiResult, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
           body: {
             agentKey: selectedAgent.key,
-            message: message,
-            context: {
-              conversationId,
-              source: 'zapi',
-              phone: metadata.phone
-            }
+            conversationId,
+            message,
+            phoneNumber: metadata.phone
           }
         });
 
         if (aiError) {
-          console.error('[ROUTE] AI error:', aiError);
+          console.error('[ROUTE] AI response error:', aiError);
         } else {
           aiResponse = aiResult?.response;
-          console.log('[ROUTE] AI response generated:', aiResponse?.substring(0, 100));
+          console.log('[ROUTE] AI response generated and sent:', aiResponse?.substring(0, 100));
         }
       } catch (error) {
-        console.error('[ROUTE] Failed to get AI response:', error);
+        console.error('[ROUTE] Failed to generate AI response:', error);
       }
     }
 
