@@ -65,6 +65,17 @@ const menuItems = [
     path: '/admin/monitoramento-ia/agentes',
     badge: 'NOVO'
   },
+  {
+    title: 'CRM & Conversas',
+    icon: MessageSquare,
+    path: '/admin/monitoramento-ia/crm',
+    badge: 'BETA'
+  },
+  {
+    title: 'Relatórios Corporativos',
+    icon: LayoutDashboard,
+    path: '/admin/monitoramento-ia/relatorios'
+  },
 ];
 
 export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }: SidebarProps) => {

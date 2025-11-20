@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CRMChatProps {
   conversationId: string | null;
@@ -19,7 +20,28 @@ interface CRMChatProps {
 export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, loading, onRefresh }) => {
   const [showNotes, setShowNotes] = useState(false);
   const [showTags, setShowTags] = useState(false);
+  const [conversation, setConversation] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (conversationId) {
+      fetchConversation();
+    }
+  }, [conversationId]);
+
+  const fetchConversation = async () => {
+    if (!conversationId) return;
+    
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('id', conversationId)
+      .single();
+    
+    if (!error && data) {
+      setConversation(data);
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -132,20 +154,32 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
         </div>
 
         {/* Composer */}
-        <MessageComposer conversationId={conversationId} onMessageSent={onRefresh} />
+        {conversation && (
+          <MessageComposer 
+            phoneNumber={conversation.contact_phone} 
+            agentKey={conversation.agent_key} 
+            onMessageSent={onRefresh} 
+          />
+        )}
       </div>
 
       {/* Sidebar (Notas/Tags) */}
-      {(showNotes || showTags) && (
+      {(showNotes || showTags) && conversation && (
         <div className="w-80 border-l p-4 overflow-y-auto bg-card">
           {showNotes && (
             <div className="mb-6">
-              <ConversationNotes conversationId={conversationId} />
+              <ConversationNotes 
+                phoneNumber={conversation.contact_phone} 
+                agentKey={conversation.agent_key} 
+              />
             </div>
           )}
           {showTags && (
             <div>
-              <ConversationTags conversationId={conversationId} />
+              <ConversationTags 
+                phoneNumber={conversation.contact_phone} 
+                agentKey={conversation.agent_key} 
+              />
             </div>
           )}
         </div>

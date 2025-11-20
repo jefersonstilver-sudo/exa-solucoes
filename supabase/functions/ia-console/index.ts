@@ -59,6 +59,29 @@ serve(async (req) => {
       );
     }
 
+    // Compor contexto completo com histórico e conhecimento
+    let systemPrompt = `Você é ${agent.display_name}. ${agent.description}`;
+    
+    // Se há conversationId, buscar contexto
+    if (context?.conversationId) {
+      try {
+        const { data: contextData } = await supabase.functions.invoke('compose-ai-context', {
+          body: {
+            agentKey,
+            conversationId: context.conversationId,
+            userMessage: message
+          }
+        });
+        
+        if (contextData?.systemPrompt) {
+          systemPrompt = contextData.systemPrompt;
+          console.log('[IA-CONSOLE] Using enriched context with history and knowledge');
+        }
+      } catch (error) {
+        console.error('[IA-CONSOLE] Failed to compose context:', error);
+      }
+    }
+
     // Chamar OpenAI
     const startTime = Date.now();
 
@@ -73,7 +96,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Você é ${agent.display_name}. ${agent.description}`
+            content: systemPrompt
           },
           {
             role: 'user',
