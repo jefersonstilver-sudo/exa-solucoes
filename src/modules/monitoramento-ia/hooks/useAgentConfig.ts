@@ -1,7 +1,26 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Agent } from '../types/multiAgentTypes';
+
+// Agent type matching database schema (snake_case)
+export interface Agent {
+  id: string;
+  key: string;
+  display_name: string;
+  description: string;
+  type: string;
+  is_active: boolean;
+  routing_rules: any;
+  kb_ids: any;
+  openai_config: any;
+  manychat_config: any;
+  manychat_connected: boolean | null;
+  whatsapp_number: string | null;
+  whatsapp_provider: string | null;
+  zapi_config: any;
+  created_at: string;
+  updated_at: string;
+}
 
 export const useAgentConfig = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -20,7 +39,7 @@ export const useAgentConfig = () => {
 
       if (error) throw error;
       
-      setAgents((data || []) as any as Agent[]);
+      setAgents((data || []) as Agent[]);
     } catch (err: any) {
       setError(err.message);
       toast.error('Erro ao carregar agentes');
