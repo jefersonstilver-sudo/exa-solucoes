@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { AgentStatus } from '../../hooks/useAgentStatus';
 import { AgentDebugPanel } from './AgentDebugPanel';
 import { ZAPICredentialsModal } from './ZAPICredentialsModal';
+import { ManyChatCredentialsModal } from './ManyChatCredentialsModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -39,7 +40,11 @@ const getProviderName = (provider: string | null) => {
 
 export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGridProps) => {
   const [debugAgent, setDebugAgent] = useState<{ key: string; name: string } | null>(null);
-  const [configAgent, setConfigAgent] = useState<{ key: string; config: any } | null>(null);
+  const [configAgent, setConfigAgent] = useState<{ 
+    key: string; 
+    provider: 'zapi' | 'manychat'; 
+    config: any 
+  } | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(false);
   
   const getStatusIcon = (status?: string) => {
@@ -75,18 +80,23 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
     }
   };
 
-  const handleConfigureAgent = async (agentKey: string) => {
+  const handleConfigureAgent = async (agentKey: string, provider: string) => {
     setLoadingConfig(true);
     try {
+      const configField = provider === 'zapi' ? 'zapi_config' : 'manychat_config';
       const { data, error } = await supabase
         .from('agents')
-        .select('zapi_config')
+        .select(configField)
         .eq('key', agentKey)
         .single();
 
       if (error) throw error;
 
-      setConfigAgent({ key: agentKey, config: data?.zapi_config || {} });
+      setConfigAgent({ 
+        key: agentKey, 
+        provider: provider as 'zapi' | 'manychat',
+        config: data?.[configField] || {} 
+      });
     } catch (error) {
       console.error('Erro ao carregar configuração:', error);
       toast.error('Erro ao carregar configuração do agente');
@@ -97,13 +107,6 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
 
   const handleSaveConfig = async (agentKey: string, config: any) => {
     try {
-      const { error } = await supabase
-        .from('agents')
-        .update({ zapi_config: config })
-        .eq('key', agentKey);
-
-      if (error) throw error;
-
       toast.success('Configuração salva com sucesso');
       setConfigAgent(null);
       
@@ -230,7 +233,7 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleConfigureAgent(agent.key)}
+                  onClick={() => handleConfigureAgent(agent.key, agent.whatsapp_provider || 'zapi')}
                   disabled={loadingConfig}
                 >
                   <Settings className="w-3 h-3" />
@@ -250,10 +253,21 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
         />
       )}
 
-      {configAgent && (
+      {configAgent?.provider === 'zapi' && (
         <ZAPICredentialsModal
           open={true}
           onOpenChange={(open) => !open && setConfigAgent(null)}
+          agentKey={configAgent.key}
+          currentConfig={configAgent.config}
+          onSave={(config) => handleSaveConfig(configAgent.key, config)}
+        />
+      )}
+
+      {configAgent?.provider === 'manychat' && (
+        <ManyChatCredentialsModal
+          open={true}
+          onOpenChange={(open) => !open && setConfigAgent(null)}
+          agentKey={configAgent.key}
           currentConfig={configAgent.config}
           onSave={(config) => handleSaveConfig(configAgent.key, config)}
         />

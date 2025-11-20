@@ -195,6 +195,7 @@ Deno.serve(async (req) => {
       const manychatConfig = agent.manychat_config as ManyChatConfig;
       
       if (!manychatConfig?.api_key) {
+        console.warn('⚠️ [EDGE] API Key ManyChat ausente');
         return new Response(
           JSON.stringify({ 
             success: false,
@@ -207,16 +208,114 @@ Deno.serve(async (req) => {
         );
       }
 
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          status: 'online',
-          provider: 'manychat',
-          message: 'ManyChat configurado',
-          credentialsPresent: true
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // TESTE REAL DA API MANYCHAT
+      try {
+        const startTime = Date.now();
+        
+        // Endpoint para obter informações da página
+        const manychatUrl = 'https://api.manychat.com/fb/page/getInfo';
+        
+        console.log('🔵 [EDGE] Testando ManyChat API:', manychatUrl);
+        
+        const response = await fetch(manychatUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${manychatConfig.api_key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const latency = Date.now() - startTime;
+        const data = await response.json();
+        
+        console.log('📡 [EDGE] Resposta ManyChat:', {
+          status: response.status,
+          ok: response.ok,
+          latency,
+          dataStatus: data.status
+        });
+
+        if (!response.ok || data.status !== 'success') {
+          const errorMsg = data.message || 'Erro ao conectar com ManyChat';
+          
+          console.error('❌ [EDGE] Erro ManyChat:', errorMsg);
+          
+          // Atualizar status no banco
+          await supabase
+            .from('agents')
+            .update({ 
+              manychat_connected: false,
+              manychat_config: {
+                ...manychatConfig,
+                status: 'error',
+                last_check: new Date().toISOString()
+              }
+            })
+            .eq('key', agentKey);
+          
+          return new Response(
+            JSON.stringify({ 
+              success: false,
+              status: 'offline',
+              provider: 'manychat',
+              message: `❌ ERRO MANYCHAT: ${errorMsg}`,
+              errorDetails: data,
+              credentialsPresent: true,
+              latency,
+              httpStatus: response.status
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Atualizar status no banco
+        await supabase
+          .from('agents')
+          .update({ 
+            manychat_connected: true,
+            manychat_config: {
+              ...manychatConfig,
+              status: 'connected',
+              last_check: new Date().toISOString(),
+              page_name: data.data?.name,
+              page_id: data.data?.id
+            }
+          })
+          .eq('key', agentKey);
+
+        console.log('✅ [EDGE] ManyChat conectado com sucesso');
+
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            status: 'online',
+            provider: 'manychat',
+            message: 'ManyChat conectado com sucesso',
+            credentialsPresent: true,
+            latency,
+            pageInfo: {
+              id: data.data?.id,
+              name: data.data?.name,
+              timezone: data.data?.timezone
+            }
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+        
+      } catch (error: any) {
+        console.error('❌ [EDGE] Erro ao testar ManyChat:', error);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            status: 'offline',
+            provider: 'manychat',
+            message: `Erro ao conectar ManyChat: ${error.message}`,
+            credentialsPresent: true
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Sem provider configurado

@@ -176,17 +176,47 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                 </div>
               )}
               
-              {/* Badge ManyChat */}
-              {agent.whatsapp_provider === 'manychat' && agent.manychat_connected && (
-                <Badge className="bg-green-500 text-white">
-                  📱 Conectado ao ManyChat
+              {/* Badge ManyChat - Status Real da API */}
+              {agent.whatsapp_provider === 'manychat' && agentStatus?.status === 'online' && (
+                <Badge className="bg-blue-500 text-white flex items-center gap-1">
+                  ✓ Conectado via ManyChat
+                  {agentStatus.latency && (
+                    <span className="text-xs opacity-80">({agentStatus.latency}ms)</span>
+                  )}
                 </Badge>
               )}
               
-              {agent.whatsapp_provider === 'manychat' && !agent.manychat_connected && (
-                <Badge variant="outline" className="border-yellow-500 text-yellow-600">
-                  ⏳ Aguardando Número do ManyChat
+              {agent.whatsapp_provider === 'manychat' && agentStatus?.status === 'offline' && (
+                <Badge variant="outline" className="border-red-500 text-red-600">
+                  ✗ ManyChat Offline
                 </Badge>
+              )}
+              
+              {agent.whatsapp_provider === 'manychat' && !agentStatus && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="border-gray-500 text-gray-600">
+                    ⚪ Status não verificado
+                  </Badge>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={handleTestConnection}
+                    disabled={testing[agent.key]}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {testing[agent.key] ? (
+                      <>
+                        <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                        Testando...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        Testar
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
               
               {/* Badge sem integração */}
