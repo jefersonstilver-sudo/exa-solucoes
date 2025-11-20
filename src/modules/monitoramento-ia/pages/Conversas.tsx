@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Search, Building2, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 interface Conversation {
   id: string;
@@ -26,6 +27,8 @@ export const ConversasPage = () => {
   const [filteredConversations, setFilteredConversations] = useState<ConversationWithDevice[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const { theme } = useModuleTheme();
+  const tc = getThemeClasses(theme);
 
   useEffect(() => {
     fetchConversations();
@@ -97,41 +100,41 @@ export const ConversasPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-[#1A1A1A] rounded-xl border border-[#2A2A2A] p-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
+      <div className={`${tc.bgCard} rounded-xl ${tc.border} border p-6`}>
+        <h1 className={`text-2xl lg:text-3xl font-bold ${tc.textPrimary} mb-2`}>
           Conversas Analisadas
         </h1>
-        <p className="text-[#A0A0A0]">
+        <p className={tc.textSecondary}>
           Histórico de conversas do ManyChat vinculadas aos painéis
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 bg-[#1A1A1A] border-[#2A2A2A]">
+        <Card className={`p-4 ${tc.bgCard} ${tc.border} border`}>
           <div className="flex items-center gap-3">
             <MessageSquare className="w-8 h-8 text-[#9C1E1E]" />
             <div>
-              <p className="text-sm text-[#A0A0A0]">Total de Conversas</p>
-              <p className="text-2xl font-bold text-white">{statsData.total}</p>
+              <p className={`text-sm ${tc.textSecondary}`}>Total de Conversas</p>
+              <p className={`text-2xl font-bold ${tc.textPrimary}`}>{statsData.total}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-[#1A1A1A] border-[#2A2A2A]">
+        <Card className={`p-4 ${tc.bgCard} ${tc.border} border`}>
           <div className="flex items-center gap-3">
-            <MessageSquare className="w-8 h-8 text-green-500" />
+            <Building2 className="w-8 h-8 text-blue-500" />
             <div>
-              <p className="text-sm text-[#A0A0A0]">Última Hora</p>
-              <p className="text-2xl font-bold text-white">{statsData.lastHour}</p>
+              <p className={`text-sm ${tc.textSecondary}`}>Última Hora</p>
+              <p className={`text-2xl font-bold ${tc.textPrimary}`}>{statsData.lastHour}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-4 bg-[#1A1A1A] border-[#2A2A2A]">
+        <Card className={`p-4 ${tc.bgCard} ${tc.border} border`}>
           <div className="flex items-center gap-3">
-            <MessageSquare className="w-8 h-8 text-orange-500" />
+            <ExternalLink className="w-8 h-8 text-green-500" />
             <div>
-              <p className="text-sm text-[#A0A0A0]">Pendentes</p>
-              <p className="text-2xl font-bold text-white">{statsData.pending}</p>
+              <p className={`text-sm ${tc.textSecondary}`}>Pendentes</p>
+              <p className={`text-2xl font-bold ${tc.textPrimary}`}>{statsData.pending}</p>
             </div>
           </div>
         </Card>
@@ -139,65 +142,50 @@ export const ConversasPage = () => {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B7280]" />
+        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${tc.textTertiary}`} />
         <Input
+          type="text"
           placeholder="Buscar por nome, telefone ou condomínio..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-[#1A1A1A] border-[#2A2A2A] text-white placeholder:text-[#6B7280]"
+          className={`pl-10 ${tc.bgInput} ${tc.border} border ${tc.textPrimary} ${tc.placeholder}`}
         />
       </div>
 
       {/* Conversations List */}
       {loading ? (
-        <div className="text-center py-12">
-          <p className="text-[#A0A0A0]">Carregando conversas...</p>
+        <div className={`text-center py-12 ${tc.bgCard} rounded-xl ${tc.border} border`}>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#9C1E1E]"></div>
+          <p className={`mt-4 ${tc.textSecondary}`}>Carregando conversas...</p>
         </div>
       ) : filteredConversations.length === 0 ? (
-        <div className="text-center py-12">
-          <MessageSquare className="w-12 h-12 text-[#6B7280] mx-auto mb-4" />
-          <p className="text-[#A0A0A0]">
-            {searchTerm ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa registrada'}
-          </p>
+        <div className={`text-center py-12 ${tc.bgCard} rounded-xl ${tc.border} border`}>
+          <MessageSquare className={`w-12 h-12 mx-auto mb-4 ${tc.textSecondary}`} />
+          <p className={tc.textSecondary}>Nenhuma conversa encontrada</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredConversations.map((conv) => (
-            <Card key={conv.id} className="p-4 bg-[#1A1A1A] border-[#2A2A2A] hover:shadow-lg hover:shadow-[#9C1E1E]/10 transition-all">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-[#9C1E1E]" />
-                    <span className="font-semibold text-white">
-                      {conv.contact_name || conv.contact_phone}
-                    </span>
-                    <Badge variant="outline" className={getStatusColor(conv.status)}>
-                      {conv.status || 'unknown'}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-[#A0A0A0]">
-                    <div className="flex items-center gap-1">
-                      <Building2 className="w-4 h-4" />
-                      <span>{conv.condominio_name}</span>
-                    </div>
-                    <span>•</span>
-                    <span>{conv.device_name}</span>
-                  </div>
-                  <div className="text-sm text-[#6B7280]">
-                    Última mensagem: {formatLastMessage(conv.last_message_at)}
-                  </div>
+            <Card key={conv.id} className={`p-4 ${tc.bgCard} ${tc.border} border ${tc.bgHover} cursor-pointer transition-colors`}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-[#9C1E1E]" />
+                  <span className={`font-semibold ${tc.textPrimary}`}>
+                    {conv.contact_name || 'Sem nome'}
+                  </span>
                 </div>
-                {conv.external_id && (
-                  <a
-                    href={`https://manychat.com/fb123456789/chat/${conv.external_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#9C1E1E] hover:text-[#7A1717] transition-colors"
-                  >
-                    <ExternalLink className="w-5 h-5" />
-                  </a>
-                )}
+                <Badge className={getStatusColor(conv.status)}>
+                  {conv.status || 'unknown'}
+                </Badge>
               </div>
+              <p className={`text-sm ${tc.textSecondary} mb-2`}>{conv.contact_phone}</p>
+              <p className={`text-sm ${tc.textSecondary} mb-2`}>
+                <Building2 className="w-4 h-4 inline mr-1" />
+                {conv.condominio_name}
+              </p>
+              <p className={`text-xs ${tc.textTertiary}`}>
+                {formatLastMessage(conv.last_message_at)}
+              </p>
             </Card>
           ))}
         </div>

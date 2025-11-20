@@ -14,11 +14,14 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Device } from '../utils/devices';
+import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 export const MonitoramentoIADashboard = () => {
   const { devices, loading, lastUpdate, filters, setFilters, sort, setSort, refresh } = useDevices();
   const [view, setView] = useState<'cards' | 'table'>('cards');
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const { theme } = useModuleTheme();
+  const tc = getThemeClasses(theme);
 
   const stats = calculateDeviceStats(devices);
   const criticalCount = devices.filter(d => (d as any).has_critical_alert === true).length;
@@ -26,16 +29,16 @@ export const MonitoramentoIADashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-[#1A1A1A] rounded-xl border border-[#2A2A2A] p-6 lg:p-8">
+      <div className={`${tc.bgCard} rounded-xl ${tc.border} border p-6 lg:p-8`}>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
+            <h1 className={`text-2xl lg:text-3xl font-bold ${tc.textPrimary} mb-2`}>
               IA & Monitoramento EXA
             </h1>
-            <p className="text-[#A0A0A0]">
+            <p className={tc.textSecondary}>
               Monitoramento em tempo real dos painéis via AnyDesk
             </p>
-            <p className="text-xs text-[#6B7280] mt-1">
+            <p className={`text-xs ${tc.textTertiary} mt-1`}>
               Última atualização: {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
             </p>
           </div>
@@ -110,7 +113,7 @@ export const MonitoramentoIADashboard = () => {
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9C1E1E]"></div>
         </div>
       ) : view === 'cards' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -130,9 +133,9 @@ export const MonitoramentoIADashboard = () => {
       )}
 
       {devices.length === 0 && !loading && (
-        <div className="bg-card rounded-xl border border-border p-12 text-center">
-          <Monitor className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Nenhum painel cadastrado</p>
+        <div className={`${tc.bgCard} rounded-xl ${tc.border} border p-12 text-center`}>
+          <Monitor className={`w-12 h-12 mx-auto mb-4 ${tc.textSecondary}`} />
+          <p className={tc.textSecondary}>Nenhum painel cadastrado</p>
         </div>
       )}
 
