@@ -1714,6 +1714,47 @@ export type Database = {
           },
         ]
       }
+      conversation_events: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          details: Json | null
+          event_type: string
+          from_agent: string | null
+          id: string
+          severity: string | null
+          to_agent: string | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          details?: Json | null
+          event_type: string
+          from_agent?: string | null
+          id?: string
+          severity?: string | null
+          to_agent?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string
+          from_agent?: string | null
+          id?: string
+          severity?: string | null
+          to_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_notes: {
         Row: {
           agent_key: string
@@ -1799,37 +1840,88 @@ export type Database = {
       }
       conversations: {
         Row: {
+          agent_key: string | null
+          alerted_exa: boolean | null
+          avg_response_time: unknown
+          awaiting_response: boolean | null
           contact_name: string | null
           contact_phone: string
           contact_type: string | null
           created_at: string | null
+          escalated_at: string | null
+          escalated_to_eduardo: boolean | null
           external_id: string | null
           first_message_at: string | null
           id: string
+          is_critical: boolean | null
+          is_hot_lead: boolean | null
+          is_sindico: boolean | null
           last_message_at: string | null
+          last_response_time: unknown
+          lead_score: number | null
+          metadata: Json | null
+          mood_score: number | null
+          provider: string | null
+          reported_to_iris: boolean | null
+          sentiment: string | null
           status: string | null
+          urgency_level: number | null
         }
         Insert: {
+          agent_key?: string | null
+          alerted_exa?: boolean | null
+          avg_response_time?: unknown
+          awaiting_response?: boolean | null
           contact_name?: string | null
           contact_phone: string
           contact_type?: string | null
           created_at?: string | null
+          escalated_at?: string | null
+          escalated_to_eduardo?: boolean | null
           external_id?: string | null
           first_message_at?: string | null
           id?: string
+          is_critical?: boolean | null
+          is_hot_lead?: boolean | null
+          is_sindico?: boolean | null
           last_message_at?: string | null
+          last_response_time?: unknown
+          lead_score?: number | null
+          metadata?: Json | null
+          mood_score?: number | null
+          provider?: string | null
+          reported_to_iris?: boolean | null
+          sentiment?: string | null
           status?: string | null
+          urgency_level?: number | null
         }
         Update: {
+          agent_key?: string | null
+          alerted_exa?: boolean | null
+          avg_response_time?: unknown
+          awaiting_response?: boolean | null
           contact_name?: string | null
           contact_phone?: string
           contact_type?: string | null
           created_at?: string | null
+          escalated_at?: string | null
+          escalated_to_eduardo?: boolean | null
           external_id?: string | null
           first_message_at?: string | null
           id?: string
+          is_critical?: boolean | null
+          is_hot_lead?: boolean | null
+          is_sindico?: boolean | null
           last_message_at?: string | null
+          last_response_time?: unknown
+          lead_score?: number | null
+          metadata?: Json | null
+          mood_score?: number | null
+          provider?: string | null
+          reported_to_iris?: boolean | null
+          sentiment?: string | null
           status?: string | null
+          urgency_level?: number | null
         }
         Relationships: []
       }
@@ -3121,37 +3213,70 @@ export type Database = {
       }
       messages: {
         Row: {
+          agent_key: string | null
+          ai_analysis: Json | null
           body: string
+          classification: Json | null
           conversation_id: string
           created_at: string | null
+          detected_mood: number | null
+          detected_urgency: number | null
+          direction: string | null
           external_message_id: string | null
           from_role: string
           has_audio: boolean | null
           has_image: boolean | null
           id: string
+          intent: string | null
+          is_automated: boolean | null
+          provider: string | null
           raw_payload: Json | null
+          response_time: unknown
+          sentiment: string | null
         }
         Insert: {
+          agent_key?: string | null
+          ai_analysis?: Json | null
           body: string
+          classification?: Json | null
           conversation_id: string
           created_at?: string | null
+          detected_mood?: number | null
+          detected_urgency?: number | null
+          direction?: string | null
           external_message_id?: string | null
           from_role: string
           has_audio?: boolean | null
           has_image?: boolean | null
           id?: string
+          intent?: string | null
+          is_automated?: boolean | null
+          provider?: string | null
           raw_payload?: Json | null
+          response_time?: unknown
+          sentiment?: string | null
         }
         Update: {
+          agent_key?: string | null
+          ai_analysis?: Json | null
           body?: string
+          classification?: Json | null
           conversation_id?: string
           created_at?: string | null
+          detected_mood?: number | null
+          detected_urgency?: number | null
+          direction?: string | null
           external_message_id?: string | null
           from_role?: string
           has_audio?: boolean | null
           has_image?: boolean | null
           id?: string
+          intent?: string | null
+          is_automated?: boolean | null
+          provider?: string | null
           raw_payload?: Json | null
+          response_time?: unknown
+          sentiment?: string | null
         }
         Relationships: [
           {
@@ -4102,6 +4227,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quick_replies: {
+        Row: {
+          agent_key: string
+          category: string | null
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          title: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          agent_key: string
+          category?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          title: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          agent_key?: string
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          title?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
       }
       role_change_audit: {
         Row: {

@@ -118,10 +118,45 @@ Obrigado pela compreensão!`;
       });
     }
 
+    // Criar/Atualizar conversation
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .upsert({
+        external_id: phone,
+        contact_phone: phone,
+        contact_name: payload.senderName || null,
+        agent_key: agent.key,
+        provider: 'zapi',
+        status: 'open',
+        last_message_at: new Date().toISOString()
+      }, {
+        onConflict: 'external_id,agent_key',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single();
+
+    if (!conversation) {
+      throw new Error('Failed to create/update conversation');
+    }
+
+    console.log('[ZAPI-WEBHOOK] Conversation:', conversation.id);
+
+    // Salvar mensagem
+    await supabase.from('messages').insert({
+      conversation_id: conversation.id,
+      agent_key: agent.key,
+      provider: 'zapi',
+      direction: 'inbound',
+      from_role: 'user',
+      body: messageText,
+      raw_payload: payload
+    });
+
     // Normalizar payload para formato interno do route-message
     const normalizedPayload = {
       message: messageText,
-      conversationId: `zapi_${phone}_${Date.now()}`,
+      conversationId: conversation.id,
       metadata: {
         source: 'zapi',
         agentKey: agent.key,

@@ -16,7 +16,7 @@ serve(async (req) => {
     const pathParts = url.pathname.split('/');
     const agentId = pathParts[pathParts.length - 1];
 
-    console.log(`[WEBHOOK] Recebido para agente: ${agentId}`);
+    console.log(`[MANYCHAT-WEBHOOK] Recebido para agente: ${agentId}`);
 
     // GET - Verificação do webhook ManyChat
     if (req.method === 'GET') {
@@ -24,10 +24,9 @@ serve(async (req) => {
       const token = url.searchParams.get('hub.verify_token');
       const challenge = url.searchParams.get('hub.challenge');
 
-      console.log(`[WEBHOOK] Modo de verificação: ${mode}`);
+      console.log(`[MANYCHAT-WEBHOOK] Modo de verificação: ${mode}`);
       
       if (mode === 'subscribe' && token) {
-        // TODO: Validar token contra o banco de dados do agente
         return new Response(challenge, { 
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
@@ -39,10 +38,8 @@ serve(async (req) => {
     if (req.method === 'POST') {
       const payload = await req.json();
       
-      console.log(`[WEBHOOK] Payload ManyChat recebido:`, JSON.stringify(payload, null, 2));
+      console.log(`[MANYCHAT-WEBHOOK] Payload recebido:`, JSON.stringify(payload, null, 2));
 
-      const timestamp = new Date().toISOString();
-      
       // Criar cliente Supabase
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
@@ -57,7 +54,7 @@ serve(async (req) => {
         .single();
 
       if (agentError || !agent) {
-        console.error('[WEBHOOK] Agente não encontrado:', agentId);
+        console.error('[MANYCHAT-WEBHOOK] Agente não encontrado:', agentId);
         return new Response(
           JSON.stringify({ error: 'Agente não encontrado' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -74,7 +71,7 @@ serve(async (req) => {
         timestamp: eventTimestamp
       } = payload;
 
-      console.log('[WEBHOOK] Evento ManyChat:', {
+      console.log('[MANYCHAT-WEBHOOK] Evento:', {
         type,
         subscriber_id,
         page_id,
@@ -84,70 +81,81 @@ serve(async (req) => {
 
       // Processar evento message_received
       if (type === 'message_received' && text) {
-        // Salvar mensagem no banco (se você tiver tabela de mensagens)
-        try {
-          const messageData = {
-            conversation_id: subscriber_id,
+        // 1. Criar/Atualizar conversation
+        const { data: conversation, error: convError } = await supabase
+          .from('conversations')
+          .upsert({
+            external_id: subscriber_id,
+            contact_phone: subscriber_id,
+            contact_name: full_name || 'Sem nome',
             agent_key: agentId,
-            direction: 'inbound',
-            body: text,
-            from_number: subscriber_id,
-            from_name: full_name || 'Desconhecido',
-            metadata: {
-              provider: 'manychat',
-              page_id,
-              event_type: type,
-              raw_payload: payload
-            },
-            created_at: eventTimestamp ? new Date(eventTimestamp * 1000).toISOString() : timestamp
-          };
+            provider: 'manychat',
+            status: 'open',
+            last_message_at: new Date().toISOString()
+          }, {
+            onConflict: 'external_id,agent_key',
+            ignoreDuplicates: false
+          })
+          .select()
+          .single();
 
-          console.log('[WEBHOOK] Salvando mensagem:', messageData);
-
-          // Tentar salvar na tabela messages (se existir)
-          const { error: msgError } = await supabase
-            .from('messages')
-            .insert(messageData);
-
-          if (msgError) {
-            console.warn('[WEBHOOK] Aviso ao salvar mensagem:', msgError.message);
-          }
-        } catch (error: any) {
-          console.error('[WEBHOOK] Erro ao processar mensagem:', error.message);
+        if (convError) {
+          console.error('[MANYCHAT-WEBHOOK] Error creating conversation:', convError);
+          throw convError;
         }
 
-        // Chamar roteador para processar com IA (se necessário)
-        try {
-          const { data: routeData, error: routeError } = await supabase.functions.invoke('route-message', {
+        console.log('[MANYCHAT-WEBHOOK] Conversation:', conversation.id);
+
+        // 2. Salvar mensagem
+        await supabase.from('messages').insert({
+          conversation_id: conversation.id,
+          agent_key: agentId,
+          provider: 'manychat',
+          direction: 'inbound',
+          from_role: 'user',
+          body: text,
+          external_message_id: payload.message_id,
+          raw_payload: payload
+        });
+
+        // 3. Chamar route-message com metadata correto
+        const { data: routeData } = await supabase.functions.invoke('route-message', {
+          body: {
+            message: text,
+            conversationId: conversation.id,
+            metadata: { 
+              source: 'manychat',
+              agentId,
+              subscriberId: subscriber_id,
+              phone: subscriber_id,
+              fullName: full_name
+            }
+          }
+        });
+
+        console.log('[MANYCHAT-WEBHOOK] Route result:', routeData);
+
+        // 4. Se route-message retornou resposta, enviar via ManyChat
+        if (routeData?.response) {
+          await supabase.functions.invoke('send-message-unified', {
             body: {
-              message: text,
-              conversationId: subscriber_id,
-              metadata: { 
-                from: full_name || subscriber_id,
-                timestamp: eventTimestamp || Date.now(),
-                agentId,
-                provider: 'manychat'
-              }
+              conversationId: conversation.id,
+              agentKey: agentId,
+              message: routeData.response,
+              metadata: { is_automated: true }
             }
           });
 
-          if (routeError) {
-            console.error('[WEBHOOK] Erro ao rotear mensagem:', routeError);
-          } else {
-            console.log('[WEBHOOK] Mensagem roteada para:', routeData?.routed_to);
-          }
-        } catch (error: any) {
-          console.warn('[WEBHOOK] Roteamento não disponível:', error.message);
+          console.log('[MANYCHAT-WEBHOOK] Response sent');
         }
       }
 
-      console.log(`[WEBHOOK] Evento processado com sucesso para ${agentId}`);
+      console.log(`[MANYCHAT-WEBHOOK] Evento processado com sucesso`);
 
       return new Response(
         JSON.stringify({ 
           success: true, 
           agentId, 
-          timestamp,
           event_type: type,
           message: 'Webhook ManyChat recebido e processado'
         }),
@@ -161,7 +169,7 @@ serve(async (req) => {
     return new Response('Método não permitido', { status: 405, headers: corsHeaders });
 
   } catch (error) {
-    console.error('[WEBHOOK] Erro:', error);
+    console.error('[MANYCHAT-WEBHOOK] Erro:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
