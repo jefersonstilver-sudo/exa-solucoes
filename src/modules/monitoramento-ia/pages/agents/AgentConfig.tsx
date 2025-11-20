@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, MessageCircle, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAgents } from '../../hooks/useAgents';
 import { toast } from 'sonner';
