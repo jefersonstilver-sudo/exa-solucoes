@@ -8,12 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Save, Plus, Trash2, Eye, Copy } from 'lucide-react';
+import { Save, Plus, Trash2, Eye, Copy, RefreshCw } from 'lucide-react';
 import { AgentChatPreview } from './AgentChatPreview';
 import { SofiaKnowledgeManager } from './SofiaKnowledgeManager';
 import { ZAPIConfigSection } from './ZAPIConfigSection';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAgentStatus } from '../../hooks/useAgentStatus';
 
 interface AgentConfigSectionProps {
   agent: Agent | undefined;
@@ -42,6 +43,10 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
   const [showPreview, setShowPreview] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
+  
+  // Hook para testar status real da API
+  const { statuses, testing, testAgent } = useAgentStatus();
+  const agentStatus = statuses[agent.key];
 
   // Realtime sync - detectar mudanças na base de conhecimento
   useEffect(() => {
@@ -113,6 +118,10 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
     }
   };
 
+  const handleTestConnection = async () => {
+    await testAgent(agent.key, agent.display_name);
+  };
+
   return (
     <div className="bg-module-card rounded-[14px] border border-module p-4 lg:p-6 max-w-full">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
@@ -124,17 +133,47 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
             
             {/* Badges de Status e Provedor */}
             <div className="flex flex-wrap gap-2 mt-2">
-              {/* Badge Z-API */}
-              {agent.whatsapp_provider === 'zapi' && agent.zapi_config?.status === 'connected' && (
-                <Badge className="bg-green-500 text-white">
-                  🤖 Conectado via Z-API
+              {/* Badge Z-API - Status Real da API */}
+              {agent.whatsapp_provider === 'zapi' && agentStatus?.status === 'online' && (
+                <Badge className="bg-green-500 text-white flex items-center gap-1">
+                  ✓ Conectado via Z-API
+                  {agentStatus.latency && (
+                    <span className="text-xs opacity-80">({agentStatus.latency}ms)</span>
+                  )}
                 </Badge>
               )}
               
-              {agent.whatsapp_provider === 'zapi' && agent.zapi_config?.status === 'pending_setup' && (
-                <Badge variant="outline" className="border-yellow-500 text-yellow-600">
-                  ⚠️ Z-API Pendente de Configuração
+              {agent.whatsapp_provider === 'zapi' && agentStatus?.status === 'offline' && (
+                <Badge variant="outline" className="border-red-500 text-red-600">
+                  ✗ Z-API Offline
                 </Badge>
+              )}
+              
+              {agent.whatsapp_provider === 'zapi' && !agentStatus && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="border-gray-500 text-gray-600">
+                    ⚪ Status não verificado
+                  </Badge>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={handleTestConnection}
+                    disabled={testing[agent.key]}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {testing[agent.key] ? (
+                      <>
+                        <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                        Testando...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        Testar
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
               
               {/* Badge ManyChat */}
