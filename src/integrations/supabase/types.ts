@@ -207,6 +207,8 @@ export type Database = {
           type: string
           updated_at: string
           whatsapp_number: string | null
+          whatsapp_provider: string | null
+          zapi_config: Json | null
         }
         Insert: {
           created_at?: string
@@ -223,6 +225,8 @@ export type Database = {
           type: string
           updated_at?: string
           whatsapp_number?: string | null
+          whatsapp_provider?: string | null
+          zapi_config?: Json | null
         }
         Update: {
           created_at?: string
@@ -239,6 +243,8 @@ export type Database = {
           type?: string
           updated_at?: string
           whatsapp_number?: string | null
+          whatsapp_provider?: string | null
+          zapi_config?: Json | null
         }
         Relationships: []
       }
@@ -2706,6 +2712,36 @@ export type Database = {
           },
         ]
       }
+      iris_authorized_directors: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          director_name: string
+          id: string
+          is_active: boolean | null
+          phone_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          director_name: string
+          id?: string
+          is_active?: boolean | null
+          phone_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          director_name?: string
+          id?: string
+          is_active?: boolean | null
+          phone_number?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       knowledge_base: {
         Row: {
           agent_key: string | null
@@ -5037,6 +5073,48 @@ export type Database = {
           success?: boolean | null
           user_id?: string | null
           webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      zapi_logs: {
+        Row: {
+          agent_key: string
+          created_at: string | null
+          direction: string
+          error_message: string | null
+          id: string
+          media_url: string | null
+          message_text: string | null
+          metadata: Json | null
+          phone_number: string
+          status: string
+          zapi_message_id: string | null
+        }
+        Insert: {
+          agent_key: string
+          created_at?: string | null
+          direction: string
+          error_message?: string | null
+          id?: string
+          media_url?: string | null
+          message_text?: string | null
+          metadata?: Json | null
+          phone_number: string
+          status?: string
+          zapi_message_id?: string | null
+        }
+        Update: {
+          agent_key?: string
+          created_at?: string | null
+          direction?: string
+          error_message?: string | null
+          id?: string
+          media_url?: string | null
+          message_text?: string | null
+          metadata?: Json | null
+          phone_number?: string
+          status?: string
+          zapi_message_id?: string | null
         }
         Relationships: []
       }

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, MessageCircle, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAgents } from '../../hooks/useAgents';
+import { ZAPIConfigSection } from '../../components/agents/ZAPIConfigSection';
 import { toast } from 'sonner';
 import type { Agent, AgentType, IntegrationProvider } from '../../types/multiAgentTypes';
 
@@ -252,43 +253,14 @@ export const AgentConfig = () => {
           </div>
         </div>
 
-        {/* Integração WhatsApp */}
-        <div className="bg-module-card rounded-[14px] border border-module p-6">
-          <h2 className="text-lg font-bold text-module-primary mb-4">Integração WhatsApp</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-module-primary text-sm font-medium mb-2">Número</label>
-              <input
-                type="text"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                placeholder="+55 (11) 99999-9999"
-                className="w-full bg-module-input border border-module rounded-lg p-3 text-module-primary focus:outline-none focus:ring-2 focus:ring-module-accent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-module-primary text-sm font-medium mb-2">Provider</label>
-              <select
-                value={formData.provider}
-                onChange={(e) => setFormData({ ...formData, provider: e.target.value as IntegrationProvider })}
-                className="w-full bg-module-input border border-module rounded-lg p-3 text-module-primary focus:outline-none focus:ring-2 focus:ring-module-accent"
-              >
-                <option value="none">Nenhum</option>
-                <option value="manychat">ManyChat</option>
-                <option value="string">STRING.com</option>
-                <option value="whatsapp-api">WhatsApp API</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-4 p-4 bg-module-input rounded-lg">
-            <p className="text-module-tertiary text-sm">
-              Status: {formData.provider === 'none' ? '🟡 Pendente de configuração' : '🟢 Configurado'}
-            </p>
-          </div>
-        </div>
+        {/* Configuração Z-API (se aplicável) */}
+        {agent?.whatsappProvider === 'zapi' && (
+          <ZAPIConfigSection
+            agentKey={agent.key}
+            zapiConfig={agent.zapiConfig}
+            whatsappNumber={agent.whatsappNumber}
+          />
+        )}
 
         {/* Actions */}
         <div className="flex justify-end">
