@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { DeviceAlert } from '../utils/alerts';
+import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 interface AlertsTableProps {
   alerts: DeviceAlert[];
@@ -18,14 +19,17 @@ interface AlertsTableProps {
 }
 
 export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
+  const { theme } = useModuleTheme();
+  const tc = getThemeClasses(theme);
+  
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case 'high':
-        return <span className="px-2 py-1 text-xs font-semibold rounded bg-[#E30613] text-white">ALTA</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-[#9C1E1E] text-white">ALTA</span>;
       case 'medium':
         return <span className="px-2 py-1 text-xs font-semibold rounded bg-yellow-500 text-black">MÉDIA</span>;
       case 'low':
-        return <span className="px-2 py-1 text-xs font-semibold rounded bg-[#2C2C2C] text-white">BAIXA</span>;
+        return <span className={`px-2 py-1 text-xs font-semibold rounded ${tc.bgInput} ${tc.textPrimary}`}>BAIXA</span>;
       default:
         return null;
     }
@@ -34,9 +38,9 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'open':
-        return <span className="px-2 py-1 text-xs rounded bg-[#E30613]/20 text-[#E30613]">Aberto</span>;
+        return <span className="px-2 py-1 text-xs rounded bg-[#9C1E1E]/20 text-[#9C1E1E]">Aberto</span>;
       case 'scheduled':
-        return <span className="px-2 py-1 text-xs rounded bg-[#2C2C2C] text-white/70">Agendado</span>;
+        return <span className={`px-2 py-1 text-xs rounded ${tc.bgInput} ${tc.textSecondary}`}>Agendado</span>;
       case 'resolved':
         return <span className="px-2 py-1 text-xs rounded bg-green-500/20 text-green-500">Resolvido</span>;
       default:
@@ -45,46 +49,35 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
   };
 
   return (
-    <div className="hidden md:block bg-[#0A0A0A] rounded-lg overflow-hidden border border-[#2C2C2C]">
+    <div className={`hidden md:block ${tc.bgCard} rounded-lg overflow-hidden border ${tc.border}`}>
       <Table>
         <TableHeader>
-          <TableRow className="bg-[#1A1A1A] hover:bg-[#1A1A1A] border-b border-[#2C2C2C]">
-            <TableHead className="text-white font-semibold">Painel</TableHead>
-            <TableHead className="text-white font-semibold">Condomínio</TableHead>
-            <TableHead className="text-white font-semibold">Severidade</TableHead>
-            <TableHead className="text-white font-semibold">Status</TableHead>
-            <TableHead className="text-white font-semibold">Tempo aberto</TableHead>
-            <TableHead className="text-white font-semibold">Última atualização</TableHead>
-            <TableHead className="text-white font-semibold text-right">Ações</TableHead>
+          <TableRow className={`${tc.bgInput} hover:${tc.bgInput} border-b ${tc.border}`}>
+            <TableHead className={`${tc.textPrimary} font-semibold`}>Painel</TableHead>
+            <TableHead className={`${tc.textPrimary} font-semibold`}>Condomínio</TableHead>
+            <TableHead className={`${tc.textPrimary} font-semibold`}>Severidade</TableHead>
+            <TableHead className={`${tc.textPrimary} font-semibold`}>Status</TableHead>
+            <TableHead className={`${tc.textPrimary} font-semibold`}>Tempo aberto</TableHead>
+            <TableHead className={`${tc.textPrimary} font-semibold text-right`}>Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {alerts.map((alert) => (
             <TableRow
               key={alert.id}
-              className="border-b border-[#1A1A1A] hover:bg-[#E30613]/10 transition-colors cursor-pointer"
+              className={`${tc.border} border-b hover:${tc.bgHover} transition-colors cursor-pointer`}
               onClick={() => onViewDetails(alert)}
             >
-              <TableCell className="font-medium text-white">
+              <TableCell className={`font-medium ${tc.textPrimary}`}>
                 {alert.devices?.name || 'Desconhecido'}
               </TableCell>
-              <TableCell className="text-white/70">
+              <TableCell className={tc.textSecondary}>
                 {alert.devices?.condominio_name || 'N/A'}
               </TableCell>
-              <TableCell>
-                {getSeverityBadge(alert.severity)}
-              </TableCell>
-              <TableCell>
-                {getStatusBadge(alert.status)}
-              </TableCell>
-              <TableCell className="text-white/70">
+              <TableCell>{getSeverityBadge(alert.severity)}</TableCell>
+              <TableCell>{getStatusBadge(alert.status)}</TableCell>
+              <TableCell className={tc.textSecondary}>
                 {formatDistanceToNow(new Date(alert.opened_at), {
-                  addSuffix: true,
-                  locale: ptBR,
-                })}
-              </TableCell>
-              <TableCell className="text-white/70">
-                {formatDistanceToNow(new Date(alert.created_at), {
                   addSuffix: true,
                   locale: ptBR,
                 })}
@@ -97,10 +90,9 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
                     e.stopPropagation();
                     onViewDetails(alert);
                   }}
-                  className="text-[#E30613] hover:text-white hover:bg-[#E30613]"
+                  className={tc.bgHover}
                 >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Ver detalhes
+                  <Eye className="w-4 h-4" />
                 </Button>
               </TableCell>
             </TableRow>
