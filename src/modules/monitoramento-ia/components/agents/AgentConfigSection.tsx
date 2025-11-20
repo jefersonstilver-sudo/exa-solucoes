@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Save, Plus, Trash2, Eye, Copy } from 'lucide-react';
 import { AgentChatPreview } from './AgentChatPreview';
+import { SofiaKnowledgeManager } from './SofiaKnowledgeManager';
 import { toast } from 'sonner';
 
 interface AgentConfigSectionProps {
@@ -113,37 +114,45 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
         <TabsList className="bg-module-input border-module w-full">
           <TabsTrigger 
             value="config" 
-            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
           >
             Configurações
           </TabsTrigger>
           <TabsTrigger 
-            value="prompts" 
-            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+            value="prompts"
+            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
           >
             Prompts
           </TabsTrigger>
           <TabsTrigger 
             value="rules" 
-            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
           >
             Regras de Decisão
           </TabsTrigger>
           <TabsTrigger 
             value="tools" 
-            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
           >
             Ferramentas & Canais
           </TabsTrigger>
           <TabsTrigger 
             value="connections" 
-            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
           >
             Conexões
           </TabsTrigger>
+          {agent.key === 'sofia' && (
+            <TabsTrigger 
+              value="knowledge" 
+              className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
+            >
+              Base de Conhecimento 🧠
+            </TabsTrigger>
+          )}
           <TabsTrigger 
             value="info" 
-            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+            className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
           >
             Informações
           </TabsTrigger>
@@ -494,6 +503,13 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
             </div>
           </div>
         </TabsContent>
+
+        {/* TAB: BASE DE CONHECIMENTO - Sofia Only */}
+        {agent.key === 'sofia' && (
+          <TabsContent value="knowledge" className="pt-4">
+            <SofiaKnowledgeManager />
+          </TabsContent>
+        )}
       </Tabs>
 
       <Button
