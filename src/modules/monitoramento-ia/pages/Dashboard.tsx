@@ -29,16 +29,16 @@ export const MonitoramentoIADashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className={`${tc.bgCard} rounded-xl ${tc.border} border p-6 lg:p-8`}>
+      <div className="bg-module-card rounded-xl border border-module p-6 lg:p-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className={`text-2xl lg:text-3xl font-bold ${tc.textPrimary} mb-2`}>
+            <h1 className="text-2xl lg:text-3xl font-bold text-module-primary mb-2">
               Dashboard
             </h1>
-            <p className={tc.textSecondary}>
+            <p className="text-module-secondary">
               Monitoramento em tempo real dos painéis via AnyDesk
             </p>
-            <p className={`text-xs ${tc.textTertiary} mt-1`}>
+            <p className="text-xs text-module-tertiary mt-1">
               Última atualização: {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
             </p>
           </div>

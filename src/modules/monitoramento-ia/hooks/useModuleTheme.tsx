@@ -28,62 +28,38 @@ export const useModuleTheme = () => {
 };
 
 /**
- * Classes CSS dinâmicas baseadas no tema
+ * Retorna a classe CSS para aplicar no container raiz
+ */
+export const getThemeClass = (theme: ModuleTheme): string => {
+  return theme === 'dark' ? 'theme-dark' : 'theme-light';
+};
+
+/**
+ * @deprecated Use CSS Variables classes directly (bg-module-primary, text-module-primary, etc)
+ * This function is kept for backward compatibility during migration
  */
 export const getThemeClasses = (theme: ModuleTheme) => {
-  if (theme === 'dark') {
-    return {
-      // Backgrounds (Dark mode com toques de vermelho)
-      bgPage: 'bg-gradient-to-br from-[#1A0A0A] via-[#0F0505] to-[#0A0A0A]',
-      bgCard: 'bg-gradient-to-br from-[#2A1515] to-[#1A1A1A]',
-      bgInput: 'bg-[#1A0808]',
-      bgHover: 'hover:bg-[#9C1E1E]/30',
-      bgAccent: 'bg-[#9C1E1E]',
-      bgAccentHover: 'hover:bg-[#B82525]',
-      
-      // Borders
-      border: 'border-[#3A1A1A]',
-      borderAccent: 'border-[#9C1E1E]',
-      
-      // Text
-      textPrimary: 'text-white',
-      textSecondary: 'text-[#D4A5A5]',
-      textTertiary: 'text-[#A08585]',
-      textMuted: 'text-white/50',
-      
-      // Placeholder
-      placeholder: 'placeholder:text-[#8B6666]',
-      
-      // Focus
-      focusRing: 'focus:ring-[#9C1E1E]',
-      focusBorder: 'focus:border-[#9C1E1E]',
-    };
-  } else {
-    return {
-      // Backgrounds (Light mode)
-      bgPage: 'bg-white',
-      bgCard: 'bg-white',
-      bgInput: 'bg-white',
-      bgHover: 'hover:bg-gray-50',
-      bgAccent: 'bg-[#9C1E1E]',
-      bgAccentHover: 'hover:bg-[#9C1E1E]/90',
-      
-      // Borders
-      border: 'border-gray-200',
-      borderAccent: 'border-[#9C1E1E]',
-      
-      // Text
-      textPrimary: 'text-gray-900',
-      textSecondary: 'text-gray-600',
-      textTertiary: 'text-gray-500',
-      textMuted: 'text-gray-400',
-      
-      // Placeholder
-      placeholder: 'placeholder:text-gray-400',
-      
-      // Focus
-      focusRing: 'focus:ring-[#9C1E1E]',
-      focusBorder: 'focus:border-[#9C1E1E]',
-    };
-  }
+  // Retorna classes CSS vazias - componentes devem usar CSS Variables diretamente
+  return {
+    bgPage: 'bg-module-primary',
+    bgCard: 'bg-module-card',
+    bgInput: 'bg-module-input',
+    bgHover: 'hover-module-bg',
+    bgAccent: 'bg-module-accent',
+    bgAccentHover: 'hover-module-accent',
+    bgSecondary: 'bg-module-secondary',
+    
+    border: 'border-module',
+    borderAccent: 'border-module-accent',
+    
+    textPrimary: 'text-module-primary',
+    textSecondary: 'text-module-secondary',
+    textTertiary: 'text-module-tertiary',
+    textMuted: 'text-module-muted',
+    
+    placeholder: 'placeholder:text-module-tertiary',
+    
+    focusRing: 'focus:ring-[var(--border-accent)]',
+    focusBorder: 'focus:border-module-accent',
+  };
 };

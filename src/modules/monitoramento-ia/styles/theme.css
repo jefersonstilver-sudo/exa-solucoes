@@ -1,0 +1,125 @@
+/* ========================================
+   MÓDULO IA & MONITORAMENTO EXA
+   Sistema de Tema com CSS Variables
+   ======================================== */
+
+/* Paleta Base EXA */
+:root {
+  --exa-black: #0A0A0A;
+  --exa-gray-dark: #1A1A1A;
+  --exa-gray-medium: #2A2A2A;
+  --exa-red: #9C1E1E;
+  --exa-red-hover: #B82525;
+  --exa-white: #FFFFFF;
+  --exa-text-secondary: #A0A0A0;
+  --exa-text-tertiary: #6B7280;
+}
+
+/* ========================================
+   TEMA ESCURO (Dark Mode)
+   ======================================== */
+.theme-dark {
+  /* Backgrounds */
+  --bg-primary: #0A0A0A;
+  --bg-secondary: #1A1A1A;
+  --bg-card: #1A1A1A;
+  --bg-input: #0A0A0A;
+  --bg-hover: rgba(156, 30, 30, 0.1);
+  --bg-accent: #9C1E1E;
+  --bg-accent-hover: #B82525;
+  
+  /* Borders */
+  --border-default: #2A2A2A;
+  --border-accent: #9C1E1E;
+  --border-light: #1A1A1A;
+  
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0A0A0;
+  --text-tertiary: #6B7280;
+  --text-muted: rgba(255, 255, 255, 0.5);
+  
+  /* Placeholders */
+  --placeholder: #6B7280;
+  
+  /* Status Colors */
+  --status-online: #22C55E;
+  --status-offline: #EF4444;
+  --status-unknown: #9CA3AF;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-accent: 0 10px 15px -3px rgba(156, 30, 30, 0.2);
+}
+
+/* ========================================
+   TEMA CLARO (Light Mode)
+   ======================================== */
+.theme-light {
+  /* Backgrounds */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F7F7F7;
+  --bg-card: #FFFFFF;
+  --bg-input: #FFFFFF;
+  --bg-hover: rgba(156, 30, 30, 0.05);
+  --bg-accent: #9C1E1E;
+  --bg-accent-hover: #B82525;
+  
+  /* Borders */
+  --border-default: #D8D8D8;
+  --border-accent: #9C1E1E;
+  --border-light: #E8E8E8;
+  
+  /* Text */
+  --text-primary: #0A0A0A;
+  --text-secondary: #4B4B4B;
+  --text-tertiary: #6B7280;
+  --text-muted: rgba(0, 0, 0, 0.4);
+  
+  /* Placeholders */
+  --placeholder: #9CA3AF;
+  
+  /* Status Colors */
+  --status-online: #16A34A;
+  --status-offline: #DC2626;
+  --status-unknown: #6B7280;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+  --shadow-accent: 0 10px 15px -3px rgba(156, 30, 30, 0.15);
+}
+
+/* ========================================
+   CLASSES UTILITÁRIAS
+   ======================================== */
+
+/* Backgrounds */
+.bg-module-primary { background-color: var(--bg-primary); }
+.bg-module-secondary { background-color: var(--bg-secondary); }
+.bg-module-card { background-color: var(--bg-card); }
+.bg-module-input { background-color: var(--bg-input); }
+.bg-module-accent { background-color: var(--bg-accent); }
+
+/* Borders */
+.border-module { border-color: var(--border-default); }
+.border-module-accent { border-color: var(--border-accent); }
+.border-module-light { border-color: var(--border-light); }
+
+/* Text */
+.text-module-primary { color: var(--text-primary); }
+.text-module-secondary { color: var(--text-secondary); }
+.text-module-tertiary { color: var(--text-tertiary); }
+.text-module-muted { color: var(--text-muted); }
+
+/* Hover States */
+.hover-module-bg:hover { background-color: var(--bg-hover); }
+.hover-module-accent:hover { background-color: var(--bg-accent-hover); }
+
+/* Transitions */
+.transition-module { 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+}
