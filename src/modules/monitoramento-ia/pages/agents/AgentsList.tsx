@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AgentCard } from '../../components/AgentCard';
-import { useAgents } from '../../hooks/useAgents';
+import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +17,7 @@ import { useState } from 'react';
 
 export const AgentsList = () => {
   const navigate = useNavigate();
-  const { agents, deleteAgent, duplicateAgent } = useAgents();
+  const { agents, deleteAgent, duplicateAgent } = useSupabaseAgents();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<string | null>(null);
 
@@ -37,8 +37,8 @@ export const AgentsList = () => {
     }
   };
 
-  const handleDuplicate = (id: string) => {
-    const newAgent = duplicateAgent(id);
+  const handleDuplicate = async (id: string) => {
+    const newAgent = await duplicateAgent(id);
     if (newAgent) {
       navigate(`/admin/monitoramento-ia/agentes/${newAgent.id}/configuracoes`);
     }

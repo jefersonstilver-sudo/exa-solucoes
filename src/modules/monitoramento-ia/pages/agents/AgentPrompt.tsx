@@ -9,14 +9,14 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { SofiaKnowledgeManager } from '../../components/agents/SofiaKnowledgeManager';
 import { AgentChatPreview } from '../../components/agents/AgentChatPreview';
-import { useAgents } from '../../hooks/useAgents';
+import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export const AgentPrompt = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getAgentById, updateAgent } = useAgents();
+  const { getAgentById, updateAgent } = useSupabaseAgents();
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);

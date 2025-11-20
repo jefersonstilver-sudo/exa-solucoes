@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAgents } from '../../hooks/useAgents';
+import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
 import type { AgentFormData, AgentType, IntegrationProvider } from '../../types/multiAgentTypes';
 
 export const CreateAgent = () => {
   const navigate = useNavigate();
-  const { createAgent } = useAgents();
+  const { createAgent } = useSupabaseAgents();
   
   const [formData, setFormData] = useState<AgentFormData>({
     name: '',
@@ -31,15 +31,17 @@ export const CreateAgent = () => {
     { value: 'string', label: 'STRING.com' },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name.trim() || formData.name.length < 3) {
       return;
     }
 
-    const newAgent = createAgent(formData);
-    navigate(`/admin/monitoramento-ia/agentes/${newAgent.id}/configuracoes`);
+    const newAgent = await createAgent(formData);
+    if (newAgent) {
+      navigate(`/admin/monitoramento-ia/agentes/${newAgent.id}/configuracoes`);
+    }
   };
 
   const handleTypeChange = (type: AgentType) => {

@@ -10,6 +10,9 @@ import {
   Home,
   ArrowLeft,
   X,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +22,8 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   theme: 'dark' | 'light';
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 const menuItems = [
@@ -62,13 +67,14 @@ const menuItems = [
   },
 ];
 
-export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
+export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }: SidebarProps) => {
   const navigate = useNavigate();
   
   return (
     <aside
       className={cn(
-        `fixed top-0 left-0 h-full w-64 transition-transform duration-300 ease-in-out z-40 border-r`,
+        `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r`,
+        collapsed ? 'w-16' : 'w-64',
         theme === 'dark' 
           ? 'bg-gradient-to-b from-[#9C1E1E] via-[#4A0F0F] to-[#0A0A0A] border-[#2A2A2A] text-white'
           : 'bg-[#9C1E1E] border-[#8A1A1A] text-white',
@@ -78,19 +84,41 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
     >
       {/* Header */}
       <div className={cn(
-        "p-6 border-b flex items-center justify-between",
+        "p-4 border-b flex items-center",
+        collapsed ? 'justify-center' : 'justify-between',
         theme === 'dark' ? 'border-[#2A2A2A]' : 'border-[#8A1A1A]'
       )}>
-        <div className="flex items-center gap-3">
+        {!collapsed && (
+          <div className="flex items-center gap-3">
+            <img 
+              src={EXA_LOGO_URL} 
+              alt="EXA" 
+              className="h-8 w-auto brightness-0 invert"
+            />
+            <div>
+              <h1 className="text-sm font-bold text-white">IA & Monitoramento</h1>
+            </div>
+          </div>
+        )}
+        
+        {collapsed && (
           <img 
             src={EXA_LOGO_URL} 
             alt="EXA" 
-            className="h-8 w-auto brightness-0 invert"
+            className="h-6 w-auto brightness-0 invert"
           />
-          <div>
-            <h1 className="text-sm font-bold text-white">IA & Monitoramento</h1>
-          </div>
-        </div>
+        )}
+
+        {/* Toggle Button - Desktop */}
+        <button
+          onClick={onToggleCollapse}
+          className="hidden lg:block p-1.5 text-white hover:bg-white/10 rounded-lg transition-colors"
+          title={collapsed ? 'Expandir sidebar' : 'Retrair sidebar'}
+        >
+          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        </button>
+
+        {/* Close Button - Mobile */}
         <button
           onClick={onClose}
           className="lg:hidden p-1.5 text-white hover:bg-white/10 rounded-lg transition-colors"
@@ -100,13 +128,17 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
       </div>
 
       {/* Navigation */}
-      <nav className="p-4 space-y-2 pb-32 overflow-y-auto max-h-[calc(100vh-240px)]">
+      <nav className={cn(
+        "p-2 space-y-1 pb-32 overflow-y-auto max-h-[calc(100vh-240px)]",
+        "custom-scrollbar"
+      )}>
         {menuItems.map((item, index) => {
           // Divisor
           if ('divider' in item && item.divider) {
             return (
               <div key={`divider-${index}`} className={cn(
                 "my-4 border-t opacity-20",
+                collapsed ? 'mx-2' : 'mx-4',
                 theme === 'dark' ? 'border-white/20' : 'border-white/30'
               )} />
             );
@@ -114,6 +146,7 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
           
           // Section Title
           if ('sectionTitle' in item && item.sectionTitle) {
+            if (collapsed) return null; // Hide section titles when collapsed
             return (
               <div key={`section-${index}`} className="px-4 py-2 mt-4">
                 <p className="text-xs font-bold text-white/70 uppercase tracking-wider">
@@ -128,47 +161,56 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
             <NavLink
               key={item.path}
               to={item.path}
-              onClick={onClose}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+                  collapsed ? 'justify-center' : '',
                   isActive
-                    ? 'bg-white/20 text-white font-medium'
-                    : 'text-white/80 hover:bg-white/10'
+                    ? theme === 'dark'
+                      ? 'bg-white/10 text-white font-medium shadow-lg'
+                      : 'bg-white/20 text-white font-medium shadow-lg'
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
                 )
               }
+              title={collapsed ? item.title : undefined}
             >
-              <item.icon size={20} />
-              <span className="text-sm">{item.title}</span>
+              <item.icon size={20} className="flex-shrink-0" />
+              {!collapsed && (
+                <>
+                  <span className="text-sm">{item.title}</span>
+                  {item.badge && (
+                    <span className={cn(
+                      "ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded",
+                      theme === 'dark'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-green-600 text-white'
+                    )}>
+                      {item.badge}
+                    </span>
+                  )}
+                </>
+              )}
             </NavLink>
           );
         })}
       </nav>
 
-      {/* Botão Sair do Módulo */}
-      <div className="absolute bottom-16 left-0 right-0 px-4">
-        <button
-          onClick={() => navigate('/admin')}
-          className={cn(
-            "w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-colors",
-            theme === 'dark'
-              ? 'bg-black/20 border-white/20 text-white hover:bg-black/30'
-              : 'bg-white/10 border-white/30 text-white hover:bg-white/20'
-          )}
-        >
-          <ArrowLeft size={20} />
-          <span className="text-sm">Sair do Módulo</span>
-        </button>
-      </div>
-
       {/* Footer */}
       <div className={cn(
-        "absolute bottom-0 left-0 right-0 p-4 border-t",
-        theme === 'dark' ? 'border-white/20' : 'border-white/30'
+        "absolute bottom-0 left-0 right-0 border-t",
+        theme === 'dark' ? 'border-[#2A2A2A] bg-[#0A0A0A]/50' : 'border-[#8A1A1A] bg-[#8A1A1A]/30'
       )}>
-        <p className="text-xs text-white/60 text-center">
-          Módulo Administrativo v1.0
-        </p>
+        <button
+          onClick={() => navigate('/')}
+          className={cn(
+            "w-full flex items-center gap-3 p-4 text-white/70 hover:text-white hover:bg-white/5 transition-colors",
+            collapsed ? 'justify-center' : ''
+          )}
+          title={collapsed ? 'Voltar ao início' : undefined}
+        >
+          <Home size={20} />
+          {!collapsed && <span className="text-sm">Voltar ao Início</span>}
+        </button>
       </div>
     </aside>
   );
