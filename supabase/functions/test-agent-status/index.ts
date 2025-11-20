@@ -21,8 +21,10 @@ Deno.serve(async (req) => {
 
   try {
     const { agentKey } = await req.json();
+    console.log('🔍 [EDGE] Requisição recebida para agente:', agentKey);
 
     if (!agentKey) {
+      console.error('❌ [EDGE] agentKey não fornecido');
       return new Response(
         JSON.stringify({ success: false, message: 'agentKey é obrigatório' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -31,14 +33,18 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    console.log('🔐 [EDGE] Conectando ao Supabase:', supabaseUrl);
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Buscar configuração do agente
+    console.log('📊 [EDGE] Buscando dados do agente no banco...');
     const { data: agent, error: agentError } = await supabase
       .from('agents')
       .select('*')
       .eq('key', agentKey)
       .single();
+    
+    console.log('📥 [EDGE] Resultado da query:', { agent, agentError });
 
     if (agentError || !agent) {
       return new Response(
@@ -54,12 +60,19 @@ Deno.serve(async (req) => {
 
     // Verificar provider
     const provider = agent.whatsapp_provider;
+    console.log('🔌 [EDGE] Provider detectado:', provider);
     
     // Testar Z-API
     if (provider === 'zapi') {
       const zapiConfig = agent.zapi_config as ZAPIConfig;
+      console.log('⚙️ [EDGE] Z-API Config:', {
+        hasInstanceId: !!zapiConfig?.instance_id,
+        hasToken: !!zapiConfig?.token,
+        instanceId: zapiConfig?.instance_id?.substring(0, 8) + '...'
+      });
       
       if (!zapiConfig?.instance_id || !zapiConfig?.token) {
+        console.warn('⚠️ [EDGE] Credenciais Z-API ausentes');
         return new Response(
           JSON.stringify({ 
             success: false,
@@ -94,11 +107,19 @@ Deno.serve(async (req) => {
       // Testar endpoint Z-API
       try {
         const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/status`;
-        const startTime = Date.now();
+        console.log('🌐 [EDGE] Chamando Z-API:', zapiUrl);
         
+        const startTime = Date.now();
         const response = await fetch(zapiUrl);
         const latency = Date.now() - startTime;
         const data = await response.json();
+        
+        console.log('📡 [EDGE] Resposta Z-API:', {
+          status: response.status,
+          ok: response.ok,
+          latency,
+          connected: data.connected
+        });
 
         if (!response.ok) {
           return new Response(

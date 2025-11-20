@@ -23,13 +23,21 @@ export const useAgentStatus = () => {
     setTesting(prev => ({ ...prev, [agentKey]: true }));
     
     try {
+      console.log('🔍 [DEBUG] Testando agente:', { agentKey, displayName });
+      
       const startTime = Date.now();
       
+      // Verificar sessão do usuário
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔐 [DEBUG] Sessão:', session ? 'Ativa' : 'Inativa');
+      
+      console.log('📤 [DEBUG] Invocando edge function test-agent-status...');
       const { data, error } = await supabase.functions.invoke('test-agent-status', {
         body: { agentKey }
       });
 
       const latency = Date.now() - startTime;
+      console.log('📥 [DEBUG] Resposta recebida:', { data, error, latency });
 
       if (error) throw error;
 
