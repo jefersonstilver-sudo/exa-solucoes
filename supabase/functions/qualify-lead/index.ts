@@ -65,11 +65,15 @@ CLASSIFICAÇÃO POR SCORE:
 
 DETECÇÃO DE RISCO DE PERDA:
 Identifique sinais de que o lead vai desistir:
+- Menciona "vou pensar melhor", "depois eu vejo", "não é prioridade"
+- Cita concorrentes ou outras soluções
 - Foco excessivo em preço/orçamento baixo
 - Resistência após apresentação de valores
 - Comparação constante com alternativas mais baratas
-- Hesitação ou adiamento de decisão
+- Hesitação clara ou adiamento de decisão
 - Sinais de que não vê valor suficiente
+- Demonstra indecisão prolongada
+- Questiona muito os valores sem apresentar intenção real
 
 BASE DE CONHECIMENTO:
 ${knowledgeText}
@@ -129,6 +133,95 @@ ${knowledgeText}
     }
 
     console.log(`[QUALIFY] Lead qualified with score: ${qualification.score}, risk: ${qualification.risk_of_loss}`);
+
+    // Se detectou risco de perda, acionar alertas CRÍTICOS
+    if (qualification.risk_of_loss) {
+      console.log('[QUALIFY] ⚠️ RISK OF LOSS DETECTED! Sending critical alerts...');
+      
+      // Notificar Eduardo com prioridade CRÍTICA
+      try {
+        await supabase.functions.invoke('notify-eduardo', {
+          body: {
+            lead: {
+              ...qualification,
+              contact_number: from,
+              contact_name: contactName,
+              conversation_id: conversationId
+            },
+            priority: 'critical',
+            reason: 'risk_of_loss',
+            alert_type: 'RISCO DE PERDA'
+          }
+        });
+        console.log('[QUALIFY] Eduardo notified about risk of loss');
+      } catch (err) {
+        console.error('[QUALIFY] Error notifying Eduardo:', err);
+      }
+      
+      // Notificar Diretores via EXA Alert
+      try {
+        await supabase.functions.invoke('notify-exa-alert', {
+          body: {
+            type: 'risk_of_loss',
+            severity: 'critical',
+            lead: {
+              ...qualification,
+              contact_number: from,
+              contact_name: contactName
+            },
+            data: {
+              reason: qualification.reason_for_risk,
+              timestamp: new Date().toISOString(),
+              action_taken: 'Sofia enviou mensagem humanizada e acionou Eduardo'
+            }
+          }
+        });
+        console.log('[QUALIFY] Directors notified via EXA Alert');
+      } catch (err) {
+        console.error('[QUALIFY] Error sending EXA Alert:', err);
+      }
+    } 
+    // Se score alto (mas sem risco de perda), notificar normalmente
+    else if (qualification.score >= 75) {
+      console.log('[QUALIFY] High score lead, notifying Eduardo...');
+      try {
+        await supabase.functions.invoke('notify-eduardo', {
+          body: {
+            lead: {
+              ...qualification,
+              contact_number: from,
+              contact_name: contactName,
+              conversation_id: conversationId
+            },
+            priority: qualification.score >= 90 ? 'critical' : 'high'
+          }
+        });
+        console.log('[QUALIFY] Eduardo notified about hot lead');
+      } catch (err) {
+        console.error('[QUALIFY] Error notifying Eduardo:', err);
+      }
+    }
+
+    // Se score muito alto (≥90), enviar também para EXA Alert
+    if (qualification.score >= 90 && !qualification.risk_of_loss) {
+      console.log('[QUALIFY] Very hot lead, sending EXA Alert...');
+      try {
+        await supabase.functions.invoke('notify-exa-alert', {
+          body: {
+            type: 'hot_lead',
+            severity: 'high',
+            lead: {
+              ...qualification,
+              contact_number: from,
+              contact_name: contactName
+            }
+          }
+        });
+        console.log('[QUALIFY] EXA Alert sent for very hot lead');
+      } catch (err) {
+        console.error('[QUALIFY] Error sending EXA Alert:', err);
+      }
+    }
 
     return new Response(JSON.stringify(qualification), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

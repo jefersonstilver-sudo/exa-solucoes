@@ -207,3 +207,18 @@ verify_jwt = true
 [functions.ia-console]
 verify_jwt = true
 
+[functions.agent-preview-chat]
+verify_jwt = true
+
+[functions.get-buildings-for-agent]
+verify_jwt = false
+
+[functions.qualify-lead]
+verify_jwt = false
+
+[functions.notify-eduardo]
+verify_jwt = false
+
+[functions.notify-exa-alert]
+verify_jwt = false
+
