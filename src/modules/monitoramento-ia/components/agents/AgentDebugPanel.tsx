@@ -76,7 +76,7 @@ export const AgentDebugPanel = ({ agentKey, displayName, open, onClose }: AgentD
         if (config.instance_id && config.token) {
           try {
             console.log('🌐 [DEBUG PANEL] Testando Z-API direto...');
-            const zapiUrl = `https://api.z-api.io/instances/${config.instance_id}/token/${config.token}/restore-session`;
+            const zapiUrl = `https://api.z-api.io/instances/${config.instance_id}/token/${config.token}/me`;
             const response = await fetch(zapiUrl);
             const data = await response.json();
             
