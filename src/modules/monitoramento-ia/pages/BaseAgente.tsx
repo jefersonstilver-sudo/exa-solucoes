@@ -1,10 +1,15 @@
+import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
+
 export const BaseAgentePage = () => {
+  const { theme } = useModuleTheme();
+  const tc = getThemeClasses(theme);
+  
   return (
-    <div className="bg-[#1A1A1A] rounded-xl border border-[#2A2A2A] shadow-sm p-6 lg:p-8">
-      <h1 className="text-2xl lg:text-3xl font-bold text-white mb-4">
+    <div className={`${tc.bgCard} rounded-xl ${tc.border} border shadow-sm p-6 lg:p-8`}>
+      <h1 className={`text-2xl lg:text-3xl font-bold ${tc.textPrimary} mb-4`}>
         Base da Agente
       </h1>
-      <p className="text-[#A0A0A0]">
+      <p className={tc.textSecondary}>
         Página criada. Conteúdo funcional será implementado em etapas seguintes.
       </p>
     </div>

@@ -1,5 +1,6 @@
 import { Search, Filter, ArrowUpDown } from 'lucide-react';
 import { DevicesFilters, DevicesSort } from '../utils/devices';
+import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 interface FiltersBarProps {
   filters: DevicesFilters;
@@ -16,12 +17,15 @@ export const FiltersBar = ({
   onSortChange,
   onNewPanel,
 }: FiltersBarProps) => {
+  const { theme } = useModuleTheme();
+  const tc = getThemeClasses(theme);
+  
   return (
-    <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl shadow-sm p-4 lg:p-6 mb-6">
+    <div className={`${tc.bgCard} ${tc.border} border rounded-xl shadow-sm p-4 lg:p-6 mb-6`}>
       {/* Linha 1: Busca e botão novo */}
-<div className="flex flex-col lg:flex-row gap-4 mb-4">
+      <div className="flex flex-col lg:flex-row gap-4 mb-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B7280]" />
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${tc.textTertiary}`} />
           <input
             type="text"
             placeholder="Buscar por nome, prédio ou AnyDesk ID..."
@@ -29,12 +33,12 @@ export const FiltersBar = ({
             onChange={(e) =>
               onFiltersChange({ ...filters, search: e.target.value })
             }
-            className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg text-white placeholder:text-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#9C1E1E] focus:border-transparent"
+            className={`w-full pl-10 pr-4 py-2.5 ${tc.bgInput} ${tc.border} border rounded-lg ${tc.textPrimary} ${tc.placeholder} focus:outline-none focus:ring-2 ${tc.focusRing} focus:border-transparent`}
           />
         </div>
         <button
           onClick={onNewPanel}
-          className="bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors whitespace-nowrap"
+          className={`${tc.bgAccent} ${tc.bgAccentHover} text-white font-semibold px-6 py-2.5 rounded-lg transition-colors whitespace-nowrap`}
         >
           + Novo Painel
         </button>
@@ -44,15 +48,14 @@ export const FiltersBar = ({
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Filtro de Status */}
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-[#A0A0A0]" />
+          <Filter className={`w-4 h-4 ${tc.textSecondary}`} />
           <select
-            multiple
-            value={filters.status || []}
+            value={filters.status?.[0] || ''}
             onChange={(e) => {
-              const selected = Array.from(e.target.selectedOptions, (option) => option.value);
-              onFiltersChange({ ...filters, status: selected });
+              const value = e.target.value;
+              onFiltersChange({ ...filters, status: value ? [value] : [] });
             }}
-            className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#9C1E1E]"
+            className={`${tc.bgInput} ${tc.border} border rounded-lg px-3 py-2 text-sm ${tc.textPrimary} focus:outline-none focus:ring-2 ${tc.focusRing}`}
           >
             <option value="">Todos os status</option>
             <option value="online">Online</option>
@@ -69,7 +72,7 @@ export const FiltersBar = ({
           onChange={(e) =>
             onFiltersChange({ ...filters, condominio: e.target.value })
           }
-          className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white placeholder:text-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#9C1E1E]"
+          className={`${tc.bgInput} ${tc.border} border rounded-lg px-3 py-2 text-sm ${tc.textPrimary} ${tc.placeholder} focus:outline-none focus:ring-2 ${tc.focusRing}`}
         />
 
         {/* Filtro de Torre */}
@@ -80,12 +83,12 @@ export const FiltersBar = ({
           onChange={(e) =>
             onFiltersChange({ ...filters, torre: e.target.value })
           }
-          className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white placeholder:text-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#9C1E1E]"
+          className={`${tc.bgInput} ${tc.border} border rounded-lg px-3 py-2 text-sm ${tc.textPrimary} ${tc.placeholder} focus:outline-none focus:ring-2 ${tc.focusRing}`}
         />
 
         {/* Ordenação */}
         <div className="flex items-center gap-2">
-          <ArrowUpDown className="w-4 h-4 text-[#A0A0A0]" />
+          <ArrowUpDown className={`w-4 h-4 ${tc.textSecondary}`} />
           <select
             value={`${sort.field}-${sort.order}`}
             onChange={(e) => {
@@ -95,16 +98,14 @@ export const FiltersBar = ({
                 order: order as DevicesSort['order'],
               });
             }}
-            className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#9C1E1E]"
+            className={`${tc.bgInput} ${tc.border} border rounded-lg px-3 py-2 text-sm ${tc.textPrimary} focus:outline-none focus:ring-2 ${tc.focusRing}`}
           >
             <option value="name-asc">Nome (A-Z)</option>
             <option value="name-desc">Nome (Z-A)</option>
-            <option value="condominio_name-asc">Condomínio (A-Z)</option>
-            <option value="condominio_name-desc">Condomínio (Z-A)</option>
-            <option value="last_online_at-desc">Último online (mais recente)</option>
-            <option value="last_online_at-asc">Último online (mais antigo)</option>
             <option value="status-asc">Status (A-Z)</option>
             <option value="status-desc">Status (Z-A)</option>
+            <option value="last_online-desc">Último online (Recente)</option>
+            <option value="last_online-asc">Último online (Antigo)</option>
           </select>
         </div>
       </div>
