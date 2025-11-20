@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,12 +43,29 @@ serve(async (req) => {
 
       const timestamp = new Date().toISOString();
       
-      // TODO: Salvar no Supabase quando houver tabela de mensagens
-      // await supabase.from('agent_messages').insert({
-      //   agent_id: agentId,
-      //   message: payload,
-      //   received_at: timestamp
-      // });
+      // Chamar roteador para processar mensagem
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+
+      const { data: routeData, error: routeError } = await supabase.functions.invoke('route-message', {
+        body: {
+          message: payload.message?.text || '',
+          conversationId: payload.conversation_id || `conv_${Date.now()}`,
+          metadata: { 
+            from: payload.from, 
+            timestamp: payload.timestamp,
+            agentId 
+          }
+        }
+      });
+
+      if (routeError) {
+        console.error('[WEBHOOK] Erro ao rotear mensagem:', routeError);
+      } else {
+        console.log('[WEBHOOK] Mensagem roteada para:', routeData?.routed_to);
+      }
 
       console.log(`[WEBHOOK] Mensagem processada com sucesso para ${agentId}`);
 
@@ -56,7 +74,8 @@ serve(async (req) => {
           success: true, 
           agentId, 
           timestamp,
-          message: 'Webhook recebido e processado'
+          message: 'Webhook recebido e processado',
+          routed_to: routeData?.routed_to
         }),
         { 
           status: 200,
