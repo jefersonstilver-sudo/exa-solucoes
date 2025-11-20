@@ -62,9 +62,9 @@ export const getThemeClasses = (theme: ModuleTheme) => {
     return {
       // Backgrounds (Light mode)
       bgPage: 'bg-white',
-      bgCard: 'bg-gray-50',
+      bgCard: 'bg-white',
       bgInput: 'bg-white',
-      bgHover: 'hover:bg-gray-100',
+      bgHover: 'hover:bg-gray-50',
       bgAccent: 'bg-[#9C1E1E]',
       bgAccentHover: 'hover:bg-[#9C1E1E]/90',
       
