@@ -69,6 +69,7 @@ import { BaseConhecimentoPage } from './modules/monitoramento-ia/pages/BaseConhe
 import { RegrasAcaoPage } from './modules/monitoramento-ia/pages/RegrasAcao';
 import { IntegracaoManyChatPage } from './modules/monitoramento-ia/pages/IntegracaoManyChat';
 import { IntegracaoStringPage } from './modules/monitoramento-ia/pages/IntegracaoString';
+import { IntegracoesApisPage } from './modules/monitoramento-ia/pages/IntegracoesApisPage';
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
@@ -464,6 +465,7 @@ const AppContent = () => {
             <Route path="agente/regras-acao" element={<RegrasAcaoPage />} />
             <Route path="agente/integracao-manychat" element={<IntegracaoManyChatPage />} />
             <Route path="agente/integracao-string" element={<IntegracaoStringPage />} />
+            <Route path="agente/apis" element={<IntegracoesApisPage />} />
           </Route>
 
           {/* Rotas administrativas */}

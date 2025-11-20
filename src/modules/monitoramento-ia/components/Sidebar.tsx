@@ -90,6 +90,15 @@ const menuItems = [
     path: '/admin/monitoramento-ia/agente/integracao-string',
   },
   {
+    title: 'Integrações & APIs (Central)',
+    icon: Plug,
+    path: '/admin/monitoramento-ia/agente/apis',
+  },
+  
+  // Divisor
+  { divider: true },
+  
+  {
     title: 'Base da Agente',
     icon: Database,
     path: '/admin/monitoramento-ia/base-agente',
