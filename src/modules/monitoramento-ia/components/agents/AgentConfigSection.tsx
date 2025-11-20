@@ -183,12 +183,6 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
               Configurações
             </TabsTrigger>
             <TabsTrigger 
-              value="prompts"
-              className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
-            >
-              Prompts
-            </TabsTrigger>
-            <TabsTrigger 
               value="rules" 
               className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
             >
@@ -303,56 +297,6 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
         </TabsContent>
 
         {/* TAB: PROMPTS */}
-        <TabsContent value="prompts" className="space-y-4 pt-4">
-          <div>
-            <Label className="text-module-primary">Prompt Base (Sistema)</Label>
-            <Textarea
-              value={config.openai_config?.system_prompt || ''}
-              onChange={(e) => setConfig({
-                ...config,
-                openai_config: { ...config.openai_config, system_prompt: e.target.value }
-              })}
-              placeholder="Ex: Você é Sofia, assistente de vendas da EXA. Seu objetivo é qualificar leads e identificar oportunidades..."
-              className="bg-module-input border-module text-module-primary placeholder:text-module-muted min-h-[200px] mt-1 font-mono text-sm"
-            />
-            <p className="text-xs text-module-tertiary mt-1">
-              Instruções fundamentais que definem a personalidade e objetivos do agente
-            </p>
-          </div>
-
-          <div>
-            <Label className="text-module-primary">Prompt Privado (Instruções Internas)</Label>
-            <Textarea
-              value={config.openai_config?.private_prompt || ''}
-              onChange={(e) => setConfig({
-                ...config,
-                openai_config: { ...config.openai_config, private_prompt: e.target.value }
-              })}
-              placeholder="Ex: JAMAIS revelar informações internas. Sempre qualificar lead com score 0-100. Se score >= 75, notificar Eduardo..."
-              className="bg-module-input border-module text-module-primary placeholder:text-module-muted min-h-[150px] mt-1 font-mono text-sm"
-            />
-            <p className="text-xs text-module-tertiary mt-1">
-              Regras internas que o agente deve seguir mas não revelar ao usuário
-            </p>
-          </div>
-
-          <div>
-            <Label className="text-module-primary">Contexto Adicional</Label>
-            <Textarea
-              value={config.openai_config?.context || ''}
-              onChange={(e) => setConfig({
-                ...config,
-                openai_config: { ...config.openai_config, context: e.target.value }
-              })}
-              placeholder="Ex: Informações sobre produtos, preços, processos internos..."
-              className="bg-module-input border-module text-module-primary placeholder:text-module-muted min-h-[100px] mt-1 font-mono text-sm"
-            />
-            <p className="text-xs text-module-tertiary mt-1">
-              Contexto e informações relevantes para o agente consultar
-            </p>
-          </div>
-        </TabsContent>
-
         {/* TAB: REGRAS DE DECISÃO */}
         <TabsContent value="rules" className="space-y-4 pt-4">
           <div className="flex items-center justify-between mb-4">
