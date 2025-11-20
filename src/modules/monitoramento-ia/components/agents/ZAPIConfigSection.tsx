@@ -114,7 +114,7 @@ export const ZAPIConfigSection = ({ agentKey, zapiConfig, whatsappNumber, onConf
       {/* Token */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-module-secondary">
-          Token
+          Token (Instance Token)
         </label>
         <div className="flex items-center gap-2">
           <div className="flex-1 bg-module-input border border-module rounded-lg p-3 text-module-primary font-mono text-sm overflow-x-auto">
@@ -128,6 +128,27 @@ export const ZAPIConfigSection = ({ agentKey, zapiConfig, whatsappNumber, onConf
             {copiedField === 'Token' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </Button>
         </div>
+      </div>
+
+      {/* Client Token Status */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-module-secondary">
+          Client-Token (Token de Segurança da Conta)
+        </label>
+        <div className="flex items-center gap-2">
+          <div className={`flex-1 border rounded-lg p-3 font-mono text-sm ${
+            (zapiConfig as any).client_token 
+              ? 'bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400' 
+              : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-600 dark:text-yellow-400'
+          }`}>
+            {(zapiConfig as any).client_token ? '✓ Configurado (oculto por segurança)' : '⚠️ Não configurado'}
+          </div>
+        </div>
+        {!(zapiConfig as any).client_token && (
+          <p className="text-xs text-yellow-500 font-medium">
+            ⚠️ Client-Token é necessário para enviar mensagens via Z-API
+          </p>
+        )}
       </div>
 
       {/* API URL */}

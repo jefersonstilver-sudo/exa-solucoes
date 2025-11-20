@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, X } from 'lucide-react';
+import { Save, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -32,6 +32,7 @@ export const ZAPICredentialsModal = ({
   const [clientToken, setClientToken] = useState('');
   const [apiUrl, setApiUrl] = useState('https://api.z-api.io');
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   // Reseta os valores quando o modal abre ou quando a config muda
   useEffect(() => {
@@ -83,6 +84,45 @@ export const ZAPICredentialsModal = ({
       toast.error('Erro ao salvar credenciais Z-API');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    if (!instanceId.trim() || !token.trim() || !clientToken.trim()) {
+      toast.error('Preencha todas as credenciais antes de testar');
+      return;
+    }
+
+    setTesting(true);
+    try {
+      // Testa a conexão fazendo uma chamada simples à API Z-API
+      const testUrl = `${apiUrl.trim()}/instances/${instanceId.trim()}/token/${token.trim()}/status`;
+      
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Client-Token': clientToken.trim()
+        }
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result) {
+        toast.success('✅ Conexão Z-API testada com sucesso!', {
+          description: `Instância conectada: ${result.connected ? 'Sim' : 'Não'}`
+        });
+      } else {
+        toast.error('❌ Erro ao testar conexão', {
+          description: result.error || 'Verifique suas credenciais'
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao testar conexão:', error);
+      toast.error('❌ Falha ao testar conexão', {
+        description: 'Verifique suas credenciais e tente novamente'
+      });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -168,38 +208,95 @@ export const ZAPICredentialsModal = ({
             </p>
           </div>
 
-          {/* Info Box */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4">
-            <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-2">
-              💡 Como obter essas informações?
+          {/* Info Box with Visual Guide */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-5">
+            <p className="text-sm text-blue-900 dark:text-blue-100 font-bold mb-3 flex items-center gap-2">
+              💡 Guia Visual: Como obter as credenciais
             </p>
-            <ol className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
-              <li>Acesse o painel Z-API</li>
-              <li>Vá em "Minhas Instâncias" e copie Instance ID e Token</li>
-              <li>Vá em "Segurança" → "Token de Segurança da Conta"</li>
-              <li>Copie o Client-Token (token de segurança)</li>
-            </ol>
+            
+            <div className="space-y-4">
+              {/* Etapa 1 */}
+              <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3">
+                <p className="text-xs font-bold text-blue-900 dark:text-blue-100 mb-1">
+                  1️⃣ Instance ID e Token
+                </p>
+                <p className="text-xs text-blue-800 dark:text-blue-200">
+                  • Painel Z-API → <strong>"Minhas Instâncias"</strong><br/>
+                  • Selecione sua instância<br/>
+                  • Copie o <strong>Instance ID</strong> (formato: 3C6B8F4A-1234-...)<br/>
+                  • Copie o <strong>Token</strong> (formato: AF7014E33113...)
+                </p>
+              </div>
+
+              {/* Etapa 2 */}
+              <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3">
+                <p className="text-xs font-bold text-blue-900 dark:text-blue-100 mb-1">
+                  2️⃣ Client-Token (Token de Segurança da Conta)
+                </p>
+                <p className="text-xs text-blue-800 dark:text-blue-200">
+                  • Painel Z-API → <strong>"Segurança"</strong><br/>
+                  • Procure por <strong>"Token de Segurança da Conta"</strong><br/>
+                  • Copie o token exibido (diferente do token da instância)<br/>
+                  • ⚠️ Este token é <strong>global</strong> para todas as instâncias
+                </p>
+              </div>
+
+              {/* Etapa 3 */}
+              <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3">
+                <p className="text-xs font-bold text-blue-900 dark:text-blue-100 mb-1">
+                  3️⃣ Diferença entre os tokens
+                </p>
+                <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                  <p>• <strong>Instance Token:</strong> Específico da instância (na URL)</p>
+                  <p>• <strong>Client-Token:</strong> Segurança da conta (no header HTTP)</p>
+                  <p className="text-red-600 dark:text-red-400 font-bold mt-2">
+                    ⚠️ AMBOS são necessários para funcionar!
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-between gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
-            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            onClick={handleTestConnection}
+            disabled={saving || testing}
+            className="border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
           >
-            <X className="w-4 h-4 mr-2" />
-            Cancelar
+            {testing ? (
+              <>
+                <div className="w-4 h-4 mr-2 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                Testando...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Testar Conexão
+              </>
+            )}
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-[#9C1E1E] hover:bg-[#7A1616] text-white border-0"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Salvando...' : 'Salvar Credenciais'}
-          </Button>
+          
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={saving || testing}
+              className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving || testing}
+              className="bg-[#9C1E1E] hover:bg-[#7A1616] text-white border-0"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Salvando...' : 'Salvar Credenciais'}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
