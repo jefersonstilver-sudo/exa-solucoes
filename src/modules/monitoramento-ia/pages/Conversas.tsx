@@ -97,41 +97,41 @@ export const ConversasPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className={`${tc.bgCard} rounded-xl ${tc.border} border p-6`}>
-        <h1 className={`text-2xl lg:text-3xl font-bold ${tc.textPrimary} mb-2`}>
+      <div className="bg-module-card rounded-xl border-module border p-6">
+        <h1 className="text-2xl lg:text-3xl font-bold text-module-primary mb-2">
           Conversas Analisadas
         </h1>
-        <p className={tc.textSecondary}>
+        <p className="text-module-secondary">
           Histórico de conversas do ManyChat vinculadas aos painéis
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className={`p-4 ${tc.bgCard} ${tc.border} border`}>
+        <Card className="p-4 bg-module-card border-module border">
           <div className="flex items-center gap-3">
             <MessageSquare className="w-8 h-8 text-[#9C1E1E]" />
             <div>
-              <p className={`text-sm ${tc.textSecondary}`}>Total de Conversas</p>
-              <p className={`text-2xl font-bold ${tc.textPrimary}`}>{statsData.total}</p>
+              <p className="text-sm text-module-secondary">Total de Conversas</p>
+              <p className="text-2xl font-bold text-module-primary">{statsData.total}</p>
             </div>
           </div>
         </Card>
-        <Card className={`p-4 ${tc.bgCard} ${tc.border} border`}>
+        <Card className="p-4 bg-module-card border-module border">
           <div className="flex items-center gap-3">
             <Building2 className="w-8 h-8 text-blue-500" />
             <div>
-              <p className={`text-sm ${tc.textSecondary}`}>Última Hora</p>
-              <p className={`text-2xl font-bold ${tc.textPrimary}`}>{statsData.lastHour}</p>
+              <p className="text-sm text-module-secondary">Última Hora</p>
+              <p className="text-2xl font-bold text-module-primary">{statsData.lastHour}</p>
             </div>
           </div>
         </Card>
-        <Card className={`p-4 ${tc.bgCard} ${tc.border} border`}>
+        <Card className="p-4 bg-module-card border-module border">
           <div className="flex items-center gap-3">
             <ExternalLink className="w-8 h-8 text-green-500" />
             <div>
-              <p className={`text-sm ${tc.textSecondary}`}>Pendentes</p>
-              <p className={`text-2xl font-bold ${tc.textPrimary}`}>{statsData.pending}</p>
+              <p className="text-sm text-module-secondary">Pendentes</p>
+              <p className="text-2xl font-bold text-module-primary">{statsData.pending}</p>
             </div>
           </div>
         </Card>
@@ -139,35 +139,35 @@ export const ConversasPage = () => {
 
       {/* Search */}
       <div className="relative">
-        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${tc.textTertiary}`} />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-module-tertiary" />
         <Input
           type="text"
           placeholder="Buscar por nome, telefone ou condomínio..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className={`pl-10 ${tc.bgInput} ${tc.border} border ${tc.textPrimary} ${tc.placeholder}`}
+          className="pl-10 bg-module-input border-module border text-module-primary placeholder-module-muted"
         />
       </div>
 
       {/* Conversations List */}
       {loading ? (
-        <div className={`text-center py-12 ${tc.bgCard} rounded-xl ${tc.border} border`}>
+        <div className="text-center py-12 bg-module-card rounded-xl border-module border">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#9C1E1E]"></div>
-          <p className={`mt-4 ${tc.textSecondary}`}>Carregando conversas...</p>
+          <p className="mt-4 text-module-secondary">Carregando conversas...</p>
         </div>
       ) : filteredConversations.length === 0 ? (
-        <div className={`text-center py-12 ${tc.bgCard} rounded-xl ${tc.border} border`}>
-          <MessageSquare className={`w-12 h-12 mx-auto mb-4 ${tc.textSecondary}`} />
-          <p className={tc.textSecondary}>Nenhuma conversa encontrada</p>
+        <div className="text-center py-12 bg-module-card rounded-xl border-module border">
+          <MessageSquare className="w-12 h-12 mx-auto mb-4 text-module-secondary" />
+          <p className="text-module-secondary">Nenhuma conversa encontrada</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredConversations.map((conv) => (
-            <Card key={conv.id} className={`p-4 ${tc.bgCard} ${tc.border} border ${tc.bgHover} cursor-pointer transition-colors`}>
+            <Card key={conv.id} className="p-4 bg-module-card border-module border hover:bg-module-hover cursor-pointer transition-colors rounded-[14px]">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-[#9C1E1E]" />
-                  <span className={`font-semibold ${tc.textPrimary}`}>
+                  <span className="font-semibold text-module-primary">
                     {conv.contact_name || 'Sem nome'}
                   </span>
                 </div>
@@ -175,12 +175,12 @@ export const ConversasPage = () => {
                   {conv.status || 'unknown'}
                 </Badge>
               </div>
-              <p className={`text-sm ${tc.textSecondary} mb-2`}>{conv.contact_phone}</p>
-              <p className={`text-sm ${tc.textSecondary} mb-2`}>
+              <p className="text-sm text-module-secondary mb-2">{conv.contact_phone}</p>
+              <p className="text-sm text-module-secondary mb-2">
                 <Building2 className="w-4 h-4 inline mr-1" />
                 {conv.condominio_name}
               </p>
-              <p className={`text-xs ${tc.textTertiary}`}>
+              <p className="text-xs text-module-tertiary">
                 {formatLastMessage(conv.last_message_at)}
               </p>
             </Card>

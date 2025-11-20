@@ -58,13 +58,13 @@ export const PaineisPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className={`${tc.bgCard} ${tc.border} border px-6 py-4 rounded-xl`}>
+      <div className="bg-module-card border-module border px-6 py-4 rounded-xl">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className={`text-2xl lg:text-3xl font-bold ${tc.textPrimary}`}>
+            <h1 className="text-2xl lg:text-3xl font-bold text-module-primary">
               Painéis
             </h1>
-            <p className={`text-sm ${tc.textSecondary} mt-1`}>
+            <p className="text-sm text-module-secondary mt-1">
               Última atualização:{' '}
               {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
             </p>
@@ -73,12 +73,12 @@ export const PaineisPage = () => {
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className={`flex items-center gap-2 px-4 py-2.5 ${tc.border} border ${tc.textPrimary} rounded-lg ${tc.bgHover} transition-colors disabled:opacity-50`}
+              className="flex items-center gap-2 px-4 py-2.5 border-module border text-module-primary rounded-lg hover:bg-module-hover transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </button>
-            <div className={`text-xs ${tc.textSecondary} hidden lg:block`}>
+            <div className="text-xs text-module-secondary hidden lg:block">
               Auto-atualização: 5 min
             </div>
           </div>
@@ -106,11 +106,11 @@ export const PaineisPage = () => {
       {loading && devices.length === 0 ? (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#9C1E1E]"></div>
-          <p className={`mt-4 ${tc.textSecondary}`}>Carregando painéis...</p>
+          <p className="mt-4 text-module-secondary">Carregando painéis...</p>
         </div>
       ) : devices.length === 0 ? (
-        <div className={`text-center py-12 ${tc.bgCard} rounded-xl shadow-sm ${tc.border} border p-8`}>
-          <p className={tc.textSecondary}>Nenhum painel encontrado</p>
+        <div className="text-center py-12 bg-module-card rounded-xl shadow-sm border-module border p-8">
+          <p className="text-module-secondary">Nenhum painel encontrado</p>
         </div>
       ) : (
         <>
@@ -131,17 +131,17 @@ export const PaineisPage = () => {
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className={`px-4 py-2 ${tc.border} border rounded-lg ${tc.bgHover} disabled:opacity-50 disabled:cursor-not-allowed ${tc.textPrimary}`}
+                className="px-4 py-2 border-module border rounded-lg hover:bg-module-hover disabled:opacity-50 disabled:cursor-not-allowed text-module-primary"
               >
                 Anterior
               </button>
-              <span className={`px-4 py-2 ${tc.textPrimary}`}>
+              <span className="px-4 py-2 text-module-primary">
                 Página {page + 1} de {Math.ceil(total / 30)}
               </span>
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={(page + 1) * 30 >= total}
-                className={`px-4 py-2 ${tc.border} border rounded-lg ${tc.bgHover} disabled:opacity-50 disabled:cursor-not-allowed ${tc.textPrimary}`}
+                className="px-4 py-2 border-module border rounded-lg hover:bg-module-hover disabled:opacity-50 disabled:cursor-not-allowed text-module-primary"
               >
                 Próxima
               </button>

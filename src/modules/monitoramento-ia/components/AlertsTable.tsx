@@ -25,7 +25,7 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
       case 'medium':
         return <span className="px-2 py-1 text-xs font-semibold rounded bg-yellow-500 text-black">MÉDIA</span>;
       case 'low':
-        return <span className={`px-2 py-1 text-xs font-semibold rounded ${tc.bgInput} ${tc.textPrimary}`}>BAIXA</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded bg-module-input text-module-primary">BAIXA</span>;
       default:
         return null;
     }
@@ -36,7 +36,7 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
       case 'open':
         return <span className="px-2 py-1 text-xs rounded bg-[#9C1E1E]/20 text-[#9C1E1E]">Aberto</span>;
       case 'scheduled':
-        return <span className={`px-2 py-1 text-xs rounded ${tc.bgInput} ${tc.textSecondary}`}>Agendado</span>;
+        return <span className="px-2 py-1 text-xs rounded bg-module-input text-module-secondary">Agendado</span>;
       case 'resolved':
         return <span className="px-2 py-1 text-xs rounded bg-green-500/20 text-green-500">Resolvido</span>;
       default:
@@ -45,34 +45,34 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
   };
 
   return (
-    <div className={`hidden md:block ${tc.bgCard} rounded-lg overflow-hidden border ${tc.border}`}>
+    <div className="hidden md:block bg-module-card rounded-xl overflow-hidden border border-module">
       <Table>
         <TableHeader>
-          <TableRow className={`${tc.bgInput} hover:${tc.bgInput} border-b ${tc.border}`}>
-            <TableHead className={`${tc.textPrimary} font-semibold`}>Painel</TableHead>
-            <TableHead className={`${tc.textPrimary} font-semibold`}>Condomínio</TableHead>
-            <TableHead className={`${tc.textPrimary} font-semibold`}>Severidade</TableHead>
-            <TableHead className={`${tc.textPrimary} font-semibold`}>Status</TableHead>
-            <TableHead className={`${tc.textPrimary} font-semibold`}>Tempo aberto</TableHead>
-            <TableHead className={`${tc.textPrimary} font-semibold text-right`}>Ações</TableHead>
+          <TableRow className="bg-module-input hover:bg-module-input border-b border-module">
+            <TableHead className="text-module-primary font-semibold">Painel</TableHead>
+            <TableHead className="text-module-primary font-semibold">Condomínio</TableHead>
+            <TableHead className="text-module-primary font-semibold">Severidade</TableHead>
+            <TableHead className="text-module-primary font-semibold">Status</TableHead>
+            <TableHead className="text-module-primary font-semibold">Tempo aberto</TableHead>
+            <TableHead className="text-module-primary font-semibold text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {alerts.map((alert) => (
             <TableRow
               key={alert.id}
-              className={`${tc.border} border-b hover:${tc.bgHover} transition-colors cursor-pointer`}
+              className="border-module border-b hover:bg-module-hover transition-colors cursor-pointer"
               onClick={() => onViewDetails(alert)}
             >
-              <TableCell className={`font-medium ${tc.textPrimary}`}>
+              <TableCell className="font-medium text-module-primary">
                 {alert.devices?.name || 'Desconhecido'}
               </TableCell>
-              <TableCell className={tc.textSecondary}>
+              <TableCell className="text-module-secondary">
                 {alert.devices?.condominio_name || 'N/A'}
               </TableCell>
               <TableCell>{getSeverityBadge(alert.severity)}</TableCell>
               <TableCell>{getStatusBadge(alert.status)}</TableCell>
-              <TableCell className={tc.textSecondary}>
+              <TableCell className="text-module-secondary">
                 {formatDistanceToNow(new Date(alert.opened_at), {
                   addSuffix: true,
                   locale: ptBR,
@@ -86,7 +86,7 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
                     e.stopPropagation();
                     onViewDetails(alert);
                   }}
-                  className={tc.bgHover}
+                  className="hover:bg-module-hover"
                 >
                   <Eye className="w-4 h-4" />
                 </Button>
