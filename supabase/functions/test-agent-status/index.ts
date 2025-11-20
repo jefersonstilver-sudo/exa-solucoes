@@ -104,10 +104,10 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Testar endpoint Z-API (restore-session é o endpoint correto para verificar status)
+      // Testar endpoint Z-API (/me retorna status da instância)
       try {
-        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/restore-session`;
-        console.log('🌐 [EDGE] Chamando Z-API restore-session:', zapiUrl);
+        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/me`;
+        console.log('🌐 [EDGE] Chamando Z-API /me:', zapiUrl);
         
         const startTime = Date.now();
         const response = await fetch(zapiUrl);
@@ -118,7 +118,8 @@ Deno.serve(async (req) => {
           status: response.status,
           ok: response.ok,
           latency,
-          data
+          connected: data.connected,
+          paymentStatus: data.paymentStatus
         });
 
         if (!response.ok) {
@@ -149,18 +150,19 @@ Deno.serve(async (req) => {
           );
         }
 
-        const instanceStatus = data.connected ? 'connected' : 'disconnected';
+        const instanceConnected = data.connected === true;
 
         return new Response(
           JSON.stringify({ 
-            success: data.connected,
-            status: data.connected ? 'online' : 'offline',
+            success: instanceConnected,
+            status: instanceConnected ? 'online' : 'offline',
             provider: 'zapi',
-            instanceStatus,
-            message: data.connected ? 'Conectado' : 'Instância desconectada - Escaneie o QR Code',
+            instanceStatus: instanceConnected ? 'connected' : 'disconnected',
+            message: instanceConnected ? 'Conectado' : 'Instância desconectada - Escaneie o QR Code',
             credentialsPresent: true,
             latency,
-            instanceId: zapiConfig.instance_id
+            instanceId: zapiConfig.instance_id,
+            paymentStatus: data.paymentStatus
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
