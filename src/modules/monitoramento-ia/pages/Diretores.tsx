@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 import { Search, Plus } from 'lucide-react';
 
 interface Director {
@@ -14,8 +13,6 @@ interface Director {
 export const DiretoresPage = () => {
   const [directors, setDirectors] = useState<Director[]>([]);
   const [loading, setLoading] = useState(true);
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
 
   useEffect(() => {
     fetchDirectors();

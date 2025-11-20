@@ -11,7 +11,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { DeviceAlert } from '../utils/alerts';
-import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 interface AlertsTableProps {
   alerts: DeviceAlert[];
@@ -19,9 +18,6 @@ interface AlertsTableProps {
 }
 
 export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
-  
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case 'high':

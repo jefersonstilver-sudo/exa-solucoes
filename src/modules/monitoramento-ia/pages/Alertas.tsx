@@ -15,7 +15,6 @@ import {
   type AlertStats,
   type AlertFilters,
 } from '../utils/alerts';
-import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 export const AlertasPage = () => {
   const [alerts, setAlerts] = useState<DeviceAlert[]>([]);
@@ -32,8 +31,6 @@ export const AlertasPage = () => {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedAlert, setSelectedAlert] = useState<DeviceAlert | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
 
   const loadData = async () => {
     try {

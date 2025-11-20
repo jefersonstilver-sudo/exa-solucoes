@@ -10,23 +10,20 @@ import { FiltersBar } from '../components/FiltersBar';
 import { useDevices } from '../hooks/useDevices';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 // Simple StatCard component for Paineis page
 const SimpleStatCard = ({ label, value, color }: { label: string; value: number; color: 'blue' | 'green' | 'red' | 'gray' }) => {
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
   
   const colorClasses = {
     blue: 'text-blue-500',
     green: 'text-green-500',
     red: 'text-[#9C1E1E]',
-    gray: tc.textSecondary,
+    gray: 'text-module-secondary',
   };
   
   return (
-    <div className={`${tc.bgCard} ${tc.border} border rounded-lg p-4`}>
-      <p className={`${tc.textSecondary} text-sm mb-1`}>{label}</p>
+    <div className="bg-module-card border border-module rounded-[14px] p-4">
+      <p className="text-module-secondary text-sm mb-1">{label}</p>
       <p className={`text-2xl font-bold ${colorClasses[color]}`}>
         {value}
       </p>
@@ -51,8 +48,6 @@ export const PaineisPage = () => {
 
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
 
   const handleRefresh = () => {
     refresh();

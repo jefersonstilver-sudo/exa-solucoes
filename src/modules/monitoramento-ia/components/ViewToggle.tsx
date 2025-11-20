@@ -4,7 +4,6 @@
  */
 
 import { LayoutGrid, Table } from 'lucide-react';
-import { useModuleTheme, getThemeClasses } from '../hooks/useModuleTheme';
 
 interface ViewToggleProps {
   view: 'cards' | 'table';
@@ -12,17 +11,14 @@ interface ViewToggleProps {
 }
 
 export const ViewToggle = ({ view, onViewChange }: ViewToggleProps) => {
-  const { theme } = useModuleTheme();
-  const tc = getThemeClasses(theme);
-  
   return (
-    <div className={`flex items-center gap-1 ${tc.bgInput} rounded-lg p-1 ${tc.border} border`}>
+    <div className="flex items-center gap-1 bg-module-input rounded-lg p-1 border border-module">
       <button
         onClick={() => onViewChange('cards')}
         className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
           view === 'cards'
-            ? `${tc.bgCard} ${tc.textPrimary} shadow-sm`
-            : `${tc.textSecondary} ${tc.bgHover}`
+            ? 'bg-module-card text-module-primary shadow-sm'
+            : 'text-module-secondary hover-module-bg'
         }`}
       >
         <LayoutGrid className="w-4 h-4" />
@@ -32,8 +28,8 @@ export const ViewToggle = ({ view, onViewChange }: ViewToggleProps) => {
         onClick={() => onViewChange('table')}
         className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
           view === 'table'
-            ? `${tc.bgCard} ${tc.textPrimary} shadow-sm`
-            : `${tc.textSecondary} ${tc.bgHover}`
+            ? 'bg-module-card text-module-primary shadow-sm'
+            : 'text-module-secondary hover-module-bg'
         }`}
       >
         <Table className="w-4 h-4" />
