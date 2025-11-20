@@ -32,7 +32,13 @@ serve(async (req) => {
 
     const { message, conversationId, metadata } = await req.json();
     
-    console.log(`[ROUTE] Processing message: ${message.substring(0, 50)}...`);
+    console.log(`[ROUTE] 📨 Processing message:`, {
+      conversationId,
+      messagePreview: message.substring(0, 100),
+      source: metadata?.source || 'unknown',
+      phone: metadata?.phone,
+      timestamp: new Date().toISOString()
+    });
 
     // ETAPA 1: Analisar mensagem com IA
     let analysis = null;
@@ -174,9 +180,22 @@ serve(async (req) => {
     }
 
     // 6. Se AI auto-response está ativada, processar com IA
+    console.log(`[ROUTE] 🤖 AI Auto-Response Check:`, {
+      agentKey: selectedAgent?.key,
+      aiAutoResponseEnabled: selectedAgent?.ai_auto_response,
+      source: metadata?.source,
+      willTriggerAI: selectedAgent?.ai_auto_response && metadata?.source === 'zapi'
+    });
+
     let aiResponse = null;
     if (selectedAgent.ai_auto_response && metadata?.source === 'zapi') {
-      console.log('[ROUTE] AI auto-response enabled, generating response...');
+      console.log(`[ROUTE] ✅ AI auto-response ENABLED for agent ${selectedAgent.key}, calling generate-ai-response`);
+      console.log(`[ROUTE] 📤 Invoking generate-ai-response with:`, {
+        agentKey: selectedAgent.key,
+        conversationId,
+        phoneNumber: metadata.phone,
+        messagePreview: message.substring(0, 50)
+      });
       
       try {
         const { data: aiResult, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
@@ -189,14 +208,20 @@ serve(async (req) => {
         });
 
         if (aiError) {
-          console.error('[ROUTE] AI response error:', aiError);
+          console.error(`[ROUTE] ❌ AI response error:`, aiError);
         } else {
           aiResponse = aiResult?.response;
-          console.log('[ROUTE] AI response generated and sent:', aiResponse?.substring(0, 100));
+          console.log(`[ROUTE] ✅ AI response triggered successfully:`, {
+            responsePreview: aiResponse?.substring(0, 100)
+          });
         }
       } catch (error) {
-        console.error('[ROUTE] Failed to generate AI response:', error);
+        console.error(`[ROUTE] ❌ Error triggering AI response:`, error);
       }
+    } else if (metadata?.source === 'zapi') {
+      console.log(`[ROUTE] ⏸️ AI auto-response DISABLED for agent ${selectedAgent?.key}`);
+    } else {
+      console.log(`[ROUTE] ⏸️ AI auto-response skipped - source is ${metadata?.source}, not zapi`);
     }
 
     return new Response(
