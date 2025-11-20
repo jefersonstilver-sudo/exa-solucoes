@@ -118,18 +118,32 @@ Deno.serve(async (req) => {
           status: response.status,
           ok: response.ok,
           latency,
-          connected: data.connected
+          data
         });
 
         if (!response.ok) {
+          // Erro 400 ou 401 = credenciais inválidas
+          const errorMsg = data.error || data.message || 'Erro desconhecido';
+          let userMessage = 'Verifique as credenciais';
+          
+          if (errorMsg.includes('client-token is not configured')) {
+            userMessage = '❌ CREDENCIAIS INVÁLIDAS: Instance ID ou Token incorretos. Verifique no painel Z-API';
+          } else if (response.status === 401) {
+            userMessage = '❌ TOKEN INVÁLIDO: Verifique o token no painel Z-API';
+          } else if (response.status === 404) {
+            userMessage = '❌ INSTÂNCIA NÃO ENCONTRADA: Verifique o Instance ID';
+          }
+          
           return new Response(
             JSON.stringify({ 
               success: false,
               status: 'offline',
               provider: 'zapi',
-              message: `Erro Z-API: ${data.message || 'Verifique as credenciais'}`,
+              message: userMessage,
+              errorDetails: errorMsg,
               credentialsPresent: true,
-              latency
+              latency,
+              httpStatus: response.status
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
