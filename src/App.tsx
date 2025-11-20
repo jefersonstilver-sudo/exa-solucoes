@@ -62,7 +62,7 @@ import { DiretoresPage } from './modules/monitoramento-ia/pages/Diretores';
 import { PaineisPage } from './modules/monitoramento-ia/pages/Paineis';
 import { AlertasPage } from './modules/monitoramento-ia/pages/Alertas';
 import { ConversasPage } from './modules/monitoramento-ia/pages/Conversas';
-import { ConversasCRM } from './modules/monitoramento-ia/pages/ConversasCRM';
+import ConversasCRM from './modules/monitoramento-ia/pages/ConversasCRM';
 import { ConsoleIAPage } from './modules/monitoramento-ia/pages/ConsoleIA';
 import { Agentes } from './modules/monitoramento-ia/pages/Agentes';
 
