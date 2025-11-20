@@ -132,11 +132,13 @@ Gere a saudação agora:`;
       const errorText = await response.text();
       console.error('[GREETING] OpenAI error:', errorText);
       
-      // Parse error para detectar rate limit
+      // Parse error para detectar tipos específicos
       try {
         const errorData = JSON.parse(errorText);
-        if (errorData.error?.code === 'rate_limit_exceeded') {
-          // Em caso de rate limit, usar saudação padrão
+        const errorCode = errorData.error?.code;
+        
+        if (errorCode === 'rate_limit_exceeded' || errorCode === 'insufficient_quota') {
+          // Em caso de rate limit ou quota, usar saudação padrão
           const defaultGreeting = getDefaultGreeting(agentKey, agent.display_name);
           const messages = defaultGreeting.split('\n\n').filter(m => m.trim());
           return new Response(JSON.stringify({ messages }), {
