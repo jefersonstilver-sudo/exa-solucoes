@@ -132,25 +132,46 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
 
       {/* Navigation */}
       <nav className="p-4 space-y-2 pb-32">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={onClose}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
-                'hover-module-bg',
-                isActive
-                  ? 'bg-module-accent text-white font-medium'
-                  : 'text-module-secondary'
-              )
-            }
-          >
-            <item.icon size={20} />
-            <span className="text-sm">{item.title}</span>
-          </NavLink>
-        ))}
+        {menuItems.map((item, index) => {
+          // Divisor
+          if ('divider' in item && item.divider) {
+            return (
+              <div key={`divider-${index}`} className="my-4 border-t border-module opacity-20" />
+            );
+          }
+          
+          // Section Title
+          if ('sectionTitle' in item && item.sectionTitle) {
+            return (
+              <div key={`section-${index}`} className="px-4 py-2 mt-4">
+                <p className="text-xs font-bold text-module-tertiary uppercase tracking-wider">
+                  {item.sectionTitle}
+                </p>
+              </div>
+            );
+          }
+          
+          // Menu Item normal
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={onClose}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
+                  'hover-module-bg',
+                  isActive
+                    ? 'bg-module-accent text-white font-medium'
+                    : 'text-module-secondary'
+                )
+              }
+            >
+              <item.icon size={20} />
+              <span className="text-sm">{item.title}</span>
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Botão Sair do Módulo */}

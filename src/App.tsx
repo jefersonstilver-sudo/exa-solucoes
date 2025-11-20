@@ -63,6 +63,12 @@ import { PaineisPage } from './modules/monitoramento-ia/pages/Paineis';
 import { AlertasPage } from './modules/monitoramento-ia/pages/Alertas';
 import { ConversasPage } from './modules/monitoramento-ia/pages/Conversas';
 import { ConsoleIAPage } from './modules/monitoramento-ia/pages/ConsoleIA';
+import { ConfiguracoesAgentePage } from './modules/monitoramento-ia/pages/ConfiguracoesAgente';
+import { InstrucoesAgentePage } from './modules/monitoramento-ia/pages/InstrucoesAgente';
+import { BaseConhecimentoPage } from './modules/monitoramento-ia/pages/BaseConhecimento';
+import { RegrasAcaoPage } from './modules/monitoramento-ia/pages/RegrasAcao';
+import { IntegracaoManyChatPage } from './modules/monitoramento-ia/pages/IntegracaoManyChat';
+import { IntegracaoStringPage } from './modules/monitoramento-ia/pages/IntegracaoString';
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
@@ -450,6 +456,14 @@ const AppContent = () => {
             <Route path="alertas" element={<AlertasPage />} />
             <Route path="conversas" element={<ConversasPage />} />
             <Route path="console-ia" element={<ConsoleIAPage />} />
+            
+            {/* Agente IA Routes */}
+            <Route path="agente/configuracoes" element={<ConfiguracoesAgentePage />} />
+            <Route path="agente/instrucoes" element={<InstrucoesAgentePage />} />
+            <Route path="agente/base-conhecimento" element={<BaseConhecimentoPage />} />
+            <Route path="agente/regras-acao" element={<RegrasAcaoPage />} />
+            <Route path="agente/integracao-manychat" element={<IntegracaoManyChatPage />} />
+            <Route path="agente/integracao-string" element={<IntegracaoStringPage />} />
           </Route>
 
           {/* Rotas administrativas */}
