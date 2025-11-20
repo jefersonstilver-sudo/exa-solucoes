@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
 import './styles/responsive-optimizations.css'
+import './modules/monitoramento-ia/styles/theme.css'
 import { ThemeProvider } from './components/ui/theme-provider'
 import './utils/debugHelpers' // Carrega helpers de debug globalmente
 
