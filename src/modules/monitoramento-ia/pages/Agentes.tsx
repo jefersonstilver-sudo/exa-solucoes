@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAgentConfig } from '../hooks/useAgentConfig';
-import { useAPIStatus } from '../hooks/useAPIStatus';
+import { useAgentStatus } from '../hooks/useAgentStatus';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RefreshCw } from 'lucide-react';
@@ -13,7 +13,7 @@ import { MonitorAPIs } from './MonitorAPIs';
 
 export const Agentes = () => {
   const { agents, loading, updateAgent, toggleAgentStatus, getAgentByKey } = useAgentConfig();
-  const { statuses, testing, testAPI, testAllAPIs } = useAPIStatus();
+  const { statuses, testing, testAgent, testAllAgents } = useAgentStatus();
   const [activeTab, setActiveTab] = useState('overview');
 
   if (loading) {
@@ -38,12 +38,12 @@ export const Agentes = () => {
             </p>
           </div>
           <Button 
-            onClick={testAllAPIs}
+            onClick={() => testAllAgents(agents)}
             disabled={Object.values(testing).some(t => t)}
             className="bg-[#9C1E1E] hover:bg-[#7A1616] text-white whitespace-nowrap"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Testar Integridade
+            Testar Todos os Agentes
           </Button>
         </div>
       </div>
@@ -104,7 +104,12 @@ export const Agentes = () => {
         </div>
 
         <TabsContent value="overview" className="space-y-6">
-          <APIStatusGrid statuses={statuses} testing={testing} onTest={testAPI} />
+          <APIStatusGrid 
+            agents={agents} 
+            statuses={statuses} 
+            testing={testing} 
+            onTest={testAgent} 
+          />
           <ManyChatConfigSection />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

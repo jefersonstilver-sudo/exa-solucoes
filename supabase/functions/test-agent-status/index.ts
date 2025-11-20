@@ -1,0 +1,198 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface ZAPIConfig {
+  instance_id?: string;
+  token?: string;
+}
+
+interface ManyChatConfig {
+  api_key?: string;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { agentKey } = await req.json();
+
+    if (!agentKey) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'agentKey é obrigatório' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Buscar configuração do agente
+    const { data: agent, error: agentError } = await supabase
+      .from('agents')
+      .select('*')
+      .eq('key', agentKey)
+      .single();
+
+    if (agentError || !agent) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          status: 'offline',
+          message: 'Agente não encontrado',
+          credentialsPresent: false
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      );
+    }
+
+    // Verificar provider
+    const provider = agent.whatsapp_provider;
+    
+    // Testar Z-API
+    if (provider === 'zapi') {
+      const zapiConfig = agent.zapi_config as ZAPIConfig;
+      
+      if (!zapiConfig?.instance_id || !zapiConfig?.token) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            status: 'pending',
+            provider: 'zapi',
+            message: 'Credenciais Z-API não configuradas',
+            credentialsPresent: false
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Verificar se é PENDING_SETUP
+      if (
+        zapiConfig.instance_id === 'PENDING_SETUP' || 
+        zapiConfig.token === 'PENDING_SETUP' ||
+        zapiConfig.instance_id === 'PENDING' || 
+        zapiConfig.token === 'PENDING'
+      ) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            status: 'pending',
+            provider: 'zapi',
+            message: 'Configure as credenciais Z-API',
+            credentialsPresent: false
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Testar endpoint Z-API
+      try {
+        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/status`;
+        const startTime = Date.now();
+        
+        const response = await fetch(zapiUrl);
+        const latency = Date.now() - startTime;
+        const data = await response.json();
+
+        if (!response.ok) {
+          return new Response(
+            JSON.stringify({ 
+              success: false,
+              status: 'offline',
+              provider: 'zapi',
+              message: `Erro Z-API: ${data.message || 'Verifique as credenciais'}`,
+              credentialsPresent: true,
+              latency
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const instanceStatus = data.connected ? 'connected' : 'disconnected';
+
+        return new Response(
+          JSON.stringify({ 
+            success: data.connected,
+            status: data.connected ? 'online' : 'offline',
+            provider: 'zapi',
+            instanceStatus,
+            message: data.connected ? 'Conectado' : 'Instância desconectada - Escaneie o QR Code',
+            credentialsPresent: true,
+            latency,
+            instanceId: zapiConfig.instance_id
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error: any) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            status: 'offline',
+            provider: 'zapi',
+            message: `Erro ao conectar Z-API: ${error.message}`,
+            credentialsPresent: true
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Testar ManyChat
+    if (provider === 'manychat') {
+      const manychatConfig = agent.manychat_config as ManyChatConfig;
+      
+      if (!manychatConfig?.api_key) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            status: 'pending',
+            provider: 'manychat',
+            message: 'API Key ManyChat não configurada',
+            credentialsPresent: false
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          status: 'online',
+          provider: 'manychat',
+          message: 'ManyChat configurado',
+          credentialsPresent: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Sem provider configurado
+    return new Response(
+      JSON.stringify({ 
+        success: false,
+        status: 'pending',
+        provider: 'none',
+        message: 'Nenhum provider configurado',
+        credentialsPresent: false
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error: any) {
+    console.error('Erro ao testar agente:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        status: 'offline',
+        message: error.message 
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
+  }
+});
