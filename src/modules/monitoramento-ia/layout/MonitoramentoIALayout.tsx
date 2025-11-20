@@ -18,7 +18,11 @@ export const MonitoramentoIALayout = () => {
       {/* Main Content */}
       <main className="flex-1 lg:ml-64">
         {/* Module Header */}
-        <ModuleHeader theme={theme} onToggleTheme={toggleTheme} />
+        <ModuleHeader 
+          theme={theme} 
+          onToggleTheme={toggleTheme} 
+          onToggleSidebar={() => setSidebarOpen(true)} 
+        />
 
         {/* Page Content */}
         <div className="p-4 lg:p-8">
