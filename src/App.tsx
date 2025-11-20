@@ -451,11 +451,24 @@ const AppContent = () => {
             <Route path="paineis" element={<PaineisPage />} />
             <Route path="alertas" element={<AlertasPage />} />
             <Route path="conversas" element={<ConversasPage />} />
-            <Route path="crm" element={<ConversasCRM />} />
             <Route path="console-ia" element={<ConsoleIAPage />} />
             
             {/* Painel Unificado de Agentes */}
             <Route path="agentes" element={<Agentes />} />
+            
+            {/* CRM Unificado */}
+            <Route path="crm" element={
+              <Suspense fallback={<GlobalLoadingPage message="Carregando CRM..." />}>
+                {React.createElement(lazy(() => import('./modules/monitoramento-ia/pages/CRMUnificado')))}
+              </Suspense>
+            } />
+            
+            {/* Relatórios Corporativos */}
+            <Route path="relatorios" element={
+              <Suspense fallback={<GlobalLoadingPage message="Carregando relatórios..." />}>
+                {React.createElement(lazy(() => import('./modules/monitoramento-ia/pages/RelatoriosCorporativos')))}
+              </Suspense>
+            } />
           </Route>
 
           {/* Rotas administrativas */}
