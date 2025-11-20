@@ -15,6 +15,7 @@ import {
   Zap,
   MessageCircle,
   Plug,
+  UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -95,13 +96,17 @@ const menuItems = [
     path: '/admin/monitoramento-ia/agente/apis',
   },
   
-  // Divisor
   { divider: true },
-  
+  { sectionTitle: '👥 AGENTES' },
   {
-    title: 'Base da Agente',
-    icon: Database,
-    path: '/admin/monitoramento-ia/base-agente',
+    title: 'Todos os Agentes',
+    icon: Users,
+    path: '/admin/monitoramento-ia/agentes',
+  },
+  {
+    title: 'Criar Novo Agente',
+    icon: UserPlus,
+    path: '/admin/monitoramento-ia/agentes/novo',
   },
 ];
 
