@@ -66,7 +66,10 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
   return (
     <aside
       className={cn(
-        `fixed top-0 left-0 h-full w-64 ${tc.bgCard} ${tc.textPrimary} transition-transform duration-300 ease-in-out z-40 ${tc.border} border-r`,
+        `fixed top-0 left-0 h-full w-64 ${tc.textPrimary} transition-transform duration-300 ease-in-out z-40 ${tc.border} border-r`,
+        theme === 'dark' 
+          ? 'bg-gradient-to-b from-[#9C1E1E] via-[#4A0F0F] to-[#0A0A0A]'
+          : tc.bgCard,
         'lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
@@ -77,10 +80,10 @@ export const Sidebar = ({ isOpen, onClose, theme }: SidebarProps) => {
           <img 
             src={EXA_LOGO_URL} 
             alt="EXA" 
-            className="h-8 w-auto"
+            className="h-8 w-auto brightness-0 invert"
           />
           <div>
-            <h1 className={`text-sm font-bold ${tc.textPrimary}`}>IA & Monitoramento</h1>
+            <h1 className="text-sm font-bold text-white">IA & Monitoramento</h1>
           </div>
         </div>
         <button

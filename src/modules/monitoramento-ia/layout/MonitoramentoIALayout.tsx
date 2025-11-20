@@ -18,17 +18,9 @@ export const MonitoramentoIALayout = () => {
 
       {/* Main Content */}
       <main className="flex-1 lg:ml-64">
-        {/* Module Header com Logo EXA + Toggle */}
+        {/* Module Header com Toggle */}
         <div className={`sticky top-0 z-40 ${tc.bgCard} ${tc.border} border-b`}>
-          <div className="px-4 lg:px-8 py-4 flex items-center justify-between">
-            {/* Logo EXA */}
-            <div className="flex items-center gap-3">
-              <img 
-                src={EXA_LOGO_URL} 
-                alt="EXA" 
-                className="h-10 w-auto"
-              />
-            </div>
+          <div className="px-4 lg:px-8 py-4 flex items-center justify-end">
 
             {/* Theme Toggle Button */}
             <button
