@@ -104,20 +104,27 @@
 /* Backgrounds */
 .bg-module-primary { background-color: var(--bg-primary); }
 .bg-module-secondary { background-color: var(--bg-secondary); }
+.bg-module-tertiary { background-color: var(--bg-tertiary); }
 .bg-module-card { background-color: var(--bg-card); }
 .bg-module-input { background-color: var(--bg-input); }
 .bg-module-accent { background-color: var(--bg-accent); }
+.bg-module-accent-hover { background-color: var(--bg-accent-hover); }
+.bg-module-hover { background-color: var(--bg-hover); }
 
 /* Borders */
 .border-module { border-color: var(--border-default); }
 .border-module-accent { border-color: var(--border-accent); }
 .border-module-light { border-color: var(--border-light); }
+.border-module-muted { border-color: var(--border-muted); }
 
 /* Text */
 .text-module-primary { color: var(--text-primary); }
 .text-module-secondary { color: var(--text-secondary); }
 .text-module-tertiary { color: var(--text-tertiary); }
 .text-module-muted { color: var(--text-muted); }
+
+/* Placeholder */
+.placeholder\:text-module-muted::placeholder { color: var(--placeholder); }
 
 /* Hover States */
 .hover-module-bg:hover { background-color: var(--bg-hover); }

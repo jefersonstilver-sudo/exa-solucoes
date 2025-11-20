@@ -51,8 +51,8 @@ export const APIStatusGrid = ({ statuses, testing, onTest }: APIStatusGridProps)
   };
 
   return (
-    <div className="bg-[#1A1A1A] rounded-[14px] border border-[#2A2A2A] p-6">
-      <h2 className="text-xl font-bold text-white mb-4">Status das Integrações</h2>
+    <div className="bg-module-card rounded-[14px] border border-module p-6">
+      <h2 className="text-xl font-bold text-module-primary mb-4">Status das Integrações</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {apiConfigs.map((api) => {
@@ -62,28 +62,28 @@ export const APIStatusGrid = ({ statuses, testing, onTest }: APIStatusGridProps)
           return (
             <div 
               key={api.name}
-              className="bg-[#0A0A0A] rounded-lg border border-[#2A2A2A] p-4 hover:border-[#3A3A3A] transition-colors"
+              className="bg-module-input rounded-lg border border-module p-4 hover:border-module-muted transition-colors"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   {getStatusIcon(status?.status)}
-                  <span className="text-white font-medium">{api.name}</span>
+                  <span className="text-module-primary font-medium">{api.name}</span>
                 </div>
                 <span className={`text-xs font-medium ${getStatusColor(status?.status)}`}>
                   {getStatusText(status?.status)}
                 </span>
               </div>
 
-              <p className="text-sm text-[#A0A0A0] mb-3">{api.description}</p>
+              <p className="text-sm text-module-secondary mb-3">{api.description}</p>
 
               {status?.lastCheck && (
-                <p className="text-xs text-[#666] mb-2">
+                <p className="text-xs text-module-tertiary mb-2">
                   Última verificação: {new Date(status.lastCheck).toLocaleTimeString('pt-BR')}
                 </p>
               )}
 
               {status?.latency && (
-                <p className="text-xs text-[#666] mb-2">
+                <p className="text-xs text-module-tertiary mb-2">
                   Latência: {status.latency}ms
                 </p>
               )}

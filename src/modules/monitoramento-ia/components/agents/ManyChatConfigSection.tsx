@@ -78,8 +78,8 @@ export const ManyChatConfigSection = () => {
   };
 
   return (
-    <div className="bg-[#1A1A1A] rounded-[14px] border border-[#2A2A2A] p-6">
-      <h2 className="text-xl font-bold text-white mb-4">Configurações ManyChat & WhatsApp</h2>
+    <div className="bg-module-card rounded-[14px] border border-module p-6">
+      <h2 className="text-xl font-bold text-module-primary mb-4">Configurações ManyChat & WhatsApp</h2>
 
       <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
         <div className="flex items-start gap-3">
@@ -88,11 +88,11 @@ export const ManyChatConfigSection = () => {
             <p className="text-sm text-yellow-500 font-medium mb-2">
               Variáveis necessárias no Supabase
             </p>
-            <ul className="text-xs text-[#A0A0A0] space-y-1">
-              <li><code className="bg-[#0A0A0A] px-2 py-0.5 rounded">MANYCHAT_API_KEY</code></li>
-              <li><code className="bg-[#0A0A0A] px-2 py-0.5 rounded">MANYCHAT_SYNC_SECRET</code></li>
-              <li><code className="bg-[#0A0A0A] px-2 py-0.5 rounded">WHATSAPP_API_KEY</code></li>
-              <li><code className="bg-[#0A0A0A] px-2 py-0.5 rounded">WHATSAPP_PHONE_NUMBER_ID</code></li>
+            <ul className="text-xs text-module-secondary space-y-1">
+              <li><code className="bg-module-input px-2 py-0.5 rounded">MANYCHAT_API_KEY</code></li>
+              <li><code className="bg-module-input px-2 py-0.5 rounded">MANYCHAT_SYNC_SECRET</code></li>
+              <li><code className="bg-module-input px-2 py-0.5 rounded">WHATSAPP_API_KEY</code></li>
+              <li><code className="bg-module-input px-2 py-0.5 rounded">WHATSAPP_PHONE_NUMBER_ID</code></li>
             </ul>
             <Button 
               variant="outline" 
@@ -108,46 +108,46 @@ export const ManyChatConfigSection = () => {
 
       <div className="space-y-4">
         <div>
-          <Label className="text-white">ManyChat API Key</Label>
+          <Label className="text-module-primary">ManyChat API Key</Label>
           <Input
             type="password"
             value={config.apiKey}
             onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
             placeholder="Chave de API do ManyChat"
-            className="bg-[#0A0A0A] border-[#2A2A2A] text-white"
+            className="bg-module-input border-module text-module-primary placeholder:text-module-muted"
           />
         </div>
 
         <div>
-          <Label className="text-white">WhatsApp Number ID</Label>
+          <Label className="text-module-primary">WhatsApp Number ID</Label>
           <Input
             type="text"
             value={config.whatsappNumberId}
             onChange={(e) => setConfig({ ...config, whatsappNumberId: e.target.value })}
             placeholder="ID do número WhatsApp"
-            className="bg-[#0A0A0A] border-[#2A2A2A] text-white"
+            className="bg-module-input border-module text-module-primary placeholder:text-module-muted"
           />
         </div>
 
         <div>
-          <Label className="text-white">Bot ID</Label>
+          <Label className="text-module-primary">Bot ID</Label>
           <Input
             type="text"
             value={config.botId}
             onChange={(e) => setConfig({ ...config, botId: e.target.value })}
             placeholder="ID do bot no ManyChat"
-            className="bg-[#0A0A0A] border-[#2A2A2A] text-white"
+            className="bg-module-input border-module text-module-primary placeholder:text-module-muted"
           />
         </div>
 
         <div>
-          <Label className="text-white">Webhook URL (auto-gerada)</Label>
+          <Label className="text-module-primary">Webhook URL (auto-gerada)</Label>
           <div className="flex gap-2">
             <Input
               type="text"
               value={config.webhookUrl}
               readOnly
-              className="bg-[#0A0A0A] border-[#2A2A2A] text-[#A0A0A0]"
+              className="bg-module-input border-module text-module-secondary"
             />
             <Button
               size="icon"
@@ -160,13 +160,13 @@ export const ManyChatConfigSection = () => {
         </div>
 
         <div>
-          <Label className="text-white">Verify Token (auto-gerado)</Label>
+          <Label className="text-module-primary">Verify Token (auto-gerado)</Label>
           <div className="flex gap-2">
             <Input
               type="text"
               value={config.verifyToken}
               readOnly
-              className="bg-[#0A0A0A] border-[#2A2A2A] text-[#A0A0A0]"
+              className="bg-module-input border-module text-module-secondary"
             />
             <Button
               size="icon"
@@ -181,7 +181,7 @@ export const ManyChatConfigSection = () => {
         <Button
           onClick={saveConfig}
           disabled={loading}
-          className="w-full bg-[#9C1E1E] hover:bg-[#7A1616]"
+          className="w-full bg-module-accent hover:bg-module-accent-hover text-white"
         >
           <Save className="w-4 h-4 mr-2" />
           {loading ? 'Salvando...' : 'Salvar Configuração'}
