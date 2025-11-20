@@ -36,8 +36,8 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
 
   if (!agent) {
     return (
-      <div className="bg-[#1A1A1A] rounded-[14px] border border-[#2A2A2A] p-6">
-        <p className="text-[#A0A0A0]">Agente não encontrado</p>
+      <div className="bg-module-card rounded-[14px] border border-module p-6">
+        <p className="text-module-secondary">Agente não encontrado</p>
       </div>
     );
   }
@@ -68,17 +68,17 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
   };
 
   return (
-    <div className="bg-[#1A1A1A] rounded-[14px] border border-[#2A2A2A] p-6">
+    <div className="bg-module-card rounded-[14px] border border-module p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <span className="text-3xl">{getAgentIcon()}</span>
           <div>
-            <h2 className="text-2xl font-bold text-white">{agent.display_name}</h2>
-            <p className="text-sm text-[#A0A0A0]">{agent.description}</p>
+            <h2 className="text-2xl font-bold text-module-primary">{agent.display_name}</h2>
+            <p className="text-sm text-module-secondary">{agent.description}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Label className="text-white">Ativo</Label>
+          <Label className="text-module-primary">Ativo</Label>
           <Switch
             checked={config.is_active}
             onCheckedChange={(checked) => setConfig({ ...config, is_active: checked })}
@@ -87,23 +87,41 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
       </div>
 
       <Tabs defaultValue="config" className="w-full">
-        <TabsList className="bg-[#0A0A0A] border-[#2A2A2A]">
-          <TabsTrigger value="config" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
+        <TabsList className="bg-module-input border-module w-full">
+          <TabsTrigger 
+            value="config" 
+            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+          >
             Configurações
           </TabsTrigger>
-          <TabsTrigger value="prompts" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
+          <TabsTrigger 
+            value="prompts" 
+            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+          >
             Prompts
           </TabsTrigger>
-          <TabsTrigger value="rules" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
+          <TabsTrigger 
+            value="rules" 
+            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+          >
             Regras de Decisão
           </TabsTrigger>
-          <TabsTrigger value="tools" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
+          <TabsTrigger 
+            value="tools" 
+            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+          >
             Ferramentas & Canais
           </TabsTrigger>
-          <TabsTrigger value="connections" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
+          <TabsTrigger 
+            value="connections" 
+            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+          >
             Conexões
           </TabsTrigger>
-          <TabsTrigger value="info" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
+          <TabsTrigger 
+            value="info" 
+            className="data-[state=active]:bg-module-accent data-[state=active]:text-white data-[state=inactive]:text-module-secondary data-[state=inactive]:hover:text-module-primary data-[state=inactive]:hover:bg-module-hover"
+          >
             Informações
           </TabsTrigger>
         </TabsList>
@@ -112,14 +130,14 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
         <TabsContent value="config" className="space-y-4 pt-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-white">Modelo OpenAI</Label>
+              <Label className="text-module-primary">Modelo OpenAI</Label>
               <select
                 value={config.openai_config?.model || 'gpt-4-turbo-preview'}
                 onChange={(e) => setConfig({
                   ...config,
                   openai_config: { ...config.openai_config, model: e.target.value }
                 })}
-                className="w-full bg-[#0A0A0A] border border-[#2A2A2A] text-white rounded-md p-2 mt-1"
+                className="w-full bg-module-input border border-module text-module-primary rounded-md p-2 mt-1"
               >
                 <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
                 <option value="gpt-4">GPT-4</option>
@@ -128,14 +146,14 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
             </div>
 
             <div>
-              <Label className="text-white">Tom de Voz</Label>
+              <Label className="text-module-primary">Tom de Voz</Label>
               <select
                 value={config.openai_config?.tone || 'friendly'}
                 onChange={(e) => setConfig({
                   ...config,
                   openai_config: { ...config.openai_config, tone: e.target.value }
                 })}
-                className="w-full bg-[#0A0A0A] border border-[#2A2A2A] text-white rounded-md p-2 mt-1"
+                className="w-full bg-module-input border border-module text-module-primary rounded-md p-2 mt-1"
               >
                 <option value="friendly">Amigável</option>
                 <option value="formal">Formal</option>
@@ -146,7 +164,7 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
           </div>
 
           <div>
-            <Label className="text-white">Temperatura ({config.openai_config?.temperature || 0.7})</Label>
+            <Label className="text-module-primary">Temperatura ({config.openai_config?.temperature || 0.7})</Label>
             <Input
               type="range"
               min="0"
@@ -157,15 +175,15 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                 ...config,
                 openai_config: { ...config.openai_config, temperature: parseFloat(e.target.value) }
               })}
-              className="bg-[#0A0A0A] border-[#2A2A2A] text-white mt-1"
+              className="bg-module-input border-module text-module-primary mt-1"
             />
-            <p className="text-xs text-[#6B7280] mt-1">
+            <p className="text-xs text-module-tertiary mt-1">
               0 = Mais preciso e determinístico | 2 = Mais criativo e variado
             </p>
           </div>
 
           <div>
-            <Label className="text-white">Max Tokens</Label>
+            <Label className="text-module-primary">Max Tokens</Label>
             <Input
               type="number"
               min="100"
@@ -176,9 +194,9 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                 ...config,
                 openai_config: { ...config.openai_config, max_tokens: parseInt(e.target.value) }
               })}
-              className="bg-[#0A0A0A] border-[#2A2A2A] text-white mt-1"
+              className="bg-module-input border-module text-module-primary mt-1"
             />
-            <p className="text-xs text-[#6B7280] mt-1">
+            <p className="text-xs text-module-tertiary mt-1">
               Máximo de tokens na resposta (aprox. 4 tokens = 3 palavras)
             </p>
           </div>
