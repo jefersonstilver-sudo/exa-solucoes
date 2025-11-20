@@ -101,6 +101,42 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_knowledge: {
+        Row: {
+          agent_key: string
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          section: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_key: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          section: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_key?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          section?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       agent_logs: {
         Row: {
           agent_key: string
@@ -131,6 +167,27 @@ export type Database = {
           message_id?: string | null
           metadata?: Json | null
           rule_used?: string | null
+        }
+        Relationships: []
+      }
+      agent_preview_conversations: {
+        Row: {
+          agent_key: string
+          created_at: string | null
+          id: string
+          messages: Json
+        }
+        Insert: {
+          agent_key: string
+          created_at?: string | null
+          id?: string
+          messages: Json
+        }
+        Update: {
+          agent_key?: string
+          created_at?: string | null
+          id?: string
+          messages?: Json
         }
         Relationships: []
       }
@@ -2164,6 +2221,42 @@ export type Database = {
         }
         Relationships: []
       }
+      diretores_autorizados: {
+        Row: {
+          cargo: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          nivel_acesso: string | null
+          nome: string
+          updated_at: string | null
+          whatsapp_number: string
+        }
+        Insert: {
+          cargo?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          nivel_acesso?: string | null
+          nome: string
+          updated_at?: string | null
+          whatsapp_number: string
+        }
+        Update: {
+          cargo?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          nivel_acesso?: string | null
+          nome?: string
+          updated_at?: string | null
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
       email_audit_log: {
         Row: {
           created_at: string | null
@@ -2682,6 +2775,69 @@ export type Database = {
           table_name?: string
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      lead_qualifications: {
+        Row: {
+          budget_range: string | null
+          classification: string | null
+          contact_name: string | null
+          contact_number: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          interest_areas: string[] | null
+          notes: string | null
+          profile_type: string | null
+          qualified_by: string | null
+          score: number | null
+          spin_implication: number | null
+          spin_need: number | null
+          spin_problem: number | null
+          spin_situation: number | null
+          timeline: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget_range?: string | null
+          classification?: string | null
+          contact_name?: string | null
+          contact_number: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          interest_areas?: string[] | null
+          notes?: string | null
+          profile_type?: string | null
+          qualified_by?: string | null
+          score?: number | null
+          spin_implication?: number | null
+          spin_need?: number | null
+          spin_problem?: number | null
+          spin_situation?: number | null
+          timeline?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget_range?: string | null
+          classification?: string | null
+          contact_name?: string | null
+          contact_number?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          interest_areas?: string[] | null
+          notes?: string | null
+          profile_type?: string | null
+          qualified_by?: string | null
+          score?: number | null
+          spin_implication?: number | null
+          spin_need?: number | null
+          spin_problem?: number | null
+          spin_situation?: number | null
+          timeline?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
