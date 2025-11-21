@@ -51,14 +51,14 @@ serve(async (req) => {
 
     // ========== DEDUPLICAÇÃO PRECOCE (30 SEGUNDOS) ==========
     const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
-    const { data: existingLog } = await supabase
+    const { data: recentLog } = await supabase
       .from('zapi_logs')
       .select('id')
       .eq('zapi_message_id', messageId)
       .gte('created_at', thirtySecondsAgo)
       .maybeSingle();
 
-    if (existingLog) {
+    if (recentLog) {
       console.log('[ZAPI-WEBHOOK] ⚠️ MESSAGE ALREADY PROCESSED (30s):', messageId);
       return new Response(JSON.stringify({ 
         success: true, 
@@ -446,28 +446,6 @@ serve(async (req) => {
       }
     }
 
-    // ========== VERIFICAÇÃO DE DEDUPLICAÇÃO ==========
-    const { data: existingLog } = await supabase
-      .from('zapi_logs')
-      .select('id, created_at')
-      .eq('zapi_message_id', messageId)
-      .maybeSingle();
-
-    if (existingLog) {
-      console.log('[ZAPI-WEBHOOK] ⚠️ DUPLICATE DETECTED - Already processed:', {
-        messageId,
-        existingLogId: existingLog.id,
-        existingLogTime: existingLog.created_at
-      });
-      return new Response(JSON.stringify({ 
-        success: true,
-        duplicate: true,
-        messageId,
-        originalProcessedAt: existingLog.created_at
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
 
     // ========== DEDUPLICAÇÃO POR CONTEÚDO ==========
     // Verificação adicional: mesma mensagem + telefone em janela de 10 segundos
