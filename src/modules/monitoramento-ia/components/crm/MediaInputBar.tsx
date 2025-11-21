@@ -67,7 +67,6 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('Mensagem enviada');
         setMessage('');
         if (onMessageSent) onMessageSent();
       } else {
@@ -145,7 +144,6 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
       }
 
       if (data?.success) {
-        toast.success(`${mediaType === 'image' ? 'Imagem' : 'Arquivo'} enviado com sucesso`);
         if (onMessageSent) onMessageSent();
       } else {
         throw new Error(data?.error || 'Erro ao enviar arquivo');
@@ -219,7 +217,7 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
         setRecordingTime(prev => prev + 1);
       }, 1000);
 
-      toast.success('Gravando áudio...');
+      
     } catch (error) {
       console.error('Error starting recording:', error);
       toast.error('Erro ao acessar microfone');
@@ -280,7 +278,6 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
       }
 
       if (data?.success) {
-        toast.success('Áudio enviado com sucesso');
         if (onMessageSent) onMessageSent();
       } else {
         throw new Error(data?.error || 'Erro ao enviar áudio');
