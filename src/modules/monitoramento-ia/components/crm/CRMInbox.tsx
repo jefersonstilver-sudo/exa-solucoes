@@ -1,9 +1,8 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { AlertCircle, TrendingUp, Clock, User, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatMessageTime } from '../../utils/formatMessageTime';
 
 interface ConversationItemProps {
   conversation: any;
@@ -85,10 +84,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       {/* Footer */}
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">
-          {formatDistanceToNow(new Date(conversation.last_message_at), {
-            addSuffix: true,
-            locale: ptBR
-          })}
+          {formatMessageTime(conversation.last_message_at)}
         </span>
 
         {/* Sentiment indicator */}
