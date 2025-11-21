@@ -262,8 +262,17 @@ serve(async (req) => {
           console.error('[ZAPI-WEBHOOK] ❌ Impossível salvar mensagens: conversa não existe');
         }
         
-        // ⚠️ NÃO RETORNAR - continuar fluxo normal para processar mensagem
-        console.log('[ZAPI-WEBHOOK] ➡️ Continuando processamento normal...');
+        // ✅ RETORNAR IMEDIATAMENTE - não processar mensagem de comando
+        console.log('[ZAPI-WEBHOOK] ✅ Comando processado, retornando');
+        return new Response(JSON.stringify({ 
+          success: true, 
+          training_mode: newState,
+          message: 'Training command processed',
+          confirmation_sent: sendSuccess
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
     }
 
