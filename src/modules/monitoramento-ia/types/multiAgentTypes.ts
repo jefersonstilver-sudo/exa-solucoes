@@ -35,6 +35,8 @@ export interface Agent {
     tone: 'formal' | 'friendly' | 'technical';
     creativity: 'low' | 'medium' | 'high';
     formality: 'low' | 'medium' | 'high';
+    typingIndicator?: boolean;
+    typingSpeed?: number;
   };
   prompt: {
     masterPrompt: string;
