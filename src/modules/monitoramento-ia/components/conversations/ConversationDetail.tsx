@@ -2,7 +2,7 @@ import { Phone, MessageCircle, Bot, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ZAPILog } from '../../hooks/useConversations';
 import { MessageBubble } from './MessageBubble';
-import { MessageComposer } from '../crm/MessageComposer';
+import { MediaInputBar } from '../crm/MediaInputBar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -167,9 +167,13 @@ export const ConversationDetail = ({
       </div>
 
       {/* Composer */}
-      <MessageComposer 
+      <MediaInputBar 
         phoneNumber={phoneNumber}
         agentKey={agentKey}
+        onMessageSent={() => {
+          // Recarregar página após envio para mostrar nova mensagem
+          window.location.reload();
+        }}
       />
     </div>
   );

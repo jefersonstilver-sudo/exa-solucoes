@@ -205,6 +205,7 @@ export type Database = {
           routing_rules: Json | null
           type: string
           updated_at: string
+          vision_enabled: boolean | null
           whatsapp_number: string | null
           whatsapp_provider: string | null
           zapi_config: Json | null
@@ -222,6 +223,7 @@ export type Database = {
           routing_rules?: Json | null
           type: string
           updated_at?: string
+          vision_enabled?: boolean | null
           whatsapp_number?: string | null
           whatsapp_provider?: string | null
           zapi_config?: Json | null
@@ -239,6 +241,7 @@ export type Database = {
           routing_rules?: Json | null
           type?: string
           updated_at?: string
+          vision_enabled?: boolean | null
           whatsapp_number?: string | null
           whatsapp_provider?: string | null
           zapi_config?: Json | null

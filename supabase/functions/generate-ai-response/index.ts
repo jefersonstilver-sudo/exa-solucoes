@@ -79,12 +79,18 @@ serve(async (req) => {
       .map((k: any) => `### ${k.title}\n${k.content}`)
       .join('\n\n');
 
-    // 4. Construir histórico de mensagens
+    // 4. Construir histórico de mensagens incluindo descrições de imagens
     const historyContext = (conversationHistory || [])
       .reverse()
-      .map((msg: any) => 
-        `${msg.direction === 'inbound' ? 'Cliente' : 'Você'}: ${msg.body}`
-      )
+      .map((msg: any) => {
+        const sender = msg.direction === 'inbound' ? 'Cliente' : 'Você';
+        let messageContent = msg.body;
+        
+        // Se mensagem inclui descrição de imagem da visão AI, mantê-la
+        // (já vem processada do zapi-webhook)
+        
+        return `${sender}: ${messageContent}`;
+      })
       .join('\n');
 
     // 5. Montar prompt para IA usando o prompt do banco
