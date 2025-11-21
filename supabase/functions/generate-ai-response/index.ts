@@ -191,14 +191,40 @@ ${message}`;
       console.error('[AI-RESPONSE] ⚠️ Typing stop error (non-blocking):', e);
     }
 
-    // Enviar mensagem COMPLETA de uma vez
-    const { data: sendResult, error: sendError } = await supabase.functions.invoke('zapi-send-message', {
-      body: {
-        agentKey,
-        phone: phoneNumber,
-        message: aiResponse, // Mensagem COMPLETA, sem dividir
-      }
-    });
+    // Verificar provider da conversa para escolher método de envio
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('provider')
+      .eq('id', conversationId)
+      .single();
+
+    console.log('[AI-RESPONSE] 📤 Provider:', conversation?.provider);
+
+    // Enviar via provider apropriado
+    let sendResult, sendError;
+    if (conversation?.provider === 'manychat') {
+      // Usar send-message-unified para ManyChat
+      const result = await supabase.functions.invoke('send-message-unified', {
+        body: {
+          conversationId,
+          agentKey,
+          message: aiResponse
+        }
+      });
+      sendResult = result.data;
+      sendError = result.error;
+    } else {
+      // Usar zapi-send-message para WhatsApp/Z-API
+      const result = await supabase.functions.invoke('zapi-send-message', {
+        body: {
+          agentKey,
+          phone: phoneNumber,
+          message: aiResponse
+        }
+      });
+      sendResult = result.data;
+      sendError = result.error;
+    }
 
     if (sendError) {
       console.error('[AI-RESPONSE] ❌ Send error:', sendError);
