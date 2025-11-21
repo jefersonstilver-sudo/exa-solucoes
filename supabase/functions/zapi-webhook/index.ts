@@ -95,18 +95,32 @@ serve(async (req) => {
     // ========== DETECÇÃO DE COMANDO DE TREINAMENTO ==========
     const normalizedText = messageText.trim().toUpperCase();
     if (normalizedText === '#AJUSTE3029' || normalizedText === '#AJUSTAR3029') {
-      console.log('[ZAPI-WEBHOOK] 🎓 Training command detected:', normalizedText);
+      console.log('🎓 [STEP 1] Comando detectado:', normalizedText);
+      console.log('🔍 [STEP 1] instanceId:', instanceId);
+      console.log('🔍 [STEP 1] phone:', phone);
       
       // Buscar agente
-      const { data: tempAgent } = await supabase
+      const { data: tempAgent, error: agentError } = await supabase
         .from('agents')
         .select('key, zapi_config')
         .eq('whatsapp_provider', 'zapi')
         .eq('zapi_config->>instance_id', instanceId)
         .single();
       
-      if (!tempAgent) {
-        console.error('[ZAPI-WEBHOOK] ❌ Agent not found for training command');
+      if (!tempAgent || agentError) {
+        console.log('❌ [STEP 2] Agente NÃO encontrado');
+        console.log('❌ instanceId buscado:', instanceId);
+        console.log('❌ Erro:', agentError);
+        
+        // Listar agentes para debug
+        const { data: allAgents } = await supabase
+          .from('agents')
+          .select('key, zapi_config');
+        console.log('📋 Agentes disponíveis:', allAgents?.map(a => ({
+          key: a.key,
+          instance_id: (a.zapi_config as any)?.instance_id
+        })));
+        
         return new Response(JSON.stringify({ 
           success: false,
           error: 'Agent not found'
@@ -116,11 +130,15 @@ serve(async (req) => {
         });
       }
       
+      console.log('✅ [STEP 2] Agente encontrado:', tempAgent.key);
+      
       const zapiConfig = tempAgent.zapi_config as any;
       const trainingKey = `training_mode_${phone}`;
       
+      console.log('🔄 [STEP 3] Buscando estado atual...');
+      
       // Alternar modo de treinamento
-      const { data: existingMode } = await supabase
+      const { data: existingMode, error: modeError } = await supabase
         .from('agent_context')
         .select('value')
         .eq('key', trainingKey)
@@ -129,22 +147,33 @@ serve(async (req) => {
       const isCurrentlyActive = existingMode?.value?.active || false;
       const newState = !isCurrentlyActive;
       
-      await supabase
+      console.log(`🔄 [STEP 3] Estado: ${isCurrentlyActive} → ${newState}`);
+      
+      const { error: upsertError } = await supabase
         .from('agent_context')
         .upsert({
           key: trainingKey,
           value: { active: newState, activated_at: new Date().toISOString() }
         });
       
-      console.log(`[ZAPI-WEBHOOK] ✅ Training mode ${newState ? 'ACTIVATED' : 'DEACTIVATED'}`);
+      if (upsertError) {
+        console.log('❌ [STEP 3] Erro ao salvar:', upsertError);
+      } else {
+        console.log(`✅ [STEP 3] Modo ${newState ? 'ATIVADO' : 'DESATIVADO'}`);
+      
+      }
       
       // Enviar confirmação
       const confirmMessage = newState 
         ? `✅ *Modo Treinamento Ativado*\n\n🎓 Oi! Agora estou no modo aluna.\n\nVocê pode me fazer perguntas de teste e corrigir minhas respostas. Vou aceitar suas correções com gratidão!\n\n_Para desativar: #AJUSTE3029_`
         : `✅ *Modo Treinamento Desativado*\n\nVoltei ao modo normal de operação. Obrigada pelo treinamento! 😊`;
       
+      console.log('📤 [STEP 4] Enviando confirmação:', confirmMessage.substring(0, 50) + '...');
+      
       const apiUrl = zapiConfig.api_url || 'https://api.z-api.io';
       const sendUrl = `${apiUrl}/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+      
+      console.log('📤 [STEP 4] URL:', sendUrl);
       
       try {
         const response = await fetch(sendUrl, {
@@ -160,16 +189,19 @@ serve(async (req) => {
         });
         
         if (!response.ok) {
-          console.error('[ZAPI-WEBHOOK] ❌ Z-API error:', response.status);
+          const errorText = await response.text();
+          console.log('❌ [STEP 4] Z-API error:', response.status, errorText);
         } else {
-          console.log('[ZAPI-WEBHOOK] ✅ Confirmation sent');
+          console.log('✅ [STEP 4] Confirmação enviada');
         }
       } catch (error) {
-        console.error('[ZAPI-WEBHOOK] ❌ Send error:', error);
+        console.log('❌ [STEP 4] Erro de rede:', error);
       }
       
       // Salvar mensagens no banco
-      let { data: conversation } = await supabase
+      console.log('💾 [STEP 5] Salvando mensagens...');
+      
+      let { data: conversation, error: convError } = await supabase
         .from('conversations')
         .select('id')
         .eq('contact_phone', phone)
@@ -177,7 +209,8 @@ serve(async (req) => {
         .maybeSingle();
       
       if (!conversation) {
-        const { data: newConv } = await supabase
+        console.log('💾 [STEP 5] Criando nova conversa...');
+        const { data: newConv, error: newConvError } = await supabase
           .from('conversations')
           .insert({
             contact_phone: phone,
@@ -186,11 +219,19 @@ serve(async (req) => {
           })
           .select('id')
           .single();
-        conversation = newConv;
+        
+        if (newConvError) {
+          console.log('❌ [STEP 5] Erro ao criar conversa:', newConvError);
+        } else {
+          conversation = newConv;
+          console.log('✅ [STEP 5] Conversa criada:', conversation?.id);
+        }
+      } else {
+        console.log('✅ [STEP 5] Conversa encontrada:', conversation.id);
       }
       
       if (conversation) {
-        await supabase.from('messages').insert([
+        const { error: msgError } = await supabase.from('messages').insert([
           {
             conversation_id: conversation.id,
             body: messageText,
@@ -206,8 +247,15 @@ serve(async (req) => {
             read_at: new Date().toISOString()
           }
         ]);
-        console.log('[ZAPI-WEBHOOK] ✅ Messages saved');
+        
+        if (msgError) {
+          console.log('❌ [STEP 5] Erro ao salvar mensagens:', msgError);
+        } else {
+          console.log('✅ [STEP 5] Mensagens salvas');
+        }
       }
+      
+      console.log(`🎉 [STEP 6] CONCLUÍDO - Modo ${newState ? 'ATIVADO' : 'DESATIVADO'}`);
       
       // ✅ RETURN IMEDIATO
       return new Response(JSON.stringify({ 
