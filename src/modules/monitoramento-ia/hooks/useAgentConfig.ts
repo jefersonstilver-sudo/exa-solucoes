@@ -13,11 +13,10 @@ export interface Agent {
   routing_rules: any;
   kb_ids: any;
   openai_config: any;
-  manychat_config: any;
-  manychat_connected: boolean | null;
   whatsapp_number: string | null;
   whatsapp_provider: string | null;
   zapi_config: any;
+  ai_auto_response: boolean | null;
   created_at: string;
   updated_at: string;
 }

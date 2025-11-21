@@ -345,8 +345,7 @@ export const AgentPrompt = () => {
             zapi_config: agent.zapiConfig || null,
             openai_config: config.openai_config,
             routing_rules: [],
-            manychat_config: config.manychat_config,
-            manychat_connected: false,
+            ai_auto_response: false,
             kb_ids: [],
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()

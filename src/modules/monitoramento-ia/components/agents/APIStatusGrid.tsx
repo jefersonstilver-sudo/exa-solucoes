@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { AgentStatus } from '../../hooks/useAgentStatus';
 import { AgentDebugPanel } from './AgentDebugPanel';
 import { ZAPICredentialsModal } from './ZAPICredentialsModal';
-import { ManyChatCredentialsModal } from './ManyChatCredentialsModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -39,7 +38,6 @@ const getAgentIcon = (key: string) => {
 const getProviderName = (provider: string | null) => {
   if (!provider) return 'Não configurado';
   if (provider === 'zapi') return 'Z-API';
-  if (provider === 'manychat') return 'ManyChat';
   return provider;
 };
 
@@ -47,7 +45,7 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
   const [debugAgent, setDebugAgent] = useState<{ key: string; name: string } | null>(null);
   const [configAgent, setConfigAgent] = useState<{ 
     key: string; 
-    provider: 'zapi' | 'manychat'; 
+    provider: 'zapi'; 
     config: any 
   } | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(false);
@@ -88,10 +86,9 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
   const handleConfigureAgent = async (agentKey: string, provider: string) => {
     setLoadingConfig(true);
     try {
-      const configField = provider === 'zapi' ? 'zapi_config' : 'manychat_config';
       const { data, error } = await supabase
         .from('agents')
-        .select(configField)
+        .select('zapi_config')
         .eq('key', agentKey)
         .single();
 
@@ -99,8 +96,8 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
 
       setConfigAgent({ 
         key: agentKey, 
-        provider: provider as 'zapi' | 'manychat',
-        config: data?.[configField] || {} 
+        provider: 'zapi',
+        config: data?.zapi_config || {} 
       });
     } catch (error) {
       console.error('Erro ao carregar configuração:', error);
@@ -177,22 +174,6 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
                 </p>
               )}
 
-              {/* Auto-sync indicator */}
-              {(agent as any).manychat_config?.auto_sync_enabled && (
-                <div className="bg-green-500/10 border border-green-500/20 rounded p-2 mb-2">
-                  <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
-                    <RefreshCw className="w-3 h-3" />
-                    <span className="font-medium">
-                      Auto-sync: {(agent as any).manychat_config.auto_sync_interval}min
-                    </span>
-                  </div>
-                  {(agent as any).manychat_config?.last_sync_at && (
-                    <p className="text-xs text-green-600/70 dark:text-green-400/70 mt-1">
-                      Última sync: {new Date((agent as any).manychat_config.last_sync_at).toLocaleTimeString('pt-BR')}
-                    </p>
-                  )}
-                </div>
-              )}
 
               {status?.latency && (
                 <p className="text-xs text-module-tertiary mb-2">
@@ -275,18 +256,8 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
         />
       )}
 
-      {configAgent?.provider === 'zapi' && (
+      {configAgent && (
         <ZAPICredentialsModal
-          open={true}
-          onOpenChange={(open) => !open && setConfigAgent(null)}
-          agentKey={configAgent.key}
-          currentConfig={configAgent.config}
-          onSave={(config) => handleSaveConfig(configAgent.key, config)}
-        />
-      )}
-
-      {configAgent?.provider === 'manychat' && (
-        <ManyChatCredentialsModal
           open={true}
           onOpenChange={(open) => !open && setConfigAgent(null)}
           agentKey={configAgent.key}

@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import { mapManychatToDevice } from './manychat';
 
 interface AnalysisResult {
   contact_type: string;
@@ -249,40 +248,8 @@ export const createAlertFromAnalysis = async (
   console.log('🚨 [ANALYSIS] Creating alert from analysis');
 
   try {
-    // Try to map message to device
-    const deviceId = await mapManychatToDevice({
-      conversation_id: message.conversation_id,
-      message_id: message.id,
-      direction: message.from_role === 'contact' ? 'inbound' : 'outbound',
-      body: message.body,
-      from: { phone: 'unknown' },
-      attachments: [],
-      timestamp: message.created_at
-    });
-
-    if (deviceId) {
-      // Create device alert
-      await supabase
-        .from('device_alerts')
-        .insert({
-          device_id: deviceId,
-          alert_type: 'manychat_urgent',
-          severity: analysis.raw_payload?.urgency >= 2 ? 'critical' : 'high',
-          status: 'open',
-          evidence: {
-            analysis_id: analysis.id,
-            message_id: message.id,
-            conversation_id: message.conversation_id,
-            text: message.body,
-            urgency_score: analysis.raw_payload?.urgency
-          }
-        });
-
-      console.log('✅ [ANALYSIS] Device alert created for device:', deviceId);
-    } else {
-      // Create general conversation alert (could be stored in separate table)
-      console.log('ℹ️ [ANALYSIS] No device mapping, alert logged in analysis');
-    }
+    // Log the alert - device mapping removed with ManyChat removal
+    console.log('ℹ️ [ANALYSIS] Alert logged in analysis (device mapping removed with ManyChat)');
   } catch (error) {
     console.error('❌ [ANALYSIS] Error creating alert:', error);
   }
