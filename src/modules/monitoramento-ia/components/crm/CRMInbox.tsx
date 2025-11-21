@@ -12,21 +12,40 @@ interface ConversationItemProps {
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSelected, onClick }) => {
+  const hasUnread = conversation.awaiting_response;
+  
   return (
     <button
       onClick={onClick}
       className={cn(
-        'w-full p-4 text-left hover:bg-muted/50 transition-colors border-b',
-        isSelected && 'bg-muted'
+        'w-full p-4 text-left hover:bg-muted/50 transition-colors border-b relative',
+        isSelected && 'bg-muted',
+        hasUnread && 'border-l-4 border-l-[#25D366] bg-[#f0f8f5] dark:bg-[#25D366]/10'
       )}
     >
       {/* Header com nome e badges */}
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <User className="w-4 h-4 text-muted-foreground" />
-          <span className="font-medium truncate">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="relative shrink-0">
+            <User className={cn(
+              "w-4 h-4",
+              hasUnread ? "text-[#25D366]" : "text-muted-foreground"
+            )} />
+            {hasUnread && (
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#25D366] rounded-full animate-pulse" />
+            )}
+          </div>
+          <span className={cn(
+            "font-medium truncate",
+            hasUnread && "text-[#25D366] font-semibold"
+          )}>
             {conversation.contact_name || conversation.contact_phone}
           </span>
+          {hasUnread && (
+            <Badge className="text-[10px] px-1.5 py-0 h-4 bg-[#25D366] hover:bg-[#20bd5a] animate-pulse">
+              NOVA
+            </Badge>
+          )}
         </div>
 
         <div className="flex gap-1 flex-shrink-0">
