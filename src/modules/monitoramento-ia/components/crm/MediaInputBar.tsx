@@ -99,7 +99,7 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${agentKey}/${fileName}`;
 
-      console.log('Uploading file:', filePath);
+      console.log('[MediaInputBar] Uploading file:', { fileName, type: file.type, size: file.size });
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('chat-media')
@@ -108,20 +108,25 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('[MediaInputBar] Storage upload error:', uploadError);
+        throw uploadError;
+      }
 
       // 2. Obter URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('chat-media')
         .getPublicUrl(filePath);
 
-      console.log('File uploaded:', publicUrl);
+      console.log('[MediaInputBar] File uploaded:', publicUrl);
 
       // 3. Determinar tipo de mídia
       let mediaType = 'document';
       if (file.type.startsWith('image/')) mediaType = 'image';
       else if (file.type.startsWith('audio/')) mediaType = 'audio';
       else if (file.type.startsWith('video/')) mediaType = 'video';
+
+      console.log('[MediaInputBar] Sending via Z-API as:', mediaType);
 
       // 4. Enviar via Z-API
       const { data, error } = await supabase.functions.invoke('zapi-send-media', {
@@ -134,7 +139,10 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[MediaInputBar] Edge function error:', error);
+        throw error;
+      }
 
       if (data?.success) {
         toast.success(`${mediaType === 'image' ? 'Imagem' : 'Arquivo'} enviado com sucesso`);
@@ -143,7 +151,7 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
         throw new Error(data?.error || 'Erro ao enviar arquivo');
       }
     } catch (error: any) {
-      console.error('Error uploading file:', error);
+      console.error('[MediaInputBar] Error uploading file:', error);
       toast.error(error.message || 'Erro ao enviar arquivo');
     } finally {
       setUploading(false);
@@ -174,7 +182,16 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      
+      // Tentar usar formato compatível com WhatsApp (ogg ou webm como fallback)
+      let mimeType = 'audio/webm';
+      if (MediaRecorder.isTypeSupported('audio/ogg; codecs=opus')) {
+        mimeType = 'audio/ogg; codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/webm; codecs=opus')) {
+        mimeType = 'audio/webm; codecs=opus';
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -186,8 +203,8 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        await uploadAudio(audioBlob);
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        await uploadAudio(audioBlob, mimeType);
         
         // Parar stream
         stream.getTracks().forEach(track => track.stop());
@@ -220,24 +237,33 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
     }
   };
 
-  const uploadAudio = async (audioBlob: Blob) => {
+  const uploadAudio = async (audioBlob: Blob, mimeType: string) => {
     setUploading(true);
     try {
-      const fileName = `audio_${Date.now()}.webm`;
+      // Determinar extensão baseada no mime type
+      const extension = mimeType.includes('ogg') ? 'ogg' : 'webm';
+      const fileName = `audio_${Date.now()}.${extension}`;
       const filePath = `${agentKey}/${fileName}`;
+
+      console.log('[MediaInputBar] Uploading audio:', { fileName, mimeType, size: audioBlob.size });
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('chat-media')
         .upload(filePath, audioBlob, {
-          contentType: 'audio/webm',
+          contentType: mimeType,
           cacheControl: '3600'
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('[MediaInputBar] Storage upload error:', uploadError);
+        throw uploadError;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('chat-media')
         .getPublicUrl(filePath);
+
+      console.log('[MediaInputBar] Audio uploaded, sending via Z-API:', publicUrl);
 
       const { data, error } = await supabase.functions.invoke('zapi-send-media', {
         body: {
@@ -248,7 +274,10 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[MediaInputBar] Edge function error:', error);
+        throw error;
+      }
 
       if (data?.success) {
         toast.success('Áudio enviado com sucesso');
@@ -257,7 +286,7 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
         throw new Error(data?.error || 'Erro ao enviar áudio');
       }
     } catch (error: any) {
-      console.error('Error uploading audio:', error);
+      console.error('[MediaInputBar] Error uploading audio:', error);
       toast.error(error.message || 'Erro ao enviar áudio');
     } finally {
       setUploading(false);
