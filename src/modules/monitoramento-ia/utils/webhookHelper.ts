@@ -4,8 +4,8 @@
  */
 
 export const generateWebhookUrl = (agentId: string): string => {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://aakenoljsycyrcrchgxj.supabase.co';
-  return `${baseUrl}/functions/v1/webhook-manychat/${agentId}`;
+  const baseUrl = 'https://aakenoljsycyrcrchgxj.supabase.co';
+  return `${baseUrl}/functions/v1/zapi-webhook`;
 };
 
 export const generateVerifyToken = (): string => {
