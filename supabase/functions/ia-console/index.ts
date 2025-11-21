@@ -82,6 +82,39 @@ serve(async (req) => {
       }
     }
 
+    // Verificar se está em modo de treinamento
+    let trainingModeActive = false;
+    if (context?.conversationId) {
+      const { data: conversations } = await supabase
+        .from('conversations')
+        .select('contact_phone')
+        .eq('id', context.conversationId)
+        .single();
+      
+      if (conversations?.contact_phone) {
+        const trainingKey = `training_mode_${conversations.contact_phone}`;
+        const { data: trainingState } = await supabase
+          .from('agent_context')
+          .select('value')
+          .eq('key', trainingKey)
+          .single();
+        
+        trainingModeActive = trainingState?.value?.active || false;
+        console.log(`[IA-CONSOLE] Training mode: ${trainingModeActive ? 'ACTIVE' : 'inactive'}`);
+      }
+    }
+
+    // Adicionar instruções de treinamento se modo ativo
+    if (trainingModeActive) {
+      systemPrompt += `\n\n🎓 MODO DE TREINAMENTO ATIVO:
+Você está recebendo uma correção do criador do sistema. 
+- Identifique qual informação estava incorreta na sua resposta anterior
+- Procure na base de conhecimento de onde veio essa informação
+- Confirme qual seção/título precisa ser corrigida
+- Sugira a correção exata para ser aplicada
+- Seja precisa e objetiva na identificação da origem do erro`;
+    }
+
     // Chamar OpenAI
     const startTime = Date.now();
 

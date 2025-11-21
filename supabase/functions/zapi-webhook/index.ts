@@ -44,6 +44,57 @@ serve(async (req) => {
       });
     }
 
+    // ========== DETECÇÃO DE COMANDO DE TREINAMENTO ==========
+    const trainingCommand = '#AJUSTE3029';
+    if (messageBody?.trim() === trainingCommand) {
+      console.log('[ZAPI-WEBHOOK] 🎓 Training command detected');
+      
+      // Alternar modo de treinamento
+      const trainingKey = `training_mode_${phone}`;
+      const { data: existingMode } = await supabaseAdmin
+        .from('agent_context')
+        .select('value')
+        .eq('key', trainingKey)
+        .single();
+      
+      const isCurrentlyActive = existingMode?.value?.active || false;
+      const newState = !isCurrentlyActive;
+      
+      await supabaseAdmin
+        .from('agent_context')
+        .upsert({
+          key: trainingKey,
+          value: { active: newState, activated_at: new Date().toISOString() }
+        });
+      
+      // Enviar resposta de confirmação
+      const confirmMessage = newState 
+        ? '🎓 *Modo Treinamento da Sofia Ativado*\n\nAgora você pode corrigir minhas respostas. Envie a correção e identificarei o que precisa ser ajustado na base de conhecimento.\n\nPara desativar, envie novamente: #AJUSTE3029'
+        : '✅ *Modo Treinamento Desativado*\n\nVoltei ao modo normal de operação.';
+      
+      await fetch(`${zapiConfig.instanceUrl}/send-text`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Client-Token': zapiConfig.clientToken
+        },
+        body: JSON.stringify({
+          phone: phone,
+          message: confirmMessage
+        })
+      });
+      
+      console.log(`[ZAPI-WEBHOOK] Training mode ${newState ? 'ACTIVATED' : 'DEACTIVATED'} for ${phone}`);
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        training_mode_toggled: true,
+        new_state: newState
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Extrair ID único da mensagem para deduplicação
     const messageId = payload.messageId || payload.id || payload.key?.id || `${phone}_${Date.now()}`;
     
