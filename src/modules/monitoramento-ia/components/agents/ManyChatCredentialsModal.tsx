@@ -55,9 +55,10 @@ export const ManyChatCredentialsModal = ({
       return;
     }
 
-    // Validar formato da API Key (deve ser número:hash)
-    if (!apiKey.includes(':')) {
-      toast.error('Formato inválido. Use: número:hash (ex: 1663612:ebed5dd)');
+    // Validar formato da API Key (aceita i663612:hash ou 1663612:hash)
+    const apiKeyPattern = /^[a-z0-9]+:[a-z0-9]+$/i;
+    if (!apiKeyPattern.test(apiKey.trim())) {
+      toast.error('Formato inválido. Use: i663612:hash ou número:hash');
       return;
     }
 
@@ -119,7 +120,7 @@ export const ManyChatCredentialsModal = ({
               id="apiKey"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Ex: 1663612:ebed5dd"
+              placeholder="Ex: i663612:ebed5dd ou 1663612:ebed5dd"
               className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 font-mono text-sm placeholder:text-gray-400"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">

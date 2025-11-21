@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RefreshCw } from 'lucide-react';
 import { APIStatusGrid } from '../components/agents/APIStatusGrid';
-import { ManyChatConfigSection } from '../components/agents/ManyChatConfigSection';
 import { AgentConfigSection } from '../components/agents/AgentConfigSection';
 import { AIConsole } from '../components/agents/AIConsole';
 import { KnowledgeBaseSection } from '../components/agents/KnowledgeBaseSection';
@@ -110,7 +109,6 @@ export const Agentes = () => {
             testing={testing} 
             onTest={testAgent} 
           />
-          <ManyChatConfigSection />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {agents.map(agent => (
