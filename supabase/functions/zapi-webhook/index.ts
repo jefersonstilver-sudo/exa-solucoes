@@ -31,7 +31,7 @@ serve(async (req) => {
     const instanceId = payload.instanceId;
 
     // ========== FILTRO: IGNORAR MENSAGENS ENVIADAS PELO PRÓPRIO AGENTE ==========
-    const fromMe = payload.fromMe || (payload.isGroupMsg === false && !payload.author);
+    const fromMe = payload.fromMe === true;
     
     if (fromMe) {
       console.log('[ZAPI-WEBHOOK] ⏭️ Skipping outbound message (fromMe=true)');
@@ -48,6 +48,26 @@ serve(async (req) => {
     const messageId = payload.messageId || payload.id || payload.key?.id || `${phone}_${Date.now()}`;
     
     console.log('[ZAPI-WEBHOOK] 🔑 Message ID:', messageId);
+
+    // ========== DEDUPLICAÇÃO PRECOCE (30 SEGUNDOS) ==========
+    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+    const { data: existingLog } = await supabase
+      .from('zapi_logs')
+      .select('id')
+      .eq('zapi_message_id', messageId)
+      .gte('created_at', thirtySecondsAgo)
+      .maybeSingle();
+
+    if (existingLog) {
+      console.log('[ZAPI-WEBHOOK] ⚠️ MESSAGE ALREADY PROCESSED (30s):', messageId);
+      return new Response(JSON.stringify({ 
+        success: true, 
+        skipped: true,
+        reason: 'message_already_processed'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     // Detectar tipo de mensagem e extrair conteúdo
     let messageText = '';
@@ -98,6 +118,23 @@ serve(async (req) => {
       console.log('🎓 [STEP 1] Comando detectado:', normalizedText);
       console.log('🔍 [STEP 1] instanceId:', instanceId);
       console.log('🔍 [STEP 1] phone:', phone);
+      
+      // ========== CACHE DE COMANDO (30 SEGUNDOS) ==========
+      const commandKey = `training_${phone}_${instanceId}`;
+      const recentCommand = processingCache.get(commandKey);
+
+      if (recentCommand && (Date.now() - recentCommand) < 30000) {
+        console.log('⚠️ [STEP 1] COMANDO DUPLICADO (30s) - Ignorando');
+        return new Response(JSON.stringify({ 
+          success: true, 
+          skipped: true,
+          reason: 'command_already_processed'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      processingCache.set(commandKey, Date.now());
       
       // Buscar agente
       const { data: tempAgent, error: agentError } = await supabase
