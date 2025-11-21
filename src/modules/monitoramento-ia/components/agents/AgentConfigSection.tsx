@@ -96,7 +96,6 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
       await onUpdate(agent.key, {
         openai_config: config.openai_config,
         routing_rules: config.routing_rules,
-        manychat_config: config.manychat_config,
         whatsapp_number: config.whatsapp_number,
         is_active: config.is_active
       });
@@ -150,49 +149,6 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
               )}
               
               {agent.whatsapp_provider === 'zapi' && !agentStatus && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="border-gray-500 text-gray-600">
-                    ⚪ Status não verificado
-                  </Badge>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={handleTestConnection}
-                    disabled={testing[agent.key]}
-                    className="h-6 px-2 text-xs"
-                  >
-                    {testing[agent.key] ? (
-                      <>
-                        <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                        Testando...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-3 h-3 mr-1" />
-                        Testar
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-              
-              {/* Badge ManyChat - Status Real da API */}
-              {agent.whatsapp_provider === 'manychat' && agentStatus?.status === 'online' && (
-                <Badge className="bg-blue-500 text-white flex items-center gap-1">
-                  ✓ Conectado via ManyChat
-                  {agentStatus.latency && (
-                    <span className="text-xs opacity-80">({agentStatus.latency}ms)</span>
-                  )}
-                </Badge>
-              )}
-              
-              {agent.whatsapp_provider === 'manychat' && agentStatus?.status === 'offline' && (
-                <Badge variant="outline" className="border-red-500 text-red-600">
-                  ✗ ManyChat Offline
-                </Badge>
-              )}
-              
-              {agent.whatsapp_provider === 'manychat' && !agentStatus && (
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="border-gray-500 text-gray-600">
                     ⚪ Status não verificado
@@ -562,48 +518,6 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                   </div>
                 </div>
               )}
-
-              {/* ManyChat Config */}
-              <div className="bg-module-card rounded-lg border border-module p-4">
-                <Label className="text-module-primary text-lg mb-3 block">ManyChat</Label>
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-module-secondary text-sm">Flow ID</Label>
-                    <Input
-                      value={config.manychat_config?.flowId || ''}
-                      onChange={(e) => setConfig({
-                        ...config,
-                        manychat_config: { ...config.manychat_config, flowId: e.target.value }
-                      })}
-                      className="bg-module-input border-module text-module-primary mt-1"
-                      placeholder="Flow ID do ManyChat"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-module-secondary text-sm">Channel ID</Label>
-                    <Input
-                      value={config.manychat_config?.channelId || ''}
-                      onChange={(e) => setConfig({
-                        ...config,
-                        manychat_config: { ...config.manychat_config, channelId: e.target.value }
-                      })}
-                      className="bg-module-input border-module text-module-primary mt-1"
-                      placeholder="Channel ID do ManyChat"
-                    />
-                  </div>
-                  {agent.key === 'eduardo' ? (
-                    <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-green-500 text-sm">Conectado ao ManyChat</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                      <span className="text-yellow-600 text-sm">Desconectado</span>
-                    </div>
-                  )}
-                </div>
-              </div>
             </>
           )}
 

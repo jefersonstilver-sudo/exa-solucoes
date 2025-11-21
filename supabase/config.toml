@@ -180,17 +180,8 @@ verify_jwt = true
 [functions.fix-audit-data]
 verify_jwt = false
 
-[functions.manychat-webhook]
-verify_jwt = false
-
-[functions.manychat-pull-sync]
-verify_jwt = false
-
 [functions.route-message]
 verify_jwt = false
-
-[functions.manychat-webhook-test]
-verify_jwt = true
 
 [functions.openai-test]
 verify_jwt = true
@@ -219,9 +210,6 @@ verify_jwt = false
 [functions.qualify-lead]
 verify_jwt = false
 
-[functions.notify-eduardo]
-verify_jwt = false
-
 [functions.notify-exa-alert]
 verify_jwt = false
 
@@ -242,10 +230,3 @@ verify_jwt = false
 
 [functions.test-agent-status]
 verify_jwt = false  # Temporariamente público para debug
-
-[functions.manychat-sync-conversations]
-verify_jwt = false
-
-[functions.manychat-auto-sync-cron]
-verify_jwt = false
-
