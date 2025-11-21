@@ -1,7 +1,7 @@
+import React, { useState, useRef, useEffect } from 'react';
 import { AlertCircle, Download, Play, Pause } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useState, useRef, useEffect } from 'react';
 
 interface MessageBubbleProps {
   direction: 'inbound' | 'outbound';
@@ -13,7 +13,7 @@ interface MessageBubbleProps {
   createdAt: string;
 }
 
-export const MessageBubble = ({
+const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   direction,
   messageText,
   mediaUrl,
@@ -21,7 +21,7 @@ export const MessageBubble = ({
   status,
   errorMessage,
   createdAt
-}: MessageBubbleProps) => {
+}) => {
   const isOutbound = direction === 'outbound';
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -120,34 +120,17 @@ export const MessageBubble = ({
   };
 
   return (
-    <div className={`flex ${isOutbound ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+    <div className={`flex ${isOutbound ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-200`}>
       <div
-        className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-3 py-2 md:px-4 md:py-2 shadow-sm ${
-          isOutbound
-            ? 'bg-[#25D366] text-white rounded-br-sm'
-            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-sm'
-        }`}
-        style={{
-          boxShadow: isOutbound 
-            ? '0 1px 2px rgba(0,0,0,0.1)' 
-            : '0 1px 2px rgba(0,0,0,0.05)'
-        }}
+        className={`
+          relative max-w-[85%] md:max-w-[70%] rounded-lg px-3 py-2
+          ${isOutbound 
+            ? 'bg-[#d9fdd3] dark:bg-[#005c4b] text-[#111b21] dark:text-[#e9edef]' 
+            : 'bg-white dark:bg-[#1f2c33] text-[#111b21] dark:text-[#e9edef]'
+          }
+          shadow-sm
+        `}
       >
-        {/* Badge indicador de origem - Oculto no mobile para economizar espaço */}
-        {isOutbound && (
-          <div className="hidden md:flex items-center gap-1 mb-1">
-            <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-              🤖 <span className="font-medium">Agente</span>
-            </span>
-          </div>
-        )}
-        {!isOutbound && (
-          <div className="hidden md:flex items-center gap-1 mb-1">
-            <span className="text-[10px] bg-black/10 dark:bg-white/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-              📱 <span className="font-medium">WhatsApp</span>
-            </span>
-          </div>
-        )}
         {status === 'error' && (
           <div className="flex items-center gap-2 mb-2 text-red-300">
             <AlertCircle className="w-4 h-4" />
@@ -158,19 +141,23 @@ export const MessageBubble = ({
         {renderMedia()}
         
         {messageText && messageText !== '[Imagem]' && messageText !== '[Áudio]' && messageText !== '[Figurinha]' && messageText !== '[Vídeo]' && (
-          <p className="text-xs md:text-sm whitespace-pre-wrap break-words leading-relaxed">
+          <p className="text-xs md:text-sm whitespace-pre-wrap break-words">
             {messageText}
           </p>
         )}
         
-        <div className={`text-[9px] md:text-[10px] mt-1 flex items-center justify-end gap-1 ${
-          isOutbound 
-            ? 'text-white/70' 
-            : 'text-gray-500 dark:text-gray-400'
-        }`}>
-          {format(new Date(createdAt), "HH:mm", { locale: ptBR })}
-          {isOutbound && status === 'sent' && <span>✓</span>}
-          {isOutbound && status === 'delivered' && <span>✓✓</span>}
+        <div className="flex items-center gap-1 mt-1 justify-end">
+          <span className="text-[11px] text-[#667781] dark:text-[#8696a0]">
+            {format(new Date(createdAt), 'HH:mm')}
+          </span>
+          
+          {isOutbound && status && (
+            <div className="flex items-center">
+              {status === 'sent' && <span className="text-xs text-[#667781]">✓</span>}
+              {status === 'delivered' && <span className="text-xs text-[#667781]">✓✓</span>}
+              {status === 'read' && <span className="text-xs text-[#53bdeb]">✓✓</span>}
+            </div>
+          )}
         </div>
 
         {errorMessage && (
@@ -182,3 +169,15 @@ export const MessageBubble = ({
     </div>
   );
 };
+
+// Memoize to prevent unnecessary re-renders
+export const MessageBubble = React.memo(MessageBubbleComponent, (prev, next) => {
+  return (
+    prev.direction === next.direction &&
+    prev.messageText === next.messageText &&
+    prev.status === next.status &&
+    prev.createdAt === next.createdAt &&
+    prev.mediaType === next.mediaType &&
+    prev.mediaUrl === next.mediaUrl
+  );
+});

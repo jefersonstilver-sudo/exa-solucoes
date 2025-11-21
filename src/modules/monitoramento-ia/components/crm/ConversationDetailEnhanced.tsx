@@ -27,11 +27,27 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end',
+        inline: 'nearest'
+      });
+    }
   };
 
   useEffect(() => {
     scrollToBottom();
+    
+    // Scroll quando keyboard aparece (mobile)
+    const handleResize = () => {
+      if (window.visualViewport) {
+        scrollToBottom();
+      }
+    };
+    
+    window.visualViewport?.addEventListener('resize', handleResize);
+    return () => window.visualViewport?.removeEventListener('resize', handleResize);
   }, [messages]);
 
   if (!phoneNumber) {
@@ -65,10 +81,14 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 p-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 bg-[#e5ddd5] dark:bg-[#0b141a]" 
+             style={{ WebkitOverflowScrolling: 'touch' }}>
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">Carregando mensagens...</p>
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-12 h-12 border-4 border-[#25D366] border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-[#667781]">Carregando mensagens...</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -119,14 +139,16 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
               <div ref={messagesEndRef} />
             </div>
           )}
-        </ScrollArea>
+        </div>
 
-        {/* Message Composer */}
-        <MessageComposer 
-          phoneNumber={phoneNumber}
-          agentKey={agentKey}
-          onMessageSent={onRefresh}
-        />
+        {/* Message Composer - Sticky bottom */}
+        <div className="sticky bottom-0 z-10 border-t bg-white pb-safe shadow-lg">
+          <MessageComposer 
+            phoneNumber={phoneNumber}
+            agentKey={agentKey}
+            onMessageSent={onRefresh}
+          />
+        </div>
       </div>
 
       {/* Side Panel */}

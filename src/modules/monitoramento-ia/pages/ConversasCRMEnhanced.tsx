@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useConversations } from '../hooks/useConversations';
 import { ConversationList } from '../components/conversations/ConversationList';
 import { ConversationDetail } from '../components/conversations/ConversationDetail';
-import { RefreshCw, ArrowLeft } from 'lucide-react';
+import { RefreshCw, ArrowLeft, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CRMHeader } from '../components/crm/CRMHeader';
 import { CRMMetrics } from '../types/crmTypes';
@@ -47,7 +47,7 @@ export const ConversasCRMEnhanced: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
+    <div className="h-[100dvh] flex flex-col bg-background overflow-hidden">
       {/* Header - Oculto no mobile quando chat aberto */}
       <div className={`${showMobileChat ? 'hidden md:block' : 'block'} p-4 border-b bg-card shrink-0`}>
         <CRMHeader
@@ -93,7 +93,7 @@ export const ConversasCRMEnhanced: React.FC = () => {
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -20, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               className="absolute inset-0 bg-background"
             >
               <ConversationList
@@ -110,29 +110,30 @@ export const ConversasCRMEnhanced: React.FC = () => {
               initial={{ x: 20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 20, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               className="absolute inset-0 bg-background flex flex-col"
             >
-              {/* Header mobile com botão voltar */}
-              <div className="shrink-0 flex items-center gap-2 p-3 border-b bg-[#25D366] text-white">
+              {/* Header mobile minimalista - WhatsApp style */}
+              <div className="sticky top-0 z-20 flex items-center gap-3 px-3 py-2.5 border-b bg-[#25D366] text-white shadow-sm">
                 <Button
                   onClick={handleBackToList}
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20 shrink-0"
+                  className="text-white hover:bg-white/20 h-9 w-9 -ml-1 touch-manipulation"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold">
-                      {phoneNumber?.slice(-2) || '?'}
-                    </span>
+                
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <Phone className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{phoneNumber}</p>
-                    <p className="text-xs opacity-90 truncate">
-                      {agentKey?.replace('_', ' ').toUpperCase()}
+                    <p className="font-semibold text-sm truncate leading-tight">
+                      {phoneNumber}
+                    </p>
+                    <p className="text-xs opacity-90 truncate leading-tight">
+                      {agentKey?.toUpperCase()}
                     </p>
                   </div>
                 </div>

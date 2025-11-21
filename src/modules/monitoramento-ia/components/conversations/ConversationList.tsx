@@ -56,21 +56,29 @@ export const ConversationList = ({
               <button
                 key={`${conv.phone_number}_${conv.agent_key}`}
                 onClick={() => onSelect(conv.phone_number, conv.agent_key)}
-                className={`w-full text-left p-3 md:p-4 transition-all active:scale-[0.98] hover:bg-accent ${
-                  isSelected ? 'bg-accent border-l-4 border-l-[#25D366]' : ''
-                } ${hasUnread ? 'bg-green-50/80 dark:bg-green-900/20 border-l-4 border-l-green-500' : ''}`}
+                className={`
+                  w-full text-left p-3 transition-all touch-manipulation
+                  ${isSelected ? 'bg-[#f0f2f5] dark:bg-[#2a3942]' : 'bg-white dark:bg-[#111b21]'}
+                  ${hasUnread ? 'border-l-4 border-l-[#25D366]' : ''}
+                  hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]
+                  active:bg-[#e9edef] dark:active:bg-[#1f2932]
+                `}
               >
                 <div className="flex items-start gap-3">
-                  {/* Avatar */}
+                  {/* Avatar - WhatsApp style */}
                   <div className="relative shrink-0">
-                    <div className={`w-11 h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center ${
-                      hasUnread ? 'bg-green-500' : 'bg-primary/10'
+                    <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+                      hasUnread 
+                        ? 'bg-[#25D366] shadow-md shadow-green-500/30' 
+                        : 'bg-[#dfe5e7] dark:bg-[#374045]'
                     }`}>
-                      <Phone className={`w-5 h-5 ${hasUnread ? 'text-white' : 'text-primary'}`} />
+                      <Phone className={`w-5 h-5 ${
+                        hasUnread ? 'text-white' : 'text-[#54656f] dark:text-[#8696a0]'
+                      }`} />
                     </div>
                     {hasUnread && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                        <span className="text-[10px] font-bold text-white">
+                      <div className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-[#25D366] rounded-full flex items-center justify-center px-1.5 shadow-lg">
+                        <span className="text-[11px] font-bold text-white">
                           {conv.unread_count}
                         </span>
                       </div>
