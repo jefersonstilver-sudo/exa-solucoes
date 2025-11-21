@@ -154,7 +154,7 @@ serve(async (req) => {
         .upsert({
           key: trainingKey,
           value: { active: newState, activated_at: new Date().toISOString() }
-        });
+        }, { onConflict: 'key' });
       
       if (upsertError) {
         console.log('❌ [STEP 3] Erro ao salvar:', upsertError);
@@ -242,8 +242,7 @@ serve(async (req) => {
             conversation_id: conversation.id,
             body: confirmMessage,
             direction: 'outbound',
-            agent_key: tempAgent.key,
-            read_at: new Date().toISOString()
+            agent_key: tempAgent.key
           }
         ]);
         
