@@ -233,7 +233,7 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
                 </div>
               );
             }))
-          )}
+          }
           
           {/* Typing Indicator */}
           {isTyping && (
