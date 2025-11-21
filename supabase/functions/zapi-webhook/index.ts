@@ -198,16 +198,39 @@ serve(async (req) => {
         console.log(`[ZAPI-WEBHOOK] Training mode ${newState ? 'ACTIVATED' : 'DEACTIVATED'} for ${phone}`);
         
         // 💾 Salvar comando e confirmação na tabela messages
-        const { data: conversation } = await supabase
+        let { data: conversation, error: convError } = await supabase
           .from('conversations')
           .select('id')
           .eq('contact_phone', phone)
           .eq('agent_key', tempAgent.key)
           .maybeSingle();
         
+        console.log('[ZAPI-WEBHOOK] 🔍 Busca conversa:', conversation ? `Encontrada ${conversation.id}` : 'Não encontrada', convError ? `Erro: ${convError.message}` : '');
+        
+        // Se não existe conversa, criar uma
+        if (!conversation) {
+          console.log('[ZAPI-WEBHOOK] 📝 Criando nova conversa...');
+          const { data: newConv, error: createError } = await supabase
+            .from('conversations')
+            .insert({
+              contact_phone: phone,
+              agent_key: tempAgent.key,
+              status: 'active'
+            })
+            .select('id')
+            .single();
+          
+          if (createError) {
+            console.error('[ZAPI-WEBHOOK] ❌ Erro ao criar conversa:', createError);
+          } else {
+            conversation = newConv;
+            console.log('[ZAPI-WEBHOOK] ✅ Conversa criada:', conversation?.id);
+          }
+        }
+        
         if (conversation) {
           // Salvar comando do usuário
-          await supabase.from('messages').insert({
+          const { error: cmdError } = await supabase.from('messages').insert({
             conversation_id: conversation.id,
             body: messageText,
             direction: 'inbound',
@@ -215,8 +238,14 @@ serve(async (req) => {
             external_id: messageId
           });
           
+          if (cmdError) {
+            console.error('[ZAPI-WEBHOOK] ❌ Erro ao salvar comando:', cmdError);
+          } else {
+            console.log('[ZAPI-WEBHOOK] ✅ Comando salvo');
+          }
+          
           // Salvar confirmação do agente
-          await supabase.from('messages').insert({
+          const { error: confError } = await supabase.from('messages').insert({
             conversation_id: conversation.id,
             body: confirmMessage,
             direction: 'outbound',
@@ -224,7 +253,13 @@ serve(async (req) => {
             read_at: new Date().toISOString()
           });
           
-          console.log('[ZAPI-WEBHOOK] ✅ Comando e confirmação salvos no banco');
+          if (confError) {
+            console.error('[ZAPI-WEBHOOK] ❌ Erro ao salvar confirmação:', confError);
+          } else {
+            console.log('[ZAPI-WEBHOOK] ✅ Confirmação salva');
+          }
+        } else {
+          console.error('[ZAPI-WEBHOOK] ❌ Impossível salvar mensagens: conversa não existe');
         }
         
         // ⚠️ NÃO RETORNAR - continuar fluxo normal para processar mensagem
