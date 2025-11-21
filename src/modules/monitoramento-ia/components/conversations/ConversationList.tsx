@@ -67,22 +67,22 @@ export const ConversationList = ({
                 <div className="flex items-start gap-3">
                   {/* Avatar - WhatsApp style */}
                   <div className="relative shrink-0">
-                    <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
-                      hasUnread 
-                        ? 'bg-[#25D366] shadow-md shadow-green-500/30' 
-                        : 'bg-[#dfe5e7] dark:bg-[#374045]'
-                    }`}>
+      <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+        hasUnread 
+          ? 'bg-[#25D366] shadow-md shadow-green-500/30 animate-pulse' 
+          : 'bg-[#dfe5e7] dark:bg-[#374045]'
+      }`}>
                       <Phone className={`w-5 h-5 ${
                         hasUnread ? 'text-white' : 'text-[#54656f] dark:text-[#8696a0]'
                       }`} />
                     </div>
-                    {hasUnread && (
-                      <div className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-[#25D366] rounded-full flex items-center justify-center px-1.5 shadow-lg">
-                        <span className="text-[11px] font-bold text-white">
-                          {conv.unread_count}
-                        </span>
-                      </div>
-                    )}
+  {hasUnread && (
+    <div className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-[#25D366] rounded-full flex items-center justify-center px-1.5 shadow-lg animate-pulse">
+      <span className="text-[11px] font-bold text-white">
+        {conv.unread_count}
+      </span>
+    </div>
+  )}
                   </div>
 
                   {/* Content */}
