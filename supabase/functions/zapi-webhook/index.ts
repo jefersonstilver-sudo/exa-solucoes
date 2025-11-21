@@ -127,9 +127,10 @@ serve(async (req) => {
           });
         
         // Enviar resposta de confirmação
+        const agentName = tempAgent.key === 'sofia' ? 'Sofia' : tempAgent.key;
         const confirmMessage = newState 
-          ? `🎓 *Modo Treinamento da ${tempAgent.key === 'sofia' ? 'Sofia' : tempAgent.key} Ativado*\n\nAgora você pode corrigir minhas respostas. Envie a correção e identificarei o que precisa ser ajustado na base de conhecimento.\n\nPara desativar, envie novamente: #AJUSTE3029`
-          : '✅ *Modo Treinamento Desativado*\n\nVoltei ao modo normal de operação.';
+          ? `✅ *Modo Treinamento Ativado*\n\n🎓 Oi! Agora estou no modo aluna.\n\nVocê pode me fazer perguntas de teste e corrigir minhas respostas. Vou aceitar suas correções com gratidão!\n\n_Para desativar: #AJUSTE3029_`
+          : `✅ *Modo Treinamento Desativado*\n\nVoltei ao modo normal de operação. Obrigada pelo treinamento! 😊`;
         
         const apiUrl = zapiConfig.api_url || 'https://api.z-api.io';
         const sendUrl = `${apiUrl}/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
