@@ -223,7 +223,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.zapi-send-media]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-ai-response]
 verify_jwt = false
