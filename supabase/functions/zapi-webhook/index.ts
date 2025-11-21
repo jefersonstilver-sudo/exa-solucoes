@@ -95,6 +95,19 @@ serve(async (req) => {
 
     console.log('[ZAPI-WEBHOOK] ✅ Agent found:', agent.key, '- Instance:', instanceId);
 
+    // ========== VERIFICAR SE AGENTE ESTÁ ATIVO ==========
+    if (!agent.is_active) {
+      console.log('[ZAPI-WEBHOOK] ⚠️ Agent is inactive:', agent.key);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Agent is inactive',
+        agent: agent.key
+      }), {
+        status: 200, // Retorna 200 para evitar retry da Z-API
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // ========== VERIFICAÇÃO DE DEDUPLICAÇÃO ==========
     const { data: existingLog } = await supabase
       .from('zapi_logs')
