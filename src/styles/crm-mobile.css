@@ -1,5 +1,13 @@
 /* CRM Mobile Optimizations */
 
+/* CSS Variables for Safe Area */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
 /* Safe area para iPhone notch e bottom bar */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0);
@@ -29,6 +37,14 @@
 
 /* Touch optimizations */
 @media (max-width: 768px) {
+  /* Mobile container with safe areas */
+  .mobile-container {
+    padding-top: max(0.75rem, var(--sat));
+    padding-bottom: max(0.75rem, var(--sab));
+    padding-left: max(0.75rem, var(--sal));
+    padding-right: max(0.75rem, var(--sar));
+  }
+
   /* Prevent text selection during scroll */
   .no-select {
     -webkit-user-select: none;
@@ -48,17 +64,28 @@
     min-height: 44px;
   }
 
-  /* Prevent zoom on inputs no iOS */
+  /* Prevent zoom on inputs no iOS - TODOS os tipos */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="search"],
   input,
   select,
   textarea {
     font-size: 16px !important;
+    -webkit-text-size-adjust: 100%;
   }
 
   /* Otimizar animações no mobile */
   .animate-fade-in,
-  .animate-scale-in {
-    animation-duration: 0.2s;
+  .animate-scale-in,
+  .animate-in {
+    animation-duration: 0.15s !important;
+  }
+
+  /* Touch manipulation - elimina delay de 300ms */
+  .touch-manipulation {
+    touch-action: manipulation;
   }
 }
 
@@ -118,7 +145,19 @@
   input[type="text"],
   input[type="email"],
   input[type="tel"],
+  input[type="search"],
   textarea {
-    font-size: 16px;
+    font-size: 16px !important;
+  }
+}
+
+/* Reduzir motion para devices com preferência */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
