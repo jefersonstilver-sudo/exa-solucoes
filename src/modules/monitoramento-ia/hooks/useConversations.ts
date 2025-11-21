@@ -72,9 +72,17 @@ export const useConversations = () => {
         }
       });
 
-      setConversations(Array.from(grouped.values()).sort((a, b) => 
-        new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
-      ));
+      // FASE 4: Ordenar por não lidas primeiro, depois por mais recente
+      const sortedConversations = Array.from(grouped.values()).sort((a, b) => {
+        // 1. Prioridade: conversas não lidas primeiro
+        if (a.unread_count > 0 && b.unread_count === 0) return -1;
+        if (b.unread_count > 0 && a.unread_count === 0) return 1;
+        
+        // 2. Depois por timestamp mais recente
+        return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+      });
+
+      setConversations(sortedConversations);
     } catch (error) {
       console.error('Error fetching conversations:', error);
       toast.error('Erro ao carregar conversas');
@@ -105,10 +113,28 @@ export const useConversations = () => {
     }
   };
 
-  const selectConversation = (phoneNumber: string, agentKey: string) => {
+  const selectConversation = async (phoneNumber: string, agentKey: string) => {
     const key = `${phoneNumber}_${agentKey}`;
     setSelectedConversation(key);
-    fetchMessages(phoneNumber, agentKey);
+    
+    // FASE 4: Marcar mensagens como lidas ao abrir conversa
+    try {
+      await supabase
+        .from('zapi_logs')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('phone_number', phoneNumber)
+        .eq('agent_key', agentKey)
+        .eq('direction', 'inbound')
+        .is('is_read', false);
+      
+      console.log('Messages marked as read for:', phoneNumber, agentKey);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+    
+    await fetchMessages(phoneNumber, agentKey);
+    // Refresh conversations para atualizar contadores
+    await fetchConversations();
   };
 
   useEffect(() => {

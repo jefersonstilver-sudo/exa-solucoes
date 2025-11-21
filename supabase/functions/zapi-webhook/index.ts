@@ -96,6 +96,34 @@ serve(async (req) => {
 
     console.log('[ZAPI-WEBHOOK] ✅ Agent found:', agent.key, '- Instance:', instanceId);
 
+    // ========== PROCESSAR IMAGENS COM VISÃO AI SE HABILITADO ==========
+    if (mediaType === 'image' && payload.image?.imageUrl && agent.vision_enabled) {
+      console.log('[ZAPI-WEBHOOK] 👁️ Vision AI enabled, analyzing image...');
+      try {
+        const { data: imageAnalysis, error: analysisError } = await supabase.functions.invoke('analyze-image', {
+          body: {
+            imageUrl: payload.image.imageUrl,
+            agentKey: agent.key
+          }
+        });
+        
+        if (analysisError) {
+          console.error('[ZAPI-WEBHOOK] ❌ Image analysis error:', analysisError);
+          messageText = `[Imagem] ${payload.image.caption || ''}`;
+        } else if (imageAnalysis?.description) {
+          // Enriquecer o texto da mensagem com a descrição da imagem
+          const imageDescription = imageAnalysis.description;
+          messageText = payload.image.caption 
+            ? `[Imagem: ${imageDescription}]\nLegenda: ${payload.image.caption}`
+            : `[Imagem: ${imageDescription}]`;
+          console.log('[ZAPI-WEBHOOK] ✅ Image analyzed:', messageText.substring(0, 100) + '...');
+        }
+      } catch (error) {
+        console.error('[ZAPI-WEBHOOK] ❌ Image analysis failed:', error);
+        messageText = `[Imagem] ${payload.image.caption || ''}`;
+      }
+    }
+
     // ========== TRANSCREVER ÁUDIO SE NECESSÁRIO ==========
     if (mediaType === 'audio' && payload.audio?.audioUrl) {
       console.log('[ZAPI-WEBHOOK] 🔍 Checking audio transcription config...');

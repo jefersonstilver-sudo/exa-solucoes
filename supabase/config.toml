@@ -219,6 +219,12 @@ verify_jwt = false
 [functions.zapi-send-message]
 verify_jwt = true
 
+[functions.analyze-image]
+verify_jwt = false
+
+[functions.zapi-send-media]
+verify_jwt = true
+
 [functions.generate-ai-response]
 verify_jwt = false
 
