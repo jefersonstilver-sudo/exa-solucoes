@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, RefreshCw, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Save, RefreshCw, Loader2, Check, AlertCircle, Building, FileText, Target, HelpCircle, MapPin, Building2, Upload, List, Plus, Trash2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from 'sonner';
 
 interface KnowledgeEntry {
@@ -24,8 +25,12 @@ export const SofiaKnowledgeManager = () => {
   const [knowledge, setKnowledge] = useState<KnowledgeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState('perfil');
+  const [activeSection, setActiveSection] = useState('perfil_identidade');
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
+  const [managedFaqs, setManagedFaqs] = useState<Array<{ id: string; question: string; answer: string }>>([
+    { id: '1', question: 'Qual o valor do investimento?', answer: 'Os valores variam de acordo com o prédio escolhido.' },
+    { id: '2', question: 'Como funciona a mídia em elevadores?', answer: 'São telas digitais instaladas nos elevadores dos prédios.' },
+  ]);
 
   useEffect(() => {
     loadKnowledge();
@@ -132,17 +137,12 @@ export const SofiaKnowledgeManager = () => {
   };
 
   const sections = [
-    { key: 'instrucoes', label: '📝 Instruções do Agente', icon: '🔒' },
-    { key: 'greeting', label: 'Saudação Inicial', icon: '👋' },
-    { key: 'perfil', label: 'Perfil & Identidade', icon: '🎀' },
-    { key: 'missao', label: 'Missão', icon: '🎯' },
-    { key: 'regras_obrigatorias', label: 'Regras Obrigatórias', icon: '📋' },
-    { key: 'classificacao', label: 'Classificação Automática', icon: '🔍' },
-    { key: 'fluxo_venda', label: 'Fluxo de Venda', icon: '💰' },
-    { key: 'qualificacao_score', label: 'Qualificação & Score', icon: '📊' },
-    { key: 'alertas_exa', label: 'Sistema de Alertas', icon: '🚨' },
-    { key: 'sobre_exa', label: 'Sobre a EXA', icon: 'ℹ️' },
-    { key: 'acesso_predios', label: 'Acesso a Prédios', icon: '🏢' }
+    { key: 'perfil_identidade', label: 'Perfil e Identidade', Icon: Building },
+    { key: 'instrucoes', label: 'Instruções do Agente', Icon: FileText },
+    { key: 'fluxo_comercial', label: 'Fluxo Comercial', Icon: Target },
+    { key: 'faq', label: 'Perguntas Frequentes', Icon: HelpCircle },
+    { key: 'contexto_local', label: 'Contexto Local', Icon: MapPin },
+    { key: 'predios', label: 'Prédios e Acesso', Icon: Building2 }
   ];
 
   const getSectionItems = (section: string) => {
@@ -198,16 +198,17 @@ export const SofiaKnowledgeManager = () => {
 
       {/* Sections Tabs */}
       <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
-        <TabsList className="bg-module-input border-module w-full grid grid-cols-3 lg:grid-cols-5 gap-2">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
           {sections.map(section => {
             const hasContent = getSectionItems(section.key).length > 0;
+            const Icon = section.Icon;
             return (
               <TabsTrigger
                 key={section.key}
                 value={section.key}
-                className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary"
+                className="gap-2"
               >
-                <span className="mr-1">{section.icon}</span>
+                <Icon className="h-4 w-4" />
                 {section.label}
                 {hasContent && (
                   <Badge variant="outline" className="ml-2 px-1 py-0 text-xs">
@@ -217,17 +218,27 @@ export const SofiaKnowledgeManager = () => {
               </TabsTrigger>
             );
           })}
+          <TabsTrigger value="documentos" className="gap-2">
+            <Upload className="h-4 w-4" />
+            Documentos
+          </TabsTrigger>
+          <TabsTrigger value="faqs_manager" className="gap-2">
+            <List className="h-4 w-4" />
+            Gerenciar FAQs
+          </TabsTrigger>
         </TabsList>
 
-        {sections.map(section => (
-          <TabsContent key={section.key} value={section.key} className="space-y-4">
-            <ScrollArea className="h-[600px] pr-4">
-              {getSectionItems(section.key).map(item => (
-                <Card key={item.id} className="mb-4 bg-module-card border-module">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg text-module-primary flex items-center gap-2">
-                        {section.icon} {item.title}
+        {sections.map(section => {
+          const Icon = section.Icon;
+          return (
+            <TabsContent key={section.key} value={section.key} className="space-y-4">
+              <ScrollArea className="h-[600px] pr-4">
+                {getSectionItems(section.key).map(item => (
+                  <Card key={item.id} className="mb-4 bg-module-card border-module">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg text-module-primary flex items-center gap-2">
+                          <Icon className="h-5 w-5" /> {item.title}
                         {item.metadata?.priority === 'critical' && (
                           <Badge variant="destructive" className="ml-2">CRÍTICO</Badge>
                         )}
@@ -300,7 +311,122 @@ export const SofiaKnowledgeManager = () => {
               )}
             </ScrollArea>
           </TabsContent>
-        ))}
+        )})}
+
+        <TabsContent value="documentos" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Documentos
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Faça upload de documentos PDF, Word ou outros arquivos para enriquecer a base de conhecimento do agente
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
+                <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-4">
+                  Nenhum documento adicionado ainda
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button disabled variant="outline" className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Adicionar Documento
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Funcionalidade em desenvolvimento</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>Formatos suportados: PDF, DOCX, TXT</p>
+                <p>Tamanho máximo: 10MB por arquivo</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="faqs_manager" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <List className="h-5 w-5" />
+                Gerenciar Perguntas Frequentes
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Adicione, edite ou remova perguntas e respostas frequentes que o agente pode usar
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-end">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button disabled variant="outline" className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Nova FAQ
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Funcionalidade em desenvolvimento</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+              <div className="space-y-3">
+                {managedFaqs.map((faq) => (
+                  <Card key={faq.id}>
+                    <CardContent className="pt-6">
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-sm font-medium">Pergunta</Label>
+                          <p className="text-sm mt-1">{faq.question}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Resposta</Label>
+                          <p className="text-sm text-muted-foreground mt-1">{faq.answer}</p>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button disabled variant="outline" size="sm">
+                                  Editar
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Funcionalidade em desenvolvimento</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button disabled variant="outline" size="sm" className="text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Funcionalidade em desenvolvimento</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
