@@ -12,12 +12,17 @@ interface ConversationItemProps {
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSelected, onClick }) => {
+  const hasUnread = conversation.unread_count > 0;
+
   return (
     <button
       onClick={onClick}
       className={cn(
-        'w-full p-4 text-left hover:bg-muted/50 transition-colors border-b',
-        isSelected && 'bg-muted'
+        'w-full p-3 md:p-4 text-left transition-all touch-manipulation',
+        isSelected ? 'bg-[#f0f2f5] dark:bg-[#2a3942]' : 'bg-white dark:bg-[#111b21]',
+        hasUnread ? 'border-l-4 border-l-[#25D366]' : '',
+        'hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]',
+        'active:bg-[#e9edef] dark:active:bg-[#1f2932]'
       )}
     >
       {/* Header com nome e badges */}
@@ -132,15 +137,26 @@ export const CRMInbox: React.FC<CRMInboxProps> = ({ conversations, selectedId, o
   }
 
   return (
-    <div className="divide-y">
-      {conversations.map((conv) => (
-        <ConversationItem
-          key={conv.id}
-          conversation={conv}
-          isSelected={selectedId === conv.id}
-          onClick={() => onSelect(conv.id)}
-        />
-      ))}
+    <div className="h-full flex flex-col bg-card">
+      {/* Header Mobile */}
+      <div className="md:hidden p-4 border-b bg-[#25D366] text-white shrink-0">
+        <h2 className="text-lg font-bold">Conversas</h2>
+        <p className="text-xs opacity-90">
+          {conversations.length} {conversations.length === 1 ? 'conversa' : 'conversas'}
+        </p>
+      </div>
+
+      {/* Lista */}
+      <div className="flex-1 overflow-y-auto divide-y">
+        {conversations.map((conv) => (
+          <ConversationItem
+            key={conv.id}
+            conversation={conv}
+            isSelected={selectedId === conv.id}
+            onClick={() => onSelect(conv.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 };

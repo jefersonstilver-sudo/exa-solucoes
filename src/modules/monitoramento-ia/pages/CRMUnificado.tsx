@@ -4,6 +4,9 @@ import { CRMChat } from '../components/crm/CRMChat';
 import { CRMFilters } from '../components/crm/CRMFilters';
 import { CRMMetrics } from '../components/crm/CRMMetrics';
 import { useUnifiedConversations } from '../hooks/useUnifiedConversations';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Phone } from 'lucide-react';
 
 export const CRMUnificado = () => {
   const [filters, setFilters] = useState({
@@ -14,6 +17,8 @@ export const CRMUnificado = () => {
     awaitingOnly: false,
     sentiment: undefined
   });
+
+  const [showMobileChat, setShowMobileChat] = useState(false);
 
   const {
     conversations,
@@ -26,20 +31,31 @@ export const CRMUnificado = () => {
     refetch
   } = useUnifiedConversations(filters);
 
+  const handleSelectConversation = (id: string) => {
+    selectConversation(id);
+    setShowMobileChat(true);
+  };
+
+  const handleBackToList = () => {
+    setShowMobileChat(false);
+  };
+
+  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header com métricas */}
-      <div className="p-4 border-b bg-card">
+    <div className="h-[100dvh] flex flex-col bg-background overflow-hidden">
+      {/* Header com métricas - Oculto no mobile quando chat aberto */}
+      <div className={`${showMobileChat ? 'hidden md:block' : 'block'} p-4 border-b bg-card shrink-0`}>
         <CRMMetrics metrics={metrics} />
       </div>
 
-      {/* Filtros */}
-      <div className="p-4 border-b bg-muted/20">
+      {/* Filtros - Oculto no mobile quando chat aberto */}
+      <div className={`${showMobileChat ? 'hidden md:block' : 'block'} p-4 border-b bg-muted/20 shrink-0`}>
         <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
       </div>
 
-      {/* Layout principal */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Layout Desktop */}
+      <div className="hidden md:flex flex-1 overflow-hidden">
         {/* Lista de conversas (1/3) */}
         <div className="w-1/3 border-r overflow-y-auto bg-card">
           <CRMInbox
@@ -59,6 +75,76 @@ export const CRMUnificado = () => {
             onRefresh={refetch}
           />
         </div>
+      </div>
+
+      {/* Layout Mobile - Fullscreen alternado */}
+      <div className="flex md:hidden flex-1 overflow-hidden relative">
+        <AnimatePresence mode="wait">
+          {!showMobileChat ? (
+            // Lista de conversas em fullscreen
+            <motion.div
+              key="list"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -20, opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute inset-0 bg-background"
+            >
+              <CRMInbox
+                conversations={conversations}
+                selectedId={selectedConversationId}
+                onSelect={handleSelectConversation}
+                loading={loading}
+              />
+            </motion.div>
+          ) : (
+            // Chat em fullscreen com botão voltar
+            <motion.div
+              key="chat"
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 20, opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute inset-0 bg-background flex flex-col"
+            >
+              {/* Header mobile minimalista - WhatsApp style */}
+              <div className="sticky top-0 z-20 flex items-center gap-3 px-3 py-2.5 border-b bg-[#25D366] text-white shadow-sm shrink-0">
+                <Button
+                  onClick={handleBackToList}
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 h-9 w-9 -ml-1 touch-manipulation"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+                
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate leading-tight">
+                      {selectedConversation?.contact_name || selectedConversation?.contact_phone}
+                    </p>
+                    <p className="text-xs opacity-90 truncate leading-tight">
+                      {selectedConversation?.agent_key?.toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chat */}
+              <div className="flex-1 overflow-hidden">
+                <CRMChat
+                  conversationId={selectedConversationId}
+                  messages={messages}
+                  loading={messagesLoading}
+                  onRefresh={refetch}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
