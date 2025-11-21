@@ -97,7 +97,7 @@ serve(async (req) => {
     if (normalizedText === '#AJUSTE3029' || normalizedText === '#AJUSTAR3029') {
       console.log('[ZAPI-WEBHOOK] 🎓 Training command detected:', normalizedText);
       
-      // Identificar agente primeiro
+      // Buscar agente
       const { data: tempAgent } = await supabase
         .from('agents')
         .select('key, zapi_config')
@@ -105,175 +105,118 @@ serve(async (req) => {
         .eq('zapi_config->>instance_id', instanceId)
         .single();
       
-      if (tempAgent) {
-        const zapiConfig = tempAgent.zapi_config as any;
-        const trainingKey = `training_mode_${phone}`;
+      if (!tempAgent) {
+        console.error('[ZAPI-WEBHOOK] ❌ Agent not found for training command');
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'Agent not found'
+        }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      const zapiConfig = tempAgent.zapi_config as any;
+      const trainingKey = `training_mode_${phone}`;
+      
+      // Alternar modo de treinamento
+      const { data: existingMode } = await supabase
+        .from('agent_context')
+        .select('value')
+        .eq('key', trainingKey)
+        .single();
+      
+      const isCurrentlyActive = existingMode?.value?.active || false;
+      const newState = !isCurrentlyActive;
+      
+      await supabase
+        .from('agent_context')
+        .upsert({
+          key: trainingKey,
+          value: { active: newState, activated_at: new Date().toISOString() }
+        });
+      
+      console.log(`[ZAPI-WEBHOOK] ✅ Training mode ${newState ? 'ACTIVATED' : 'DEACTIVATED'}`);
+      
+      // Enviar confirmação
+      const confirmMessage = newState 
+        ? `✅ *Modo Treinamento Ativado*\n\n🎓 Oi! Agora estou no modo aluna.\n\nVocê pode me fazer perguntas de teste e corrigir minhas respostas. Vou aceitar suas correções com gratidão!\n\n_Para desativar: #AJUSTE3029_`
+        : `✅ *Modo Treinamento Desativado*\n\nVoltei ao modo normal de operação. Obrigada pelo treinamento! 😊`;
+      
+      const apiUrl = zapiConfig.api_url || 'https://api.z-api.io';
+      const sendUrl = `${apiUrl}/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+      
+      try {
+        const response = await fetch(sendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Client-Token': zapiConfig.client_token
+          },
+          body: JSON.stringify({
+            phone: phone,
+            message: confirmMessage
+          })
+        });
         
-        // Alternar modo de treinamento
-        const { data: existingMode } = await supabase
-          .from('agent_context')
-          .select('value')
-          .eq('key', trainingKey)
-          .single();
-        
-        const isCurrentlyActive = existingMode?.value?.active || false;
-        const newState = !isCurrentlyActive;
-        
-        await supabase
-          .from('agent_context')
-          .upsert({
-            key: trainingKey,
-            value: { active: newState, activated_at: new Date().toISOString() }
-          });
-        
-        // Enviar resposta de confirmação
-        const agentName = tempAgent.key === 'sofia' ? 'Sofia' : tempAgent.key;
-        const confirmMessage = newState 
-          ? `✅ *Modo Treinamento Ativado*\n\n🎓 Oi! Agora estou no modo aluna.\n\nVocê pode me fazer perguntas de teste e corrigir minhas respostas. Vou aceitar suas correções com gratidão!\n\n_Para desativar: #AJUSTE3029_`
-          : `✅ *Modo Treinamento Desativado*\n\nVoltei ao modo normal de operação. Obrigada pelo treinamento! 😊`;
-        
-        const apiUrl = zapiConfig.api_url || 'https://api.z-api.io';
-        const sendUrl = `${apiUrl}/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
-        
-        // 🔧 Envio com retry automático
-        let sendSuccess = false;
-        let sendAttempts = 0;
-        const maxAttempts = 2;
-        
-        while (!sendSuccess && sendAttempts < maxAttempts) {
-          sendAttempts++;
-          console.log(`[ZAPI-WEBHOOK] 📤 Tentativa ${sendAttempts}/${maxAttempts} de envio de confirmação`);
-          
-          try {
-            const response = await fetch(sendUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Client-Token': zapiConfig.client_token
-              },
-              body: JSON.stringify({
-                phone: phone,
-                message: confirmMessage
-              })
-            });
-            
-            const responseData = await response.json();
-            console.log(`[ZAPI-WEBHOOK] 📥 Z-API Response (attempt ${sendAttempts}):`, JSON.stringify(responseData));
-            
-            if (response.ok) {
-              sendSuccess = true;
-              console.log(`[ZAPI-WEBHOOK] ✅ Confirmação enviada com sucesso`);
-            } else {
-              console.error(`[ZAPI-WEBHOOK] ❌ Z-API error (attempt ${sendAttempts}):`, response.status, responseData);
-              if (sendAttempts < maxAttempts) {
-                console.log(`[ZAPI-WEBHOOK] ⏳ Aguardando 2s antes do retry...`);
-                await new Promise(resolve => setTimeout(resolve, 2000));
-              }
-            }
-          } catch (error) {
-            console.error(`[ZAPI-WEBHOOK] ❌ Exceção no envio (attempt ${sendAttempts}):`, error);
-            if (sendAttempts < maxAttempts) {
-              console.log(`[ZAPI-WEBHOOK] ⏳ Aguardando 2s antes do retry...`);
-              await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-          }
+        if (!response.ok) {
+          console.error('[ZAPI-WEBHOOK] ❌ Z-API error:', response.status);
+        } else {
+          console.log('[ZAPI-WEBHOOK] ✅ Confirmation sent');
         }
-        
-        // 🆘 Fallback: Se falhou após todas as tentativas, salvar flag no banco
-        if (!sendSuccess) {
-          console.error(`[ZAPI-WEBHOOK] 🆘 FALLBACK: Salvando flag de confirmação pendente no banco`);
-          await supabase
-            .from('agent_context')
-            .upsert({
-              key: `training_confirmation_pending_${phone}`,
-              value: { 
-                pending: true, 
-                state: newState,
-                activated_at: new Date().toISOString(),
-                agent_key: tempAgent.key
-              }
-            });
-        }
-        
-        console.log(`[ZAPI-WEBHOOK] Training mode ${newState ? 'ACTIVATED' : 'DEACTIVATED'} for ${phone}`);
-        
-        // 💾 Salvar comando e confirmação na tabela messages
-        let { data: conversation, error: convError } = await supabase
+      } catch (error) {
+        console.error('[ZAPI-WEBHOOK] ❌ Send error:', error);
+      }
+      
+      // Salvar mensagens no banco
+      let { data: conversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('contact_phone', phone)
+        .eq('agent_key', tempAgent.key)
+        .maybeSingle();
+      
+      if (!conversation) {
+        const { data: newConv } = await supabase
           .from('conversations')
+          .insert({
+            contact_phone: phone,
+            agent_key: tempAgent.key,
+            status: 'active'
+          })
           .select('id')
-          .eq('contact_phone', phone)
-          .eq('agent_key', tempAgent.key)
-          .maybeSingle();
-        
-        console.log('[ZAPI-WEBHOOK] 🔍 Busca conversa:', conversation ? `Encontrada ${conversation.id}` : 'Não encontrada', convError ? `Erro: ${convError.message}` : '');
-        
-        // Se não existe conversa, criar uma
-        if (!conversation) {
-          console.log('[ZAPI-WEBHOOK] 📝 Criando nova conversa...');
-          const { data: newConv, error: createError } = await supabase
-            .from('conversations')
-            .insert({
-              contact_phone: phone,
-              agent_key: tempAgent.key,
-              status: 'active'
-            })
-            .select('id')
-            .single();
-          
-          if (createError) {
-            console.error('[ZAPI-WEBHOOK] ❌ Erro ao criar conversa:', createError);
-          } else {
-            conversation = newConv;
-            console.log('[ZAPI-WEBHOOK] ✅ Conversa criada:', conversation?.id);
-          }
-        }
-        
-        if (conversation) {
-          // Salvar comando do usuário
-          const { error: cmdError } = await supabase.from('messages').insert({
+          .single();
+        conversation = newConv;
+      }
+      
+      if (conversation) {
+        await supabase.from('messages').insert([
+          {
             conversation_id: conversation.id,
             body: messageText,
             direction: 'inbound',
             agent_key: tempAgent.key,
             external_id: messageId
-          });
-          
-          if (cmdError) {
-            console.error('[ZAPI-WEBHOOK] ❌ Erro ao salvar comando:', cmdError);
-          } else {
-            console.log('[ZAPI-WEBHOOK] ✅ Comando salvo');
-          }
-          
-          // Salvar confirmação do agente
-          const { error: confError } = await supabase.from('messages').insert({
+          },
+          {
             conversation_id: conversation.id,
             body: confirmMessage,
             direction: 'outbound',
             agent_key: tempAgent.key,
             read_at: new Date().toISOString()
-          });
-          
-          if (confError) {
-            console.error('[ZAPI-WEBHOOK] ❌ Erro ao salvar confirmação:', confError);
-          } else {
-            console.log('[ZAPI-WEBHOOK] ✅ Confirmação salva');
           }
-        } else {
-          console.error('[ZAPI-WEBHOOK] ❌ Impossível salvar mensagens: conversa não existe');
-        }
-        
-        // ✅ RETORNAR IMEDIATAMENTE - não processar mensagem de comando
-        console.log('[ZAPI-WEBHOOK] ✅ Comando processado, retornando');
-        return new Response(JSON.stringify({ 
-          success: true, 
-          training_mode: newState,
-          message: 'Training command processed',
-          confirmation_sent: sendSuccess
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        ]);
+        console.log('[ZAPI-WEBHOOK] ✅ Messages saved');
       }
+      
+      // ✅ RETURN IMEDIATO
+      return new Response(JSON.stringify({ 
+        success: true, 
+        training_mode: newState
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Identificar qual agente recebeu a mensagem baseado no instanceId
