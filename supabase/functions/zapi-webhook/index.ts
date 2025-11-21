@@ -30,6 +30,20 @@ serve(async (req) => {
     const phone = payload.phone || payload.remoteJid?.replace('@s.whatsapp.net', '');
     const instanceId = payload.instanceId;
 
+    // ========== FILTRO: IGNORAR MENSAGENS ENVIADAS PELO PRÓPRIO AGENTE ==========
+    const fromMe = payload.fromMe || (payload.isGroupMsg === false && !payload.author);
+    
+    if (fromMe) {
+      console.log('[ZAPI-WEBHOOK] ⏭️ Skipping outbound message (fromMe=true)');
+      return new Response(JSON.stringify({ 
+        success: true, 
+        skipped: true,
+        reason: 'outbound_message'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Extrair ID único da mensagem para deduplicação
     const messageId = payload.messageId || payload.id || payload.key?.id || `${phone}_${Date.now()}`;
     
