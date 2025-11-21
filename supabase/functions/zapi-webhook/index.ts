@@ -134,17 +134,65 @@ serve(async (req) => {
         const apiUrl = zapiConfig.api_url || 'https://api.z-api.io';
         const sendUrl = `${apiUrl}/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
         
-        await fetch(sendUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Client-Token': zapiConfig.client_token
-          },
-          body: JSON.stringify({
-            phone: phone,
-            message: confirmMessage
-          })
-        });
+        // 🔧 Envio com retry automático
+        let sendSuccess = false;
+        let sendAttempts = 0;
+        const maxAttempts = 2;
+        
+        while (!sendSuccess && sendAttempts < maxAttempts) {
+          sendAttempts++;
+          console.log(`[ZAPI-WEBHOOK] 📤 Tentativa ${sendAttempts}/${maxAttempts} de envio de confirmação`);
+          
+          try {
+            const response = await fetch(sendUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Client-Token': zapiConfig.client_token
+              },
+              body: JSON.stringify({
+                phone: phone,
+                message: confirmMessage
+              })
+            });
+            
+            const responseData = await response.json();
+            console.log(`[ZAPI-WEBHOOK] 📥 Z-API Response (attempt ${sendAttempts}):`, JSON.stringify(responseData));
+            
+            if (response.ok) {
+              sendSuccess = true;
+              console.log(`[ZAPI-WEBHOOK] ✅ Confirmação enviada com sucesso`);
+            } else {
+              console.error(`[ZAPI-WEBHOOK] ❌ Z-API error (attempt ${sendAttempts}):`, response.status, responseData);
+              if (sendAttempts < maxAttempts) {
+                console.log(`[ZAPI-WEBHOOK] ⏳ Aguardando 2s antes do retry...`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              }
+            }
+          } catch (error) {
+            console.error(`[ZAPI-WEBHOOK] ❌ Exceção no envio (attempt ${sendAttempts}):`, error);
+            if (sendAttempts < maxAttempts) {
+              console.log(`[ZAPI-WEBHOOK] ⏳ Aguardando 2s antes do retry...`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          }
+        }
+        
+        // 🆘 Fallback: Se falhou após todas as tentativas, salvar flag no banco
+        if (!sendSuccess) {
+          console.error(`[ZAPI-WEBHOOK] 🆘 FALLBACK: Salvando flag de confirmação pendente no banco`);
+          await supabase
+            .from('agent_context')
+            .upsert({
+              key: `training_confirmation_pending_${phone}`,
+              value: { 
+                pending: true, 
+                state: newState,
+                activated_at: new Date().toISOString(),
+                agent_key: tempAgent.key
+              }
+            });
+        }
         
         console.log(`[ZAPI-WEBHOOK] Training mode ${newState ? 'ACTIVATED' : 'DEACTIVATED'} for ${phone}`);
         
@@ -249,6 +297,53 @@ serve(async (req) => {
         status: 200, // Retorna 200 para evitar retry da Z-API
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
+    }
+    
+    // ========== FALLBACK: VERIFICAR CONFIRMAÇÃO PENDENTE ==========
+    const { data: pendingConfirmation } = await supabase
+      .from('agent_context')
+      .select('value')
+      .eq('key', `training_confirmation_pending_${phone}`)
+      .single();
+    
+    if (pendingConfirmation?.value?.pending) {
+      console.log('[ZAPI-WEBHOOK] 🔔 Confirmação pendente detectada, enviando agora...');
+      const state = pendingConfirmation.value.state;
+      const activatedAt = new Date(pendingConfirmation.value.activated_at);
+      const now = new Date();
+      const hoursDiff = Math.floor((now.getTime() - activatedAt.getTime()) / (1000 * 60 * 60));
+      
+      const fallbackMessage = state 
+        ? `⚠️ *Modo Treinamento já estava ativo desde ${hoursDiff}h atrás*\n\nVocê pode corrigir minhas respostas. Para desativar: #AJUSTE3029`
+        : '✅ *Modo Treinamento foi desativado*';
+      
+      try {
+        const zapiConfig = agent.zapi_config as any;
+        const apiUrl = zapiConfig.api_url || 'https://api.z-api.io';
+        const sendUrl = `${apiUrl}/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+        
+        await fetch(sendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Client-Token': zapiConfig.client_token
+          },
+          body: JSON.stringify({
+            phone: phone,
+            message: fallbackMessage
+          })
+        });
+        
+        console.log('[ZAPI-WEBHOOK] ✅ Confirmação pendente enviada');
+        
+        // Remover flag do banco
+        await supabase
+          .from('agent_context')
+          .delete()
+          .eq('key', `training_confirmation_pending_${phone}`);
+      } catch (error) {
+        console.error('[ZAPI-WEBHOOK] ❌ Erro ao enviar confirmação pendente:', error);
+      }
     }
 
     // ========== VERIFICAÇÃO DE DEDUPLICAÇÃO ==========
