@@ -4,7 +4,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Bot, Thermometer, Hash, MessageSquare } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Bot, Thermometer, Hash, MessageSquare, Mic } from 'lucide-react';
 import type { Agent } from '../../types/multiAgentTypes';
 
 interface AgentInstructionsSectionProps {
@@ -246,6 +248,108 @@ export const AgentInstructionsSection = ({ agent, onUpdate }: AgentInstructionsS
                 Tempo por caractere (menor = mais rápido)
               </p>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Audio Transcription */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Mic className="h-5 w-5" />
+            Transcrição de Áudio (Whisper AI)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <Label>Habilitar Transcrição de Áudio</Label>
+              <p className="text-sm text-muted-foreground">
+                Permite que o agente entenda mensagens de áudio do WhatsApp
+              </p>
+            </div>
+            <Switch
+              checked={agent.config?.audio_transcription_enabled || false}
+              onCheckedChange={(checked) => {
+                handleUpdate({
+                  config: {
+                    ...agent.config,
+                    audio_transcription_enabled: checked
+                  }
+                });
+              }}
+            />
+          </div>
+
+          {agent.config?.audio_transcription_enabled && (
+            <>
+              <div className="space-y-2 pt-2 border-t">
+                <Label>Idioma Principal</Label>
+                <Select
+                  value={agent.config.audio_language || 'pt'}
+                  onValueChange={(value: 'pt' | 'en' | 'es') => {
+                    handleUpdate({
+                      config: {
+                        ...agent.config,
+                        audio_language: value
+                      }
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o idioma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pt">Português (Brasil)</SelectItem>
+                    <SelectItem value="es">Espanhol</SelectItem>
+                    <SelectItem value="en">Inglês</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Idioma principal para melhorar precisão da transcrição
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Contexto de Transcrição (opcional)</Label>
+                <Input
+                  placeholder="Ex: Áudio sobre vendas de mídia"
+                  value={agent.config.audio_prompt || ''}
+                  onChange={(e) => {
+                    handleUpdate({
+                      config: {
+                        ...agent.config,
+                        audio_prompt: e.target.value
+                      }
+                    });
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ajuda o Whisper a entender melhor o contexto (gírias, termos técnicos)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Duração Máxima do Áudio (segundos)</Label>
+                <Input
+                  type="number"
+                  min={10}
+                  max={300}
+                  value={agent.config.audio_max_duration || 120}
+                  onChange={(e) => {
+                    handleUpdate({
+                      config: {
+                        ...agent.config,
+                        audio_max_duration: parseInt(e.target.value) || 120
+                      }
+                    });
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Áudios maiores que este limite não serão transcritos
+                </p>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

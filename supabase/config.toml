@@ -237,6 +237,9 @@ verify_jwt = false
 [functions.send-typing-indicator]
 verify_jwt = false
 
+[functions.transcribe-audio]
+verify_jwt = false
+
 [functions.test-agent-status]
 verify_jwt = false  # Temporariamente público para debug
 
