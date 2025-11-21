@@ -197,13 +197,38 @@ serve(async (req) => {
         
         console.log(`[ZAPI-WEBHOOK] Training mode ${newState ? 'ACTIVATED' : 'DEACTIVATED'} for ${phone}`);
         
-        return new Response(JSON.stringify({ 
-          success: true, 
-          training_mode_toggled: true,
-          new_state: newState
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        // 💾 Salvar comando e confirmação na tabela messages
+        const { data: conversation } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('contact_phone', phone)
+          .eq('agent_key', tempAgent.key)
+          .maybeSingle();
+        
+        if (conversation) {
+          // Salvar comando do usuário
+          await supabase.from('messages').insert({
+            conversation_id: conversation.id,
+            body: messageText,
+            direction: 'inbound',
+            agent_key: tempAgent.key,
+            external_id: messageId
+          });
+          
+          // Salvar confirmação do agente
+          await supabase.from('messages').insert({
+            conversation_id: conversation.id,
+            body: confirmMessage,
+            direction: 'outbound',
+            agent_key: tempAgent.key,
+            read_at: new Date().toISOString()
+          });
+          
+          console.log('[ZAPI-WEBHOOK] ✅ Comando e confirmação salvos no banco');
+        }
+        
+        // ⚠️ NÃO RETORNAR - continuar fluxo normal para processar mensagem
+        console.log('[ZAPI-WEBHOOK] ➡️ Continuando processamento normal...');
       }
     }
 
