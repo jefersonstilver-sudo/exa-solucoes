@@ -273,13 +273,17 @@ serve(async (req) => {
             conversation_id: conversation.id,
             body: messageText,
             direction: 'inbound',
-            agent_key: tempAgent.key
+            agent_key: tempAgent.key,
+            from_role: 'user',
+            provider: 'zapi'
           },
           {
             conversation_id: conversation.id,
             body: confirmMessage,
             direction: 'outbound',
-            agent_key: tempAgent.key
+            agent_key: tempAgent.key,
+            from_role: 'agent',
+            provider: 'zapi'
           }
         ]);
         
