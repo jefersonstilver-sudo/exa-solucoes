@@ -1,7 +1,9 @@
-import { MessageCircle, Phone } from 'lucide-react';
+import { Loader2, MessageCircle, Phone } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { ConversationGroup } from '../../hooks/useConversations';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ConversationListProps {
   conversations: ConversationGroup[];
@@ -18,8 +20,8 @@ export const ConversationList = ({
 }: ConversationListProps) => {
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-module-secondary">Carregando conversas...</div>
+      <div className="flex items-center justify-center h-full p-8">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -27,84 +29,106 @@ export const ConversationList = ({
   if (conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        <MessageCircle className="w-16 h-16 text-module-tertiary mb-4" />
-        <h3 className="text-lg font-semibold text-module-primary mb-2">
-          Nenhuma conversa ainda
-        </h3>
-        <p className="text-sm text-module-secondary max-w-sm">
-          As conversas dos seus agentes aparecerão aqui assim que receberem mensagens via Z-API.
-        </p>
+        <MessageCircle className="w-12 h-12 text-muted-foreground mb-3" />
+        <p className="text-sm text-muted-foreground">Nenhuma conversa ainda</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar">
-      {conversations.map((conv) => {
-        const key = `${conv.phone_number}_${conv.agent_key}`;
-        const isSelected = selectedConversation === key;
-        
-        return (
-          <button
-            key={key}
-            onClick={() => onSelect(conv.phone_number, conv.agent_key)}
-            className={`w-full p-4 border-b border-module transition-colors text-left ${
-              isSelected 
-                ? 'bg-module-accent/10 border-l-4 border-l-module-accent' 
-                : 'hover:bg-module-hover'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              {/* Avatar colorido por agente */}
-              <div 
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
-                  conv.agent_key === 'sofia' ? 'bg-purple-500 text-white' :
-                  conv.agent_key === 'iris' ? 'bg-blue-500 text-white' :
-                  conv.agent_key === 'eduardo' ? 'bg-green-500 text-white' :
-                  conv.agent_key === 'exa_alert' ? 'bg-orange-500 text-white' :
-                  'bg-gray-500 text-white'
-                }`}
+    <div className="h-full flex flex-col bg-card">
+      {/* Header Mobile */}
+      <div className="md:hidden p-4 border-b bg-[#25D366] text-white shrink-0">
+        <h2 className="text-lg font-bold">Conversas</h2>
+        <p className="text-xs opacity-90">
+          {conversations.length} {conversations.length === 1 ? 'conversa' : 'conversas'}
+        </p>
+      </div>
+
+      {/* Lista */}
+      <ScrollArea className="flex-1">
+        <div className="divide-y divide-border">
+          {conversations.map((conv) => {
+            const isSelected = selectedConversation === `${conv.phone_number}_${conv.agent_key}`;
+            const hasUnread = conv.unread_count > 0;
+
+            return (
+              <button
+                key={`${conv.phone_number}_${conv.agent_key}`}
+                onClick={() => onSelect(conv.phone_number, conv.agent_key)}
+                className={`w-full text-left p-3 md:p-4 transition-all active:scale-[0.98] hover:bg-accent ${
+                  isSelected ? 'bg-accent border-l-4 border-l-[#25D366]' : ''
+                } ${hasUnread ? 'bg-green-50/80 dark:bg-green-900/20 border-l-4 border-l-green-500' : ''}`}
               >
-                {conv.agent_key === 'sofia' ? '🟣' :
-                 conv.agent_key === 'iris' ? '💼' :
-                 conv.agent_key === 'eduardo' ? '👨‍💼' :
-                 conv.agent_key === 'exa_alert' ? '🔔' :
-                 '🤖'}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-semibold text-module-primary truncate">
-                    {conv.contact_name || conv.phone_number}
-                  </h3>
-                  <span className="text-xs text-module-tertiary ml-2">
-                    {formatDistanceToNow(new Date(conv.last_message_at), { 
-                      addSuffix: true, 
-                      locale: ptBR 
-                    })}
-                  </span>
+                <div className="flex items-start gap-3">
+                  {/* Avatar */}
+                  <div className="relative shrink-0">
+                    <div className={`w-11 h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center ${
+                      hasUnread ? 'bg-green-500' : 'bg-primary/10'
+                    }`}>
+                      <Phone className={`w-5 h-5 ${hasUnread ? 'text-white' : 'text-primary'}`} />
+                    </div>
+                    {hasUnread && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                        <span className="text-[10px] font-bold text-white">
+                          {conv.unread_count}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2 mb-1">
+                      <span className={`font-semibold text-sm md:text-base truncate ${
+                        hasUnread ? 'text-foreground' : 'text-muted-foreground'
+                      }`}>
+                        {conv.contact_name || conv.phone_number}
+                      </span>
+                      <span className={`text-[10px] md:text-xs shrink-0 ${
+                        hasUnread ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-muted-foreground'
+                      }`}>
+                        {formatDistanceToNow(new Date(conv.last_message_at), {
+                          addSuffix: true,
+                          locale: ptBR
+                        })}
+                      </span>
+                    </div>
+
+                    <p className={`text-xs md:text-sm line-clamp-2 mb-2 ${
+                      hasUnread ? 'font-medium text-foreground' : 'text-muted-foreground'
+                    }`}>
+                      {conv.last_message}
+                    </p>
+
+                    {/* Badges */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge 
+                        variant="outline" 
+                        className={`text-[10px] md:text-xs px-1.5 py-0 h-5 ${
+                          conv.agent_key === 'sofia' ? 'border-purple-500 text-purple-600' :
+                          conv.agent_key === 'iris' ? 'border-blue-500 text-blue-600' :
+                          'border-orange-500 text-orange-600'
+                        }`}
+                      >
+                        {conv.agent_name}
+                      </Badge>
+                      {hasUnread && (
+                        <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white text-[10px] md:text-xs px-1.5 py-0 h-5">
+                          {conv.unread_count} nova{conv.unread_count > 1 ? 's' : ''}
+                        </Badge>
+                      )}
+                      <span className="text-[10px] text-muted-foreground ml-auto">
+                        {conv.total_messages} {conv.total_messages === 1 ? 'msg' : 'msgs'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                
-                <p className="text-sm text-module-secondary truncate mb-1">
-                  {conv.last_message}
-                </p>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-module-tertiary">
-                    🤖 {conv.agent_name}
-                  </span>
-                  
-                  {conv.unread_count > 0 && (
-                    <span className="bg-module-accent text-white text-xs px-2 py-0.5 rounded-full">
-                      {conv.unread_count}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </button>
-        );
-      })}
+              </button>
+            );
+          })}
+        </div>
+      </ScrollArea>
     </div>
   );
 };

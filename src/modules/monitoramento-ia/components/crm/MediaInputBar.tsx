@@ -270,7 +270,7 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
   };
 
   return (
-    <div className="flex gap-2 p-4 border-t border-border bg-card">
+    <div className="flex gap-1.5 md:gap-2 p-2 md:p-4 bg-card">
       <input
         ref={fileInputRef}
         type="file"
@@ -285,12 +285,12 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
         disabled={uploading || sending || recording}
         variant="ghost"
         size="icon"
-        className="shrink-0"
+        className="shrink-0 h-9 w-9 md:h-10 md:w-10"
       >
         {uploading ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
         ) : (
-          <Paperclip className="w-5 h-5" />
+          <Paperclip className="w-4 h-4 md:w-5 md:h-5" />
         )}
       </Button>
 
@@ -301,17 +301,23 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
             disabled={uploading || sending || recording}
             variant="ghost"
             size="icon"
-            className="shrink-0"
+            className="shrink-0 h-9 w-9 md:h-10 md:w-10"
           >
-            <Smile className="w-5 h-5" />
+            <Smile className="w-4 h-4 md:w-5 md:h-5" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 border-0" align="start">
+        <PopoverContent 
+          className="w-auto p-0 border-0" 
+          align="start"
+          side="top"
+        >
           <Picker 
             data={data} 
             onEmojiSelect={handleEmojiSelect}
             theme="auto"
             locale="pt"
+            perLine={8}
+            previewPosition="none"
           />
         </PopoverContent>
       </Popover>
@@ -321,16 +327,16 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
         <div className="flex-1 relative">
           <Textarea
             ref={textareaRef}
-            placeholder="Digite uma mensagem..."
+            placeholder="Mensagem..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
-            className="resize-none rounded-3xl pr-12 bg-background"
+            className="resize-none rounded-3xl pr-10 md:pr-12 bg-background text-sm md:text-base min-h-[38px] md:min-h-[42px] py-2.5 md:py-3"
             disabled={sending || uploading}
           />
           {message.length > 0 && (
-            <span className="absolute right-3 bottom-3 text-xs text-muted-foreground">
+            <span className="absolute right-2 md:right-3 bottom-2 md:bottom-3 text-[10px] md:text-xs text-muted-foreground">
               {message.length}
             </span>
           )}
@@ -339,18 +345,18 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
 
       {/* Indicador de gravação */}
       {recording && (
-        <div className="flex-1 flex items-center gap-3 bg-red-50 dark:bg-red-900/20 rounded-3xl px-4 py-2">
-          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-          <span className="text-sm font-medium text-red-600 dark:text-red-400">
-            Gravando: {formatRecordingTime(recordingTime)}
+        <div className="flex-1 flex items-center gap-2 md:gap-3 bg-red-50 dark:bg-red-900/20 rounded-3xl px-3 md:px-4 py-2">
+          <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-red-500 rounded-full animate-pulse" />
+          <span className="text-xs md:text-sm font-medium text-red-600 dark:text-red-400 flex-1">
+            {formatRecordingTime(recordingTime)}
           </span>
           <Button
             onClick={stopRecording}
             size="sm"
             variant="ghost"
-            className="ml-auto"
+            className="h-7 w-7 md:h-8 md:w-8 p-0"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3 h-3 md:w-4 md:h-4" />
           </Button>
         </div>
       )}
@@ -361,9 +367,9 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
         disabled={uploading || sending}
         variant="ghost"
         size="icon"
-        className={`shrink-0 ${recording ? 'text-red-500' : ''}`}
+        className={`shrink-0 h-9 w-9 md:h-10 md:w-10 ${recording ? 'text-red-500 animate-pulse' : ''}`}
       >
-        <Mic className="w-5 h-5" />
+        <Mic className="w-4 h-4 md:w-5 md:h-5" />
       </Button>
 
       {/* Botão Enviar */}
@@ -371,12 +377,12 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
         onClick={handleSend}
         disabled={!message.trim() || sending || uploading || recording}
         size="icon"
-        className="shrink-0 rounded-full bg-[#25D366] hover:bg-[#20bd5a]"
+        className="shrink-0 rounded-full bg-[#25D366] hover:bg-[#20bd5a] h-9 w-9 md:h-10 md:w-10 active:scale-95 transition-transform"
       >
         {sending ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
-          <Send className="w-4 h-4" />
+          <Send className="w-3.5 h-3.5 md:w-4 md:h-4" />
         )}
       </Button>
     </div>

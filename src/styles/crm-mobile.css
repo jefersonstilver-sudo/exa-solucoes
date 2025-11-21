@@ -1,0 +1,124 @@
+/* CRM Mobile Optimizations */
+
+/* Safe area para iPhone notch e bottom bar */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Custom scrollbar para CRM */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Touch optimizations */
+@media (max-width: 768px) {
+  /* Prevent text selection during scroll */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Smooth scroll para mobile */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Otimizar touch targets mínimos de 44x44px */
+  button,
+  a,
+  input,
+  textarea {
+    min-height: 44px;
+  }
+
+  /* Prevent zoom on inputs no iOS */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Otimizar animações no mobile */
+  .animate-fade-in,
+  .animate-scale-in {
+    animation-duration: 0.2s;
+  }
+}
+
+/* WhatsApp-like gradient header */
+.whatsapp-header {
+  background: linear-gradient(180deg, #25D366 0%, #20bd5a 100%);
+}
+
+/* Message bubble entrance animation */
+@keyframes message-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.message-enter {
+  animation: message-enter 0.2s ease-out;
+}
+
+/* Pulse animation for unread badge */
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.badge-pulse {
+  animation: badge-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Active state feedback para touch */
+.touch-feedback:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* Gradient backgrounds para conversas */
+.conversation-gradient {
+  background: linear-gradient(135deg, 
+    hsl(var(--card)) 0%, 
+    hsl(var(--muted)) 100%
+  );
+}
+
+/* Otimizar input no mobile - prevent zoom */
+@supports (-webkit-touch-callout: none) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  textarea {
+    font-size: 16px;
+  }
+}
