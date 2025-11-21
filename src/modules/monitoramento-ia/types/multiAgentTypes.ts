@@ -37,6 +37,10 @@ export interface Agent {
     formality: 'low' | 'medium' | 'high';
     typingIndicator?: boolean;
     typingSpeed?: number;
+    audio_transcription_enabled?: boolean;
+    audio_language?: 'pt' | 'en' | 'es';
+    audio_prompt?: string;
+    audio_max_duration?: number;
   };
   prompt: {
     masterPrompt: string;
