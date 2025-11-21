@@ -45,13 +45,11 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: `Analise esta imagem em detalhes. Descreva:
-1. O que você vê na imagem
-2. Texto (se houver) - faça OCR completo
-3. Contexto e significado
-4. Qualquer informação relevante
+                text: `Descreva esta imagem em 2-3 frases curtas:
+- O que você vê
+- Texto principal (se houver)
 
-Seja detalhado e preciso. Se for um documento, extraia TODO o texto.`
+Seja conciso e objetivo.`
               },
               {
                 type: 'image_url',
@@ -63,8 +61,8 @@ Seja detalhado e preciso. Se for um documento, extraia TODO o texto.`
             ]
           }
         ],
-        max_tokens: 1500,
-        temperature: 0.3 // Baixa temperatura para precisão
+        max_tokens: 300,
+        temperature: 0.3
       })
     });
 

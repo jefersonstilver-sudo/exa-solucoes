@@ -51,12 +51,25 @@ serve(async (req) => {
 
     // ========== DEDUPLICAÇÃO PRECOCE (30 SEGUNDOS) ==========
     const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
-    const { data: recentLog } = await supabase
+    
+    // Extrair imageUrl se existir
+    const imageUrl = payload.image?.imageUrl || null;
+    
+    // Buscar duplicatas por messageId OU por conteúdo de imagem
+    let dedupeQuery = supabase
       .from('zapi_logs')
       .select('id')
-      .eq('zapi_message_id', messageId)
-      .gte('created_at', thirtySecondsAgo)
-      .maybeSingle();
+      .gte('created_at', thirtySecondsAgo);
+    
+    if (imageUrl) {
+      // Se tiver imagem, buscar por messageId OU imageUrl
+      dedupeQuery = dedupeQuery.or(`zapi_message_id.eq.${messageId},metadata->>image_url.eq.${imageUrl}`);
+    } else {
+      // Sem imagem, buscar só por messageId
+      dedupeQuery = dedupeQuery.eq('zapi_message_id', messageId);
+    }
+    
+    const { data: recentLog } = await dedupeQuery.maybeSingle();
 
     if (recentLog) {
       console.log('[ZAPI-WEBHOOK] ⚠️ MESSAGE ALREADY PROCESSED (30s):', messageId);
@@ -513,7 +526,8 @@ serve(async (req) => {
       status: 'received',
       metadata: { 
         raw_payload: payload,
-        media_type: mediaType
+        media_type: mediaType,
+        image_url: imageUrl
       }
     });
 
@@ -661,7 +675,38 @@ Obrigado pela compreensão!`;
 
         // Verificar se precisa chamar IA automaticamente
         if (agent.ai_auto_response && routeResult?.routed_to) {
-          console.log('[ZAPI-WEBHOOK] 🤖 AI auto-response enabled, calling generate-ai-response...');
+          console.log('[ZAPI-WEBHOOK] 🤖 AI auto-response enabled, checking lock...');
+          
+          // ========== VERIFICAR LOCK DE PROCESSAMENTO AI ==========
+          const aiLockKey = `ai_processing_${conversation.id}`;
+          const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
+          
+          const { data: existingLock } = await supabase
+            .from('agent_context')
+            .select('value, created_at')
+            .eq('key', aiLockKey)
+            .gte('created_at', fiveSecondsAgo)
+            .maybeSingle();
+
+          if (existingLock) {
+            console.log('[ZAPI-WEBHOOK] ⏸️ AI already processing, skipping duplicate call:', {
+              conversationId: conversation.id,
+              lockCreated: existingLock.created_at
+            });
+            return;
+          }
+
+          // ========== CRIAR LOCK DE PROCESSAMENTO ==========
+          await supabase.from('agent_context').insert({
+            key: aiLockKey,
+            value: { 
+              processing: true, 
+              started_at: new Date().toISOString(),
+              message_id: messageId 
+            }
+          });
+
+          console.log('[ZAPI-WEBHOOK] 🔒 AI lock created, calling generate-ai-response...');
           
           try {
             const { data: aiResult, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
@@ -673,6 +718,14 @@ Obrigado pela compreensão!`;
               }
             });
 
+            // ========== LIMPAR LOCK APÓS PROCESSAMENTO ==========
+            await supabase
+              .from('agent_context')
+              .delete()
+              .eq('key', aiLockKey);
+
+            console.log('[ZAPI-WEBHOOK] 🔓 AI lock released');
+
             if (aiError) {
               console.error('[ZAPI-WEBHOOK] ❌ AI generation error:', aiError);
             } else {
@@ -680,6 +733,12 @@ Obrigado pela compreensão!`;
             }
           } catch (aiError) {
             console.error('[ZAPI-WEBHOOK] ❌ AI invocation failed:', aiError);
+            
+            // Limpar lock mesmo em caso de erro
+            await supabase
+              .from('agent_context')
+              .delete()
+              .eq('key', aiLockKey);
           }
         }
 
