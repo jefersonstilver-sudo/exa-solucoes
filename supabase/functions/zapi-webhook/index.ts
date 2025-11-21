@@ -93,9 +93,9 @@ serve(async (req) => {
     console.log('[ZAPI-WEBHOOK] 📨 Message type:', mediaType, mediaUrl ? '(has media)' : '(text only)');
 
     // ========== DETECÇÃO DE COMANDO DE TREINAMENTO ==========
-    const trainingCommand = '#AJUSTE3029';
-    if (messageText.trim() === trainingCommand) {
-      console.log('[ZAPI-WEBHOOK] 🎓 Training command detected');
+    const normalizedText = messageText.trim().toUpperCase();
+    if (normalizedText === '#AJUSTE3029' || normalizedText === '#AJUSTAR3029') {
+      console.log('[ZAPI-WEBHOOK] 🎓 Training command detected:', normalizedText);
       
       // Identificar agente primeiro
       const { data: tempAgent } = await supabase
