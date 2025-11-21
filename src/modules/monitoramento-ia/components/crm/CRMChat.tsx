@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { StickyNote, Tag, MessageSquare } from 'lucide-react';
-import { MessageComposer } from './MessageComposer';
+import { StickyNote, Tag, MessageSquare, FileText, Play, Volume2 } from 'lucide-react';
+import { MediaInputBar } from './MediaInputBar';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
 import { format } from 'date-fns';
@@ -119,59 +119,120 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
               Nenhuma mensagem ainda
             </div>
           ) : (
-            messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={cn('flex', msg.direction === 'outbound' ? 'justify-end' : 'justify-start')}
-              >
+            messages.map((msg) => {
+              const mediaUrl = msg.raw_payload?.mediaUrl || msg.media_url;
+              const mediaType = msg.raw_payload?.mediaType || msg.metadata?.media_type;
+              const hasMedia = !!mediaUrl;
+
+              return (
                 <div
-                  className={cn(
-                    'max-w-[70%] rounded-lg p-3',
-                    msg.direction === 'outbound'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
-                  )}
+                  key={msg.id}
+                  className={cn('flex', msg.direction === 'outbound' ? 'justify-end' : 'justify-start')}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                  <div
+                    className={cn(
+                      'max-w-[70%] rounded-lg p-3',
+                      msg.direction === 'outbound'
+                        ? 'bg-[#dcf8c6] dark:bg-[#005c4b] text-gray-900 dark:text-white'
+                        : 'bg-white dark:bg-[#202c33] text-gray-900 dark:text-white shadow-sm'
+                    )}
+                  >
+                    {/* Imagem */}
+                    {mediaType === 'image' && hasMedia && (
+                      <div className="mb-2">
+                        <img 
+                          src={mediaUrl} 
+                          alt="Imagem enviada"
+                          className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity max-h-96 object-contain"
+                          onClick={() => window.open(mediaUrl, '_blank')}
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
 
-                  {/* Análise de sentimento (apenas inbound) */}
-                  {msg.direction === 'inbound' && msg.sentiment && (
-                    <div className="mt-2 flex gap-2 flex-wrap">
-                      {msg.sentiment && (
-                        <Badge variant="outline" className="text-xs">
-                          {msg.sentiment}
-                        </Badge>
-                      )}
-                      {msg.detected_mood > 0 && (
-                        <Badge variant="outline" className="text-xs">
-                          Humor: {msg.detected_mood}/100
-                        </Badge>
-                      )}
-                      {msg.detected_urgency > 0 && (
-                        <Badge variant="outline" className="text-xs text-orange-600">
-                          Urgência: {msg.detected_urgency}/10
-                        </Badge>
-                      )}
-                      {msg.intent && (
-                        <Badge variant="outline" className="text-xs">
-                          {msg.intent}
-                        </Badge>
-                      )}
+                    {/* Áudio */}
+                    {mediaType === 'audio' && hasMedia && (
+                      <div className="mb-2 flex items-center gap-2 bg-muted/50 rounded-lg p-2">
+                        <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <audio controls className="w-full max-w-xs">
+                          <source src={mediaUrl} type="audio/webm" />
+                          <source src={mediaUrl} type="audio/ogg" />
+                          <source src={mediaUrl} type="audio/mpeg" />
+                          Seu navegador não suporta áudio.
+                        </audio>
+                      </div>
+                    )}
+
+                    {/* Vídeo */}
+                    {mediaType === 'video' && hasMedia && (
+                      <div className="mb-2">
+                        <video controls className="rounded-lg max-w-full h-auto max-h-96">
+                          <source src={mediaUrl} type="video/mp4" />
+                          <source src={mediaUrl} type="video/webm" />
+                          Seu navegador não suporta vídeo.
+                        </video>
+                      </div>
+                    )}
+
+                    {/* Documento */}
+                    {mediaType === 'document' && hasMedia && (
+                      <a 
+                        href={mediaUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 mb-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                      >
+                        <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span className="text-sm text-blue-600 hover:underline truncate">
+                          Abrir documento
+                        </span>
+                      </a>
+                    )}
+
+                    {/* Texto da mensagem (inclui descrição da Vision AI se houver) */}
+                    {msg.body && (
+                      <p className="text-sm whitespace-pre-wrap break-words">{msg.body}</p>
+                    )}
+
+                    {/* Análise de sentimento (apenas inbound) */}
+                    {msg.direction === 'inbound' && msg.sentiment && (
+                      <div className="mt-2 flex gap-2 flex-wrap">
+                        {msg.sentiment && (
+                          <Badge variant="outline" className="text-xs">
+                            {msg.sentiment}
+                          </Badge>
+                        )}
+                        {msg.detected_mood > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            Humor: {msg.detected_mood}/100
+                          </Badge>
+                        )}
+                        {msg.detected_urgency > 0 && (
+                          <Badge variant="outline" className="text-xs text-orange-600">
+                            Urgência: {msg.detected_urgency}/10
+                          </Badge>
+                        )}
+                        {msg.intent && (
+                          <Badge variant="outline" className="text-xs">
+                            {msg.intent}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {msg.is_automated && (
+                      <Badge variant="outline" className="text-xs mt-2">
+                        🤖 Automático
+                      </Badge>
+                    )}
+
+                    <div className="mt-1 text-xs opacity-70">
+                      {format(new Date(msg.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                     </div>
-                  )}
-
-                  {msg.is_automated && (
-                    <Badge variant="outline" className="text-xs mt-2">
-                      Automático
-                    </Badge>
-                  )}
-
-                  <div className="mt-1 text-xs opacity-70">
-                    {format(new Date(msg.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            }))
           )}
           
           {/* Typing Indicator */}
@@ -191,12 +252,12 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Composer */}
+        {/* MediaInputBar - Com todos os recursos */}
         {conversation && (
-          <MessageComposer 
+          <MediaInputBar 
             phoneNumber={conversation.contact_phone} 
             agentKey={conversation.agent_key}
-            conversationId={conversationId!}
+            conversationId={conversationId}
             onMessageSent={onRefresh} 
           />
         )}
