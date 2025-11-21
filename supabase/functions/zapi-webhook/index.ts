@@ -48,39 +48,8 @@ serve(async (req) => {
       mediaUrl = payload.image.imageUrl;
       mediaType = 'image';
     } else if (payload.audio?.audioUrl) {
-      console.log('[ZAPI-WEBHOOK] 🎤 Audio detected, checking transcription config...');
-      
-      // Check if agent has transcription enabled
-      const openaiConfig = agent.openai_config as any;
-      if (openaiConfig?.audio_transcription_enabled) {
-        try {
-          console.log('[ZAPI-WEBHOOK] 🔄 Transcribing audio...');
-          const { data: transcription, error: transcriptionError } = await supabase.functions.invoke('transcribe-audio', {
-            body: {
-              audioUrl: payload.audio.audioUrl,
-              language: openaiConfig.audio_language || 'pt',
-              prompt: openaiConfig.audio_prompt || 'Áudio de WhatsApp'
-            }
-          });
-          
-          if (transcriptionError) {
-            console.error('[ZAPI-WEBHOOK] ❌ Transcription error:', transcriptionError);
-            messageText = '[Áudio - erro ao transcrever]';
-          } else if (transcription?.text) {
-            messageText = transcription.text;
-            console.log('[ZAPI-WEBHOOK] ✅ Audio transcribed:', messageText.substring(0, 50) + '...');
-          } else {
-            messageText = '[Áudio - transcrição indisponível]';
-          }
-        } catch (error) {
-          console.error('[ZAPI-WEBHOOK] ❌ Transcription failed:', error);
-          messageText = '[Áudio - erro ao transcrever]';
-        }
-      } else {
-        console.log('[ZAPI-WEBHOOK] ℹ️ Audio transcription disabled for this agent');
-        messageText = '[Áudio]';
-      }
-      
+      console.log('[ZAPI-WEBHOOK] 🎤 Audio detected');
+      messageText = '[Áudio]'; // Temporário, será transcrito depois
       mediaUrl = payload.audio.audioUrl;
       mediaType = 'audio';
     } else if (payload.sticker?.stickerUrl) {
@@ -126,6 +95,40 @@ serve(async (req) => {
     }
 
     console.log('[ZAPI-WEBHOOK] ✅ Agent found:', agent.key, '- Instance:', instanceId);
+
+    // ========== TRANSCREVER ÁUDIO SE NECESSÁRIO ==========
+    if (mediaType === 'audio' && payload.audio?.audioUrl) {
+      console.log('[ZAPI-WEBHOOK] 🔍 Checking audio transcription config...');
+      const openaiConfig = agent.openai_config as any;
+      
+      if (openaiConfig?.audio_transcription_enabled) {
+        try {
+          console.log('[ZAPI-WEBHOOK] 🔄 Transcribing audio...');
+          const { data: transcription, error: transcriptionError } = await supabase.functions.invoke('transcribe-audio', {
+            body: {
+              audioUrl: payload.audio.audioUrl,
+              language: openaiConfig.audio_language || 'pt',
+              prompt: openaiConfig.audio_prompt || 'Áudio de WhatsApp'
+            }
+          });
+          
+          if (transcriptionError) {
+            console.error('[ZAPI-WEBHOOK] ❌ Transcription error:', transcriptionError);
+            messageText = '[Áudio - erro ao transcrever]';
+          } else if (transcription?.text) {
+            messageText = transcription.text;
+            console.log('[ZAPI-WEBHOOK] ✅ Audio transcribed:', messageText.substring(0, 50) + '...');
+          } else {
+            messageText = '[Áudio - transcrição indisponível]';
+          }
+        } catch (error) {
+          console.error('[ZAPI-WEBHOOK] ❌ Transcription failed:', error);
+          messageText = '[Áudio - erro ao transcrever]';
+        }
+      } else {
+        console.log('[ZAPI-WEBHOOK] ℹ️ Audio transcription disabled for this agent');
+      }
+    }
 
     // ========== VERIFICAR SE AGENTE ESTÁ ATIVO ==========
     if (!agent.is_active) {
