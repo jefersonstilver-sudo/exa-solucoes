@@ -15,6 +15,11 @@ interface APIStatusGridProps {
     description: string;
     is_active: boolean;
     whatsapp_provider: string | null;
+    manychat_config?: {
+      auto_sync_enabled?: boolean;
+      auto_sync_interval?: number;
+      last_sync_at?: string;
+    };
   }>;
   statuses: Record<string, AgentStatus>;
   testing: Record<string, boolean>;
@@ -170,6 +175,23 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
                 <p className="text-xs text-module-tertiary mb-2">
                   Última verificação: {new Date(status.lastCheck).toLocaleTimeString('pt-BR')}
                 </p>
+              )}
+
+              {/* Auto-sync indicator */}
+              {(agent as any).manychat_config?.auto_sync_enabled && (
+                <div className="bg-green-500/10 border border-green-500/20 rounded p-2 mb-2">
+                  <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                    <RefreshCw className="w-3 h-3" />
+                    <span className="font-medium">
+                      Auto-sync: {(agent as any).manychat_config.auto_sync_interval}min
+                    </span>
+                  </div>
+                  {(agent as any).manychat_config?.last_sync_at && (
+                    <p className="text-xs text-green-600/70 dark:text-green-400/70 mt-1">
+                      Última sync: {new Date((agent as any).manychat_config.last_sync_at).toLocaleTimeString('pt-BR')}
+                    </p>
+                  )}
+                </div>
               )}
 
               {status?.latency && (

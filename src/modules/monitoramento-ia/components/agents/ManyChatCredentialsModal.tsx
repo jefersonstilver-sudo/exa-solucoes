@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Save, X, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +34,9 @@ export const ManyChatCredentialsModal = ({
   const [pageId, setPageId] = useState('');
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
+  const [syncInterval, setSyncInterval] = useState<string>('5');
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
 
   const webhookUrl = generateWebhookUrl(agentKey);
 
@@ -39,6 +44,9 @@ export const ManyChatCredentialsModal = ({
     if (open) {
       setApiKey(currentConfig?.api_key || '');
       setPageId(currentConfig?.page_id || '');
+      setAutoSyncEnabled((currentConfig as any)?.auto_sync_enabled || false);
+      setSyncInterval(String((currentConfig as any)?.auto_sync_interval || 5));
+      setLastSyncAt((currentConfig as any)?.last_sync_at || null);
     }
   }, [open, currentConfig]);
 
@@ -70,6 +78,9 @@ export const ManyChatCredentialsModal = ({
           page_id: pageId.trim() || undefined,
           webhook_url: webhookUrl,
           status: 'connected',
+          auto_sync_enabled: autoSyncEnabled,
+          auto_sync_interval: parseInt(syncInterval),
+          last_sync_at: lastSyncAt || new Date().toISOString(),
           last_updated: new Date().toISOString()
         },
         manychat_connected: true
@@ -126,6 +137,53 @@ export const ManyChatCredentialsModal = ({
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Formato: número:hash (encontre em ManyChat → Settings → API)
             </p>
+          </div>
+
+          {/* Sincronização Automática */}
+          <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  🔄 Sincronização Automática
+                </Label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Buscar mensagens automaticamente do ManyChat
+                </p>
+              </div>
+              <Switch
+                checked={autoSyncEnabled}
+                onCheckedChange={setAutoSyncEnabled}
+              />
+            </div>
+            
+            {autoSyncEnabled && (
+              <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Intervalo de Sincronização
+                </Label>
+                <Select value={syncInterval} onValueChange={setSyncInterval}>
+                  <SelectTrigger className="bg-white dark:bg-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">⚡ A cada 1 minuto (tempo real)</SelectItem>
+                    <SelectItem value="5">🔄 A cada 5 minutos (recomendado)</SelectItem>
+                    <SelectItem value="10">⏱️ A cada 10 minutos</SelectItem>
+                    <SelectItem value="30">⏳ A cada 30 minutos</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-2 mt-2">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    ⚡ Sistema buscará novas mensagens automaticamente no intervalo escolhido
+                  </p>
+                </div>
+                {lastSyncAt && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Última sincronização: {new Date(lastSyncAt).toLocaleString('pt-BR')}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Page ID (Opcional) */}

@@ -243,3 +243,9 @@ verify_jwt = false
 [functions.test-agent-status]
 verify_jwt = false  # Temporariamente público para debug
 
+[functions.manychat-sync-conversations]
+verify_jwt = false
+
+[functions.manychat-auto-sync-cron]
+verify_jwt = false
+
