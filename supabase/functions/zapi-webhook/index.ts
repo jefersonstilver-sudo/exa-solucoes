@@ -236,8 +236,7 @@ serve(async (req) => {
             conversation_id: conversation.id,
             body: messageText,
             direction: 'inbound',
-            agent_key: tempAgent.key,
-            external_id: messageId
+            agent_key: tempAgent.key
           },
           {
             conversation_id: conversation.id,
