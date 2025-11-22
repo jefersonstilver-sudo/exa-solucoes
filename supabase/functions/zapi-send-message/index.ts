@@ -85,8 +85,46 @@ serve(async (req) => {
       return chunks;
     };
 
+    // 🛡️ ENVIAR COM RETRY (blindagem contra desconexão)
+    const sendWithRetry = async (url: string, body: any, retries = 3): Promise<any> => {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Client-Token': zapiClientToken,
+            },
+            body: JSON.stringify(body),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${JSON.stringify(result)}`);
+          }
+
+          return result;
+        } catch (error) {
+          console.error(`[ZAPI-SEND] ⚠️ Attempt ${attempt}/${retries} failed:`, error.message);
+          
+          if (attempt === retries) {
+            throw new Error(`Failed after ${retries} attempts: ${error.message}`);
+          }
+          
+          // Esperar antes de tentar novamente (backoff exponencial)
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+    };
+
     const messageChunks = splitMessage(message);
-    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'message chunks');
+    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'message chunks with retry protection');
 
     // Enviar cada chunk com delay (simular digitação humana)
     const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
@@ -103,74 +141,61 @@ serve(async (req) => {
         timestamp: new Date().toISOString()
       });
 
-      const zapiResponse = await fetch(sendUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Client-Token': zapiClientToken,
-        },
-        body: JSON.stringify({
+      try {
+        const chunkResult = await sendWithRetry(sendUrl, {
           phone: phone.replace(/\D/g, ''),
           message: chunk
-        })
-      });
+        });
 
-      const zapiResult = await zapiResponse.json();
-      results.push(zapiResult);
+        results.push(chunkResult);
+        console.log('[ZAPI-SEND] ✅ Chunk', i + 1, 'sent successfully');
 
-      if (!zapiResponse.ok) {
-        console.error('[ZAPI-SEND] ❌ Z-API error on chunk', i + 1, ':', zapiResult);
-        throw new Error(`Z-API error: ${JSON.stringify(zapiResult)}`);
-      }
-
-      // Delay entre mensagens (exceto última)
-      if (i < messageChunks.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // Delay entre mensagens (exceto última)
+        if (i < messageChunks.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+      } catch (error) {
+        console.error('[ZAPI-SEND] ❌ Failed to send chunk', i + 1, ':', error.message);
+        
+        // Log falha
+        await supabase.from('zapi_logs').insert({
+          agent_key: agentKey,
+          direction: 'outbound',
+          phone_number: phone,
+          message_text: chunk,
+          status: 'failed',
+          error_message: error.message,
+          metadata: { error: error.message, chunkIndex: i, totalChunks: messageChunks.length }
+        });
+        
+        throw error; // Propagar erro para catch principal
       }
     }
 
-    const zapiResult = results[results.length - 1]; // Último resultado
+    const zapiResult = results[results.length - 1]; // Último resultado para messageId
 
-    const zapiResult = await zapiResponse.json();
-
-    if (!zapiResponse.ok) {
-      console.error('[ZAPI-SEND] ❌ Z-API error:', {
-        status: zapiResponse.status,
-        statusText: zapiResponse.statusText,
-        result: zapiResult
-      });
-      
-      // Log falha
-      await supabase.from('zapi_logs').insert({
-        agent_key: agentKey,
-        direction: 'outbound',
-        phone_number: phone,
-        message_text: message,
-        status: 'failed',
-        error_message: JSON.stringify(zapiResult),
-        metadata: { error: zapiResult }
-      });
-
-      throw new Error(`Z-API error: ${JSON.stringify(zapiResult)}`);
-    }
-
-    console.log('[ZAPI-SEND] ✅ Message sent successfully:', {
-      messageId: zapiResult.messageId,
+    console.log('[ZAPI-SEND] ✅ All chunks sent successfully:', {
+      totalChunks: messageChunks.length,
+      lastMessageId: zapiResult.messageId,
       phone,
       agent: agentKey,
       timestamp: new Date().toISOString()
     });
 
-    // Log sucesso
+    // Log sucesso com informação de chunks
     await supabase.from('zapi_logs').insert({
       agent_key: agentKey,
       direction: 'outbound',
       phone_number: phone,
-      message_text: message,
+      message_text: message, // Mensagem completa
       media_url: mediaUrl || null,
       status: 'sent',
       zapi_message_id: zapiResult.messageId || null,
-      metadata: { response: zapiResult }
+      metadata: { 
+        response: zapiResult,
+        totalChunks: messageChunks.length,
+        allResults: results
+      }
     });
 
     // ✅ FASE 1: SALVAR EM MESSAGES PARA APARECER NO CRM
@@ -193,16 +218,18 @@ serve(async (req) => {
         provider: 'zapi',
         direction: 'outbound',
         from_role: 'agent',
-        body: message,
+        body: message, // Mensagem completa
         is_automated: true,
         raw_payload: { 
           zapi_message_id: zapiResult.messageId,
           sent_at: new Date().toISOString(),
-          media_url: mediaUrl || null
+          media_url: mediaUrl || null,
+          sentInChunks: messageChunks.length > 1,
+          totalChunks: messageChunks.length
         }
       });
       
-      console.log('[ZAPI-SEND] ✅ Outbound message saved to messages table for CRM');
+      console.log('[ZAPI-SEND] ✅ Outbound message saved (chunks:', messageChunks.length, ')');
     } else {
       console.warn('[ZAPI-SEND] ⚠️ No conversation found for phone:', phone);
     }
