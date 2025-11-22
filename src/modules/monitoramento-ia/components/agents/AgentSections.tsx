@@ -40,6 +40,8 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
           section_title: section.section_title,
           content,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'agent_id,section_number'
         });
 
       if (error) throw error;
