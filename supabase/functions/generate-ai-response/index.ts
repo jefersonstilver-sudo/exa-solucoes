@@ -27,44 +27,35 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // 1. Paralelizar queries (5→1 call = mais rápido) + dados reais
+    // ====== LOG INÍCIO EM AGENT_LOGS ======
+    await supabase.from('agent_logs').insert({
+      agent_key: agentKey,
+      conversation_id: conversationId,
+      event_type: 'ai_request_initiated',
+      metadata: {
+        userMessage: message,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+    // ====== BUSCAR DADOS EM PARALELO ======
     const [
-      { data: agent, error: agentError },
-      { data: agentKnowledge, error: knowledgeError },
+      { data: agent },
+      { data: agentKnowledge },
       { data: conversationHistory },
       { data: conversation },
-      { data: buildingsData, error: buildingsError }
+      { data: buildingsData }
     ] = await Promise.all([
       supabase.from('agents').select('*').eq('key', agentKey).single(),
-      supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true).in('section', ['perfil', 'fluxo_comercial', 'regras_basicas']),
+      supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true),
       supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: false }).limit(5),
       supabase.from('conversations').select('provider').eq('id', conversationId).single(),
       supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, bairro, status').in('status', ['ativo', 'instalação']).limit(50)
     ]);
 
-    console.log('[AI-RESPONSE] 🏢 Buildings query result:', {
-      count: buildingsData?.length || 0,
-      hasError: !!buildingsError,
-      error: buildingsError,
-      buildings: buildingsData?.map(b => ({
-        nome: b.nome,
-        status: b.status,
-        preco: b.preco_base
-      })) || []
-    });
-
-    if (agentError || !agent) {
-      console.error('[AI-RESPONSE] ❌ Agent not found:', agentKey, agentError);
+    if (!agent) {
       throw new Error('Agent not found');
     }
-
-    console.log('[AI-RESPONSE] ✅ Data loaded:', {
-      agent: agent.display_name,
-      knowledge: agentKnowledge?.length || 0,
-      history: conversationHistory?.length || 0,
-      provider: conversation?.provider,
-      realBuildings: buildingsData?.length || 0
-    });
 
     if (!agent.ai_auto_response) {
       console.log('[AI-RESPONSE] ⏸️ AI auto-response disabled');
@@ -74,138 +65,17 @@ serve(async (req) => {
       );
     }
 
-    // 3. Construir contexto do conhecimento
-    const knowledgeContext = (agentKnowledge || [])
-      .map((k: any) => `### ${k.title}\n${k.content}`)
-      .join('\n\n');
-
-    // 3.5. Injetar dados REAIS dos prédios (anti-alucinação)
-    const realDataSection = buildingsData && buildingsData.length > 0 ? `
-
-## 🏢 DADOS REAIS DA LOJA (SEMPRE USE ESTES DADOS - ATUALIZADO EM TEMPO REAL)
-
-⚠️ ATENÇÃO: NUNCA invente números de prédios, preços ou público. Use APENAS os dados abaixo.
-
-**Total de prédios disponíveis:** ${buildingsData.length}
-
-**Lista completa de prédios disponíveis para venda:**
-${buildingsData.map((b: any) => {
-  const statusEmoji = b.status === 'ativo' ? '✅ DISPONÍVEL' : '🚧 EM INSTALAÇÃO';
-  return `- ${b.nome} (${statusEmoji}) - Código: ${b.codigo_predio || 'N/A'} - Bairro: ${b.bairro}
-   Preço: R$ ${b.preco_base ? b.preco_base.toFixed(2) : 'Consultar'}/mês | Telas: ${b.quantidade_telas || 0} | Público estimado: ${b.publico_estimado ? b.publico_estimado.toLocaleString() : 'N/A'} pessoas/mês`;
-}).join('\n')}
-
-⚠️ VALIDAÇÃO OBRIGATÓRIA PRÉ-RESPOSTA:
-
-QUANDO O CLIENTE PERGUNTAR SOBRE PRÉDIO ESPECÍFICO:
-
-## ✅ EXEMPLOS DE RESPOSTAS CORRETAS (COPIE ESTE PADRÃO!)
-
-**Exemplo 1 - Prédio em instalação:**
-Cliente: "Quanto custa pra anunciar no predio sant perer"
-VOCÊ (CORRETO ✅): "O Saint Peter tá em fase de instalação ainda. Quando ele ficar ativo, vai ser R$ 155/mês. Quer ver os prédios que já tão disponíveis? 😊"
-VOCÊ (ERRADO ❌): "Vou verificar pra você!" 
-
-**Exemplo 2 - Prédio ativo:**
-Cliente: "Quanto custa o edifício provence"
-VOCÊ (CORRETO ✅): "O Edifício Provence tá disponível agora! É R$ 254/mês. Quer que eu te envie mais detalhes?"
-VOCÊ (ERRADO ❌): "A partir de R$ 200/mês"
-
-**Exemplo 3 - Prédio não existe:**
-Cliente: "quanto custa o predio xyz"
-VOCÊ (CORRETO ✅): "Não encontrei nenhum prédio chamado 'XYZ' na nossa lista. Quer ver os prédios disponíveis na região que você quer?"
-VOCÊ (ERRADO ❌): "Vou consultar aqui"
-
-## ❌ RESPOSTAS ABSOLUTAMENTE PROIBIDAS
-
-NUNCA responda:
-- "Vou verificar" ou "Vou consultar" (OS DADOS ESTÃO ACIMA!)
-- "Qual o seu negócio?" quando cliente já perguntou preço direto (RESPONDA O PREÇO PRIMEIRO!)
-- "Vou enviar os detalhes por WhatsApp" sem enviar nada (ENVIE OS DADOS AGORA!)
-- "A partir de R$..." com valor genérico (USE O PREÇO EXATO ACIMA!)
-- Qualquer informação que NÃO esteja na lista acima
-
-⚠️ PRÉ-VALIDAÇÃO ANTES DE RESPONDER SOBRE PRÉDIO ESPECÍFICO:
-1. PROCURE na lista acima usando fuzzy match
-   - "sant peter" = "Saint Peter"
-   - "san pedro" = "Saint Peter"  
-   - Ignore acentos, maiúsculas, pontuação
-   
-2. SE ENCONTRAR:
-   ✅ Use o nome EXATO da lista
-   ✅ Use o preço EXATO sem arredondar
-   ✅ Informe status:
-      - ativo → "Esse prédio tá disponível agora!"
-      - instalação → "Esse prédio tá em fase de instalação. Quando ativar, vai ser R$ [preço exato]/mês"
-   
-3. SE NÃO ENCONTRAR:
-   Responda: "Opa, esse prédio não tá na nossa base ainda não viu... Mas posso te mostrar os que a gente tem disponíveis!"
-
-4. ❌ PROIBIÇÕES ABSOLUTAS:
-   - NUNCA invente preços
-   - NUNCA diga "só trato de publicidade em elevadores" (VOCÊ TRATA DE PRÉDIOS!)
-   - NUNCA use "a partir de..." quando cliente perguntar prédio específico
-   - NUNCA diga "vou verificar" quando os dados já estão no contexto
-` : '';
-
-    console.log('[AI-RESPONSE] 📊 Real data injected:', {
-      buildingsCount: buildingsData?.length || 0,
-      realDataLength: realDataSection.length
-    });
-
-    // 4. Construir histórico de mensagens incluindo descrições de imagens
-    const historyContext = (conversationHistory || [])
-      .reverse()
-      .map((msg: any) => {
-        const sender = msg.direction === 'inbound' ? 'Cliente' : 'Você';
-        let messageContent = msg.body;
-        
-        // Se mensagem inclui descrição de imagem da visão AI, mantê-la
-        // (já vem processada do zapi-webhook)
-        
-        return `${sender}: ${messageContent}`;
-      })
-      .join('\n');
-
-    // 5. Montar prompt para IA usando o prompt do banco
-    const baseSystemPrompt = agent.openai_config?.system_prompt || 
-      `Você é ${agent.display_name}, ${agent.description}.`;
-
-    const knowledgeSection = knowledgeContext ? 
-      `\n\n## BASE DE CONHECIMENTO\n${knowledgeContext}` : '';
-
-    const historySection = historyContext ? 
-      `\n\n## HISTÓRICO DA CONVERSA\n${historyContext}` : '';
-
-    const systemPrompt = `${baseSystemPrompt}${realDataSection}${knowledgeSection}${historySection}
-
-## MENSAGEM ATUAL DO CLIENTE
-${message}`;
-
-    console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
-      knowledgeItemsCount: (agentKnowledge || []).length,
-      historyMessagesCount: (conversationHistory || []).length,
-      systemPromptLength: systemPrompt.length
-    });
-
-    // 6. Typing indicator (1x, Z-API para automaticamente ao enviar)
-    console.log('[AI-RESPONSE] ⌨️ Typing indicator...');
-    supabase.functions.invoke('send-typing-indicator', {
-      body: { phone: phoneNumber, agentKey, action: 'start' }
-    }).catch(e => console.error('[AI-RESPONSE] ⚠️ Typing error (non-blocking):', e));
-
-    // 7. Fuzzy matching com Levenshtein distance - detectar menção de prédio
+    // ====== FUZZY MATCHING COM LEVENSHTEIN ======
     const normalizeName = (text: string) => {
       return text
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-        .replace(/[^a-z0-9\s]/g, '') // Remove pontuação
-        .replace(/\s+/g, ' ') // Remove espaços extras
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ')
         .trim();
     };
 
-    // Levenshtein distance para calcular similaridade entre strings
     const levenshteinDistance = (str1: string, str2: string): number => {
       const track = Array(str2.length + 1).fill(null).map(() =>
         Array(str1.length + 1).fill(null));
@@ -228,7 +98,6 @@ ${message}`;
       return track[str2.length][str1.length];
     };
 
-    // Calcular similaridade entre 0-1
     const stringSimilarity = (str1: string, str2: string): number => {
       const longer = str1.length > str2.length ? str1 : str2;
       const shorter = str1.length > str2.length ? str2 : str1;
@@ -238,21 +107,16 @@ ${message}`;
 
     const userNormalized = normalizeName(message);
     
-    // Coletar todos os matches para logging
     const allMatches = buildingsData?.map((b: any) => {
       const bNormalized = normalizeName(b.nome);
       
-      // 1. Match exato
       if (userNormalized.includes(bNormalized)) {
         return { building: b, score: 1.0, method: 'exact' };
       }
       
-      // 2. Extrair menção de prédio do texto (palavras após "predio")
       const predioMatch = userNormalized.match(/predio\s+([a-z0-9\s]{2,40})/);
       if (predioMatch) {
         const mentionedName = predioMatch[1].trim();
-        
-        // 3. Comparar com Levenshtein (60% de similaridade)
         const similarity = stringSimilarity(mentionedName, bNormalized);
         
         if (similarity >= 0.6) {
@@ -260,7 +124,6 @@ ${message}`;
         }
       }
       
-      // 4. Match parcial por palavras (fallback)
       const userWords = userNormalized.split(' ');
       const buildingWords = bNormalized.split(' ');
       const matchCount = buildingWords.filter(word => 
@@ -278,95 +141,190 @@ ${message}`;
     const buildingMentioned = allMatches[0]?.building;
     const matchDetails = allMatches[0];
 
-    // 7.5 Log context preview e fuzzy match result com detalhes
     const top3Matches = allMatches.slice(0, 3).map(m => ({
       nome: m!.building.nome,
       score: `${(m!.score * 100).toFixed(1)}%`,
       method: m!.method
     }));
 
-    console.log('[AI-RESPONSE] 🔍 PRE-VALIDATION COMPLETE:', {
-      // Input
-      userMessage: message.substring(0, 100),
-      userNormalized: userNormalized,
-      
-      // Detection
+    console.log('[AI-RESPONSE] 🔍 FUZZY MATCH RESULT:', {
       buildingDetected: buildingMentioned?.nome || 'NONE',
       matchScore: matchDetails ? `${(matchDetails.score * 100).toFixed(1)}%` : 'n/a',
       matchMethod: matchDetails?.method || 'n/a',
-      top3Matches: top3Matches,
-      
-      // Data available
-      buildingPrice: buildingMentioned?.preco_base || 'n/a',
-      buildingStatus: buildingMentioned?.status || 'n/a',
-      totalBuildingsAvailable: buildingsData?.length || 0,
-      
-      // Context injection
-      willInjectSpecificBuilding: !!buildingMentioned,
-      contextSize: systemPrompt.length,
-      buildingsPreview: buildingsData?.map(b => `${b.nome} (${b.status})`).slice(0, 5) || []
+      top3Matches,
+      totalBuildingsAvailable: buildingsData?.length || 0
     });
 
-    // 8. Chamar OpenAI via ia-console
-    console.log('[AI-RESPONSE] 🧠 Calling ia-console...');
-    
-    const { data: aiResult, error: aiError } = await supabase.functions.invoke('ia-console', {
-      body: {
-        agentKey,
-        message,
-        context: {
-          conversationId,
-          systemPrompt,
-          phone: phoneNumber
-        }
+    // ====== CONSTRUIR DADOS DOS PRÉDIOS ======
+    const buildingsFormatted = buildingsData && buildingsData.length > 0 
+      ? buildingsData.map((b: any) => {
+          const statusEmoji = b.status === 'ativo' ? '✅' : '🚧';
+          return `${statusEmoji} ${b.nome} - R$ ${b.preco_base?.toFixed(2) || '?'}/mês - ${b.status}`;
+        }).join('\n')
+      : 'Nenhum prédio disponível';
+
+    // ====== CONSTRUIR KNOWLEDGE BASE ======
+    const knowledgeContext = agentKnowledge && agentKnowledge.length > 0
+      ? agentKnowledge.map((k: any) => `### ${k.title}\n${k.content}`).join('\n\n')
+      : '';
+
+    // ====== CONSTRUIR HISTÓRICO ======
+    const historyFormatted = conversationHistory && conversationHistory.length > 0
+      ? conversationHistory.reverse().map((m: any) => 
+          `${m.direction === 'inbound' ? 'Cliente' : 'Agente'}: ${m.body}`
+        ).join('\n')
+      : 'Início da conversa.';
+
+    // ====== CONSTRUIR SYSTEM PROMPT COMPLETO ======
+    const systemPrompt = `Você é ${agent.display_name}. ${agent.description}
+
+## 🎯 IDENTIDADE E TOM
+
+- Tom: amigável, direto, sem enrolação
+- NUNCA mencione que você é uma IA
+- Use linguagem natural do WhatsApp
+- Máximo 1 emoji por mensagem (usar raramente)
+- Mensagens curtas (máx 80 caracteres por linha)
+
+## 🏢 DADOS REAIS DOS PRÉDIOS (SEMPRE USE ESTES DADOS!)
+
+${buildingsFormatted}
+
+**Total de prédios:** ${buildingsData?.length || 0}
+
+## ✅ EXEMPLOS DE RESPOSTAS CORRETAS
+
+Cliente: "Quanto custa pra amunciar no predio sant perer"
+VOCÊ (CORRETO): "O Saint Peter tá em instalação. Vai ser R$ 155/mês quando ativar! Quer ver os que já tão disponíveis? 😊"
+VOCÊ (ERRADO): "Vou verificar pra você!" ❌
+VOCÊ (ERRADO): "Para valores, me chama no (45) 9 9141-5856" ❌
+
+Cliente: "Quanto custa o edifício provence"
+VOCÊ (CORRETO): "O Edifício Provence tá disponível agora! R$ 254/mês. Quer mais detalhes?"
+VOCÊ (ERRADO): "A partir de R$ 200/mês" ❌
+VOCÊ (ERRADO): "Depende do número de prédios" ❌
+
+## ❌ RESPOSTAS ABSOLUTAMENTE PROIBIDAS
+
+NUNCA MAIS responda:
+- "Vou verificar pra você" (OS DADOS ESTÃO ACIMA!)
+- "Qual o seu negócio?" quando cliente pergunta preço (RESPONDA O PREÇO PRIMEIRO!)
+- "Para valores, me chama no (45) 9 9141-5856" (RESPONDA AQUI!)
+- "Depende do número de prédios" quando cliente pergunta preço específico (USE O PREÇO EXATO!)
+- "Vou enviar os detalhes por WhatsApp" sem enviar (ENVIE AGORA!)
+
+## 📚 BASE DE CONHECIMENTO
+
+${knowledgeContext}
+
+## 💬 HISTÓRICO DA CONVERSA
+
+${historyFormatted}
+
+---
+
+**INSTRUÇÃO FINAL**: Responda de forma natural, objetiva e SEMPRE usando os dados reais dos prédios acima. Se cliente perguntar sobre prédio, USE O PREÇO EXATO da lista!`;
+
+    console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
+      promptLength: systemPrompt.length,
+      buildingsCount: buildingsData?.length || 0,
+      knowledgeSections: agentKnowledge?.length || 0
+    });
+
+    // ====== LOG PRÉ-VALIDAÇÃO EM AGENT_LOGS ======
+    await supabase.from('agent_logs').insert({
+      agent_key: agentKey,
+      conversation_id: conversationId,
+      event_type: 'ai_context_prepared',
+      metadata: {
+        buildingDetected: buildingMentioned?.nome || 'NONE',
+        fuzzyMatchScore: matchDetails ? `${(matchDetails.score * 100).toFixed(1)}%` : 'N/A',
+        fuzzyMatchMethod: matchDetails?.method || 'N/A',
+        top3Matches,
+        buildingsCount: buildingsData?.length || 0,
+        promptTokens: Math.floor(systemPrompt.length / 4),
+        timestamp: new Date().toISOString()
       }
     });
 
-    if (aiError) {
-      console.error('[AI-RESPONSE] ❌ AI error:', aiError);
-      throw new Error('Failed to generate AI response');
+    // ====== CHAMAR OPENAI ======
+    console.log('[AI-RESPONSE] 🤖 Calling OpenAI...');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
-    let aiResponse = aiResult?.response;
-
-    if (!aiResponse) {
-      throw new Error('No response from AI');
-    }
-
-    // SANITIZAÇÃO: Remover quebras de linha múltiplas e forçar mensagem única
-    aiResponse = aiResponse
-      .replace(/\n\n+/g, ' ')  // Substituir quebras duplas por espaço
-      .replace(/\n/g, ' ')     // Substituir quebras simples por espaço
-      .trim();
-
-    console.log('[AI-RESPONSE] ✅ AI response generated and sanitized:', {
-      responseLength: aiResponse.length,
-      responsePreview: aiResponse.substring(0, 100)
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      }),
     });
 
-    // 8. Enviar mensagem (typing para automaticamente)
+    if (!openaiResponse.ok) {
+      throw new Error(`OpenAI error: ${openaiResponse.status}`);
+    }
+
+    const openaiData = await openaiResponse.json();
+    const aiReply = openaiData.choices[0]?.message?.content || '';
+
+    if (!aiReply) {
+      throw new Error('Empty AI response');
+    }
+
+    // Sanitizar resposta
+    const sanitizedReply = aiReply
+      .replace(/\n\n+/g, ' ')
+      .replace(/\n/g, ' ')
+      .trim();
+
+    console.log('[AI-RESPONSE] ✅ AI reply generated:', sanitizedReply.substring(0, 80) + '...');
+
+    // ====== LOG RESPOSTA EM AGENT_LOGS ======
+    await supabase.from('agent_logs').insert({
+      agent_key: agentKey,
+      conversation_id: conversationId,
+      event_type: 'ai_response_generated',
+      metadata: {
+        responsePreview: sanitizedReply.substring(0, 100),
+        responseLength: sanitizedReply.length,
+        tokensUsed: openaiData.usage?.total_tokens,
+        model: 'gpt-4o-mini',
+        timestamp: new Date().toISOString()
+      }
+    });
+
+    // ====== ENVIAR MENSAGEM ======
     console.log('[AI-RESPONSE] 📨 Sending message via', conversation?.provider);
 
-    // Enviar via provider apropriado
     let sendResult, sendError;
     if (conversation?.provider === 'manychat') {
-      // Usar send-message-unified para ManyChat
       const result = await supabase.functions.invoke('send-message-unified', {
         body: {
           conversationId,
           agentKey,
-          message: aiResponse
+          message: sanitizedReply
         }
       });
       sendResult = result.data;
       sendError = result.error;
     } else {
-      // Usar zapi-send-message para WhatsApp/Z-API
       const result = await supabase.functions.invoke('zapi-send-message', {
         body: {
           agentKey,
           phone: phoneNumber,
-          message: aiResponse
+          message: sanitizedReply
         }
       });
       sendResult = result.data;
@@ -378,19 +336,14 @@ ${message}`;
       throw new Error('Failed to send message');
     }
 
-    console.log('[AI-RESPONSE] ✅ Complete message sent successfully');
-
-    // 10. Registrar no log
-    console.log('[AI-RESPONSE] 📊 Logging event...');
-    
+    // ====== LOG SUCESSO FINAL EM AGENT_LOGS ======
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,
-      event_type: 'ai_response_sent',
       conversation_id: conversationId,
+      event_type: 'ai_response_sent',
       metadata: {
-        message_preview: message.substring(0, 100),
-        response_preview: aiResponse.substring(0, 100),
-        chunks_sent: 1, // ✅ CORRIGIDO: sempre 1 mensagem completa agora
+        messagePreview: message.substring(0, 100),
+        responsePreview: sanitizedReply.substring(0, 100),
         success: true,
         timestamp: new Date().toISOString()
       }
@@ -401,14 +354,39 @@ ${message}`;
     return new Response(
       JSON.stringify({ 
         success: true,
-        response: aiResponse
+        response: sanitizedReply
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('[AI-RESPONSE] 💥 FATAL ERROR:', error);
-    console.error('[AI-RESPONSE] Error stack:', error.stack);
+    
+    // ====== LOG ERRO EM AGENT_LOGS ======
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      const { agentKey, conversationId } = await req.json().catch(() => ({}));
+      
+      if (agentKey) {
+        await supabase.from('agent_logs').insert({
+          agent_key: agentKey,
+          conversation_id: conversationId,
+          event_type: 'ai_response_error',
+          metadata: {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+    } catch (logError) {
+      console.error('[AI-RESPONSE] Failed to log error:', logError);
+    }
+    
     return new Response(
       JSON.stringify({ 
         error: error.message,
