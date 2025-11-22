@@ -98,12 +98,15 @@ serve(async (req) => {
       
       if (!buildingsData) {
         console.log('[AI-RESPONSE] 🔍 Cache miss, fetching all buildings...');
-        const { data } = await supabase
+        const { data, error: buildingsError } = await supabase
           .from('buildings')
-          .select('nome, preco_base, visualizacoes_mes, bairro, endereco, cidade, estado, status')
+          .select('nome, preco_base, visualizacoes_mes, bairro, endereco, status')
           .in('status', ['ativo', 'instalação'])
           .order('nome');
         
+        if (buildingsError) {
+          console.error('[AI-RESPONSE] ❌ Error fetching buildings:', buildingsError);
+        }
         buildingsData = data;
         
         // Salvar no cache
@@ -116,13 +119,16 @@ serve(async (req) => {
     } else {
       // Busca simplificada: apenas 5 principais
       console.log('[AI-RESPONSE] 📊 Simple query: fetching top 5 buildings');
-      const { data } = await supabase
+      const { data, error: buildingsError } = await supabase
         .from('buildings')
         .select('nome, preco_base, bairro')
         .in('status', ['ativo', 'instalação'])
         .order('nome')
         .limit(5);
       
+      if (buildingsError) {
+        console.error('[AI-RESPONSE] ❌ Error fetching buildings:', buildingsError);
+      }
       buildingsData = data;
     }
 
