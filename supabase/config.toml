@@ -236,3 +236,10 @@ verify_jwt = false
 
 [functions.test-agent-status]
 verify_jwt = false  # Temporariamente público para debug
+
+[functions.conversation-follow-up]
+verify_jwt = false
+
+[[cron]]
+function_name = "conversation-follow-up"
+schedule = "*/2 * * * *"  # A cada 2 minutos
