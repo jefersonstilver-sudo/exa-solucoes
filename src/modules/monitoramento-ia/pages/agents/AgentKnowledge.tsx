@@ -10,26 +10,15 @@ import { KnowledgeItems } from '../../components/agents/KnowledgeItems';
 export const AgentKnowledge = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getAgentById, refetch } = useSupabaseAgents();
+  const { agents, loading: agentsLoading } = useSupabaseAgents();
   
-  const [agent, setAgent] = useState<ReturnType<typeof getAgentById>>(undefined);
   const [loading, setLoading] = useState(true);
 
-  const loadAgent = async () => {
-    if (!id) return;
-    
-    setLoading(true);
-    await refetch();
-    const foundAgent = getAgentById(id);
-    if (foundAgent) {
-      setAgent(foundAgent);
-    }
-    setLoading(false);
-  };
+  const agent = agents.find(a => a.id === id);
 
   useEffect(() => {
-    loadAgent();
-  }, [id]);
+    setLoading(agentsLoading);
+  }, [agentsLoading]);
 
   if (loading) {
     return (
@@ -39,7 +28,17 @@ export const AgentKnowledge = () => {
     );
   }
 
-  if (!agent) return null;
+  if (!agent) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <p className="text-module-secondary">Agente não encontrado</p>
+        <Button variant="outline" onClick={() => navigate('/admin/monitoramento-ia/agentes')}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Voltar
+        </Button>
+      </div>
+    );
+  }
 
   const sections = agent.sections || [];
   const knowledgeItems = agent.knowledgeItems || [];
@@ -78,29 +77,28 @@ export const AgentKnowledge = () => {
         <TabsContent value="section1" className="mt-6">
           <AgentSections 
             sections={sections.filter(s => s.section_number === 1)} 
-            onRefresh={loadAgent}
+            agentId={agent.id}
           />
         </TabsContent>
 
         <TabsContent value="section2" className="mt-6">
           <AgentSections 
             sections={sections.filter(s => s.section_number === 2)} 
-            onRefresh={loadAgent}
+            agentId={agent.id}
           />
         </TabsContent>
 
         <TabsContent value="section3" className="mt-6">
           <AgentSections 
             sections={sections.filter(s => s.section_number === 3)} 
-            onRefresh={loadAgent}
+            agentId={agent.id}
           />
         </TabsContent>
 
         <TabsContent value="section4" className="mt-6">
           <KnowledgeItems 
             items={knowledgeItems} 
-            agentKey={agent.key}
-            onRefresh={loadAgent}
+            agentId={agent.id}
           />
         </TabsContent>
       </Tabs>

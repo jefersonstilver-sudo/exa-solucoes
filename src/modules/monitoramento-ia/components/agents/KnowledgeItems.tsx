@@ -24,11 +24,10 @@ interface KnowledgeItem {
 
 interface KnowledgeItemsProps {
   items: KnowledgeItem[];
-  agentKey: string;
-  onRefresh: () => void;
+  agentId: string;
 }
 
-export const KnowledgeItems = ({ items, agentKey, onRefresh }: KnowledgeItemsProps) => {
+export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -52,7 +51,7 @@ export const KnowledgeItems = ({ items, agentKey, onRefresh }: KnowledgeItemsPro
       const { error } = await supabase
         .from('agent_knowledge_items')
         .insert({
-          agent_id: agentKey,
+          agent_id: agentId,
           title: newItem.title,
           description: newItem.description,
           content: newItem.content,
@@ -74,7 +73,7 @@ export const KnowledgeItems = ({ items, agentKey, onRefresh }: KnowledgeItemsPro
         instruction: ''
       });
       setIsAddDialogOpen(false);
-      onRefresh();
+      window.location.reload(); // Reload to get updated data
     } catch (error) {
       console.error('Error adding knowledge item:', error);
       toast.error('Erro ao adicionar item');
@@ -93,7 +92,7 @@ export const KnowledgeItems = ({ items, agentKey, onRefresh }: KnowledgeItemsPro
       if (error) throw error;
 
       toast.success('Item removido');
-      onRefresh();
+      window.location.reload(); // Reload to get updated data
     } catch (error) {
       console.error('Error deleting item:', error);
       toast.error('Erro ao remover item');
