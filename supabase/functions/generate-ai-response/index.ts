@@ -27,52 +27,38 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // 1. Buscar configuração do agente
-    const { data: agent, error: agentError } = await supabase
-      .from('agents')
-      .select('*')
-      .eq('key', agentKey)
-      .single();
+    // 1. Paralelizar queries (4→1 call = mais rápido)
+    const [
+      { data: agent, error: agentError },
+      { data: agentKnowledge, error: knowledgeError },
+      { data: conversationHistory },
+      { data: conversation }
+    ] = await Promise.all([
+      supabase.from('agents').select('*').eq('key', agentKey).single(),
+      supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true).in('section', ['perfil', 'fluxo_comercial', 'regras_basicas']),
+      supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: false }).limit(5),
+      supabase.from('conversations').select('provider').eq('id', conversationId).single()
+    ]);
 
     if (agentError || !agent) {
       console.error('[AI-RESPONSE] ❌ Agent not found:', agentKey, agentError);
       throw new Error('Agent not found');
     }
 
-    console.log('[AI-RESPONSE] ✅ Agent found:', {
-      key: agent.key,
-      name: agent.display_name,
-      aiAutoResponse: agent.ai_auto_response
+    console.log('[AI-RESPONSE] ✅ Data loaded:', {
+      agent: agent.display_name,
+      knowledge: agentKnowledge?.length || 0,
+      history: conversationHistory?.length || 0,
+      provider: conversation?.provider
     });
 
-    // 1.1. Buscar conhecimento do agente separadamente
-    const { data: agentKnowledge, error: knowledgeError } = await supabase
-      .from('agent_knowledge')
-      .select('*')
-      .eq('agent_key', agentKey)
-      .eq('is_active', true);
-
-    if (knowledgeError) {
-      console.error('[AI-RESPONSE] ⚠️ Error fetching knowledge:', knowledgeError);
-    }
-
-    console.log('[AI-RESPONSE] ✅ Knowledge items found:', agentKnowledge?.length || 0);
-
     if (!agent.ai_auto_response) {
-      console.log('[AI-RESPONSE] ⏸️ AI auto-response disabled for agent');
+      console.log('[AI-RESPONSE] ⏸️ AI auto-response disabled');
       return new Response(
         JSON.stringify({ success: false, message: 'AI auto-response disabled' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // 2. Buscar contexto da conversa (últimas 10 mensagens)
-    const { data: conversationHistory } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: false })
-      .limit(10);
 
     // 3. Construir contexto do conhecimento
     const knowledgeContext = (agentKnowledge || [])
@@ -114,22 +100,11 @@ ${message}`;
       systemPromptLength: systemPrompt.length
     });
 
-    // 6. Enviar indicador de "digitando..." ANTES de chamar IA
-    console.log('[AI-RESPONSE] ⌨️ Starting typing indicator...');
-    try {
-      await supabase.functions.invoke('send-typing-indicator', {
-        body: {
-          phone: phoneNumber,
-          agentKey,
-          action: 'start'
-        }
-      });
-    } catch (typingError) {
-      console.error('[AI-RESPONSE] ⚠️ Typing indicator error (non-blocking):', typingError);
-    }
-
-    // Aguardar delay realista (simular digitação humana)
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // 6. Typing indicator (1x, Z-API para automaticamente ao enviar)
+    console.log('[AI-RESPONSE] ⌨️ Typing indicator...');
+    supabase.functions.invoke('send-typing-indicator', {
+      body: { phone: phoneNumber, agentKey, action: 'start' }
+    }).catch(e => console.error('[AI-RESPONSE] ⚠️ Typing error (non-blocking):', e));
 
     // 7. Chamar OpenAI via ia-console
     console.log('[AI-RESPONSE] 🧠 Calling ia-console...');
@@ -168,43 +143,8 @@ ${message}`;
       responsePreview: aiResponse.substring(0, 100)
     });
 
-    // ✅ FASE 2: ENVIAR MENSAGEM COMPLETA (SEM CHUNKS)
-    console.log('[AI-RESPONSE] 📨 Sending complete message (no chunks)...', {
-      messageLength: aiResponse.length,
-      agentKey,
-      phoneNumber
-    });
-
-    // Typing indicator antes de enviar
-    try {
-      await supabase.functions.invoke('send-typing-indicator', {
-        body: { phone: phoneNumber, agentKey, action: 'start' }
-      });
-    } catch (e) {
-      console.error('[AI-RESPONSE] ⚠️ Typing start error (non-blocking):', e);
-    }
-
-    // Delay realista (2-3 segundos para simular digitação humana)
-    const typingDelay = 2000 + Math.random() * 1000;
-    await new Promise(resolve => setTimeout(resolve, typingDelay));
-
-    // Parar typing indicator
-    try {
-      await supabase.functions.invoke('send-typing-indicator', {
-        body: { phone: phoneNumber, agentKey, action: 'stop' }
-      });
-    } catch (e) {
-      console.error('[AI-RESPONSE] ⚠️ Typing stop error (non-blocking):', e);
-    }
-
-    // Verificar provider da conversa para escolher método de envio
-    const { data: conversation } = await supabase
-      .from('conversations')
-      .select('provider')
-      .eq('id', conversationId)
-      .single();
-
-    console.log('[AI-RESPONSE] 📤 Provider:', conversation?.provider);
+    // 8. Enviar mensagem (typing para automaticamente)
+    console.log('[AI-RESPONSE] 📨 Sending message via', conversation?.provider);
 
     // Enviar via provider apropriado
     let sendResult, sendError;
