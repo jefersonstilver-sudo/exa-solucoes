@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Save, Plus, Trash2, Eye, Copy, RefreshCw } from 'lucide-react';
+import { Save, Plus, Trash2, Eye, Copy, RefreshCw, BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AgentChatPreview } from './AgentChatPreview';
 import { ZAPIConfigSection } from './ZAPIConfigSection';
 import { toast } from 'sonner';
@@ -37,6 +38,7 @@ const AVAILABLE_CHANNELS = [
 ];
 
 export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState(agent || {} as Agent);
   const [showPreview, setShowPreview] = useState(false);
@@ -310,6 +312,15 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
               Informações
             </TabsTrigger>
           </TabsList>
+          
+          {/* Botão para Base de Conhecimento */}
+          <Button 
+            onClick={() => navigate(`/admin/monitoramento-ia/agentes/${agent.id}/base-conhecimento`)}
+            className="bg-module-accent hover:bg-module-accent/90 text-white"
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Base de Conhecimento (4 Seções)
+          </Button>
         </div>
 
         {/* TAB: CONFIGURAÇÕES BÁSICAS */}
