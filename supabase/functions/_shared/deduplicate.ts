@@ -11,7 +11,7 @@ export async function checkDuplicate(
   messageText: string
 ): Promise<{ isDuplicate: boolean; reason?: string; existingId?: string }> {
   
-  // 1. Verificar por messageId (mais confiável)
+  // 1. Verificar por messageId (MAIS CONFIÁVEL - VERIFICAÇÃO PRIMÁRIA)
   const { data: existingLog } = await supabase
     .from('zapi_logs')
     .select('id, created_at')
@@ -27,8 +27,8 @@ export async function checkDuplicate(
     };
   }
 
-  // 2. Verificar por conteúdo (backup - janela de 10 segundos)
-  const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+  // 2. Verificar por conteúdo (backup - janela de 30 segundos - aumentado)
+  const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
 
   const { data: recentSimilarLog } = await supabase
     .from('zapi_logs')
@@ -36,13 +36,14 @@ export async function checkDuplicate(
     .eq('phone_number', phone)
     .eq('message_text', messageText)
     .eq('direction', 'inbound')
-    .gte('created_at', tenSecondsAgo)
+    .gte('created_at', thirtySecondsAgo)
     .maybeSingle();
 
   if (recentSimilarLog) {
+    const secondsAgo = (Date.now() - new Date(recentSimilarLog.created_at).getTime()) / 1000;
     console.log('[DEDUPE] ⚠️ Duplicate by content:', {
       phone,
-      secondsAgo: (Date.now() - new Date(recentSimilarLog.created_at).getTime()) / 1000
+      secondsAgo: secondsAgo.toFixed(1)
     });
     return {
       isDuplicate: true,
@@ -52,5 +53,6 @@ export async function checkDuplicate(
   }
 
   // Não é duplicado
+  console.log('[DEDUPE] ✅ Not a duplicate:', { messageId, phone });
   return { isDuplicate: false };
 }

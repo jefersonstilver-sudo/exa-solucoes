@@ -423,23 +423,51 @@ Obrigado pela compreensão!`;
         if (agent.ai_auto_response && routeResult?.routed_to) {
           console.log('[ZAPI-WEBHOOK] 🤖 AI auto-response enabled, calling generate-ai-response...');
           
-          try {
-            const { data: aiResult, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
-              body: {
-                conversationId: conversation.id,
-                message: messageText,
-                agentKey: agent.key,
-                phoneNumber: phone
-              }
-            });
+          // ====== LOCK NO WEBHOOK ANTES DE CHAMAR IA (FASE 1) ======
+          const aiLockKey = `ai_processing_${conversation.id}_${messageId}`;
+          
+          const { data: aiLock, error: aiLockError } = await supabase
+            .from('agent_context')
+            .insert({ 
+              key: aiLockKey, 
+              value: { 
+                acquired_at: new Date().toISOString(),
+                message_id: messageId
+              } 
+            })
+            .select()
+            .maybeSingle();
 
-            if (aiError) {
-              console.error('[ZAPI-WEBHOOK] ❌ AI generation error:', aiError);
-            } else {
-              console.log('[ZAPI-WEBHOOK] ✅ AI response generated successfully');
+          if (aiLockError) {
+            console.log('[ZAPI-WEBHOOK] ⚠️ AI already processing this message, skipping');
+          } else {
+            // Limpar lock após 2 minutos
+            setTimeout(async () => {
+              await supabase.from('agent_context').delete().eq('key', aiLockKey);
+            }, 120000);
+
+            try {
+              const { data: aiResult, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
+                body: {
+                  conversationId: conversation.id,
+                  message: messageText,
+                  agentKey: agent.key,
+                  phoneNumber: phone,
+                  messageId // ADICIONAR messageId para lock correto
+                }
+              });
+
+              if (aiError) {
+                console.error('[ZAPI-WEBHOOK] ❌ AI generation error:', aiError);
+              } else {
+                console.log('[ZAPI-WEBHOOK] ✅ AI response generated successfully');
+              }
+            } catch (aiError) {
+              console.error('[ZAPI-WEBHOOK] ❌ AI invocation failed:', aiError);
+            } finally {
+              // Limpar lock imediatamente após processamento
+              await supabase.from('agent_context').delete().eq('key', aiLockKey);
             }
-          } catch (aiError) {
-            console.error('[ZAPI-WEBHOOK] ❌ AI invocation failed:', aiError);
           }
         }
 
