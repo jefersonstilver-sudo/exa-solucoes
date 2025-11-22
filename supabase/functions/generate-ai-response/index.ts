@@ -73,10 +73,10 @@ serve(async (req) => {
       { data: buildingsData }
     ] = await Promise.all([
       supabase.from('agents').select('*').eq('key', agentKey).single(),
-      supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true),
+      supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
       supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true }).limit(10),
       supabase.from('conversations').select('provider').eq('id', conversationId).single(),
-      supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, bairro, status').in('status', ['ativo', 'instalação']).limit(50)
+      supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, bairro, status').in('status', ['ativo', 'instalação']).limit(13)
     ]);
 
     if (!agent) {
