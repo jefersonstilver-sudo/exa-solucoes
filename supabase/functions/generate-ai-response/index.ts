@@ -76,7 +76,7 @@ serve(async (req) => {
       supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
       supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true }).limit(10),
       supabase.from('conversations').select('provider').eq('id', conversationId).single(),
-      supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, bairro, status').in('status', ['ativo', 'instalação']).limit(13)
+      supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, visualizacoes_mes, bairro, endereco, cidade, estado, status').in('status', ['ativo', 'instalação']).order('nome')
     ]);
 
     if (!agent) {
@@ -181,12 +181,20 @@ serve(async (req) => {
       totalBuildingsAvailable: buildingsData?.length || 0
     });
 
-    // ====== CONSTRUIR DADOS DOS PRÉDIOS ======
+    // ====== DETECTAR PEDIDO DE LISTA COMPLETA ======
+    const isFullListRequest = message.match(/todos|lista completa|quantos prédios|quais prédios|mostre.*prédios|ver.*prédios/i);
+    
+    // ====== CONSTRUIR DADOS DOS PRÉDIOS (COM DETALHES COMPLETOS) ======
     const buildingsFormatted = buildingsData && buildingsData.length > 0 
       ? buildingsData.map((b: any) => {
           const statusEmoji = b.status === 'ativo' ? '✅' : '🚧';
-          return `${statusEmoji} ${b.nome} - R$ ${b.preco_base?.toFixed(2) || '?'}/mês - ${b.status}`;
-        }).join('\n')
+          const visualizacoes = b.visualizacoes_mes || (b.quantidade_telas ? b.quantidade_telas * 7350 : 0);
+          return `${statusEmoji} **${b.nome}**
+   📍 ${b.bairro} - ${b.cidade}/${b.estado}
+   📊 ${visualizacoes.toLocaleString('pt-BR')} exibições/mês
+   💰 R$ ${b.preco_base?.toFixed(2) || '?'}/mês
+   🏢 ${b.endereco}`;
+        }).join('\n\n')
       : 'Nenhum prédio disponível';
 
     // ====== CONSTRUIR KNOWLEDGE BASE ======
@@ -219,21 +227,38 @@ ${historyFormatted}
 ✅ PRIMEIRA MENSAGEM: "Oi! Sou a Sofia da Exa 😊 O que você quer anunciar?"
 `}
 
-## 🎯 FUNIL DE VENDAS (seguir ordem)
+## ⚠️ REGRAS OBRIGATÓRIAS - NUNCA VIOLE!
 
-1. Qualificar negócio: "O que você quer anunciar?"
-2. Qualificar quantidade: "Quantos prédios?"
-3. Upsell descontos: "Com 2 prédios: 15% OFF | 5: 30% OFF"
-4. Direcionar site: "www.examidia.com.br"
+### 📋 LISTA COMPLETA DE PRÉDIOS:
+${isFullListRequest ? `
+🚨 ATENÇÃO: Cliente pediu LISTA COMPLETA!
 
-## 📱 ESTILO
+**INSTRUÇÕES ESPECIAIS:**
+1. Mostre TODOS os ${buildingsData?.length || 0} prédios disponíveis
+2. Use o formato EXATO que está em "PRÉDIOS DISPONÍVEIS"
+3. Inicie com: "Temos ${buildingsData?.length || 0} prédios disponíveis! 🏢"
+4. Termine com: "Gostou de algum? Posso te passar mais detalhes! 😊"
+5. NÃO resuma, NÃO corte, mostre TUDO
+` : `
+- Ao mencionar prédios, mostre máx 3 de cada vez
+- Se perguntarem sobre prédio específico, dê TODOS os detalhes (endereço, exibições, preço)
+- Se pedirem "todos", avise: "Vou te mostrar a lista completa!"
+`}
 
-- Mensagens CURTAS (máx 2-3 linhas)
+### 💬 ESTILO DE MENSAGEM:
+- Mensagens CURTAS (máx 2-3 linhas) - EXCETO quando for lista completa
 - Natural e conversacional
 - Use emoji com moderação
 - Se cliente enviar imagem: comente rápido e volte ao funil
 
-## 🏢 PRÉDIOS DISPONÍVEIS
+## 🎯 FUNIL DE VENDAS (seguir ordem)
+
+1. Qualificar negócio: "O que você quer anunciar?"
+2. Qualificar quantidade: "Quantos prédios?"
+3. Upsell descontos: "Com 2 prédios: 15% OFF | 5: 30% OFF | 10+: 40% OFF"
+4. Direcionar site: "www.examidia.com.br"
+
+## 🏢 PRÉDIOS DISPONÍVEIS (${buildingsData?.length || 0} opções)
 
 ${buildingsFormatted}
 
@@ -243,7 +268,7 @@ ${knowledgeContext}
 
 ---
 
-Responda de forma natural, curta e objetiva. SEMPRE leia o histórico antes de responder.`;
+Responda de forma natural e objetiva. Se pedirem lista completa, mostre TODOS os prédios do formato acima.`;
 
     console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
       promptLength: systemPrompt.length,
@@ -267,6 +292,39 @@ Responda de forma natural, curta e objetiva. SEMPRE leia o histórico antes de r
       }
     });
 
+    // ====== ENVIAR MENSAGEM DE AGUARDE (SE FOR LISTA COMPLETA) ======
+    if (isFullListRequest) {
+      console.log('[AI-RESPONSE] 💬 Sending "wait" message for full list...');
+      
+      const waitMessages = [
+        "Só um momento, vou buscar todos os prédios disponíveis! 🔍",
+        "Deixa eu organizar a lista completa pra você! ⏱️",
+        "Preparando lista completa... já volto! 💭"
+      ];
+      const waitMsg = waitMessages[Math.floor(Math.random() * waitMessages.length)];
+      
+      if (conversation?.provider === 'manychat') {
+        await supabase.functions.invoke('send-message-unified', {
+          body: {
+            conversationId,
+            agentKey,
+            message: waitMsg
+          }
+        });
+      } else {
+        await supabase.functions.invoke('zapi-send-message', {
+          body: {
+            agentKey,
+            phone: phoneNumber,
+            message: waitMsg
+          }
+        });
+      }
+      
+      // Aguardar 2 segundos
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
     // ====== CHAMAR OPENAI ======
     console.log('[AI-RESPONSE] 🤖 Calling OpenAI...');
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -274,6 +332,8 @@ Responda de forma natural, curta e objetiva. SEMPRE leia o histórico antes de r
     if (!openaiApiKey) {
       throw new Error('OPENAI_API_KEY not configured');
     }
+
+    const maxTokens = isFullListRequest ? 3000 : 500;
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -288,7 +348,7 @@ Responda de forma natural, curta e objetiva. SEMPRE leia o histórico antes de r
           { role: 'user', content: message }
         ],
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: maxTokens,
       }),
     });
 
@@ -349,49 +409,53 @@ Responda de forma natural, curta e objetiva. SEMPRE leia o histórico antes de r
       });
     }
 
-    // Validar tamanho da mensagem (máx 4 linhas, ou 3 se tiver URL)
-    const lineCount = sanitizedReply.split('\n').length;
-    const hasUrl = sanitizedReply.includes('http') || sanitizedReply.includes('www.');
-    const maxLines = hasUrl ? 3 : 4;
-    
-    if (lineCount > maxLines) {
-      console.log('[AI-RESPONSE] ⚠️ Message too long:', {
-        lines: lineCount,
-        maxAllowed: maxLines,
-        hasUrl
-      });
+    // Validar tamanho da mensagem (EXCETO para lista completa)
+    if (!isFullListRequest) {
+      const lineCount = sanitizedReply.split('\n').length;
+      const hasUrl = sanitizedReply.includes('http') || sanitizedReply.includes('www.');
+      const maxLines = hasUrl ? 3 : 4;
       
-      await supabase.from('agent_logs').insert({
-        agent_key: agentKey,
-        conversation_id: conversationId,
-        event_type: 'long_message_warning',
-        metadata: {
-          lineCount,
+      if (lineCount > maxLines) {
+        console.log('[AI-RESPONSE] ⚠️ Message too long:', {
+          lines: lineCount,
           maxAllowed: maxLines,
-          hasUrl,
-          messagePreview: sanitizedReply.substring(0, 200),
-          timestamp: new Date().toISOString()
-        }
-      });
-    }
+          hasUrl
+        });
+        
+        await supabase.from('agent_logs').insert({
+          agent_key: agentKey,
+          conversation_id: conversationId,
+          event_type: 'long_message_warning',
+          metadata: {
+            lineCount,
+            maxAllowed: maxLines,
+            hasUrl,
+            messagePreview: sanitizedReply.substring(0, 200),
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
 
-    // Validar tamanho total da mensagem
-    if (sanitizedReply.length > 1000) {
-      console.log('[AI-RESPONSE] ⚠️ Long message detected:', {
-        length: sanitizedReply.length,
-        preview: sanitizedReply.substring(0, 100)
-      });
-      
-      await supabase.from('agent_logs').insert({
-        agent_key: agentKey,
-        conversation_id: conversationId,
-        event_type: 'long_message_warning',
-        metadata: {
+      // Validar tamanho total da mensagem
+      if (sanitizedReply.length > 1000) {
+        console.log('[AI-RESPONSE] ⚠️ Long message detected:', {
           length: sanitizedReply.length,
-          messagePreview: sanitizedReply.substring(0, 200),
-          timestamp: new Date().toISOString()
-        }
-      });
+          preview: sanitizedReply.substring(0, 100)
+        });
+        
+        await supabase.from('agent_logs').insert({
+          agent_key: agentKey,
+          conversation_id: conversationId,
+          event_type: 'long_message_warning',
+          metadata: {
+            length: sanitizedReply.length,
+            messagePreview: sanitizedReply.substring(0, 200),
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+    } else {
+      console.log('[AI-RESPONSE] ✅ Full list response - size validation SKIPPED');
     }
 
     // Detectar report de problema técnico em painel
