@@ -117,7 +117,7 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold">Base de Conhecimento Dinâmica</h3>
+          <h3 className="text-lg font-semibold">Conhecimento</h3>
           <p className="text-sm text-muted-foreground">
             Adicione documentos, links e textos que o agente pode consultar
           </p>

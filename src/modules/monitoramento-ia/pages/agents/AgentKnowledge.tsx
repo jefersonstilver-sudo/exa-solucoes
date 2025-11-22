@@ -98,7 +98,7 @@ export const AgentKnowledge = () => {
         <TabsContent value="section4" className="mt-6">
           <KnowledgeItems 
             items={knowledgeItems} 
-            agentId={agent.id}
+            agentId={agent.key}
           />
         </TabsContent>
       </Tabs>
