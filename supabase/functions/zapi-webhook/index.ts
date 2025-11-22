@@ -452,32 +452,31 @@ Obrigado pela compreensão!`;
           
           // ========== VERIFICAR LOCK DE PROCESSAMENTO AI ==========
           const aiLockKey = `ai_processing_${conversation.id}`;
-          const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
-          
-          const { data: existingLock } = await supabase
+          // ========== LOCK ATÔMICO COM UNIQUE CONSTRAINT ==========
+          const { error: lockError } = await supabase
             .from('agent_context')
-            .select('value, created_at')
-            .eq('key', aiLockKey)
-            .gte('created_at', fiveSecondsAgo)
-            .maybeSingle();
+            .insert({
+              key: aiLockKey,
+              value: { 
+                processing: true, 
+                started_at: new Date().toISOString(),
+                message_id: messageId 
+              }
+            });
 
-          if (existingLock) {
-            console.log('[ZAPI-WEBHOOK] ⏸️ AI already processing, skipping duplicate call:', {
+          // Se erro 23505 (duplicate key) = outra chamada pegou o lock
+          if (lockError?.code === '23505') {
+            console.log('[ZAPI-WEBHOOK] ⏸️ AI já processando (lock ativo - duplicate key):', {
               conversationId: conversation.id,
-              lockCreated: existingLock.created_at
+              lockKey: aiLockKey
             });
             return;
           }
 
-          // ========== CRIAR LOCK DE PROCESSAMENTO ==========
-          await supabase.from('agent_context').insert({
-            key: aiLockKey,
-            value: { 
-              processing: true, 
-              started_at: new Date().toISOString(),
-              message_id: messageId 
-            }
-          });
+          if (lockError) {
+            console.error('[ZAPI-WEBHOOK] ❌ Erro ao criar lock:', lockError);
+            throw lockError;
+          }
 
           console.log('[ZAPI-WEBHOOK] 🔒 AI lock created, calling generate-ai-response...');
           
