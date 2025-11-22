@@ -1,37 +1,48 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, BookOpen } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { KnowledgeCard } from '../../components/KnowledgeCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
-import { toast } from 'sonner';
-import { SofiaModificationLog } from '../../components/SofiaModificationLog';
-import { AddTopicDialog } from '../../components/AddTopicDialog';
+import { AgentSections } from '../../components/agents/AgentSections';
+import { KnowledgeItems } from '../../components/agents/KnowledgeItems';
 
 export const AgentKnowledge = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getAgentById } = useSupabaseAgents();
+  const { getAgentById, refetch } = useSupabaseAgents();
   
   const [agent, setAgent] = useState<ReturnType<typeof getAgentById>>(undefined);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadAgent = async () => {
     if (!id) return;
     
+    setLoading(true);
+    await refetch();
     const foundAgent = getAgentById(id);
     if (foundAgent) {
       setAgent(foundAgent);
-    } else {
-      toast.error('Agente não encontrado');
-      navigate('/admin/monitoramento-ia/agentes');
     }
-  }, [id, getAgentById, navigate]);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadAgent();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (!agent) return null;
 
-  const documents = agent.knowledge.filter(k => k.type === 'document');
-  const faqs = agent.knowledge.filter(k => k.type === 'faq');
-  const policies = agent.knowledge.filter(k => k.type === 'policy');
+  const sections = agent.sections || [];
+  const knowledgeItems = agent.knowledgeItems || [];
 
   return (
     <div className="space-y-6">
@@ -43,7 +54,7 @@ export const AgentKnowledge = () => {
               {agent.avatar} Base de Conhecimento: {agent.name}
             </h1>
             <p className="text-module-secondary">
-              Gerencie documentos e informações do agente
+              Configure as 4 seções fundamentais do agente
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -51,90 +62,48 @@ export const AgentKnowledge = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar
             </Button>
-            <Button className="bg-module-accent hover:bg-module-accent-hover">
-              <Plus className="w-4 h-4 mr-2" />
-              Adicionar Documento
-            </Button>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-module-card rounded-[14px] border border-module p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-module-tertiary text-sm mb-1">Documentos</p>
-              <p className="text-3xl font-bold text-module-primary">{documents.length}</p>
-            </div>
-            <BookOpen className="w-8 h-8 text-module-accent" />
-          </div>
-        </div>
+      {/* Tabs for 4 Sections */}
+      <Tabs defaultValue="section1" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="section1">1. Identidade</TabsTrigger>
+          <TabsTrigger value="section2">2. Operacional</TabsTrigger>
+          <TabsTrigger value="section3">3. Limites</TabsTrigger>
+          <TabsTrigger value="section4">4. Base</TabsTrigger>
+        </TabsList>
 
-        <div className="bg-module-card rounded-[14px] border border-module p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-module-tertiary text-sm mb-1">FAQs</p>
-              <p className="text-3xl font-bold text-module-primary">{faqs.length}</p>
-            </div>
-            <span className="text-3xl">❓</span>
-          </div>
-        </div>
+        <TabsContent value="section1" className="mt-6">
+          <AgentSections 
+            sections={sections.filter(s => s.section_number === 1)} 
+            onRefresh={loadAgent}
+          />
+        </TabsContent>
 
-        <div className="bg-module-card rounded-[14px] border border-module p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-module-tertiary text-sm mb-1">Políticas</p>
-              <p className="text-3xl font-bold text-module-primary">{policies.length}</p>
-            </div>
-            <span className="text-3xl">📋</span>
-          </div>
-        </div>
-      </div>
+        <TabsContent value="section2" className="mt-6">
+          <AgentSections 
+            sections={sections.filter(s => s.section_number === 2)} 
+            onRefresh={loadAgent}
+          />
+        </TabsContent>
 
-      {/* Knowledge List */}
-      <div className="bg-module-card rounded-[14px] border border-module p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-module-primary">Documentos da Base de Conhecimento</h2>
-          {agent.id === 'sofia' && (
-            <AddTopicDialog 
-              agentKey="sofia" 
-              onSuccess={() => window.location.reload()} 
-            />
-          )}
-        </div>
-        
-        {agent.knowledge.length === 0 ? (
-          <div className="text-center py-12">
-            <BookOpen className="w-16 h-16 text-module-tertiary mx-auto mb-4" />
-            <p className="text-module-secondary mb-2">Nenhum documento adicionado ainda</p>
-            <p className="text-module-tertiary text-sm mb-4">
-              Adicione documentos para enriquecer o conhecimento do agente
-            </p>
-            <Button className="bg-module-accent hover:bg-module-accent-hover">
-              <Plus className="w-4 h-4 mr-2" />
-              Adicionar Primeiro Documento
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {agent.knowledge.map((doc) => (
-              <KnowledgeCard
-                key={doc.id}
-                title={doc.title}
-                type={doc.type}
-                tags={doc.tags}
-                updatedAt={doc.updatedAt}
-                onEdit={() => toast.info('Edição de documento em desenvolvimento')}
-                onDelete={() => toast.info('Exclusão de documento em desenvolvimento')}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+        <TabsContent value="section3" className="mt-6">
+          <AgentSections 
+            sections={sections.filter(s => s.section_number === 3)} 
+            onRefresh={loadAgent}
+          />
+        </TabsContent>
 
-      {/* Botão flutuante de log (só para Sofia) */}
-      {agent.id === 'sofia' && <SofiaModificationLog />}
+        <TabsContent value="section4" className="mt-6">
+          <KnowledgeItems 
+            items={knowledgeItems} 
+            agentKey={agent.key}
+            onRefresh={loadAgent}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

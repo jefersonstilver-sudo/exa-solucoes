@@ -1,0 +1,287 @@
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus, Trash2, Edit, Save, X, FileText, Link as LinkIcon, File } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
+
+interface KnowledgeItem {
+  id: string;
+  agent_id: string;
+  title: string;
+  description?: string;
+  content: string;
+  content_type: 'text' | 'pdf' | 'link';
+  keywords: string[];
+  instruction?: string;
+  active: boolean;
+}
+
+interface KnowledgeItemsProps {
+  items: KnowledgeItem[];
+  agentKey: string;
+  onRefresh: () => void;
+}
+
+export const KnowledgeItems = ({ items, agentKey, onRefresh }: KnowledgeItemsProps) => {
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [newItem, setNewItem] = useState({
+    title: '',
+    description: '',
+    content: '',
+    content_type: 'text' as 'text' | 'pdf' | 'link',
+    keywords: '',
+    instruction: ''
+  });
+
+  const handleAdd = async () => {
+    if (!newItem.title || !newItem.content) {
+      toast.error('Preencha título e conteúdo');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('agent_knowledge_items')
+        .insert({
+          agent_id: agentKey,
+          title: newItem.title,
+          description: newItem.description,
+          content: newItem.content,
+          content_type: newItem.content_type,
+          keywords: newItem.keywords.split(',').map(k => k.trim()).filter(Boolean),
+          instruction: newItem.instruction,
+          active: true
+        });
+
+      if (error) throw error;
+
+      toast.success('Item de conhecimento adicionado');
+      setNewItem({
+        title: '',
+        description: '',
+        content: '',
+        content_type: 'text',
+        keywords: '',
+        instruction: ''
+      });
+      setIsAddDialogOpen(false);
+      onRefresh();
+    } catch (error) {
+      console.error('Error adding knowledge item:', error);
+      toast.error('Erro ao adicionar item');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('agent_knowledge_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Item removido');
+      onRefresh();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      toast.error('Erro ao remover item');
+    }
+  };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'text':
+        return <FileText className="h-4 w-4" />;
+      case 'pdf':
+        return <File className="h-4 w-4" />;
+      case 'link':
+        return <LinkIcon className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold">Base de Conhecimento Dinâmica</h3>
+          <p className="text-sm text-muted-foreground">
+            Adicione documentos, links e textos que o agente pode consultar
+          </p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Adicionar Conhecimento
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Novo Item de Conhecimento</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Tipo de Conteúdo</Label>
+                <select
+                  className="w-full mt-1 p-2 border rounded-md bg-background"
+                  value={newItem.content_type}
+                  onChange={(e) => setNewItem({ ...newItem, content_type: e.target.value as any })}
+                >
+                  <option value="text">Texto</option>
+                  <option value="pdf">PDF</option>
+                  <option value="link">Link</option>
+                </select>
+              </div>
+              <div>
+                <Label>Título</Label>
+                <Input
+                  value={newItem.title}
+                  onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
+                  placeholder="Ex: Media Kit Profissional"
+                />
+              </div>
+              <div>
+                <Label>Palavras-chave (separadas por vírgula)</Label>
+                <Input
+                  value={newItem.keywords}
+                  onChange={(e) => setNewItem({ ...newItem, keywords: e.target.value })}
+                  placeholder="Ex: media kit, apresentação, creator"
+                />
+              </div>
+              <div>
+                <Label>Descrição Curta (opcional)</Label>
+                <Input
+                  value={newItem.description}
+                  onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                  placeholder="Breve descrição sobre este conhecimento"
+                />
+              </div>
+              <div>
+                <Label>Conteúdo</Label>
+                <Textarea
+                  value={newItem.content}
+                  onChange={(e) => setNewItem({ ...newItem, content: e.target.value })}
+                  placeholder={
+                    newItem.content_type === 'link'
+                      ? 'Cole o link aqui...'
+                      : 'Digite o conteúdo completo...'
+                  }
+                  className="min-h-[200px]"
+                />
+              </div>
+              <div>
+                <Label>Instrução Específica (opcional)</Label>
+                <Textarea
+                  value={newItem.instruction}
+                  onChange={(e) => setNewItem({ ...newItem, instruction: e.target.value })}
+                  placeholder="Ex: Usar este conteúdo quando o cliente perguntar sobre..."
+                  className="min-h-[100px]"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleAdd} disabled={saving}>
+                  {saving ? 'Salvando...' : 'Adicionar'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="space-y-3">
+        {items.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground mb-2">
+                Nenhum item de conhecimento adicionado ainda
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Clique em "Adicionar Conhecimento" para começar
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          items.map((item) => (
+            <Card key={item.id}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      {getIcon(item.content_type)}
+                      <CardTitle className="text-base">{item.title}</CardTitle>
+                      <Badge variant="secondary" className="text-xs">
+                        {item.content_type}
+                      </Badge>
+                    </div>
+                    {item.description && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {item.description}
+                      </p>
+                    )}
+                    {item.keywords.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {item.keywords.map((keyword, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {keyword}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingId(item.id)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {item.content.length > 300
+                    ? `${item.content.substring(0, 300)}...`
+                    : item.content}
+                </p>
+                {item.instruction && (
+                  <div className="mt-3 p-3 bg-muted rounded-md">
+                    <p className="text-xs font-semibold mb-1">Instrução de Uso:</p>
+                    <p className="text-xs text-muted-foreground">{item.instruction}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};

@@ -59,6 +59,28 @@ export interface Agent {
     tags: string[];
     type: 'document' | 'faq' | 'policy';
   }>;
+  sections?: Array<{
+    id: string;
+    agent_id: string;
+    section_number: number;
+    section_title: string;
+    content: string;
+    created_at: string;
+    updated_at: string;
+  }>;
+  knowledgeItems?: Array<{
+    id: string;
+    agent_id: string;
+    title: string;
+    description?: string;
+    content: string;
+    content_type: 'text' | 'pdf' | 'link';
+    keywords: string[];
+    instruction?: string;
+    active: boolean;
+    created_at: string;
+    updated_at: string;
+  }>;
   rules: Array<{
     id: number;
     name: string;

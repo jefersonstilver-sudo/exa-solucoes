@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { SofiaKnowledgeManager } from '../../components/agents/SofiaKnowledgeManager';
 import { AgentChatPreview } from '../../components/agents/AgentChatPreview';
 import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
 import { toast } from 'sonner';
@@ -243,16 +242,20 @@ export const AgentPrompt = () => {
 
             {/* Knowledge Base Tab */}
             <TabsContent value="knowledge">
-              {agent.type === 'vendas' ? (
-                <SofiaKnowledgeManager />
-              ) : (
-                <div className="bg-black/40 backdrop-blur-sm rounded-2xl border border-red-900/30 p-8 text-center">
-                  <Brain className="h-16 w-16 text-red-400/50 mx-auto mb-4" />
-                  <p className="text-red-200/70">
-                    Base de conhecimento disponível apenas para Sofia
-                  </p>
-                </div>
-              )}
+              <div className="bg-black/40 backdrop-blur-sm rounded-2xl border border-red-900/30 p-8 text-center">
+                <Brain className="h-16 w-16 text-red-400/50 mx-auto mb-4" />
+                <p className="text-red-200/70 mb-2">
+                  Base de conhecimento configurada em página dedicada
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/admin/monitoramento-ia/agentes/${id}/base-conhecimento`)}
+                  className="border-red-900/30 text-white hover:bg-red-900/20 mt-4"
+                >
+                  <Brain className="mr-2 h-4 w-4" />
+                  Ir para Base de Conhecimento
+                </Button>
+              </div>
             </TabsContent>
 
             {/* AI Config Tab */}
