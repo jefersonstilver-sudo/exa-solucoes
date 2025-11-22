@@ -49,6 +49,28 @@ serve(async (req) => {
     
     console.log('[ZAPI-WEBHOOK] 🔑 Message ID:', messageId);
 
+    // ========== FILTRO: IGNORAR STATUS UPDATES ==========
+    const eventType = payload.type;
+
+    // Z-API envia múltiplos eventos por mensagem:
+    // - ReceivedCallback: mensagem RECEBIDA (processar ✅)
+    // - MessageStatusCallback: atualizações de status (ignorar ❌)
+    // - DeliveryCallback: confirmação de entrega (ignorar ❌)
+
+    if (eventType === 'MessageStatusCallback' || eventType === 'DeliveryCallback') {
+      console.log('[ZAPI-WEBHOOK] ⏭️ Skipping status update event:', eventType);
+      return new Response(JSON.stringify({ 
+        success: true, 
+        skipped: true,
+        reason: 'status_update',
+        eventType
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log('[ZAPI-WEBHOOK] ✅ Processing message event:', eventType);
+
     // Detectar tipo de mensagem e extrair conteúdo
     let messageText = '';
     let mediaUrl = null;
