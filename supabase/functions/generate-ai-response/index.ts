@@ -98,6 +98,34 @@ ${buildingsData.map((b: any) => {
 ⚠️ VALIDAÇÃO OBRIGATÓRIA PRÉ-RESPOSTA:
 
 QUANDO O CLIENTE PERGUNTAR SOBRE PRÉDIO ESPECÍFICO:
+
+## ✅ EXEMPLOS DE RESPOSTAS CORRETAS (COPIE ESTE PADRÃO!)
+
+**Exemplo 1 - Prédio em instalação:**
+Cliente: "Quanto custa pra anunciar no predio sant perer"
+VOCÊ (CORRETO ✅): "O Saint Peter tá em fase de instalação ainda. Quando ele ficar ativo, vai ser R$ 155/mês. Quer ver os prédios que já tão disponíveis? 😊"
+VOCÊ (ERRADO ❌): "Vou verificar pra você!" 
+
+**Exemplo 2 - Prédio ativo:**
+Cliente: "Quanto custa o edifício provence"
+VOCÊ (CORRETO ✅): "O Edifício Provence tá disponível agora! É R$ 254/mês. Quer que eu te envie mais detalhes?"
+VOCÊ (ERRADO ❌): "A partir de R$ 200/mês"
+
+**Exemplo 3 - Prédio não existe:**
+Cliente: "quanto custa o predio xyz"
+VOCÊ (CORRETO ✅): "Não encontrei nenhum prédio chamado 'XYZ' na nossa lista. Quer ver os prédios disponíveis na região que você quer?"
+VOCÊ (ERRADO ❌): "Vou consultar aqui"
+
+## ❌ RESPOSTAS ABSOLUTAMENTE PROIBIDAS
+
+NUNCA responda:
+- "Vou verificar" ou "Vou consultar" (OS DADOS ESTÃO ACIMA!)
+- "Qual o seu negócio?" quando cliente já perguntou preço direto (RESPONDA O PREÇO PRIMEIRO!)
+- "Vou enviar os detalhes por WhatsApp" sem enviar nada (ENVIE OS DADOS AGORA!)
+- "A partir de R$..." com valor genérico (USE O PREÇO EXATO ACIMA!)
+- Qualquer informação que NÃO esteja na lista acima
+
+⚠️ PRÉ-VALIDAÇÃO ANTES DE RESPONDER SOBRE PRÉDIO ESPECÍFICO:
 1. PROCURE na lista acima usando fuzzy match
    - "sant peter" = "Saint Peter"
    - "san pedro" = "Saint Peter"  
@@ -166,7 +194,7 @@ ${message}`;
       body: { phone: phoneNumber, agentKey, action: 'start' }
     }).catch(e => console.error('[AI-RESPONSE] ⚠️ Typing error (non-blocking):', e));
 
-    // 7. Fuzzy matching - detectar menção de prédio
+    // 7. Fuzzy matching com Levenshtein distance - detectar menção de prédio
     const normalizeName = (text: string) => {
       return text
         .toLowerCase()
@@ -177,24 +205,86 @@ ${message}`;
         .trim();
     };
 
+    // Levenshtein distance para calcular similaridade entre strings
+    const levenshteinDistance = (str1: string, str2: string): number => {
+      const track = Array(str2.length + 1).fill(null).map(() =>
+        Array(str1.length + 1).fill(null));
+      for (let i = 0; i <= str1.length; i += 1) {
+        track[0][i] = i;
+      }
+      for (let j = 0; j <= str2.length; j += 1) {
+        track[j][0] = j;
+      }
+      for (let j = 1; j <= str2.length; j += 1) {
+        for (let i = 1; i <= str1.length; i += 1) {
+          const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+          track[j][i] = Math.min(
+            track[j][i - 1] + 1,
+            track[j - 1][i] + 1,
+            track[j - 1][i - 1] + indicator,
+          );
+        }
+      }
+      return track[str2.length][str1.length];
+    };
+
+    // Calcular similaridade entre 0-1
+    const stringSimilarity = (str1: string, str2: string): number => {
+      const longer = str1.length > str2.length ? str1 : str2;
+      const shorter = str1.length > str2.length ? str2 : str1;
+      const distance = levenshteinDistance(longer, shorter);
+      return (longer.length - distance) / longer.length;
+    };
+
     const userNormalized = normalizeName(message);
-    const buildingMentioned = buildingsData?.find((b: any) => {
+    
+    // Coletar todos os matches para logging
+    const allMatches = buildingsData?.map((b: any) => {
       const bNormalized = normalizeName(b.nome);
       
-      // Match exato
-      if (userNormalized.includes(bNormalized)) return true;
+      // 1. Match exato
+      if (userNormalized.includes(bNormalized)) {
+        return { building: b, score: 1.0, method: 'exact' };
+      }
       
-      // Match parcial (pelo menos 70% das palavras)
+      // 2. Extrair menção de prédio do texto (palavras após "predio")
+      const predioMatch = userNormalized.match(/predio\s+([a-z0-9\s]{2,40})/);
+      if (predioMatch) {
+        const mentionedName = predioMatch[1].trim();
+        
+        // 3. Comparar com Levenshtein (60% de similaridade)
+        const similarity = stringSimilarity(mentionedName, bNormalized);
+        
+        if (similarity >= 0.6) {
+          return { building: b, score: similarity, method: 'levenshtein' };
+        }
+      }
+      
+      // 4. Match parcial por palavras (fallback)
       const userWords = userNormalized.split(' ');
       const buildingWords = bNormalized.split(' ');
       const matchCount = buildingWords.filter(word => 
         userWords.some(uWord => uWord.includes(word) || word.includes(uWord))
       ).length;
+      const wordScore = matchCount / buildingWords.length;
       
-      return matchCount / buildingWords.length >= 0.7;
-    });
+      if (wordScore >= 0.7) {
+        return { building: b, score: wordScore, method: 'word_match' };
+      }
+      
+      return null;
+    }).filter(m => m !== null).sort((a, b) => b!.score - a!.score) || [];
 
-    // 7.5 Log context preview e fuzzy match result
+    const buildingMentioned = allMatches[0]?.building;
+    const matchDetails = allMatches[0];
+
+    // 7.5 Log context preview e fuzzy match result com detalhes
+    const top3Matches = allMatches.slice(0, 3).map(m => ({
+      nome: m!.building.nome,
+      score: `${(m!.score * 100).toFixed(1)}%`,
+      method: m!.method
+    }));
+
     console.log('[AI-RESPONSE] 🔍 PRE-VALIDATION COMPLETE:', {
       // Input
       userMessage: message.substring(0, 100),
@@ -202,7 +292,9 @@ ${message}`;
       
       // Detection
       buildingDetected: buildingMentioned?.nome || 'NONE',
-      detectionConfidence: buildingMentioned ? 'HIGH' : 'NONE',
+      matchScore: matchDetails ? `${(matchDetails.score * 100).toFixed(1)}%` : 'n/a',
+      matchMethod: matchDetails?.method || 'n/a',
+      top3Matches: top3Matches,
       
       // Data available
       buildingPrice: buildingMentioned?.preco_base || 'n/a',

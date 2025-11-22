@@ -64,7 +64,40 @@ serve(async (req) => {
       });
     }
 
-    // 🛡️ VERIFICAR DUPLICAÇÃO - evitar envios duplicados
+    // 🛡️ VERIFICAR DUPLICAÇÃO - evitar envios duplicados (cache + DB)
+    // Cache em memória para verificação mais rápida
+    const messageHash = `${phone}_${message.substring(0, 100)}`;
+    const cacheKey = `dup_${messageHash}`;
+    
+    // Tentar obter do cache primeiro (mais rápido)
+    const cachedTimestamp = await supabase
+      .from('agent_context')
+      .select('value')
+      .eq('key', cacheKey)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value && typeof data.value === 'object' && 'timestamp' in data.value) {
+          return (data.value as { timestamp: number }).timestamp;
+        }
+        return null;
+      });
+
+    if (cachedTimestamp) {
+      const timeDiff = Date.now() - cachedTimestamp;
+      if (timeDiff < 3000) { // menos de 3 segundos
+        console.log('[ZAPI-SEND] ⚠️ Duplicate blocked (cache):', {
+          message: message.substring(0, 30),
+          timeDiff: `${timeDiff}ms ago`
+        });
+        return new Response(JSON.stringify({ 
+          success: true, 
+          skipped: true, 
+          reason: 'duplicate_cache' 
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // Verificação adicional no banco (backup)
     const { data: conversationForDuplication } = await supabase
       .from('conversations')
       .select('id')
@@ -80,25 +113,39 @@ serve(async (req) => {
         .select('body, created_at')
         .eq('conversation_id', conversationForDuplication.id)
         .eq('direction', 'outbound')
-        .gte('created_at', new Date(Date.now() - 10000).toISOString()) // últimos 10s
+        .gte('created_at', new Date(Date.now() - 5000).toISOString()) // últimos 5s
         .order('created_at', { ascending: false })
         .limit(1);
 
       if (recentMessages?.[0]?.body === message) {
         const timeDiff = Date.now() - new Date(recentMessages[0].created_at).getTime();
-        if (timeDiff < 5000) { // menos de 5 segundos
-          console.log('[ZAPI-SEND] ⚠️ Duplicate message blocked:', {
-            message: message.substring(0, 50),
+        if (timeDiff < 3000) { // menos de 3 segundos
+          console.log('[ZAPI-SEND] ⚠️ Duplicate blocked (DB):', {
+            message: message.substring(0, 30),
             timeDiff: `${timeDiff}ms ago`
           });
           return new Response(JSON.stringify({ 
             success: true, 
             skipped: true, 
-            reason: 'duplicate_detected' 
+            reason: 'duplicate_db' 
           }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
       }
     }
+
+    // Salvar timestamp no cache para próxima verificação
+    await supabase
+      .from('agent_context')
+      .upsert({ 
+        key: cacheKey, 
+        value: { timestamp: Date.now() } as any 
+      })
+      .then(() => {
+        // Limpar cache antigo após 10 segundos
+        setTimeout(() => {
+          supabase.from('agent_context').delete().eq('key', cacheKey).then();
+        }, 10000);
+      });
 
     // 🤖 QUEBRAR MENSAGENS LONGAS (humanizar comunicação)
     const splitMessage = (text: string, maxLength = 150): string[] => {
