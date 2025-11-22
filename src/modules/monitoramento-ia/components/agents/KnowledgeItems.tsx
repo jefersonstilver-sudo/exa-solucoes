@@ -32,6 +32,7 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [editingItem, setEditingItem] = useState<KnowledgeItem | null>(null);
   const [newItem, setNewItem] = useState({
     title: '',
     description: '',
@@ -78,6 +79,46 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
     } catch (error) {
       console.error('Error adding knowledge item:', error);
       toast.error('Erro ao adicionar item');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEdit = (item: KnowledgeItem) => {
+    setEditingId(item.id);
+    setEditingItem({ ...item });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingItem(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('agent_knowledge_items')
+        .update({
+          title: editingItem.title,
+          description: editingItem.description,
+          content: editingItem.content,
+          keywords: editingItem.keywords,
+          instruction: editingItem.instruction
+        })
+        .eq('id', editingItem.id);
+
+      if (error) throw error;
+
+      toast.success('Item atualizado');
+      setEditingId(null);
+      setEditingItem(null);
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast.error('Erro ao atualizar item');
     } finally {
       setSaving(false);
     }
@@ -238,58 +279,135 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {getIcon(item.content_type)}
-                      <CardTitle className="text-base">{item.title}</CardTitle>
-                      <Badge variant="secondary" className="text-xs">
-                        {item.content_type}
-                      </Badge>
-                    </div>
-                    {item.description && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {item.description}
-                      </p>
-                    )}
-                    {item.keywords.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {item.keywords.map((keyword, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {keyword}
-                          </Badge>
-                        ))}
+                    {editingId === item.id && editingItem ? (
+                      <div className="space-y-3">
+                        <div>
+                          <Label>Título</Label>
+                          <Input
+                            value={editingItem.title}
+                            onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Descrição</Label>
+                          <Input
+                            value={editingItem.description || ''}
+                            onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Palavras-chave (separadas por vírgula)</Label>
+                          <Input
+                            value={editingItem.keywords.join(', ')}
+                            onChange={(e) => setEditingItem({ 
+                              ...editingItem, 
+                              keywords: e.target.value.split(',').map(k => k.trim()).filter(Boolean)
+                            })}
+                          />
+                        </div>
                       </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 mb-2">
+                          {getIcon(item.content_type)}
+                          <CardTitle className="text-base">{item.title}</CardTitle>
+                          <Badge variant="secondary" className="text-xs">
+                            {item.content_type}
+                          </Badge>
+                        </div>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {item.description}
+                          </p>
+                        )}
+                        {item.keywords.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {item.keywords.map((keyword, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {keyword}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setEditingId(item.id)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {editingId === item.id ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleCancelEdit}
+                          disabled={saving}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleSaveEdit}
+                          disabled={saving}
+                        >
+                          <Save className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEdit(item)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {item.content.length > 300
-                    ? `${item.content.substring(0, 300)}...`
-                    : item.content}
-                </p>
-                {item.instruction && (
-                  <div className="mt-3 p-3 bg-muted rounded-md">
-                    <p className="text-xs font-semibold mb-1">Instrução de Uso:</p>
-                    <p className="text-xs text-muted-foreground">{item.instruction}</p>
+                {editingId === item.id && editingItem ? (
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Conteúdo</Label>
+                      <Textarea
+                        value={editingItem.content}
+                        onChange={(e) => setEditingItem({ ...editingItem, content: e.target.value })}
+                        className="min-h-[200px]"
+                      />
+                    </div>
+                    <div>
+                      <Label>Instrução Específica</Label>
+                      <Textarea
+                        value={editingItem.instruction || ''}
+                        onChange={(e) => setEditingItem({ ...editingItem, instruction: e.target.value })}
+                        className="min-h-[100px]"
+                      />
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {item.content.length > 300
+                        ? `${item.content.substring(0, 300)}...`
+                        : item.content}
+                    </p>
+                    {item.instruction && (
+                      <div className="mt-3 p-3 bg-muted rounded-md">
+                        <p className="text-xs font-semibold mb-1">Instrução de Uso:</p>
+                        <p className="text-xs text-muted-foreground">{item.instruction}</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
