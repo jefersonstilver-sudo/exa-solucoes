@@ -31,14 +31,14 @@ serve(async (req) => {
       throw new Error('Agent not found');
     }
 
-    // 2. Buscar configurações de conhecimento (OTIMIZADO: apenas seções core)
-    const relevantSections = ['perfil', 'fluxo_comercial', 'informacoes_predios', 'suporte_multilingue']; // Seções essenciais
-    const { data: agentKnowledge } = await supabase
-      .from('agent_knowledge')
-      .select('*')
-      .eq('agent_key', agentKey)
-      .eq('is_active', true)
-      .in('section', relevantSections);
+    // 2. Buscar as 4 seções fundamentais + itens de conhecimento
+    const [
+      { data: agentSections },
+      { data: agentKnowledgeItems }
+    ] = await Promise.all([
+      supabase.from('agent_sections').select('*').eq('agent_id', agentKey).order('section_number'),
+      supabase.from('agent_knowledge_items').select('*').eq('agent_id', agentKey).eq('active', true)
+    ]);
 
     // 3. Buscar histórico da conversa (OTIMIZADO: apenas últimas 5 mensagens)
     const { data: conversationHistory } = await supabase
@@ -58,10 +58,30 @@ serve(async (req) => {
     // 5. Montar system prompt completo
     const systemPrompt = buildSystemPrompt(agent, conversation);
 
-    // 6. Montar knowledge base
-    const knowledgeContext = agentKnowledge && agentKnowledge.length > 0
-      ? agentKnowledge.map(k => `### ${k.title}\n${k.content}`).join('\n\n')
-      : 'Nenhuma base de conhecimento específica configurada.';
+    // 6. Montar knowledge base das 4 seções
+    let knowledgeContext = '';
+    
+    if (agentSections && agentSections.length > 0) {
+      const sections = agentSections.sort((a: any, b: any) => a.section_number - b.section_number);
+      knowledgeContext += sections.map((s: any) => `## SEÇÃO ${s.section_number} - ${s.section_title.toUpperCase()}\n${s.content}`).join('\n\n');
+    }
+    
+    if (agentKnowledgeItems && agentKnowledgeItems.length > 0) {
+      knowledgeContext += '\n\n## SEÇÃO 4 - BASE DE CONHECIMENTO\n\n';
+      knowledgeContext += agentKnowledgeItems.map((k: any) => {
+        let item = `### ${k.title}\n`;
+        if (k.description) item += `${k.description}\n\n`;
+        item += k.content;
+        if (k.keywords && k.keywords.length > 0) {
+          item += `\n\n**Palavras-chave:** ${k.keywords.join(', ')}`;
+        }
+        return item;
+      }).join('\n\n---\n\n');
+    }
+    
+    if (!knowledgeContext) {
+      knowledgeContext = 'Nenhuma base de conhecimento configurada.';
+    }
 
     // 7. Montar histórico formatado
     const historyFormatted = conversationHistory && conversationHistory.length > 0
@@ -97,7 +117,8 @@ ${userMessage}
         context: {
           conversation,
           history: conversationHistory,
-          knowledge: agentKnowledge
+          sections: agentSections,
+          knowledgeItems: agentKnowledgeItems
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

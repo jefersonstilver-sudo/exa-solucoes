@@ -35,16 +35,17 @@ serve(async (req) => {
       });
     }
 
-    // Buscar base de conhecimento
-    const { data: knowledge } = await supabase
-      .from('agent_knowledge')
-      .select('*')
-      .eq('agent_key', agentKey)
-      .eq('is_active', true)
-      .order('section', { ascending: true });
+    // Buscar as 4 seções fundamentais + itens de conhecimento
+    const [
+      { data: agentSections },
+      { data: agentKnowledgeItems }
+    ] = await Promise.all([
+      supabase.from('agent_sections').select('*').eq('agent_id', agentKey).order('section_number'),
+      supabase.from('agent_knowledge_items').select('*').eq('agent_id', agentKey).eq('active', true)
+    ]);
 
     // Construir system prompt
-    const systemPrompt = buildSystemPrompt(agent, knowledge || []);
+    const systemPrompt = buildSystemPrompt(agent, agentSections || [], agentKnowledgeItems || []);
 
     // Chamar OpenAI
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
@@ -246,28 +247,28 @@ serve(async (req) => {
   }
 });
 
-function buildSystemPrompt(agent: any, knowledge: any[]): string {
-  // Separar instruções da base de conhecimento
-  const instructions = knowledge.filter(k => k.section === 'instrucoes');
-  const otherKnowledge = knowledge.filter(k => k.section !== 'instrucoes');
+function buildSystemPrompt(agent: any, sections: any[], knowledgeItems: any[]): string {
+  let prompt = `Você é ${agent.display_name}. ${agent.description}\n\n`;
   
-  let prompt = '';
-  
-  // Construir prompt a partir das instruções
-  if (instructions.length > 0) {
-    instructions.forEach(instruction => {
-      prompt += `${instruction.content}\n\n`;
+  // Construir prompt das 4 seções fundamentais
+  if (sections && sections.length > 0) {
+    const sortedSections = sections.sort((a, b) => a.section_number - b.section_number);
+    sortedSections.forEach(s => {
+      prompt += `## SEÇÃO ${s.section_number} - ${s.section_title.toUpperCase()}\n${s.content}\n\n`;
     });
-  } else {
-    // Fallback se não houver instruções
-    prompt = `Você é ${agent.display_name}. ${agent.description}\n\n`;
   }
   
-  // Adicionar resto da base de conhecimento
-  if (otherKnowledge.length > 0) {
-    prompt += '## BASE DE CONHECIMENTO ADICIONAL\n\n';
-    otherKnowledge.forEach(k => {
-      prompt += `### ${k.title}\n${k.content}\n\n`;
+  // Adicionar itens de conhecimento da Seção 4
+  if (knowledgeItems && knowledgeItems.length > 0) {
+    prompt += '## SEÇÃO 4 - BASE DE CONHECIMENTO\n\n';
+    knowledgeItems.forEach(k => {
+      prompt += `### ${k.title}\n`;
+      if (k.description) prompt += `${k.description}\n\n`;
+      prompt += `${k.content}\n`;
+      if (k.keywords && k.keywords.length > 0) {
+        prompt += `\n**Palavras-chave:** ${k.keywords.join(', ')}\n`;
+      }
+      prompt += '\n---\n\n';
     });
   }
 

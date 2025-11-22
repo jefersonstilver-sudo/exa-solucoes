@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Settings, Lock, LogOut, LogIn, UserPlus, User as UserIcon, ShieldCheck, LayoutDashboard, Users, Package, Building, Monitor, CheckCircle, ClipboardList, ListOrdered, Gift, Film } from 'lucide-react';
+import { Settings, Lock, LogOut, LogIn, UserPlus, User as UserIcon, ShieldCheck, LayoutDashboard, Users, Package, Building, Monitor, CheckCircle, ClipboardList, ListOrdered, Gift, Film, Bot } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -164,6 +164,13 @@ const UserMenu = () => {
                                 <Link to="/super_admin" className="flex items-center">
                                   <ShieldCheck className="mr-3 h-5 w-5 text-amber-600" />
                                   <span className="font-medium">Master Control Panel</span>
+                                </Link>
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-50 text-gray-900 hover:text-purple-700 focus:bg-purple-50 focus:text-purple-700">
+                                <Link to="/admin/monitoramento-ia/agentes" className="flex items-center">
+                                  <Bot className="mr-3 h-5 w-5 text-purple-600" />
+                                  <span className="font-medium">Módulo Agentes EXA</span>
                                 </Link>
                               </DropdownMenuItem>
                               

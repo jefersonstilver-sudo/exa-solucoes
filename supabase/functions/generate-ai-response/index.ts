@@ -151,12 +151,14 @@ serve(async (req) => {
     // ====== BUSCAR DADOS EM PARALELO (OTIMIZADO) ======
     const [
       { data: agent },
-      { data: agentKnowledge },
+      { data: agentSections },
+      { data: agentKnowledgeItems },
       { data: conversationHistory },
       { data: conversation }
     ] = await Promise.all([
       supabase.from('agents').select('*').eq('key', agentKey).single(),
-      supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
+      supabase.from('agent_sections').select('*').eq('agent_id', agentKey).order('section_number'),
+      supabase.from('agent_knowledge_items').select('*').eq('agent_id', agentKey).eq('active', true),
       supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true }).limit(10),
       supabase.from('conversations').select('provider').eq('id', conversationId).single()
     ]);
@@ -344,10 +346,26 @@ serve(async (req) => {
         }).filter(b => b !== null).join('\n\n') // Remover prédios sem preço
       : 'Nenhum prédio disponível';
 
-    // ====== CONSTRUIR KNOWLEDGE BASE ======
-    const knowledgeContext = agentKnowledge && agentKnowledge.length > 0
-      ? agentKnowledge.map((k: any) => `### ${k.title}\n${k.content}`).join('\n\n')
-      : '';
+    // ====== CONSTRUIR KNOWLEDGE BASE DAS 4 SEÇÕES ======
+    let knowledgeContext = '';
+    
+    if (agentSections && agentSections.length > 0) {
+      const sections = agentSections.sort((a: any, b: any) => a.section_number - b.section_number);
+      knowledgeContext += sections.map((s: any) => `## SEÇÃO ${s.section_number} - ${s.section_title.toUpperCase()}\n${s.content}`).join('\n\n');
+    }
+    
+    if (agentKnowledgeItems && agentKnowledgeItems.length > 0) {
+      knowledgeContext += '\n\n## SEÇÃO 4 - BASE DE CONHECIMENTO\n\n';
+      knowledgeContext += agentKnowledgeItems.map((k: any) => {
+        let item = `### ${k.title}\n`;
+        if (k.description) item += `${k.description}\n\n`;
+        item += k.content;
+        if (k.keywords && k.keywords.length > 0) {
+          item += `\n\n**Palavras-chave:** ${k.keywords.join(', ')}`;
+        }
+        return item;
+      }).join('\n\n---\n\n');
+    }
 
     // ====== FASE 1: CONSTRUIR HISTÓRICO ESTRUTURADO PARA OpenAI ======
     const historyMessages = conversationHistory && conversationHistory.length > 0
@@ -430,7 +448,8 @@ ${knowledgeContext ? `\n## CONHECIMENTO\n${knowledgeContext}` : ''}`;
     console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
       promptLength: systemPrompt.length,
       buildingsCount: buildingsData?.length || 0,
-      knowledgeSections: agentKnowledge?.length || 0
+      sections: agentSections?.length || 0,
+      knowledgeItems: agentKnowledgeItems?.length || 0
     });
 
     // ====== LOG PRÉ-VALIDAÇÃO EM AGENT_LOGS (COM PERFORMANCE) ======

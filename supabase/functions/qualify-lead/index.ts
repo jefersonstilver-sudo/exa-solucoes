@@ -21,15 +21,34 @@ serve(async (req) => {
 
     console.log(`[QUALIFY] Processing lead for conversation: ${conversationId}`);
 
-    // Buscar conhecimento da Sofia para qualificação
-    const { data: knowledge } = await supabase
-      .from('agent_knowledge')
-      .select('content')
-      .eq('agent_key', 'sofia')
-      .in('section', ['spin_selling', 'scoring', 'perfis', 'objetivo_final'])
-      .eq('is_active', true);
+    // Buscar as 4 seções fundamentais da Sofia para qualificação
+    const [
+      { data: agentSections },
+      { data: agentKnowledgeItems }
+    ] = await Promise.all([
+      supabase.from('agent_sections').select('*').eq('agent_id', 'sofia').order('section_number'),
+      supabase.from('agent_knowledge_items').select('*').eq('agent_id', 'sofia').eq('active', true)
+    ]);
 
-    const knowledgeText = knowledge?.map(k => k.content).join('\n\n') || '';
+    let knowledgeText = '';
+    
+    if (agentSections && agentSections.length > 0) {
+      const sections = agentSections.sort((a: any, b: any) => a.section_number - b.section_number);
+      knowledgeText += sections.map((s: any) => `## SEÇÃO ${s.section_number} - ${s.section_title.toUpperCase()}\n${s.content}`).join('\n\n');
+    }
+    
+    if (agentKnowledgeItems && agentKnowledgeItems.length > 0) {
+      knowledgeText += '\n\n## SEÇÃO 4 - BASE DE CONHECIMENTO\n\n';
+      knowledgeText += agentKnowledgeItems.map((k: any) => {
+        let item = `### ${k.title}\n`;
+        if (k.description) item += `${k.description}\n\n`;
+        item += k.content;
+        if (k.keywords && k.keywords.length > 0) {
+          item += `\n\n**Palavras-chave:** ${k.keywords.join(', ')}`;
+        }
+        return item;
+      }).join('\n\n---\n\n');
+    }
 
     const systemPrompt = `
 Você é um sistema de qualificação de leads da EXA (mídia Out of Home - painéis digitais).
