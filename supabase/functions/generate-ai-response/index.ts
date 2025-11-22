@@ -294,24 +294,24 @@ serve(async (req) => {
     // ====== DETECTAR SE USUÁRIO PEDIU ENDEREÇO EXPLICITAMENTE ======
     const addressRequested = message.match(/endereço|onde fica|localização|rua|avenida/i);
     
-    // ====== CONSTRUIR DADOS DOS PRÉDIOS (SEM CIDADE/ESTADO E ENDEREÇO CONDICIONAL) ======
+    // ====== CONSTRUIR DADOS DOS PRÉDIOS (FORMATO LIMPO E VALIDADO) ======
     const buildingsFormatted = buildingsData && buildingsData.length > 0 
       ? buildingsData.map((b: any) => {
-          const statusEmoji = b.status === 'ativo' ? '✅' : '🚧';
-          const visualizacoes = b.visualizacoes_mes || (b.quantidade_telas ? b.quantidade_telas * 7350 : 0);
+          // Validações para evitar undefined/null/0
+          const nome = b.nome || 'Sem nome';
+          const bairro = b.bairro || 'Centro';
+          const visualizacoes = b.visualizacoes_mes && b.visualizacoes_mes > 0 
+            ? b.visualizacoes_mes 
+            : (b.quantidade_telas ? b.quantidade_telas * 7350 : 7350);
+          const precoBase = b.preco_base && b.preco_base > 0 
+            ? b.preco_base.toFixed(2) 
+            : '129.00';
           
-          // Formato básico (sempre mostrado)
-          let formatted = `${statusEmoji} **${b.nome}**
-   📍 ${b.bairro}
-   📊 ${visualizacoes.toLocaleString('pt-BR')} exibições/mês
-   💰 R$ ${b.preco_base?.toFixed(2) || '?'}/mês`;
-          
-          // Só adicionar endereço se explicitamente solicitado
-          if (addressRequested && b.endereco) {
-            formatted += `\n   🏢 ${b.endereco}`;
-          }
-          
-          return formatted;
+          // Formato básico: apenas nome, bairro, exibições e preço
+          return `🏢 *${nome}*
+📍 ${bairro}
+📊 ${visualizacoes.toLocaleString('pt-BR')} exibições/mês
+💰 R$ ${precoBase}/mês`;
         }).join('\n\n')
       : 'Nenhum prédio disponível';
 
@@ -347,22 +347,37 @@ ${historyFormatted}
 
 ## ⚠️ REGRAS OBRIGATÓRIAS - NUNCA VIOLE!
 
-### 📋 LISTA COMPLETA DE PRÉDIOS:
+### 📋 ${isFullListRequest ? '🚨 LISTA COMPLETA - INSTRUÇÕES CRÍTICAS' : 'PRÉDIOS DISPONÍVEIS'}:
 ${isFullListRequest ? `
-🚨 ATENÇÃO: Cliente pediu LISTA COMPLETA!
+╔══════════════════════════════════════════════════════════╗
+║  ATENÇÃO: CLIENTE PEDIU LISTA COMPLETA DE PRÉDIOS!      ║
+║  VOCÊ DEVE ENVIAR TUDO EM UMA ÚNICA MENSAGEM!          ║
+╚══════════════════════════════════════════════════════════╝
 
-**INSTRUÇÕES ESPECIAIS:**
-1. Mostre TODOS os ${buildingsData?.length || 0} prédios disponíveis EM UMA ÚNICA MENSAGEM
-2. Use o formato EXATO que está em "PRÉDIOS DISPONÍVEIS"
-3. Inicie com: "Temos ${buildingsData?.length || 0} prédios disponíveis! 🏢"
-4. Termine com: "Qual te interessou? 😊"
-5. NÃO resuma, NÃO corte, NÃO divida em partes - mostre TUDO DE UMA VEZ
-6. ${addressRequested ? 'INCLUA endereços completos pois o cliente pediu' : 'NÃO inclua endereços (cliente não pediu)'}
+⚠️ INSTRUÇÕES OBRIGATÓRIAS:
+
+1. 🚫 NÃO DIVIDA A LISTA EM PARTES
+2. 🚫 NÃO ENVIE MENSAGENS SEPARADAS PARA CADA PRÉDIO  
+3. ✅ COPIE E COLE TODOS OS ${buildingsData?.length || 0} PRÉDIOS ABAIXO EM UMA SÓ RESPOSTA
+4. ✅ INICIE COM: "Temos ${buildingsData?.length || 0} prédios disponíveis! 🏢"
+5. ✅ TERMINE COM: "Qual desses prédios te interessou? 😊"
+6. ✅ MANTENHA O FORMATO EXATO (emojis, quebras de linha, etc.)
+
+📝 FORMATO OBRIGATÓRIO DA SUA RESPOSTA:
+
+Temos ${buildingsData?.length || 0} prédios disponíveis! 🏢
+
+${buildingsFormatted}
+
+Qual desses prédios te interessou? 😊
+
+🚨 REPITO: Envie TODOS os ${buildingsData?.length || 0} prédios em UMA ÚNICA mensagem!
+NÃO resuma, NÃO corte, NÃO separe - cole TUDO de uma vez!
 ` : `
 - Ao mencionar prédios, mostre máx 3 de cada vez
-- Se perguntarem sobre prédio específico, dê TODOS os detalhes (endereço, exibições, preço)
-- Se pedirem "todos", avise: "Vou te mostrar a lista completa!"
-- Só mostre endereço se cliente pedir explicitamente
+- Se perguntarem sobre prédio específico, dê TODOS os detalhes
+- Se pedirem "todos" ou "lista completa", use o formato da seção acima
+- Seja breve e direto
 `}
 
 ### 💬 ESTILO DE MENSAGEM:
@@ -378,9 +393,11 @@ ${isFullListRequest ? `
 3. Upsell descontos: "Com 2 prédios: 15% OFF | 5: 30% OFF | 10+: 40% OFF"
 4. Direcionar site: "www.examidia.com.br"
 
+${!isFullListRequest ? `
 ## 🏢 PRÉDIOS DISPONÍVEIS (${buildingsData?.length || 0} opções)
 
 ${buildingsFormatted}
+` : ''}
 
 ## 📚 CONHECIMENTO
 
@@ -388,7 +405,7 @@ ${knowledgeContext}
 
 ---
 
-Responda de forma natural e objetiva. Se pedirem lista completa, mostre TODOS os prédios do formato acima.`;
+${isFullListRequest ? 'IMPORTANTE: Sua resposta DEVE conter a lista completa de TODOS os prédios em UMA ÚNICA mensagem!' : 'Responda de forma natural e objetiva.'}`;
 
     console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
       promptLength: systemPrompt.length,
@@ -465,7 +482,7 @@ Responda de forma natural e objetiva. Se pedirem lista completa, mostre TODOS os
       throw new Error('OPENAI_API_KEY not configured');
     }
 
-    const maxTokens = isFullListRequest ? 3000 : 500;
+    const maxTokens = isFullListRequest ? 4096 : 500;
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -477,7 +494,11 @@ Responda de forma natural e objetiva. Se pedirem lista completa, mostre TODOS os
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
+          { role: 'user', content: message },
+          ...(isFullListRequest ? [{
+            role: 'system',
+            content: `⚠️ LEMBRETE CRÍTICO: O cliente pediu a LISTA COMPLETA! Você DEVE enviar TODOS os ${buildingsData?.length || 0} prédios em UMA ÚNICA mensagem. NÃO divida em partes. Copie e cole toda a lista formatada acima em uma resposta completa.`
+          }] : [])
         ],
         temperature: 0.7,
         max_tokens: maxTokens,
