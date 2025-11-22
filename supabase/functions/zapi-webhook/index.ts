@@ -44,75 +44,42 @@ serve(async (req) => {
       });
     }
 
-    // Extrair ID único da mensagem para deduplicação
+    // ========== BLOQUEIO DE DUPLICATAS NO BANCO ==========
+    // Extrair ID único da mensagem (UNIQUE INDEX garante unicidade)
     const messageId = payload.messageId || payload.id || payload.key?.id || `${phone}_${Date.now()}`;
+    const imageUrl = payload.image?.imageUrl || null;
     
     console.log('[ZAPI-WEBHOOK] 🔑 Message ID:', messageId);
 
-    // ========== DEDUPLICAÇÃO PRECOCE (30 SEGUNDOS) ==========
-    const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
-    
-    // Extrair imageUrl se existir
-    const imageUrl = payload.image?.imageUrl || null;
-    
-    // Buscar duplicatas por messageId OU por conteúdo de imagem
-    let dedupeQuery = supabase
-      .from('zapi_logs')
-      .select('id')
-      .gte('created_at', thirtySecondsAgo);
-    
-    if (imageUrl) {
-      // Se tiver imagem, buscar por messageId OU imageUrl
-      dedupeQuery = dedupeQuery.or(`zapi_message_id.eq.${messageId},metadata->>image_url.eq.${imageUrl}`);
-    } else {
-      // Sem imagem, buscar só por messageId
-      dedupeQuery = dedupeQuery.eq('zapi_message_id', messageId);
-    }
-    
-    const { data: recentLog } = await dedupeQuery.maybeSingle();
-
-    if (recentLog) {
-      console.log('[ZAPI-WEBHOOK] ⚠️ MESSAGE ALREADY PROCESSED (30s):', messageId);
-      return new Response(JSON.stringify({ 
-        success: true, 
-        skipped: true,
-        reason: 'message_already_processed'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // ========== CRIAR LOG IMEDIATAMENTE PARA PREVENIR DUPLICATAS ==========
-    // Inserir log ANTES de qualquer processamento para bloquear chamadas duplicadas
-    console.log('[ZAPI-WEBHOOK] 📝 Creating early log entry for deduplication...');
-    
-    const { error: earlyLogError } = await supabase.from('zapi_logs').insert({
+    // Tentar inserir log IMEDIATAMENTE - banco bloqueia duplicatas via UNIQUE INDEX
+    const { error: insertError } = await supabase.from('zapi_logs').insert({
       phone_number: phone,
       direction: 'inbound',
       zapi_message_id: messageId,
       status: 'processing',
       metadata: { 
         raw_payload: payload,
-        image_url: imageUrl,
-        early_dedupe: true
+        image_url: imageUrl
       }
     });
 
-    if (earlyLogError) {
-      console.error('[ZAPI-WEBHOOK] ⚠️ Early log error (might be duplicate):', earlyLogError);
-      // Se der erro, pode ser que já exista o registro (duplicate key)
-      // Nesse caso, vamos tratar como duplicata
-      if (earlyLogError.code === '23505') { // Unique violation
-        console.log('[ZAPI-WEBHOOK] ⚠️ Log already exists - concurrent duplicate detected');
+    // Se der erro de chave duplicada, significa que mensagem já está sendo processada
+    if (insertError) {
+      if (insertError.code === '23505') { // Unique constraint violation
+        console.log('[ZAPI-WEBHOOK] 🚫 DUPLICATE BLOCKED BY DATABASE:', messageId);
         return new Response(JSON.stringify({ 
           success: true, 
           skipped: true,
-          reason: 'concurrent_duplicate'
+          reason: 'duplicate_blocked_by_db'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
+      // Outro erro - logar e continuar
+      console.error('[ZAPI-WEBHOOK] ⚠️ Log insert error:', insertError);
     }
+
+    console.log('[ZAPI-WEBHOOK] ✅ Message accepted for processing:', messageId);
 
     // Detectar tipo de mensagem e extrair conteúdo
     let messageText = '';
@@ -299,36 +266,6 @@ serve(async (req) => {
       }
     }
 
-
-    // ========== DEDUPLICAÇÃO POR CONTEÚDO ==========
-    // Verificação adicional: mesma mensagem + telefone em janela de 10 segundos
-    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-
-    const { data: recentSimilarLog } = await supabase
-      .from('zapi_logs')
-      .select('id, created_at')
-      .eq('phone_number', phone)
-      .eq('message_text', messageText)
-      .eq('direction', 'inbound')
-      .gte('created_at', tenSecondsAgo)
-      .maybeSingle();
-
-    if (recentSimilarLog) {
-      console.log('[ZAPI-WEBHOOK] ⚠️ CONTENT DUPLICATE - Same message recently:', {
-        messageText,
-        phone,
-        recentLogId: recentSimilarLog.id,
-        secondsAgo: (Date.now() - new Date(recentSimilarLog.created_at).getTime()) / 1000
-      });
-      
-      return new Response(JSON.stringify({ 
-        success: true,
-        contentDuplicate: true,
-        recentLogId: recentSimilarLog.id
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
 
     // ========== RATE LIMITING POR TELEFONE ==========
     const cacheKey = `${phone}_${agent.key}`;
