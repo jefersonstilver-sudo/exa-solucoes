@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { TextFormattingToolbar } from './TextFormattingToolbar';
+import { SectionSearchBar } from './SectionSearchBar';
 
 interface Section {
   id: string;
@@ -22,12 +24,13 @@ interface AgentSectionsProps {
 export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
 
   const handleUpdate = async (id: string, content: string) => {
     try {
       setSaving(true);
       
-      // Find section to get section_number and title
       const section = sections.find(s => s.id === id);
       if (!section) throw new Error('Section not found');
       
@@ -43,7 +46,7 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
 
       toast.success('Seção atualizada com sucesso');
       setEditingId(null);
-      window.location.reload(); // Reload to get updated data
+      window.location.reload();
     } catch (error) {
       console.error('Error updating section:', error);
       toast.error('Erro ao atualizar seção');
@@ -52,9 +55,59 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
     }
   };
 
+  const handleFormat = (sectionId: string, format: string, prefix: string, suffix?: string) => {
+    const textarea = textareaRefs.current[sectionId];
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    const beforeText = textarea.value.substring(0, start);
+    const afterText = textarea.value.substring(end);
+
+    let newText;
+    if (selectedText) {
+      newText = beforeText + prefix + selectedText + (suffix || '') + afterText;
+    } else {
+      newText = beforeText + prefix + (suffix || '') + afterText;
+    }
+
+    textarea.value = newText;
+    const newCursorPos = start + prefix.length + selectedText.length;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+    textarea.focus();
+  };
+
+  const highlightText = (text: string, query: string) => {
+    if (!query.trim()) return text;
+
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === query.toLowerCase() 
+        ? `<mark class="bg-yellow-200 dark:bg-yellow-800">${part}</mark>`
+        : part
+    ).join('');
+  };
+
+  const filteredSections = sections.filter(section => 
+    !searchQuery || section.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalMatches = searchQuery 
+    ? sections.reduce((count, section) => {
+        const matches = section.content.toLowerCase().split(searchQuery.toLowerCase()).length - 1;
+        return count + matches;
+      }, 0)
+    : 0;
+
   return (
     <div className="space-y-4">
-      {sections.map((section) => (
+      <SectionSearchBar 
+        onSearch={setSearchQuery}
+        totalResults={searchQuery ? totalMatches : undefined}
+      />
+
+      {filteredSections.map((section) => (
         <Card key={section.id}>
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -76,7 +129,7 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
                       size="sm"
                       variant="ghost"
                       onClick={() => {
-                        const textarea = document.getElementById(`content-${section.id}`) as HTMLTextAreaElement;
+                        const textarea = textareaRefs.current[section.id];
                         if (textarea) handleUpdate(section.id, textarea.value);
                       }}
                       disabled={saving}
@@ -98,19 +151,42 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
           </CardHeader>
           <CardContent>
             {editingId === section.id ? (
-              <Textarea
-                id={`content-${section.id}`}
-                defaultValue={section.content}
-                className="min-h-[200px] font-mono text-sm"
-              />
+              <>
+                <TextFormattingToolbar
+                  onFormat={(format, prefix, suffix) => 
+                    handleFormat(section.id, format, prefix, suffix)
+                  }
+                  disabled={saving}
+                />
+                <Textarea
+                  ref={(el) => {
+                    textareaRefs.current[section.id] = el;
+                  }}
+                  defaultValue={section.content}
+                  className="min-h-[300px] font-mono text-sm"
+                />
+              </>
             ) : (
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {section.content}
-              </p>
+              <div 
+                className="text-sm text-muted-foreground whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ 
+                  __html: highlightText(section.content, searchQuery) 
+                }}
+              />
             )}
           </CardContent>
         </Card>
       ))}
+
+      {filteredSections.length === 0 && searchQuery && (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground">
+              Nenhum resultado encontrado para "{searchQuery}"
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
