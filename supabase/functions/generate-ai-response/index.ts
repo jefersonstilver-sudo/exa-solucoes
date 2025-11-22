@@ -27,17 +27,19 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // 1. Paralelizar queries (4→1 call = mais rápido)
+    // 1. Paralelizar queries (5→1 call = mais rápido) + dados reais
     const [
       { data: agent, error: agentError },
       { data: agentKnowledge, error: knowledgeError },
       { data: conversationHistory },
-      { data: conversation }
+      { data: conversation },
+      { data: buildingsData }
     ] = await Promise.all([
       supabase.from('agents').select('*').eq('key', agentKey).single(),
       supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true).in('section', ['perfil', 'fluxo_comercial', 'regras_basicas']),
       supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: false }).limit(5),
-      supabase.from('conversations').select('provider').eq('id', conversationId).single()
+      supabase.from('conversations').select('provider').eq('id', conversationId).single(),
+      supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, bairro, status').eq('status', 'ativo').limit(50)
     ]);
 
     if (agentError || !agent) {
@@ -49,7 +51,8 @@ serve(async (req) => {
       agent: agent.display_name,
       knowledge: agentKnowledge?.length || 0,
       history: conversationHistory?.length || 0,
-      provider: conversation?.provider
+      provider: conversation?.provider,
+      realBuildings: buildingsData?.length || 0
     });
 
     if (!agent.ai_auto_response) {
@@ -64,6 +67,29 @@ serve(async (req) => {
     const knowledgeContext = (agentKnowledge || [])
       .map((k: any) => `### ${k.title}\n${k.content}`)
       .join('\n\n');
+
+    // 3.5. Injetar dados REAIS dos prédios (anti-alucinação)
+    const realDataSection = buildingsData && buildingsData.length > 0 ? `
+
+## 🏢 DADOS REAIS DA LOJA (SEMPRE USE ESTES DADOS - ATUALIZADO EM TEMPO REAL)
+
+⚠️ ATENÇÃO: NUNCA invente números de prédios, preços ou público. Use APENAS os dados abaixo.
+
+**Total de prédios disponíveis:** ${buildingsData.length}
+
+**Lista completa de prédios ativos:**
+${buildingsData.map((b: any) => 
+  `- ${b.nome} (Código: ${b.codigo_predio || 'N/A'}) - Bairro: ${b.bairro}
+  Preço: R$ ${b.preco_base ? b.preco_base.toFixed(2) : 'Consultar'}/mês | Telas: ${b.quantidade_telas || 0} | Público estimado: ${b.publico_estimado ? b.publico_estimado.toLocaleString() : 'N/A'} pessoas/mês`
+).join('\n')}
+
+⚠️ REGRA CRÍTICA: Se o cliente perguntar sobre prédios, quantidade, preços ou público, use APENAS estes ${buildingsData.length} prédios listados acima. NÃO invente números.
+` : '';
+
+    console.log('[AI-RESPONSE] 📊 Real data injected:', {
+      buildingsCount: buildingsData?.length || 0,
+      realDataLength: realDataSection.length
+    });
 
     // 4. Construir histórico de mensagens incluindo descrições de imagens
     const historyContext = (conversationHistory || [])
@@ -89,7 +115,7 @@ serve(async (req) => {
     const historySection = historyContext ? 
       `\n\n## HISTÓRICO DA CONVERSA\n${historyContext}` : '';
 
-    const systemPrompt = `${baseSystemPrompt}${knowledgeSection}${historySection}
+    const systemPrompt = `${baseSystemPrompt}${realDataSection}${knowledgeSection}${historySection}
 
 ## MENSAGEM ATUAL DO CLIENTE
 ${message}`;
