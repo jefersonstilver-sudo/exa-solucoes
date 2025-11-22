@@ -9,6 +9,7 @@ import { Plus, Trash2, Edit, Save, X, FileText, Link as LinkIcon, File } from 'l
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
+import DocumentUpload from '@/components/ui/document-upload';
 
 interface KnowledgeItem {
   id: string;
@@ -169,19 +170,33 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                   placeholder="Breve descrição sobre este conhecimento"
                 />
               </div>
-              <div>
-                <Label>Conteúdo</Label>
-                <Textarea
-                  value={newItem.content}
-                  onChange={(e) => setNewItem({ ...newItem, content: e.target.value })}
-                  placeholder={
-                    newItem.content_type === 'link'
-                      ? 'Cole o link aqui...'
-                      : 'Digite o conteúdo completo...'
-                  }
-                  className="min-h-[200px]"
-                />
-              </div>
+              {newItem.content_type === 'pdf' ? (
+                <div>
+                  <Label>Upload do PDF</Label>
+                  <DocumentUpload
+                    label=""
+                    value={newItem.content}
+                    onChange={(url) => setNewItem({ ...newItem, content: url || '' })}
+                    bucketName="documents"
+                    folder="knowledge-base"
+                    accept="application/pdf"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <Label>Conteúdo</Label>
+                  <Textarea
+                    value={newItem.content}
+                    onChange={(e) => setNewItem({ ...newItem, content: e.target.value })}
+                    placeholder={
+                      newItem.content_type === 'link'
+                        ? 'Cole o link aqui...'
+                        : 'Digite o conteúdo completo...'
+                    }
+                    className="min-h-[200px]"
+                  />
+                </div>
+              )}
               <div>
                 <Label>Instrução Específica (opcional)</Label>
                 <Textarea
