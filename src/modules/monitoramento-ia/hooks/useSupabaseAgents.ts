@@ -17,41 +17,70 @@ export const useSupabaseAgents = () => {
 
       if (error) throw error;
 
-      const mappedAgents: Agent[] = (data || []).map((agent: any) => ({
-        id: agent.id,
-        key: agent.key,
-        name: agent.display_name,
-        type: agent.type as any,
-        avatar: '', // Avatar pode ser adicionado depois se necessário
-        description: agent.description,
-        phoneNumber: agent.whatsapp_number || '',
-        provider: agent.whatsapp_provider === 'manychat' ? 'manychat' : (agent.whatsapp_provider === 'zapi' ? 'string' : 'none'),
-        whatsappProvider: agent.whatsapp_provider,
-        whatsappNumber: agent.whatsapp_number,
-        zapiConfig: agent.zapi_config,
-        status: agent.is_active ? 'active' : 'inactive',
-        createdAt: agent.created_at,
-        updatedAt: agent.updated_at,
-        config: agent.openai_config || {
-          model: 'EXA Virtual Assistant',
-          temperature: 0.7,
-          maxTokens: 2000,
-          tone: 'friendly',
-          creativity: 'medium',
-          formality: 'medium',
-        },
-        prompt: {
-          masterPrompt: agent.openai_config?.system_prompt || '',
-          conditionalInstructions: [],
-          forbiddenWords: [],
-        },
-        knowledge: [],
+      const mappedAgents: Agent[] = await Promise.all((data || []).map(async (agent: any) => {
+        // Fetch agent sections
+        const { data: sectionsData } = await supabase
+          .from('agent_sections')
+          .select('*')
+          .eq('agent_id', agent.key)
+          .order('section_number');
+
+        // Fetch agent knowledge items
+        const { data: knowledgeData } = await supabase
+          .from('agent_knowledge_items')
+          .select('*')
+          .eq('agent_id', agent.key)
+          .eq('active', true);
+
+        return {
+          id: agent.id,
+          key: agent.key,
+          name: agent.display_name,
+          type: agent.type as any,
+          avatar: '',
+          description: agent.description,
+          phoneNumber: agent.whatsapp_number || '',
+          provider: agent.whatsapp_provider === 'manychat' ? 'manychat' : (agent.whatsapp_provider === 'zapi' ? 'string' : 'none'),
+          whatsappProvider: agent.whatsapp_provider,
+          whatsappNumber: agent.whatsapp_number,
+          zapiConfig: agent.zapi_config,
+          status: agent.is_active ? 'active' : 'inactive',
+          createdAt: agent.created_at,
+          updatedAt: agent.updated_at,
+          config: agent.openai_config || {
+            model: 'EXA Virtual Assistant',
+            temperature: 0.7,
+            maxTokens: 2000,
+            tone: 'friendly',
+            creativity: 'medium',
+            formality: 'medium',
+          },
+          prompt: {
+            masterPrompt: agent.openai_config?.system_prompt || '',
+            conditionalInstructions: [],
+            forbiddenWords: [],
+          },
+          knowledge: [],
+          sections: sectionsData || [],
+          knowledgeItems: (knowledgeData || []).map((item: any) => ({
+            id: item.id,
+            agent_id: item.agent_id,
+            title: item.title,
+            description: item.description,
+            content: item.content,
+            content_type: item.content_type as 'text' | 'pdf' | 'link',
+            keywords: item.keywords || [],
+            instruction: item.instruction,
+            active: item.active,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+          })),
         rules: agent.routing_rules || [],
         integrationSettings: {
           manychat: agent.manychat_config,
           zapi: agent.zapi_config,
         },
-      }));
+      };}));
 
       setAgents(mappedAgents);
     } catch (error) {

@@ -10,7 +10,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Save, Plus, Trash2, Eye, Copy, RefreshCw } from 'lucide-react';
 import { AgentChatPreview } from './AgentChatPreview';
-import { SofiaKnowledgeManager } from './SofiaKnowledgeManager';
 import { ZAPIConfigSection } from './ZAPIConfigSection';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -278,15 +277,7 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
             >
               Conexões
             </TabsTrigger>
-            {agent.key === 'sofia' && (
-              <TabsTrigger 
-                value="knowledge" 
-                className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
-              >
-                Base de Conhecimento 🧠
-              </TabsTrigger>
-            )}
-            <TabsTrigger 
+            <TabsTrigger
               value="info" 
               className="data-[state=active]:bg-white data-[state=active]:text-module-accent data-[state=inactive]:text-module-secondary whitespace-nowrap px-4"
             >
@@ -577,13 +568,6 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
             </div>
           </div>
         </TabsContent>
-
-        {/* TAB: BASE DE CONHECIMENTO - Sofia Only */}
-        {agent.key === 'sofia' && (
-          <TabsContent value="knowledge" className="pt-4">
-            <SofiaKnowledgeManager />
-          </TabsContent>
-        )}
       </Tabs>
 
       <div className="sticky bottom-0 left-0 right-0 bg-module-primary pt-4 pb-4 border-t border-module mt-6">
