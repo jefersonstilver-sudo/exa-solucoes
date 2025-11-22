@@ -71,7 +71,7 @@ export const AgentKnowledge = () => {
           <TabsTrigger value="section1">1. Identidade</TabsTrigger>
           <TabsTrigger value="section2">2. Operacional</TabsTrigger>
           <TabsTrigger value="section3">3. Limites</TabsTrigger>
-          <TabsTrigger value="section4">4. Base</TabsTrigger>
+          <TabsTrigger value="section4">4. Conhecimentos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="section1" className="mt-6">
