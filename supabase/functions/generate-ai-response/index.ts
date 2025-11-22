@@ -312,7 +312,7 @@ serve(async (req) => {
     // ====== DETECTAR SE USUÁRIO PEDIU ENDEREÇO/DETALHES EXPLICITAMENTE ======
     const detailsRequested = message.match(/endereço|onde fica|localização|rua|avenida|visualizações|exibições|quantas pessoas/i);
     
-    // ====== CONSTRUIR DADOS DOS PRÉDIOS (FORMATO LIMPO - SEM BAIRRO POR PADRÃO) ======
+    // ====== CONSTRUIR DADOS DOS PRÉDIOS (FORMATO COMPACTO - SEM BAIRRO POR PADRÃO) ======
     // ⚠️ CRÍTICO: NUNCA usar valores fallback! Se não tem no banco, não mostrar!
     const buildingsFormatted = buildingsData && buildingsData.length > 0 
       ? buildingsData.map((b: any) => {
@@ -331,13 +331,13 @@ serve(async (req) => {
             ? b.visualizacoes_mes 
             : (b.quantidade_telas ? b.quantidade_telas * 7350 : 7350);
           
-          // Formato básico: apenas nome e preço (SEM bairro)
-          let formatted = `🏢 *${nome}* • R$ ${precoBase}/mês`;
+          // 🔧 FASE 3: Formato ultra-compacto para evitar truncamento do WhatsApp
+          let formatted = `🏢 ${nome} • R$ ${precoBase}/mês`;
           
           // Adicionar detalhes SOMENTE se usuário pediu
           if (detailsRequested && bairro) {
             formatted += `\n📍 ${bairro}${endereco ? ' - ' + endereco : ''}`;
-            formatted += `\n👥 ${visualizacoes.toLocaleString('pt-BR')} visualizações/mês`;
+            formatted += `\n👥 ${visualizacoes.toLocaleString('pt-BR')}/mês`;
           }
           
           return formatted;
@@ -349,14 +349,15 @@ serve(async (req) => {
       ? agentKnowledge.map((k: any) => `### ${k.title}\n${k.content}`).join('\n\n')
       : '';
 
-    // ====== CONSTRUIR HISTÓRICO ======
-    const historyFormatted = conversationHistory && conversationHistory.length > 0
-      ? conversationHistory.map((m: any) => 
-          `${m.direction === 'inbound' ? 'Cliente' : 'Sofia'}: ${m.body}`
-        ).join('\n')
-      : '';
+    // ====== FASE 1: CONSTRUIR HISTÓRICO ESTRUTURADO PARA OpenAI ======
+    const historyMessages = conversationHistory && conversationHistory.length > 0
+      ? conversationHistory.map((m: any) => ({
+          role: m.direction === 'inbound' ? 'user' : 'assistant',
+          content: m.body
+        }))
+      : [];
 
-    // ====== CONSTRUIR SYSTEM PROMPT SIMPLIFICADO ======
+    // ====== CONSTRUIR SYSTEM PROMPT SIMPLIFICADO (SEM HISTÓRICO) ======
     const systemPrompt = `Você é Sofia da Exa Mídia - vendedora de painéis digitais.
 
 ╔══════════════════════════════════════════════════════════╗
@@ -367,14 +368,24 @@ serve(async (req) => {
 ⚠️ Se um prédio não está na lista, diga "Não tenho informações"
 ⚠️ Os preços abaixo vêm DIRETO DO BANCO DE DADOS
 
+╔══════════════════════════════════════════════════════════╗
+║ ⚠️ REGRAS DE CONTEXTO (CRÍTICO)                         ║
+╚══════════════════════════════════════════════════════════╝
 ${conversationHistory && conversationHistory.length > 0 ? `
-## HISTÓRICO
-${historyFormatted}
-
-⚠️ REGRAS: Não repita perguntas já feitas. Avance na conversa.
+⚠️ NÃO se reapresente - vocês já estão conversando
+⚠️ NÃO pergunte informações já fornecidas pelo cliente
+⚠️ Continue a conversa naturalmente do ponto onde parou
+⚠️ Lembre-se de prédios/assuntos já mencionados
 ` : `
-PRIMEIRA MENSAGEM: "Oi! Sou a Sofia da Exa 😊 O que você quer anunciar?"
+✅ PRIMEIRA MENSAGEM: "Oi! Sou a Sofia da Exa 😊 O que você quer anunciar?"
 `}
+
+╔══════════════════════════════════════════════════════════╗
+║ ⚠️ REGRA: RESPOSTA ÚNICA E COMPLETA                    ║
+╚══════════════════════════════════════════════════════════╝
+⚠️ Envie APENAS UMA resposta completa
+⚠️ NÃO divida sua resposta em múltiplas mensagens
+⚠️ Se já perguntou algo E já teve resposta, NÃO pergunte novamente
 
 ${isFullListRequest ? `
 ╔═══════════════════════════════════════════════════╗
@@ -443,20 +454,20 @@ ${knowledgeContext ? `\n## CONHECIMENTO\n${knowledgeContext}` : ''}`;
       }
     });
 
-    // ====== ENVIAR MENSAGEM HUMANIZADA DE AGUARDE ======
+    // ====== FASE 2: ENVIAR MENSAGEM HUMANIZADA DE AGUARDE (SEM EMOJIS) ======
     if (isFullListRequest || isComplexSearch) {
       console.log('[AI-RESPONSE] 💬 Sending "wait" message...');
       
       const waitMessages = isFullListRequest 
         ? [
-            "Só um momento, vou buscar todos os prédios disponíveis! 🔍",
-            "Deixa eu organizar a lista completa pra você! ⏱️",
-            "Preparando lista completa... já volto! 💭"
+            "Um momento, estou buscando todos os prédios disponíveis.",
+            "Deixa eu organizar a lista completa pra você.",
+            "Preparando a lista completa."
           ]
         : [
-            "Deixa eu procurar isso no sistema... 🔍",
-            "Um momento, já te respondo! ⏱️",
-            "Só um instantinho, estou verificando... 💭"
+            "Deixa eu procurar isso no sistema.",
+            "Um momento, já te respondo.",
+            "Só um instante, estou verificando."
           ];
       
       const waitMsg = waitMessages[Math.floor(Math.random() * waitMessages.length)];
@@ -493,6 +504,7 @@ ${knowledgeContext ? `\n## CONHECIMENTO\n${knowledgeContext}` : ''}`;
 
     const maxTokens = isFullListRequest ? 4096 : (isComplexSearch ? 1024 : 512);
 
+    // ====== FASE 1: CHAMAR OPENAI COM HISTÓRICO ESTRUTURADO ======
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -503,6 +515,7 @@ ${knowledgeContext ? `\n## CONHECIMENTO\n${knowledgeContext}` : ''}`;
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
+          ...historyMessages, // 🔧 FASE 1: Histórico estruturado
           { role: 'user', content: message },
           ...(isFullListRequest ? [{
             role: 'system',
@@ -521,12 +534,44 @@ ${knowledgeContext ? `\n## CONHECIMENTO\n${knowledgeContext}` : ''}`;
     }
 
     const openaiData = await openaiResponse.json();
-    const aiReply = openaiData.choices[0]?.message?.content || '';
+    let aiReply = openaiData.choices[0]?.message?.content || '';
 
     if (!aiReply || aiReply.trim().length < 3) {
       console.error('[AI-RESPONSE] ❌ Resposta vazia ou muito curta');
       await releaseLock();
       throw new Error('AI response invalid');
+    }
+
+    // ====== FASE 5: VALIDAÇÃO DE CONTEXTO - REMOVER REAPRESENTAÇÕES ======
+    if (conversationHistory && conversationHistory.length > 0) {
+      // Detectar e remover reapresentação desnecessária
+      const reIntroPatterns = [
+        /Oi!?\s*Sou a? Sofia[^\.!?]*[\.!?]/gi,
+        /Olá!?\s*Sou a? Sofia[^\.!?]*[\.!?]/gi,
+        /Oi,?\s*tudo bem\?\s*Sou a? Sofia[^\.!?]*[\.!?]/gi
+      ];
+      
+      let hadReIntro = false;
+      for (const pattern of reIntroPatterns) {
+        if (pattern.test(aiReply)) {
+          console.warn('[AI-RESPONSE] ⚠️ FASE 5: AI re-introducing itself - removing...');
+          aiReply = aiReply.replace(pattern, '').trim();
+          hadReIntro = true;
+        }
+      }
+      
+      if (hadReIntro) {
+        await supabase.from('agent_logs').insert({
+          agent_key: agentKey,
+          conversation_id: conversationId,
+          event_type: 'reintroduction_removed',
+          metadata: {
+            originalLength: openaiData.choices[0]?.message?.content?.length,
+            cleanedLength: aiReply.length,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
     }
 
     // Sanitizar resposta
