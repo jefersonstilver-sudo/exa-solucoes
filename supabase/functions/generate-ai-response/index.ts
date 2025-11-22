@@ -33,7 +33,7 @@ serve(async (req) => {
       { data: agentKnowledge, error: knowledgeError },
       { data: conversationHistory },
       { data: conversation },
-      { data: buildingsData }
+      { data: buildingsData, error: buildingsError }
     ] = await Promise.all([
       supabase.from('agents').select('*').eq('key', agentKey).single(),
       supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true).in('section', ['perfil', 'fluxo_comercial', 'regras_basicas']),
@@ -41,6 +41,17 @@ serve(async (req) => {
       supabase.from('conversations').select('provider').eq('id', conversationId).single(),
       supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, bairro, status').in('status', ['ativo', 'instalação']).limit(50)
     ]);
+
+    console.log('[AI-RESPONSE] 🏢 Buildings query result:', {
+      count: buildingsData?.length || 0,
+      hasError: !!buildingsError,
+      error: buildingsError,
+      buildings: buildingsData?.map(b => ({
+        nome: b.nome,
+        status: b.status,
+        preco: b.preco_base
+      })) || []
+    });
 
     if (agentError || !agent) {
       console.error('[AI-RESPONSE] ❌ Agent not found:', agentKey, agentError);
@@ -84,12 +95,29 @@ ${buildingsData.map((b: any) => {
    Preço: R$ ${b.preco_base ? b.preco_base.toFixed(2) : 'Consultar'}/mês | Telas: ${b.quantidade_telas || 0} | Público estimado: ${b.publico_estimado ? b.publico_estimado.toLocaleString() : 'N/A'} pessoas/mês`;
 }).join('\n')}
 
-⚠️ VALIDAÇÃO OBRIGATÓRIA - LEIA ANTES DE RESPONDER:
-1. Se o cliente perguntar sobre um prédio ESPECÍFICO, PROCURE na lista acima primeiro
-2. Se NÃO encontrar o prédio na lista, responda de forma humanizada: "Opa, esse prédio não tá na nossa base ainda não viu... Mas posso te mostrar os que a gente tem disponíveis!"
-3. Se o prédio está em INSTALAÇÃO (🚧), informe: "Esse prédio tá em fase de instalação ainda. Quando ficar pronto, vai ser R$ [preço]/mês. Quer ver os que já tão ativos?"
-4. NUNCA invente preços, números de prédios ou informações - use APENAS os ${buildingsData.length} prédios listados acima
-5. Use fuzzy matching para nomes similares (ex: "sant peter" = "Saint Peter")
+⚠️ VALIDAÇÃO OBRIGATÓRIA PRÉ-RESPOSTA:
+
+QUANDO O CLIENTE PERGUNTAR SOBRE PRÉDIO ESPECÍFICO:
+1. PROCURE na lista acima usando fuzzy match
+   - "sant peter" = "Saint Peter"
+   - "san pedro" = "Saint Peter"  
+   - Ignore acentos, maiúsculas, pontuação
+   
+2. SE ENCONTRAR:
+   ✅ Use o nome EXATO da lista
+   ✅ Use o preço EXATO sem arredondar
+   ✅ Informe status:
+      - ativo → "Esse prédio tá disponível agora!"
+      - instalação → "Esse prédio tá em fase de instalação. Quando ativar, vai ser R$ [preço exato]/mês"
+   
+3. SE NÃO ENCONTRAR:
+   Responda: "Opa, esse prédio não tá na nossa base ainda não viu... Mas posso te mostrar os que a gente tem disponíveis!"
+
+4. ❌ PROIBIÇÕES ABSOLUTAS:
+   - NUNCA invente preços
+   - NUNCA diga "só trato de publicidade em elevadores" (VOCÊ TRATA DE PRÉDIOS!)
+   - NUNCA use "a partir de..." quando cliente perguntar prédio específico
+   - NUNCA diga "vou verificar" quando os dados já estão no contexto
 ` : '';
 
     console.log('[AI-RESPONSE] 📊 Real data injected:', {
@@ -138,12 +166,53 @@ ${message}`;
       body: { phone: phoneNumber, agentKey, action: 'start' }
     }).catch(e => console.error('[AI-RESPONSE] ⚠️ Typing error (non-blocking):', e));
 
-    // 7. Log context preview antes de chamar IA
-    console.log('[AI-RESPONSE] 📋 Context preview:', {
-      buildingsInjected: buildingsData?.map(b => `${b.nome} (${b.status})`).slice(0, 5) || [],
-      totalBuildings: buildingsData?.length || 0,
-      userQuestion: message.substring(0, 50),
-      hasRealData: buildingsData && buildingsData.length > 0
+    // 7. Fuzzy matching - detectar menção de prédio
+    const normalizeName = (text: string) => {
+      return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+        .replace(/[^a-z0-9\s]/g, '') // Remove pontuação
+        .replace(/\s+/g, ' ') // Remove espaços extras
+        .trim();
+    };
+
+    const userNormalized = normalizeName(message);
+    const buildingMentioned = buildingsData?.find((b: any) => {
+      const bNormalized = normalizeName(b.nome);
+      
+      // Match exato
+      if (userNormalized.includes(bNormalized)) return true;
+      
+      // Match parcial (pelo menos 70% das palavras)
+      const userWords = userNormalized.split(' ');
+      const buildingWords = bNormalized.split(' ');
+      const matchCount = buildingWords.filter(word => 
+        userWords.some(uWord => uWord.includes(word) || word.includes(uWord))
+      ).length;
+      
+      return matchCount / buildingWords.length >= 0.7;
+    });
+
+    // 7.5 Log context preview e fuzzy match result
+    console.log('[AI-RESPONSE] 🔍 PRE-VALIDATION COMPLETE:', {
+      // Input
+      userMessage: message.substring(0, 100),
+      userNormalized: userNormalized,
+      
+      // Detection
+      buildingDetected: buildingMentioned?.nome || 'NONE',
+      detectionConfidence: buildingMentioned ? 'HIGH' : 'NONE',
+      
+      // Data available
+      buildingPrice: buildingMentioned?.preco_base || 'n/a',
+      buildingStatus: buildingMentioned?.status || 'n/a',
+      totalBuildingsAvailable: buildingsData?.length || 0,
+      
+      // Context injection
+      willInjectSpecificBuilding: !!buildingMentioned,
+      contextSize: systemPrompt.length,
+      buildingsPreview: buildingsData?.map(b => `${b.nome} (${b.status})`).slice(0, 5) || []
     });
 
     // 8. Chamar OpenAI via ia-console

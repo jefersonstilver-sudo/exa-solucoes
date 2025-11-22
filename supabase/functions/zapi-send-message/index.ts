@@ -64,6 +64,42 @@ serve(async (req) => {
       });
     }
 
+    // 🛡️ VERIFICAR DUPLICAÇÃO - evitar envios duplicados
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('contact_phone', phone)
+      .eq('agent_key', agentKey)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (conversation) {
+      const { data: recentMessages } = await supabase
+        .from('messages')
+        .select('body, created_at')
+        .eq('conversation_id', conversation.id)
+        .eq('direction', 'outbound')
+        .gte('created_at', new Date(Date.now() - 10000).toISOString()) // últimos 10s
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (recentMessages?.[0]?.body === message) {
+        const timeDiff = Date.now() - new Date(recentMessages[0].created_at).getTime();
+        if (timeDiff < 5000) { // menos de 5 segundos
+          console.log('[ZAPI-SEND] ⚠️ Duplicate message blocked:', {
+            message: message.substring(0, 50),
+            timeDiff: `${timeDiff}ms ago`
+          });
+          return new Response(JSON.stringify({ 
+            success: true, 
+            skipped: true, 
+            reason: 'duplicate_detected' 
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+    }
+
     // 🤖 QUEBRAR MENSAGENS LONGAS (humanizar comunicação)
     const splitMessage = (text: string, maxLength = 150): string[] => {
       if (text.length <= maxLength) return [text];
