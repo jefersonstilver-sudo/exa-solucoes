@@ -34,6 +34,7 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
       const { error } = await supabase
         .from('agent_sections')
         .upsert({ 
+          id,
           agent_id: agentId,
           section_number: section.section_number,
           section_title: section.section_title,
