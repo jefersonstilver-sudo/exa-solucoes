@@ -499,6 +499,24 @@ ${historyFormatted}
       });
     }
 
+    // Detectar report de problema técnico em painel
+    if (sanitizedReply.match(/alertar.*técnico|problema.*painel|tá com problema/i)) {
+      console.log('[AI-RESPONSE] 🚨 Panel technical issue reported');
+      
+      await supabase.from('agent_logs').insert({
+        agent_key: agentKey,
+        conversation_id: conversationId,
+        event_type: 'panel_technical_issue',
+        metadata: {
+          phone: phoneNumber,
+          userMessage: message,
+          aiResponse: sanitizedReply,
+          timestamp: new Date().toISOString(),
+          priority: 'high'
+        }
+      });
+    }
+
     console.log('[AI-RESPONSE] ✅ AI reply generated:', sanitizedReply.substring(0, 80) + '...');
 
     // ====== LOG RESPOSTA EM AGENT_LOGS ======

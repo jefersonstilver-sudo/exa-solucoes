@@ -45,13 +45,25 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: `Analise esta imagem em detalhes. Descreva:
+                text: `Analise esta imagem em detalhes:
+
+🎯 PRIORIDADE: Identificar se é um painel digital da Exa Mídia
+- Procure por painéis digitais em elevadores
+- Identifique logo, branding ou características da Exa Mídia
+- Detecte se há problemas técnicos (tela preta, erro, cabo solto, tela congelada, etc.)
+
+Se for um painel da Exa:
+1. Descreva o estado (funcionando/com problema)
+2. Identifique o problema específico (se houver): tela preta, mensagem de erro, cabo desconectado, tela quebrada, conteúdo congelado
+3. Descreva o que está sendo exibido
+
+Se NÃO for um painel:
 1. O que você vê na imagem
-2. Texto (se houver) - faça OCR completo
+2. Texto presente (OCR completo)
 3. Contexto e significado
 4. Qualquer informação relevante
 
-Seja detalhado e preciso. Se for um documento, extraia TODO o texto.`
+Seja detalhado e preciso.`
               },
               {
                 type: 'image_url',
