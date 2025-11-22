@@ -30,9 +30,9 @@ const DocumentUpload = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validar tamanho do arquivo (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Arquivo muito grande. Máximo 10MB.');
+    // Validar tamanho do arquivo (max 100MB)
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Máximo 100MB.');
       return;
     }
 
@@ -125,7 +125,7 @@ const DocumentUpload = ({
               {uploading ? 'Enviando...' : 'Clique para enviar documento'}
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              PNG, JPG ou PDF até 10MB
+              PNG, JPG ou PDF até 100MB
             </p>
           </label>
         </div>
