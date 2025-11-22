@@ -46,7 +46,12 @@ export const AIConsole = ({ agents }: AIConsoleProps) => {
         body: {
           agentKey: selectedAgentKey,
           message: input,
-          context: {}
+          context: {
+            conversationHistory: messages.map(m => ({
+              role: m.role,
+              content: m.content
+            }))
+          }
         }
       });
 
