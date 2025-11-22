@@ -82,6 +82,38 @@ serve(async (req) => {
       });
     }
 
+    // ========== CRIAR LOG IMEDIATAMENTE PARA PREVENIR DUPLICATAS ==========
+    // Inserir log ANTES de qualquer processamento para bloquear chamadas duplicadas
+    console.log('[ZAPI-WEBHOOK] 📝 Creating early log entry for deduplication...');
+    
+    const { error: earlyLogError } = await supabase.from('zapi_logs').insert({
+      phone_number: phone,
+      direction: 'inbound',
+      zapi_message_id: messageId,
+      status: 'processing',
+      metadata: { 
+        raw_payload: payload,
+        image_url: imageUrl,
+        early_dedupe: true
+      }
+    });
+
+    if (earlyLogError) {
+      console.error('[ZAPI-WEBHOOK] ⚠️ Early log error (might be duplicate):', earlyLogError);
+      // Se der erro, pode ser que já exista o registro (duplicate key)
+      // Nesse caso, vamos tratar como duplicata
+      if (earlyLogError.code === '23505') { // Unique violation
+        console.log('[ZAPI-WEBHOOK] ⚠️ Log already exists - concurrent duplicate detected');
+        return new Response(JSON.stringify({ 
+          success: true, 
+          skipped: true,
+          reason: 'concurrent_duplicate'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     // Detectar tipo de mensagem e extrair conteúdo
     let messageText = '';
     let mediaUrl = null;
@@ -323,25 +355,21 @@ serve(async (req) => {
     // Limpar cache após 5 segundos
     setTimeout(() => processingCache.delete(cacheKey), 5000);
 
-    // Log inbound message COM messageId para deduplicação
-    const { error: logError } = await supabase.from('zapi_logs').insert({
+    // Atualizar log inicial com detalhes completos
+    await supabase.from('zapi_logs').update({
       agent_key: agent.key,
-      direction: 'inbound',
-      phone_number: phone,
       message_text: messageText,
       media_url: mediaUrl,
-      zapi_message_id: messageId,
       status: 'received',
       metadata: { 
         raw_payload: payload,
         media_type: mediaType,
         image_url: imageUrl
       }
-    });
+    }).eq('zapi_message_id', messageId);
 
-    if (logError) {
-      console.error('[ZAPI-WEBHOOK] ❌ Error logging message:', logError);
-    }
+    console.log('[ZAPI-WEBHOOK] ✅ Log updated with full details');
+
 
     console.log('[ZAPI-WEBHOOK] ✅ Message logged with ID:', messageId);
 
