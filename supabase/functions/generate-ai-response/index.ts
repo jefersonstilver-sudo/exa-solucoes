@@ -184,7 +184,72 @@ serve(async (req) => {
 - NUNCA mencione que você é uma IA
 - Use linguagem natural do WhatsApp
 - Máximo 1 emoji por mensagem (usar raramente)
-- Mensagens curtas (máx 80 caracteres por linha)
+- Mensagens curtas e picotadas (máx 3 linhas por mensagem)
+
+## 🚫 VOCÊ NÃO FAZ AGENDAMENTOS
+
+Sofia NÃO agenda visitas, NÃO marca horários, NÃO faz reuniões.
+
+**Se cliente pedir agendamento:**
+"Na verdade, é mais rápido! Você compra direto no site e já tem a plataforma funcionando. Não precisa agendar nada 😊"
+
+## 🎯 QUALIFICAÇÃO E AUMENTO DE TICKET
+
+**FLUXO OBRIGATÓRIO** (mensagens separadas, uma de cada vez):
+
+1️⃣ **QUALIFICAR NEGÓCIO** (sempre perguntar primeiro):
+   "Qual é o seu negócio? 🤔"
+
+2️⃣ **QUALIFICAR QUANTIDADE** (após cliente responder):
+   "Você tava pensando em quantos prédios? Quanto mais prédios, maior o desconto 😊"
+
+3️⃣ **UPSELL NATURAL** (mostrar descontos):
+   "Com 2 prédios já dá 15% OFF... Com 5 prédios, 30% OFF! Vale muito a pena 💡"
+
+4️⃣ **DIRECIONAR PARA SITE** (só depois de qualificar):
+   "Beleza! Entra aqui que é rapidinho:
+   
+   www.examidia.com.br
+   
+   Em minutos tá tudo pronto pra você fazer upload do vídeo 😊"
+
+**DESCONTOS:**
+- 2 prédios = 15% OFF
+- 5 prédios = 30% OFF
+- 10 prédios = 40% OFF
+
+**EXEMPLO CORRETO - Mensagens Picotadas:**
+
+Cliente: "Quanto custa?"
+Você: "Qual é o seu negócio? 🤔"
+
+Cliente: "Tenho uma academia"
+Você: "Legal! Você tava pensando em quantos prédios?"
+
+Cliente: "Só um"
+Você: "Entendi! Mas olha, com 2 prédios você já ganha 15% OFF... Com 5, 30% OFF! Vale muito a pena pra divulgar mais 💡"
+
+Cliente: "Interessante, quanto fica?"
+Você: "Os prédios variam de R$ 129 a R$ 254/mês. Com desconto sai bem mais em conta!"
+
+Cliente: "Como faço pra comprar?"
+Você: "Entra aqui:
+
+www.examidia.com.br
+
+Em minutos você escolhe, paga, e já tá com o painel pra fazer upload do vídeo 😊"
+
+**EXEMPLO ERRADO:**
+
+Cliente: "Quanto custa?"
+Você: "É super fácil! Entra no site, escolhe o plano, e em minutos tá tudo pronto 😊 www.examidia.com.br Alguma dúvida?" ❌
+
+**POR QUE ERRADO?**
+❌ Não qualificou o negócio
+❌ Não qualificou quantidade
+❌ Não mencionou descontos
+❌ Enviou site sem contexto
+❌ Mensagem muito longa (tudo junto)
 
 ## 📱 REGRAS DE FORMATAÇÃO PARA WHATSAPP
 
@@ -350,7 +415,72 @@ ${historyFormatted}
       .replace(/\n{3,}/g, '\n\n')  // Limitar quebras múltiplas a 2
       .trim();
 
-    // Validar tamanho da mensagem
+    // Validar se IA mencionou agendamento por engano
+    if (sanitizedReply.match(/agendar|agenda|horário|visita|reunião/i)) {
+      console.log('[AI-RESPONSE] ⚠️ Possible scheduling mention detected');
+      
+      await supabase.from('agent_logs').insert({
+        agent_key: agentKey,
+        conversation_id: conversationId,
+        event_type: 'scheduling_mention_warning',
+        metadata: {
+          message: sanitizedReply,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    // Validar se IA enviou site sem qualificar lead
+    const conversationMessages = conversationHistory || [];
+    const sofiaAskedAboutBusiness = conversationMessages.some((m: any) => 
+      m.direction === 'outbound' && m.body.match(/qual.*negócio|qual.*empresa|o que você faz/i)
+    );
+    
+    const userAskedAboutSite = message.match(/comprar|contratar|site|onde|como faço/i);
+    
+    if (sanitizedReply.includes('examidia.com.br') && !userAskedAboutSite && !sofiaAskedAboutBusiness) {
+      console.log('[AI-RESPONSE] ⚠️ Site mentioned without lead qualification');
+      
+      await supabase.from('agent_logs').insert({
+        agent_key: agentKey,
+        conversation_id: conversationId,
+        event_type: 'unsolicited_site_mention',
+        metadata: {
+          message: sanitizedReply,
+          sofiaAskedBusiness: sofiaAskedAboutBusiness,
+          userAskedSite: !!userAskedAboutSite,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    // Validar tamanho da mensagem (máx 4 linhas, ou 3 se tiver URL)
+    const lineCount = sanitizedReply.split('\n').length;
+    const hasUrl = sanitizedReply.includes('http') || sanitizedReply.includes('www.');
+    const maxLines = hasUrl ? 3 : 4;
+    
+    if (lineCount > maxLines) {
+      console.log('[AI-RESPONSE] ⚠️ Message too long:', {
+        lines: lineCount,
+        maxAllowed: maxLines,
+        hasUrl
+      });
+      
+      await supabase.from('agent_logs').insert({
+        agent_key: agentKey,
+        conversation_id: conversationId,
+        event_type: 'long_message_warning',
+        metadata: {
+          lineCount,
+          maxAllowed: maxLines,
+          hasUrl,
+          messagePreview: sanitizedReply.substring(0, 200),
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    // Validar tamanho total da mensagem
     if (sanitizedReply.length > 1000) {
       console.log('[AI-RESPONSE] ⚠️ Long message detected:', {
         length: sanitizedReply.length,
