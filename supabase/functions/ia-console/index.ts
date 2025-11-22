@@ -60,9 +60,53 @@ serve(async (req) => {
     }
 
     // Compor contexto completo com histórico e conhecimento
-    let systemPrompt = `Você é ${agent.display_name}. ${agent.description}`;
+    let systemPrompt = `Você é ${agent.display_name}. ${agent.description}
+
+FERRAMENTAS DISPONÍVEIS:
+Você tem acesso à ferramenta "consultar_predios" para consultar dados reais dos prédios no banco de dados.
+
+REGRAS OBRIGATÓRIAS:
+1. SEMPRE use a ferramenta "consultar_predios" quando o usuário perguntar sobre:
+   - Quantidade de prédios disponíveis
+   - Preços de prédios
+   - Localização ou bairros
+   - Disponibilidade de prédios
+   
+2. NUNCA invente números ou dados sobre prédios
+3. SEMPRE consulte o banco antes de responder sobre prédios
+4. Use status="ativo" para prédios disponíveis agora
+5. Use tipo_consulta="count" para perguntas sobre quantidade
+6. Use tipo_consulta="list" para listar prédios
+7. Use tipo_consulta="details" para detalhes completos
+
+EXEMPLO:
+Usuário: "Quantos prédios vocês têm?"
+→ Você DEVE usar consultar_predios(status="ativo", tipo_consulta="count")
+→ Depois responder com o número real retornado
+
+Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de prédios.`;
     
-    // Se há conversationId, buscar contexto
+    // Carregar conhecimento do agente (mesmo sem conversationId no console)
+    try {
+      const { data: knowledge } = await supabase
+        .from('agent_knowledge_items')
+        .select('content, instruction')
+        .eq('agent_id', agent.id)
+        .eq('active', true);
+      
+      if (knowledge && knowledge.length > 0) {
+        const knowledgeText = knowledge.map(k => 
+          `${k.instruction || ''}\n\n${k.content}`
+        ).join('\n\n---\n\n');
+        
+        systemPrompt += `\n\nBASE DE CONHECIMENTO:\n${knowledgeText}`;
+        console.log(`[IA-CONSOLE] Loaded ${knowledge.length} knowledge items`);
+      }
+    } catch (error) {
+      console.error('[IA-CONSOLE] Failed to load knowledge:', error);
+    }
+    
+    // Se há conversationId, buscar contexto adicional
     if (context?.conversationId) {
       try {
         const { data: contextData } = await supabase.functions.invoke('compose-ai-context', {
