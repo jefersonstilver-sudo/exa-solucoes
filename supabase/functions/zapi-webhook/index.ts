@@ -125,6 +125,32 @@ serve(async (req) => {
 
     console.log('[ZAPI-WEBHOOK] ✅ Agent found:', agent.key, '- Instance:', instanceId);
 
+    // ========== RATE LIMITING POR TELEFONE (PRIMEIRA LINHA DE DEFESA) ==========
+    const cacheKey = `${phone}_${agent.key}_${messageText.substring(0, 50)}`;
+    const lastProcessed = processingCache.get(cacheKey);
+    const now = Date.now();
+
+    if (lastProcessed && (now - lastProcessed) < DEBOUNCE_MS) {
+      console.log('[ZAPI-WEBHOOK] 🚫 Rate limit - Too fast (PRE-CHECK):', {
+        phone,
+        timeSinceLastMs: now - lastProcessed
+      });
+      
+      return new Response(JSON.stringify({ 
+        success: true,
+        rateLimited: true,
+        stage: 'pre_check',
+        waitMs: DEBOUNCE_MS - (now - lastProcessed)
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Marcar como processando IMEDIATAMENTE
+    processingCache.set(cacheKey, now);
+    setTimeout(() => processingCache.delete(cacheKey), 5000);
+
     // ========== PROCESSAR IMAGENS COM VISÃO AI SE HABILITADO ==========
     if (mediaType === 'image' && payload.image?.imageUrl && agent.vision_enabled) {
       console.log('[ZAPI-WEBHOOK] 👁️ Vision AI enabled, analyzing image...');
@@ -200,7 +226,7 @@ serve(async (req) => {
       });
     }
 
-    // ========== VERIFICAÇÃO DE DEDUPLICAÇÃO (OTIMIZADA) ==========
+    // ========== VERIFICAÇÃO DE DEDUPLICAÇÃO (SEGUNDA LINHA DE DEFESA) ==========
     const dupeCheck = await checkDuplicate(supabase, messageId, phone, messageText);
     
     if (dupeCheck.isDuplicate) {
@@ -214,31 +240,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-
-    // ========== RATE LIMITING POR TELEFONE ==========
-    const cacheKey = `${phone}_${agent.key}`;
-    const lastProcessed = processingCache.get(cacheKey);
-    const now = Date.now();
-
-    if (lastProcessed && (now - lastProcessed) < DEBOUNCE_MS) {
-      console.log('[ZAPI-WEBHOOK] 🚫 Rate limit - Too fast:', {
-        phone,
-        timeSinceLastMs: now - lastProcessed
-      });
-      
-      return new Response(JSON.stringify({ 
-        success: true,
-        rateLimited: true,
-        waitMs: DEBOUNCE_MS - (now - lastProcessed)
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    processingCache.set(cacheKey, now);
-    // Limpar cache após 5 segundos
-    setTimeout(() => processingCache.delete(cacheKey), 5000);
 
     // Log inbound message COM messageId para deduplicação
     const { error: logError } = await supabase.from('zapi_logs').insert({
