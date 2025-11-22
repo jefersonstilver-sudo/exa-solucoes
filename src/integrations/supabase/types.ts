@@ -101,37 +101,43 @@ export type Database = {
         }
         Relationships: []
       }
-      agent_knowledge: {
+      agent_knowledge_items: {
         Row: {
-          agent_key: string
+          active: boolean | null
+          agent_id: string
           content: string
+          content_type: string
           created_at: string | null
+          description: string | null
           id: string
-          is_active: boolean | null
-          metadata: Json | null
-          section: string
+          instruction: string | null
+          keywords: string[] | null
           title: string
           updated_at: string | null
         }
         Insert: {
-          agent_key: string
+          active?: boolean | null
+          agent_id: string
           content: string
+          content_type: string
           created_at?: string | null
+          description?: string | null
           id?: string
-          is_active?: boolean | null
-          metadata?: Json | null
-          section: string
+          instruction?: string | null
+          keywords?: string[] | null
           title: string
           updated_at?: string | null
         }
         Update: {
-          agent_key?: string
+          active?: boolean | null
+          agent_id?: string
           content?: string
+          content_type?: string
           created_at?: string | null
+          description?: string | null
           id?: string
-          is_active?: boolean | null
-          metadata?: Json | null
-          section?: string
+          instruction?: string | null
+          keywords?: string[] | null
           title?: string
           updated_at?: string | null
         }
@@ -221,6 +227,36 @@ export type Database = {
           created_at?: string | null
           id?: string
           messages?: Json
+        }
+        Relationships: []
+      }
+      agent_sections: {
+        Row: {
+          agent_id: string
+          content: string
+          created_at: string | null
+          id: string
+          section_number: number
+          section_title: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          section_number: number
+          section_title: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          section_number?: number
+          section_title?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
