@@ -436,8 +436,12 @@ Obrigado pela compreensão!`;
 
             if (aiError) {
               console.error('[ZAPI-WEBHOOK] ❌ AI generation error:', aiError);
+            } else if (aiResult?.success === false) {
+              console.log('[ZAPI-WEBHOOK] ⚠️ AI generation skipped:', aiResult.reason || 'unknown');
+            } else if (aiResult?.success === true) {
+              console.log('[ZAPI-WEBHOOK] ✅ AI response generated and sent successfully');
             } else {
-              console.log('[ZAPI-WEBHOOK] ✅ AI response generated successfully');
+              console.warn('[ZAPI-WEBHOOK] ⚠️ Unexpected AI result:', aiResult);
             }
           } catch (aiError) {
             console.error('[ZAPI-WEBHOOK] ❌ AI invocation failed:', aiError);

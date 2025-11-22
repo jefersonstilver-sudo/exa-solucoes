@@ -27,33 +27,6 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // ====== DEDUPLICAÇÃO ======
-    const messageId = `${phoneNumber}_${message}_${conversationId}`;
-    const recentlyProcessed = await supabase
-      .from('agent_logs')
-      .select('id')
-      .eq('agent_key', agentKey)
-      .eq('event_type', 'message_processed')
-      .gte('created_at', new Date(Date.now() - 10000).toISOString())
-      .eq('metadata->>messageId', messageId)
-      .maybeSingle();
-
-    if (recentlyProcessed) {
-      console.log('[AI-RESPONSE] ⏭️ SKIPPED: Mensagem já processada recentemente');
-      return new Response(
-        JSON.stringify({ success: false, reason: 'duplicate' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    }
-
-    // Registrar processamento
-    await supabase.from('agent_logs').insert({
-      agent_key: agentKey,
-      conversation_id: conversationId,
-      event_type: 'message_processed',
-      metadata: { messageId, phoneNumber, message: message.substring(0, 100) }
-    });
-
     // ====== LOG INÍCIO EM AGENT_LOGS ======
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,
@@ -632,11 +605,23 @@ ${historyFormatted}
     });
 
     if (!openaiResponse.ok) {
-      throw new Error(`OpenAI error: ${openaiResponse.status}`);
+      const errorText = await openaiResponse.text();
+      console.error('[AI-RESPONSE] ❌ OpenAI error:', {
+        status: openaiResponse.status,
+        error: errorText
+      });
+      throw new Error(`OpenAI error: ${openaiResponse.status} - ${errorText}`);
     }
 
     const openaiData = await openaiResponse.json();
     const aiReply = openaiData.choices[0]?.message?.content || '';
+
+    console.log('[AI-RESPONSE] 🤖 OpenAI response received:', {
+      aiReplyLength: aiReply.length,
+      aiReplyPreview: aiReply.substring(0, 100),
+      tokensUsed: openaiData.usage?.total_tokens,
+      model: openaiData.model
+    });
 
     if (!aiReply) {
       throw new Error('Empty AI response');
@@ -809,10 +794,15 @@ ${historyFormatted}
     });
 
     // ====== ENVIAR MENSAGEM ======
-    console.log('[AI-RESPONSE] 📨 Sending message via', conversation?.provider);
+    console.log('[AI-RESPONSE] 📨 Preparando envio via', conversation?.provider, {
+      phone: phoneNumber,
+      conversationId,
+      messageLength: sanitizedReply.length
+    });
 
     let sendResult, sendError;
     if (conversation?.provider === 'manychat') {
+      console.log('[AI-RESPONSE] 📤 Enviando via ManyChat...');
       const result = await supabase.functions.invoke('send-message-unified', {
         body: {
           conversationId,
@@ -823,6 +813,10 @@ ${historyFormatted}
       sendResult = result.data;
       sendError = result.error;
     } else {
+      console.log('[AI-RESPONSE] 📤 Enviando via ZAPI...', {
+        phone: phoneNumber,
+        messagePreview: sanitizedReply.substring(0, 50)
+      });
       const result = await supabase.functions.invoke('zapi-send-message', {
         body: {
           agentKey,
@@ -832,12 +826,15 @@ ${historyFormatted}
       });
       sendResult = result.data;
       sendError = result.error;
+      console.log('[AI-RESPONSE] 📥 ZAPI response:', { sendResult, sendError });
     }
 
     if (sendError) {
       console.error('[AI-RESPONSE] ❌ Send error:', sendError);
       throw new Error('Failed to send message');
     }
+    
+    console.log('[AI-RESPONSE] ✅ Message sent successfully:', sendResult);
 
     // ====== LOG SUCESSO FINAL EM AGENT_LOGS ======
     await supabase.from('agent_logs').insert({
