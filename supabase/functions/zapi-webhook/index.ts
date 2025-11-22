@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkDuplicate } from "../_shared/deduplicate.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -199,54 +200,16 @@ serve(async (req) => {
       });
     }
 
-    // ========== VERIFICAÇÃO DE DEDUPLICAÇÃO ==========
-    const { data: existingLog } = await supabase
-      .from('zapi_logs')
-      .select('id, created_at')
-      .eq('zapi_message_id', messageId)
-      .maybeSingle();
-
-    if (existingLog) {
-      console.log('[ZAPI-WEBHOOK] ⚠️ DUPLICATE DETECTED - Already processed:', {
-        messageId,
-        existingLogId: existingLog.id,
-        existingLogTime: existingLog.created_at
-      });
+    // ========== VERIFICAÇÃO DE DEDUPLICAÇÃO (OTIMIZADA) ==========
+    const dupeCheck = await checkDuplicate(supabase, messageId, phone, messageText);
+    
+    if (dupeCheck.isDuplicate) {
+      console.log('[ZAPI-WEBHOOK] ⚠️ DUPLICATE DETECTED:', dupeCheck);
       return new Response(JSON.stringify({ 
         success: true,
         duplicate: true,
-        messageId,
-        originalProcessedAt: existingLog.created_at
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // ========== DEDUPLICAÇÃO POR CONTEÚDO ==========
-    // Verificação adicional: mesma mensagem + telefone em janela de 10 segundos
-    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-
-    const { data: recentSimilarLog } = await supabase
-      .from('zapi_logs')
-      .select('id, created_at')
-      .eq('phone_number', phone)
-      .eq('message_text', messageText)
-      .eq('direction', 'inbound')
-      .gte('created_at', tenSecondsAgo)
-      .maybeSingle();
-
-    if (recentSimilarLog) {
-      console.log('[ZAPI-WEBHOOK] ⚠️ CONTENT DUPLICATE - Same message recently:', {
-        messageText,
-        phone,
-        recentLogId: recentSimilarLog.id,
-        secondsAgo: (Date.now() - new Date(recentSimilarLog.created_at).getTime()) / 1000
-      });
-      
-      return new Response(JSON.stringify({ 
-        success: true,
-        contentDuplicate: true,
-        recentLogId: recentSimilarLog.id
+        reason: dupeCheck.reason,
+        existingId: dupeCheck.existingId
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -359,31 +322,52 @@ Obrigado pela compreensão!`;
           return;
         }
 
-        // Criar/Atualizar conversation
-        const { data: conversation, error: convError } = await supabase
+        // Criar/Atualizar conversation (OTIMIZADO: evita onConflict complexo)
+        let conversation;
+        
+        // Buscar existente primeiro
+        const { data: existing } = await supabase
           .from('conversations')
-          .upsert({
-            external_id: phone,
-            contact_phone: phone,
-            contact_name: payload.senderName || null,
-            agent_key: agent.key,
-            provider: 'zapi',
-            status: 'open',
-            last_message_at: new Date().toISOString()
-          }, {
-            onConflict: 'external_id,agent_key',
-            ignoreDuplicates: false
-          })
-          .select()
-          .single();
+          .select('id')
+          .eq('external_id', phone)
+          .eq('agent_key', agent.key)
+          .maybeSingle();
 
-        if (convError) {
-          console.error('[ZAPI-WEBHOOK] ❌ Conversation upsert error:', convError);
-          throw new Error(`Failed to upsert conversation: ${convError.message}`);
+        if (existing) {
+          // UPDATE simples
+          const { data: updated, error: updateError } = await supabase
+            .from('conversations')
+            .update({ 
+              last_message_at: new Date().toISOString(),
+              status: 'open'
+            })
+            .eq('id', existing.id)
+            .select()
+            .single();
+          
+          if (updateError) throw new Error(`Failed to update conversation: ${updateError.message}`);
+          conversation = updated;
+        } else {
+          // INSERT simples
+          const { data: inserted, error: insertError } = await supabase
+            .from('conversations')
+            .insert({
+              external_id: phone,
+              contact_phone: phone,
+              contact_name: payload.senderName || null,
+              agent_key: agent.key,
+              provider: 'zapi',
+              status: 'open',
+              last_message_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+          
+          if (insertError) throw new Error(`Failed to insert conversation: ${insertError.message}`);
+          conversation = inserted;
         }
 
         if (!conversation) {
-          console.error('[ZAPI-WEBHOOK] ❌ Conversation returned null without error');
           throw new Error('Conversation returned null');
         }
 
