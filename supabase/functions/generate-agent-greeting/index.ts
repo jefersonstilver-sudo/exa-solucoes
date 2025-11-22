@@ -48,19 +48,18 @@ serve(async (req) => {
       });
     }
 
-    // Buscar base de conhecimento (incluindo greeting)
-    const { data: knowledge } = await supabase
-      .from('agent_knowledge')
+    // Buscar as 4 seções fundamentais
+    const { data: agentSections } = await supabase
+      .from('agent_sections')
       .select('*')
-      .eq('agent_key', agentKey)
-      .eq('is_active', true)
-      .order('section', { ascending: true });
+      .eq('agent_id', agentKey)
+      .order('section_number');
 
-    // Buscar seção de greeting específica
-    const greetingKnowledge = knowledge?.find(k => k.section === 'greeting');
+    // Usar a Seção 1 (Identidade) como base para greeting
+    const identitySection = agentSections?.find(s => s.section_number === 1);
 
-    // Se não tiver greeting customizado, retornar mensagem padrão
-    if (!greetingKnowledge) {
+    // Se não tiver seção de identidade, retornar mensagem padrão
+    if (!identitySection) {
       const defaultGreeting = getDefaultGreeting(agentKey, agent.display_name);
       const result = { messages: [defaultGreeting] };
       greetingCache.set(agentKey, { messages: [defaultGreeting], timestamp: Date.now() });
@@ -80,23 +79,11 @@ serve(async (req) => {
       });
     }
 
-    // Construir prompt para geração de saudação
-    // Primeiro buscar instruções da base de conhecimento
-    const instructions = knowledge?.filter(k => k.section === 'instrucoes') || [];
-    
-    let basePrompt = '';
-    if (instructions.length > 0) {
-      instructions.forEach(instruction => {
-        basePrompt += `${instruction.content}\n\n`;
-      });
-    } else {
-      basePrompt = `Você é ${agent.display_name}, um agente de atendimento.\n\n`;
-    }
-    
-    const systemPrompt = `${basePrompt}
+    // Construir prompt para geração de saudação usando a Seção 1
+    const systemPrompt = `Você é ${agent.display_name}, um agente de atendimento.
 
-BASE DE CONHECIMENTO - SAUDAÇÃO:
-${greetingKnowledge.content}
+SEÇÃO 1 - IDENTIDADE & PAPEL:
+${identitySection.content}
 
 INSTRUÇÕES:
 1. Gere uma saudação inicial natural e quebrada em 2-4 mensagens curtas
