@@ -163,11 +163,21 @@ serve(async (req) => {
       supabase.from('conversations').select('provider').eq('id', conversationId).single()
     ]);
 
-    // ====== BUSCAR PRÉDIOS (LAZY LOAD + CACHE) ======
+    // ====== CONTROLE DE ACESSO VIA SEÇÃO LIMITES (SEÇÃO 3) ======
+    const limitesSection = agentSections?.find((s: any) => s.section_number === 3);
+    const canAccessBuildings = limitesSection?.content?.match(/prédios|buildings|painéis/i);
+    
+    console.log('[AI-RESPONSE] 🔐 Access control check:', {
+      limitesConfigured: !!limitesSection,
+      canAccessBuildings: !!canAccessBuildings,
+      limitesPreview: limitesSection?.content?.substring(0, 100)
+    });
+
+    // ====== BUSCAR PRÉDIOS SOMENTE SE AUTORIZADO (LAZY LOAD + CACHE) ======
     let buildingsData;
     const cacheKey = `buildings_cache_${agentKey}`;
     
-    if (isFullListRequest || isComplexSearch) {
+    if (canAccessBuildings && (isFullListRequest || isComplexSearch)) {
       // Tentar buscar do cache primeiro (5 minutos)
       buildingsData = await getFromCache(supabase, cacheKey, 300);
       
@@ -191,8 +201,8 @@ serve(async (req) => {
       } else {
         console.log('[AI-RESPONSE] ✅ Cache hit for buildings');
       }
-    } else {
-      // Busca simplificada: também precisa buscar TODOS os campos para validação
+    } else if (canAccessBuildings) {
+      // Busca simplificada
       console.log('[AI-RESPONSE] 📊 Simple query: fetching top 5 buildings');
       const { data, error: buildingsError } = await supabase
         .from('buildings')
@@ -205,6 +215,9 @@ serve(async (req) => {
         console.error('[AI-RESPONSE] ❌ Error fetching buildings:', buildingsError);
       }
       buildingsData = data;
+    } else {
+      console.log('[AI-RESPONSE] 🚫 Buildings access BLOCKED - not configured in Limites section');
+      buildingsData = null;
     }
 
     if (!agent) {
