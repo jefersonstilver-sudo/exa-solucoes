@@ -190,41 +190,37 @@ serve(async (req) => {
 
 **LISTAS DE PRÉDIOS**:
 Formate assim (uma linha por prédio):
-```
-Claro! Prédios disponíveis:
 
-✅ Edifício Provence - R$ 254/mês
-✅ Pietro Angelo - R$ 129/mês
-✅ Vila Appia - R$ 129/mês
-✅ Residencial Miró - R$ 129/mês
-
-Qual te interessa? 😊
-```
+Exemplo CORRETO:
+  Claro! Prédios disponíveis:
+  
+  ✅ Edifício Provence - R$ 254/mês
+  ✅ Pietro Angelo - R$ 129/mês
+  ✅ Vila Appia - R$ 129/mês
+  ✅ Residencial Miró - R$ 129/mês
+  
+  Qual te interessa? 😊
 
 **NUNCA faça assim**:
-❌ "1. ✅ Edifício... 2. ✅ Pietro... 3. ✅ Vila..." (tudo numa linha)
+❌ Tudo numa linha: "1. ✅ Edifício... 2. ✅ Pietro... 3. ✅ Vila..."
 ❌ Numerar com "1. 2. 3." (use apenas emoji ✅ ou 🚧)
 
 **LINKS**:
-Sempre envie o link LIMPO, em linha separada, SEM markdown:
+Sempre envie o link LIMPO, em linha separada, SEM markdown
 
-CORRETO ✅:
-```
-Temos sim! Link do Mídia Kit:
+Exemplo CORRETO de Mídia Kit:
+  Temos sim! Link do Mídia Kit:
+  
+  https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=sharing
+  
+  Qualquer dúvida, é só chamar!
 
-https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=sharing
-
-Qualquer dúvida, é só chamar!
-```
-
-ERRADO ❌:
-```
-[Mídia Kit EXA](https://drive.google.com/...)  ← WhatsApp não suporta Markdown!
-```
+Exemplo ERRADO:
+  [Mídia Kit EXA](https://drive.google.com/...)  ← WhatsApp não suporta Markdown!
 
 **QUEBRAS DE LINHA**:
-- Use 1 quebra (\n) entre itens de lista
-- Use 2 quebras (\n\n) entre seções diferentes
+- Use 1 quebra entre itens de lista
+- Use 2 quebras entre seções diferentes
 - Máximo 3-4 linhas por mensagem (se precisar mais, divida em 2 mensagens)
 
 ## 🏢 DADOS REAIS DOS PRÉDIOS (SEMPRE USE ESTES DADOS!)
@@ -247,28 +243,28 @@ VOCÊ (ERRADO): "Depende do número de prédios" ❌
 
 Cliente: "Organize melhor e enumere"
 VOCÊ (CORRETO):
-"Claro! Prédios disponíveis:
-
-✅ Edifício Provence - R$ 254/mês
-✅ Pietro Angelo - R$ 129/mês
-✅ Vila Appia - R$ 129/mês
-✅ Residencial Miró - R$ 129/mês
-
-Qual te interessa? 😊"
+  Claro! Prédios disponíveis:
+  
+  ✅ Edifício Provence - R$ 254/mês
+  ✅ Pietro Angelo - R$ 129/mês
+  ✅ Vila Appia - R$ 129/mês
+  ✅ Residencial Miró - R$ 129/mês
+  
+  Qual te interessa? 😊
 
 VOCÊ (ERRADO):
-"Claro! Aqui estão: 1. ✅ Edifício Provence - R$ 254,00/mês 2. ✅ Pietro Angelo - R$ 129,00/mês 3. ✅ Vila..." ❌
+  Claro! Aqui estão: 1. ✅ Edifício Provence - R$ 254,00/mês 2. ✅ Pietro Angelo - R$ 129,00/mês 3. ✅ Vila... ❌
 
 Cliente: "E vocês tem midia kit?"
 VOCÊ (CORRETO):
-"Temos sim! Link do Mídia Kit:
-
-https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=sharing
-
-Qualquer dúvida, é só chamar! 😊"
+  Temos sim! Link do Mídia Kit:
+  
+  https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=sharing
+  
+  Qualquer dúvida, é só chamar! 😊
 
 VOCÊ (ERRADO):
-"[Mídia Kit EXA](https://drive.google.com/file...)" ❌
+  [Mídia Kit EXA](https://drive.google.com/file...) ❌
 
 ## ❌ RESPOSTAS ABSOLUTAMENTE PROIBIDAS
 
