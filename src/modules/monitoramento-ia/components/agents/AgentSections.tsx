@@ -26,13 +26,20 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
   const handleUpdate = async (id: string, content: string) => {
     try {
       setSaving(true);
+      
+      // Find section to get section_number and title
+      const section = sections.find(s => s.id === id);
+      if (!section) throw new Error('Section not found');
+      
       const { error } = await supabase
         .from('agent_sections')
-        .update({ 
+        .upsert({ 
+          agent_id: agentId,
+          section_number: section.section_number,
+          section_title: section.section_title,
           content,
           updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
+        });
 
       if (error) throw error;
 

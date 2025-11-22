@@ -375,75 +375,42 @@ serve(async (req) => {
         }))
       : [];
 
-    // ====== CONSTRUIR SYSTEM PROMPT SIMPLIFICADO (SEM HISTÓRICO) ======
-    const systemPrompt = `Você é Sofia da Exa Mídia - vendedora de painéis digitais.
+    // ====== CONSTRUIR SYSTEM PROMPT DINAMICAMENTE DAS SEÇÕES ======
+    let systemPrompt = '';
+    
+    if (knowledgeContext && knowledgeContext.trim()) {
+      // Usar APENAS o conteúdo das seções da base de conhecimento
+      systemPrompt = knowledgeContext;
+    } else {
+      // Fallback mínimo se não houver seções configuradas
+      systemPrompt = `Você é um assistente virtual. Responda de forma clara e objetiva.`;
+    }
+    
+    // Adicionar dados contextuais de prédios (sempre dinâmicos)
+    systemPrompt += `
 
-╔══════════════════════════════════════════════════════════╗
-║ 🚨 REGRA CRÍTICA: VALORES DE PREÇOS                     ║
-╚══════════════════════════════════════════════════════════╝
-⚠️ VOCÊ DEVE USAR **EXATAMENTE** OS PREÇOS FORNECIDOS ABAIXO
-⚠️ **NUNCA** invente, estime ou altere valores de preços
-⚠️ Se um prédio não está na lista, diga "Não tenho informações"
-⚠️ Os preços abaixo vêm DIRETO DO BANCO DE DADOS
+## PRÉDIOS DISPONÍVEIS (${buildingsData?.length || 0})
+${buildingsFormatted}
 
-╔══════════════════════════════════════════════════════════╗
-║ ⚠️ REGRAS DE CONTEXTO (CRÍTICO)                         ║
-╚══════════════════════════════════════════════════════════╝
+## CONTEXTO DA CONVERSA
 ${conversationHistory && conversationHistory.length > 0 ? `
-⚠️ NÃO se reapresente - vocês já estão conversando
-⚠️ NÃO pergunte informações já fornecidas pelo cliente
-⚠️ Continue a conversa naturalmente do ponto onde parou
-⚠️ Lembre-se de prédios/assuntos já mencionados
+⚠️ Conversa em andamento - NÃO se reapresente
+⚠️ NÃO repita perguntas já respondidas
+⚠️ Continue naturalmente
 ` : `
-✅ PRIMEIRA MENSAGEM: "Oi! Sou a Sofia da Exa 😊 O que você quer anunciar?"
+✅ Primeira mensagem - Faça saudação inicial
 `}
 
-╔══════════════════════════════════════════════════════════╗
-║ ⚠️ REGRA: RESPOSTA ÚNICA E COMPLETA                    ║
-╚══════════════════════════════════════════════════════════╝
-⚠️ Envie APENAS UMA resposta completa
-⚠️ NÃO divida sua resposta em múltiplas mensagens
-⚠️ Se já perguntou algo E já teve resposta, NÃO pergunte novamente
-
+## FORMATO DE RESPOSTA
 ${isFullListRequest ? `
-╔═══════════════════════════════════════════════════╗
-║ ⚠️ LISTA COMPLETA - ENVIAR TUDO EM 1 MENSAGEM!  ║
-╚═══════════════════════════════════════════════════╝
-
-INSTRUÇÕES OBRIGATÓRIAS:
-✅ Enviar TODOS os ${buildingsData?.length || 0} prédios em UMA SÓ mensagem
-✅ Iniciar: "Temos ${buildingsData?.length || 0} prédios! 🏢"
-✅ Terminar: "Qual te interessou? 😊"
-✅ Usar formato EXATO abaixo (COPIAR E COLAR OS PREÇOS)
-🚫 NÃO dividir em partes
-🚫 NÃO resumir
-🚫 NÃO alterar nenhum preço
-
-FORMATO:
-Temos ${buildingsData?.length || 0} prédios! 🏢
-
-${buildingsFormatted}
-
-Qual te interessou? 😊
+⚠️ LISTA COMPLETA SOLICITADA
+✅ Enviar TODOS os ${buildingsData?.length || 0} prédios em UMA mensagem
+✅ Formato: "Temos ${buildingsData?.length || 0} prédios! 🏢\\n\\n${buildingsFormatted}\\n\\nQual te interessou? 😊"
 ` : `
-## PRÉDIOS (${buildingsData?.length || 0} disponíveis)
-${buildingsFormatted}
-
-REGRAS:
-- Mostrar máx 3 prédios por vez
-- Se pedir "todos": usar formato de lista completa
-- Se pedir detalhes/endereço: adicionar bairro e visualizações
-- **COPIAR OS PREÇOS EXATAMENTE COMO APARECEM ACIMA**
-- Ser breve (2-3 linhas)
-`}
-
-## FUNIL
-1. Qualificar: "O que quer anunciar?"
-2. Quantidade: "Quantos prédios?"
-3. Desconto: "2 prédios: 15% | 5: 30% | 10+: 40%"
-4. Site: "www.examidia.com.br"
-
-${knowledgeContext ? `\n## CONHECIMENTO\n${knowledgeContext}` : ''}`;
+✅ Responda em UMA mensagem curta
+✅ Máximo 3 prédios por vez
+✅ Se pedir "todos": enviar lista completa
+`}`;
 
     console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
       promptLength: systemPrompt.length,
