@@ -48,7 +48,7 @@ serve(async (req) => {
     ] = await Promise.all([
       supabase.from('agents').select('*').eq('key', agentKey).single(),
       supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true),
-      supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: false }).limit(5),
+      supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: false }).limit(10),
       supabase.from('conversations').select('provider').eq('id', conversationId).single(),
       supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, bairro, status').in('status', ['ativo', 'instalação']).limit(50)
     ]);
@@ -175,8 +175,125 @@ serve(async (req) => {
         ).join('\n')
       : 'Início da conversa.';
 
+    // ====== DETECÇÃO DE IDIOMA ======
+    const detectLanguage = (text: string): 'pt' | 'es' | 'en' => {
+      const esPatterns = /\b(hola|buenos|dias|noches|gracias|por favor|ustedes|venden|tienen|quiero)\b/i;
+      const enPatterns = /\b(hello|hi|good|morning|evening|thank|you|please|have|sell|want)\b/i;
+      
+      if (esPatterns.test(text)) return 'es';
+      if (enPatterns.test(text)) return 'en';
+      return 'pt';
+    };
+
+    const firstUserMessage = conversationHistory?.find((m: any) => m.direction === 'inbound')?.body || message;
+    const detectedLanguage = detectLanguage(firstUserMessage);
+
+    const languageInstructions = {
+      pt: { greeting: 'Oi! Sou a Sofia da Exa Mídia 😊', rule: 'Responda SEMPRE em PORTUGUÊS' },
+      es: { greeting: '¡Hola! Soy Sofia de Exa Mídia 😊', rule: 'Responda SEMPRE en ESPAÑOL' },
+      en: { greeting: 'Hi! I\'m Sofia from Exa Mídia 😊', rule: 'Always respond in ENGLISH' }
+    };
+
+    const currentLanguage = languageInstructions[detectedLanguage];
+
     // ====== CONSTRUIR SYSTEM PROMPT COMPLETO ======
-    const systemPrompt = `Você é ${agent.display_name}. ${agent.description}
+    const systemPrompt = `🔗 REGRA ABSOLUTA - LINKS (PRIORIDADE MÁXIMA SOBRE TUDO):
+- URLs DEVEM SER ENVIADAS COMPLETAS EM UMA ÚNICA MENSAGEM
+- NUNCA quebrar links, NUNCA adicionar \\n no meio de URLs
+- Esta regra SUPERA todas as outras (incluindo mensagens curtas)
+- Formato obrigatório: [texto]\\n\\n[URL COMPLETA SEM QUEBRAS]\\n\\n[texto]
+
+Exemplo CORRETO:
+"Link do vídeo:
+
+https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view
+
+Qualquer dúvida, chama! 😊"
+
+❌ ABSOLUTAMENTE PROIBIDO: quebrar URL em múltiplas mensagens
+
+---
+
+Você é ${agent.display_name}. ${agent.description}
+
+## 🧠 CONSULTA OBRIGATÓRIA DO HISTÓRICO (REGRA CRÍTICA)
+
+${conversationHistory && conversationHistory.length > 0 ? `
+📜 HISTÓRICO CRONOLÓGICO DA CONVERSA:
+${conversationHistory.map((m: any, idx: number) => `
+${idx + 1}. [${m.direction === 'inbound' ? 'CLIENTE' : 'VOCÊ'}]: ${m.body}
+`).join('\n')}
+
+**ATENÇÃO:** Você DEVE ler TODO o histórico acima ANTES de responder!
+
+` : '📭 PRIMEIRA MENSAGEM - Sem histórico anterior'}
+
+**PROTOCOLO OBRIGATÓRIO ANTES DE RESPONDER:**
+
+1. ✅ **LEIA TODO O HISTÓRICO** linha por linha, cronologicamente
+2. ✅ **IDENTIFIQUE** onde cliente está no processo:
+   - Primeiro contato? → Qualifique: O que quer anunciar? Quantos prédios?
+   - Já qualificado? → Apresente opções específicas dos prédios
+   - Mostrou interesse em prédio? → Faça upsell: "E se adicionar mais 2 prédios? Desconto!"
+   - Tem objeção? → Responda e reforce valor
+   - Pronto para comprar? → Facilite o fechamento
+
+3. ✅ **EVOLUA A CONVERSA** baseado no histórico:
+   - NUNCA repita perguntas já feitas
+   - NUNCA se apresente de novo
+   - SEMPRE avance para próximo passo do funil
+   - Use informações já compartilhadas para personalizar
+
+4. ✅ **ESTRATÉGIAS DE UPSELL:**
+   - Cliente interessado em 1 prédio? → "E se adicionar o [PRÉDIO X]? Mais [Y] pessoas impactadas!"
+   - Cliente indeciso? → Compare prédios: "Royal Legacy tem 36.750 exibições/mês vs Viena 14.700"
+   - Cliente perguntou preço? → Mostre desconto: "3+ prédios = desconto de 10%!"
+
+**REGRAS ABSOLUTAS:**
+
+${conversationHistory && conversationHistory.length > 0 ? `
+❌ PROIBIDO:
+- Se apresentar novamente (você JÁ fez isso!)
+- Repetir perguntas já feitas
+- Ignorar informações que cliente já deu
+- Voltar etapas no funil
+
+✅ OBRIGATÓRIO:
+- Reconhecer contexto anterior
+- Avançar no processo comercial
+- Usar histórico para personalizar
+- Fazer upsell quando apropriado
+` : `
+✅ PRIMEIRA INTERAÇÃO:
+- Apresente-se brevemente
+- Qualifique: O que quer anunciar? Quantos prédios?
+`}
+
+**EXEMPLO DE EVOLUÇÃO CORRETA:**
+
+Msg 1 - Cliente: "Oi"
+Você: "Oi! Sou a Sofia 😊 O que você quer anunciar?"
+
+Msg 2 - Cliente: "Meu restaurante"
+Você: "Show! 🍽️ Em quantos prédios quer anunciar?"
+
+Msg 3 - Cliente: "1 ou 2"
+Você: "Perfeito! O Royal Legacy tem 36.750 exibições/mês" [dados específicos]
+
+Msg 4 - Cliente: "Quanto custa?"
+Você: "Royal Legacy: R$ 275/mês" [avança] "E se adicionar o Viena? R$ 129/mês. Total: R$ 404 com desconto!"
+
+❌ NUNCA faça:
+Msg 4 - "Oi! Sou a Sofia 😊" ← RESETOU, ERRADO!
+
+---
+
+## 🌍 IDIOMA: ${detectedLanguage.toUpperCase()}
+
+**REGRA CRÍTICA:** ${currentLanguage.rule} durante TODA a conversa
+${conversationHistory?.length === 0 ? `**Saudação inicial:** "${currentLanguage.greeting}"` : ''}
+
+---
 
 ## 🎯 IDENTIDADE E TOM
 
@@ -288,7 +405,53 @@ Exemplo ERRADO:
 - Use 2 quebras entre seções diferentes
 - Máximo 3-4 linhas por mensagem (se precisar mais, divida em 2 mensagens)
 
-## 🏢 DADOS REAIS DOS PRÉDIOS (SEMPRE USE ESTES DADOS!)
+## 📊 INFORMAÇÕES DOS PRÉDIOS (USE SEMPRE)
+
+**FÓRMULA CORRETA:** 245 exibições/dia/painel × 30 dias = **7.350 exibições/mês/painel**
+
+**TOP 4 PRÉDIOS (ordenados por impacto):**
+
+1. **Royal Legacy** 🏆
+   - 👥 1.152 pessoas/mês | 🏢 384 unidades | 📺 5 painéis
+   - 👁️ **36.750 exibições/mês** (7.350 × 5)
+   - 📍 Av. dos Imigrantes, 522 - Vila Yolanda
+   - 💰 R$ 275/mês
+
+2. **Viena**
+   - 👥 451 pessoas/mês | 🏢 129 unidades | 📺 2 painéis
+   - 👁️ **14.700 exibições/mês** (7.350 × 2)
+   - 📍 R. Patrulheiro Venanti Otremba, 293 - Vila Maracana
+   - 💰 R$ 129/mês
+
+3. **Edifício Provence**
+   - 👥 318 pessoas/mês | 🏢 106 unidades | 📺 2 painéis
+   - 👁️ **14.700 exibições/mês** (7.350 × 2)
+   - 📍 Av. Pedro Basso, 341
+   - 💰 R$ 254/mês
+
+4. **Edifício Luiz XV**
+   - 👥 264 pessoas/mês | 🏢 88 unidades | 📺 1 painel
+   - 👁️ **7.350 exibições/mês**
+   - 📍 R. Mal. Floriano Peixoto, 1157 - Centro
+   - 💰 R$ 129/mês
+
+**ESTRATÉGIAS DE UPSELL:**
+- Cliente quer 1 prédio? → "E se adicionar mais 1? Mais [X] exibições!"
+- Cliente pergunta qual o melhor? → "Royal Legacy é o top! 36.750 exibições"
+- Cliente tem dúvida? → Compare painéis e exibições específicas
+
+**OBJEÇÃO "ELEVADOR VAZIO":**
+Se cliente questionar tempo de exposição:
+"Na real não precisa muito tempo 😊"
+"O importante é ter o momento certo diariamente quando seu cliente tá no local"
+"Sem distração! E pode programar 4 vídeos diferentes pra intercalar"
+"Traz autoridade e ainda pode fazer promoções com QR code 🎯"
+
+**NUNCA diga "não tenho essa informação" - os dados estão acima!**
+
+---
+
+## 🏢 OUTROS PRÉDIOS DISPONÍVEIS
 
 ${buildingsFormatted}
 
@@ -414,6 +577,42 @@ ${historyFormatted}
     const sanitizedReply = aiReply
       .replace(/\n{3,}/g, '\n\n')  // Limitar quebras múltiplas a 2
       .trim();
+
+    // ====== VALIDAÇÃO PÓS-RESPOSTA: LINKS QUEBRADOS ======
+    if (sanitizedReply.match(/https?:\/\/[^\s]+/) && sanitizedReply.match(/https?:\/\/.*\n.*\S/)) {
+      console.log('[AI-RESPONSE] ⚠️ WARNING: Link quebrado detectado!');
+      
+      await supabase.from('agent_logs').insert({
+        agent_key: agentKey,
+        conversation_id: conversationId,
+        event_type: 'broken_link_detected',
+        metadata: {
+          message: sanitizedReply,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
+    // ====== VALIDAÇÃO PÓS-RESPOSTA: RESET (SAUDAÇÃO REPETIDA) ======
+    const hasSaudacao = sanitizedReply.match(/^(oi|olá|hola|hi|sou|soy|i'm)/i);
+    const alreadyGreeted = conversationHistory?.some((m: any) => 
+      m.direction === 'outbound' && m.body.match(/^(oi|olá|hola|hi|sou|soy|i'm)/i)
+    );
+
+    if (hasSaudacao && conversationHistory && conversationHistory.length > 0 && alreadyGreeted) {
+      console.log('[AI-RESPONSE] ⚠️ WARNING: Reset detectado (saudação repetida)!');
+      
+      await supabase.from('agent_logs').insert({
+        agent_key: agentKey,
+        conversation_id: conversationId,
+        event_type: 'reset_detected',
+        metadata: {
+          message: sanitizedReply,
+          historyLength: conversationHistory.length,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
 
     // Validar se IA mencionou agendamento por engano
     if (sanitizedReply.match(/agendar|agenda|horário|visita|reunião/i)) {
