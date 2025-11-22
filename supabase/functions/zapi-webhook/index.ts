@@ -49,28 +49,6 @@ serve(async (req) => {
     
     console.log('[ZAPI-WEBHOOK] 🔑 Message ID:', messageId);
 
-    // ========== FILTRO: IGNORAR STATUS UPDATES ==========
-    const eventType = payload.type;
-
-    // Z-API envia múltiplos eventos por mensagem:
-    // - ReceivedCallback: mensagem RECEBIDA (processar ✅)
-    // - MessageStatusCallback: atualizações de status (ignorar ❌)
-    // - DeliveryCallback: confirmação de entrega (ignorar ❌)
-
-    if (eventType === 'MessageStatusCallback' || eventType === 'DeliveryCallback') {
-      console.log('[ZAPI-WEBHOOK] ⏭️ Skipping status update event:', eventType);
-      return new Response(JSON.stringify({ 
-        success: true, 
-        skipped: true,
-        reason: 'status_update',
-        eventType
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    console.log('[ZAPI-WEBHOOK] ✅ Processing message event:', eventType);
-
     // Detectar tipo de mensagem e extrair conteúdo
     let messageText = '';
     let mediaUrl = null;
@@ -458,12 +436,8 @@ Obrigado pela compreensão!`;
 
             if (aiError) {
               console.error('[ZAPI-WEBHOOK] ❌ AI generation error:', aiError);
-            } else if (aiResult?.success === false) {
-              console.log('[ZAPI-WEBHOOK] ⚠️ AI generation skipped:', aiResult.reason || 'unknown');
-            } else if (aiResult?.success === true) {
-              console.log('[ZAPI-WEBHOOK] ✅ AI response generated and sent successfully');
             } else {
-              console.warn('[ZAPI-WEBHOOK] ⚠️ Unexpected AI result:', aiResult);
+              console.log('[ZAPI-WEBHOOK] ✅ AI response generated successfully');
             }
           } catch (aiError) {
             console.error('[ZAPI-WEBHOOK] ❌ AI invocation failed:', aiError);

@@ -27,62 +27,6 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // ====== LOCK ATÔMICO PARA EVITAR PROCESSAMENTO SIMULTÂNEO ======
-    const messageHash = `${conversationId}_${message.substring(0, 50)}`;
-    const lockKey = `ai_lock_${messageHash}`;
-
-    // Tentar adquirir lock (usando agent_context como store de locks)
-    const { data: existingLock } = await supabase
-      .from('agent_context')
-      .select('value, created_at')
-      .eq('key', lockKey)
-      .maybeSingle();
-
-    if (existingLock) {
-      const lockAge = Date.now() - new Date(existingLock.created_at).getTime();
-      
-      // Se lock tem menos de 30 segundos, está processando
-      if (lockAge < 30000) {
-        console.log('[AI-RESPONSE] 🔒 LOCKED - Another instance processing this message:', {
-          lockKey,
-          lockAge: `${Math.round(lockAge / 1000)}s`,
-          messagePreview: message.substring(0, 30)
-        });
-        
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            reason: 'processing_in_progress',
-            lockAge: Math.round(lockAge / 1000)
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Lock expirado (>30s), pode ser de crash anterior - deletar
-      console.log('[AI-RESPONSE] 🧹 Cleaning expired lock (age:', Math.round(lockAge / 1000), 's)');
-      await supabase.from('agent_context').delete().eq('key', lockKey);
-    }
-
-    // Criar lock
-    await supabase.from('agent_context').insert({
-      key: lockKey,
-      value: { 
-        conversationId, 
-        phoneNumber, 
-        messagePreview: message.substring(0, 50),
-        locked_at: new Date().toISOString()
-      }
-    });
-
-    console.log('[AI-RESPONSE] 🔓 Lock acquired, processing message...');
-
-    // Garantir que lock será liberado ao final (sucesso ou erro)
-    const releaseLock = async () => {
-      await supabase.from('agent_context').delete().eq('key', lockKey);
-      console.log('[AI-RESPONSE] 🔓 Lock released');
-    };
-
     // ====== LOG INÍCIO EM AGENT_LOGS ======
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,
@@ -104,7 +48,7 @@ serve(async (req) => {
     ] = await Promise.all([
       supabase.from('agents').select('*').eq('key', agentKey).single(),
       supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true),
-      supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true }).limit(10),
+      supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: false }).limit(5),
       supabase.from('conversations').select('provider').eq('id', conversationId).single(),
       supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, bairro, status').in('status', ['ativo', 'instalação']).limit(50)
     ]);
@@ -224,164 +168,189 @@ serve(async (req) => {
       ? agentKnowledge.map((k: any) => `### ${k.title}\n${k.content}`).join('\n\n')
       : '';
 
-    // ====== CONSTRUIR HISTÓRICO EM ORDEM CRONOLÓGICA ======
+    // ====== CONSTRUIR HISTÓRICO ======
     const historyFormatted = conversationHistory && conversationHistory.length > 0
-      ? conversationHistory.map((m: any, idx: number) => 
-          `${idx + 1}. [${m.direction === 'inbound' ? 'CLIENTE' : 'SOFIA'}]: ${m.body}`
+      ? conversationHistory.reverse().map((m: any) => 
+          `${m.direction === 'inbound' ? 'Cliente' : 'Agente'}: ${m.body}`
         ).join('\n')
       : 'Início da conversa.';
 
-    console.log(`[AI-RESPONSE] 📜 Histórico montado (${conversationHistory?.length || 0} msgs):\n${historyFormatted.substring(0, 300)}...`);
-
-    // ====== DETECÇÃO DE IDIOMA DINÂMICA ======
-    const detectLanguage = (text: string): 'pt' | 'es' | 'en' => {
-      const esPatterns = /\b(hola|buenos|dias|noches|gracias|por favor|ustedes|venden|tienen|quiero|puedo)\b/i;
-      const enPatterns = /\b(hello|hi|good|morning|evening|thank|you|please|have|sell|want)\b/i;
-      const ptPatterns = /\b(oi|olá|bom dia|boa tarde|obrigado|por favor|você|vocês|quero|posso|sou brasileiro)\b/i;
-      
-      // Priorizar PT se detectar padrões fortes
-      if (ptPatterns.test(text)) return 'pt';
-      if (esPatterns.test(text)) return 'es';
-      if (enPatterns.test(text)) return 'en';
-      return 'pt'; // Default PT
-    };
-
-    // Pegar ÚLTIMAS 3 mensagens do cliente para detectar idioma
-    const lastUserMessages = conversationHistory
-      ?.filter((m: any) => m.direction === 'inbound')
-      ?.slice(-3) // Últimas 3
-      ?.map((m: any) => m.body)
-      ?.join(' ') || message;
-
-    const detectedLanguage = detectLanguage(lastUserMessages + ' ' + message);
-
-    console.log(`[AI-RESPONSE] 🌍 Idioma detectado: ${detectedLanguage.toUpperCase()} (baseado em: "${lastUserMessages.substring(0, 50)}...")`);
-
-    const languageInstructions = {
-      pt: { greeting: 'Oi! Sou a Sofia da Exa Mídia 😊', rule: 'Responda SEMPRE em PORTUGUÊS' },
-      es: { greeting: '¡Hola! Soy Sofia de Exa Mídia 😊', rule: 'Responda SEMPRE en ESPAÑOL' },
-      en: { greeting: 'Hi! I\'m Sofia from Exa Mídia 😊', rule: 'Always respond in ENGLISH' }
-    };
-
-    const currentLanguage = languageInstructions[detectedLanguage];
-
-    console.log(`[AI-RESPONSE] 📋 DEBUG COMPLETO:`, {
-      conversationId,
-      phoneNumber,
-      messagePreview: message.substring(0, 50),
-      detectedLanguage,
-      historyLength: conversationHistory?.length || 0,
-      knowledgeLength: agentKnowledge?.length || 0,
-      hasHistory: !!(conversationHistory && conversationHistory.length > 0)
-    });
-
     // ====== CONSTRUIR SYSTEM PROMPT COMPLETO ======
-    const systemPrompt = `Você é Sofia da Exa Mídia - vendedora especialista em painéis digitais.
+    const systemPrompt = `Você é ${agent.display_name}. ${agent.description}
 
-## 🧠 LEIA O HISTÓRICO ANTES DE RESPONDER
+## 🎯 IDENTIDADE E TOM
 
-${conversationHistory && conversationHistory.length > 0 ? `
-📜 HISTÓRICO DA CONVERSA (em ordem cronológica):
-${historyFormatted}
+- Tom: amigável, direto, sem enrolação
+- NUNCA mencione que você é uma IA
+- Use linguagem natural do WhatsApp
+- Máximo 1 emoji por mensagem (usar raramente)
+- Mensagens curtas e picotadas (máx 3 linhas por mensagem)
 
-🚫 VOCÊ JÁ SE APRESENTOU! NUNCA MAIS:
-- Diga "Oi!", "Olá!" ou qualquer saudação
-- Pergunte coisas que já perguntou
-- Ignore informações que cliente já deu
+## 🚫 VOCÊ NÃO FAZ AGENDAMENTOS
 
-✅ VOCÊ DEVE:
-- Ler TODO o histórico acima
-- Identificar onde cliente está no processo
-- Avançar para próxima etapa do funil
-- Usar informações já compartilhadas
+Sofia NÃO agenda visitas, NÃO marca horários, NÃO faz reuniões.
 
-**EXEMPLO:**
-Histórico mostra:
-1. [CLIENTE]: Oi
-2. [SOFIA]: Oi! Sou a Sofia 😊 O que você quer anunciar?
-3. [CLIENTE]: Meu restaurante
+**Se cliente pedir agendamento:**
+"Na verdade, é mais rápido! Você compra direto no site e já tem a plataforma funcionando. Não precisa agendar nada 😊"
 
-Você DEVE responder:
-"Show! 🍽️ Você tava pensando em quantos prédios?"
+## 🎯 QUALIFICAÇÃO E AUMENTO DE TICKET
 
-Você NÃO DEVE responder:
-"Oi! Sou a Sofia" ❌ (já se apresentou!)
-"Qual é o seu negócio?" ❌ (ele já disse: restaurante!)
+**FLUXO OBRIGATÓRIO** (mensagens separadas, uma de cada vez):
 
-` : `
-✅ PRIMEIRA MENSAGEM:
-Apresente-se: "${currentLanguage.greeting}"
-Qualifique: "O que você quer anunciar?"
-`}
+1️⃣ **QUALIFICAR NEGÓCIO** (sempre perguntar primeiro):
+   "Qual é o seu negócio? 🤔"
 
-## 🌍 IDIOMA: ${detectedLanguage.toUpperCase()}
-${currentLanguage.rule} durante TODA a conversa.
+2️⃣ **QUALIFICAR QUANTIDADE** (após cliente responder):
+   "Você tava pensando em quantos prédios? Quanto mais prédios, maior o desconto 😊"
 
-## 🎯 FLUXO DE VENDAS (siga ordem)
+3️⃣ **UPSELL NATURAL** (mostrar descontos):
+   "Com 2 prédios já dá 15% OFF... Com 5 prédios, 30% OFF! Vale muito a pena 💡"
 
-1️⃣ QUALIFICAR NEGÓCIO:
-"Qual é o seu negócio? 🤔"
+4️⃣ **DIRECIONAR PARA SITE** (só depois de qualificar):
+   "Beleza! Entra aqui que é rapidinho:
+   
+   www.examidia.com.br
+   
+   Em minutos tá tudo pronto pra você fazer upload do vídeo 😊"
 
-2️⃣ QUALIFICAR QUANTIDADE:
-"Você tava pensando em quantos prédios?"
+**DESCONTOS:**
+- 2 prédios = 15% OFF
+- 5 prédios = 30% OFF
+- 10 prédios = 40% OFF
 
-3️⃣ APRESENTAR OPÇÕES:
-Use dados reais dos prédios da lista abaixo.
+**EXEMPLO CORRETO - Mensagens Picotadas:**
 
-4️⃣ FAZER UPSELL:
-"Com 2 prédios: 15% OFF... Com 5: 30% OFF!"
+Cliente: "Quanto custa?"
+Você: "Qual é o seu negócio? 🤔"
 
-5️⃣ DIRECIONAR PARA SITE:
-"Entra aqui: www.examidia.com.br"
+Cliente: "Tenho uma academia"
+Você: "Legal! Você tava pensando em quantos prédios?"
 
-## 📱 FORMATAÇÃO WHATSAPP
+Cliente: "Só um"
+Você: "Entendi! Mas olha, com 2 prédios você já ganha 15% OFF... Com 5, 30% OFF! Vale muito a pena pra divulgar mais 💡"
 
-**LISTAS:**
-✅ Edifício Provence - R$ 254/mês
-✅ Pietro Angelo - R$ 129/mês
+Cliente: "Interessante, quanto fica?"
+Você: "Os prédios variam de R$ 129 a R$ 254/mês. Com desconto sai bem mais em conta!"
 
-(use quebras de linha, não numere com 1. 2. 3.)
+Cliente: "Como faço pra comprar?"
+Você: "Entra aqui:
 
-**LINKS:**
-Envie limpo, sem markdown:
-https://drive.google.com/...
+www.examidia.com.br
 
-## 📊 TOP 4 PRÉDIOS
+Em minutos você escolhe, paga, e já tá com o painel pra fazer upload do vídeo 😊"
 
-1. **Royal Legacy** 🏆
-   - 36.750 exibições/mês (5 painéis)
-   - R$ 275/mês
+**EXEMPLO ERRADO:**
 
-2. **Viena**
-   - 14.700 exibições/mês (2 painéis)
-   - R$ 129/mês
+Cliente: "Quanto custa?"
+Você: "É super fácil! Entra no site, escolhe o plano, e em minutos tá tudo pronto 😊 www.examidia.com.br Alguma dúvida?" ❌
 
-3. **Edifício Provence**
-   - 14.700 exibições/mês (2 painéis)
-   - R$ 254/mês
+**POR QUE ERRADO?**
+❌ Não qualificou o negócio
+❌ Não qualificou quantidade
+❌ Não mencionou descontos
+❌ Enviou site sem contexto
+❌ Mensagem muito longa (tudo junto)
 
-4. **Edifício Luiz XV**
-   - 7.350 exibições/mês (1 painel)
-   - R$ 129/mês
+## 📱 REGRAS DE FORMATAÇÃO PARA WHATSAPP
 
-## 🏢 OUTROS PRÉDIOS
+**LISTAS DE PRÉDIOS**:
+Formate assim (uma linha por prédio):
+
+Exemplo CORRETO:
+  Claro! Prédios disponíveis:
+  
+  ✅ Edifício Provence - R$ 254/mês
+  ✅ Pietro Angelo - R$ 129/mês
+  ✅ Vila Appia - R$ 129/mês
+  ✅ Residencial Miró - R$ 129/mês
+  
+  Qual te interessa? 😊
+
+**NUNCA faça assim**:
+❌ Tudo numa linha: "1. ✅ Edifício... 2. ✅ Pietro... 3. ✅ Vila..."
+❌ Numerar com "1. 2. 3." (use apenas emoji ✅ ou 🚧)
+
+**LINKS**:
+Sempre envie o link LIMPO, em linha separada, SEM markdown
+
+Exemplo CORRETO de Mídia Kit:
+  Temos sim! Link do Mídia Kit:
+  
+  https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=sharing
+  
+  Qualquer dúvida, é só chamar!
+
+Exemplo ERRADO:
+  [Mídia Kit EXA](https://drive.google.com/...)  ← WhatsApp não suporta Markdown!
+
+**QUEBRAS DE LINHA**:
+- Use 1 quebra entre itens de lista
+- Use 2 quebras entre seções diferentes
+- Máximo 3-4 linhas por mensagem (se precisar mais, divida em 2 mensagens)
+
+## 🏢 DADOS REAIS DOS PRÉDIOS (SEMPRE USE ESTES DADOS!)
 
 ${buildingsFormatted}
 
-## ❌ NUNCA RESPONDA
+**Total de prédios:** ${buildingsData?.length || 0}
 
-- "Vou verificar" (use dados acima!)
-- "Para valores, me chama no (45)..." (responda aqui!)
-- "Depende do número de prédios" (dê preço exato!)
+## ✅ EXEMPLOS DE RESPOSTAS CORRETAS
+
+Cliente: "Quanto custa pra amunciar no predio sant perer"
+VOCÊ (CORRETO): "O Saint Peter tá em instalação. Vai ser R$ 155/mês quando ativar! Quer ver os que já tão disponíveis? 😊"
+VOCÊ (ERRADO): "Vou verificar pra você!" ❌
+VOCÊ (ERRADO): "Para valores, me chama no (45) 9 9141-5856" ❌
+
+Cliente: "Quanto custa o edifício provence"
+VOCÊ (CORRETO): "O Edifício Provence tá disponível agora! R$ 254/mês. Quer mais detalhes?"
+VOCÊ (ERRADO): "A partir de R$ 200/mês" ❌
+VOCÊ (ERRADO): "Depende do número de prédios" ❌
+
+Cliente: "Organize melhor e enumere"
+VOCÊ (CORRETO):
+  Claro! Prédios disponíveis:
+  
+  ✅ Edifício Provence - R$ 254/mês
+  ✅ Pietro Angelo - R$ 129/mês
+  ✅ Vila Appia - R$ 129/mês
+  ✅ Residencial Miró - R$ 129/mês
+  
+  Qual te interessa? 😊
+
+VOCÊ (ERRADO):
+  Claro! Aqui estão: 1. ✅ Edifício Provence - R$ 254,00/mês 2. ✅ Pietro Angelo - R$ 129,00/mês 3. ✅ Vila... ❌
+
+Cliente: "E vocês tem midia kit?"
+VOCÊ (CORRETO):
+  Temos sim! Link do Mídia Kit:
+  
+  https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=sharing
+  
+  Qualquer dúvida, é só chamar! 😊
+
+VOCÊ (ERRADO):
+  [Mídia Kit EXA](https://drive.google.com/file...) ❌
+
+## ❌ RESPOSTAS ABSOLUTAMENTE PROIBIDAS
+
+NUNCA MAIS responda:
+- "Vou verificar pra você" (OS DADOS ESTÃO ACIMA!)
+- "Qual o seu negócio?" quando cliente pergunta preço (RESPONDA O PREÇO PRIMEIRO!)
+- "Para valores, me chama no (45) 9 9141-5856" (RESPONDA AQUI!)
+- "Depende do número de prédios" quando cliente pergunta preço específico (USE O PREÇO EXATO!)
+- "Vou enviar os detalhes por WhatsApp" sem enviar (ENVIE AGORA!)
 
 ## 📚 BASE DE CONHECIMENTO
 
 ${knowledgeContext}
 
+## 💬 HISTÓRICO DA CONVERSA
+
+${historyFormatted}
+
 ---
 
-Responda de forma natural, use dados reais, e SEMPRE avance no funil de vendas.`;
-
+**INSTRUÇÃO FINAL**: Responda de forma natural, objetiva e SEMPRE usando os dados reais dos prédios acima. Se cliente perguntar sobre prédio, USE O PREÇO EXATO da lista!`;
 
     console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
       promptLength: systemPrompt.length,
@@ -431,36 +400,11 @@ Responda de forma natural, use dados reais, e SEMPRE avance no funil de vendas.`
     });
 
     if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('[AI-RESPONSE] ❌ OpenAI error:', {
-        status: openaiResponse.status,
-        error: errorText
-      });
-      throw new Error(`OpenAI error: ${openaiResponse.status} - ${errorText}`);
+      throw new Error(`OpenAI error: ${openaiResponse.status}`);
     }
 
     const openaiData = await openaiResponse.json();
     const aiReply = openaiData.choices[0]?.message?.content || '';
-
-    // ====== VALIDAÇÃO DE RESPOSTA VAZIA ======
-    if (!aiReply || aiReply.trim().length === 0) {
-      console.error('[AI-RESPONSE] ❌ Empty AI response received');
-      await releaseLock();
-      throw new Error('AI returned empty response');
-    }
-
-    if (aiReply.length < 3) {
-      console.error('[AI-RESPONSE] ❌ AI response too short:', aiReply);
-      await releaseLock();
-      throw new Error('AI response too short');
-    }
-
-    console.log('[AI-RESPONSE] 🤖 OpenAI response received:', {
-      aiReplyLength: aiReply.length,
-      aiReplyPreview: aiReply.substring(0, 100),
-      tokensUsed: openaiData.usage?.total_tokens,
-      model: openaiData.model
-    });
 
     if (!aiReply) {
       throw new Error('Empty AI response');
@@ -470,49 +414,6 @@ Responda de forma natural, use dados reais, e SEMPRE avance no funil de vendas.`
     const sanitizedReply = aiReply
       .replace(/\n{3,}/g, '\n\n')  // Limitar quebras múltiplas a 2
       .trim();
-
-    console.log(`[AI-RESPONSE] 🤖 Resposta gerada:`, {
-      preview: sanitizedReply.substring(0, 100),
-      length: sanitizedReply.length,
-      startsWithGreeting: /^(oi|olá|hola|hi)/i.test(sanitizedReply),
-      containsUrl: /https?:\/\//i.test(sanitizedReply)
-    });
-
-    // ====== VALIDAÇÃO PÓS-RESPOSTA: LINKS QUEBRADOS ======
-    if (sanitizedReply.match(/https?:\/\/[^\s]+/) && sanitizedReply.match(/https?:\/\/.*\n.*\S/)) {
-      console.log('[AI-RESPONSE] ⚠️ WARNING: Link quebrado detectado!');
-      
-      await supabase.from('agent_logs').insert({
-        agent_key: agentKey,
-        conversation_id: conversationId,
-        event_type: 'broken_link_detected',
-        metadata: {
-          message: sanitizedReply,
-          timestamp: new Date().toISOString()
-        }
-      });
-    }
-
-    // ====== VALIDAÇÃO PÓS-RESPOSTA: RESET (SAUDAÇÃO REPETIDA) ======
-    const hasSaudacao = sanitizedReply.match(/^(oi|olá|hola|hi|sou|soy|i'm)/i);
-    const alreadyGreeted = conversationHistory?.some((m: any) => 
-      m.direction === 'outbound' && m.body.match(/^(oi|olá|hola|hi|sou|soy|i'm)/i)
-    );
-
-    if (hasSaudacao && conversationHistory && conversationHistory.length > 0 && alreadyGreeted) {
-      console.log('[AI-RESPONSE] ⚠️ WARNING: Reset detectado (saudação repetida)!');
-      
-      await supabase.from('agent_logs').insert({
-        agent_key: agentKey,
-        conversation_id: conversationId,
-        event_type: 'reset_detected',
-        metadata: {
-          message: sanitizedReply,
-          historyLength: conversationHistory.length,
-          timestamp: new Date().toISOString()
-        }
-      });
-    }
 
     // Validar se IA mencionou agendamento por engano
     if (sanitizedReply.match(/agendar|agenda|horário|visita|reunião/i)) {
@@ -633,15 +534,10 @@ Responda de forma natural, use dados reais, e SEMPRE avance no funil de vendas.`
     });
 
     // ====== ENVIAR MENSAGEM ======
-    console.log('[AI-RESPONSE] 📨 Preparando envio via', conversation?.provider, {
-      phone: phoneNumber,
-      conversationId,
-      messageLength: sanitizedReply.length
-    });
+    console.log('[AI-RESPONSE] 📨 Sending message via', conversation?.provider);
 
     let sendResult, sendError;
     if (conversation?.provider === 'manychat') {
-      console.log('[AI-RESPONSE] 📤 Enviando via ManyChat...');
       const result = await supabase.functions.invoke('send-message-unified', {
         body: {
           conversationId,
@@ -652,10 +548,6 @@ Responda de forma natural, use dados reais, e SEMPRE avance no funil de vendas.`
       sendResult = result.data;
       sendError = result.error;
     } else {
-      console.log('[AI-RESPONSE] 📤 Enviando via ZAPI...', {
-        phone: phoneNumber,
-        messagePreview: sanitizedReply.substring(0, 50)
-      });
       const result = await supabase.functions.invoke('zapi-send-message', {
         body: {
           agentKey,
@@ -665,15 +557,12 @@ Responda de forma natural, use dados reais, e SEMPRE avance no funil de vendas.`
       });
       sendResult = result.data;
       sendError = result.error;
-      console.log('[AI-RESPONSE] 📥 ZAPI response:', { sendResult, sendError });
     }
 
     if (sendError) {
       console.error('[AI-RESPONSE] ❌ Send error:', sendError);
       throw new Error('Failed to send message');
     }
-    
-    console.log('[AI-RESPONSE] ✅ Message sent successfully:', sendResult);
 
     // ====== LOG SUCESSO FINAL EM AGENT_LOGS ======
     await supabase.from('agent_logs').insert({
@@ -690,9 +579,6 @@ Responda de forma natural, use dados reais, e SEMPRE avance no funil de vendas.`
 
     console.log('[AI-RESPONSE] 🎉 Complete! AI response flow finished successfully');
 
-    // Liberar lock
-    await releaseLock();
-
     return new Response(
       JSON.stringify({ 
         success: true,
@@ -703,23 +589,6 @@ Responda de forma natural, use dados reais, e SEMPRE avance no funil de vendas.`
 
   } catch (error) {
     console.error('[AI-RESPONSE] 💥 FATAL ERROR:', error);
-    
-    // Liberar lock em caso de erro
-    try {
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
-      const { conversationId, message } = await req.json().catch(() => ({}));
-      if (conversationId && message) {
-        const messageHash = `${conversationId}_${message.substring(0, 50)}`;
-        const lockKey = `ai_lock_${messageHash}`;
-        await supabase.from('agent_context').delete().eq('key', lockKey);
-        console.log('[AI-RESPONSE] 🔓 Lock released (error path)');
-      }
-    } catch (unlockError) {
-      console.error('[AI-RESPONSE] Failed to release lock:', unlockError);
-    }
     
     // ====== LOG ERRO EM AGENT_LOGS ======
     try {
