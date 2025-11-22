@@ -49,21 +49,46 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
 
   // Realtime sync - detectar mudanças na base de conhecimento
   useEffect(() => {
-    const channel = supabase
-      .channel(`agent-knowledge-${agent.key}`)
+    // Canal para agent_sections
+    const sectionsChannel = supabase
+      .channel(`agent-sections-${agent.key}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'agent_knowledge',
-          filter: `agent_key=eq.${agent.key}`
+          table: 'agent_sections',
+          filter: `agent_id=eq.${agent.id}`
         },
         (payload) => {
-          console.log('[REALTIME] Agent knowledge changed:', payload);
+          console.log('[REALTIME] Agent sections changed:', payload);
           setSyncStatus('syncing');
+          setPreviewKey(prev => prev + 1);
           
-          // Forçar reload do preview
+          setTimeout(() => {
+            setSyncStatus('synced');
+            toast.success('Preview atualizado automaticamente', {
+              description: 'Seção sincronizada'
+            });
+          }, 1000);
+        }
+      )
+      .subscribe();
+
+    // Canal para agent_knowledge_items
+    const itemsChannel = supabase
+      .channel(`agent-knowledge-items-${agent.key}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'agent_knowledge_items',
+          filter: `agent_id=eq.${agent.id}`
+        },
+        (payload) => {
+          console.log('[REALTIME] Agent knowledge items changed:', payload);
+          setSyncStatus('syncing');
           setPreviewKey(prev => prev + 1);
           
           setTimeout(() => {
@@ -77,9 +102,10 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(sectionsChannel);
+      supabase.removeChannel(itemsChannel);
     };
-  }, [agent.key]);
+  }, [agent.key, agent.id]);
 
   if (!agent) {
     return (

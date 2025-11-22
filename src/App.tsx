@@ -456,6 +456,13 @@ const AppContent = () => {
             {/* Painel Unificado de Agentes */}
             <Route path="agentes" element={<Agentes />} />
             
+            {/* Rotas individuais dos agentes */}
+            <Route path="agentes/:id/base-conhecimento" element={
+              <Suspense fallback={<GlobalLoadingPage message="Carregando base de conhecimento..." />}>
+                {React.createElement(lazy(() => import('./modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge }))))}
+              </Suspense>
+            } />
+            
             {/* CRM Unificado */}
             <Route path="crm" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando CRM..." />}>

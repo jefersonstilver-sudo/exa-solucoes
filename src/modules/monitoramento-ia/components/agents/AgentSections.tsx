@@ -16,10 +16,10 @@ interface Section {
 
 interface AgentSectionsProps {
   sections: Section[];
-  onRefresh: () => void;
+  agentId: string;
 }
 
-export const AgentSections = ({ sections, onRefresh }: AgentSectionsProps) => {
+export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -38,7 +38,7 @@ export const AgentSections = ({ sections, onRefresh }: AgentSectionsProps) => {
 
       toast.success('Seção atualizada com sucesso');
       setEditingId(null);
-      onRefresh();
+      window.location.reload(); // Reload to get updated data
     } catch (error) {
       console.error('Error updating section:', error);
       toast.error('Erro ao atualizar seção');
