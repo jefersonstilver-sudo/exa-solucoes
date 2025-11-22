@@ -44,6 +44,20 @@ serve(async (req) => {
       });
     }
 
+    // ========== FILTRO: IGNORAR STATUS UPDATES ==========
+    const eventType = payload.type;
+
+    if (eventType === 'MessageStatusCallback' || eventType === 'DeliveryCallback') {
+      console.log('[ZAPI-WEBHOOK] ⏭️ Status update ignorado:', eventType);
+      return new Response(JSON.stringify({ 
+        success: true, 
+        skipped: true,
+        reason: 'status_update'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Extrair ID único da mensagem para deduplicação
     const messageId = payload.messageId || payload.id || payload.key?.id || `${phone}_${Date.now()}`;
     
