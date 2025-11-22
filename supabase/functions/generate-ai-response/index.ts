@@ -18,26 +18,44 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { agentKey, conversationId, message, phoneNumber } = await req.json();
+    const { agentKey, conversationId, message, phoneNumber, messageId } = await req.json();
 
     console.log('[AI-RESPONSE] 🤖 Starting AI response generation:', {
       agentKey,
       conversationId,
       phoneNumber,
+      messageId,
       messagePreview: message.substring(0, 50),
       timestamp: new Date().toISOString()
     });
 
-    // ====== LOCK ATÔMICO ULTRA-ROBUSTO (HASH MD5 + UPSERT) ======
-    // Usar hash consistente da mensagem completa para garantir deduplicação perfeita
-    const encoder = new TextEncoder();
-    const msgData = encoder.encode(`${conversationId}_${message}_${phoneNumber}`);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgData);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const messageHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
-    
-    const lockKey = `lock_msg_${messageHash}`;
-    const LOCK_TIMEOUT_MS = 45000; // 45 segundos
+    // ====== PRÉ-VERIFICAÇÃO: CHECAR SE JÁ FOI PROCESSADO ======
+    const { data: existingLog } = await supabase
+      .from('zapi_logs')
+      .select('id, created_at')
+      .eq('zapi_message_id', messageId)
+      .eq('direction', 'outbound')
+      .maybeSingle();
+
+    if (existingLog) {
+      console.log('[AI-RESPONSE] ⚠️ Message already processed:', {
+        messageId,
+        existingLogId: existingLog.id,
+        processedAt: existingLog.created_at
+      });
+      return new Response(JSON.stringify({ 
+        success: false, 
+        reason: 'already_processed',
+        existingLogId: existingLog.id
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      });
+    }
+
+    // ====== LOCK ATÔMICO (conversationId + messageId) ======
+    const lockKey = `lock_${conversationId}_${messageId}`;
+    const LOCK_TIMEOUT_MS = 90000; // 90 segundos (aumentado para queries complexas)
 
     console.log('[AI-RESPONSE] 🔐 Attempting to acquire lock:', {
       lockKey,
@@ -291,15 +309,16 @@ serve(async (req) => {
 
     // isFullListRequest já foi detectado acima
     
-    // ====== DETECTAR SE USUÁRIO PEDIU ENDEREÇO EXPLICITAMENTE ======
-    const addressRequested = message.match(/endereço|onde fica|localização|rua|avenida/i);
+    // ====== DETECTAR SE USUÁRIO PEDIU ENDEREÇO/DETALHES EXPLICITAMENTE ======
+    const detailsRequested = message.match(/endereço|onde fica|localização|rua|avenida|visualizações|exibições|quantas pessoas/i);
     
-    // ====== CONSTRUIR DADOS DOS PRÉDIOS (FORMATO LIMPO E VALIDADO) ======
+    // ====== CONSTRUIR DADOS DOS PRÉDIOS (FORMATO LIMPO - SEM BAIRRO POR PADRÃO) ======
     const buildingsFormatted = buildingsData && buildingsData.length > 0 
       ? buildingsData.map((b: any) => {
           // Validações para evitar undefined/null/0
           const nome = b.nome || 'Sem nome';
           const bairro = b.bairro || 'Centro';
+          const endereco = b.endereco || '';
           const visualizacoes = b.visualizacoes_mes && b.visualizacoes_mes > 0 
             ? b.visualizacoes_mes 
             : (b.quantidade_telas ? b.quantidade_telas * 7350 : 7350);
@@ -307,11 +326,16 @@ serve(async (req) => {
             ? b.preco_base.toFixed(2) 
             : '129.00';
           
-          // Formato básico: apenas nome, bairro, exibições e preço
-          return `🏢 *${nome}*
-📍 ${bairro}
-📊 ${visualizacoes.toLocaleString('pt-BR')} exibições/mês
-💰 R$ ${precoBase}/mês`;
+          // Formato básico: apenas nome e preço (SEM bairro)
+          let formatted = `🏢 *${nome}* • R$ ${precoBase}/mês`;
+          
+          // Adicionar detalhes SOMENTE se usuário pediu
+          if (detailsRequested) {
+            formatted += `\n📍 ${bairro}${endereco ? ' - ' + endereco : ''}`;
+            formatted += `\n👥 ${visualizacoes.toLocaleString('pt-BR')} visualizações/mês`;
+          }
+          
+          return formatted;
         }).join('\n\n')
       : 'Nenhum prédio disponível';
 
@@ -327,85 +351,55 @@ serve(async (req) => {
         ).join('\n')
       : '';
 
-    // ====== CONSTRUIR SYSTEM PROMPT OTIMIZADO ======
+    // ====== CONSTRUIR SYSTEM PROMPT SIMPLIFICADO ======
     const systemPrompt = `Você é Sofia da Exa Mídia - vendedora de painéis digitais.
 
 ${conversationHistory && conversationHistory.length > 0 ? `
-## 📜 HISTÓRICO (LER ANTES DE RESPONDER!)
-
+## HISTÓRICO
 ${historyFormatted}
 
-🚨 REGRAS DO HISTÓRICO:
-- Se já se apresentou, NUNCA mais diga "Oi" ou "Olá"
-- Se cliente já disse o negócio, NUNCA pergunte de novo
-- Se cliente enviou imagem, comente naturalmente (ex: "Que delícia! 🍖")
-- SEMPRE avance na conversa, não repita perguntas
-
+⚠️ REGRAS: Não repita perguntas já feitas. Avance na conversa.
 ` : `
-✅ PRIMEIRA MENSAGEM: "Oi! Sou a Sofia da Exa 😊 O que você quer anunciar?"
+PRIMEIRA MENSAGEM: "Oi! Sou a Sofia da Exa 😊 O que você quer anunciar?"
 `}
 
-## ⚠️ REGRAS OBRIGATÓRIAS - NUNCA VIOLE!
-
-### 📋 ${isFullListRequest ? '🚨 LISTA COMPLETA - INSTRUÇÕES CRÍTICAS' : 'PRÉDIOS DISPONÍVEIS'}:
 ${isFullListRequest ? `
-╔══════════════════════════════════════════════════════════╗
-║  ATENÇÃO: CLIENTE PEDIU LISTA COMPLETA DE PRÉDIOS!      ║
-║  VOCÊ DEVE ENVIAR TUDO EM UMA ÚNICA MENSAGEM!          ║
-╚══════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════╗
+║ ⚠️ LISTA COMPLETA - ENVIAR TUDO EM 1 MENSAGEM!  ║
+╚═══════════════════════════════════════════════════╝
 
-⚠️ INSTRUÇÕES OBRIGATÓRIAS:
+INSTRUÇÕES OBRIGATÓRIAS:
+✅ Enviar TODOS os ${buildingsData?.length || 0} prédios em UMA SÓ mensagem
+✅ Iniciar: "Temos ${buildingsData?.length || 0} prédios! 🏢"
+✅ Terminar: "Qual te interessou? 😊"
+✅ Usar formato EXATO abaixo
+🚫 NÃO dividir em partes
+🚫 NÃO resumir
 
-1. 🚫 NÃO DIVIDA A LISTA EM PARTES
-2. 🚫 NÃO ENVIE MENSAGENS SEPARADAS PARA CADA PRÉDIO  
-3. ✅ COPIE E COLE TODOS OS ${buildingsData?.length || 0} PRÉDIOS ABAIXO EM UMA SÓ RESPOSTA
-4. ✅ INICIE COM: "Temos ${buildingsData?.length || 0} prédios disponíveis! 🏢"
-5. ✅ TERMINE COM: "Qual desses prédios te interessou? 😊"
-6. ✅ MANTENHA O FORMATO EXATO (emojis, quebras de linha, etc.)
-
-📝 FORMATO OBRIGATÓRIO DA SUA RESPOSTA:
-
-Temos ${buildingsData?.length || 0} prédios disponíveis! 🏢
+FORMATO:
+Temos ${buildingsData?.length || 0} prédios! 🏢
 
 ${buildingsFormatted}
 
-Qual desses prédios te interessou? 😊
-
-🚨 REPITO: Envie TODOS os ${buildingsData?.length || 0} prédios em UMA ÚNICA mensagem!
-NÃO resuma, NÃO corte, NÃO separe - cole TUDO de uma vez!
+Qual te interessou? 😊
 ` : `
-- Ao mencionar prédios, mostre máx 3 de cada vez
-- Se perguntarem sobre prédio específico, dê TODOS os detalhes
-- Se pedirem "todos" ou "lista completa", use o formato da seção acima
-- Seja breve e direto
+## PRÉDIOS (${buildingsData?.length || 0} disponíveis)
+${buildingsFormatted}
+
+REGRAS:
+- Mostrar máx 3 prédios por vez
+- Se pedir "todos": usar formato de lista completa
+- Se pedir detalhes/endereço: adicionar bairro e visualizações
+- Ser breve (2-3 linhas)
 `}
 
-### 💬 ESTILO DE MENSAGEM:
-- Mensagens CURTAS (máx 2-3 linhas) - EXCETO quando for lista completa
-- Natural e conversacional
-- Use emoji com moderação
-- Se cliente enviar imagem: comente rápido e volte ao funil
+## FUNIL
+1. Qualificar: "O que quer anunciar?"
+2. Quantidade: "Quantos prédios?"
+3. Desconto: "2 prédios: 15% | 5: 30% | 10+: 40%"
+4. Site: "www.examidia.com.br"
 
-## 🎯 FUNIL DE VENDAS (seguir ordem)
-
-1. Qualificar negócio: "O que você quer anunciar?"
-2. Qualificar quantidade: "Quantos prédios?"
-3. Upsell descontos: "Com 2 prédios: 15% OFF | 5: 30% OFF | 10+: 40% OFF"
-4. Direcionar site: "www.examidia.com.br"
-
-${!isFullListRequest ? `
-## 🏢 PRÉDIOS DISPONÍVEIS (${buildingsData?.length || 0} opções)
-
-${buildingsFormatted}
-` : ''}
-
-## 📚 CONHECIMENTO
-
-${knowledgeContext}
-
----
-
-${isFullListRequest ? 'IMPORTANTE: Sua resposta DEVE conter a lista completa de TODOS os prédios em UMA ÚNICA mensagem!' : 'Responda de forma natural e objetiva.'}`;
+${knowledgeContext ? `\n## CONHECIMENTO\n${knowledgeContext}` : ''}`;
 
     console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
       promptLength: systemPrompt.length,
@@ -482,7 +476,7 @@ ${isFullListRequest ? 'IMPORTANTE: Sua resposta DEVE conter a lista completa de 
       throw new Error('OPENAI_API_KEY not configured');
     }
 
-    const maxTokens = isFullListRequest ? 4096 : 500;
+    const maxTokens = isFullListRequest ? 4096 : (isComplexSearch ? 1024 : 512);
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -497,7 +491,7 @@ ${isFullListRequest ? 'IMPORTANTE: Sua resposta DEVE conter a lista completa de 
           { role: 'user', content: message },
           ...(isFullListRequest ? [{
             role: 'system',
-            content: `⚠️ LEMBRETE CRÍTICO: O cliente pediu a LISTA COMPLETA! Você DEVE enviar TODOS os ${buildingsData?.length || 0} prédios em UMA ÚNICA mensagem. NÃO divida em partes. Copie e cole toda a lista formatada acima em uma resposta completa.`
+            content: `⚠️ CRÍTICO: Cliente pediu LISTA COMPLETA! Enviar TODOS os ${buildingsData?.length || 0} prédios em UMA mensagem!`
           }] : [])
         ],
         temperature: 0.7,
@@ -506,7 +500,9 @@ ${isFullListRequest ? 'IMPORTANTE: Sua resposta DEVE conter a lista completa de 
     });
 
     if (!openaiResponse.ok) {
-      throw new Error(`OpenAI error: ${openaiResponse.status}`);
+      const errorText = await openaiResponse.text();
+      console.error('[AI-RESPONSE] ❌ OpenAI error:', openaiResponse.status, errorText);
+      throw new Error(`OpenAI error: ${openaiResponse.status} - ${errorText}`);
     }
 
     const openaiData = await openaiResponse.json();
@@ -518,10 +514,55 @@ ${isFullListRequest ? 'IMPORTANTE: Sua resposta DEVE conter a lista completa de 
       throw new Error('AI response invalid');
     }
 
-    // Sanitizar resposta (preservar quebras de linha para formatação WhatsApp)
-    const sanitizedReply = aiReply
-      .replace(/\n{3,}/g, '\n\n')  // Limitar quebras múltiplas a 2
+    // Sanitizar resposta
+    let sanitizedReply = aiReply
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
+
+    // ====== VALIDAÇÃO DE RESPOSTA (FASE 4) ======
+    if (isFullListRequest && buildingsData && buildingsData.length > 0) {
+      const buildingCount = (sanitizedReply.match(/🏢/g) || []).length;
+      const expectedCount = buildingsData.length;
+      
+      console.log('[AI-RESPONSE] 🔍 Validating full list response:', {
+        expectedCount,
+        actualCount: buildingCount,
+        isComplete: buildingCount >= expectedCount
+      });
+
+      if (buildingCount < expectedCount * 0.8) { // Se faltarem mais de 20% dos prédios
+        console.error('[AI-RESPONSE] ⚠️ INCOMPLETE LIST DETECTED! Retrying with simpler prompt...');
+        
+        // Retry com prompt ultra-simplificado
+        const retryPrompt = `Você DEVE copiar e colar TODOS os ${expectedCount} prédios abaixo em UMA mensagem:
+
+Temos ${expectedCount} prédios! 🏢
+
+${buildingsFormatted}
+
+Qual te interessou? 😊`;
+
+        const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: retryPrompt }],
+            temperature: 0.3,
+            max_tokens: 4096,
+          }),
+        });
+
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          sanitizedReply = retryData.choices[0]?.message?.content?.trim() || sanitizedReply;
+          console.log('[AI-RESPONSE] ✅ Retry successful');
+        }
+      }
+    }
 
     // Validar se IA mencionou agendamento por engano
     if (sanitizedReply.match(/agendar|agenda|horário|visita|reunião/i)) {
