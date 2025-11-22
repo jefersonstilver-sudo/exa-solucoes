@@ -64,31 +64,72 @@ serve(async (req) => {
       });
     }
 
-    // Construir URL da API Z-API para envio de mensagem
+    // 🤖 QUEBRAR MENSAGENS LONGAS (humanizar comunicação)
+    const splitMessage = (text: string, maxLength = 150): string[] => {
+      if (text.length <= maxLength) return [text];
+      
+      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+      const chunks: string[] = [];
+      let currentChunk = '';
+      
+      for (const sentence of sentences) {
+        if ((currentChunk + sentence).length <= maxLength) {
+          currentChunk += sentence;
+        } else {
+          if (currentChunk) chunks.push(currentChunk.trim());
+          currentChunk = sentence;
+        }
+      }
+      if (currentChunk) chunks.push(currentChunk.trim());
+      
+      return chunks;
+    };
+
+    const messageChunks = splitMessage(message);
+    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'message chunks');
+
+    // Enviar cada chunk com delay (simular digitação humana)
     const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+    const results = [];
 
-    console.log('[ZAPI-SEND] 📤 Sending message via Z-API:', {
-      agent: agentKey,
-      phone,
-      messagePreview: message.substring(0, 50) + '...',
-      messageLength: message.length,
-      hasClientToken: !!zapiClientToken,
-      instanceId: zapiConfig.instance_id,
-      timestamp: new Date().toISOString()
-    });
+    for (let i = 0; i < messageChunks.length; i++) {
+      const chunk = messageChunks[i];
+      
+      console.log('[ZAPI-SEND] 📤 Chunk', i + 1, '/', messageChunks.length, ':', {
+        agent: agentKey,
+        phone,
+        preview: chunk.substring(0, 50) + '...',
+        length: chunk.length,
+        timestamp: new Date().toISOString()
+      });
 
-    // Enviar mensagem via Z-API (com Client-Token no header)
-    const zapiResponse = await fetch(sendUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Client-Token': zapiClientToken, // ✅ CRÍTICO: Client-Token necessário
-      },
-      body: JSON.stringify({
-        phone: phone.replace(/\D/g, ''), // Remove caracteres não numéricos
-        message: message
-      })
-    });
+      const zapiResponse = await fetch(sendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Client-Token': zapiClientToken,
+        },
+        body: JSON.stringify({
+          phone: phone.replace(/\D/g, ''),
+          message: chunk
+        })
+      });
+
+      const zapiResult = await zapiResponse.json();
+      results.push(zapiResult);
+
+      if (!zapiResponse.ok) {
+        console.error('[ZAPI-SEND] ❌ Z-API error on chunk', i + 1, ':', zapiResult);
+        throw new Error(`Z-API error: ${JSON.stringify(zapiResult)}`);
+      }
+
+      // Delay entre mensagens (exceto última)
+      if (i < messageChunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+    }
+
+    const zapiResult = results[results.length - 1]; // Último resultado
 
     const zapiResult = await zapiResponse.json();
 
