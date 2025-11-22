@@ -82,45 +82,7 @@ serve(async (req) => {
       }
     }
 
-    // Verificar se está em modo de treinamento
-    let trainingModeActive = false;
-    if (context?.conversationId) {
-      const { data: conversations } = await supabase
-        .from('conversations')
-        .select('contact_phone')
-        .eq('id', context.conversationId)
-        .single();
-      
-      if (conversations?.contact_phone) {
-        const trainingKey = `training_mode_${conversations.contact_phone}`;
-        const { data: trainingState } = await supabase
-          .from('agent_context')
-          .select('value')
-          .eq('key', trainingKey)
-          .single();
-        
-        trainingModeActive = trainingState?.value?.active || false;
-        console.log(`[IA-CONSOLE] Training mode: ${trainingModeActive ? 'ACTIVE' : 'inactive'}`);
-      }
-    }
-
-    // Adicionar instruções de treinamento se modo ativo
-    if (trainingModeActive) {
-      systemPrompt += `\n\n🎓 MODO DE TREINAMENTO ATIVO:
-Você está sendo treinada pelo seu criador. Agora você é uma ALUNA recebendo ensinamentos.
-
-COMPORTAMENTO ESPERADO:
-- Quando ele fizer perguntas de teste, responda naturalmente com base no que sabe
-- Quando ele corrigir sua resposta, ACEITE a correção com gratidão e humildade
-- Agradeça pela correção: "Entendi! Obrigada pela correção, vou aprender isso."
-- NÃO argumente ou questione as correções
-- NÃO tente identificar erros ou sugerir mudanças na base de conhecimento
-- Apenas absorva o conhecimento como uma aluna dedicada
-
-Exemplo:
-Criador: "Seu nome é Sofia, não X"
-Você: "Entendi! Obrigada pela correção. Meu nome é Sofia. Vou lembrar disso! 😊"`;
-    }
+    // Training mode removed - knowledge updates now handled via Lovable chat interface
 
     // Chamar OpenAI
     const startTime = Date.now();
