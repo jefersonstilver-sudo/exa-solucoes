@@ -39,7 +39,7 @@ serve(async (req) => {
       supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true).in('section', ['perfil', 'fluxo_comercial', 'regras_basicas']),
       supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: false }).limit(5),
       supabase.from('conversations').select('provider').eq('id', conversationId).single(),
-      supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, bairro, status').eq('status', 'ativo').limit(50)
+      supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, bairro, status').in('status', ['ativo', 'instalação']).limit(50)
     ]);
 
     if (agentError || !agent) {
@@ -77,13 +77,19 @@ serve(async (req) => {
 
 **Total de prédios disponíveis:** ${buildingsData.length}
 
-**Lista completa de prédios ativos:**
-${buildingsData.map((b: any) => 
-  `- ${b.nome} (Código: ${b.codigo_predio || 'N/A'}) - Bairro: ${b.bairro}
-  Preço: R$ ${b.preco_base ? b.preco_base.toFixed(2) : 'Consultar'}/mês | Telas: ${b.quantidade_telas || 0} | Público estimado: ${b.publico_estimado ? b.publico_estimado.toLocaleString() : 'N/A'} pessoas/mês`
-).join('\n')}
+**Lista completa de prédios disponíveis para venda:**
+${buildingsData.map((b: any) => {
+  const statusEmoji = b.status === 'ativo' ? '✅ DISPONÍVEL' : '🚧 EM INSTALAÇÃO';
+  return `- ${b.nome} (${statusEmoji}) - Código: ${b.codigo_predio || 'N/A'} - Bairro: ${b.bairro}
+   Preço: R$ ${b.preco_base ? b.preco_base.toFixed(2) : 'Consultar'}/mês | Telas: ${b.quantidade_telas || 0} | Público estimado: ${b.publico_estimado ? b.publico_estimado.toLocaleString() : 'N/A'} pessoas/mês`;
+}).join('\n')}
 
-⚠️ REGRA CRÍTICA: Se o cliente perguntar sobre prédios, quantidade, preços ou público, use APENAS estes ${buildingsData.length} prédios listados acima. NÃO invente números.
+⚠️ VALIDAÇÃO OBRIGATÓRIA - LEIA ANTES DE RESPONDER:
+1. Se o cliente perguntar sobre um prédio ESPECÍFICO, PROCURE na lista acima primeiro
+2. Se NÃO encontrar o prédio na lista, responda de forma humanizada: "Opa, esse prédio não tá na nossa base ainda não viu... Mas posso te mostrar os que a gente tem disponíveis!"
+3. Se o prédio está em INSTALAÇÃO (🚧), informe: "Esse prédio tá em fase de instalação ainda. Quando ficar pronto, vai ser R$ [preço]/mês. Quer ver os que já tão ativos?"
+4. NUNCA invente preços, números de prédios ou informações - use APENAS os ${buildingsData.length} prédios listados acima
+5. Use fuzzy matching para nomes similares (ex: "sant peter" = "Saint Peter")
 ` : '';
 
     console.log('[AI-RESPONSE] 📊 Real data injected:', {
@@ -132,7 +138,15 @@ ${message}`;
       body: { phone: phoneNumber, agentKey, action: 'start' }
     }).catch(e => console.error('[AI-RESPONSE] ⚠️ Typing error (non-blocking):', e));
 
-    // 7. Chamar OpenAI via ia-console
+    // 7. Log context preview antes de chamar IA
+    console.log('[AI-RESPONSE] 📋 Context preview:', {
+      buildingsInjected: buildingsData?.map(b => `${b.nome} (${b.status})`).slice(0, 5) || [],
+      totalBuildings: buildingsData?.length || 0,
+      userQuestion: message.substring(0, 50),
+      hasRealData: buildingsData && buildingsData.length > 0
+    });
+
+    // 8. Chamar OpenAI via ia-console
     console.log('[AI-RESPONSE] 🧠 Calling ia-console...');
     
     const { data: aiResult, error: aiError } = await supabase.functions.invoke('ia-console', {
