@@ -170,6 +170,39 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_modification_logs: {
+        Row: {
+          agent_key: string
+          created_at: string | null
+          field_modified: string
+          id: string
+          modified_by: string | null
+          new_value: string | null
+          old_value: string | null
+          section: string
+        }
+        Insert: {
+          agent_key: string
+          created_at?: string | null
+          field_modified: string
+          id?: string
+          modified_by?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          section: string
+        }
+        Update: {
+          agent_key?: string
+          created_at?: string | null
+          field_modified?: string
+          id?: string
+          modified_by?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          section?: string
+        }
+        Relationships: []
+      }
       agent_preview_conversations: {
         Row: {
           agent_key: string
@@ -188,6 +221,42 @@ export type Database = {
           created_at?: string | null
           id?: string
           messages?: Json
+        }
+        Relationships: []
+      }
+      agent_topics: {
+        Row: {
+          agent_key: string
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          keywords: string[]
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_key: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[]
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_key?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[]
+          title?: string
+          type?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { KnowledgeCard } from '../../components/KnowledgeCard';
 import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
 import { toast } from 'sonner';
+import { SofiaModificationLog } from '../../components/SofiaModificationLog';
+import { AddTopicDialog } from '../../components/AddTopicDialog';
 
 export const AgentKnowledge = () => {
   const { id } = useParams<{ id: string }>();
@@ -92,7 +94,15 @@ export const AgentKnowledge = () => {
 
       {/* Knowledge List */}
       <div className="bg-module-card rounded-[14px] border border-module p-6">
-        <h2 className="text-lg font-bold text-module-primary mb-4">Documentos da Base de Conhecimento</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-module-primary">Documentos da Base de Conhecimento</h2>
+          {agent.id === 'sofia' && (
+            <AddTopicDialog 
+              agentKey="sofia" 
+              onSuccess={() => window.location.reload()} 
+            />
+          )}
+        </div>
         
         {agent.knowledge.length === 0 ? (
           <div className="text-center py-12">
@@ -122,6 +132,9 @@ export const AgentKnowledge = () => {
           </div>
         )}
       </div>
+
+      {/* Botão flutuante de log (só para Sofia) */}
+      {agent.id === 'sofia' && <SofiaModificationLog />}
     </div>
   );
 };
