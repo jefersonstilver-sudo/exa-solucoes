@@ -33,16 +33,11 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
       
       const { error } = await supabase
         .from('agent_sections')
-        .upsert({ 
-          id,
-          agent_id: agentId,
-          section_number: section.section_number,
-          section_title: section.section_title,
+        .update({ 
           content,
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'agent_id,section_number'
-        });
+        })
+        .eq('id', id);
 
       if (error) throw error;
 
