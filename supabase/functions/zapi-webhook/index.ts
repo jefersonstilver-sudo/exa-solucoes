@@ -31,7 +31,7 @@ serve(async (req) => {
     const instanceId = payload.instanceId;
 
     // ========== FILTRO: IGNORAR MENSAGENS ENVIADAS PELO PRÓPRIO AGENTE ==========
-    const fromMe = payload.fromMe === true;
+    const fromMe = payload.fromMe || (payload.isGroupMsg === false && !payload.author);
     
     if (fromMe) {
       console.log('[ZAPI-WEBHOOK] ⏭️ Skipping outbound message (fromMe=true)');
@@ -44,42 +44,10 @@ serve(async (req) => {
       });
     }
 
-    // ========== BLOQUEIO DE DUPLICATAS NO BANCO ==========
-    // Extrair ID único da mensagem (UNIQUE INDEX garante unicidade)
+    // Extrair ID único da mensagem para deduplicação
     const messageId = payload.messageId || payload.id || payload.key?.id || `${phone}_${Date.now()}`;
-    const imageUrl = payload.image?.imageUrl || null;
     
     console.log('[ZAPI-WEBHOOK] 🔑 Message ID:', messageId);
-
-    // Tentar inserir log IMEDIATAMENTE - banco bloqueia duplicatas via UNIQUE INDEX
-    const { error: insertError } = await supabase.from('zapi_logs').insert({
-      phone_number: phone,
-      direction: 'inbound',
-      zapi_message_id: messageId,
-      status: 'processing',
-      metadata: { 
-        raw_payload: payload,
-        image_url: imageUrl
-      }
-    });
-
-    // Se der erro de chave duplicada, significa que mensagem já está sendo processada
-    if (insertError) {
-      if (insertError.code === '23505') { // Unique constraint violation
-        console.log('[ZAPI-WEBHOOK] 🚫 DUPLICATE BLOCKED BY DATABASE:', messageId);
-        return new Response(JSON.stringify({ 
-          success: true, 
-          skipped: true,
-          reason: 'duplicate_blocked_by_db'
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      // Outro erro - logar e continuar
-      console.error('[ZAPI-WEBHOOK] ⚠️ Log insert error:', insertError);
-    }
-
-    console.log('[ZAPI-WEBHOOK] ✅ Message accepted for processing:', messageId);
 
     // Detectar tipo de mensagem e extrair conteúdo
     let messageText = '';
@@ -123,8 +91,6 @@ serve(async (req) => {
     }
 
     console.log('[ZAPI-WEBHOOK] 📨 Message type:', mediaType, mediaUrl ? '(has media)' : '(text only)');
-
-    // Training logic removed - now handled via Lovable chat interface
 
     // Identificar qual agente recebeu a mensagem baseado no instanceId
     const { data: agent, error: agentError } = await supabase
@@ -218,54 +184,59 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    
-    // ========== FALLBACK: VERIFICAR CONFIRMAÇÃO PENDENTE ==========
-    const { data: pendingConfirmation } = await supabase
-      .from('agent_context')
-      .select('value')
-      .eq('key', `training_confirmation_pending_${phone}`)
-      .single();
-    
-    if (pendingConfirmation?.value?.pending) {
-      console.log('[ZAPI-WEBHOOK] 🔔 Confirmação pendente detectada, enviando agora...');
-      const state = pendingConfirmation.value.state;
-      const activatedAt = new Date(pendingConfirmation.value.activated_at);
-      const now = new Date();
-      const hoursDiff = Math.floor((now.getTime() - activatedAt.getTime()) / (1000 * 60 * 60));
-      
-      const fallbackMessage = state 
-        ? `⚠️ *Modo Treinamento já estava ativo desde ${hoursDiff}h atrás*\n\nVocê pode corrigir minhas respostas. Para desativar: #AJUSTE3029`
-        : '✅ *Modo Treinamento foi desativado*';
-      
-      try {
-        const zapiConfig = agent.zapi_config as any;
-        const apiUrl = zapiConfig.api_url || 'https://api.z-api.io';
-        const sendUrl = `${apiUrl}/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
-        
-        await fetch(sendUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Client-Token': zapiConfig.client_token
-          },
-          body: JSON.stringify({
-            phone: phone,
-            message: fallbackMessage
-          })
-        });
-        
-        console.log('[ZAPI-WEBHOOK] ✅ Confirmação pendente enviada');
-        
-        // Remover flag do banco
-        await supabase
-          .from('agent_context')
-          .delete()
-          .eq('key', `training_confirmation_pending_${phone}`);
-      } catch (error) {
-        console.error('[ZAPI-WEBHOOK] ❌ Erro ao enviar confirmação pendente:', error);
-      }
+
+    // ========== VERIFICAÇÃO DE DEDUPLICAÇÃO ==========
+    const { data: existingLog } = await supabase
+      .from('zapi_logs')
+      .select('id, created_at')
+      .eq('zapi_message_id', messageId)
+      .maybeSingle();
+
+    if (existingLog) {
+      console.log('[ZAPI-WEBHOOK] ⚠️ DUPLICATE DETECTED - Already processed:', {
+        messageId,
+        existingLogId: existingLog.id,
+        existingLogTime: existingLog.created_at
+      });
+      return new Response(JSON.stringify({ 
+        success: true,
+        duplicate: true,
+        messageId,
+        originalProcessedAt: existingLog.created_at
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
+    // ========== DEDUPLICAÇÃO POR CONTEÚDO ==========
+    // Verificação adicional: mesma mensagem + telefone em janela de 10 segundos
+    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+
+    const { data: recentSimilarLog } = await supabase
+      .from('zapi_logs')
+      .select('id, created_at')
+      .eq('phone_number', phone)
+      .eq('message_text', messageText)
+      .eq('direction', 'inbound')
+      .gte('created_at', tenSecondsAgo)
+      .maybeSingle();
+
+    if (recentSimilarLog) {
+      console.log('[ZAPI-WEBHOOK] ⚠️ CONTENT DUPLICATE - Same message recently:', {
+        messageText,
+        phone,
+        recentLogId: recentSimilarLog.id,
+        secondsAgo: (Date.now() - new Date(recentSimilarLog.created_at).getTime()) / 1000
+      });
+      
+      return new Response(JSON.stringify({ 
+        success: true,
+        contentDuplicate: true,
+        recentLogId: recentSimilarLog.id
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     // ========== RATE LIMITING POR TELEFONE ==========
     const cacheKey = `${phone}_${agent.key}`;
@@ -292,21 +263,24 @@ serve(async (req) => {
     // Limpar cache após 5 segundos
     setTimeout(() => processingCache.delete(cacheKey), 5000);
 
-    // Atualizar log inicial com detalhes completos
-    await supabase.from('zapi_logs').update({
+    // Log inbound message COM messageId para deduplicação
+    const { error: logError } = await supabase.from('zapi_logs').insert({
       agent_key: agent.key,
+      direction: 'inbound',
+      phone_number: phone,
       message_text: messageText,
       media_url: mediaUrl,
+      zapi_message_id: messageId,
       status: 'received',
       metadata: { 
         raw_payload: payload,
-        media_type: mediaType,
-        image_url: imageUrl
+        media_type: mediaType
       }
-    }).eq('zapi_message_id', messageId);
+    });
 
-    console.log('[ZAPI-WEBHOOK] ✅ Log updated with full details');
-
+    if (logError) {
+      console.error('[ZAPI-WEBHOOK] ❌ Error logging message:', logError);
+    }
 
     console.log('[ZAPI-WEBHOOK] ✅ Message logged with ID:', messageId);
 
@@ -448,37 +422,7 @@ Obrigado pela compreensão!`;
 
         // Verificar se precisa chamar IA automaticamente
         if (agent.ai_auto_response && routeResult?.routed_to) {
-          console.log('[ZAPI-WEBHOOK] 🤖 AI auto-response enabled, checking lock...');
-          
-          // ========== VERIFICAR LOCK DE PROCESSAMENTO AI ==========
-          const aiLockKey = `ai_processing_${conversation.id}`;
-          // ========== LOCK ATÔMICO COM UNIQUE CONSTRAINT ==========
-          const { error: lockError } = await supabase
-            .from('agent_context')
-            .insert({
-              key: aiLockKey,
-              value: { 
-                processing: true, 
-                started_at: new Date().toISOString(),
-                message_id: messageId 
-              }
-            });
-
-          // Se erro 23505 (duplicate key) = outra chamada pegou o lock
-          if (lockError?.code === '23505') {
-            console.log('[ZAPI-WEBHOOK] ⏸️ AI já processando (lock ativo - duplicate key):', {
-              conversationId: conversation.id,
-              lockKey: aiLockKey
-            });
-            return;
-          }
-
-          if (lockError) {
-            console.error('[ZAPI-WEBHOOK] ❌ Erro ao criar lock:', lockError);
-            throw lockError;
-          }
-
-          console.log('[ZAPI-WEBHOOK] 🔒 AI lock created, calling generate-ai-response...');
+          console.log('[ZAPI-WEBHOOK] 🤖 AI auto-response enabled, calling generate-ai-response...');
           
           try {
             const { data: aiResult, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
@@ -490,14 +434,6 @@ Obrigado pela compreensão!`;
               }
             });
 
-            // ========== LIMPAR LOCK APÓS PROCESSAMENTO ==========
-            await supabase
-              .from('agent_context')
-              .delete()
-              .eq('key', aiLockKey);
-
-            console.log('[ZAPI-WEBHOOK] 🔓 AI lock released');
-
             if (aiError) {
               console.error('[ZAPI-WEBHOOK] ❌ AI generation error:', aiError);
             } else {
@@ -505,12 +441,6 @@ Obrigado pela compreensão!`;
             }
           } catch (aiError) {
             console.error('[ZAPI-WEBHOOK] ❌ AI invocation failed:', aiError);
-            
-            // Limpar lock mesmo em caso de erro
-            await supabase
-              .from('agent_context')
-              .delete()
-              .eq('key', aiLockKey);
           }
         }
 

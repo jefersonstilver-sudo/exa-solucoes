@@ -1,8 +1,9 @@
 import { Loader2, MessageCircle, Phone } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import type { ConversationGroup } from '../../hooks/useConversations';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { formatMessageTime } from '../../utils/formatMessageTime';
 
 interface ConversationListProps {
   conversations: ConversationGroup[];
@@ -95,7 +96,10 @@ export const ConversationList = ({
                       <span className={`text-[10px] md:text-xs shrink-0 ${
                         hasUnread ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-muted-foreground'
                       }`}>
-                        {formatMessageTime(conv.last_message_at)}
+                        {formatDistanceToNow(new Date(conv.last_message_at), {
+                          addSuffix: true,
+                          locale: ptBR
+                        })}
                       </span>
                     </div>
 

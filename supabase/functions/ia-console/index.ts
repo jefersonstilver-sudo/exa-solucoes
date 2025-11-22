@@ -82,8 +82,6 @@ serve(async (req) => {
       }
     }
 
-    // Training mode removed - knowledge updates now handled via Lovable chat interface
-
     // Chamar OpenAI
     const startTime = Date.now();
 

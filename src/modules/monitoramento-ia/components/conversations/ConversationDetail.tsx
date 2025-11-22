@@ -25,7 +25,6 @@ export const ConversationDetail = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [manualControl, setManualControl] = useState(false);
   const [aiAutoResponse, setAiAutoResponse] = useState<boolean | null>(null);
-  const [trainingMode, setTrainingMode] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -53,29 +52,6 @@ export const ConversationDetail = ({
 
     fetchAgentStatus();
   }, [agentKey]);
-
-  // Buscar status de modo treinamento
-  useEffect(() => {
-    if (!phoneNumber || !agentKey) return;
-
-    const checkTrainingMode = async () => {
-      const trainingKey = `training_mode_${phoneNumber}`;
-      const { data } = await supabase
-        .from('agent_context')
-        .select('value')
-        .eq('key', trainingKey)
-        .single();
-
-      const modeValue = data?.value as { active?: boolean } | null;
-      setTrainingMode(modeValue?.active || false);
-    };
-
-    checkTrainingMode();
-
-    // Atualizar a cada 5 segundos
-    const interval = setInterval(checkTrainingMode, 5000);
-    return () => clearInterval(interval);
-  }, [phoneNumber, agentKey]);
 
   const handleToggleControl = async () => {
     if (!phoneNumber || !agentKey) return;
@@ -141,14 +117,6 @@ export const ConversationDetail = ({
           
           {/* Status e Controle - Versão compacta no mobile */}
           <div className="flex items-center gap-1 md:gap-2 shrink-0">
-            {trainingMode && (
-              <Badge 
-                variant="outline" 
-                className="border-amber-500 text-amber-600 gap-1 text-[10px] md:text-xs px-1.5 md:px-2 animate-pulse"
-              >
-                🎓 <span className="hidden md:inline">Modo Treinamento</span>
-              </Badge>
-            )}
             {aiAutoResponse && (
               <>
                 {manualControl ? (
