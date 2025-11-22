@@ -58,8 +58,17 @@ serve(async (req) => {
       });
     }
 
-    // Se for Sofia, adicionar ferramenta de consulta de prédios
-    const tools = agentKey === 'sofia' ? [
+    // ====== CONTROLE DE ACESSO VIA SEÇÃO LIMITES (SEÇÃO 3) ======
+    const limitesSection = agentSections?.find((s: any) => s.section_number === 3);
+    const canAccessBuildings = limitesSection?.content?.match(/prédios|buildings|painéis/i);
+    
+    console.log('[PREVIEW] 🔐 Access control:', {
+      limitesConfigured: !!limitesSection,
+      canAccessBuildings: !!canAccessBuildings
+    });
+
+    // Adicionar tool SOMENTE se autorizado na seção Limites
+    const tools = canAccessBuildings ? [
       {
         type: 'function',
         function: {
