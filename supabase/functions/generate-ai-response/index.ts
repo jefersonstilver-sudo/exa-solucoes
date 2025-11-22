@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getFromCache, saveToCache } from '../_shared/cache.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,8 +28,9 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // ====== LOCK ATÔMICO ======
+    // ====== LOCK ATÔMICO OTIMIZADO (45s + auto-cleanup) ======
     const lockKey = `lock_${conversationId}_${message.substring(0, 30)}`;
+    const LOCK_TIMEOUT_MS = 45000; // 45 segundos
 
     const { data: existingLock } = await supabase
       .from('agent_context')
@@ -38,12 +40,13 @@ serve(async (req) => {
 
     if (existingLock) {
       const age = Date.now() - new Date(existingLock.created_at).getTime();
-      if (age < 30000) {
-        console.log('[AI-RESPONSE] 🔒 LOCKED - Processando...');
+      if (age < LOCK_TIMEOUT_MS) {
+        console.log('[AI-RESPONSE] 🔒 LOCKED - Processando...', { ageMs: age });
         return new Response(JSON.stringify({ success: false, reason: 'locked' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
+      // Lock expirado, limpar
       await supabase.from('agent_context').delete().eq('key', lockKey);
     }
 
@@ -52,6 +55,9 @@ serve(async (req) => {
     const releaseLock = async () => {
       await supabase.from('agent_context').delete().eq('key', lockKey);
     };
+
+    // Auto-cleanup após 60s (fallback)
+    setTimeout(() => releaseLock(), 60000);
 
     // ====== LOG INÍCIO EM AGENT_LOGS ======
     await supabase.from('agent_logs').insert({
@@ -64,20 +70,61 @@ serve(async (req) => {
       }
     });
 
-    // ====== BUSCAR DADOS EM PARALELO ======
+    // ====== DETECTAR TIPO DE REQUISIÇÃO ======
+    const startTime = Date.now();
+    const isFullListRequest = message.match(/todos|lista completa|quantos prédios|quais prédios|mostre.*prédios|ver.*prédios/i);
+    const isComplexSearch = message.match(/preço|valor|quanto custa|endereço|onde fica|visualizações/i);
+    
+    // ====== BUSCAR DADOS EM PARALELO (OTIMIZADO) ======
     const [
       { data: agent },
       { data: agentKnowledge },
       { data: conversationHistory },
-      { data: conversation },
-      { data: buildingsData }
+      { data: conversation }
     ] = await Promise.all([
       supabase.from('agents').select('*').eq('key', agentKey).single(),
       supabase.from('agent_knowledge').select('*').eq('agent_key', agentKey).eq('is_active', true).order('created_at', { ascending: false }).limit(5),
       supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true }).limit(10),
-      supabase.from('conversations').select('provider').eq('id', conversationId).single(),
-      supabase.from('buildings').select('nome, codigo_predio, preco_base, quantidade_telas, publico_estimado, visualizacoes_mes, bairro, endereco, cidade, estado, status').in('status', ['ativo', 'instalação']).order('nome')
+      supabase.from('conversations').select('provider').eq('id', conversationId).single()
     ]);
+
+    // ====== BUSCAR PRÉDIOS (LAZY LOAD + CACHE) ======
+    let buildingsData;
+    const cacheKey = `buildings_cache_${agentKey}`;
+    
+    if (isFullListRequest || isComplexSearch) {
+      // Tentar buscar do cache primeiro (5 minutos)
+      buildingsData = await getFromCache(supabase, cacheKey, 300);
+      
+      if (!buildingsData) {
+        console.log('[AI-RESPONSE] 🔍 Cache miss, fetching all buildings...');
+        const { data } = await supabase
+          .from('buildings')
+          .select('nome, preco_base, visualizacoes_mes, bairro, endereco, cidade, estado, status')
+          .in('status', ['ativo', 'instalação'])
+          .order('nome');
+        
+        buildingsData = data;
+        
+        // Salvar no cache
+        if (buildingsData) {
+          await saveToCache(supabase, cacheKey, buildingsData);
+        }
+      } else {
+        console.log('[AI-RESPONSE] ✅ Cache hit for buildings');
+      }
+    } else {
+      // Busca simplificada: apenas 5 principais
+      console.log('[AI-RESPONSE] 📊 Simple query: fetching top 5 buildings');
+      const { data } = await supabase
+        .from('buildings')
+        .select('nome, preco_base, bairro')
+        .in('status', ['ativo', 'instalação'])
+        .order('nome')
+        .limit(5);
+      
+      buildingsData = data;
+    }
 
     if (!agent) {
       throw new Error('Agent not found');
@@ -181,8 +228,7 @@ serve(async (req) => {
       totalBuildingsAvailable: buildingsData?.length || 0
     });
 
-    // ====== DETECTAR PEDIDO DE LISTA COMPLETA ======
-    const isFullListRequest = message.match(/todos|lista completa|quantos prédios|quais prédios|mostre.*prédios|ver.*prédios/i);
+    // isFullListRequest já foi detectado acima
     
     // ====== CONSTRUIR DADOS DOS PRÉDIOS (COM DETALHES COMPLETOS) ======
     const buildingsFormatted = buildingsData && buildingsData.length > 0 
@@ -276,7 +322,9 @@ Responda de forma natural e objetiva. Se pedirem lista completa, mostre TODOS os
       knowledgeSections: agentKnowledge?.length || 0
     });
 
-    // ====== LOG PRÉ-VALIDAÇÃO EM AGENT_LOGS ======
+    // ====== LOG PRÉ-VALIDAÇÃO EM AGENT_LOGS (COM PERFORMANCE) ======
+    const contextPrepTime = Date.now() - startTime;
+    
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,
       conversation_id: conversationId,
@@ -288,19 +336,29 @@ Responda de forma natural e objetiva. Se pedirem lista completa, mostre TODOS os
         top3Matches,
         buildingsCount: buildingsData?.length || 0,
         promptTokens: Math.floor(systemPrompt.length / 4),
+        contextPrepTimeMs: contextPrepTime,
+        isFullListRequest: !!isFullListRequest,
+        isComplexSearch: !!isComplexSearch,
         timestamp: new Date().toISOString()
       }
     });
 
-    // ====== ENVIAR MENSAGEM DE AGUARDE (SE FOR LISTA COMPLETA) ======
-    if (isFullListRequest) {
-      console.log('[AI-RESPONSE] 💬 Sending "wait" message for full list...');
+    // ====== ENVIAR MENSAGEM HUMANIZADA DE AGUARDE ======
+    if (isFullListRequest || isComplexSearch) {
+      console.log('[AI-RESPONSE] 💬 Sending "wait" message...');
       
-      const waitMessages = [
-        "Só um momento, vou buscar todos os prédios disponíveis! 🔍",
-        "Deixa eu organizar a lista completa pra você! ⏱️",
-        "Preparando lista completa... já volto! 💭"
-      ];
+      const waitMessages = isFullListRequest 
+        ? [
+            "Só um momento, vou buscar todos os prédios disponíveis! 🔍",
+            "Deixa eu organizar a lista completa pra você! ⏱️",
+            "Preparando lista completa... já volto! 💭"
+          ]
+        : [
+            "Deixa eu procurar isso no sistema... 🔍",
+            "Um momento, já te respondo! ⏱️",
+            "Só um instantinho, estou verificando... 💭"
+          ];
+      
       const waitMsg = waitMessages[Math.floor(Math.random() * waitMessages.length)];
       
       if (conversation?.provider === 'manychat') {
@@ -478,7 +536,9 @@ Responda de forma natural e objetiva. Se pedirem lista completa, mostre TODOS os
 
     console.log('[AI-RESPONSE] ✅ AI reply generated:', sanitizedReply.substring(0, 80) + '...');
 
-    // ====== LOG RESPOSTA EM AGENT_LOGS ======
+    // ====== LOG RESPOSTA EM AGENT_LOGS (COM PERFORMANCE) ======
+    const totalTime = Date.now() - startTime;
+    
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,
       conversation_id: conversationId,
@@ -488,6 +548,9 @@ Responda de forma natural e objetiva. Se pedirem lista completa, mostre TODOS os
         responseLength: sanitizedReply.length,
         tokensUsed: openaiData.usage?.total_tokens,
         model: 'gpt-4o-mini',
+        totalTimeMs: totalTime,
+        contextPrepTimeMs: contextPrepTime,
+        openaiTimeMs: totalTime - contextPrepTime,
         timestamp: new Date().toISOString()
       }
     });
