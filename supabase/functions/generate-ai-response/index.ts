@@ -27,6 +27,33 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
+    // ====== DEDUPLICAÇÃO ======
+    const messageId = `${phoneNumber}_${message}_${conversationId}`;
+    const recentlyProcessed = await supabase
+      .from('agent_logs')
+      .select('id')
+      .eq('agent_key', agentKey)
+      .eq('event_type', 'message_processed')
+      .gte('created_at', new Date(Date.now() - 10000).toISOString())
+      .eq('metadata->>messageId', messageId)
+      .maybeSingle();
+
+    if (recentlyProcessed) {
+      console.log('[AI-RESPONSE] ⏭️ SKIPPED: Mensagem já processada recentemente');
+      return new Response(
+        JSON.stringify({ success: false, reason: 'duplicate' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    // Registrar processamento
+    await supabase.from('agent_logs').insert({
+      agent_key: agentKey,
+      conversation_id: conversationId,
+      event_type: 'message_processed',
+      metadata: { messageId, phoneNumber, message: message.substring(0, 100) }
+    });
+
     // ====== LOG INÍCIO EM AGENT_LOGS ======
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,
@@ -168,25 +195,38 @@ serve(async (req) => {
       ? agentKnowledge.map((k: any) => `### ${k.title}\n${k.content}`).join('\n\n')
       : '';
 
-    // ====== CONSTRUIR HISTÓRICO ======
+    // ====== CONSTRUIR HISTÓRICO EM ORDEM CRONOLÓGICA ======
     const historyFormatted = conversationHistory && conversationHistory.length > 0
-      ? conversationHistory.reverse().map((m: any) => 
-          `${m.direction === 'inbound' ? 'Cliente' : 'Agente'}: ${m.body}`
+      ? conversationHistory.map((m: any, idx: number) => 
+          `${idx + 1}. [${m.direction === 'inbound' ? 'CLIENTE' : 'SOFIA'}]: ${m.body}`
         ).join('\n')
       : 'Início da conversa.';
 
-    // ====== DETECÇÃO DE IDIOMA ======
+    console.log(`[AI-RESPONSE] 📜 Histórico montado (${conversationHistory?.length || 0} msgs):\n${historyFormatted.substring(0, 300)}...`);
+
+    // ====== DETECÇÃO DE IDIOMA DINÂMICA ======
     const detectLanguage = (text: string): 'pt' | 'es' | 'en' => {
-      const esPatterns = /\b(hola|buenos|dias|noches|gracias|por favor|ustedes|venden|tienen|quiero)\b/i;
+      const esPatterns = /\b(hola|buenos|dias|noches|gracias|por favor|ustedes|venden|tienen|quiero|puedo)\b/i;
       const enPatterns = /\b(hello|hi|good|morning|evening|thank|you|please|have|sell|want)\b/i;
+      const ptPatterns = /\b(oi|olá|bom dia|boa tarde|obrigado|por favor|você|vocês|quero|posso|sou brasileiro)\b/i;
       
+      // Priorizar PT se detectar padrões fortes
+      if (ptPatterns.test(text)) return 'pt';
       if (esPatterns.test(text)) return 'es';
       if (enPatterns.test(text)) return 'en';
-      return 'pt';
+      return 'pt'; // Default PT
     };
 
-    const firstUserMessage = conversationHistory?.find((m: any) => m.direction === 'inbound')?.body || message;
-    const detectedLanguage = detectLanguage(firstUserMessage);
+    // Pegar ÚLTIMAS 3 mensagens do cliente para detectar idioma
+    const lastUserMessages = conversationHistory
+      ?.filter((m: any) => m.direction === 'inbound')
+      ?.slice(-3) // Últimas 3
+      ?.map((m: any) => m.body)
+      ?.join(' ') || message;
+
+    const detectedLanguage = detectLanguage(lastUserMessages + ' ' + message);
+
+    console.log(`[AI-RESPONSE] 🌍 Idioma detectado: ${detectedLanguage.toUpperCase()} (baseado em: "${lastUserMessages.substring(0, 50)}...")`);
 
     const languageInstructions = {
       pt: { greeting: 'Oi! Sou a Sofia da Exa Mídia 😊', rule: 'Responda SEMPRE em PORTUGUÊS' },
@@ -195,6 +235,16 @@ serve(async (req) => {
     };
 
     const currentLanguage = languageInstructions[detectedLanguage];
+
+    console.log(`[AI-RESPONSE] 📋 DEBUG COMPLETO:`, {
+      conversationId,
+      phoneNumber,
+      messagePreview: message.substring(0, 50),
+      detectedLanguage,
+      historyLength: conversationHistory?.length || 0,
+      knowledgeLength: agentKnowledge?.length || 0,
+      hasHistory: !!(conversationHistory && conversationHistory.length > 0)
+    });
 
     // ====== CONSTRUIR SYSTEM PROMPT COMPLETO ======
     const systemPrompt = `🔗 REGRA ABSOLUTA - LINKS (PRIORIDADE MÁXIMA SOBRE TUDO):
@@ -220,9 +270,7 @@ Você é ${agent.display_name}. ${agent.description}
 
 ${conversationHistory && conversationHistory.length > 0 ? `
 📜 HISTÓRICO CRONOLÓGICO DA CONVERSA:
-${conversationHistory.map((m: any, idx: number) => `
-${idx + 1}. [${m.direction === 'inbound' ? 'CLIENTE' : 'VOCÊ'}]: ${m.body}
-`).join('\n')}
+${historyFormatted}
 
 **ATENÇÃO:** Você DEVE ler TODO o histórico acima ANTES de responder!
 
@@ -249,9 +297,30 @@ ${idx + 1}. [${m.direction === 'inbound' ? 'CLIENTE' : 'VOCÊ'}]: ${m.body}
    - Cliente indeciso? → Compare prédios: "Royal Legacy tem 36.750 exibições/mês vs Viena 14.700"
    - Cliente perguntou preço? → Mostre desconto: "3+ prédios = desconto de 10%!"
 
-**REGRAS ABSOLUTAS:**
+**REGRAS ABSOLUTAS - ANTI-RESET (PRIORIDADE MÁXIMA):**
 
 ${conversationHistory && conversationHistory.length > 0 ? `
+🚫 VOCÊ JÁ SE APRESENTOU NESTA CONVERSA!
+
+❌ NUNCA MAIS use:
+- "Oi!"
+- "Olá!"
+- "¡Hola!"
+- "Hi!"
+- "Sou a Sofia"
+- Qualquer forma de saudação inicial
+
+✅ APENAS responda DIRETAMENTE à pergunta do cliente
+✅ Continue a conversa onde parou
+
+**EXEMPLO ERRADO (PROIBIDO):**
+Cliente: "Eu sou brasileiro"
+Você: "Oi! Que bom saber! 😊"  ← ❌ NÃO FAÇA ISSO!
+
+**EXEMPLO CORRETO:**
+Cliente: "Eu sou brasileiro"
+Você: "Que bom saber! 😊 O que você quer anunciar?"  ← ✅ SEM SAUDAÇÃO
+
 ❌ PROIBIDO:
 - Se apresentar novamente (você JÁ fez isso!)
 - Repetir perguntas já feitas
@@ -265,7 +334,7 @@ ${conversationHistory && conversationHistory.length > 0 ? `
 - Fazer upsell quando apropriado
 ` : `
 ✅ PRIMEIRA INTERAÇÃO:
-- Apresente-se brevemente
+- Apresente-se: "${currentLanguage.greeting}"
 - Qualifique: O que quer anunciar? Quantos prédios?
 `}
 
@@ -577,6 +646,13 @@ ${historyFormatted}
     const sanitizedReply = aiReply
       .replace(/\n{3,}/g, '\n\n')  // Limitar quebras múltiplas a 2
       .trim();
+
+    console.log(`[AI-RESPONSE] 🤖 Resposta gerada:`, {
+      preview: sanitizedReply.substring(0, 100),
+      length: sanitizedReply.length,
+      startsWithGreeting: /^(oi|olá|hola|hi)/i.test(sanitizedReply),
+      containsUrl: /https?:\/\//i.test(sanitizedReply)
+    });
 
     // ====== VALIDAÇÃO PÓS-RESPOSTA: LINKS QUEBRADOS ======
     if (sanitizedReply.match(/https?:\/\/[^\s]+/) && sanitizedReply.match(/https?:\/\/.*\n.*\S/)) {
