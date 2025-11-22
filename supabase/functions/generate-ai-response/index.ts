@@ -28,31 +28,86 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // ====== LOCK ATÔMICO OTIMIZADO (45s + auto-cleanup) ======
-    const lockKey = `lock_${conversationId}_${message.substring(0, 30)}`;
+    // ====== LOCK ATÔMICO ULTRA-ROBUSTO (HASH MD5 + UPSERT) ======
+    // Usar hash consistente da mensagem completa para garantir deduplicação perfeita
+    const encoder = new TextEncoder();
+    const msgData = encoder.encode(`${conversationId}_${message}_${phoneNumber}`);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgData);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const messageHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
+    
+    const lockKey = `lock_msg_${messageHash}`;
     const LOCK_TIMEOUT_MS = 45000; // 45 segundos
 
-    const { data: existingLock } = await supabase
+    console.log('[AI-RESPONSE] 🔐 Attempting to acquire lock:', {
+      lockKey,
+      conversationId,
+      messagePreview: message.substring(0, 30)
+    });
+
+    // Tentar criar lock com INSERT (atomic)
+    const { data: lockInserted, error: lockError } = await supabase
       .from('agent_context')
-      .select('created_at')
-      .eq('key', lockKey)
+      .insert({ 
+        key: lockKey, 
+        value: { 
+          acquired_at: new Date().toISOString(),
+          conversation_id: conversationId,
+          phone: phoneNumber
+        } 
+      })
+      .select()
       .maybeSingle();
 
-    if (existingLock) {
-      const age = Date.now() - new Date(existingLock.created_at).getTime();
-      if (age < LOCK_TIMEOUT_MS) {
-        console.log('[AI-RESPONSE] 🔒 LOCKED - Processando...', { ageMs: age });
-        return new Response(JSON.stringify({ success: false, reason: 'locked' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+    // Se INSERT falhou, verificar se lock existe e está expirado
+    if (lockError) {
+      const { data: existingLock } = await supabase
+        .from('agent_context')
+        .select('created_at, value')
+        .eq('key', lockKey)
+        .maybeSingle();
+
+      if (existingLock) {
+        const age = Date.now() - new Date(existingLock.created_at).getTime();
+        if (age < LOCK_TIMEOUT_MS) {
+          console.log('[AI-RESPONSE] 🔒 LOCKED - Mensagem já sendo processada', { 
+            ageMs: age,
+            lockKey,
+            existingSince: existingLock.created_at
+          });
+          return new Response(JSON.stringify({ 
+            success: false, 
+            reason: 'locked',
+            message: 'Message already being processed',
+            lockAge: age
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409
+          });
+        }
+        // Lock expirado, deletar
+        console.log('[AI-RESPONSE] ⏰ Lock expired, cleaning up...');
+        await supabase.from('agent_context').delete().eq('key', lockKey);
+        
+        // Tentar novamente
+        const { error: retryError } = await supabase
+          .from('agent_context')
+          .insert({ key: lockKey, value: {} });
+        
+        if (retryError) {
+          console.error('[AI-RESPONSE] ❌ Failed to acquire lock on retry');
+          return new Response(JSON.stringify({ success: false, reason: 'lock_failed' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409
+          });
+        }
       }
-      // Lock expirado, limpar
-      await supabase.from('agent_context').delete().eq('key', lockKey);
     }
 
-    await supabase.from('agent_context').insert({ key: lockKey, value: {} });
+    console.log('[AI-RESPONSE] ✅ Lock acquired successfully');
 
     const releaseLock = async () => {
+      console.log('[AI-RESPONSE] 🔓 Releasing lock:', lockKey);
       await supabase.from('agent_context').delete().eq('key', lockKey);
     };
 
@@ -236,16 +291,27 @@ serve(async (req) => {
 
     // isFullListRequest já foi detectado acima
     
-    // ====== CONSTRUIR DADOS DOS PRÉDIOS (COM DETALHES COMPLETOS) ======
+    // ====== DETECTAR SE USUÁRIO PEDIU ENDEREÇO EXPLICITAMENTE ======
+    const addressRequested = message.match(/endereço|onde fica|localização|rua|avenida/i);
+    
+    // ====== CONSTRUIR DADOS DOS PRÉDIOS (SEM CIDADE/ESTADO E ENDEREÇO CONDICIONAL) ======
     const buildingsFormatted = buildingsData && buildingsData.length > 0 
       ? buildingsData.map((b: any) => {
           const statusEmoji = b.status === 'ativo' ? '✅' : '🚧';
           const visualizacoes = b.visualizacoes_mes || (b.quantidade_telas ? b.quantidade_telas * 7350 : 0);
-          return `${statusEmoji} **${b.nome}**
-   📍 ${b.bairro} - ${b.cidade}/${b.estado}
+          
+          // Formato básico (sempre mostrado)
+          let formatted = `${statusEmoji} **${b.nome}**
+   📍 ${b.bairro}
    📊 ${visualizacoes.toLocaleString('pt-BR')} exibições/mês
-   💰 R$ ${b.preco_base?.toFixed(2) || '?'}/mês
-   🏢 ${b.endereco}`;
+   💰 R$ ${b.preco_base?.toFixed(2) || '?'}/mês`;
+          
+          // Só adicionar endereço se explicitamente solicitado
+          if (addressRequested && b.endereco) {
+            formatted += `\n   🏢 ${b.endereco}`;
+          }
+          
+          return formatted;
         }).join('\n\n')
       : 'Nenhum prédio disponível';
 
@@ -286,15 +352,17 @@ ${isFullListRequest ? `
 🚨 ATENÇÃO: Cliente pediu LISTA COMPLETA!
 
 **INSTRUÇÕES ESPECIAIS:**
-1. Mostre TODOS os ${buildingsData?.length || 0} prédios disponíveis
+1. Mostre TODOS os ${buildingsData?.length || 0} prédios disponíveis EM UMA ÚNICA MENSAGEM
 2. Use o formato EXATO que está em "PRÉDIOS DISPONÍVEIS"
 3. Inicie com: "Temos ${buildingsData?.length || 0} prédios disponíveis! 🏢"
-4. Termine com: "Gostou de algum? Posso te passar mais detalhes! 😊"
-5. NÃO resuma, NÃO corte, mostre TUDO
+4. Termine com: "Qual te interessou? 😊"
+5. NÃO resuma, NÃO corte, NÃO divida em partes - mostre TUDO DE UMA VEZ
+6. ${addressRequested ? 'INCLUA endereços completos pois o cliente pediu' : 'NÃO inclua endereços (cliente não pediu)'}
 ` : `
 - Ao mencionar prédios, mostre máx 3 de cada vez
 - Se perguntarem sobre prédio específico, dê TODOS os detalhes (endereço, exibições, preço)
 - Se pedirem "todos", avise: "Vou te mostrar a lista completa!"
+- Só mostre endereço se cliente pedir explicitamente
 `}
 
 ### 💬 ESTILO DE MENSAGEM:
