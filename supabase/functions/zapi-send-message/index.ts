@@ -65,7 +65,7 @@ serve(async (req) => {
     }
 
     // 🛡️ VERIFICAR DUPLICAÇÃO - evitar envios duplicados
-    const { data: conversation } = await supabase
+    const { data: conversationForDuplication } = await supabase
       .from('conversations')
       .select('id')
       .eq('contact_phone', phone)
@@ -74,11 +74,11 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    if (conversation) {
+    if (conversationForDuplication) {
       const { data: recentMessages } = await supabase
         .from('messages')
         .select('body, created_at')
-        .eq('conversation_id', conversation.id)
+        .eq('conversation_id', conversationForDuplication.id)
         .eq('direction', 'outbound')
         .gte('created_at', new Date(Date.now() - 10000).toISOString()) // últimos 10s
         .order('created_at', { ascending: false })
