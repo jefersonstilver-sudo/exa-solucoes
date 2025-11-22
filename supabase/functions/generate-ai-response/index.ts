@@ -173,7 +173,7 @@ serve(async (req) => {
         console.log('[AI-RESPONSE] 🔍 Cache miss, fetching all buildings...');
         const { data, error: buildingsError } = await supabase
           .from('buildings')
-          .select('nome, preco_base, visualizacoes_mes, bairro, endereco, status')
+          .select('nome, preco_base, visualizacoes_mes, bairro, endereco, status, quantidade_telas')
           .in('status', ['ativo', 'instalação'])
           .order('nome');
         
@@ -190,11 +190,11 @@ serve(async (req) => {
         console.log('[AI-RESPONSE] ✅ Cache hit for buildings');
       }
     } else {
-      // Busca simplificada: apenas 5 principais
+      // Busca simplificada: também precisa buscar TODOS os campos para validação
       console.log('[AI-RESPONSE] 📊 Simple query: fetching top 5 buildings');
       const { data, error: buildingsError } = await supabase
         .from('buildings')
-        .select('nome, preco_base, bairro')
+        .select('nome, preco_base, visualizacoes_mes, bairro, endereco, quantidade_telas')
         .in('status', ['ativo', 'instalação'])
         .order('nome')
         .limit(5);
@@ -313,30 +313,35 @@ serve(async (req) => {
     const detailsRequested = message.match(/endereço|onde fica|localização|rua|avenida|visualizações|exibições|quantas pessoas/i);
     
     // ====== CONSTRUIR DADOS DOS PRÉDIOS (FORMATO LIMPO - SEM BAIRRO POR PADRÃO) ======
+    // ⚠️ CRÍTICO: NUNCA usar valores fallback! Se não tem no banco, não mostrar!
     const buildingsFormatted = buildingsData && buildingsData.length > 0 
       ? buildingsData.map((b: any) => {
-          // Validações para evitar undefined/null/0
           const nome = b.nome || 'Sem nome';
-          const bairro = b.bairro || 'Centro';
+          const bairro = b.bairro || '';
           const endereco = b.endereco || '';
+          
+          // ⚠️ VALIDAÇÃO CRÍTICA: Se não tem preco_base válido, LOGAR WARNING
+          if (!b.preco_base || b.preco_base <= 0) {
+            console.error(`[AI-RESPONSE] 🚨 CRITICAL: Building "${nome}" has NO PRICE in database!`);
+            return null; // Não incluir prédios sem preço
+          }
+          
+          const precoBase = b.preco_base.toFixed(2);
           const visualizacoes = b.visualizacoes_mes && b.visualizacoes_mes > 0 
             ? b.visualizacoes_mes 
             : (b.quantidade_telas ? b.quantidade_telas * 7350 : 7350);
-          const precoBase = b.preco_base && b.preco_base > 0 
-            ? b.preco_base.toFixed(2) 
-            : '129.00';
           
           // Formato básico: apenas nome e preço (SEM bairro)
           let formatted = `🏢 *${nome}* • R$ ${precoBase}/mês`;
           
           // Adicionar detalhes SOMENTE se usuário pediu
-          if (detailsRequested) {
+          if (detailsRequested && bairro) {
             formatted += `\n📍 ${bairro}${endereco ? ' - ' + endereco : ''}`;
             formatted += `\n👥 ${visualizacoes.toLocaleString('pt-BR')} visualizações/mês`;
           }
           
           return formatted;
-        }).join('\n\n')
+        }).filter(b => b !== null).join('\n\n') // Remover prédios sem preço
       : 'Nenhum prédio disponível';
 
     // ====== CONSTRUIR KNOWLEDGE BASE ======
@@ -353,6 +358,14 @@ serve(async (req) => {
 
     // ====== CONSTRUIR SYSTEM PROMPT SIMPLIFICADO ======
     const systemPrompt = `Você é Sofia da Exa Mídia - vendedora de painéis digitais.
+
+╔══════════════════════════════════════════════════════════╗
+║ 🚨 REGRA CRÍTICA: VALORES DE PREÇOS                     ║
+╚══════════════════════════════════════════════════════════╝
+⚠️ VOCÊ DEVE USAR **EXATAMENTE** OS PREÇOS FORNECIDOS ABAIXO
+⚠️ **NUNCA** invente, estime ou altere valores de preços
+⚠️ Se um prédio não está na lista, diga "Não tenho informações"
+⚠️ Os preços abaixo vêm DIRETO DO BANCO DE DADOS
 
 ${conversationHistory && conversationHistory.length > 0 ? `
 ## HISTÓRICO
@@ -372,9 +385,10 @@ INSTRUÇÕES OBRIGATÓRIAS:
 ✅ Enviar TODOS os ${buildingsData?.length || 0} prédios em UMA SÓ mensagem
 ✅ Iniciar: "Temos ${buildingsData?.length || 0} prédios! 🏢"
 ✅ Terminar: "Qual te interessou? 😊"
-✅ Usar formato EXATO abaixo
+✅ Usar formato EXATO abaixo (COPIAR E COLAR OS PREÇOS)
 🚫 NÃO dividir em partes
 🚫 NÃO resumir
+🚫 NÃO alterar nenhum preço
 
 FORMATO:
 Temos ${buildingsData?.length || 0} prédios! 🏢
@@ -390,6 +404,7 @@ REGRAS:
 - Mostrar máx 3 prédios por vez
 - Se pedir "todos": usar formato de lista completa
 - Se pedir detalhes/endereço: adicionar bairro e visualizações
+- **COPIAR OS PREÇOS EXATAMENTE COMO APARECEM ACIMA**
 - Ser breve (2-3 linhas)
 `}
 
