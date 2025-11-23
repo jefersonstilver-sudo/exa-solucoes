@@ -105,6 +105,7 @@ serve(async (req) => {
           name: hostname,
           status: status,
           last_online_at: client.online ? new Date().toISOString() : existingDevice?.last_online_at,
+          condominio_name: existingDevice?.condominio_name || 'Não especificado',
         };
 
         if (existingDevice) {
