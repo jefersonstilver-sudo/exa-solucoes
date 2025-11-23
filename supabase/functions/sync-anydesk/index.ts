@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { createHmac } from "https://deno.land/std@0.192.0/node/crypto.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,11 +25,24 @@ serve(async (req) => {
       throw new Error('AnyDesk credentials not configured');
     }
 
-    // Gerar token HMAC-SHA1
+    // Gerar token HMAC-SHA1 usando Web Crypto API
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    const hmac = createHmac('sha1', apiPassword);
-    hmac.update(licenseId + timestamp);
-    const token = hmac.digest('hex');
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(apiPassword);
+    const messageData = encoder.encode(licenseId + timestamp);
+    
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-1' },
+      false,
+      ['sign']
+    );
+    
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    const token = Array.from(new Uint8Array(signature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
 
     console.log('[SYNC-ANYDESK] 🔑 Authentication token generated');
 
