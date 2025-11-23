@@ -135,17 +135,54 @@ serve(async (req) => {
 
     console.log('[SYNC-ANYDESK] 🔑 Authentication token generated');
 
-    // Fetch clients
+    // Fetch clients with retry logic
     const anydeskUrl = `https://v1.api.anydesk.com:8081/clients`;
-    const response = await fetch(anydeskUrl, {
-      method: 'GET',
-      headers: { 'Authorization': authHeader, 'Content-Type': 'application/json' },
-    });
+    
+    let response: Response | null = null;
+    let lastError: Error | null = null;
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[SYNC-ANYDESK] 📡 Fetching clients (attempt ${attempt}/${maxRetries})...`);
+        
+        response = await fetch(anydeskUrl, {
+          method: 'GET',
+          headers: { 
+            'Authorization': authHeader, 
+            'Content-Type': 'application/json',
+            'Connection': 'close', // Force connection close to avoid HTTP/2 issues
+          },
+        });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[SYNC-ANYDESK] ❌ API Error:', errorText);
-      throw new Error(`AnyDesk API error: ${response.status} - ${errorText}`);
+        if (response.ok) {
+          console.log('[SYNC-ANYDESK] ✅ Successfully fetched clients from AnyDesk API');
+          break;
+        }
+        
+        const errorText = await response.text();
+        console.error(`[SYNC-ANYDESK] ⚠️ Attempt ${attempt} failed with status ${response.status}:`, errorText);
+        lastError = new Error(`AnyDesk API error: ${response.status} - ${errorText}`);
+        
+        if (attempt < maxRetries) {
+          console.log(`[SYNC-ANYDESK] ⏳ Waiting ${retryDelay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      } catch (error) {
+        console.error(`[SYNC-ANYDESK] ⚠️ Attempt ${attempt} failed with network error:`, error.message);
+        lastError = error as Error;
+        
+        if (attempt < maxRetries) {
+          console.log(`[SYNC-ANYDESK] ⏳ Waiting ${retryDelay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+    
+    if (!response || !response.ok) {
+      console.error('[SYNC-ANYDESK] ❌ All retry attempts failed');
+      throw lastError || new Error('Failed to fetch AnyDesk clients after retries');
     }
 
     const anydeskData = await response.json();
