@@ -2518,6 +2518,41 @@ export type Database = {
         }
         Relationships: []
       }
+      device_alert_configs: {
+        Row: {
+          alerts_enabled: boolean | null
+          created_at: string | null
+          device_id: string
+          id: string
+          offline_threshold_minutes: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          alerts_enabled?: boolean | null
+          created_at?: string | null
+          device_id: string
+          id?: string
+          offline_threshold_minutes?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          alerts_enabled?: boolean | null
+          created_at?: string | null
+          device_id?: string
+          id?: string
+          offline_threshold_minutes?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_alert_configs_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: true
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_alerts: {
         Row: {
           alert_type: string
@@ -5684,6 +5719,18 @@ export type Database = {
       }
     }
     Views: {
+      dashboard_metrics: {
+        Row: {
+          critical_alerts: number | null
+          events_today: number | null
+          last_updated: string | null
+          panels_offline: number | null
+          panels_online: number | null
+          panels_total: number | null
+          unread_messages: number | null
+        }
+        Relationships: []
+      }
       users_with_role: {
         Row: {
           avatar_url: string | null
@@ -6504,6 +6551,7 @@ export type Database = {
         Returns: Json
       }
       recover_lost_transactions: { Args: never; Returns: Json }
+      refresh_dashboard_metrics: { Args: never; Returns: undefined }
       register_benefit_choice: {
         Args: { p_choice: string; p_token: string }
         Returns: Json
