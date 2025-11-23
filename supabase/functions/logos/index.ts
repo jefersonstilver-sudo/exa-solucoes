@@ -180,30 +180,27 @@ serve(async (req) => {
           );
         }
 
-        // Obter próximo sort_order
+      // Obter próxima ordem
         const { data: lastLogo } = await supabaseClient
-          .from('logos')
-          .select('sort_order')
-          .order('sort_order', { ascending: false })
+          .from('client_logos')
+          .select('order_position')
+          .order('order_position', { ascending: false })
           .limit(1)
           .single();
 
-        let nextSortOrder = (lastLogo?.sort_order || 0) + 1;
+        let nextOrderPosition = (lastLogo?.order_position || 0) + 1;
 
         // Inserir logos em batch
         const logosToInsert = logos.map((logo: any) => ({
           name: logo.name,
-          file_url: logo.file_url,
-          storage_bucket: logo.storage_bucket,
-          storage_key: logo.storage_key,
-          color_variant: logo.color_variant || 'white',
-          link_url: logo.link_url,
-          sort_order: logo.sort_order || nextSortOrder++,
+          logo_url: logo.file_url || logo.logo_url,
+          link: logo.link_url || logo.link,
+          order_position: logo.order_position || nextOrderPosition++,
           is_active: logo.is_active !== false
         }));
 
         const { data: insertedLogos, error: insertError } = await supabaseClient
-          .from('logos')
+          .from('client_logos')
           .insert(logosToInsert)
           .select();
 
@@ -233,12 +230,20 @@ serve(async (req) => {
         // Handle single logo update via POST (for compatibility)
         const { id, ...updates } = payload;
         
+        const mappedUpdates: any = {};
+        if (updates.file_url) mappedUpdates.logo_url = updates.file_url;
+        if (updates.logo_url) mappedUpdates.logo_url = updates.logo_url;
+        if (updates.link_url) mappedUpdates.link = updates.link_url;
+        if (updates.link) mappedUpdates.link = updates.link;
+        if (updates.is_active !== undefined) mappedUpdates.is_active = updates.is_active;
+        if (updates.order_position !== undefined) mappedUpdates.order_position = updates.order_position;
+        if (updates.sort_order !== undefined) mappedUpdates.order_position = updates.sort_order;
+        if (updates.name) mappedUpdates.name = updates.name;
+        mappedUpdates.updated_at = new Date().toISOString();
+        
         const { data: updatedLogo, error: updateError } = await supabaseClient
-          .from('logos')
-          .update({
-            ...updates,
-            updated_at: new Date().toISOString()
-          })
+          .from('client_logos')
+          .update(mappedUpdates)
           .eq('id', id)
           .select()
           .single();
@@ -327,30 +332,27 @@ serve(async (req) => {
         );
       }
 
-      // Obter próximo sort_order
+      // Obter próxima ordem
       const { data: lastLogo } = await supabaseClient
-        .from('logos')
-        .select('sort_order')
-        .order('sort_order', { ascending: false })
+        .from('client_logos')
+        .select('order_position')
+        .order('order_position', { ascending: false })
         .limit(1)
         .single();
 
-      let nextSortOrder = (lastLogo?.sort_order || 0) + 1;
+      let nextOrderPosition = (lastLogo?.order_position || 0) + 1;
 
       // Inserir logos em batch
       const logosToInsert = logos.map((logo: Partial<Logo>) => ({
         name: logo.name,
-        file_url: logo.file_url,
-        storage_bucket: (logo as any).storage_bucket,
-        storage_key: (logo as any).storage_key,
-        color_variant: logo.color_variant || 'white',
-        link_url: logo.link_url,
-        sort_order: nextSortOrder++,
+        logo_url: logo.file_url,
+        link: logo.link_url,
+        order_position: nextOrderPosition++,
         is_active: true
       }));
 
       const { data: insertedLogos, error: insertError } = await supabaseClient
-        .from('logos')
+        .from('client_logos')
         .insert(logosToInsert)
         .select();
 
@@ -408,12 +410,20 @@ serve(async (req) => {
 
       console.log('📝 Updating logo:', id, updates);
 
+      const mappedUpdates: any = {};
+      if (updates.file_url) mappedUpdates.logo_url = updates.file_url;
+      if (updates.logo_url) mappedUpdates.logo_url = updates.logo_url;
+      if (updates.link_url) mappedUpdates.link = updates.link_url;
+      if (updates.link) mappedUpdates.link = updates.link;
+      if (updates.is_active !== undefined) mappedUpdates.is_active = updates.is_active;
+      if (updates.order_position !== undefined) mappedUpdates.order_position = updates.order_position;
+      if (updates.sort_order !== undefined) mappedUpdates.order_position = updates.sort_order;
+      if (updates.name) mappedUpdates.name = updates.name;
+      mappedUpdates.updated_at = new Date().toISOString();
+
       const { data: updatedLogo, error: updateError } = await supabaseClient
-        .from('logos')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .from('client_logos')
+        .update(mappedUpdates)
         .eq('id', id)
         .select()
         .single();
@@ -440,7 +450,7 @@ serve(async (req) => {
       const logoId = path.substring(1);
       
       const { data: updatedLogo, error: deleteError } = await supabaseClient
-        .from('logos')
+        .from('client_logos')
         .update({ is_active: false })
         .eq('id', logoId)
         .select()
