@@ -173,12 +173,21 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
                 />
               </>
             ) : (
-              <div 
-                className="text-sm text-muted-foreground whitespace-pre-wrap"
-                dangerouslySetInnerHTML={{ 
-                  __html: highlightText(section.content, searchQuery) 
-                }}
-              />
+              <div className="text-sm text-muted-foreground font-mono">
+                {section.content.split('\n').map((line, index) => (
+                  <div key={index} className="flex gap-3">
+                    <span className="text-muted-foreground/40 select-none min-w-[3ch] text-right">
+                      {index + 1}
+                    </span>
+                    <span 
+                      className="flex-1"
+                      dangerouslySetInnerHTML={{ 
+                        __html: highlightText(line, searchQuery) 
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
