@@ -13,7 +13,7 @@ const STORAGE_KEY = 'monitoramento-ia-theme';
 export const useModuleTheme = () => {
   const [theme, setTheme] = useState<ModuleTheme>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return (stored as ModuleTheme) || 'dark';
+    return (stored as ModuleTheme) || 'light'; // Agora padrão é light (cores claras)
   });
 
   useEffect(() => {

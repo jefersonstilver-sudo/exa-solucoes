@@ -71,14 +71,14 @@
   animation: glow 2s ease-in-out infinite;
 }
 
-/* Shapes - Background decorativo com cores EXA */
-.shape-1 {
+/* Shapes - Background decorativo com cores EXA - Adaptado para claro/escuro */
+.theme-dark .shape-1 {
   position: fixed;
   top: -10%;
   right: -5%;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(156, 30, 30, 0.2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(156, 30, 30, 0.25) 0%, transparent 70%);
   border-radius: 50%;
   filter: blur(100px);
   pointer-events: none;
@@ -86,15 +86,43 @@
   animation: float 20s ease-in-out infinite;
 }
 
-.shape-2 {
+.theme-dark .shape-2 {
   position: fixed;
   bottom: -10%;
   left: -5%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(156, 30, 30, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(156, 30, 30, 0.2) 0%, transparent 70%);
   border-radius: 50%;
   filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+  animation: float 25s ease-in-out infinite reverse;
+}
+
+.theme-light .shape-1 {
+  position: fixed;
+  top: -10%;
+  right: -5%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(156, 30, 30, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  animation: float 20s ease-in-out infinite;
+}
+
+.theme-light .shape-2 {
+  position: fixed;
+  bottom: -10%;
+  left: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(156, 30, 30, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(120px);
   pointer-events: none;
   z-index: 0;
   animation: float 25s ease-in-out infinite reverse;
@@ -105,7 +133,7 @@
     transform: translate(0, 0) scale(1);
   }
   50% {
-    transform: translate(30px, -30px) scale(1.1);
+    transform: translate(30px, -30px) scale(1.05);
   }
 }
 
