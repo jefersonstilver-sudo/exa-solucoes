@@ -111,9 +111,15 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
         <Card key={section.id}>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">
-                {section.section_number}. {section.section_title}
-              </CardTitle>
+              <div className="flex flex-col gap-1">
+                <CardTitle className="text-lg">
+                  {section.section_number}. {section.section_title}
+                </CardTitle>
+                <div className="flex gap-4 text-xs text-muted-foreground">
+                  <span>📊 {section.content.length.toLocaleString('pt-BR')} caracteres</span>
+                  <span>📝 {section.content.split('\n').length} linhas</span>
+                </div>
+              </div>
               <div className="flex gap-2">
                 {editingId === section.id ? (
                   <>
