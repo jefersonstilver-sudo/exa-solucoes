@@ -238,10 +238,14 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
         type: "function",
         function: {
           name: "consultar_predios",
-          description: "Consulta dados dos prédios disponíveis na tabela buildings. Use quando o usuário perguntar sobre quantidade, preços, localizações ou disponibilidade de prédios.",
+          description: "Consulta dados dos prédios disponíveis na tabela buildings. SEMPRE use esta ferramenta quando o usuário perguntar sobre prédios específicos (por nome) ou dados como visualizações, preço, público.",
           parameters: {
             type: "object",
             properties: {
+              nome_predio: {
+                type: "string",
+                description: "Nome do prédio que o usuário está perguntando (ex: 'Royal Legacy', 'Liberdade Prime'). Use este parâmetro SEMPRE que o usuário mencionar um prédio específico por nome."
+              },
               status: {
                 type: "string",
                 enum: ["ativo", "instalação", "todos"],
@@ -257,7 +261,7 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
                 description: "Tipo de consulta: 'count' (só quantidade), 'list' (lista resumida), 'details' (detalhes completos)"
               }
             },
-            required: ["status", "tipo_consulta"]
+            required: ["tipo_consulta"]
           }
         }
       }
@@ -333,6 +337,12 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
       if (functionName === 'consultar_predios') {
         // Executar query no banco
         let query = supabase.from('buildings').select('*');
+        
+        // PRIORIDADE: Filtrar por nome do prédio se especificado
+        if (functionArgs.nome_predio) {
+          query = query.ilike('nome', `%${functionArgs.nome_predio}%`);
+          console.log(`[IA-CONSOLE] Filtering by building name: ${functionArgs.nome_predio}`);
+        }
         
         // Filtrar por status
         if (functionArgs.status === 'ativo') {
