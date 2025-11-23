@@ -81,84 +81,95 @@ export const ConnectionTimeline = ({ computerId }: ConnectionTimelineProps) => {
   return (
     <div className="space-y-4">
       {events.length === 0 ? (
-        <p className="text-gray-400">Nenhum histórico de conexão disponível</p>
+        <p className="text-muted-foreground text-center py-8">Nenhum histórico de conexão disponível</p>
       ) : (
-        events.map((event) => {
-          const isOnline = event.event_type === "online";
-          const isActive = !event.ended_at;
+        <div className="relative">
+          {/* Linha vertical conectando eventos */}
+          <div className="absolute left-5 top-8 bottom-8 w-0.5 bg-gradient-to-b from-green-500/30 via-module-input to-red-500/30" />
+          
+          {events.map((event, index) => {
+            const isOnline = event.event_type === "online";
+            const isActive = !event.ended_at;
 
-          return (
-            <div
-              key={event.id}
-              className={cn(
-                "relative p-4 rounded-lg",
-                "bg-white/5 backdrop-blur-xl border border-white/10",
-                "hover:bg-white/10 transition-all"
-              )}
-            >
-              <div className="flex items-start gap-4">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                  isOnline 
-                    ? "bg-emerald-500/20 text-emerald-400" 
-                    : "bg-gray-500/20 text-gray-400"
-                )}>
-                  {isOnline ? <Wifi className="h-5 w-5" /> : <WifiOff className="h-5 w-5" />}
-                </div>
+            return (
+              <div
+                key={event.id}
+                className={cn(
+                  "relative p-4 rounded-lg mb-4",
+                  "glass-card",
+                  "hover:bg-white/10 transition-all duration-300"
+                )}
+              >
+                <div className="flex items-start gap-4">
+                  {/* Ícone com animação */}
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 relative z-10",
+                    isOnline 
+                      ? "bg-green-500/20 text-green-400" 
+                      : "bg-red-500/20 text-red-400",
+                    isActive && "animate-pulse"
+                  )}>
+                    {isOnline ? <Wifi className="h-5 w-5" /> : <WifiOff className="h-5 w-5" />}
+                  </div>
 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge
-                      variant={isOnline ? "default" : "destructive"}
-                      className={cn(
-                        isOnline 
-                          ? "bg-emerald-500/20 text-emerald-400" 
-                          : "bg-gray-500/20 text-gray-400"
-                      )}
-                    >
-                      {isOnline ? "Online" : "Offline"}
-                    </Badge>
-                    {isActive && (
-                      <Badge className="bg-[#9C1E1E]/20 text-red-400 animate-pulse">
-                        Em andamento
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge
+                        variant={isOnline ? "default" : "destructive"}
+                        className={cn(
+                          isOnline 
+                            ? "bg-green-500/20 text-green-400 border-green-500/30" 
+                            : "bg-red-500/20 text-red-400 border-red-500/30"
+                        )}
+                      >
+                        {isOnline ? "Online" : "Offline"}
                       </Badge>
+                      {isActive && (
+                        <Badge className="bg-primary/20 text-primary border-primary/30 animate-pulse">
+                          Em andamento
+                        </Badge>
+                      )}
+                    </div>
+
+                    <p className="text-sm mb-1">
+                      {format(new Date(event.started_at), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}
+                    </p>
+                    
+                    <p className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(event.started_at), { addSuffix: true, locale: ptBR })}
+                    </p>
+
+                    <div className="mt-2 flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Duração:</span>
+                      <span className={cn(
+                        "font-semibold",
+                        isActive && "text-primary animate-pulse"
+                      )}>
+                        {formatDuration(event.duration_seconds)}
+                      </span>
+                    </div>
+
+                    {event.ended_at && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Finalizado em {format(new Date(event.ended_at), "HH:mm:ss")}
+                      </p>
                     )}
                   </div>
+                </div>
 
-                  <p className="text-sm text-white mb-1">
-                    {format(new Date(event.started_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
-                  </p>
-                  
-                  <p className="text-xs text-gray-400">
-                    {formatDistanceToNow(new Date(event.started_at), { addSuffix: true, locale: ptBR })}
-                  </p>
-
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-400">Duração:</span>
-                    <span className="text-white font-medium">
-                      {formatDuration(event.duration_seconds)}
-                    </span>
-                  </div>
-
-                  {event.ended_at && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Até {format(new Date(event.ended_at), "HH:mm:ss")}
+                {/* Alerta para tempo offline > 1 minuto */}
+                {!isOnline && event.duration_seconds && event.duration_seconds > 60 && (
+                  <div className="mt-3 p-2 rounded bg-red-500/10 border border-red-500/30">
+                    <p className="text-xs text-red-400 font-medium">
+                      ⚠️ Tempo offline significativo: {formatDuration(event.duration_seconds)}
                     </p>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-
-              {!isOnline && event.duration_seconds && event.duration_seconds > 300 && (
-                <div className="mt-3 p-2 rounded bg-[#9C1E1E]/10 border border-[#9C1E1E]/30">
-                  <p className="text-xs text-red-400">
-                    ⚠️ Tempo offline significativo detectado
-                  </p>
-                </div>
-              )}
-            </div>
-          );
-        })
+            );
+          })}
+        </div>
       )}
     </div>
   );

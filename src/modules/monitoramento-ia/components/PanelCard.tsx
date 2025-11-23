@@ -45,22 +45,35 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
   // Extrair endereço das tags ou comentários
   const address = device.address || 'Sem endereço';
 
+  // Nome principal: comments (local) > name
+  const displayName = device.comments || device.name;
+  const hasLocation = !!device.comments;
+
   return (
     <div
       onClick={onClick}
-      className={`bg-module-card rounded-[14px] shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border overflow-hidden group ${
+      className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border overflow-hidden group hover:scale-105 ${
         hasCriticalAlert 
-          ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200' 
+          ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200 glow-danger' 
           : 'border-module'
       }`}
     >
       {/* Corpo do card */}
       <div className="p-6 text-center">
-        {/* Nome do painel (comments ou name) */}
+        {/* Nome do Local/Painel com ícone */}
         <div className="mb-2">
-          <div className="text-3xl font-bold text-module-primary group-hover:text-[#9C1E1E] transition-colors">
-            {device.comments || device.name}
-          </div>
+          {hasLocation ? (
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <MapPin className="h-5 w-5 text-primary" />
+              <div className="text-3xl font-bold text-primary group-hover:text-[#9C1E1E] transition-colors">
+                {displayName}
+              </div>
+            </div>
+          ) : (
+            <div className="text-3xl font-bold text-module-primary group-hover:text-[#9C1E1E] transition-colors">
+              {displayName}
+            </div>
+          )}
         </div>
 
         {/* Nome do prédio */}
@@ -76,25 +89,27 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
           )}
         </div>
 
-        {/* Badges: Provider, Address, Total Events */}
+        {/* Badges: Provider, Address */}
         <div className="flex flex-wrap gap-2 justify-center mb-4">
-          <Badge variant="outline" className="text-xs gap-1">
+          <Badge variant="outline" className="text-xs gap-1 bg-module-input/50">
             <Wifi className="h-3 w-3" />
             {provider}
           </Badge>
-          <Badge variant="outline" className="text-xs gap-1">
-            <MapPin className="h-3 w-3" />
-            {address}
-          </Badge>
+          {address && address !== 'Sem endereço' && (
+            <Badge variant="outline" className="text-xs gap-1 bg-module-input/50">
+              <MapPin className="h-3 w-3" />
+              {address}
+            </Badge>
+          )}
           <Badge variant="secondary" className="text-xs gap-1">
             <Activity className="h-3 w-3" />
             {device.total_events || 0} eventos
           </Badge>
         </div>
 
-        {/* AnyDesk ID */}
-        <div className="mb-2 text-xs text-module-tertiary font-mono">
-          {device.anydesk_client_id}
+        {/* AnyDesk ID - Secundário e discreto */}
+        <div className="mb-2 text-xs text-module-tertiary/70 font-mono">
+          ID: {device.anydesk_client_id}
         </div>
       </div>
 
