@@ -429,7 +429,27 @@ Obrigado pela compreensão!`;
           // ====== LOCK NO WEBHOOK ANTES DE CHAMAR IA (FASE 1) ======
           const aiLockKey = `ai_processing_${conversation.id}_${messageId}`;
           
-          const { data: aiLock, error: aiLockError } = await supabase
+          // Verificar se existe lock e se ele está expirado
+          const { data: existingLock } = await supabase
+            .from('agent_context')
+            .select('value, updated_at')
+            .eq('key', aiLockKey)
+            .maybeSingle();
+          
+          if (existingLock) {
+            const lockAge = Date.now() - new Date(existingLock.updated_at).getTime();
+            if (lockAge > 120000) { // 2 minutos - lock expirado
+              console.log('[ZAPI-WEBHOOK] 🧹 Expired lock detected, removing...');
+              await supabase.from('agent_context').delete().eq('key', aiLockKey);
+            } else {
+              // Lock ainda válido, mensagem ainda sendo processada
+              console.log('[ZAPI-WEBHOOK] ⚠️ Message still processing (lock age: ${lockAge}ms), skipping');
+              return; // NÃO processar
+            }
+          }
+          
+          // Tentar criar novo lock
+          const { error: aiLockError } = await supabase
             .from('agent_context')
             .insert({ 
               key: aiLockKey, 
@@ -437,17 +457,12 @@ Obrigado pela compreensão!`;
                 acquired_at: new Date().toISOString(),
                 message_id: messageId
               } 
-            })
-            .select()
-            .maybeSingle();
+            });
 
           if (aiLockError) {
-            console.log('[ZAPI-WEBHOOK] ⚠️ AI already processing this message, skipping');
+            console.log('[ZAPI-WEBHOOK] ⚠️ Failed to acquire lock, another process may have started, skipping');
+            return; // NÃO processar
           } else {
-            // Limpar lock após 2 minutos
-            setTimeout(async () => {
-              await supabase.from('agent_context').delete().eq('key', aiLockKey);
-            }, 120000);
 
             try {
               const { data: aiResult, error: aiError } = await supabase.functions.invoke('ia-console', {
