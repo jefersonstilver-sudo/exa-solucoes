@@ -95,7 +95,8 @@ export const ComputerDetailModal = ({
   if (!computer) return null;
 
   const isOnline = computer.status === "online";
-  const displayName = computer.comments || computer.name || computer.hostname;
+  // Usar apenas o nome do prédio parseado, não o comments completo
+  const displayName = computer.name || computer.condominio_name || computer.hostname;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
