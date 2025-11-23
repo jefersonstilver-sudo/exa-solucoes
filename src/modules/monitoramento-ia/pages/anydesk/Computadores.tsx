@@ -153,7 +153,7 @@ export const ComputadoresPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatsCard
-          title="Total de Computadores"
+          title="Total de Paineis"
           value={totalComputers}
           icon={Monitor}
           variant="default"
