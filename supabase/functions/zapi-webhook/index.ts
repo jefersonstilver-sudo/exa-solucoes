@@ -241,8 +241,8 @@ serve(async (req) => {
       });
     }
 
-    // Log inbound message COM messageId para deduplicação
-    const { error: logError } = await supabase.from('zapi_logs').insert({
+    // Log inbound message COM messageId para deduplicação (UPSERT para evitar erro de duplicata)
+    const { error: logError } = await supabase.from('zapi_logs').upsert({
       agent_key: agent.key,
       direction: 'inbound',
       phone_number: phone,
@@ -254,6 +254,9 @@ serve(async (req) => {
         raw_payload: payload,
         media_type: mediaType
       }
+    }, {
+      onConflict: 'zapi_message_id',
+      ignoreDuplicates: true
     });
 
     if (logError) {
@@ -461,8 +464,19 @@ Obrigado pela compreensão!`;
 
               if (aiError) {
                 console.error('[ZAPI-WEBHOOK] ❌ AI generation error:', aiError);
-              } else {
-                console.log('[ZAPI-WEBHOOK] ✅ AI response generated successfully');
+              } else if (aiResult?.response) {
+                console.log('[ZAPI-WEBHOOK] ✅ AI response generated, sending to WhatsApp...');
+                
+                // ENVIAR RESPOSTA DA IA PARA O WHATSAPP
+                await supabase.functions.invoke('zapi-send-message', {
+                  body: {
+                    agentKey: agent.key,
+                    phone,
+                    message: aiResult.response
+                  }
+                });
+                
+                console.log('[ZAPI-WEBHOOK] ✅ AI response sent to WhatsApp');
               }
             } catch (aiError) {
               console.error('[ZAPI-WEBHOOK] ❌ AI invocation failed:', aiError);
