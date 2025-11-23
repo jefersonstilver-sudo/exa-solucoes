@@ -24,6 +24,7 @@ export const ConnectionTimeline = ({ computerId }: ConnectionTimelineProps) => {
 
   const fetchConnectionHistory = async () => {
     try {
+      // @ts-ignore - Table will exist after migration is executed
       const { data, error } = await supabase
         .from("connection_history")
         .select("id, event_type, started_at, ended_at, duration_seconds")
@@ -32,7 +33,7 @@ export const ConnectionTimeline = ({ computerId }: ConnectionTimelineProps) => {
         .limit(20);
 
       if (error) throw error;
-      setEvents((data || []) as ConnectionEvent[]);
+      setEvents((data || []) as any as ConnectionEvent[]);
     } catch (error) {
       console.error("Error fetching connection history:", error);
     } finally {
@@ -43,6 +44,7 @@ export const ConnectionTimeline = ({ computerId }: ConnectionTimelineProps) => {
   useEffect(() => {
     fetchConnectionHistory();
 
+    // @ts-ignore - Table will exist after migration is executed
     const channel = supabase
       .channel(`connection-history-${computerId}`)
       .on("postgres_changes", {

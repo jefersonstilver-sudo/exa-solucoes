@@ -36,16 +36,16 @@ serve(async (req) => {
       
       // ✅ FIX: Select apenas colunas necessárias + LIMIT
       const { data: logos, error } = await supabaseClient
-        .from('logos')
-        .select('id, name, file_url, color_variant, link_url, sort_order, is_active')
+        .from('client_logos')
+        .select('id, name, logo_url, link, is_active, order_position')
         .eq('is_active', true)
-        .order('sort_order', { ascending: true })
+        .order('order_position', { ascending: true })
         .limit(20);
 
       if (error) {
         console.error('❌ Error fetching logos:', error);
         return new Response(
-          JSON.stringify({ error: 'Failed to fetch logos' }), 
+          JSON.stringify({ error: 'Failed to fetch logos', details: error.message }), 
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -69,28 +69,63 @@ serve(async (req) => {
 
       // ✅ FIX: Processar em batches de 3
       const BATCH_SIZE = 3;
-      const signedLogos: (Logo | null)[] = [];
+      const signedLogos: any[] = [];
       
       for (let i = 0; i < (logos || []).length; i += BATCH_SIZE) {
         const batch = (logos || []).slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(batch.map(async (logo: any) => {
-          const info = extractBucketAndPath(logo.file_url);
+          const info = extractBucketAndPath(logo.logo_url);
           if (!info) {
-            const cacheBustedUrl = logo.file_url + (logo.file_url.includes('?') ? '&' : '?') + `v=${Date.now()}`;
-            return { ...logo, file_url: cacheBustedUrl };
+            const cacheBustedUrl = logo.logo_url + (logo.logo_url.includes('?') ? '&' : '?') + `v=${Date.now()}`;
+            return { 
+              id: logo.id,
+              name: logo.name,
+              file_url: cacheBustedUrl,
+              link_url: logo.link,
+              is_active: logo.is_active,
+              sort_order: logo.order_position
+            };
           }
           try {
-            let { data: s1, error: e1 } = await supabaseClient.storage.from(info.bucket).createSignedUrl(info.pathDecoded, 60 * 60 * 24 * 7);
-            if (s1?.signedUrl) return { ...logo, file_url: s1.signedUrl } as Logo;
+            let { data: s1 } = await supabaseClient.storage.from(info.bucket).createSignedUrl(info.pathDecoded, 60 * 60 * 24 * 7);
+            if (s1?.signedUrl) return { 
+              id: logo.id,
+              name: logo.name,
+              file_url: s1.signedUrl,
+              link_url: logo.link,
+              is_active: logo.is_active,
+              sort_order: logo.order_position
+            };
             
-            let { data: s2, error: e2 } = await supabaseClient.storage.from(info.bucket).createSignedUrl(info.pathRaw, 60 * 60 * 24 * 7);
-            if (s2?.signedUrl) return { ...logo, file_url: s2.signedUrl } as Logo;
+            let { data: s2 } = await supabaseClient.storage.from(info.bucket).createSignedUrl(info.pathRaw, 60 * 60 * 24 * 7);
+            if (s2?.signedUrl) return { 
+              id: logo.id,
+              name: logo.name,
+              file_url: s2.signedUrl,
+              link_url: logo.link,
+              is_active: logo.is_active,
+              sort_order: logo.order_position
+            };
             
             const { data: pub1 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathDecoded);
-            if (pub1?.publicUrl) return { ...logo, file_url: pub1.publicUrl } as Logo;
+            if (pub1?.publicUrl) return { 
+              id: logo.id,
+              name: logo.name,
+              file_url: pub1.publicUrl,
+              link_url: logo.link,
+              is_active: logo.is_active,
+              sort_order: logo.order_position
+            };
             
             const { data: pub2 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathRaw);
-            if (pub2?.publicUrl) return { ...logo, file_url: pub2.publicUrl } as Logo;
+            if (pub2?.publicUrl) return { 
+              id: logo.id,
+              name: logo.name,
+              file_url: pub2.publicUrl,
+              link_url: logo.link,
+              is_active: logo.is_active,
+              sort_order: logo.order_position
+            };
             
             return null;
           } catch (e) {
@@ -105,7 +140,7 @@ serve(async (req) => {
         }
       }
 
-      const validLogos = signedLogos.filter((logo): logo is Logo => logo !== null);
+      const validLogos = signedLogos.filter(logo => logo !== null);
       console.log(`✅ Found ${validLogos?.length || 0} active logos in batches`);
       return new Response(
         JSON.stringify(validLogos || []), 
