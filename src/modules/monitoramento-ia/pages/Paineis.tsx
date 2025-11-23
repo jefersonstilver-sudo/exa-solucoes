@@ -51,7 +51,6 @@ export const PaineisPage = () => {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
   const [topOfflinePanels, setTopOfflinePanels] = useState<Device[]>([]);
-  const [avgOfflineTime, setAvgOfflineTime] = useState<string>('0h');
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
@@ -99,11 +98,35 @@ export const PaineisPage = () => {
 
   const stats = calculateDeviceStats(devices);
 
-  // Buscar top 3 painéis com mais quedas e tempo médio offline
+  // Auto-sync do AnyDesk a cada 4 segundos (em background)
+  useEffect(() => {
+    const syncInterval = setInterval(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const SUPABASE_URL = "https://aakenoljsycyrcrchgxj.supabase.co";
+        await fetch(`${SUPABASE_URL}/functions/v1/sync-anydesk`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        console.log('[AUTO-SYNC] Sincronização automática executada');
+      } catch (error) {
+        console.error('[AUTO-SYNC] Erro na sincronização automática:', error);
+      }
+    }, 4000); // 4 segundos
+
+    return () => clearInterval(syncInterval);
+  }, []);
+
+  // Buscar top 3 painéis com mais quedas
   useEffect(() => {
     const fetchTopOffline = async () => {
       try {
-        // Top 3 painéis com mais quedas (offline_count)
         const { data: topData } = await supabase
           .from('devices')
           .select('*')
@@ -111,20 +134,6 @@ export const PaineisPage = () => {
           .limit(3);
 
         if (topData) setTopOfflinePanels(topData as Device[]);
-
-        // Calcular tempo médio offline dos últimos 7 dias
-        const { data: historyData } = await supabase
-          .from('connection_history')
-          .select('duration_seconds')
-          .eq('event_type', 'offline')
-          .gte('started_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
-
-        if (historyData && historyData.length > 0) {
-          const avgSeconds = historyData.reduce((sum, h) => sum + (h.duration_seconds || 0), 0) / historyData.length;
-          const hours = Math.floor(avgSeconds / 3600);
-          const minutes = Math.floor((avgSeconds % 3600) / 60);
-          setAvgOfflineTime(`${hours}h ${minutes}m`);
-        }
       } catch (error) {
         console.error('Erro ao buscar dados de offline:', error);
       }
@@ -179,43 +188,26 @@ export const PaineisPage = () => {
         <SimpleStatCard label="Desconhecido" value={stats.unknown} color="gray" />
       </div>
 
-      {/* Cards de Mais Quedas e Tempo Médio Offline */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top 3 Painéis com Mais Quedas */}
-        <div className="bg-module-card border border-module rounded-[14px] p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="w-5 h-5 text-red-500" />
-            <h3 className="text-lg font-bold text-module-primary">Mais Quedas</h3>
-          </div>
-          <div className="space-y-3">
-            {topOfflinePanels.length > 0 ? (
-              topOfflinePanels.map((panel, idx) => (
-                <div key={panel.id} className="flex items-center justify-between p-3 bg-module-input rounded-lg border border-module">
-                  <div>
-                    <p className="text-sm font-medium text-module-primary">{panel.comments || panel.name}</p>
-                    <p className="text-xs text-module-tertiary">{panel.condominio_name}</p>
-                  </div>
-                  <span className="text-lg font-bold text-red-500">{panel.offline_count || 0} quedas</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-module-secondary">Nenhum dado disponível</p>
-            )}
-          </div>
+      {/* Card de Mais Quedas */}
+      <div className="bg-module-card border border-module rounded-[14px] p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle className="w-5 h-5 text-red-500" />
+          <h3 className="text-lg font-bold text-module-primary">Painéis com Mais Quedas</h3>
         </div>
-
-        {/* Tempo Médio Offline (últimos 7 dias) */}
-        <div className="bg-module-card border border-module rounded-[14px] p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-blue-500" />
-            <h3 className="text-lg font-bold text-module-primary">Tempo Médio Offline</h3>
-          </div>
-          <div className="flex items-center justify-center h-24">
-            <div className="text-center">
-              <p className="text-4xl font-bold text-module-primary">{avgOfflineTime}</p>
-              <p className="text-sm text-module-secondary mt-2">Últimos 7 dias</p>
-            </div>
-          </div>
+        <div className="space-y-3">
+          {topOfflinePanels.length > 0 ? (
+            topOfflinePanels.map((panel) => (
+              <div key={panel.id} className="flex items-center justify-between p-3 bg-module-input rounded-lg border border-module">
+                <div>
+                  <p className="text-sm font-medium text-module-primary">{panel.comments || panel.name}</p>
+                  <p className="text-xs text-module-tertiary">{panel.condominio_name}</p>
+                </div>
+                <span className="text-lg font-bold text-red-500">{panel.offline_count || 0} quedas</span>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-module-secondary">Nenhum dado disponível</p>
+          )}
         </div>
       </div>
 
