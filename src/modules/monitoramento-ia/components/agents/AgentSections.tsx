@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Save, X } from 'lucide-react';
+import { Edit, Save, X, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { TextFormattingToolbar } from './TextFormattingToolbar';
@@ -144,13 +144,26 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
                     </Button>
                   </>
                 ) : (
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    onClick={() => setEditingId(section.id)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(section.content);
+                        toast.success('Texto copiado para a área de transferência');
+                      }}
+                      title="Copiar texto completo"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => setEditingId(section.id)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
