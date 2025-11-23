@@ -259,20 +259,20 @@ export const ComputerDetailModal = ({
                 <p className="text-sm text-module-primary">{computer.metadata?.online_time || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Client-Version</p>
-                <p className="text-sm">{computer.metadata?.version || '7.0.0'}</p>
+                <p className="text-xs text-module-secondary mb-1">Client-Version</p>
+                <p className="text-sm text-module-primary">{computer.metadata?.version || '7.0.0'}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">IP Público</p>
-                <p className="text-sm font-mono">{computer.metadata?.ip_address || 'N/A'}</p>
+                <p className="text-xs text-module-secondary mb-1">IP Público</p>
+                <p className="text-sm font-mono text-module-primary">{computer.metadata?.ip_address || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Sistema</p>
-                <p className="text-sm">{computer.metadata?.os || 'N/A'}</p>
+                <p className="text-xs text-module-secondary mb-1">Sistema</p>
+                <p className="text-sm text-module-primary">{computer.metadata?.os || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Condomínio</p>
-                <p className="text-sm">{computer.condominio_name || 'N/A'}</p>
+                <p className="text-xs text-module-secondary mb-1">Condomínio</p>
+                <p className="text-sm text-module-primary">{computer.condominio_name || 'N/A'}</p>
               </div>
             </div>
           </CardContent>
@@ -280,27 +280,27 @@ export const ComputerDetailModal = ({
 
         {/* TABS */}
         <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-module-input">
-            <TabsTrigger value="info" className="data-[state=active]:bg-primary">
+          <TabsList className="grid w-full grid-cols-3 glass-card border-module-border">
+            <TabsTrigger value="info" className="data-[state=active]:bg-module-accent data-[state=active]:text-white text-module-secondary">
               <Info className="h-4 w-4 mr-2" />
               Informações
             </TabsTrigger>
-            <TabsTrigger value="timeline" className="data-[state=active]:bg-primary">
+            <TabsTrigger value="timeline" className="data-[state=active]:bg-module-accent data-[state=active]:text-white text-module-secondary">
               <Clock className="h-4 w-4 mr-2" />
               Timeline
             </TabsTrigger>
-            <TabsTrigger value="graficos" className="data-[state=active]:bg-primary">
+            <TabsTrigger value="graficos" className="data-[state=active]:bg-module-accent data-[state=active]:text-white text-module-secondary">
               <BarChart3 className="h-4 w-4 mr-2" />
               Gráficos
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-4 mt-4">
-            <Card className="bg-card border-border">
+            <Card className="glass-card border-module-border">
               <CardHeader>
-                <CardTitle>Resumo Completo</CardTitle>
+                <CardTitle className="text-module-primary">Resumo Completo</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardContent className="space-y-2 text-sm text-module-primary">
                 <p><strong>Nome:</strong> {displayName}</p>
                 <p><strong>Status:</strong> {computer.status}</p>
                 <p><strong>Provedor:</strong> {computer.provider || 'Não identificado'}</p>
