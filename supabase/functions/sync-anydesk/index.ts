@@ -97,20 +97,14 @@ serve(async (req) => {
         const { data: existingDevice } = await supabase
           .from('devices')
           .select('*')
-          .eq('anydesk_id', anydeskId)
+          .eq('anydesk_client_id', anydeskId)
           .maybeSingle();
 
         const deviceData = {
-          anydesk_id: anydeskId,
-          hostname: hostname,
+          anydesk_client_id: anydeskId,
+          name: hostname,
           status: status,
-          last_online: client.online ? new Date().toISOString() : existingDevice?.last_online,
-          version: client['client-version'] || null,
-          comment: client.comment || null,
-          metadata: {
-            online_time: client['online-time'],
-            last_sync: new Date().toISOString(),
-          },
+          last_online_at: client.online ? new Date().toISOString() : existingDevice?.last_online_at,
         };
 
         if (existingDevice) {

@@ -25,7 +25,7 @@ export const ComputadoresPage = () => {
       const { data, error } = await supabase
         .from("devices")
         .select("*")
-        .order("updated_at", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setComputers(data || []);
