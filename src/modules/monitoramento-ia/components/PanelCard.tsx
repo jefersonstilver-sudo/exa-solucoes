@@ -60,8 +60,8 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
         <div className="mb-2">
           {hasLocation ? (
             <div className="flex items-center justify-center gap-2 mb-1">
-              <MapPin className="h-5 w-5 text-primary" />
-              <div className="text-3xl font-bold text-primary group-hover:text-[#9C1E1E] transition-colors">
+              <MapPin className="h-5 w-5 text-module-accent" />
+              <div className="text-3xl font-bold text-module-primary group-hover:text-[#9C1E1E] transition-colors">
                 {displayName}
               </div>
             </div>
@@ -85,18 +85,8 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
           )}
         </div>
 
-        {/* Badges: Provider, Address */}
+        {/* Badge: Eventos */}
         <div className="flex flex-wrap gap-2 justify-center mb-4">
-          <Badge variant="outline" className="text-xs gap-1 bg-module-input/50">
-            <Wifi className="h-3 w-3" />
-            {provider}
-          </Badge>
-          {address && address !== 'Sem endereço' && (
-            <Badge variant="outline" className="text-xs gap-1 bg-module-input/50">
-              <MapPin className="h-3 w-3" />
-              {address}
-            </Badge>
-          )}
           <Badge variant="secondary" className="text-xs gap-1">
             <Activity className="h-3 w-3" />
             {device.total_events || 0} eventos
