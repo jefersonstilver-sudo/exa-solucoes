@@ -99,7 +99,7 @@ export const ComputerDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto glass-card border-white/10">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-background border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <Monitor className="h-6 w-6 text-primary" />
@@ -110,7 +110,7 @@ export const ComputerDetailModal = ({
         {/* 3 CARDS SUPERIORES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* CARD 1: INFORMAÇÕES DO SISTEMA */}
-          <Card className="glass-card border-white/10">
+          <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Info className="h-4 w-4 text-primary" />
@@ -155,7 +155,7 @@ export const ComputerDetailModal = ({
           </Card>
 
           {/* CARD 2: ATIVIDADE */}
-          <Card className="glass-card border-white/10">
+          <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" />
@@ -201,7 +201,7 @@ export const ComputerDetailModal = ({
           </Card>
 
           {/* CARD 3: CONFIGURAÇÃO DE ALERTAS */}
-          <Card className="glass-card border-white/10">
+          <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Bell className="h-4 w-4 text-primary" />
@@ -243,7 +243,7 @@ export const ComputerDetailModal = ({
         </div>
 
         {/* INFORMAÇÕES ADICIONAIS */}
-        <Card className="glass-card border-white/10 mb-6">
+        <Card className="bg-card border-border mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Informações Adicionais</CardTitle>
           </CardHeader>
@@ -295,7 +295,7 @@ export const ComputerDetailModal = ({
           </TabsList>
 
           <TabsContent value="info" className="space-y-4 mt-4">
-            <Card className="glass-card border-white/10">
+            <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle>Resumo Completo</CardTitle>
               </CardHeader>
