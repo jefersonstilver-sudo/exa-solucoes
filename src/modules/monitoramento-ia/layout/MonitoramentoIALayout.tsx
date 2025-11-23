@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useModuleTheme, getThemeClass } from '../hooks/useModuleTheme';
 import '../styles/theme.css';
 import '../styles/scrollbar.css';
+import '../styles/anydesk.css';
 
 export const MonitoramentoIALayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);

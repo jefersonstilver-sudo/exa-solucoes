@@ -1,0 +1,116 @@
+/* ====================================
+   ANYDESK MONITORING - GLASSMORPHISM DESIGN
+   EXA BRAND COLORS
+   ==================================== */
+
+/* Glassmorphism Base */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 8px 32px rgba(156, 30, 30, 0.15);
+}
+
+/* Glow Effects */
+.glow-exa {
+  box-shadow: 0 0 20px rgba(156, 30, 30, 0.3);
+}
+
+.glow-success {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.glow-danger {
+  box-shadow: 0 0 20px rgba(156, 30, 30, 0.5);
+}
+
+/* Gradientes EXA */
+.gradient-exa {
+  background: linear-gradient(135deg, #9C1E1E 0%, #6B7280 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(180deg, #0A0A0A 0%, #1A1A1A 100%);
+}
+
+.gradient-success {
+  background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
+}
+
+/* Animações */
+@keyframes pulse-exa {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(156, 30, 30, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(156, 30, 30, 0);
+  }
+}
+
+.animate-pulse-exa {
+  animation: pulse-exa 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Shapes - Background decorativo */
+.shape-1 {
+  position: fixed;
+  top: -10%;
+  right: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(156, 30, 30, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.shape-2 {
+  position: fixed;
+  bottom: -10%;
+  left: -5%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scrollbar customizado */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 30, 30, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 30, 30, 0.8);
+}
