@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, AlertTriangle, Clock } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Clock, ChevronDown } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -8,10 +8,13 @@ import { PanelCard } from '../components/PanelCard';
 import { ComputerDetailModal } from '../components/anydesk/ComputerDetailModal';
 import { FiltersBar } from '../components/FiltersBar';
 import { useDevices } from '../hooks/useDevices';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Simple StatCard component for Paineis page
 const SimpleStatCard = ({ label, value, color }: { label: string; value: number; color: 'blue' | 'green' | 'red' | 'gray' }) => {
@@ -53,6 +56,8 @@ export const PaineisPage = () => {
   const [topOfflinePanels, setTopOfflinePanels] = useState<Device[]>([]);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [quedaPeriod, setQuedaPeriod] = useState<'hoje' | '7dias' | '30dias'>('hoje');
+  const [isQuedasOpen, setIsQuedasOpen] = useState(false);
 
   const handleRefresh = () => {
     refresh();
@@ -123,13 +128,32 @@ export const PaineisPage = () => {
     return () => clearInterval(syncInterval);
   }, []);
 
-  // Buscar top 3 painéis com mais quedas
+  // Buscar top 3 painéis com mais quedas filtrado por período
   useEffect(() => {
     const fetchTopOffline = async () => {
       try {
+        let startDate: Date;
+        const endDate = endOfDay(new Date());
+        
+        switch (quedaPeriod) {
+          case 'hoje':
+            startDate = startOfDay(new Date());
+            break;
+          case '7dias':
+            startDate = startOfDay(subDays(new Date(), 7));
+            break;
+          case '30dias':
+            startDate = startOfDay(subDays(new Date(), 30));
+            break;
+          default:
+            startDate = startOfDay(new Date());
+        }
+
         const { data: topData } = await supabase
           .from('devices')
           .select('*')
+          .gte('last_offline_at', startDate.toISOString())
+          .lte('last_offline_at', endDate.toISOString())
           .order('offline_count', { ascending: false })
           .limit(3);
 
@@ -140,7 +164,7 @@ export const PaineisPage = () => {
     };
 
     fetchTopOffline();
-  }, [devices]);
+  }, [devices, quedaPeriod]);
 
   return (
     <div className="space-y-6">
@@ -180,6 +204,23 @@ export const PaineisPage = () => {
         </div>
       </div>
 
+      {/* Seletor de Período */}
+      <div className="glass-card border-white/10 rounded-[14px] p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-module-secondary">Período de Análise</h3>
+          <Select value={quedaPeriod} onValueChange={(value: any) => setQuedaPeriod(value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hoje">Hoje</SelectItem>
+              <SelectItem value="7dias">Últimos 7 dias</SelectItem>
+              <SelectItem value="30dias">Últimos 30 dias</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Cards de estatísticas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <SimpleStatCard label="Total" value={stats.total} color="blue" />
@@ -188,28 +229,44 @@ export const PaineisPage = () => {
         <SimpleStatCard label="Desconhecido" value={stats.unknown} color="gray" />
       </div>
 
-      {/* Card de Mais Quedas */}
-      <div className="glass-card border-white/10 rounded-[14px] p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <AlertTriangle className="w-5 h-5 text-red-500" />
-          <h3 className="text-lg font-bold text-module-primary">Painéis com Mais Quedas</h3>
-        </div>
-        <div className="space-y-3">
-          {topOfflinePanels.length > 0 ? (
-            topOfflinePanels.map((panel) => (
-              <div key={panel.id} className="flex items-center justify-between p-3 bg-module-input rounded-lg border border-module">
-                <div>
-                  <p className="text-sm font-medium text-module-primary">{panel.comments || panel.name}</p>
-                  <p className="text-xs text-module-tertiary">{panel.condominio_name}</p>
-                </div>
-                <span className="text-lg font-bold text-red-500">{panel.offline_count || 0} quedas</span>
+      {/* Card de Mais Quedas - Colapsável */}
+      <Collapsible open={isQuedasOpen} onOpenChange={setIsQuedasOpen}>
+        <div className="glass-card border-white/10 rounded-[14px] p-4">
+          <CollapsibleTrigger className="w-full">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <h3 className="text-lg font-bold text-module-primary">Painéis com Mais Quedas</h3>
+                <Badge variant="destructive" className="ml-2 animate-pulse">
+                  {topOfflinePanels.reduce((sum, panel) => sum + (panel.offline_count || 0), 0)}
+                </Badge>
               </div>
-            ))
-          ) : (
-            <p className="text-sm text-module-secondary">Nenhum dado disponível</p>
-          )}
+              <ChevronDown className={`w-5 h-5 text-module-secondary transition-transform ${isQuedasOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="mt-4">
+            <div className="space-y-3">
+              {topOfflinePanels.length > 0 ? (
+                topOfflinePanels.map((panel) => {
+                  const displayName = (panel.comments || panel.name).split(' - ')[0].trim();
+                  return (
+                    <div key={panel.id} className="flex items-center justify-between p-3 bg-module-input rounded-lg border border-module-border">
+                      <div>
+                        <p className="text-sm font-medium text-module-primary">{displayName}</p>
+                        <p className="text-xs text-module-tertiary">{panel.condominio_name}</p>
+                      </div>
+                      <span className="text-lg font-bold text-red-500">{panel.offline_count || 0} quedas</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-module-secondary">Nenhum dado disponível</p>
+              )}
+            </div>
+          </CollapsibleContent>
         </div>
-      </div>
+      </Collapsible>
 
       {/* Filtros */}
       <FiltersBar
