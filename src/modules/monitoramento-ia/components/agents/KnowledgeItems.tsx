@@ -33,6 +33,7 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingItem, setEditingItem] = useState<KnowledgeItem | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
   const [newItem, setNewItem] = useState({
     title: '',
     description: '',
@@ -48,22 +49,45 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
       return;
     }
 
+    // Validar agentId
+    if (!agentId || agentId.length < 10) {
+      console.error('❌ Agent ID inválido:', agentId);
+      setAddError(`ID do agente inválido: ${agentId}`);
+      toast.error('ID do agente inválido. Recarregue a página.');
+      return;
+    }
+
     try {
       setSaving(true);
-      const { error } = await supabase
-        .from('agent_knowledge_items')
-        .insert({
-          agent_id: agentId,
-          title: newItem.title,
-          description: newItem.description,
-          content: newItem.content,
-          content_type: newItem.content_type,
-          keywords: newItem.keywords.split(',').map(k => k.trim()).filter(Boolean),
-          instruction: newItem.instruction,
-          active: true
-        });
+      setAddError(null);
+      
+      const dataToInsert = {
+        agent_id: agentId,
+        title: newItem.title,
+        description: newItem.description,
+        content: newItem.content,
+        content_type: newItem.content_type,
+        keywords: newItem.keywords.split(',').map(k => k.trim()).filter(Boolean),
+        instruction: newItem.instruction,
+        active: true
+      };
 
-      if (error) throw error;
+      // Log dos dados antes de inserir
+      console.log('📤 Inserindo knowledge item:', dataToInsert);
+      
+      const { data, error } = await supabase
+        .from('agent_knowledge_items')
+        .insert(dataToInsert)
+        .select();
+
+      if (error) {
+        console.error('❌ Erro ao inserir:', error);
+        setAddError(error.message);
+        throw error;
+      }
+
+      // Log de sucesso
+      console.log('✅ Item inserido com sucesso:', data);
 
       toast.success('Item de conhecimento adicionado');
       setNewItem({
@@ -74,11 +98,12 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
         keywords: '',
         instruction: ''
       });
+      setAddError(null);
       setIsAddDialogOpen(false);
-      window.location.reload(); // Reload to get updated data
-    } catch (error) {
-      console.error('Error adding knowledge item:', error);
-      toast.error('Erro ao adicionar item');
+      window.location.reload();
+    } catch (error: any) {
+      console.error('❌ Error adding knowledge item:', error);
+      toast.error(`Erro ao adicionar item: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setSaving(false);
     }
@@ -250,6 +275,12 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                   className="min-h-[100px] bg-[#2A2A2A] border-[#9C1E1E]/50 text-white placeholder:text-gray-400 focus:border-[#9C1E1E] focus:ring-2 focus:ring-[#9C1E1E]/30 transition-all resize-none"
                 />
               </div>
+              {addError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-md">
+                  <p className="text-sm text-red-400 font-semibold">Erro:</p>
+                  <p className="text-xs text-red-300">{addError}</p>
+                </div>
+              )}
               <div className="flex justify-end gap-3 pt-4 border-t border-[#9C1E1E]/20">
                 <Button 
                   variant="outline" 
