@@ -67,11 +67,11 @@ export const AgentKnowledge = () => {
 
       {/* Tabs for 4 Sections */}
       <Tabs defaultValue="section1" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="section1">1. Identidade</TabsTrigger>
-          <TabsTrigger value="section2">2. Operacional</TabsTrigger>
-          <TabsTrigger value="section3">3. Limites</TabsTrigger>
-          <TabsTrigger value="section4">4. Conhecimentos</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 bg-module-primary/10 border-module">
+          <TabsTrigger value="section1" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white text-module-primary">1. Identidade</TabsTrigger>
+          <TabsTrigger value="section2" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white text-module-primary">2. Operacional</TabsTrigger>
+          <TabsTrigger value="section3" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white text-module-primary">3. Limites</TabsTrigger>
+          <TabsTrigger value="section4" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white text-module-primary">4. Conhecimentos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="section1" className="mt-6">
