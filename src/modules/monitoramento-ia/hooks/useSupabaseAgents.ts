@@ -22,14 +22,14 @@ export const useSupabaseAgents = () => {
         const { data: sectionsData } = await supabase
           .from('agent_sections')
           .select('*')
-          .eq('agent_id', agent.key)
+          .eq('agent_id', agent.id)
           .order('section_number');
 
         // Fetch agent knowledge items
         const { data: knowledgeData } = await supabase
           .from('agent_knowledge_items')
           .select('*')
-          .eq('agent_id', agent.key)
+          .eq('agent_id', agent.id)
           .eq('active', true);
 
         return {
