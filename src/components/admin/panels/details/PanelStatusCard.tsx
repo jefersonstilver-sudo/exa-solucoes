@@ -18,9 +18,9 @@ const PanelStatusCard: React.FC<PanelStatusCardProps> = ({ panel, statusInfo }) 
   const StatusIcon = statusInfo.icon === 'Wifi' ? Wifi : statusInfo.icon === 'WifiOff' ? WifiOff : Settings;
 
   return (
-    <Card>
+    <Card className="glass-card border-module-border">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between text-module-primary">
           <span>Status Atual</span>
           <Badge variant={statusInfo.variant} className="flex items-center gap-1">
             <StatusIcon className="h-3 w-3" />
@@ -31,26 +31,26 @@ const PanelStatusCard: React.FC<PanelStatusCardProps> = ({ panel, statusInfo }) 
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="flex items-center space-x-2">
-            <Building className="h-4 w-4 text-gray-500" />
+            <Building className="h-4 w-4 text-module-secondary" />
             <div>
-              <p className="text-sm font-medium">Prédio</p>
-              <p className="text-xs text-gray-500">{panel.buildings?.nome || 'N/A'}</p>
+              <p className="text-sm font-medium text-module-secondary">Prédio</p>
+              <p className="text-xs text-module-primary">{panel.buildings?.nome || 'N/A'}</p>
             </div>
           </div>
           {panel.localizacao && (
             <div className="flex items-center space-x-2">
-              <MapPin className="h-4 w-4 text-gray-500" />
+              <MapPin className="h-4 w-4 text-module-secondary" />
               <div>
-                <p className="text-sm font-medium">Localização</p>
-                <p className="text-xs text-gray-500">{panel.localizacao}</p>
+                <p className="text-sm font-medium text-module-secondary">Localização</p>
+                <p className="text-xs text-module-primary">{panel.localizacao}</p>
               </div>
             </div>
           )}
           <div className="flex items-center space-x-2">
-            <Calendar className="h-4 w-4 text-gray-500" />
+            <Calendar className="h-4 w-4 text-module-secondary" />
             <div>
-              <p className="text-sm font-medium">Última Sync</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm font-medium text-module-secondary">Última Sync</p>
+              <p className="text-xs text-module-primary">
                 {panel.ultima_sync 
                   ? new Date(panel.ultima_sync).toLocaleString('pt-BR')
                   : 'Nunca'
@@ -59,10 +59,10 @@ const PanelStatusCard: React.FC<PanelStatusCardProps> = ({ panel, statusInfo }) 
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Monitor className="h-4 w-4 text-gray-500" />
+            <Monitor className="h-4 w-4 text-module-secondary" />
             <div>
-              <p className="text-sm font-medium">Código</p>
-              <p className="text-xs text-gray-500">{panel.code}</p>
+              <p className="text-sm font-medium text-module-secondary">Código</p>
+              <p className="text-xs text-module-primary">{panel.code}</p>
             </div>
           </div>
         </div>
