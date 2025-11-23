@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, AlertTriangle, Clock, ChevronDown } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Clock, ChevronDown, Calendar as CalendarIcon } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Simple StatCard component for Paineis page
 const SimpleStatCard = ({ label, value, color }: { label: string; value: number; color: 'blue' | 'green' | 'red' | 'gray' }) => {
@@ -181,43 +182,37 @@ export const PaineisPage = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {/* Seletor de Período - Ícone */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="p-2.5 border-module-border border text-module-primary rounded-lg hover:bg-module-secondary/20 transition-colors">
+                  <CalendarIcon className="w-4 h-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2" align="end">
+                <Select value={quedaPeriod} onValueChange={(value: any) => setQuedaPeriod(value)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hoje">Hoje</SelectItem>
+                    <SelectItem value="7dias">Últimos 7 dias</SelectItem>
+                    <SelectItem value="30dias">Últimos 30 dias</SelectItem>
+                  </SelectContent>
+                </Select>
+              </PopoverContent>
+            </Popover>
+
+            {/* Sincronizar AnyDesk - Apenas Ícone */}
             <button
               onClick={handleSyncAnyDesk}
               disabled={syncing}
-              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+              title="Sincronizar AnyDesk"
+              className="p-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              Sincronizar AnyDesk
             </button>
-            <button
-              onClick={handleRefresh}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2.5 border-module border text-module-primary rounded-lg hover:bg-module-hover transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </button>
-            <div className="text-xs text-module-secondary hidden lg:block">
-              Auto-refresh: 4s
-            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Seletor de Período */}
-      <div className="glass-card border-white/10 rounded-[14px] p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-module-secondary">Período de Análise</h3>
-          <Select value={quedaPeriod} onValueChange={(value: any) => setQuedaPeriod(value)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="hoje">Hoje</SelectItem>
-              <SelectItem value="7dias">Últimos 7 dias</SelectItem>
-              <SelectItem value="30dias">Últimos 30 dias</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
