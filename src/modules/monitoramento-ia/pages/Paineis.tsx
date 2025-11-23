@@ -11,6 +11,7 @@ import { useDevices } from '../hooks/useDevices';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // Simple StatCard component for Paineis page
 const SimpleStatCard = ({ label, value, color }: { label: string; value: number; color: 'blue' | 'green' | 'red' | 'gray' }) => {
@@ -52,9 +53,48 @@ export const PaineisPage = () => {
   const [topOfflinePanels, setTopOfflinePanels] = useState<Device[]>([]);
   const [avgOfflineTime, setAvgOfflineTime] = useState<string>('0h');
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const handleRefresh = () => {
     refresh();
+  };
+
+  const handleSyncAnyDesk = async () => {
+    setSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Não autenticado');
+
+      const SUPABASE_URL = "https://aakenoljsycyrcrchgxj.supabase.co";
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/sync-anydesk`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Erro na sincronização: ${error}`);
+      }
+
+      const result = await response.json();
+      console.log('[SYNC] Resultado:', result);
+      
+      toast.success(`Sincronização concluída! ${result.summary?.devices_updated || 0} atualizados, ${result.summary?.devices_created || 0} criados`);
+      
+      // Recarregar dados
+      refresh();
+    } catch (error) {
+      console.error('[SYNC] Erro:', error);
+      toast.error('Erro ao sincronizar com AnyDesk');
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const stats = calculateDeviceStats(devices);
@@ -109,6 +149,14 @@ export const PaineisPage = () => {
           </div>
           <div className="flex items-center gap-3">
             <button
+              onClick={handleSyncAnyDesk}
+              disabled={syncing}
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              Sincronizar AnyDesk
+            </button>
+            <button
               onClick={handleRefresh}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2.5 border-module border text-module-primary rounded-lg hover:bg-module-hover transition-colors disabled:opacity-50"
@@ -117,7 +165,7 @@ export const PaineisPage = () => {
               Atualizar
             </button>
             <div className="text-xs text-module-secondary hidden lg:block">
-              Auto-atualização: 5 min
+              Auto-refresh: 4s
             </div>
           </div>
         </div>
