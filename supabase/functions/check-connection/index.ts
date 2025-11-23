@@ -83,7 +83,7 @@ serve(async (req) => {
       .from('devices')
       .select('*');
 
-    const dbClientIds = new Set(dbDevices?.map(d => d.anydesk_id) || []);
+    const dbClientIds = new Set(dbDevices?.map(d => d.anydesk_client_id) || []);
 
     console.log(`[CHECK-CONNECTION] 💾 Found ${dbDevices?.length || 0} devices in database`);
 
