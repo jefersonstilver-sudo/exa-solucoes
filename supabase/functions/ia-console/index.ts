@@ -86,24 +86,44 @@ Usuário: "Quantos prédios vocês têm?"
 
 Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de prédios.`;
     
-    // Carregar conhecimento do agente (mesmo sem conversationId no console)
+    // Carregar AMBAS as bases de conhecimento
     try {
+      // 1. Carregar agent_sections (Base principal estruturada - Identidade, Operacional, Limites)
+      const { data: sections } = await supabase
+        .from('agent_sections')
+        .select('section_number, section_title, content')
+        .eq('agent_id', agent.id)
+        .order('section_number');
+      
+      if (sections && sections.length > 0) {
+        const sectionsText = sections
+          .filter(s => s.content && s.content.trim())
+          .map(s => `### SEÇÃO ${s.section_number}: ${s.section_title}\n\n${s.content}`)
+          .join('\n\n---\n\n');
+        
+        if (sectionsText) {
+          systemPrompt += `\n\n=== BASE DE CONHECIMENTO PRINCIPAL ===\n${sectionsText}`;
+          console.log(`[IA-CONSOLE] ✅ Loaded ${sections.filter(s => s.content && s.content.trim()).length}/${sections.length} sections with content`);
+        }
+      }
+
+      // 2. Carregar agent_knowledge_items (Documentos/Links adicionais como Midia Kit)
       const { data: knowledge } = await supabase
         .from('agent_knowledge_items')
-        .select('content, instruction')
+        .select('title, content, instruction')
         .eq('agent_id', agent.id)
         .eq('active', true);
       
       if (knowledge && knowledge.length > 0) {
         const knowledgeText = knowledge.map(k => 
-          `${k.instruction || ''}\n\n${k.content}`
+          `### ${k.title}\n${k.instruction || ''}\n\n${k.content}`
         ).join('\n\n---\n\n');
         
-        systemPrompt += `\n\nBASE DE CONHECIMENTO:\n${knowledgeText}`;
-        console.log(`[IA-CONSOLE] Loaded ${knowledge.length} knowledge items`);
+        systemPrompt += `\n\n=== DOCUMENTOS E RECURSOS ===\n${knowledgeText}`;
+        console.log(`[IA-CONSOLE] ✅ Loaded ${knowledge.length} knowledge items`);
       }
     } catch (error) {
-      console.error('[IA-CONSOLE] Failed to load knowledge:', error);
+      console.error('[IA-CONSOLE] ❌ Failed to load knowledge:', error);
     }
     
     // Se há conversationId, buscar contexto adicional
