@@ -3,7 +3,7 @@ import { useAgentConfig } from '../hooks/useAgentConfig';
 import { useAgentStatus } from '../hooks/useAgentStatus';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Bot, Sparkles, Building2, Bell, UserCircle } from 'lucide-react';
 import { APIStatusGrid } from '../components/agents/APIStatusGrid';
 import { AgentConfigSection } from '../components/agents/AgentConfigSection';
 import { AIConsole } from '../components/agents/AIConsole';
@@ -35,7 +35,10 @@ export const Agentes = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-module-primary flex items-center gap-3">
-              🤖 Agentes Inteligentes
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9C1E1E] to-[#7A1616] flex items-center justify-center shadow-lg shadow-[#9C1E1E]/20">
+                <Bot className="w-6 h-6 text-white" />
+              </div>
+              Agentes Inteligentes
             </h1>
             <p className="text-module-secondary mt-2">
               Configuração unificada dos agentes de IA avançada
@@ -58,17 +61,21 @@ export const Agentes = () => {
             <TabsTrigger value="apis" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4">
               Monitor de APIs
             </TabsTrigger>
-            <TabsTrigger value="sofia" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4">
-              Sofia 🟣
+            <TabsTrigger value="sofia" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Sofia
             </TabsTrigger>
-            <TabsTrigger value="iris" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4">
-              IRIS 💼
+            <TabsTrigger value="iris" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4 flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              IRIS
             </TabsTrigger>
-            <TabsTrigger value="exa_alert" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4">
-              EXA Alert 🔔
+            <TabsTrigger value="exa_alert" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4 flex items-center gap-2">
+              <Bell className="w-4 h-4" />
+              EXA Alert
             </TabsTrigger>
-            <TabsTrigger value="eduardo" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4">
-              Eduardo 👨‍💼
+            <TabsTrigger value="eduardo" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4 flex items-center gap-2">
+              <UserCircle className="w-4 h-4" />
+              Eduardo
             </TabsTrigger>
             <TabsTrigger value="console" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white data-[state=inactive]:text-module-secondary whitespace-nowrap px-4">
               Console IA

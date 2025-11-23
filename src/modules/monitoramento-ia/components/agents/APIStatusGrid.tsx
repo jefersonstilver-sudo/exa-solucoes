@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Bug, Settings } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Bug, Settings, Bot, Sparkles, Building2, Bell, UserCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AgentStatus } from '../../hooks/useAgentStatus';
 import { AgentDebugPanel } from './AgentDebugPanel';
@@ -25,14 +25,14 @@ interface APIStatusGridProps {
   onTest: (agentKey: string, displayName: string) => Promise<any>;
 }
 
-const getAgentIcon = (key: string) => {
-  const icons: Record<string, string> = {
-    sofia: '🟣',
-    iris: '💼',
-    exa_alert: '🔔',
-    eduardo: '👨‍💼'
+const getAgentIcon = (key: string): JSX.Element => {
+  const icons: Record<string, JSX.Element> = {
+    sofia: <Sparkles className="w-5 h-5 text-[#9C1E1E]" />,
+    iris: <Building2 className="w-5 h-5 text-[#9C1E1E]" />,
+    exa_alert: <Bell className="w-5 h-5 text-[#9C1E1E]" />,
+    eduardo: <UserCircle className="w-5 h-5 text-[#9C1E1E]" />
   };
-  return icons[key] || '🤖';
+  return icons[key] || <Bot className="w-5 h-5 text-[#9C1E1E]" />;
 };
 
 const getProviderName = (provider: string | null) => {
@@ -189,8 +189,9 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
 
               {status?.credentialsPresent === false && (
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-2 mb-3">
-                  <p className="text-xs text-yellow-500">
-                    ⚠️ Credenciais não configuradas
+                  <p className="text-xs text-yellow-500 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Credenciais não configuradas
                   </p>
                 </div>
               )}

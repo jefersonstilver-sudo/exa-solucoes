@@ -1,4 +1,4 @@
-import { Settings, Eye, Copy, Trash2, Bot } from 'lucide-react';
+import { Settings, Eye, Copy, Trash2, Bot, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,7 +42,7 @@ export const AgentCard = ({ agent, onManage, onPreview, onDuplicate, onDelete, o
       setAiAutoResponse(checked);
       toast.success(
         checked 
-          ? '🤖 IA ativada! Agente responderá automaticamente'
+          ? 'IA ativada! Agente responderá automaticamente'
           : 'IA desativada'
       );
       
@@ -75,12 +75,13 @@ export const AgentCard = ({ agent, onManage, onPreview, onDuplicate, onDelete, o
             <p className="text-sm text-module-tertiary capitalize">{getTypeLabel(agent.type)}</p>
           </div>
         </div>
-        <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+        <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 ${
           agent.status === 'active' 
             ? 'bg-green-500/10 text-green-500' 
             : 'bg-module-muted text-module-tertiary'
         }`}>
-          {agent.status === 'active' ? '🟢 Ativo' : '⚫ Inativo'}
+          <Circle className={`w-2 h-2 fill-current ${agent.status === 'active' ? 'text-green-500' : 'text-module-tertiary'}`} />
+          {agent.status === 'active' ? 'Ativo' : 'Inativo'}
         </div>
       </div>
 
@@ -109,7 +110,7 @@ export const AgentCard = ({ agent, onManage, onPreview, onDuplicate, onDelete, o
               <Bot className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <div className="flex-1">
                 <p className="font-semibold text-sm text-blue-900 dark:text-blue-100">
-                  🤖 Resposta Automática IA
+                  Resposta Automática IA
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300">
                   Responde automaticamente usando IA treinada

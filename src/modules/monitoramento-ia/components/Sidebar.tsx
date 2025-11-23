@@ -84,7 +84,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
         collapsed ? 'w-16' : 'w-64',
         theme === 'dark' 
           ? 'glass bg-gradient-to-b from-[#1A1A1A]/95 via-[#0A0A0A]/95 to-[#000000]/95 border-white/10 text-white backdrop-blur-xl'
-          : 'glass bg-gradient-to-b from-white/95 via-[#F9FAFB]/95 to-white/95 border-[#9C1E1E]/20 text-[#0A0A0A] backdrop-blur-xl shadow-lg',
+          : 'glass bg-gradient-to-br from-[#9C1E1E]/15 via-[#0A0A0A]/10 to-[#9C1E1E]/20 border-[#9C1E1E]/30 text-[#0A0A0A] backdrop-blur-xl shadow-lg',
         'lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
@@ -112,14 +112,16 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
         )}
         
         {collapsed && (
-          <img 
-            src={EXA_LOGO_URL} 
-            alt="EXA" 
-            className={cn(
-              "h-8 w-auto",
-              theme === 'dark' ? 'brightness-0 invert' : ''
-            )}
-          />
+          <div className="flex items-center justify-center w-10 h-10">
+            <img 
+              src={EXA_LOGO_URL} 
+              alt="EXA" 
+              className={cn(
+                "h-8 object-contain",
+                theme === 'dark' ? 'brightness-0 invert' : ''
+              )}
+            />
+          </div>
         )}
 
         {/* Toggle Button - Desktop (posição absoluta) */}

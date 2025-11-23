@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { StickyNote, Tag, MessageSquare, FileText, Play, Volume2 } from 'lucide-react';
+import { StickyNote, Tag, MessageSquare, FileText, Play, Volume2, Bot } from 'lucide-react';
 import { MediaInputBar } from './MediaInputBar';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
@@ -221,8 +221,9 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
                     )}
 
                     {msg.is_automated && (
-                      <Badge variant="outline" className="text-xs mt-2">
-                        🤖 Automático
+                      <Badge variant="outline" className="text-xs mt-2 flex items-center gap-1">
+                        <Bot className="w-3 h-3" />
+                        Automático
                       </Badge>
                     )}
 
