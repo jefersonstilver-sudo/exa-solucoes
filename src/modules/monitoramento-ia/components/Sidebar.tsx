@@ -77,6 +77,13 @@ const menuItems = [
     icon: LayoutDashboard,
     path: '/admin/monitoramento-ia/relatorios'
   },
+  { divider: true },
+  { sectionTitle: '💻 MONITORAMENTO PAINÉIS' },
+  {
+    title: 'Computadores',
+    icon: Monitor,
+    path: '/admin/monitoramento-ia/anydesk/computadores',
+  },
 ];
 
 export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }: SidebarProps) => {
