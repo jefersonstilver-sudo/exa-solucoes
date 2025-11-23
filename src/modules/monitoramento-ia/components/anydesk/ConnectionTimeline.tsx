@@ -75,17 +75,17 @@ export const ConnectionTimeline = ({ computerId }: ConnectionTimelineProps) => {
   };
 
   if (loading) {
-    return <div className="text-gray-400">Carregando...</div>;
+    return <div className="text-module-secondary">Carregando...</div>;
   }
 
   return (
     <div className="space-y-4">
       {events.length === 0 ? (
-        <p className="text-muted-foreground text-center py-8">Nenhum histórico de conexão disponível</p>
+        <p className="text-module-secondary text-center py-8">Nenhum histórico de conexão disponível</p>
       ) : (
         <div className="relative">
           {/* Linha vertical conectando eventos */}
-          <div className="absolute left-5 top-8 bottom-8 w-0.5 bg-gradient-to-b from-green-500/30 via-module-input to-red-500/30" />
+          <div className="absolute left-5 top-8 bottom-8 w-0.5 bg-gradient-to-b from-green-500/30 via-module-border to-red-500/30" />
           
           {events.map((event, index) => {
             const isOnline = event.event_type === "online";
@@ -97,7 +97,7 @@ export const ConnectionTimeline = ({ computerId }: ConnectionTimelineProps) => {
                 className={cn(
                   "relative p-4 rounded-lg mb-4",
                   "glass-card",
-                  "hover:bg-white/10 transition-all duration-300"
+                  "hover:bg-module-hover transition-all duration-300"
                 )}
               >
                 <div className="flex items-start gap-4">
@@ -131,19 +131,19 @@ export const ConnectionTimeline = ({ computerId }: ConnectionTimelineProps) => {
                       )}
                     </div>
 
-                    <p className="text-sm mb-1">
+                    <p className="text-sm mb-1 text-module-primary">
                       {format(new Date(event.started_at), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}
                     </p>
                     
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-module-secondary">
                       {formatDistanceToNow(new Date(event.started_at), { addSuffix: true, locale: ptBR })}
                     </p>
 
                     <div className="mt-2 flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Duração:</span>
+                      <Clock className="h-4 w-4 text-module-secondary" />
+                      <span className="text-module-secondary">Duração:</span>
                       <span className={cn(
-                        "font-semibold",
+                        "font-semibold text-module-primary",
                         isActive && "text-primary animate-pulse"
                       )}>
                         {formatDuration(event.duration_seconds)}
@@ -151,7 +151,7 @@ export const ConnectionTimeline = ({ computerId }: ConnectionTimelineProps) => {
                     </div>
 
                     {event.ended_at && (
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-module-secondary mt-1">
                         Finalizado em {format(new Date(event.ended_at), "HH:mm:ss")}
                       </p>
                     )}
