@@ -27,58 +27,50 @@ interface SidebarProps {
   onToggleCollapse: () => void;
 }
 
-const menuItems = [
+interface MenuItem {
+  title?: string;
+  icon?: any;
+  path?: string;
+  badge?: string;
+  divider?: boolean;
+  sectionTitle?: string;
+}
+
+const menuItems: MenuItem[] = [
   {
     title: 'Dashboard',
     icon: LayoutDashboard,
     path: '/admin/monitoramento-ia/dashboard',
   },
-  {
-    title: 'Painéis',
-    icon: Monitor,
-    path: '/admin/monitoramento-ia/paineis',
-  },
-  {
-    title: 'Alertas de Painéis',
-    icon: Bell,
-    path: '/admin/monitoramento-ia/alertas',
-  },
-  {
-    title: 'Conversas Analisadas',
-    icon: MessageSquare,
-    path: '/admin/monitoramento-ia/conversas',
-  },
-  {
-    title: 'Diretores Autorizados',
-    icon: Users,
-    path: '/admin/monitoramento-ia/diretores',
-  },
-  {
-    title: 'Console da IA',
-    icon: Terminal,
-    path: '/admin/monitoramento-ia/console-ia',
-  },
   { divider: true },
-  { sectionTitle: '🤖 AGENTES INTELIGENTES' },
+  { sectionTitle: '🤖 AGENTES' },
   {
-    title: 'Painel Unificado',
+    title: 'Agentes',
     icon: Bot,
     path: '/admin/monitoramento-ia/agentes',
-    badge: 'NOVO'
   },
   {
     title: 'CRM & Conversas',
     icon: MessageSquare,
     path: '/admin/monitoramento-ia/crm',
-    badge: 'BETA'
   },
   {
-    title: 'Relatórios Corporativos',
+    title: 'Relatórios',
     icon: LayoutDashboard,
     path: '/admin/monitoramento-ia/relatorios'
   },
   { divider: true },
-  { sectionTitle: '💻 MONITORAMENTO PAINÉIS' },
+  { sectionTitle: '💻 PAINÉIS' },
+  {
+    title: 'Monitoramento',
+    icon: Monitor,
+    path: '/admin/monitoramento-ia/paineis',
+  },
+  {
+    title: 'Alertas',
+    icon: Bell,
+    path: '/admin/monitoramento-ia/alertas',
+  },
   {
     title: 'Computadores',
     icon: Monitor,

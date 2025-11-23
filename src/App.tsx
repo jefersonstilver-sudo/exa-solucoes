@@ -56,14 +56,9 @@ import VideoEditorPage from './pages/video-editor/VideoEditorPage';
 
 // Monitoramento IA Module
 import { MonitoramentoIALayout } from './modules/monitoramento-ia/layout/MonitoramentoIALayout';
-import { MonitoramentoIADashboard } from './modules/monitoramento-ia/pages/Dashboard';
-import { BaseAgentePage } from './modules/monitoramento-ia/pages/BaseAgente';
-import { DiretoresPage } from './modules/monitoramento-ia/pages/Diretores';
+import { DashboardUnificado } from './modules/monitoramento-ia/pages/DashboardUnificado';
 import { PaineisPage } from './modules/monitoramento-ia/pages/Paineis';
 import { AlertasPage } from './modules/monitoramento-ia/pages/Alertas';
-import { ConversasPage } from './modules/monitoramento-ia/pages/Conversas';
-import ConversasCRM from './modules/monitoramento-ia/pages/ConversasCRM';
-import { ConsoleIAPage } from './modules/monitoramento-ia/pages/ConsoleIA';
 import { Agentes } from './modules/monitoramento-ia/pages/Agentes';
 import { ComputadoresPage } from './modules/monitoramento-ia/pages/anydesk/Computadores';
 
@@ -446,21 +441,15 @@ const AppContent = () => {
           {/* Módulo Monitoramento IA */}
           <Route path="/admin/monitoramento-ia" element={<MonitoramentoIALayout />}>
             <Route index element={<Navigate to="/admin/monitoramento-ia/dashboard" replace />} />
-            <Route path="dashboard" element={<MonitoramentoIADashboard />} />
-            <Route path="base-agente" element={<BaseAgentePage />} />
-            <Route path="diretores" element={<DiretoresPage />} />
+            <Route path="dashboard" element={<DashboardUnificado />} />
+            
+            {/* Seção Painéis */}
             <Route path="paineis" element={<PaineisPage />} />
             <Route path="alertas" element={<AlertasPage />} />
-            <Route path="conversas" element={<ConversasPage />} />
-            <Route path="console-ia" element={<ConsoleIAPage />} />
-            
-            {/* AnyDesk Monitoring */}
             <Route path="anydesk/computadores" element={<ComputadoresPage />} />
             
-            {/* Painel Unificado de Agentes */}
+            {/* Seção Agentes */}
             <Route path="agentes" element={<Agentes />} />
-            
-            {/* Rotas individuais dos agentes */}
             <Route path="agentes/:id/base-conhecimento" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando base de conhecimento..." />}>
                 {React.createElement(lazy(() => import('./modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge }))))}
