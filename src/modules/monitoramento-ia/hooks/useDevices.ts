@@ -5,8 +5,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Device, DevicesFilters, DevicesSort, fetchDevices } from '../utils/devices';
-import { POLLING_INTERVAL_MS } from '../utils/constants';
 import { toast } from 'sonner';
+
+// Auto-refresh a cada 4 segundos
+const POLLING_INTERVAL_MS = 4000;
 
 export function useDevices(
   initialPage: number = 0,

@@ -71,11 +71,6 @@ const menuItems: MenuItem[] = [
     icon: Bell,
     path: '/admin/monitoramento-ia/alertas',
   },
-  {
-    title: 'Computadores',
-    icon: Monitor,
-    path: '/admin/monitoramento-ia/anydesk/computadores',
-  },
 ];
 
 export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }: SidebarProps) => {

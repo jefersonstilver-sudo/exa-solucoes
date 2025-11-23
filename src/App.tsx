@@ -60,7 +60,6 @@ import { DashboardUnificado } from './modules/monitoramento-ia/pages/DashboardUn
 import { PaineisPage } from './modules/monitoramento-ia/pages/Paineis';
 import { AlertasPage } from './modules/monitoramento-ia/pages/Alertas';
 import { Agentes } from './modules/monitoramento-ia/pages/Agentes';
-import { ComputadoresPage } from './modules/monitoramento-ia/pages/anydesk/Computadores';
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
@@ -446,7 +445,6 @@ const AppContent = () => {
             {/* Seção Painéis */}
             <Route path="paineis" element={<PaineisPage />} />
             <Route path="alertas" element={<AlertasPage />} />
-            <Route path="anydesk/computadores" element={<ComputadoresPage />} />
             
             {/* Seção Agentes */}
             <Route path="agentes" element={<Agentes />} />

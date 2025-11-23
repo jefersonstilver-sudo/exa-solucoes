@@ -8,6 +8,12 @@ export interface Device {
   status: 'online' | 'offline' | 'unknown';
   last_online_at: string | null;
   created_at: string;
+  comments?: string;
+  address?: string;
+  provider?: string;
+  tags?: string[] | any;
+  total_events?: number;
+  offline_count?: number;
   metadata?: {
     torre?: string;
     elevador?: string;
