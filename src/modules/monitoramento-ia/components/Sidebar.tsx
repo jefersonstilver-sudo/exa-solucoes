@@ -83,8 +83,8 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
         `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r`,
         collapsed ? 'w-16' : 'w-64',
         theme === 'dark' 
-          ? 'bg-gradient-to-b from-[#6B1414] via-[#4A0E0E] to-[#2D0808] border-[#9C1E1E]/30 text-white shadow-2xl'
-          : 'bg-gradient-to-br from-[#9C1E1E]/15 via-[#0A0A0A]/10 to-[#9C1E1E]/20 border-[#9C1E1E]/30 text-[#0A0A0A] backdrop-blur-xl shadow-lg',
+          ? 'bg-gradient-to-b from-[#6B1010] via-[#4A0A0A] to-[#2D0606] border-[#9C1E1E]/40 text-white shadow-2xl'
+          : 'bg-gradient-to-br from-white/95 via-gray-50/90 to-white/95 border-[#9C1E1E]/20 text-[#0A0A0A] backdrop-blur-xl shadow-lg',
         'lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
