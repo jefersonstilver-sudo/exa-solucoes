@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConnectionTimeline } from "./ConnectionTimeline";
@@ -100,20 +100,23 @@ export const ComputerDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto bg-background">
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto !bg-background">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-foreground">
             <Monitor className="h-6 w-6 text-[#9C1E1E]" />
             <span>{displayName}</span>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Detalhes completos do painel {displayName}
+          </DialogDescription>
         </DialogHeader>
 
         {/* 3 CARDS SUPERIORES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* CARD 1: INFORMAÇÕES DO SISTEMA */}
-          <Card className="bg-card border-border">
+          <Card className="!bg-card !border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2 text-card-foreground">
+              <CardTitle className="text-sm flex items-center gap-2 !text-card-foreground">
                 <Info className="h-4 w-4 text-[#9C1E1E]" />
                 Sistema
               </CardTitle>
@@ -124,20 +127,20 @@ export const ComputerDetailModal = ({
                   <MapPin className="h-3 w-3" />
                   Local/Prédio
                 </p>
-                <p className="text-base font-semibold text-card-foreground">{displayName}</p>
+                <p className="text-base font-semibold !text-card-foreground">{displayName}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                   <Wifi className="h-3 w-3" />
                   Provedor
                 </p>
-                <Badge variant="outline" className="text-card-foreground">
+                <Badge variant="outline" className="!text-card-foreground">
                   {computer.provider || 'Sem provedor'}
                 </Badge>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Endereço</p>
-                <p className="text-sm text-card-foreground">{computer.address || 'Sem endereço'}</p>
+                <p className="text-sm !text-card-foreground">{computer.address || 'Sem endereço'}</p>
               </div>
               {computer.tags && Array.isArray(computer.tags) && computer.tags.length > 0 && (
                 <div>
@@ -147,7 +150,7 @@ export const ComputerDetailModal = ({
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {computer.tags.map((tag: string, i: number) => (
-                      <Badge key={i} variant="outline" className="text-xs text-card-foreground">{tag}</Badge>
+                      <Badge key={i} variant="outline" className="text-xs !text-card-foreground">{tag}</Badge>
                     ))}
                   </div>
                 </div>
@@ -156,9 +159,9 @@ export const ComputerDetailModal = ({
           </Card>
 
           {/* CARD 2: ATIVIDADE */}
-          <Card className="bg-card border-border">
+          <Card className="!bg-card !border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2 text-card-foreground">
+              <CardTitle className="text-sm flex items-center gap-2 !text-card-foreground">
                 <Activity className="h-4 w-4 text-[#9C1E1E]" />
                 Atividade
               </CardTitle>
@@ -179,7 +182,7 @@ export const ComputerDetailModal = ({
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Última Conexão</p>
-                <p className="text-sm font-semibold text-card-foreground">
+                <p className="text-sm font-semibold !text-card-foreground">
                   {computer.status === 'offline' ? (
                     <span className="text-red-600 dark:text-red-400">Offline há {offlineCounter}</span>
                   ) : (
@@ -189,7 +192,7 @@ export const ComputerDetailModal = ({
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Total de Eventos</p>
-                <p className="text-2xl font-bold text-card-foreground">{computer.total_events || 0}</p>
+                <p className="text-2xl font-bold !text-card-foreground">{computer.total_events || 0}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
@@ -202,16 +205,16 @@ export const ComputerDetailModal = ({
           </Card>
 
           {/* CARD 3: CONFIGURAÇÃO DE ALERTAS */}
-          <Card className="bg-card border-border">
+          <Card className="!bg-card !border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2 text-card-foreground">
+              <CardTitle className="text-sm flex items-center gap-2 !text-card-foreground">
                 <Bell className="h-4 w-4 text-[#9C1E1E]" />
                 Alertas
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="alerts-enabled" className="text-sm text-card-foreground">Alertas Automáticos</Label>
+                <Label htmlFor="alerts-enabled" className="text-sm !text-card-foreground">Alertas Automáticos</Label>
                 <Switch
                   id="alerts-enabled"
                   checked={alertConfig.alerts_enabled}
@@ -244,35 +247,35 @@ export const ComputerDetailModal = ({
         </div>
 
         {/* INFORMAÇÕES ADICIONAIS */}
-        <Card className="mb-6 bg-card border-border">
+        <Card className="mb-6 !bg-card !border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-card-foreground">Informações Adicionais</CardTitle>
+            <CardTitle className="text-sm !text-card-foreground">Informações Adicionais</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">AnyDesk ID</p>
-                <p className="text-sm font-mono text-card-foreground">{computer.anydesk_client_id}</p>
+                <p className="text-sm font-mono !text-card-foreground">{computer.anydesk_client_id}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Online-Time</p>
-                <p className="text-sm text-card-foreground">{computer.metadata?.online_time || 'N/A'}</p>
+                <p className="text-sm !text-card-foreground">{computer.metadata?.online_time || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Client-Version</p>
-                <p className="text-sm text-card-foreground">{computer.metadata?.version || '7.0.0'}</p>
+                <p className="text-sm !text-card-foreground">{computer.metadata?.version || '7.0.0'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">IP Público</p>
-                <p className="text-sm font-mono text-card-foreground">{computer.metadata?.ip_address || 'N/A'}</p>
+                <p className="text-sm font-mono !text-card-foreground">{computer.metadata?.ip_address || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Sistema</p>
-                <p className="text-sm text-card-foreground">{computer.metadata?.os || 'N/A'}</p>
+                <p className="text-sm !text-card-foreground">{computer.metadata?.os || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Condomínio</p>
-                <p className="text-sm text-card-foreground">{computer.condominio_name || 'N/A'}</p>
+                <p className="text-sm !text-card-foreground">{computer.condominio_name || 'N/A'}</p>
               </div>
             </div>
           </CardContent>
@@ -280,27 +283,27 @@ export const ComputerDetailModal = ({
 
         {/* TABS */}
         <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-muted">
-            <TabsTrigger value="info" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
+          <TabsList className="grid w-full grid-cols-3 !bg-muted">
+            <TabsTrigger value="info" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white">
               <Info className="h-4 w-4 mr-2" />
               Informações
             </TabsTrigger>
-            <TabsTrigger value="timeline" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
+            <TabsTrigger value="timeline" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white">
               <Clock className="h-4 w-4 mr-2" />
               Timeline
             </TabsTrigger>
-            <TabsTrigger value="graficos" className="data-[state=active]:bg-[#9C1E1E] data-[state=active]:text-white">
+            <TabsTrigger value="graficos" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white">
               <BarChart3 className="h-4 w-4 mr-2" />
               Gráficos
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-4 mt-4">
-            <Card className="bg-card border-border">
+            <Card className="!bg-card !border-border">
               <CardHeader>
-                <CardTitle className="text-card-foreground">Resumo Completo</CardTitle>
+                <CardTitle className="!text-card-foreground">Resumo Completo</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm text-card-foreground">
+              <CardContent className="space-y-2 text-sm !text-card-foreground">
                 <p><strong>Nome:</strong> {displayName}</p>
                 <p><strong>Status:</strong> {computer.status}</p>
                 <p><strong>Provedor:</strong> {computer.provider || 'Não identificado'}</p>
