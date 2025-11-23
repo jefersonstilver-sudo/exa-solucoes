@@ -14,11 +14,10 @@ export const MonitoramentoIALayout = () => {
   const themeClass = getThemeClass(theme);
 
   return (
-    <div className={`min-h-screen bg-module-primary flex ${themeClass} relative`} style={{
-      backgroundImage: `
-        radial-gradient(ellipse at 20% 30%, rgba(156, 30, 30, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 70%, rgba(156, 30, 30, 0.1) 0%, transparent 50%)
-      `,
+    <div className={`min-h-screen flex ${themeClass} relative`} style={{
+      background: theme === 'dark' 
+        ? 'linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%)'
+        : 'linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 50%, #FFFFFF 100%)',
       backgroundAttachment: 'fixed'
     }}>
       {/* Sidebar */}

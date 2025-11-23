@@ -43,7 +43,7 @@ const menuItems: MenuItem[] = [
     path: '/admin/monitoramento-ia/dashboard',
   },
   { divider: true },
-  { sectionTitle: '🤖 AGENTES' },
+  { sectionTitle: 'AGENTES' },
   {
     title: 'Agentes',
     icon: Bot,
@@ -60,7 +60,7 @@ const menuItems: MenuItem[] = [
     path: '/admin/monitoramento-ia/relatorios'
   },
   { divider: true },
-  { sectionTitle: '💻 PAINÉIS' },
+  { sectionTitle: 'PAINÉIS' },
   {
     title: 'Monitoramento',
     icon: Monitor,
@@ -80,31 +80,40 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
   return (
     <aside
       className={cn(
-        `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r glass`,
+        `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r`,
         collapsed ? 'w-16' : 'w-64',
         theme === 'dark' 
-          ? 'bg-gradient-to-b from-[#9C1E1E]/90 via-[#4A0F0F]/80 to-[#0A0A0A]/90 border-white/10 text-white'
-          : 'bg-[#9C1E1E]/90 border-white/20 text-white',
-        'lg:translate-x-0 backdrop-blur-xl',
+          ? 'glass bg-gradient-to-b from-[#1A1A1A]/95 via-[#0A0A0A]/95 to-[#000000]/95 border-white/10 text-white backdrop-blur-xl'
+          : 'glass bg-gradient-to-b from-white/95 via-[#F9FAFB]/95 to-white/95 border-[#9C1E1E]/20 text-[#0A0A0A] backdrop-blur-xl shadow-lg',
+        'lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
       {/* Header - Glassmorphism com logo reorganizado */}
       <div className={cn(
-        "p-4 border-b flex items-center glass",
+        "p-4 border-b flex items-center",
         collapsed ? 'justify-center' : 'justify-between',
-        theme === 'dark' ? 'border-white/10' : 'border-white/20'
+        theme === 'dark' ? 'border-white/10' : 'border-[#9C1E1E]/15'
       )}>
         {!collapsed && (
           <div className="flex items-center gap-3">
             <img 
               src={EXA_LOGO_URL} 
               alt="EXA" 
-              className="h-10 w-auto brightness-0 invert"
+              className={cn(
+                "h-10 w-auto",
+                theme === 'dark' ? 'brightness-0 invert' : ''
+              )}
             />
             <div className="flex flex-col">
-              <h1 className="text-2xl font-black text-white tracking-tight leading-none">EXA</h1>
-              <p className="text-xs font-medium text-white/70 tracking-widest uppercase mt-0.5">IA Monitoramento</p>
+              <h1 className={cn(
+                "text-2xl font-black tracking-tight leading-none",
+                theme === 'dark' ? 'text-white' : 'text-[#9C1E1E]'
+              )}>EXA</h1>
+              <p className={cn(
+                "text-xs font-medium tracking-widest uppercase mt-0.5",
+                theme === 'dark' ? 'text-white/70' : 'text-[#0A0A0A]/60'
+              )}>IA Monitoramento</p>
             </div>
           </div>
         )}
@@ -113,14 +122,22 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
           <img 
             src={EXA_LOGO_URL} 
             alt="EXA" 
-            className="h-8 w-auto brightness-0 invert"
+            className={cn(
+              "h-8 w-auto",
+              theme === 'dark' ? 'brightness-0 invert' : ''
+            )}
           />
         )}
 
         {/* Toggle Button - Desktop */}
         <button
           onClick={onToggleCollapse}
-          className="hidden lg:block p-1.5 text-white hover:bg-white/10 rounded-lg transition-colors"
+          className={cn(
+            "hidden lg:block p-1.5 rounded-lg transition-colors",
+            theme === 'dark' 
+              ? 'text-white hover:bg-white/10' 
+              : 'text-[#9C1E1E] hover:bg-[#9C1E1E]/10'
+          )}
           title={collapsed ? 'Expandir sidebar' : 'Retrair sidebar'}
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -129,7 +146,12 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
         {/* Close Button - Mobile */}
         <button
           onClick={onClose}
-          className="lg:hidden p-1.5 text-white hover:bg-white/10 rounded-lg transition-colors"
+          className={cn(
+            "lg:hidden p-1.5 rounded-lg transition-colors",
+            theme === 'dark' 
+              ? 'text-white hover:bg-white/10' 
+              : 'text-[#9C1E1E] hover:bg-[#9C1E1E]/10'
+          )}
         >
           <X size={18} />
         </button>
@@ -157,7 +179,10 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
             if (collapsed) return null; // Hide section titles when collapsed
             return (
               <div key={`section-${index}`} className="px-4 py-2 mt-4">
-                <p className="text-xs font-bold text-white/70 uppercase tracking-wider">
+                <p className={cn(
+                  "text-xs font-bold uppercase tracking-wider",
+                  theme === 'dark' ? 'text-white/60' : 'text-[#0A0A0A]/50'
+                )}>
                   {item.sectionTitle}
                 </p>
               </div>
@@ -175,9 +200,11 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
                   collapsed ? 'justify-center' : '',
                   isActive
                     ? theme === 'dark'
-                      ? 'bg-white/10 text-white font-medium shadow-lg'
-                      : 'bg-white/20 text-white font-medium shadow-lg'
-                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                      ? 'bg-[#9C1E1E] text-white font-medium shadow-lg glow-exa'
+                      : 'bg-[#9C1E1E] text-white font-medium shadow-lg glow-exa'
+                    : theme === 'dark'
+                      ? 'text-white/70 hover:text-white hover:bg-white/5'
+                      : 'text-[#0A0A0A]/70 hover:text-[#9C1E1E] hover:bg-[#9C1E1E]/5'
                 )
               }
               title={collapsed ? item.title : undefined}
@@ -216,14 +243,19 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
 
       {/* Footer */}
       <div className={cn(
-        "absolute bottom-0 left-0 right-0 border-t glass",
-        theme === 'dark' ? 'border-white/10 bg-[#0A0A0A]/70' : 'border-white/20 bg-[#8A1A1A]/50'
+        "absolute bottom-0 left-0 right-0 border-t",
+        theme === 'dark' 
+          ? 'border-white/10 bg-[#0A0A0A]/80 backdrop-blur-sm' 
+          : 'border-[#9C1E1E]/15 bg-white/80 backdrop-blur-sm'
       )}>
         <button
           onClick={() => navigate('/')}
           className={cn(
-            "w-full flex items-center gap-3 p-4 text-white/70 hover:text-white hover:bg-white/5 transition-colors",
-            collapsed ? 'justify-center' : ''
+            "w-full flex items-center gap-3 p-4 transition-colors",
+            collapsed ? 'justify-center' : '',
+            theme === 'dark'
+              ? 'text-white/70 hover:text-white hover:bg-white/5'
+              : 'text-[#0A0A0A]/70 hover:text-[#9C1E1E] hover:bg-[#9C1E1E]/5'
           )}
           title={collapsed ? 'Voltar ao início' : undefined}
         >
