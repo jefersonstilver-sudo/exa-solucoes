@@ -91,30 +91,23 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
     >
       {/* Header - Glassmorphism com logo reorganizado */}
       <div className={cn(
-        "p-4 border-b flex items-center",
-        collapsed ? 'justify-center' : 'justify-between',
+        "p-5 border-b flex items-center justify-center relative",
         theme === 'dark' ? 'border-white/10' : 'border-[#9C1E1E]/15'
       )}>
         {!collapsed && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-center gap-2 w-full">
             <img 
               src={EXA_LOGO_URL} 
               alt="EXA" 
               className={cn(
-                "h-10 w-auto",
+                "h-12 w-auto",
                 theme === 'dark' ? 'brightness-0 invert' : ''
               )}
             />
-            <div className="flex flex-col">
-              <h1 className={cn(
-                "text-2xl font-black tracking-tight leading-none",
-                theme === 'dark' ? 'text-white' : 'text-[#9C1E1E]'
-              )}>EXA</h1>
-              <p className={cn(
-                "text-xs font-medium tracking-widest uppercase mt-0.5",
-                theme === 'dark' ? 'text-white/70' : 'text-[#0A0A0A]/60'
-              )}>IA Monitoramento</p>
-            </div>
+            <p className={cn(
+              "text-sm font-semibold tracking-wider uppercase",
+              theme === 'dark' ? 'text-white/80' : 'text-[#0A0A0A]/70'
+            )}>Monitoramento</p>
           </div>
         )}
         
@@ -129,32 +122,51 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
           />
         )}
 
-        {/* Toggle Button - Desktop */}
-        <button
-          onClick={onToggleCollapse}
-          className={cn(
-            "hidden lg:block p-1.5 rounded-lg transition-colors",
-            theme === 'dark' 
-              ? 'text-white hover:bg-white/10' 
-              : 'text-[#9C1E1E] hover:bg-[#9C1E1E]/10'
-          )}
-          title={collapsed ? 'Expandir sidebar' : 'Retrair sidebar'}
-        >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
+        {/* Toggle Button - Desktop (posição absoluta) */}
+        {!collapsed && (
+          <button
+            onClick={onToggleCollapse}
+            className={cn(
+              "hidden lg:block absolute right-4 top-4 p-1.5 rounded-lg transition-colors",
+              theme === 'dark' 
+                ? 'text-white hover:bg-white/10' 
+                : 'text-[#9C1E1E] hover:bg-[#9C1E1E]/10'
+            )}
+            title="Retrair sidebar"
+          >
+            <ChevronLeft size={18} />
+          </button>
+        )}
+        
+        {collapsed && (
+          <button
+            onClick={onToggleCollapse}
+            className={cn(
+              "hidden lg:block p-1.5 rounded-lg transition-colors",
+              theme === 'dark' 
+                ? 'text-white hover:bg-white/10' 
+                : 'text-[#9C1E1E] hover:bg-[#9C1E1E]/10'
+            )}
+            title="Expandir sidebar"
+          >
+            <ChevronRight size={18} />
+          </button>
+        )}
 
-        {/* Close Button - Mobile */}
-        <button
-          onClick={onClose}
-          className={cn(
-            "lg:hidden p-1.5 rounded-lg transition-colors",
-            theme === 'dark' 
-              ? 'text-white hover:bg-white/10' 
-              : 'text-[#9C1E1E] hover:bg-[#9C1E1E]/10'
-          )}
-        >
-          <X size={18} />
-        </button>
+        {/* Close Button - Mobile (posição absoluta) */}
+        {!collapsed && (
+          <button
+            onClick={onClose}
+            className={cn(
+              "lg:hidden absolute right-4 top-4 p-1.5 rounded-lg transition-colors",
+              theme === 'dark' 
+                ? 'text-white hover:bg-white/10' 
+                : 'text-[#9C1E1E] hover:bg-[#9C1E1E]/10'
+            )}
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
