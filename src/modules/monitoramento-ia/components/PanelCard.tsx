@@ -68,8 +68,19 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
   const provider = device.provider || 'Sem provedor';
 
   // Nome principal: comments (local) > name
-  const displayName = device.comments || device.name;
-  const hasLocation = !!device.comments;
+  const rawName = device.comments || device.name;
+  
+  // Extrair apenas o nome do prédio (primeira parte antes do " - ")
+  const displayName = rawName.split(' - ')[0].trim();
+
+  // Cores por provedor
+  const getProviderColor = (providerName: string) => {
+    const upperProvider = providerName.toUpperCase();
+    if (upperProvider.includes('VIVO')) return 'text-purple-400';
+    if (upperProvider.includes('LIGGA')) return 'text-orange-400';
+    if (upperProvider.includes('TELECOM FOZ')) return 'text-blue-400';
+    return 'text-white/90';
+  };
 
   return (
     <div
@@ -89,25 +100,27 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
           </div>
         </div>
 
-        {/* Provedor - onde antes estava o nome */}
+        {/* Provedor - colorido */}
         <div className="mb-4">
-          <div className="text-lg text-white/90 dark:text-white/90 font-semibold tracking-wide">
+          <div className={`text-lg font-semibold tracking-wide ${getProviderColor(provider)} dark:${getProviderColor(provider)}`}>
             {provider}
           </div>
         </div>
 
-        {/* Nome do prédio */}
-        <div className="mb-4">
-          <div className="text-base text-white/80 dark:text-white/80 font-medium">
-            {device.condominio_name}
-          </div>
-          {device.metadata?.torre && (
-            <div className="text-sm text-white/70 dark:text-white/70 mt-1">
-              Torre {device.metadata.torre}
-              {device.metadata?.elevador && ` - Elevador ${device.metadata.elevador}`}
+        {/* Nome do prédio (condomínio) */}
+        {device.condominio_name && (
+          <div className="mb-4">
+            <div className="text-base text-white/80 dark:text-white/80 font-medium">
+              {device.condominio_name}
             </div>
-          )}
-        </div>
+            {device.metadata?.torre && (
+              <div className="text-sm text-white/70 dark:text-white/70 mt-1">
+                Torre {device.metadata.torre}
+                {device.metadata?.elevador && ` - Elevador ${device.metadata.elevador}`}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Badge: Eventos */}
         <div className="flex flex-wrap gap-2 justify-center mb-4">
