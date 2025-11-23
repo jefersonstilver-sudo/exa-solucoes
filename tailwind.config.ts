@@ -95,6 +95,24 @@ export default {
 					white: '#FFFFFF',         // EXA White
 					yellow: '#FFD54F',        // Mantém amarelo
 					blue: '#4FC3F7',          // Mantém azul
+				},
+				// Cores do Módulo de Monitoramento IA
+				module: {
+					background: 'hsl(var(--module-background))',
+					card: 'hsl(var(--module-card))',
+					input: 'hsl(var(--module-input))',
+					primary: 'hsl(var(--module-primary))',
+					secondary: 'hsl(var(--module-secondary))',
+					muted: 'hsl(var(--module-muted))',
+					accent: 'hsl(var(--module-accent))',
+					'accent-hover': 'hsl(var(--module-accent-hover))',
+					'accent-foreground': 'hsl(var(--module-accent-foreground))',
+					border: 'hsl(var(--module-border))',
+					'border-strong': 'hsl(var(--module-border-strong))',
+					success: 'hsl(var(--module-success))',
+					warning: 'hsl(var(--module-warning))',
+					error: 'hsl(var(--module-error))',
+					info: 'hsl(var(--module-info))',
 				}
 			},
 			borderRadius: {
