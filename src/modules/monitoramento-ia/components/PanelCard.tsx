@@ -35,11 +35,37 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
     }
   };
 
+  // Calcular tempo offline em horas para determinar cor do card
+  const getOfflineHours = () => {
+    if (device.status !== 'offline' || !device.last_online_at) return 0;
+    const now = new Date();
+    const lastOnline = new Date(device.last_online_at);
+    const diffMs = now.getTime() - lastOnline.getTime();
+    return diffMs / (1000 * 60 * 60); // converter para horas
+  };
+
+  const offlineHours = getOfflineHours();
+
+  // Determinar cor de fundo do card baseado no status
+  const getCardBgClass = () => {
+    if (hasCriticalAlert) return '';
+    if (device.status === 'online') {
+      return 'bg-green-500/10 border-green-500/30';
+    }
+    if (device.status === 'offline') {
+      if (offlineHours > 1) {
+        return 'bg-red-600/20 border-red-600/40'; // vermelho forte
+      } else {
+        return 'bg-red-400/10 border-red-400/30'; // vermelho leve
+      }
+    }
+    return '';
+  };
+
   const lastOnline = humanizeDate(device.last_online_at);
   
-  // Usar provedor e endereço parseados automaticamente
+  // Usar provedor parseado automaticamente
   const provider = device.provider || 'Sem provedor';
-  const address = device.address || 'Sem endereço';
 
   // Nome principal: comments (local) > name
   const displayName = device.comments || device.name;
@@ -51,34 +77,32 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
       className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border overflow-hidden group hover:scale-[1.03] ${
         hasCriticalAlert 
           ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200 glow-danger' 
-          : 'border-white/10'
+          : getCardBgClass()
       }`}
     >
       {/* Corpo do card */}
       <div className="p-6 text-center">
-        {/* Nome do Local/Painel com ícone */}
-        <div className="mb-2">
-          {hasLocation ? (
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <MapPin className="h-5 w-5 text-module-accent" />
-              <div className="text-3xl font-bold text-module-primary group-hover:text-[#9C1E1E] transition-colors">
-                {displayName}
-              </div>
-            </div>
-          ) : (
-            <div className="text-3xl font-bold text-module-primary group-hover:text-[#9C1E1E] transition-colors">
-              {displayName}
-            </div>
-          )}
+        {/* Nome principal grande */}
+        <div className="mb-3">
+          <div className="text-3xl font-bold text-white dark:text-white group-hover:text-[#9C1E1E] transition-colors">
+            {displayName}
+          </div>
+        </div>
+
+        {/* Provedor - onde antes estava o nome */}
+        <div className="mb-4">
+          <div className="text-lg text-white/90 dark:text-white/90 font-semibold tracking-wide">
+            {provider}
+          </div>
         </div>
 
         {/* Nome do prédio */}
         <div className="mb-4">
-          <div className="text-base text-module-secondary font-medium">
+          <div className="text-base text-white/80 dark:text-white/80 font-medium">
             {device.condominio_name}
           </div>
           {device.metadata?.torre && (
-            <div className="text-sm text-module-tertiary mt-1">
+            <div className="text-sm text-white/70 dark:text-white/70 mt-1">
               Torre {device.metadata.torre}
               {device.metadata?.elevador && ` - Elevador ${device.metadata.elevador}`}
             </div>
@@ -87,29 +111,29 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
 
         {/* Badge: Eventos */}
         <div className="flex flex-wrap gap-2 justify-center mb-4">
-          <Badge variant="secondary" className="text-xs gap-1">
+          <Badge variant="secondary" className="text-xs gap-1 bg-white/90 text-gray-900">
             <Activity className="h-3 w-3" />
             {device.total_events || 0} eventos
           </Badge>
         </div>
 
         {/* AnyDesk ID - Secundário e discreto */}
-        <div className="mb-2 text-xs text-module-tertiary/70 font-mono">
+        <div className="mb-2 text-xs text-white/60 dark:text-white/60 font-mono">
           ID: {device.anydesk_client_id}
         </div>
       </div>
 
       {/* Rodapé com status */}
-      <div className="bg-module-input/50 backdrop-blur-sm px-6 py-3 flex items-center justify-between border-t border-white/10">
+      <div className="bg-black/30 dark:bg-black/40 backdrop-blur-sm px-6 py-3 flex items-center justify-between border-t border-white/20">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${getStatusColor(device.status)}`} />
-          <span className="text-sm font-medium text-module-secondary">
+          <span className="text-sm font-medium text-white dark:text-white">
             {getStatusLabel(device.status)}
           </span>
         </div>
-        <div className="text-xs text-module-tertiary">
+        <div className="text-xs text-white/80 dark:text-white/80">
           {device.status === 'offline' ? (
-            <span className="font-semibold text-red-500">Offline há {offlineCounter}</span>
+            <span className="font-semibold text-red-300">Offline há {offlineCounter}</span>
           ) : (
             lastOnline
           )}
