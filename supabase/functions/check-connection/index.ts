@@ -25,11 +25,24 @@ serve(async (req) => {
       throw new Error('AnyDesk credentials not configured');
     }
 
-    // Gerar token HMAC-SHA1 usando Web Crypto API
+    // Gerar token de autenticação AnyDesk (formato correto)
     const timestamp = Math.floor(Date.now() / 1000).toString();
+    const resource = '/clients';
+    const method = 'GET';
+    const content = '';
+    
+    // Calcular content hash (SHA1 do body em base64)
     const encoder = new TextEncoder();
+    const contentData = encoder.encode(content);
+    const contentHashBuffer = await crypto.subtle.digest('SHA-1', contentData);
+    const contentHash = btoa(String.fromCharCode(...new Uint8Array(contentHashBuffer)));
+    
+    // Criar request string: METHOD\n/resource\nTIMESTAMP\nCONTENT_HASH
+    const requestString = `${method}\n${resource}\n${timestamp}\n${contentHash}`;
+    
+    // Gerar HMAC-SHA1 token
     const keyData = encoder.encode(apiPassword);
-    const messageData = encoder.encode(licenseId + timestamp);
+    const messageData = encoder.encode(requestString);
     
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
@@ -40,18 +53,17 @@ serve(async (req) => {
     );
     
     const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-    const token = Array.from(new Uint8Array(signature))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+    const token = btoa(String.fromCharCode(...new Uint8Array(signature)));
+    
+    // Criar header de autenticação: AD LICENSE:TIMESTAMP:TOKEN
+    const authHeader = `AD ${licenseId}:${timestamp}:${token}`;
 
-    // Buscar clientes do AnyDesk
-    const anydeskUrl = `https://my.anydesk.com/api/v1/clients`;
+    // Buscar clientes do AnyDesk (URL correta)
+    const anydeskUrl = `https://v1.api.anydesk.com:8081/clients`;
     const response = await fetch(anydeskUrl, {
       method: 'GET',
       headers: {
-        'X-API-License': licenseId,
-        'X-API-Timestamp': timestamp,
-        'X-API-Token': token,
+        'Authorization': authHeader,
         'Content-Type': 'application/json',
       },
     });
@@ -61,7 +73,7 @@ serve(async (req) => {
     }
 
     const anydeskData = await response.json();
-    const apiClients = anydeskData.clients || [];
+    const apiClients = anydeskData.list || [];
     const apiClientIds = new Set(apiClients.map((c: any) => c.cid));
 
     console.log(`[CHECK-CONNECTION] 📋 Found ${apiClients.length} clients in API`);
