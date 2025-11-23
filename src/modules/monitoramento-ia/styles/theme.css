@@ -13,6 +13,16 @@
   --exa-white: #FFFFFF;
   --exa-text-secondary: #A0A0A0;
   --exa-text-tertiary: #6B7280;
+  
+  /* Glass Effect Variables */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-blur: 12px;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  
+  /* Glow Effects */
+  --glow-exa: rgba(156, 30, 30, 0.5);
+  --glow-success: rgba(34, 197, 94, 0.4);
+  --glow-danger: rgba(156, 30, 30, 0.6);
 }
 
 /* ========================================
@@ -136,4 +146,60 @@
 /* Transitions */
 .transition-module { 
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+/* ========================================
+   GLASSMORPHISM UTILITIES
+   ======================================== */
+
+/* Base Glass Effect */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px var(--glow-exa);
+  transform: translateY(-2px);
+}
+
+/* Glow Effects */
+.glow-exa {
+  box-shadow: 0 0 40px var(--glow-exa);
+}
+
+.glow-success {
+  box-shadow: 0 0 30px var(--glow-success);
+}
+
+.glow-danger {
+  box-shadow: 0 0 30px var(--glow-danger);
+}
+
+/* Content Card */
+.content-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.content-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(156, 30, 30, 0.2);
+  transform: scale(1.02);
 }

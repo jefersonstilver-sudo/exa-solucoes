@@ -48,10 +48,10 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
   return (
     <div
       onClick={onClick}
-      className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border overflow-hidden group hover:scale-105 ${
+      className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border overflow-hidden group hover:scale-[1.03] ${
         hasCriticalAlert 
           ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200 glow-danger' 
-          : 'border-module'
+          : 'border-white/10'
       }`}
     >
       {/* Corpo do card */}
@@ -110,7 +110,7 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
       </div>
 
       {/* Rodapé com status */}
-      <div className="bg-module-input px-6 py-3 flex items-center justify-between border-t border-module">
+      <div className="bg-module-input/50 backdrop-blur-sm px-6 py-3 flex items-center justify-between border-t border-white/10">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${getStatusColor(device.status)}`} />
           <span className="text-sm font-medium text-module-secondary">

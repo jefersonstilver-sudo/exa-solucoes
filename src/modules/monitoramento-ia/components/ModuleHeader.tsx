@@ -13,7 +13,7 @@ interface ModuleHeaderProps {
 
 export const ModuleHeader = ({ theme, onToggleTheme, onToggleSidebar }: ModuleHeaderProps) => {
   return (
-    <div className="sticky top-0 z-20 bg-module-card border-b border-module backdrop-blur-sm">
+    <div className="sticky top-0 z-20 glass-card border-b border-white/10 backdrop-blur-xl">
       <div className="px-4 lg:px-8 py-4 flex items-center justify-between">
         {/* Hamburger Menu - Mobile Only */}
         <button
