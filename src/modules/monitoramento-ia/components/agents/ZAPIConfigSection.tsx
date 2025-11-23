@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Check, ExternalLink, Settings } from 'lucide-react';
+import { Copy, Check, ExternalLink, Settings, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ZAPICredentialsModal } from './ZAPICredentialsModal';

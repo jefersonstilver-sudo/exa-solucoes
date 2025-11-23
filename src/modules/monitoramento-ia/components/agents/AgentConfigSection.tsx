@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Save, Plus, Trash2, Eye, Copy, RefreshCw, BookOpen } from 'lucide-react';
+import { Save, Plus, Trash2, Eye, Copy, RefreshCw, BookOpen, Sparkles, Building2, Bell, UserCircle, Bot as BotIcon, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AgentChatPreview } from './AgentChatPreview';
 import { ZAPIConfigSection } from './ZAPIConfigSection';
@@ -134,13 +134,13 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
     }
   };
 
-  const getAgentIcon = () => {
+  const getAgentIcon = (): JSX.Element => {
     switch (agent.key) {
-      case 'sofia': return '🟣';
-      case 'iris': return '💼';
-      case 'exa_alert': return '🔔';
-      case 'eduardo': return '👨‍💼';
-      default: return '🤖';
+      case 'sofia': return <Sparkles className="w-5 h-5" />;
+      case 'iris': return <Building2 className="w-5 h-5" />;
+      case 'exa_alert': return <Bell className="w-5 h-5" />;
+      case 'eduardo': return <UserCircle className="w-5 h-5" />;
+      default: return <BotIcon className="w-5 h-5" />;
     }
   };
 
@@ -162,7 +162,8 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
               {/* Badge Z-API - Status Real da API */}
               {agent.whatsapp_provider === 'zapi' && agentStatus?.status === 'online' && (
                 <Badge className="bg-green-500 text-white flex items-center gap-1">
-                  ✓ Conectado via Z-API
+                  <CheckCircle className="w-3 h-3" />
+                  Conectado via Z-API
                   {agentStatus.latency && (
                     <span className="text-xs opacity-80">({agentStatus.latency}ms)</span>
                   )}

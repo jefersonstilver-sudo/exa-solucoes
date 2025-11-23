@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AgentCard } from '../../components/AgentCard';
 import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
@@ -89,7 +89,7 @@ export const AgentsList = () => {
               <p className="text-3xl font-bold text-green-500">{activeAgents}</p>
             </div>
             <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-              <span className="text-2xl">🟢</span>
+              <Circle className="w-6 h-6 text-green-500 fill-green-500" />
             </div>
           </div>
         </div>
@@ -101,7 +101,7 @@ export const AgentsList = () => {
               <p className="text-3xl font-bold text-module-tertiary">{inactiveAgents}</p>
             </div>
             <div className="w-12 h-12 rounded-full bg-module-muted flex items-center justify-center">
-              <span className="text-2xl">⚫</span>
+              <Circle className="w-6 h-6 text-module-tertiary fill-module-tertiary" />
             </div>
           </div>
         </div>
