@@ -104,8 +104,8 @@ export const ComputerDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`max-w-7xl max-h-[95vh] overflow-y-auto ${themeClass}`}>
-        <div className="bg-module-card border-module rounded-lg p-6">
+      <DialogContent className={`max-w-7xl max-h-[95vh] overflow-y-auto ${themeClass} !bg-transparent !border-none !shadow-none`}>
+        <div className="glass-card bg-module-card/80 backdrop-blur-xl border-module/30 rounded-lg p-6 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-module-primary">
               <Monitor className="h-6 w-6 text-[#9C1E1E]" />
