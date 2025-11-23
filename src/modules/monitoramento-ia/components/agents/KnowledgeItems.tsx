@@ -170,15 +170,15 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
               Adicionar Conhecimento
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-5xl w-[95vw] bg-module-card border-module text-module-primary max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl w-[95vw] !bg-[#1A1A1A] border-[#9C1E1E]/30 text-white max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-module-primary">Novo Item de Conhecimento</DialogTitle>
+              <DialogTitle className="text-white">Novo Item de Conhecimento</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label className="text-module-primary">Tipo de Conteúdo</Label>
+                <Label className="text-white">Tipo de Conteúdo</Label>
                 <select
-                  className="w-full mt-1 p-2 border rounded-md bg-module-input border-module text-module-primary"
+                  className="w-full mt-1 p-2 border rounded-md bg-[#0A0A0A] border-[#9C1E1E]/30 text-white"
                   value={newItem.content_type}
                   onChange={(e) => setNewItem({ ...newItem, content_type: e.target.value as any })}
                 >
@@ -188,35 +188,35 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                 </select>
               </div>
               <div>
-                <Label className="text-module-primary">Título</Label>
+                <Label className="text-white">Título</Label>
                 <Input
                   value={newItem.title}
                   onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
                   placeholder="Ex: Media Kit Profissional"
-                  className="bg-module-input border-module text-module-primary"
+                  className="bg-[#0A0A0A] border-[#9C1E1E]/30 text-white placeholder:text-gray-500"
                 />
               </div>
               <div>
-                <Label className="text-module-primary">Palavras-chave (separadas por vírgula)</Label>
+                <Label className="text-white">Palavras-chave (separadas por vírgula)</Label>
                 <Input
                   value={newItem.keywords}
                   onChange={(e) => setNewItem({ ...newItem, keywords: e.target.value })}
                   placeholder="Ex: media kit, apresentação, creator"
-                  className="bg-module-input border-module text-module-primary"
+                  className="bg-[#0A0A0A] border-[#9C1E1E]/30 text-white placeholder:text-gray-500"
                 />
               </div>
               <div>
-                <Label className="text-module-primary">Descrição Curta (opcional)</Label>
+                <Label className="text-white">Descrição Curta (opcional)</Label>
                 <Input
                   value={newItem.description}
                   onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                   placeholder="Breve descrição sobre este conhecimento"
-                  className="bg-module-input border-module text-module-primary"
+                  className="bg-[#0A0A0A] border-[#9C1E1E]/30 text-white placeholder:text-gray-500"
                 />
               </div>
               {newItem.content_type === 'pdf' ? (
                 <div>
-                  <Label className="text-module-primary">Upload do PDF</Label>
+                  <Label className="text-white">Upload do PDF</Label>
                   <DocumentUpload
                     label=""
                     value={newItem.content}
@@ -228,7 +228,7 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                 </div>
               ) : (
                 <div>
-                  <Label className="text-module-primary">Conteúdo</Label>
+                  <Label className="text-white">Conteúdo</Label>
                   <Textarea
                     value={newItem.content}
                     onChange={(e) => setNewItem({ ...newItem, content: e.target.value })}
@@ -237,17 +237,17 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                         ? 'Cole o link aqui...'
                         : 'Digite o conteúdo completo...'
                     }
-                    className="min-h-[200px] bg-module-input border-module text-module-primary"
+                    className="min-h-[200px] bg-[#0A0A0A] border-[#9C1E1E]/30 text-white placeholder:text-gray-500"
                   />
                 </div>
               )}
               <div>
-                <Label className="text-module-primary">Instrução Específica (opcional)</Label>
+                <Label className="text-white">Instrução Específica (opcional)</Label>
                 <Textarea
                   value={newItem.instruction}
                   onChange={(e) => setNewItem({ ...newItem, instruction: e.target.value })}
                   placeholder="Ex: Usar este conteúdo quando o cliente perguntar sobre..."
-                  className="min-h-[100px] bg-module-input border-module text-module-primary"
+                  className="min-h-[100px] bg-[#0A0A0A] border-[#9C1E1E]/30 text-white placeholder:text-gray-500"
                 />
               </div>
               <div className="flex justify-end gap-2">
