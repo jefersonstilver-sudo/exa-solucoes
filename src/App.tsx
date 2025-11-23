@@ -65,6 +65,7 @@ import { ConversasPage } from './modules/monitoramento-ia/pages/Conversas';
 import ConversasCRM from './modules/monitoramento-ia/pages/ConversasCRM';
 import { ConsoleIAPage } from './modules/monitoramento-ia/pages/ConsoleIA';
 import { Agentes } from './modules/monitoramento-ia/pages/Agentes';
+import { ComputadoresPage } from './modules/monitoramento-ia/pages/anydesk/Computadores';
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
@@ -452,6 +453,9 @@ const AppContent = () => {
             <Route path="alertas" element={<AlertasPage />} />
             <Route path="conversas" element={<ConversasPage />} />
             <Route path="console-ia" element={<ConsoleIAPage />} />
+            
+            {/* AnyDesk Monitoring */}
+            <Route path="anydesk/computadores" element={<ComputadoresPage />} />
             
             {/* Painel Unificado de Agentes */}
             <Route path="agentes" element={<Agentes />} />
