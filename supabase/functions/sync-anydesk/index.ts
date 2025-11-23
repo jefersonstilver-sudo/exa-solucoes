@@ -6,44 +6,89 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Detect provider from tags array and text
-function detectProvider(tags: string[], allText: string): string {
-  const combinedText = [...tags, allText].join(' ').toUpperCase();
-  
-  if (combinedText.includes('LIGGA')) return 'LIGGA';
-  if (combinedText.includes('TELECOM FOZ') || combinedText.includes('TELECOMFOZ')) return 'TELECOM FOZ';
-  if (combinedText.includes('VIVO')) return 'VIVO';
-  if (combinedText.includes('CLARO')) return 'CLARO';
-  if (combinedText.includes('TIM')) return 'TIM';
-  if (combinedText.includes('OI')) return 'OI';
-  
-  return 'Sem provedor';
+// Parser inteligente para extrair informações estruturadas do comments
+interface ParsedComments {
+  buildingName: string;
+  provider: string;
+  address: string;
+  parseMethod: 'structured' | 'fallback' | 'minimal';
 }
 
-// Extract address from tags array and text
-function extractAddress(tags: string[], allText: string): string {
-  const allSources = [...tags, allText];
+function parseComments(comments: string, tags: string[]): ParsedComments {
+  console.log(`[PARSER] 🔍 Parsing comments: "${comments}"`);
   
-  // Padrões de endereço mais abrangentes
-  const patterns = [
-    // Endereço completo com número
+  // Tenta parsing estruturado: "NOME - PROVEDOR - ENDEREÇO"
+  const structuredPattern = /^([^-]+)\s*-\s*([^-]+)\s*-\s*(.+)$/;
+  const match = comments.match(structuredPattern);
+  
+  if (match) {
+    const buildingName = match[1].trim();
+    const providerPart = match[2].trim().toUpperCase();
+    const addressPart = match[3].trim();
+    
+    // Valida se o provedor é conhecido
+    const knownProviders = ['LIGGA', 'VIVO', 'CLARO', 'TIM', 'OI', 'TELECOM FOZ', 'TELECOMFOZ'];
+    const detectedProvider = knownProviders.find(p => providerPart.includes(p)) || providerPart;
+    
+    console.log(`[PARSER] ✅ Structured parsing successful:`, {
+      buildingName,
+      provider: detectedProvider,
+      address: addressPart,
+    });
+    
+    return {
+      buildingName,
+      provider: detectedProvider,
+      address: addressPart,
+      parseMethod: 'structured',
+    };
+  }
+  
+  // Fallback: tenta detectar provedor e endereço no texto completo
+  console.log(`[PARSER] ⚠️ Structured parsing failed, trying fallback...`);
+  
+  const allText = [...tags, comments].join(' ');
+  const upperText = allText.toUpperCase();
+  
+  // Detecta provedor
+  let provider = 'Sem provedor';
+  if (upperText.includes('LIGGA')) provider = 'LIGGA';
+  else if (upperText.includes('TELECOM FOZ') || upperText.includes('TELECOMFOZ')) provider = 'TELECOM FOZ';
+  else if (upperText.includes('VIVO')) provider = 'VIVO';
+  else if (upperText.includes('CLARO')) provider = 'CLARO';
+  else if (upperText.includes('TIM')) provider = 'TIM';
+  else if (upperText.includes('OI')) provider = 'OI';
+  
+  // Detecta endereço
+  const addressPatterns = [
     /((?:Rua|Av\.|Avenida|R\.|Travessa|Alameda|Praça)\s+[^,\n]+,?\s*(?:n[°º]?\s*)?\d+[^,\n]*)/i,
-    // Endereço sem número explícito
     /((?:Rua|Av\.|Avenida|R\.|Travessa|Alameda|Praça)\s+[^,\n]+)/i,
-    // Qualquer linha que pareça endereço (contém rua/av + algo)
-    /([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ][a-záàâãéèêíïóôõöúçñ]+\s+[^,\n]+,\s*\d+)/i,
   ];
   
-  for (const source of allSources) {
-    for (const pattern of patterns) {
-      const match = source.match(pattern);
-      if (match) {
-        return match[1].trim();
-      }
+  let address = 'Sem endereço';
+  for (const pattern of addressPatterns) {
+    const addressMatch = allText.match(pattern);
+    if (addressMatch) {
+      address = addressMatch[1].trim();
+      break;
     }
   }
   
-  return 'Sem endereço';
+  // Nome do prédio = primeira palavra/parte antes de hífen ou texto completo
+  let buildingName = comments.split(/[-,]/)[0].trim() || comments.trim();
+  
+  console.log(`[PARSER] 🔄 Fallback parsing result:`, {
+    buildingName,
+    provider,
+    address,
+  });
+  
+  return {
+    buildingName,
+    provider,
+    address,
+    parseMethod: 'fallback',
+  };
 }
 
 serve(async (req) => {
@@ -122,18 +167,19 @@ serve(async (req) => {
         // Get tags from AnyDesk API (array of strings)
         const rawTags = Array.isArray(client.tags) ? client.tags : [];
         
-        // Extract data from all text fields + tags
-        const allText = `${alias} ${comment} ${label}`;
-        const provider = detectProvider(rawTags, allText);
-        const address = extractAddress(rawTags, allText);
-        const panelName = comment || alias;
+        // Parse comments inteligentemente
+        const parsed = parseComments(comment, rawTags);
         
-        console.log(`[SYNC-ANYDESK] 🔍 Processing ${anydeskId}:`, {
+        console.log(`[SYNC-ANYDESK] 📊 Device ${anydeskId} processed:`, {
           alias,
-          comment,
-          tags: rawTags,
-          detectedProvider: provider,
-          detectedAddress: address
+          originalComments: comment,
+          rawTags,
+          parsed: {
+            buildingName: parsed.buildingName,
+            provider: parsed.provider,
+            address: parsed.address,
+            method: parsed.parseMethod,
+          }
         });
 
         const { data: existingDevice } = await supabase
@@ -144,26 +190,33 @@ serve(async (req) => {
 
         const deviceData = {
           anydesk_client_id: anydeskId,
-          name: panelName,
+          name: parsed.buildingName,
           status: status,
           last_online_at: client.online ? new Date().toISOString() : existingDevice?.last_online_at,
-          condominio_name: existingDevice?.condominio_name || 'Não especificado',
+          condominio_name: parsed.buildingName,
           tags: rawTags,
           comments: comment,
-          provider: provider,
-          address: address,
+          provider: parsed.provider,
+          address: parsed.address,
           metadata: { 
             alias, 
             label, 
             online_time: client['online-time'],
             raw_tags: rawTags,
+            parsed_data: {
+              buildingName: parsed.buildingName,
+              provider: parsed.provider,
+              address: parsed.address,
+              parseMethod: parsed.parseMethod,
+              originalComments: comment,
+            },
             parsed_at: new Date().toISOString()
           },
         };
 
         if (existingDevice) {
           const statusChanged = existingDevice.status !== status;
-          const providerChanged = existingDevice.provider !== provider && provider !== 'Sem provedor';
+          const providerChanged = existingDevice.provider !== parsed.provider && parsed.provider !== 'Sem provedor';
 
           const { error: updateError } = await supabase
             .from('devices')
@@ -183,7 +236,7 @@ serve(async (req) => {
             await supabase.from('provider_alerts').insert({
               computer_id: existingDevice.id,
               old_provider: existingDevice.provider,
-              new_provider: provider,
+              new_provider: parsed.provider,
             });
           }
 
@@ -201,7 +254,7 @@ serve(async (req) => {
               old_status: existingDevice.status,
               new_status: status,
               description: `Status changed from ${existingDevice.status} to ${status}`,
-              metadata: { timestamp: new Date().toISOString(), provider, address },
+              metadata: { timestamp: new Date().toISOString(), provider: parsed.provider, address: parsed.address },
             });
 
             if (status === 'offline') {
@@ -279,11 +332,11 @@ serve(async (req) => {
             started_at: new Date().toISOString(),
           });
 
-          if (provider !== 'Sem provedor') {
+          if (parsed.provider !== 'Sem provedor') {
             providerDetections++;
             await supabase.from('provider_alerts').insert({
               computer_id: newDevice.id,
-              new_provider: provider,
+              new_provider: parsed.provider,
             });
           }
         }
