@@ -108,14 +108,14 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
       />
 
       {filteredSections.map((section) => (
-        <Card key={section.id}>
+        <Card key={section.id} className="bg-module-card border-module">
           <CardHeader>
             <div className="flex justify-between items-center">
               <div className="flex flex-col gap-1">
-                <CardTitle className="text-lg">
+                <CardTitle className="text-lg text-module-primary">
                   {section.section_number}. {section.section_title}
                 </CardTitle>
-                <div className="flex gap-4 text-xs text-muted-foreground">
+                <div className="flex gap-4 text-xs text-module-secondary">
                   <span>📊 {section.content.length.toLocaleString('pt-BR')} caracteres</span>
                   <span>📝 {section.content.split('\n').length} linhas</span>
                 </div>
@@ -169,14 +169,14 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
                     textareaRefs.current[section.id] = el;
                   }}
                   defaultValue={section.content}
-                  className="min-h-[300px] font-mono text-sm"
+                  className="min-h-[300px] font-mono text-sm bg-module-input border-module text-module-primary"
                 />
               </>
             ) : (
-              <div className="text-sm text-muted-foreground font-mono">
+              <div className="text-sm text-module-primary font-mono">
                 {section.content.split('\n').map((line, index) => (
                   <div key={index} className="flex gap-3">
-                    <span className="text-muted-foreground/40 select-none min-w-[3ch] text-right">
+                    <span className="text-module-secondary select-none min-w-[3ch] text-right">
                       {index + 1}
                     </span>
                     <span 
@@ -194,9 +194,9 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
       ))}
 
       {filteredSections.length === 0 && searchQuery && (
-        <Card>
+        <Card className="bg-module-card border-module">
           <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">
+            <p className="text-module-secondary">
               Nenhum resultado encontrado para "{searchQuery}"
             </p>
           </CardContent>
