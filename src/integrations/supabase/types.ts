@@ -1763,6 +1763,44 @@ export type Database = {
         }
         Relationships: []
       }
+      connection_history: {
+        Row: {
+          computer_id: string
+          created_at: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          event_type: string
+          id: string
+          started_at: string
+        }
+        Insert: {
+          computer_id: string
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          event_type: string
+          id?: string
+          started_at?: string
+        }
+        Update: {
+          computer_id?: string
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          event_type?: string
+          id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connection_history_computer_id_fkey"
+            columns: ["computer_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contratos: {
         Row: {
           created_at: string
@@ -2526,31 +2564,52 @@ export type Database = {
       }
       devices: {
         Row: {
+          address: string | null
           anydesk_client_id: string
+          comments: string | null
           condominio_name: string
           created_at: string | null
           id: string
           last_online_at: string | null
+          metadata: Json | null
           name: string
+          offline_count: number | null
+          provider: string | null
           status: string | null
+          tags: Json | null
+          total_events: number | null
         }
         Insert: {
+          address?: string | null
           anydesk_client_id: string
+          comments?: string | null
           condominio_name: string
           created_at?: string | null
           id?: string
           last_online_at?: string | null
+          metadata?: Json | null
           name: string
+          offline_count?: number | null
+          provider?: string | null
           status?: string | null
+          tags?: Json | null
+          total_events?: number | null
         }
         Update: {
+          address?: string | null
           anydesk_client_id?: string
+          comments?: string | null
           condominio_name?: string
           created_at?: string | null
           id?: string
           last_online_at?: string | null
+          metadata?: Json | null
           name?: string
+          offline_count?: number | null
+          provider?: string | null
           status?: string | null
+          tags?: Json | null
+          total_events?: number | null
         }
         Relationships: []
       }
@@ -2823,6 +2882,47 @@ export type Database = {
           version?: string
         }
         Relationships: []
+      }
+      events_log: {
+        Row: {
+          computer_id: string
+          created_at: string | null
+          description: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          new_status: string | null
+          old_status: string | null
+        }
+        Insert: {
+          computer_id: string
+          created_at?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          new_status?: string | null
+          old_status?: string | null
+        }
+        Update: {
+          computer_id?: string
+          created_at?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          new_status?: string | null
+          old_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_log_computer_id_fkey"
+            columns: ["computer_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       financial_access_logs: {
         Row: {
@@ -4303,6 +4403,41 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_alerts: {
+        Row: {
+          computer_id: string
+          detected_at: string | null
+          id: string
+          new_provider: string
+          notified: boolean | null
+          old_provider: string | null
+        }
+        Insert: {
+          computer_id: string
+          detected_at?: string | null
+          id?: string
+          new_provider: string
+          notified?: boolean | null
+          old_provider?: string | null
+        }
+        Update: {
+          computer_id?: string
+          detected_at?: string | null
+          id?: string
+          new_provider?: string
+          notified?: boolean | null
+          old_provider?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_alerts_computer_id_fkey"
+            columns: ["computer_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provider_benefits: {
         Row: {
           access_token: string
@@ -5649,6 +5784,10 @@ export type Database = {
           p_pedido_ids: string[]
           p_user_agent?: string
         }
+        Returns: Json
+      }
+      calculate_device_stats: {
+        Args: { device_id: string; period_end?: string; period_start?: string }
         Returns: Json
       }
       calculate_lifecycle_stage: {
