@@ -20,14 +20,11 @@ export const useLogoImageUrl = (logo: { file_url: string; storage_bucket?: strin
           // Detectar se é URL assinada (não aplicar cache-busting pois quebra o token)
           const isSignedUrl = logo.file_url.includes('/storage/v1/object/sign/') || logo.file_url.includes('token=');
           
-          // Detectar se já tem cache-busting
-          const hasCacheBusting = logo.file_url.includes('v=') || logo.file_url.includes('&v=');
-          
-          if (isSignedUrl || hasCacheBusting) {
-            // URLs assinadas ou que já têm cache-busting - usar como está
+          if (isSignedUrl) {
+            // URLs assinadas já têm token - usar como está
             setImageUrl(logo.file_url);
           } else {
-            // URLs públicas/externas - aplicar cache-busting com separador correto (apenas uma vez)
+            // URLs públicas/externas - aplicar cache-busting com separador correto
             const separator = logo.file_url.includes('?') ? '&' : '?';
             const urlWithCacheBuster = `${logo.file_url}${separator}v=${Date.now()}`;
             setImageUrl(urlWithCacheBuster);

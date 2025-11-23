@@ -101,11 +101,11 @@ const PanelDeviceTab: React.FC<PanelDeviceTabProps> = ({ panel }) => {
   }
 
   return (
-    <Card className="glass-card border-module-border">
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-module-primary">
-            <Monitor className="h-5 w-5 text-module-accent" />
+          <CardTitle className="flex items-center gap-2">
+            <Monitor className="h-5 w-5" />
             Dispositivo Conectado
           </CardTitle>
           <div className="flex items-center gap-2">
@@ -114,12 +114,11 @@ const PanelDeviceTab: React.FC<PanelDeviceTabProps> = ({ panel }) => {
               size="sm"
               onClick={() => refetch()}
               disabled={isLoading}
-              className="border-module-border hover:bg-module-accent/10 text-module-primary"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
-            <Badge variant={connectionStatus.variant} className={`flex items-center gap-1 ${connectionStatus.status === 'online' ? 'bg-green-500' : ''}`}>
+            <Badge variant={connectionStatus.variant} className={`flex items-center gap-1 ${connectionStatus.status === 'online' ? 'bg-green-600 hover:bg-green-700' : ''}`}>
               <StatusIcon className="h-3 w-3" />
               {connectionStatus.label}
             </Badge>
@@ -130,17 +129,17 @@ const PanelDeviceTab: React.FC<PanelDeviceTabProps> = ({ panel }) => {
         {/* Status de Conexão */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <h4 className="font-medium text-sm text-module-secondary flex items-center gap-2">
+            <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
               <Wifi className="h-4 w-4" />
               Status da Conexão
             </h4>
-            <div className="p-3 bg-module-accent/10 rounded-lg border border-module-border">
+            <div className="p-3 bg-accent/50 rounded-lg">
               <div className="flex items-center gap-2">
                 <StatusIcon className={`h-5 w-5 ${connectionStatus.color}`} />
                 <div>
-                  <p className="font-semibold text-module-primary">{connectionStatus.label}</p>
+                  <p className="font-semibold">{connectionStatus.label}</p>
                   {deviceStatus?.ultimo_heartbeat && (
-                    <p className="text-xs text-module-secondary">
+                    <p className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(deviceStatus.ultimo_heartbeat), {
                         addSuffix: true,
                         locale: ptBR,
@@ -153,12 +152,12 @@ const PanelDeviceTab: React.FC<PanelDeviceTabProps> = ({ panel }) => {
           </div>
 
           <div className="space-y-2">
-            <h4 className="font-medium text-sm text-module-secondary flex items-center gap-2">
+            <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Último Heartbeat
             </h4>
-            <div className="p-3 bg-module-accent/10 rounded-lg border border-module-border">
-              <p className="text-sm font-mono text-module-primary">
+            <div className="p-3 bg-accent/50 rounded-lg">
+              <p className="text-sm font-mono">
                 {deviceStatus?.ultimo_heartbeat
                   ? new Date(deviceStatus.ultimo_heartbeat).toLocaleString('pt-BR')
                   : 'Nunca recebido'}
@@ -170,24 +169,24 @@ const PanelDeviceTab: React.FC<PanelDeviceTabProps> = ({ panel }) => {
         {/* IP e URL Atual */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <h4 className="font-medium text-sm text-module-secondary flex items-center gap-2">
+            <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
               <Globe className="h-4 w-4" />
               IP do Dispositivo
             </h4>
-            <div className="p-3 bg-module-accent/10 rounded-lg border border-module-border">
-              <p className="text-sm font-mono text-module-primary">
+            <div className="p-3 bg-accent/50 rounded-lg">
+              <p className="text-sm font-mono">
                 {String(deviceStatus?.ip_address || 'Não capturado')}
               </p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <h4 className="font-medium text-sm text-module-secondary flex items-center gap-2">
+            <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
               <Monitor className="h-4 w-4" />
               URL Exibindo
             </h4>
-            <div className="p-3 bg-module-accent/10 rounded-lg border border-module-border">
-              <p className="text-sm font-mono truncate text-module-primary" title={deviceStatus?.url_atual || 'Nenhuma'}>
+            <div className="p-3 bg-accent/50 rounded-lg">
+              <p className="text-sm font-mono truncate" title={deviceStatus?.url_atual || 'Nenhuma'}>
                 {deviceStatus?.url_atual || 'Nenhuma URL'}
               </p>
             </div>
@@ -196,48 +195,48 @@ const PanelDeviceTab: React.FC<PanelDeviceTabProps> = ({ panel }) => {
 
         {/* Endereço Físico */}
         <div className="space-y-2">
-          <h4 className="font-medium text-sm text-module-secondary flex items-center gap-2">
+          <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
             <MapPin className="h-4 w-4" />
             Endereço Físico (Localização do Prédio)
           </h4>
-          <div className="p-3 bg-module-accent/10 rounded-lg border border-module-border">
-            <p className="text-sm text-module-primary">{enderecoFisico}</p>
+          <div className="p-3 bg-accent/50 rounded-lg">
+            <p className="text-sm">{enderecoFisico}</p>
           </div>
         </div>
 
         {/* Informações do Dispositivo */}
         {deviceInfo && Object.keys(deviceInfo).length > 0 && (
           <div className="space-y-2">
-            <h4 className="font-medium text-sm text-module-secondary">
+            <h4 className="font-medium text-sm text-muted-foreground">
               Informações do Navegador
             </h4>
             <div className="grid grid-cols-2 gap-3">
               {deviceInfo.userAgent && (
-                <div className="p-2 bg-module-accent/10 rounded text-xs border border-module-border">
-                  <span className="font-medium text-module-primary">User Agent:</span>
-                  <p className="text-module-secondary truncate" title={String(deviceInfo.userAgent)}>
+                <div className="p-2 bg-accent/30 rounded text-xs">
+                  <span className="font-medium">User Agent:</span>
+                  <p className="text-muted-foreground truncate" title={String(deviceInfo.userAgent)}>
                     {String(deviceInfo.userAgent)}
                   </p>
                 </div>
               )}
               {deviceInfo.screen && (
-                <div className="p-2 bg-module-accent/10 rounded text-xs border border-module-border">
-                  <span className="font-medium text-module-primary">Resolução:</span>
-                  <p className="text-module-secondary">
+                <div className="p-2 bg-accent/30 rounded text-xs">
+                  <span className="font-medium">Resolução:</span>
+                  <p className="text-muted-foreground">
                     {String(deviceInfo.screen.width)}x{String(deviceInfo.screen.height)}
                   </p>
                 </div>
               )}
               {deviceInfo.language && (
-                <div className="p-2 bg-module-accent/10 rounded text-xs border border-module-border">
-                  <span className="font-medium text-module-primary">Idioma:</span>
-                  <p className="text-module-secondary">{String(deviceInfo.language)}</p>
+                <div className="p-2 bg-accent/30 rounded text-xs">
+                  <span className="font-medium">Idioma:</span>
+                  <p className="text-muted-foreground">{String(deviceInfo.language)}</p>
                 </div>
               )}
               {deviceInfo.timezone && (
-                <div className="p-2 bg-module-accent/10 rounded text-xs border border-module-border">
-                  <span className="font-medium text-module-primary">Timezone:</span>
-                  <p className="text-module-secondary">{String(deviceInfo.timezone)}</p>
+                <div className="p-2 bg-accent/30 rounded text-xs">
+                  <span className="font-medium">Timezone:</span>
+                  <p className="text-muted-foreground">{String(deviceInfo.timezone)}</p>
                 </div>
               )}
             </div>
@@ -258,7 +257,7 @@ const PanelDeviceTab: React.FC<PanelDeviceTabProps> = ({ panel }) => {
         )}
 
         {/* Última Atualização */}
-        <div className="pt-4 border-t border-module-border text-xs text-module-secondary text-center">
+        <div className="pt-4 border-t text-xs text-muted-foreground text-center">
           Atualização automática a cada 10 segundos • Última atualização:{' '}
           {new Date().toLocaleTimeString('pt-BR')}
         </div>

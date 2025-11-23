@@ -41,13 +41,13 @@ const PanelDetailsDialog: React.FC<PanelDetailsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto glass-card border-module-border">
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl flex items-center text-module-primary">
-            <Monitor className="h-6 w-6 mr-2 text-module-accent" />
+          <DialogTitle className="text-2xl flex items-center">
+            <Monitor className="h-6 w-6 mr-2" />
             Detalhes do Painel - {panel.code}
           </DialogTitle>
-          <DialogDescription className="text-module-secondary">
+          <DialogDescription>
             Visualize todas as informações e configurações do painel
           </DialogDescription>
         </DialogHeader>

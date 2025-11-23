@@ -57,26 +57,26 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="glass-card rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col border border-module-border">
+      <div className="bg-background rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col border border-border">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-module-border glass-card">
+        <div className="flex items-center justify-between p-6 border-b border-border bg-card">
           <div className="flex items-center gap-4">
-            <Monitor className="h-8 w-8 text-module-accent" />
+            <Monitor className="h-8 w-8 text-primary" />
             <div>
-              <h2 className="text-2xl font-bold text-module-primary">{device.comments || device.name}</h2>
-              <p className="text-sm text-module-secondary mt-1">{device.condominio_name}</p>
+              <h2 className="text-2xl font-bold text-foreground">{device.comments || device.name}</h2>
+              <p className="text-sm text-muted-foreground mt-1">{device.condominio_name}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-module-secondary hover:text-module-primary transition-colors p-2 hover:bg-module-accent/10 rounded-lg"
+            className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-accent rounded-lg"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-module-border glass-card px-6 overflow-x-auto">
+        <div className="flex border-b border-border bg-card px-6 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -85,8 +85,8 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-6 py-4 border-b-2 transition-all whitespace-nowrap font-medium ${
                   activeTab === tab.id
-                    ? 'border-module-accent text-module-accent'
-                    : 'border-transparent text-module-secondary hover:text-module-primary hover:bg-module-accent/10'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-accent'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -97,27 +97,27 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-module-bg">
+        <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
           {activeTab === 'informacoes' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Sistema Card */}
-              <Card className="glass-card border-module-border">
+              <Card className="bg-card border-border">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2 text-module-primary">
-                    <HardDrive className="h-5 w-5 text-module-accent" />
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <HardDrive className="h-5 w-5 text-primary" />
                     Sistema
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <p className="text-sm text-module-secondary mb-1">Nome do Prédio</p>
-                    <p className="font-semibold text-module-primary">{device.comments || device.name}</p>
+                    <p className="text-sm text-muted-foreground mb-1">Nome do Prédio</p>
+                    <p className="font-semibold text-foreground">{device.comments || device.name}</p>
                   </div>
                   
                   {device.provider && device.provider !== 'Sem provedor' && (
                     <div>
-                      <p className="text-sm text-module-secondary mb-2">Provedor</p>
-                      <Badge variant="outline" className="bg-module-accent/10 text-module-accent border-module-accent/20 font-semibold">
+                      <p className="text-sm text-muted-foreground mb-2">Provedor</p>
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-semibold">
                         {device.provider}
                       </Badge>
                     </div>
@@ -125,30 +125,30 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
                   
                   {device.address && device.address !== 'Sem endereço' && (
                     <div>
-                      <p className="text-sm text-module-secondary mb-1">Endereço</p>
-                      <p className="text-sm text-module-primary">{device.address}</p>
+                      <p className="text-sm text-muted-foreground mb-1">Endereço</p>
+                      <p className="text-sm text-foreground">{device.address}</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
               {/* Atividade Card */}
-              <Card className="glass-card border-module-border">
+              <Card className="bg-card border-border">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2 text-module-primary">
-                    <Activity className="h-5 w-5 text-module-accent" />
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" />
                     Atividade
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <p className="text-sm text-module-secondary mb-2">Status Atual</p>
+                    <p className="text-sm text-muted-foreground mb-2">Status Atual</p>
                     {getStatusBadge()}
                   </div>
                   
                   <div>
-                    <p className="text-sm text-module-secondary mb-1">Última Conexão</p>
-                    <p className="text-sm font-medium text-module-primary">
+                    <p className="text-sm text-muted-foreground mb-1">Última Conexão</p>
+                    <p className="text-sm font-medium text-foreground">
                       {device.last_online_at ? (
                         <>
                           {device.status === 'online' ? 'Online agora' : format(new Date(device.last_online_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
@@ -160,13 +160,13 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
                   </div>
                   
                   <div>
-                    <p className="text-sm text-module-secondary mb-1">Total de Eventos</p>
-                    <p className="text-2xl font-bold text-module-accent">{device.total_events || 0}</p>
+                    <p className="text-sm text-muted-foreground mb-1">Total de Eventos</p>
+                    <p className="text-2xl font-bold text-primary">{device.total_events || 0}</p>
                   </div>
                   
                   {device.offline_count !== undefined && device.offline_count > 0 && (
                     <div>
-                      <p className="text-sm text-module-secondary mb-1">Quedas</p>
+                      <p className="text-sm text-muted-foreground mb-1">Quedas</p>
                       <Badge variant="destructive" className="font-semibold">
                         {device.offline_count}
                       </Badge>
@@ -176,24 +176,24 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
               </Card>
 
               {/* Alertas Card */}
-              <Card className="glass-card border-module-border">
+              <Card className="bg-card border-border">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2 text-module-primary">
-                    <Bell className="h-5 w-5 text-module-accent" />
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-primary" />
                     Alertas
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-module-primary">Alertas Automáticos</p>
-                      <p className="text-xs text-module-secondary">Notificações quando offline</p>
+                      <p className="text-sm font-medium text-foreground">Alertas Automáticos</p>
+                      <p className="text-xs text-muted-foreground">Notificações quando offline</p>
                     </div>
                     <Switch checked={autoAlerts} onCheckedChange={setAutoAlerts} />
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-module-primary block mb-2">
+                    <label className="text-sm font-medium text-foreground block mb-2">
                       Alertar após (minutos offline)
                     </label>
                     <Input
@@ -202,21 +202,21 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
                       onChange={(e) => setAlertMinutes(Number(e.target.value))}
                       min={1}
                       max={60}
-                      className="bg-module-input border-module-border text-module-primary"
+                      className="bg-background border-border"
                     />
                   </div>
                   
-                  <Button className="w-full bg-module-accent hover:bg-module-accent-hover text-white font-semibold">
+                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
                     Salvar Configurações
                   </Button>
                 </CardContent>
               </Card>
 
               {/* Informações Adicionais Card - Full Width */}
-              <Card className="lg:col-span-3 glass-card border-module-border">
+              <Card className="lg:col-span-3 bg-card border-border">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2 text-module-primary">
-                    <Info className="h-5 w-5 text-module-accent" />
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Info className="h-5 w-5 text-primary" />
                     Informações Adicionais
                   </CardTitle>
                 </CardHeader>
@@ -235,22 +235,22 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
           )}
 
           {activeTab === 'atividade' && (
-            <Card className="glass-card border-module-border">
+            <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-module-primary">
-                  <Clock className="h-5 w-5 text-module-accent" />
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-primary" />
                   Timeline
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {loadingAlerts ? (
-                  <div className="text-center py-12 text-module-secondary">
-                    <Activity className="h-8 w-8 animate-spin mx-auto mb-2 text-module-accent" />
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Activity className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
                     <p>Carregando histórico...</p>
                   </div>
                 ) : alerts.length === 0 ? (
-                  <div className="text-center py-12 text-module-secondary">
-                    <AlertCircle className="h-12 w-12 mx-auto mb-3 text-module-secondary/50" />
+                  <div className="text-center py-12 text-muted-foreground">
+                    <AlertCircle className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
                     <p className="text-lg font-medium">Nenhum evento registrado</p>
                     <p className="text-sm mt-1">Os eventos aparecerão aqui quando ocorrerem</p>
                   </div>
@@ -259,7 +259,7 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
                     {alerts.map((alert) => (
                       <div
                         key={alert.id}
-                        className="p-4 border border-module-border rounded-lg hover:bg-module-accent/10 transition-colors glass-card"
+                        className="p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors bg-card"
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -275,7 +275,7 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
                             >
                               {alert.severity}
                             </Badge>
-                            <span className="text-sm font-medium text-module-primary">
+                            <span className="text-sm font-medium text-foreground">
                               {alert.alert_type}
                             </span>
                           </div>
@@ -290,7 +290,7 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
                             {alert.status}
                           </Badge>
                         </div>
-                        <div className="text-xs text-module-secondary">
+                        <div className="text-xs text-muted-foreground">
                           {format(new Date(alert.opened_at), "dd/MM/yyyy 'às' HH:mm", {
                             locale: ptBR,
                           })}
@@ -305,29 +305,29 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
 
           {activeTab === 'alertas' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="glass-card border-module-border hover:border-module-accent/50 transition-colors cursor-pointer hover:shadow-lg">
+              <Card className="bg-card border-border hover:border-primary/50 transition-colors cursor-pointer hover:shadow-lg">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-module-accent/10 flex items-center justify-center">
-                      <Activity className="h-6 w-6 text-module-accent" />
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Activity className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-module-primary">Gráficos</h3>
-                      <p className="text-sm text-module-secondary">Ver estatísticas detalhadas</p>
+                      <h3 className="font-semibold text-foreground">Gráficos</h3>
+                      <p className="text-sm text-muted-foreground">Ver estatísticas detalhadas</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="glass-card border-module-border hover:border-module-accent/50 transition-colors cursor-pointer hover:shadow-lg">
+              <Card className="bg-card border-border hover:border-primary/50 transition-colors cursor-pointer hover:shadow-lg">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-module-accent/10 flex items-center justify-center">
-                      <Clock className="h-6 w-6 text-module-accent" />
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-module-primary">Timeline</h3>
-                      <p className="text-sm text-module-secondary">Histórico de eventos</p>
+                      <h3 className="font-semibold text-foreground">Timeline</h3>
+                      <p className="text-sm text-muted-foreground">Histórico de eventos</p>
                     </div>
                   </div>
                 </CardContent>
@@ -337,11 +337,11 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t border-module-border glass-card">
+        <div className="flex justify-end gap-3 p-6 border-t border-border bg-card">
           <Button
             variant="outline"
             onClick={onClose}
-            className="border-module-border hover:bg-module-accent/10 text-module-primary"
+            className="border-border"
           >
             Fechar
           </Button>
@@ -353,7 +353,7 @@ export const PanelDetailModal = ({ device, onClose, onUpdate }: PanelDetailModal
 
 const InfoItem = ({ label, value }: { label: string; value: string | number }) => (
   <div>
-    <p className="text-xs text-module-secondary mb-1">{label}</p>
-    <p className="text-sm font-semibold text-module-primary truncate">{value}</p>
+    <p className="text-xs text-muted-foreground mb-1">{label}</p>
+    <p className="text-sm font-semibold text-foreground truncate">{value}</p>
   </div>
 );
