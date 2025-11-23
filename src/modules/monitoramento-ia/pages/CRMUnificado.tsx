@@ -27,21 +27,21 @@ export const CRMUnificado = () => {
   } = useUnifiedConversations(filters);
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-module-primary">
       {/* Header com métricas */}
-      <div className="p-4 border-b bg-card">
+      <div className="p-4 border-b border-module-border glass-card">
         <CRMMetrics metrics={metrics} />
       </div>
 
       {/* Filtros */}
-      <div className="p-4 border-b bg-muted/20">
+      <div className="p-4 border-b border-module-border bg-module-secondary/30">
         <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
       </div>
 
       {/* Layout principal */}
       <div className="flex-1 flex overflow-hidden">
         {/* Lista de conversas (1/3) */}
-        <div className="w-1/3 border-r overflow-y-auto bg-card">
+        <div className="w-1/3 border-r border-module-border overflow-y-auto glass-card">
           <CRMInbox
             conversations={conversations}
             selectedId={selectedConversationId}
@@ -51,7 +51,7 @@ export const CRMUnificado = () => {
         </div>
 
         {/* Chat (2/3) */}
-        <div className="w-2/3 bg-background">
+        <div className="w-2/3 bg-module-primary">
           <CRMChat
             conversationId={selectedConversationId}
             messages={messages}
