@@ -6,20 +6,44 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Detect provider from text
-function detectProvider(text: string): string {
-  const upperText = text.toUpperCase();
-  if (upperText.includes('LIGGA')) return 'LIGGA';
-  if (upperText.includes('TELECOM FOZ') || upperText.includes('TELECOMFOZ')) return 'TELECOM FOZ';
-  if (upperText.includes('VIVO')) return 'VIVO';
+// Detect provider from tags array and text
+function detectProvider(tags: string[], allText: string): string {
+  const combinedText = [...tags, allText].join(' ').toUpperCase();
+  
+  if (combinedText.includes('LIGGA')) return 'LIGGA';
+  if (combinedText.includes('TELECOM FOZ') || combinedText.includes('TELECOMFOZ')) return 'TELECOM FOZ';
+  if (combinedText.includes('VIVO')) return 'VIVO';
+  if (combinedText.includes('CLARO')) return 'CLARO';
+  if (combinedText.includes('TIM')) return 'TIM';
+  if (combinedText.includes('OI')) return 'OI';
+  
   return 'Sem provedor';
 }
 
-// Extract address from text
-function extractAddress(text: string): string | null {
-  const addressPattern = /(Rua|Av\.|Avenida|R\.|Travessa|Alameda)\s+[^,]+,?\s*\d*[^,]*/i;
-  const match = text.match(addressPattern);
-  return match ? match[0].trim() : null;
+// Extract address from tags array and text
+function extractAddress(tags: string[], allText: string): string {
+  const allSources = [...tags, allText];
+  
+  // Padrões de endereço mais abrangentes
+  const patterns = [
+    // Endereço completo com número
+    /((?:Rua|Av\.|Avenida|R\.|Travessa|Alameda|Praça)\s+[^,\n]+,?\s*(?:n[°º]?\s*)?\d+[^,\n]*)/i,
+    // Endereço sem número explícito
+    /((?:Rua|Av\.|Avenida|R\.|Travessa|Alameda|Praça)\s+[^,\n]+)/i,
+    // Qualquer linha que pareça endereço (contém rua/av + algo)
+    /([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ][a-záàâãéèêíïóôõöúçñ]+\s+[^,\n]+,\s*\d+)/i,
+  ];
+  
+  for (const source of allSources) {
+    for (const pattern of patterns) {
+      const match = source.match(pattern);
+      if (match) {
+        return match[1].trim();
+      }
+    }
+  }
+  
+  return 'Sem endereço';
 }
 
 serve(async (req) => {
@@ -95,12 +119,22 @@ serve(async (req) => {
         const label = client.label || '';
         const status = client.online ? 'online' : 'offline';
         
-        // Extract data from all text fields
+        // Get tags from AnyDesk API (array of strings)
+        const rawTags = Array.isArray(client.tags) ? client.tags : [];
+        
+        // Extract data from all text fields + tags
         const allText = `${alias} ${comment} ${label}`;
-        const provider = detectProvider(allText);
-        const address = extractAddress(allText) || 'Sem endereço';
-        const tags = client.tags || [];
+        const provider = detectProvider(rawTags, allText);
+        const address = extractAddress(rawTags, allText);
         const panelName = comment || alias;
+        
+        console.log(`[SYNC-ANYDESK] 🔍 Processing ${anydeskId}:`, {
+          alias,
+          comment,
+          tags: rawTags,
+          detectedProvider: provider,
+          detectedAddress: address
+        });
 
         const { data: existingDevice } = await supabase
           .from('devices')
@@ -114,11 +148,17 @@ serve(async (req) => {
           status: status,
           last_online_at: client.online ? new Date().toISOString() : existingDevice?.last_online_at,
           condominio_name: existingDevice?.condominio_name || 'Não especificado',
-          tags: tags,
+          tags: rawTags,
           comments: comment,
           provider: provider,
           address: address,
-          metadata: { alias, label, online_time: client['online-time'] },
+          metadata: { 
+            alias, 
+            label, 
+            online_time: client['online-time'],
+            raw_tags: rawTags,
+            parsed_at: new Date().toISOString()
+          },
         };
 
         if (existingDevice) {
