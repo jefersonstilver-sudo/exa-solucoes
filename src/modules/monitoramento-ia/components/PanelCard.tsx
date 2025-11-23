@@ -37,12 +37,8 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
 
   const lastOnline = humanizeDate(device.last_online_at);
   
-  // Detectar provedor de internet nas tags
-  const provider = device.tags?.find((tag: string) => 
-    ['LIGGA', 'TELECOM FOZ', 'VIVO'].some(p => tag.toUpperCase().includes(p))
-  ) || 'Sem provedor';
-  
-  // Extrair endereço das tags ou comentários
+  // Usar provedor e endereço parseados automaticamente
+  const provider = device.provider || 'Sem provedor';
   const address = device.address || 'Sem endereço';
 
   // Nome principal: comments (local) > name
