@@ -112,12 +112,12 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
         )}
         
         {collapsed && (
-          <div className="flex items-center justify-center w-10 h-10">
+          <div className="flex items-center justify-center w-full py-2">
             <img 
               src={EXA_LOGO_URL} 
               alt="EXA" 
               className={cn(
-                "h-8 object-contain",
+                "h-6 w-6 object-contain",
                 theme === 'dark' ? 'brightness-0 invert' : ''
               )}
             />
