@@ -100,54 +100,54 @@ export const ComputerDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-background border-border">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto glass-card border-module-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <Monitor className="h-6 w-6 text-primary" />
-            <span className="text-primary">{displayName}</span>
+            <Monitor className="h-6 w-6 text-module-accent" />
+            <span className="text-module-primary">{displayName}</span>
           </DialogTitle>
         </DialogHeader>
 
         {/* 3 CARDS SUPERIORES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* CARD 1: INFORMAÇÕES DO SISTEMA */}
-          <Card className="bg-card border-border">
+          <Card className="glass-card border-module-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Info className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
+                <Info className="h-4 w-4 text-module-accent" />
                 Sistema
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
                   Local/Prédio
                 </p>
-                <p className="text-base font-semibold text-primary">{displayName}</p>
+                <p className="text-base font-semibold text-module-primary">{displayName}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
                   <Wifi className="h-3 w-3" />
                   Provedor
                 </p>
-                <Badge variant="outline" className="bg-module-input/50">
+                <Badge variant="outline" className="bg-module-input/50 text-module-primary border-module-border">
                   {computer.provider || 'Sem provedor'}
                 </Badge>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Endereço</p>
-                <p className="text-sm">{computer.address || 'Sem endereço'}</p>
+                <p className="text-xs text-module-secondary mb-1">Endereço</p>
+                <p className="text-sm text-module-primary">{computer.address || 'Sem endereço'}</p>
               </div>
               {computer.tags && Array.isArray(computer.tags) && computer.tags.length > 0 && (
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
                     <Tag className="h-3 w-3" />
                     Tags
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {computer.tags.map((tag: string, i: number) => (
-                      <Badge key={i} variant="outline" className="text-xs">{tag}</Badge>
+                      <Badge key={i} variant="outline" className="text-xs text-module-primary border-module-border">{tag}</Badge>
                     ))}
                   </div>
                 </div>
@@ -156,16 +156,16 @@ export const ComputerDetailModal = ({
           </Card>
 
           {/* CARD 2: ATIVIDADE */}
-          <Card className="bg-card border-border">
+          <Card className="glass-card border-module-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Activity className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
+                <Activity className="h-4 w-4 text-module-accent" />
                 Atividade
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Status Atual</p>
+                <p className="text-xs text-module-secondary mb-1">Status Atual</p>
                 <Badge
                   className={cn(
                     "flex items-center gap-1 w-fit",
@@ -178,8 +178,8 @@ export const ComputerDetailModal = ({
                 </Badge>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Última Conexão</p>
-                <p className="text-sm font-semibold">
+                <p className="text-xs text-module-secondary mb-1">Última Conexão</p>
+                <p className="text-sm font-semibold text-module-primary">
                   {computer.status === 'offline' ? (
                     <span className="text-red-400">Offline há {offlineCounter}</span>
                   ) : (
@@ -188,11 +188,11 @@ export const ComputerDetailModal = ({
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Total de Eventos</p>
-                <p className="text-2xl font-bold">{computer.total_events || 0}</p>
+                <p className="text-xs text-module-secondary mb-1">Total de Eventos</p>
+                <p className="text-2xl font-bold text-module-primary">{computer.total_events || 0}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3 text-red-400" />
                   Quedas
                 </p>
@@ -202,16 +202,16 @@ export const ComputerDetailModal = ({
           </Card>
 
           {/* CARD 3: CONFIGURAÇÃO DE ALERTAS */}
-          <Card className="bg-card border-border">
+          <Card className="glass-card border-module-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Bell className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
+                <Bell className="h-4 w-4 text-module-accent" />
                 Alertas
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="alerts-enabled" className="text-sm">Alertas Automáticos</Label>
+                <Label htmlFor="alerts-enabled" className="text-sm text-module-primary">Alertas Automáticos</Label>
                 <Switch
                   id="alerts-enabled"
                   checked={alertConfig.alerts_enabled}
@@ -219,7 +219,7 @@ export const ComputerDetailModal = ({
                 />
               </div>
               <div>
-                <Label htmlFor="threshold" className="text-xs text-muted-foreground">
+                <Label htmlFor="threshold" className="text-xs text-module-secondary">
                   Alertar após (minutos offline)
                 </Label>
                 <Input
@@ -228,13 +228,13 @@ export const ComputerDetailModal = ({
                   min="1"
                   value={alertConfig.offline_threshold_minutes}
                   onChange={(e) => setAlertConfig({ ...alertConfig, offline_threshold_minutes: parseInt(e.target.value) || 5 })}
-                  className="mt-1"
+                  className="mt-1 bg-module-input text-module-primary border-module-border"
                 />
               </div>
               <Button 
                 onClick={saveAlertConfig} 
                 disabled={loading}
-                className="w-full"
+                className="w-full bg-module-accent hover:bg-module-accent-hover text-white"
                 size="sm"
               >
                 {loading ? 'Salvando...' : 'Salvar Configurações'}
@@ -244,19 +244,19 @@ export const ComputerDetailModal = ({
         </div>
 
         {/* INFORMAÇÕES ADICIONAIS */}
-        <Card className="bg-card border-border mb-6">
+        <Card className="glass-card border-module-border mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Informações Adicionais</CardTitle>
+            <CardTitle className="text-sm text-module-primary">Informações Adicionais</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">AnyDesk ID</p>
-                <p className="text-sm font-mono">{computer.anydesk_client_id}</p>
+                <p className="text-xs text-module-secondary mb-1">AnyDesk ID</p>
+                <p className="text-sm font-mono text-module-primary">{computer.anydesk_client_id}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Online-Time</p>
-                <p className="text-sm">{computer.metadata?.online_time || 'N/A'}</p>
+                <p className="text-xs text-module-secondary mb-1">Online-Time</p>
+                <p className="text-sm text-module-primary">{computer.metadata?.online_time || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Client-Version</p>

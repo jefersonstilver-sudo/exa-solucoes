@@ -54,7 +54,7 @@ const OfflinePanelCard = ({ device }: { device: OfflineDevice }) => {
   const elapsed = useRealTimeCounter(device.last_online_at);
   
   return (
-    <Card className="p-4 border-red-500/50 bg-red-950/20">
+    <Card className="p-4 border-red-500/50 glass-card">
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1">
           <h4 className="font-semibold text-module-primary">
