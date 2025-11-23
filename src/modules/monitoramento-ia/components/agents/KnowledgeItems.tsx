@@ -170,53 +170,53 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
               Adicionar Conhecimento
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-5xl w-[95vw] !bg-[#1A1A1A] border-[#9C1E1E]/30 text-white max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl w-[95vw] !bg-[#1A1A1A] border-[#9C1E1E]/50 text-white max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-white">Novo Item de Conhecimento</DialogTitle>
+              <DialogTitle className="text-white text-xl font-bold">Novo Item de Conhecimento</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-4 py-4">
               <div>
-                <Label className="text-white">Tipo de Conteúdo</Label>
+                <Label className="text-white font-semibold mb-2 block">Tipo de Conteúdo</Label>
                 <select
-                  className="w-full mt-1 p-2 border rounded-md bg-[#0A0A0A] border-[#9C1E1E]/30 text-white"
+                  className="w-full mt-1 p-3 border rounded-md bg-[#2A2A2A] border-[#9C1E1E]/50 text-white focus:border-[#9C1E1E] focus:outline-none focus:ring-2 focus:ring-[#9C1E1E]/30 transition-all"
                   value={newItem.content_type}
                   onChange={(e) => setNewItem({ ...newItem, content_type: e.target.value as any })}
                 >
-                  <option value="text">Texto</option>
-                  <option value="pdf">PDF</option>
-                  <option value="link">Link</option>
+                  <option value="text" className="bg-[#2A2A2A]">Texto</option>
+                  <option value="pdf" className="bg-[#2A2A2A]">PDF</option>
+                  <option value="link" className="bg-[#2A2A2A]">Link</option>
                 </select>
               </div>
               <div>
-                <Label className="text-white">Título</Label>
+                <Label className="text-white font-semibold mb-2 block">Título</Label>
                 <Input
                   value={newItem.title}
                   onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
                   placeholder="Ex: Media Kit Profissional"
-                  className="bg-[#0A0A0A] border-[#9C1E1E]/30 text-white placeholder:text-gray-500"
+                  className="bg-[#2A2A2A] border-[#9C1E1E]/50 text-white placeholder:text-gray-400 focus:border-[#9C1E1E] focus:ring-2 focus:ring-[#9C1E1E]/30 transition-all"
                 />
               </div>
               <div>
-                <Label className="text-white">Palavras-chave (separadas por vírgula)</Label>
+                <Label className="text-white font-semibold mb-2 block">Palavras-chave (separadas por vírgula)</Label>
                 <Input
                   value={newItem.keywords}
                   onChange={(e) => setNewItem({ ...newItem, keywords: e.target.value })}
                   placeholder="Ex: media kit, apresentação, creator"
-                  className="bg-[#0A0A0A] border-[#9C1E1E]/30 text-white placeholder:text-gray-500"
+                  className="bg-[#2A2A2A] border-[#9C1E1E]/50 text-white placeholder:text-gray-400 focus:border-[#9C1E1E] focus:ring-2 focus:ring-[#9C1E1E]/30 transition-all"
                 />
               </div>
               <div>
-                <Label className="text-white">Descrição Curta (opcional)</Label>
+                <Label className="text-white font-semibold mb-2 block">Descrição Curta (opcional)</Label>
                 <Input
                   value={newItem.description}
                   onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                   placeholder="Breve descrição sobre este conhecimento"
-                  className="bg-[#0A0A0A] border-[#9C1E1E]/30 text-white placeholder:text-gray-500"
+                  className="bg-[#2A2A2A] border-[#9C1E1E]/50 text-white placeholder:text-gray-400 focus:border-[#9C1E1E] focus:ring-2 focus:ring-[#9C1E1E]/30 transition-all"
                 />
               </div>
               {newItem.content_type === 'pdf' ? (
                 <div>
-                  <Label className="text-white">Upload do PDF</Label>
+                  <Label className="text-white font-semibold mb-2 block">Upload do PDF</Label>
                   <DocumentUpload
                     label=""
                     value={newItem.content}
@@ -228,7 +228,7 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                 </div>
               ) : (
                 <div>
-                  <Label className="text-white">Conteúdo</Label>
+                  <Label className="text-white font-semibold mb-2 block">Conteúdo</Label>
                   <Textarea
                     value={newItem.content}
                     onChange={(e) => setNewItem({ ...newItem, content: e.target.value })}
@@ -237,24 +237,32 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                         ? 'Cole o link aqui...'
                         : 'Digite o conteúdo completo...'
                     }
-                    className="min-h-[200px] bg-[#0A0A0A] border-[#9C1E1E]/30 text-white placeholder:text-gray-500"
+                    className="min-h-[200px] bg-[#2A2A2A] border-[#9C1E1E]/50 text-white placeholder:text-gray-400 focus:border-[#9C1E1E] focus:ring-2 focus:ring-[#9C1E1E]/30 transition-all resize-none"
                   />
                 </div>
               )}
               <div>
-                <Label className="text-white">Instrução Específica (opcional)</Label>
+                <Label className="text-white font-semibold mb-2 block">Instrução Específica (opcional)</Label>
                 <Textarea
                   value={newItem.instruction}
                   onChange={(e) => setNewItem({ ...newItem, instruction: e.target.value })}
                   placeholder="Ex: Usar este conteúdo quando o cliente perguntar sobre..."
-                  className="min-h-[100px] bg-[#0A0A0A] border-[#9C1E1E]/30 text-white placeholder:text-gray-500"
+                  className="min-h-[100px] bg-[#2A2A2A] border-[#9C1E1E]/50 text-white placeholder:text-gray-400 focus:border-[#9C1E1E] focus:ring-2 focus:ring-[#9C1E1E]/30 transition-all resize-none"
                 />
               </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              <div className="flex justify-end gap-3 pt-4 border-t border-[#9C1E1E]/20">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsAddDialogOpen(false)}
+                  className="border-[#9C1E1E]/50 text-white hover:bg-[#9C1E1E]/10"
+                >
                   Cancelar
                 </Button>
-                <Button onClick={handleAdd} disabled={saving}>
+                <Button 
+                  onClick={handleAdd} 
+                  disabled={saving}
+                  className="bg-[#9C1E1E] hover:bg-[#7A1616] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {saving ? 'Salvando...' : 'Adicionar'}
                 </Button>
               </div>
