@@ -24,7 +24,7 @@ const SimpleStatCard = ({ label, value, color }: { label: string; value: number;
   };
   
   return (
-    <div className="bg-module-card border border-module rounded-[14px] p-4">
+    <div className="glass-card rounded-[14px] p-4 hover:scale-105 transition-all">
       <p className="text-module-secondary text-sm mb-1">{label}</p>
       <p className={`text-2xl font-bold ${colorClasses[color]}`}>
         {value}
@@ -145,7 +145,7 @@ export const PaineisPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-module-card border-module border px-6 py-4 rounded-xl">
+      <div className="glass-card border-white/10 px-6 py-4 rounded-xl">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-module-primary">
@@ -189,7 +189,7 @@ export const PaineisPage = () => {
       </div>
 
       {/* Card de Mais Quedas */}
-      <div className="bg-module-card border border-module rounded-[14px] p-6">
+      <div className="glass-card border-white/10 rounded-[14px] p-6">
         <div className="flex items-center gap-2 mb-4">
           <AlertTriangle className="w-5 h-5 text-red-500" />
           <h3 className="text-lg font-bold text-module-primary">Painéis com Mais Quedas</h3>

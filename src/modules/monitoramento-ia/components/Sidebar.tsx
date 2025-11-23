@@ -80,30 +80,31 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
   return (
     <aside
       className={cn(
-        `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r`,
+        `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r glass`,
         collapsed ? 'w-16' : 'w-64',
         theme === 'dark' 
-          ? 'bg-gradient-to-b from-[#9C1E1E] via-[#4A0F0F] to-[#0A0A0A] border-[#2A2A2A] text-white'
-          : 'bg-[#9C1E1E] border-[#8A1A1A] text-white',
-        'lg:translate-x-0',
+          ? 'bg-gradient-to-b from-[#9C1E1E]/90 via-[#4A0F0F]/80 to-[#0A0A0A]/90 border-white/10 text-white'
+          : 'bg-[#9C1E1E]/90 border-white/20 text-white',
+        'lg:translate-x-0 backdrop-blur-xl',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
-      {/* Header */}
+      {/* Header - Glassmorphism com logo reorganizado */}
       <div className={cn(
-        "p-4 border-b flex items-center",
+        "p-4 border-b flex items-center glass",
         collapsed ? 'justify-center' : 'justify-between',
-        theme === 'dark' ? 'border-[#2A2A2A]' : 'border-[#8A1A1A]'
+        theme === 'dark' ? 'border-white/10' : 'border-white/20'
       )}>
         {!collapsed && (
           <div className="flex items-center gap-3">
             <img 
               src={EXA_LOGO_URL} 
               alt="EXA" 
-              className="h-8 w-auto brightness-0 invert"
+              className="h-10 w-auto brightness-0 invert"
             />
-            <div>
-              <h1 className="text-sm font-bold text-white">IA & Monitoramento</h1>
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-black text-white tracking-tight leading-none">EXA</h1>
+              <p className="text-xs font-medium text-white/70 tracking-widest uppercase mt-0.5">IA Monitoramento</p>
             </div>
           </div>
         )}
@@ -112,7 +113,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
           <img 
             src={EXA_LOGO_URL} 
             alt="EXA" 
-            className="h-6 w-auto brightness-0 invert"
+            className="h-8 w-auto brightness-0 invert"
           />
         )}
 
@@ -215,8 +216,8 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
 
       {/* Footer */}
       <div className={cn(
-        "absolute bottom-0 left-0 right-0 border-t",
-        theme === 'dark' ? 'border-[#2A2A2A] bg-[#0A0A0A]/50' : 'border-[#8A1A1A] bg-[#8A1A1A]/30'
+        "absolute bottom-0 left-0 right-0 border-t glass",
+        theme === 'dark' ? 'border-white/10 bg-[#0A0A0A]/70' : 'border-white/20 bg-[#8A1A1A]/50'
       )}>
         <button
           onClick={() => navigate('/')}
