@@ -18,32 +18,33 @@ const PanelRemoteTab: React.FC<PanelRemoteTabProps> = ({
   onCopyToClipboard 
 }) => {
   return (
-    <Card>
+    <Card className="glass-card border-module-border">
       <CardHeader>
-        <CardTitle>Acesso Remoto - AnyDesk</CardTitle>
+        <CardTitle className="text-module-primary">Acesso Remoto - AnyDesk</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-module-accent/10 rounded-lg border border-module-border">
             <div>
-              <h4 className="font-medium text-sm text-gray-700">Código AnyDesk</h4>
-              <p className="text-sm font-mono">{panel.codigo_anydesk || 'Não configurado'}</p>
+              <h4 className="font-medium text-sm text-module-secondary">Código AnyDesk</h4>
+              <p className="text-sm font-mono text-module-primary">{panel.codigo_anydesk || 'Não configurado'}</p>
             </div>
             {panel.codigo_anydesk && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onCopyToClipboard(panel.codigo_anydesk, 'Código AnyDesk')}
+                className="hover:bg-module-accent/20"
               >
                 <Copy className="h-4 w-4" />
               </Button>
             )}
           </div>
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-module-accent/10 rounded-lg border border-module-border">
             <div>
-              <h4 className="font-medium text-sm text-gray-700">Senha AnyDesk</h4>
+              <h4 className="font-medium text-sm text-module-secondary">Senha AnyDesk</h4>
               <div className="flex items-center space-x-2">
-                <p className="text-sm font-mono">
+                <p className="text-sm font-mono text-module-primary">
                   {panel.senha_anydesk 
                     ? (showPassword ? panel.senha_anydesk : '••••••••')
                     : 'Não configurada'
@@ -54,6 +55,7 @@ const PanelRemoteTab: React.FC<PanelRemoteTabProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={onTogglePassword}
+                    className="hover:bg-module-accent/20"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
@@ -65,6 +67,7 @@ const PanelRemoteTab: React.FC<PanelRemoteTabProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => onCopyToClipboard(panel.senha_anydesk, 'Senha AnyDesk')}
+                className="hover:bg-module-accent/20"
               >
                 <Copy className="h-4 w-4" />
               </Button>

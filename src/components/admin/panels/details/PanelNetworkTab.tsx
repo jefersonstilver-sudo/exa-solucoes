@@ -11,16 +11,16 @@ interface PanelNetworkTabProps {
 
 const PanelNetworkTab: React.FC<PanelNetworkTabProps> = ({ panel, onCopyToClipboard }) => {
   return (
-    <Card>
+    <Card className="glass-card border-module-border">
       <CardHeader>
-        <CardTitle>Configurações de Rede</CardTitle>
+        <CardTitle className="text-module-primary">Configurações de Rede</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 gap-4">
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-module-accent/10 rounded-lg border border-module-border">
             <div>
-              <h4 className="font-medium text-sm text-gray-700">IP Interno</h4>
-              <p className="text-sm">{panel.ip_interno || 'Não configurado'}</p>
+              <h4 className="font-medium text-sm text-module-secondary">IP Interno</h4>
+              <p className="text-sm text-module-primary">{panel.ip_interno || 'Não configurado'}</p>
             </div>
             {panel.ip_interno && (
               <Button
@@ -32,10 +32,10 @@ const PanelNetworkTab: React.FC<PanelNetworkTabProps> = ({ panel, onCopyToClipbo
               </Button>
             )}
           </div>
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-module-accent/10 rounded-lg border border-module-border">
             <div>
-              <h4 className="font-medium text-sm text-gray-700">Endereço MAC</h4>
-              <p className="text-sm font-mono">{panel.mac_address || 'Não configurado'}</p>
+              <h4 className="font-medium text-sm text-module-secondary">Endereço MAC</h4>
+              <p className="text-sm font-mono text-module-primary">{panel.mac_address || 'Não configurado'}</p>
             </div>
             {panel.mac_address && (
               <Button
