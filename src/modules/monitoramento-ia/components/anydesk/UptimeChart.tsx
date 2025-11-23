@@ -88,7 +88,7 @@ export const UptimeChart = ({ computerId }: UptimeChartProps) => {
   };
 
   if (loading) {
-    return <div className="text-gray-400">Carregando estatísticas...</div>;
+    return <div className="text-module-secondary">Carregando estatísticas...</div>;
   }
 
   return (
@@ -98,6 +98,7 @@ export const UptimeChart = ({ computerId }: UptimeChartProps) => {
           size="sm"
           variant={period === 'today' ? 'default' : 'outline'}
           onClick={() => setPeriod('today')}
+          className="border-module"
         >
           Hoje
         </Button>
@@ -105,6 +106,7 @@ export const UptimeChart = ({ computerId }: UptimeChartProps) => {
           size="sm"
           variant={period === '7days' ? 'default' : 'outline'}
           onClick={() => setPeriod('7days')}
+          className="border-module"
         >
           7 dias
         </Button>
@@ -112,22 +114,23 @@ export const UptimeChart = ({ computerId }: UptimeChartProps) => {
           size="sm"
           variant={period === '30days' ? 'default' : 'outline'}
           onClick={() => setPeriod('30days')}
+          className="border-module"
         >
           30 dias
         </Button>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white/5 p-4 rounded-lg">
-          <p className="text-sm text-gray-400">Uptime Médio</p>
+        <div className="bg-module-card border-module border p-4 rounded-lg">
+          <p className="text-sm text-module-secondary">Uptime Médio</p>
           <p className="text-2xl font-bold text-emerald-400">{stats?.avgUptime}%</p>
         </div>
-        <div className="bg-white/5 p-4 rounded-lg">
-          <p className="text-sm text-gray-400">Total de Eventos</p>
-          <p className="text-2xl font-bold text-white">{stats?.totalEvents}</p>
+        <div className="bg-module-card border-module border p-4 rounded-lg">
+          <p className="text-sm text-module-secondary">Total de Eventos</p>
+          <p className="text-2xl font-bold text-module-primary">{stats?.totalEvents}</p>
         </div>
-        <div className="bg-white/5 p-4 rounded-lg">
-          <p className="text-sm text-gray-400">Tempo Médio Offline</p>
+        <div className="bg-module-card border-module border p-4 rounded-lg">
+          <p className="text-sm text-module-secondary">Tempo Médio Offline</p>
           <p className="text-2xl font-bold text-red-400">{stats?.avgOfflineTime}min</p>
         </div>
       </div>
@@ -135,12 +138,16 @@ export const UptimeChart = ({ computerId }: UptimeChartProps) => {
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-            <XAxis dataKey="date" stroke="#999" />
-            <YAxis stroke="#999" />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-module-border" />
+            <XAxis dataKey="date" className="stroke-module-secondary" />
+            <YAxis className="stroke-module-secondary" />
             <Tooltip 
-              contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
-              labelStyle={{ color: '#fff' }}
+              contentStyle={{ 
+                backgroundColor: 'var(--bg-module-card)', 
+                border: '1px solid var(--border-module)',
+                color: 'var(--text-module-primary)'
+              }}
+              labelStyle={{ color: 'var(--text-module-primary)' }}
             />
             <Bar dataKey="uptimePercentage" fill="#10b981" name="Uptime %" />
           </BarChart>
