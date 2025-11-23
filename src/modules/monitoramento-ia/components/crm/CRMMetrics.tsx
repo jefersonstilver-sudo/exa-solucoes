@@ -56,7 +56,7 @@ export const CRMMetrics: React.FC<CRMMetricsProps> = ({ metrics }) => {
   return (
     <div className="flex gap-4">
       <div className="flex-1">
-        <h2 className="text-xl font-semibold mb-4">CRM & Conversas Unificadas</h2>
+        <h2 className="text-xl font-semibold mb-4 text-module-primary">CRM & Conversas Unificadas</h2>
         <div className="grid grid-cols-5 gap-4">
           {metricsData.map((metric, index) => {
             const Icon = metric.icon;
@@ -66,7 +66,7 @@ export const CRMMetrics: React.FC<CRMMetricsProps> = ({ metrics }) => {
                   <Icon className={cn('w-5 h-5', metric.color)} />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">{metric.label}</p>
+                  <p className="text-xs text-module-secondary">{metric.label}</p>
                   <p className={cn('text-2xl font-bold', metric.color)}>{metric.value}</p>
                 </div>
               </div>

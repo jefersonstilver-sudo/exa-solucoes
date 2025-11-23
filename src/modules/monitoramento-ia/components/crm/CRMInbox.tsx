@@ -18,9 +18,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
     <button
       onClick={onClick}
       className={cn(
-        'w-full p-4 text-left hover:bg-muted/50 transition-colors border-b relative',
-        isSelected && 'bg-muted',
-        hasUnread && 'border-l-4 border-l-[#25D366] bg-[#f0f8f5] dark:bg-[#25D366]/10'
+        'w-full p-4 text-left transition-colors border-b border-module-border relative',
+        'hover:bg-module-secondary/20',
+        isSelected && 'bg-module-secondary/30',
+        hasUnread && 'border-l-4 border-l-[#25D366] bg-[#25D366]/5'
       )}
     >
       {/* Header com nome e badges */}
@@ -36,7 +37,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
             )}
           </div>
           <span className={cn(
-            "font-medium truncate",
+            "font-medium truncate text-module-primary",
             hasUnread && "text-[#25D366] font-semibold"
           )}>
             {conversation.contact_name || conversation.contact_phone}
@@ -71,7 +72,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       </div>
 
       {/* Telefone e provider */}
-      <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+      <div className="flex items-center gap-2 mb-2 text-xs text-module-secondary">
         <Phone className="w-3 h-3" />
         <span>{conversation.contact_phone}</span>
         <Badge variant="outline" className="text-xs">
@@ -84,7 +85,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">
+        <span className="text-module-secondary">
           {formatDistanceToNow(new Date(conversation.last_message_at), {
             addSuffix: true,
             locale: ptBR
@@ -94,11 +95,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
         {/* Sentiment indicator */}
         <div
           className={cn(
-            'px-2 py-0.5 rounded',
-            conversation.sentiment === 'positive' && 'bg-green-500/20 text-green-700',
-            conversation.sentiment === 'neutral' && 'bg-gray-500/20 text-gray-700',
-            conversation.sentiment === 'negative' && 'bg-orange-500/20 text-orange-700',
-            conversation.sentiment === 'angry' && 'bg-red-500/20 text-red-700'
+            'px-2 py-0.5 rounded text-xs',
+            conversation.sentiment === 'positive' && 'bg-green-500/20 text-green-400',
+            conversation.sentiment === 'neutral' && 'bg-gray-500/20 text-gray-300',
+            conversation.sentiment === 'negative' && 'bg-orange-500/20 text-orange-400',
+            conversation.sentiment === 'angry' && 'bg-red-500/20 text-red-400'
           )}
         >
           {conversation.sentiment || 'neutro'}
@@ -107,14 +108,14 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
 
       {/* Scores */}
       <div className="mt-2 flex gap-3 text-xs">
-        <span className="text-muted-foreground">
-          Lead: <span className="font-medium text-foreground">{conversation.lead_score || 0}/100</span>
+        <span className="text-module-secondary">
+          Lead: <span className="font-medium text-module-primary">{conversation.lead_score || 0}/100</span>
         </span>
-        <span className="text-muted-foreground">
-          Humor: <span className="font-medium text-foreground">{conversation.mood_score || 50}/100</span>
+        <span className="text-module-secondary">
+          Humor: <span className="font-medium text-module-primary">{conversation.mood_score || 50}/100</span>
         </span>
         {conversation.urgency_level > 0 && (
-          <span className="text-orange-600 font-medium">
+          <span className="text-orange-400 font-medium">
             Urgência: {conversation.urgency_level}/10
           </span>
         )}
@@ -136,7 +137,7 @@ interface CRMInboxProps {
 export const CRMInbox: React.FC<CRMInboxProps> = ({ conversations, selectedId, onSelect, loading }) => {
   if (loading) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
+      <div className="p-8 text-center text-module-secondary">
         Carregando conversas...
       </div>
     );
@@ -144,7 +145,7 @@ export const CRMInbox: React.FC<CRMInboxProps> = ({ conversations, selectedId, o
 
   if (conversations.length === 0) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
+      <div className="p-8 text-center text-module-secondary">
         Nenhuma conversa encontrada
       </div>
     );

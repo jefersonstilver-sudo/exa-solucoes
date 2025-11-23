@@ -72,7 +72,7 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
 
   if (!conversationId) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
+      <div className="flex items-center justify-center h-full text-module-secondary">
         <div className="text-center">
           <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-20" />
           <p>Selecione uma conversa para visualizar</p>
@@ -86,8 +86,8 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
       {/* Área de mensagens */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between bg-card">
-          <h2 className="font-semibold">Conversa</h2>
+        <div className="p-4 border-b border-module-border flex items-center justify-between glass-card">
+          <h2 className="font-semibold text-module-primary">Conversa</h2>
           <div className="flex gap-2">
             <Button
               variant={showNotes ? 'default' : 'outline'}
@@ -111,11 +111,11 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
         {/* Mensagens */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loading ? (
-            <div className="text-center text-muted-foreground py-8">
+            <div className="text-center text-module-secondary py-8">
               Carregando mensagens...
             </div>
           ) : messages.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">
+            <div className="text-center text-module-secondary py-8">
               Nenhuma mensagem ainda
             </div>
           ) : (
@@ -133,8 +133,8 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
                     className={cn(
                       'max-w-[70%] rounded-lg p-3',
                       msg.direction === 'outbound'
-                        ? 'bg-[#dcf8c6] dark:bg-[#005c4b] text-gray-900 dark:text-white'
-                        : 'bg-white dark:bg-[#202c33] text-gray-900 dark:text-white shadow-sm'
+                        ? 'bg-[#dcf8c6] dark:bg-[#005c4b] text-[#000000] dark:text-white'
+                        : 'glass-card text-module-primary shadow-sm border border-module-border/30'
                     )}
                   >
                     {/* Imagem */}
@@ -266,7 +266,7 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
 
       {/* Sidebar (Notas/Tags) */}
       {(showNotes || showTags) && conversation && (
-        <div className="w-80 border-l p-4 overflow-y-auto bg-card">
+        <div className="w-80 border-l border-module-border p-4 overflow-y-auto glass-card">
           {showNotes && (
             <div className="mb-6">
               <ConversationNotes 
