@@ -8,6 +8,7 @@ import { PanelCard } from '../components/PanelCard';
 import { ComputerDetailModal } from '../components/anydesk/ComputerDetailModal';
 import { FiltersBar } from '../components/FiltersBar';
 import { useDevices } from '../hooks/useDevices';
+import { useModuleTheme } from '../hooks/useModuleTheme';
 import { format, startOfDay, endOfDay, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,6 +52,8 @@ export const PaineisPage = () => {
     setSort,
     refresh,
   } = useDevices(0, 30);
+
+  const { theme } = useModuleTheme();
 
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
@@ -332,6 +335,7 @@ export const PaineisPage = () => {
             setIsDetailModalOpen(false);
             setSelectedDevice(null);
           }}
+          theme={theme}
         />
       )}
     </div>

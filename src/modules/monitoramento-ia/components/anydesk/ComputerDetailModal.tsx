@@ -19,6 +19,7 @@ interface ComputerDetailModalProps {
   computer: any;
   isOpen: boolean;
   onClose: () => void;
+  theme: 'dark' | 'light';
 }
 
 interface AlertConfig {
@@ -29,7 +30,8 @@ interface AlertConfig {
 export const ComputerDetailModal = ({ 
   computer, 
   isOpen, 
-  onClose 
+  onClose,
+  theme
 }: ComputerDetailModalProps) => {
   const [alertConfig, setAlertConfig] = useState<AlertConfig>({
     alerts_enabled: true,
@@ -98,230 +100,234 @@ export const ComputerDetailModal = ({
   // Usar apenas o nome do prédio parseado, não o comments completo
   const displayName = computer.name || computer.condominio_name || computer.hostname;
 
+  const themeClass = theme === 'dark' ? 'theme-dark' : 'theme-light';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto !bg-background">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 text-foreground">
-            <Monitor className="h-6 w-6 text-[#9C1E1E]" />
-            <span>{displayName}</span>
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Detalhes completos do painel {displayName}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className={`max-w-7xl max-h-[95vh] overflow-y-auto ${themeClass}`}>
+        <div className="bg-module-card border-module rounded-lg p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-module-primary">
+              <Monitor className="h-6 w-6 text-[#9C1E1E]" />
+              <span>{displayName}</span>
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Detalhes completos do painel {displayName}
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* 3 CARDS SUPERIORES */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* CARD 1: INFORMAÇÕES DO SISTEMA */}
-          <Card className="!bg-card !border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2 !text-card-foreground">
-                <Info className="h-4 w-4 text-[#9C1E1E]" />
-                Sistema
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  Local/Prédio
-                </p>
-                <p className="text-base font-semibold !text-card-foreground">{displayName}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                  <Wifi className="h-3 w-3" />
-                  Provedor
-                </p>
-                <Badge variant="outline" className="!text-card-foreground">
-                  {computer.provider || 'Sem provedor'}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Endereço</p>
-                <p className="text-sm !text-card-foreground">{computer.address || 'Sem endereço'}</p>
-              </div>
-              {computer.tags && Array.isArray(computer.tags) && computer.tags.length > 0 && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                    <Tag className="h-3 w-3" />
-                    Tags
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {computer.tags.map((tag: string, i: number) => (
-                      <Badge key={i} variant="outline" className="text-xs !text-card-foreground">{tag}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* CARD 2: ATIVIDADE */}
-          <Card className="!bg-card !border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2 !text-card-foreground">
-                <Activity className="h-4 w-4 text-[#9C1E1E]" />
-                Atividade
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Status Atual</p>
-                <Badge
-                  className={cn(
-                    "flex items-center gap-1 w-fit",
-                    isOnline 
-                      ? "bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30" 
-                      : "bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30"
-                  )}
-                >
-                  {isOnline ? "Online" : "Offline"}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Última Conexão</p>
-                <p className="text-sm font-semibold !text-card-foreground">
-                  {computer.status === 'offline' ? (
-                    <span className="text-red-600 dark:text-red-400">Offline há {offlineCounter}</span>
-                  ) : (
-                    <span className="text-green-600 dark:text-green-400">Online agora</span>
-                  )}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Total de Eventos</p>
-                <p className="text-2xl font-bold !text-card-foreground">{computer.total_events || 0}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
-                  Quedas
-                </p>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{computer.offline_count || 0}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* CARD 3: CONFIGURAÇÃO DE ALERTAS */}
-          <Card className="!bg-card !border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2 !text-card-foreground">
-                <Bell className="h-4 w-4 text-[#9C1E1E]" />
-                Alertas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="alerts-enabled" className="text-sm !text-card-foreground">Alertas Automáticos</Label>
-                <Switch
-                  id="alerts-enabled"
-                  checked={alertConfig.alerts_enabled}
-                  onCheckedChange={(checked) => setAlertConfig({ ...alertConfig, alerts_enabled: checked })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="threshold" className="text-xs text-muted-foreground">
-                  Alertar após (minutos offline)
-                </Label>
-                <Input
-                  id="threshold"
-                  type="number"
-                  min="1"
-                  value={alertConfig.offline_threshold_minutes}
-                  onChange={(e) => setAlertConfig({ ...alertConfig, offline_threshold_minutes: parseInt(e.target.value) || 5 })}
-                  className="mt-1 bg-input border-border text-foreground"
-                />
-              </div>
-              <Button 
-                onClick={saveAlertConfig} 
-                disabled={loading}
-                className="w-full bg-[#9C1E1E] hover:bg-[#7A1717] text-white"
-                size="sm"
-              >
-                {loading ? 'Salvando...' : 'Salvar Configurações'}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* INFORMAÇÕES ADICIONAIS */}
-        <Card className="mb-6 !bg-card !border-border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm !text-card-foreground">Informações Adicionais</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">AnyDesk ID</p>
-                <p className="text-sm font-mono !text-card-foreground">{computer.anydesk_client_id}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Online-Time</p>
-                <p className="text-sm !text-card-foreground">{computer.metadata?.online_time || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Client-Version</p>
-                <p className="text-sm !text-card-foreground">{computer.metadata?.version || '7.0.0'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">IP Público</p>
-                <p className="text-sm font-mono !text-card-foreground">{computer.metadata?.ip_address || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Sistema</p>
-                <p className="text-sm !text-card-foreground">{computer.metadata?.os || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Condomínio</p>
-                <p className="text-sm !text-card-foreground">{computer.condominio_name || 'N/A'}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* TABS */}
-        <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 !bg-muted">
-            <TabsTrigger value="info" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white">
-              <Info className="h-4 w-4 mr-2" />
-              Informações
-            </TabsTrigger>
-            <TabsTrigger value="timeline" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white">
-              <Clock className="h-4 w-4 mr-2" />
-              Timeline
-            </TabsTrigger>
-            <TabsTrigger value="graficos" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Gráficos
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="info" className="space-y-4 mt-4">
-            <Card className="!bg-card !border-border">
-              <CardHeader>
-                <CardTitle className="!text-card-foreground">Resumo Completo</CardTitle>
+          {/* 3 CARDS SUPERIORES */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* CARD 1: INFORMAÇÕES DO SISTEMA */}
+            <Card className="bg-module-card border-module">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
+                  <Info className="h-4 w-4 text-[#9C1E1E]" />
+                  Sistema
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm !text-card-foreground">
-                <p><strong>Nome:</strong> {displayName}</p>
-                <p><strong>Status:</strong> {computer.status}</p>
-                <p><strong>Provedor:</strong> {computer.provider || 'Não identificado'}</p>
-                <p><strong>Endereço:</strong> {computer.address || 'Não informado'}</p>
-                <p><strong>Total Eventos:</strong> {computer.total_events || 0}</p>
-                <p><strong>Quedas:</strong> {computer.offline_count || 0}</p>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Local/Prédio
+                  </p>
+                  <p className="text-base font-semibold text-module-primary">{displayName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
+                    <Wifi className="h-3 w-3" />
+                    Provedor
+                  </p>
+                  <Badge variant="outline" className="text-module-primary border-module">
+                    {computer.provider || 'Sem provedor'}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary mb-1">Endereço</p>
+                  <p className="text-sm text-module-primary">{computer.address || 'Sem endereço'}</p>
+                </div>
+                {computer.tags && Array.isArray(computer.tags) && computer.tags.length > 0 && (
+                  <div>
+                    <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
+                      <Tag className="h-3 w-3" />
+                      Tags
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {computer.tags.map((tag: string, i: number) => (
+                        <Badge key={i} variant="outline" className="text-xs text-module-primary border-module">{tag}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="timeline" className="mt-4">
-            <ConnectionTimeline computerId={computer.id} />
-          </TabsContent>
+            {/* CARD 2: ATIVIDADE */}
+            <Card className="bg-module-card border-module">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
+                  <Activity className="h-4 w-4 text-[#9C1E1E]" />
+                  Atividade
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs text-module-secondary mb-1">Status Atual</p>
+                  <Badge
+                    className={cn(
+                      "flex items-center gap-1 w-fit",
+                      isOnline 
+                        ? "bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30" 
+                        : "bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30"
+                    )}
+                  >
+                    {isOnline ? "Online" : "Offline"}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary mb-1">Última Conexão</p>
+                  <p className="text-sm font-semibold text-module-primary">
+                    {computer.status === 'offline' ? (
+                      <span className="text-red-600 dark:text-red-400">Offline há {offlineCounter}</span>
+                    ) : (
+                      <span className="text-green-600 dark:text-green-400">Online agora</span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary mb-1">Total de Eventos</p>
+                  <p className="text-2xl font-bold text-module-primary">{computer.total_events || 0}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                    Quedas
+                  </p>
+                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">{computer.offline_count || 0}</p>
+                </div>
+              </CardContent>
+            </Card>
 
-          <TabsContent value="graficos" className="mt-4">
-            <UptimeChart computerId={computer.id} />
-          </TabsContent>
-        </Tabs>
+            {/* CARD 3: CONFIGURAÇÃO DE ALERTAS */}
+            <Card className="bg-module-card border-module">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
+                  <Bell className="h-4 w-4 text-[#9C1E1E]" />
+                  Alertas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="alerts-enabled" className="text-sm text-module-primary">Alertas Automáticos</Label>
+                  <Switch
+                    id="alerts-enabled"
+                    checked={alertConfig.alerts_enabled}
+                    onCheckedChange={(checked) => setAlertConfig({ ...alertConfig, alerts_enabled: checked })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="threshold" className="text-xs text-module-secondary">
+                    Alertar após (minutos offline)
+                  </Label>
+                  <Input
+                    id="threshold"
+                    type="number"
+                    min="1"
+                    value={alertConfig.offline_threshold_minutes}
+                    onChange={(e) => setAlertConfig({ ...alertConfig, offline_threshold_minutes: parseInt(e.target.value) || 5 })}
+                    className="mt-1 bg-module-primary/5 border-module text-module-primary"
+                  />
+                </div>
+                <Button 
+                  onClick={saveAlertConfig} 
+                  disabled={loading}
+                  className="w-full bg-[#9C1E1E] hover:bg-[#7A1717] text-white"
+                  size="sm"
+                >
+                  {loading ? 'Salvando...' : 'Salvar Configurações'}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* INFORMAÇÕES ADICIONAIS */}
+          <Card className="mb-6 bg-module-card border-module">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-module-primary">Informações Adicionais</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-module-secondary mb-1">AnyDesk ID</p>
+                  <p className="text-sm font-mono text-module-primary">{computer.anydesk_client_id}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary mb-1">Online-Time</p>
+                  <p className="text-sm text-module-primary">{computer.metadata?.online_time || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary mb-1">Client-Version</p>
+                  <p className="text-sm text-module-primary">{computer.metadata?.version || '7.0.0'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary mb-1">IP Público</p>
+                  <p className="text-sm font-mono text-module-primary">{computer.metadata?.ip_address || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary mb-1">Sistema</p>
+                  <p className="text-sm text-module-primary">{computer.metadata?.os || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary mb-1">Condomínio</p>
+                  <p className="text-sm text-module-primary">{computer.condominio_name || 'N/A'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* TABS */}
+          <Tabs defaultValue="info" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-module-primary/10 border-module">
+              <TabsTrigger value="info" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white text-module-primary">
+                <Info className="h-4 w-4 mr-2" />
+                Informações
+              </TabsTrigger>
+              <TabsTrigger value="timeline" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white text-module-primary">
+                <Clock className="h-4 w-4 mr-2" />
+                Timeline
+              </TabsTrigger>
+              <TabsTrigger value="graficos" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white text-module-primary">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Gráficos
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="info" className="space-y-4 mt-4">
+              <Card className="bg-module-card border-module">
+                <CardHeader>
+                  <CardTitle className="text-module-primary">Resumo Completo</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-module-primary">
+                  <p><strong>Nome:</strong> {displayName}</p>
+                  <p><strong>Status:</strong> {computer.status}</p>
+                  <p><strong>Provedor:</strong> {computer.provider || 'Não identificado'}</p>
+                  <p><strong>Endereço:</strong> {computer.address || 'Não informado'}</p>
+                  <p><strong>Total Eventos:</strong> {computer.total_events || 0}</p>
+                  <p><strong>Quedas:</strong> {computer.offline_count || 0}</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="timeline" className="mt-4">
+              <ConnectionTimeline computerId={computer.id} />
+            </TabsContent>
+
+            <TabsContent value="graficos" className="mt-4">
+              <UptimeChart computerId={computer.id} />
+            </TabsContent>
+          </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
