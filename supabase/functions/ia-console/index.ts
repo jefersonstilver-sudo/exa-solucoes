@@ -174,32 +174,62 @@ Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de pr�
       }
     ];
 
-    // Chamar OpenAI
+    // Chamar OpenAI com proteção contra timeout
     const startTime = Date.now();
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: agent.openai_config?.model || 'gpt-4-turbo-preview',
-        messages: messagesArray,
-        tools: tools,
-        temperature: agent.openai_config?.temperature || 0.7,
-        max_tokens: agent.openai_config?.max_tokens || 2000
-      })
-    });
+    let openaiResponse;
+    let data;
+    let assistantMessage;
 
-    const latency = Date.now() - startTime;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+      
+      openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: agent.openai_config?.model || 'gpt-4-turbo-preview',
+          messages: messagesArray,
+          tools: tools,
+          temperature: agent.openai_config?.temperature || 0.7,
+          max_tokens: agent.openai_config?.max_tokens || 2000
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!openaiResponse.ok) {
+        const errorText = await openaiResponse.text();
+        console.error('[IA-CONSOLE] OpenAI error response:', errorText);
+        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+      }
 
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
+      data = await openaiResponse.json();
+      assistantMessage = data.choices[0].message;
+
+    } catch (error) {
+      console.error('[IA-CONSOLE] First OpenAI call failed:', error);
+      
+      // Retornar mensagem amigável SEM resetar conversa
+      return new Response(
+        JSON.stringify({
+          success: true, // success=true para não resetar no frontend
+          response: '⚠️ Desculpe, estou com dificuldades para processar sua mensagem agora. Pode tentar novamente? Se persistir, pode ser timeout ou limite de requisições.',
+          tokens: 0,
+          latency: Date.now() - startTime,
+          error: error.message
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      );
     }
-
-    const data = await openaiResponse.json();
-    const assistantMessage = data.choices[0].message;
 
     // Se a IA pediu para chamar uma função
     if (assistantMessage.tool_calls) {
@@ -241,44 +271,94 @@ Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de pr�
           } else if (functionArgs.tipo_consulta === 'list') {
             functionResult = buildings.map(b => ({
               nome: b.nome,
-              bairro: b.bairro,
               preco_base: b.preco_base,
+              visualizacoes_mes: b.visualizacoes_mes,
+              publico_estimado: b.publico_estimado,
               status: b.status
             }));
           } else {
-            functionResult = buildings;
+            // Tipo "details" - ordenar por exibições (maior primeiro)
+            functionResult = buildings
+              .sort((a, b) => (b.visualizacoes_mes || 0) - (a.visualizacoes_mes || 0))
+              .map(b => ({
+                nome: b.nome,
+                preco_base: b.preco_base,
+                visualizacoes_mes: b.visualizacoes_mes,
+                publico_estimado: b.publico_estimado,
+                bairro: b.bairro,
+                status: b.status
+              }));
           }
         }
         
         console.log(`[IA-CONSOLE] Query result: ${buildings?.length || 0} buildings found`);
       }
       
-      // Chamar OpenAI novamente com o resultado da função
-      const secondCallResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: agent.openai_config?.model || 'gpt-4-turbo-preview',
-          messages: [
-            ...messagesArray,
-            assistantMessage,
-            {
-              role: 'tool',
-              tool_call_id: toolCall.id,
-              content: JSON.stringify(functionResult)
-            }
-          ],
-          temperature: agent.openai_config?.temperature || 0.7,
-          max_tokens: agent.openai_config?.max_tokens || 2000
-        })
-      });
-      
-      const finalData = await secondCallResponse.json();
-      const finalMessage = finalData.choices[0].message.content;
-      const tokensUsed = finalData.usage.total_tokens;
+      // Chamar OpenAI novamente com o resultado da função (com proteção)
+      let secondCallResponse;
+      let finalData;
+      let finalMessage;
+      let tokensUsed;
+
+      try {
+        const controller2 = new AbortController();
+        const timeoutId2 = setTimeout(() => controller2.abort(), 60000);
+        
+        secondCallResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: agent.openai_config?.model || 'gpt-4-turbo-preview',
+            messages: [
+              ...messagesArray,
+              assistantMessage,
+              {
+                role: 'tool',
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(functionResult)
+              }
+            ],
+            temperature: agent.openai_config?.temperature || 0.7,
+            max_tokens: agent.openai_config?.max_tokens || 2000
+          }),
+          signal: controller2.signal
+        });
+        
+        clearTimeout(timeoutId2);
+        
+        if (!secondCallResponse.ok) {
+          const errorText = await secondCallResponse.text();
+          console.error('[IA-CONSOLE] Second OpenAI call error:', errorText);
+          throw new Error(`OpenAI API error: ${secondCallResponse.status}`);
+        }
+
+        finalData = await secondCallResponse.json();
+        finalMessage = finalData.choices[0].message.content;
+        tokensUsed = finalData.usage.total_tokens;
+
+      } catch (error) {
+        console.error('[IA-CONSOLE] Second OpenAI call failed:', error);
+        
+        // Retornar mensagem amigável com o resultado da função
+        return new Response(
+          JSON.stringify({
+            success: true,
+            response: `⚠️ Consegui consultar os dados (${functionResult.total || functionResult.length} prédios encontrados), mas tive dificuldade em formatar a resposta. Pode tentar novamente?`,
+            tokens: 0,
+            latency: Date.now() - startTime,
+            functionCalled: functionName,
+            functionResult: functionResult,
+            error: error.message
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200
+          }
+        );
+      }
       
       // Registrar em logs
       await supabase.from('agent_logs').insert({
