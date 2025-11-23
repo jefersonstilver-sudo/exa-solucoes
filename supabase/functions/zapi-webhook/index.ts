@@ -447,13 +447,15 @@ Obrigado pela compreensão!`;
             }, 120000);
 
             try {
-              const { data: aiResult, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
+              const { data: aiResult, error: aiError } = await supabase.functions.invoke('ia-console', {
                 body: {
-                  conversationId: conversation.id,
-                  message: messageText,
                   agentKey: agent.key,
-                  phoneNumber: phone,
-                  messageId // ADICIONAR messageId para lock correto
+                  message: messageText,
+                  context: {
+                    conversationId: conversation.id,
+                    phoneNumber: phone,
+                    messageId: messageId
+                  }
                 }
               });
 
