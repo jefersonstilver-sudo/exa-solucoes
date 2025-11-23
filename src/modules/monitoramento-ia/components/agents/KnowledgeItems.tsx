@@ -170,7 +170,7 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
               Adicionar Conhecimento
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl bg-module-card border-module text-module-primary">
+          <DialogContent className="max-w-5xl w-[95vw] bg-module-card border-module text-module-primary max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-module-primary">Novo Item de Conhecimento</DialogTitle>
             </DialogHeader>
