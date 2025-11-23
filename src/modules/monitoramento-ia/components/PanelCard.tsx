@@ -48,18 +48,18 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
 
   // Determinar cor de fundo do card baseado no status
   const getCardBgClass = () => {
-    if (hasCriticalAlert) return '';
+    if (hasCriticalAlert) return 'border-red-500/50';
     if (device.status === 'online') {
-      return 'bg-green-500/10 border-green-500/30';
+      return 'border-green-500/30';
     }
     if (device.status === 'offline') {
       if (offlineHours > 1) {
-        return 'bg-red-600/20 border-red-600/40'; // vermelho forte
+        return 'border-red-500/40'; // vermelho forte
       } else {
-        return 'bg-red-400/10 border-red-400/30'; // vermelho leve
+        return 'border-red-400/30'; // vermelho leve
       }
     }
-    return '';
+    return 'border-module-border';
   };
 
   const lastOnline = humanizeDate(device.last_online_at);
@@ -76,18 +76,18 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
   // Cores por provedor
   const getProviderColor = (providerName: string) => {
     const upperProvider = providerName.toUpperCase();
-    if (upperProvider.includes('VIVO')) return 'text-purple-400';
-    if (upperProvider.includes('LIGGA')) return 'text-orange-400';
-    if (upperProvider.includes('TELECOM FOZ')) return 'text-blue-400';
-    return 'text-white/90';
+    if (upperProvider.includes('VIVO')) return 'text-purple-400 dark:text-purple-400';
+    if (upperProvider.includes('LIGGA')) return 'text-orange-400 dark:text-orange-400';
+    if (upperProvider.includes('TELECOM FOZ')) return 'text-blue-400 dark:text-blue-400';
+    return 'text-module-secondary';
   };
 
   return (
     <div
       onClick={onClick}
-      className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border overflow-hidden group hover:scale-[1.03] ${
+      className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-shadow duration-200 cursor-pointer border overflow-hidden ${
         hasCriticalAlert 
-          ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200 glow-danger' 
+          ? 'border-red-500 border-2 animate-pulse' 
           : getCardBgClass()
       }`}
     >
@@ -95,14 +95,14 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
       <div className="p-6 text-center">
         {/* Nome principal grande */}
         <div className="mb-3">
-          <div className="text-3xl font-bold text-white dark:text-white group-hover:text-[#9C1E1E] transition-colors">
+          <div className="text-3xl font-bold text-module-primary">
             {displayName}
           </div>
         </div>
 
         {/* Provedor - colorido */}
         <div className="mb-4">
-          <div className={`text-lg font-semibold tracking-wide ${getProviderColor(provider)} dark:${getProviderColor(provider)}`}>
+          <div className={`text-lg font-semibold tracking-wide ${getProviderColor(provider)}`}>
             {provider}
           </div>
         </div>
@@ -110,11 +110,11 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
         {/* Nome do prédio (condomínio) */}
         {device.condominio_name && (
           <div className="mb-4">
-            <div className="text-base text-white/80 dark:text-white/80 font-medium">
+            <div className="text-base text-module-secondary font-medium">
               {device.condominio_name}
             </div>
             {device.metadata?.torre && (
-              <div className="text-sm text-white/70 dark:text-white/70 mt-1">
+              <div className="text-sm text-module-secondary/70 mt-1">
                 Torre {device.metadata.torre}
                 {device.metadata?.elevador && ` - Elevador ${device.metadata.elevador}`}
               </div>
@@ -124,29 +124,29 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
 
         {/* Badge: Eventos */}
         <div className="flex flex-wrap gap-2 justify-center mb-4">
-          <Badge variant="secondary" className="text-xs gap-1 bg-white/90 text-gray-900">
+          <Badge variant="secondary" className="text-xs gap-1 bg-module-accent/20 text-module-accent border-module-accent/30">
             <Activity className="h-3 w-3" />
             {device.total_events || 0} eventos
           </Badge>
         </div>
 
         {/* AnyDesk ID - Secundário e discreto */}
-        <div className="mb-2 text-xs text-white/60 dark:text-white/60 font-mono">
+        <div className="mb-2 text-xs text-module-secondary/60 font-mono">
           ID: {device.anydesk_client_id}
         </div>
       </div>
 
       {/* Rodapé com status */}
-      <div className="bg-black/30 dark:bg-black/40 backdrop-blur-sm px-6 py-3 flex items-center justify-between border-t border-white/20">
+      <div className="bg-module-accent/10 backdrop-blur-sm px-6 py-3 flex items-center justify-between border-t border-module-border">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${getStatusColor(device.status)}`} />
-          <span className="text-sm font-medium text-white dark:text-white">
+          <span className="text-sm font-medium text-module-primary">
             {getStatusLabel(device.status)}
           </span>
         </div>
-        <div className="text-xs text-white/80 dark:text-white/80">
+        <div className="text-xs text-module-secondary">
           {device.status === 'offline' ? (
-            <span className="font-semibold text-red-300">Offline há {offlineCounter}</span>
+            <span className="font-semibold text-red-400">Offline há {offlineCounter}</span>
           ) : (
             lastOnline
           )}

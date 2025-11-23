@@ -11,27 +11,27 @@ const PanelTooltip: React.FC<PanelTooltipProps> = memo(({ panel, children }) => 
   // Simplified tooltip content to avoid performance issues
   const tooltipContent = (
     <div className="p-2 space-y-1 max-w-xs">
-      <div className="font-semibold">{panel.code}</div>
-      <div className="text-sm text-gray-600">
+      <div className="font-semibold text-module-primary">{panel.code}</div>
+      <div className="text-sm text-module-secondary">
         Status: <span className="capitalize">{panel.status || 'offline'}</span>
       </div>
       {panel.resolucao && (
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-module-secondary">
           Resolução: {panel.resolucao}
         </div>
       )}
       {panel.polegada && (
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-module-secondary">
           Tamanho: {panel.polegada}"
         </div>
       )}
       {panel.sistema_operacional && (
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-module-secondary">
           Sistema: {panel.sistema_operacional}
         </div>
       )}
       {panel.localizacao && (
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-module-secondary">
           Local: {panel.localizacao}
         </div>
       )}
