@@ -32,26 +32,31 @@ serve(async (req) => {
     }
 
     const zapiConfig = agent.zapi_config as any;
-    if (!zapiConfig?.api_url || !zapiConfig?.api_token || !zapiConfig?.instance_id) {
+    if (!zapiConfig?.token || !zapiConfig?.instance_id) {
       throw new Error('Z-API configuration incomplete');
     }
 
+    const ZAPI_BASE_URL = 'https://api.z-api.io';
+    const instanceId = zapiConfig.instance_id;
+    const token = zapiConfig.token;
+    const clientToken = zapiConfig.client_token;
+
     console.log('[ZAPI-IMPORT] Agent config loaded:', {
-      instanceId: zapiConfig.instance_id,
-      apiUrl: zapiConfig.api_url
+      instanceId,
+      baseUrl: ZAPI_BASE_URL
     });
 
     // Fetch chats from Z-API
-    const chatsResponse = await fetch(
-      `${zapiConfig.api_url}/chats/${zapiConfig.instance_id}`,
-      {
-        method: 'GET',
-        headers: {
-          'Client-Token': zapiConfig.api_token,
-          'Content-Type': 'application/json'
-        }
+    const chatsUrl = `${ZAPI_BASE_URL}/instances/${instanceId}/token/${token}/chats`;
+    console.log('[ZAPI-IMPORT] Fetching chats from:', chatsUrl);
+    
+    const chatsResponse = await fetch(chatsUrl, {
+      method: 'GET',
+      headers: {
+        'Client-Token': clientToken,
+        'Content-Type': 'application/json'
       }
-    );
+    });
 
     if (!chatsResponse.ok) {
       const errorText = await chatsResponse.text();
@@ -111,16 +116,16 @@ serve(async (req) => {
         }
 
         // Fetch messages for this chat
-        const messagesResponse = await fetch(
-          `${zapiConfig.api_url}/chat-messages/${zapiConfig.instance_id}/${phoneNumber}`,
-          {
-            method: 'GET',
-            headers: {
-              'Client-Token': zapiConfig.api_token,
-              'Content-Type': 'application/json'
-            }
+        const messagesUrl = `${ZAPI_BASE_URL}/instances/${instanceId}/token/${token}/chat/${phoneNumber}/messages?amount=100`;
+        console.log('[ZAPI-IMPORT] Fetching messages from:', messagesUrl);
+        
+        const messagesResponse = await fetch(messagesUrl, {
+          method: 'GET',
+          headers: {
+            'Client-Token': clientToken,
+            'Content-Type': 'application/json'
           }
-        );
+        });
 
         if (!messagesResponse.ok) {
           console.error('[ZAPI-IMPORT] Failed to fetch messages for:', phoneNumber);
