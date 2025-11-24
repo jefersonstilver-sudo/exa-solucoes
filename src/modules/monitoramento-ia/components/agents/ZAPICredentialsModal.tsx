@@ -56,6 +56,7 @@ export const ZAPICredentialsModal = ({
     setSaving(true);
     try {
       const updatedConfig = {
+        whatsapp_provider: 'zapi',
         zapi_config: {
           instance_id: instanceId.trim(),
           token: token.trim(),
