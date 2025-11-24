@@ -1,6 +1,5 @@
 import { Resend } from "npm:resend@4.0.0";
 import * as EmailTemplates from "../_shared/email-templates/index.ts";
-import { createResendConfirmationEmailInline } from "./inline-templates.ts";
 
 export class EmailService {
   private resend: Resend;
@@ -88,7 +87,11 @@ export class EmailService {
   async sendResendConfirmationEmail(userEmail: string, userName: string, confirmationUrl: string) {
     console.log('📧 [EMAIL] Gerando email de confirmação para:', userEmail);
     
-    const html = createResendConfirmationEmailInline(userName, confirmationUrl);
+    const html = EmailTemplates.createResendConfirmationEmail({
+      userEmail,
+      userName,
+      confirmationUrl
+    });
     
     console.log(`✅ [EMAIL] HTML gerado (${html.length} caracteres)`);
 
