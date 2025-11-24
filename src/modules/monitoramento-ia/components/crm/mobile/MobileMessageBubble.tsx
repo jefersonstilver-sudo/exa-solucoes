@@ -33,6 +33,11 @@ const getAgentColor = (agentKey: string) => {
 export const MobileMessageBubble: React.FC<MobileMessageBubbleProps> = ({ message, index }) => {
   const isOutbound = message.direction === 'outbound';
   
+  // Extrair dados do grupo e participante
+  const isGroup = message.raw_payload?.isGroup;
+  const senderName = message.raw_payload?.senderName;
+  const participantPhone = message.raw_payload?.participantPhone;
+  
   // Mapear mídia do raw_payload (suporta image, video, document, audio)
   const mediaUrl = message.raw_payload?.image?.imageUrl || 
                    message.raw_payload?.video?.videoUrl ||
@@ -50,10 +55,20 @@ export const MobileMessageBubble: React.FC<MobileMessageBubbleProps> = ({ messag
   
   const hasMedia = !!mediaUrl;
   
-  // Cor suave por agente
+  // Cor suave por agente (outbound)
   const agentColor = isOutbound && message.agent_key 
     ? getAgentColor(message.agent_key) 
     : undefined;
+  
+  // Cor suave por participante (inbound em grupos)
+  const inboundColor = isGroup && !isOutbound && participantPhone
+    ? getAgentColor(participantPhone)
+    : undefined;
+  
+  // Cor final da bolha
+  const bubbleColor = isOutbound 
+    ? (agentColor || '#dcf8c6') // Verde WhatsApp padrão se não tiver agent_key
+    : inboundColor;
 
   return (
     <motion.div
@@ -70,9 +85,15 @@ export const MobileMessageBubble: React.FC<MobileMessageBubbleProps> = ({ messag
           'relative max-w-[85%] rounded-lg',
           isOutbound
             ? 'text-[#000000] dark:text-white rounded-br-none'
-            : 'bg-white dark:bg-[#1f2c33] text-[#000000] dark:text-white shadow-sm rounded-bl-none'
+            : 'text-[#000000] dark:text-white shadow-sm rounded-bl-none'
         )}
-        style={isOutbound && agentColor ? { backgroundColor: agentColor } : undefined}
+        style={
+          bubbleColor 
+            ? { backgroundColor: bubbleColor } 
+            : isOutbound 
+              ? undefined 
+              : { backgroundColor: 'white' }
+        }
       >
         {/* Cauda da bolha (estilo WhatsApp) */}
         <div
@@ -80,12 +101,25 @@ export const MobileMessageBubble: React.FC<MobileMessageBubbleProps> = ({ messag
             'absolute bottom-0 w-0 h-0',
             isOutbound
               ? 'right-0 -mr-2 border-l-8 border-b-8 border-b-transparent'
-              : 'left-0 -ml-2 border-r-8 border-r-white dark:border-r-[#1f2c33] border-b-8 border-b-transparent'
+              : 'left-0 -ml-2 border-r-8 border-b-8 border-b-transparent'
           )}
-          style={isOutbound && agentColor ? { borderLeftColor: agentColor } : undefined}
+          style={
+            isOutbound && bubbleColor
+              ? { borderLeftColor: bubbleColor }
+              : !isOutbound && inboundColor
+                ? { borderRightColor: inboundColor }
+                : undefined
+          }
         />
 
         <div className="p-2">
+          {/* Nome do remetente em grupos (apenas inbound) */}
+          {isGroup && !isOutbound && senderName && (
+            <p className="text-xs font-semibold mb-1 opacity-70">
+              {senderName}
+            </p>
+          )}
+
           {/* Imagem */}
           {mediaType === 'image' && hasMedia && (
             <div className="mb-1 -m-2 mb-2">
