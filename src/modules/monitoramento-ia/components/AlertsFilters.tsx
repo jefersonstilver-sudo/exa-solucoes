@@ -2,7 +2,10 @@ import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { PeriodSelector, PeriodType } from './PeriodSelector';
 import type { AlertFilters } from '../utils/alerts';
+import { startOfDay, endOfDay, subDays, startOfYesterday, endOfYesterday, startOfWeek } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface AlertsFiltersProps {
   filters: AlertFilters;
@@ -17,21 +20,78 @@ export const AlertsFilters = ({
   onFiltersChange,
   onClearFilters 
 }: AlertsFiltersProps) => {
+  const handlePeriodChange = (period: PeriodType, customStart?: Date, customEnd?: Date) => {
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
+    switch (period) {
+      case 'hoje':
+        startDate = startOfDay(new Date());
+        endDate = endOfDay(new Date());
+        break;
+      case 'ontem':
+        startDate = startOfYesterday();
+        endDate = endOfYesterday();
+        break;
+      case 'esta-semana':
+        startDate = startOfWeek(new Date(), { locale: ptBR });
+        endDate = endOfDay(new Date());
+        break;
+      case '7dias':
+        startDate = startOfDay(subDays(new Date(), 7));
+        endDate = endOfDay(new Date());
+        break;
+      case '30dias':
+        startDate = startOfDay(subDays(new Date(), 30));
+        endDate = endOfDay(new Date());
+        break;
+      case 'personalizado':
+        startDate = customStart ? startOfDay(customStart) : undefined;
+        endDate = customEnd ? endOfDay(customEnd) : undefined;
+        break;
+    }
+
+    onFiltersChange({ ...filters, startDate, endDate });
+  };
+
+  const getCurrentPeriod = (): PeriodType => {
+    if (!filters.startDate) return 'hoje';
+    
+    const today = startOfDay(new Date());
+    const filterStart = startOfDay(filters.startDate);
+    
+    if (filterStart.getTime() === today.getTime()) return 'hoje';
+    if (filterStart.getTime() === startOfYesterday().getTime()) return 'ontem';
+    if (filterStart.getTime() === startOfWeek(new Date(), { locale: ptBR }).getTime()) return 'esta-semana';
+    if (filterStart.getTime() === startOfDay(subDays(new Date(), 7)).getTime()) return '7dias';
+    if (filterStart.getTime() === startOfDay(subDays(new Date(), 30)).getTime()) return '30dias';
+    
+    return 'personalizado';
+  };
+
   return (
     <div className="bg-module-card rounded-xl p-4 mb-6 space-y-4 border border-module">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-module-muted" />
-        <Input
-          placeholder="Buscar por painel, condomínio ou tipo..."
-          value={filters.search || ''}
-          onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-          className="pl-10 bg-module-input border-module border text-module-primary placeholder-module-muted"
+      {/* Search and Period */}
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-module-muted" />
+          <Input
+            placeholder="Buscar por painel, condomínio ou tipo..."
+            value={filters.search || ''}
+            onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+            className="pl-10 bg-module-input border-module border text-module-primary placeholder-module-muted"
+          />
+        </div>
+        <PeriodSelector
+          value={getCurrentPeriod()}
+          onChange={handlePeriodChange}
+          customStartDate={filters.startDate}
+          customEndDate={filters.endDate}
         />
       </div>
 
       {/* Filters Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {/* Status */}
         <Select
           value={filters.status?.[0] || 'all'}
@@ -95,6 +155,27 @@ export const AlertsFilters = ({
           </SelectContent>
         </Select>
 
+        {/* Provider */}
+        <Select
+          value={filters.provider || 'all'}
+          onValueChange={(value) => 
+            onFiltersChange({ 
+              ...filters, 
+              provider: value === 'all' ? undefined : value 
+            })
+          }
+        >
+          <SelectTrigger className="bg-module-input border-module border text-module-primary">
+            <SelectValue placeholder="Provedor" />
+          </SelectTrigger>
+          <SelectContent className="bg-module-card border-module border z-50">
+            <SelectItem value="all">Todos os provedores</SelectItem>
+            <SelectItem value="AnyDesk">AnyDesk</SelectItem>
+            <SelectItem value="String">String</SelectItem>
+            <SelectItem value="Manual">Manual</SelectItem>
+          </SelectContent>
+        </Select>
+
         {/* Order By */}
         <Select
           value={filters.orderBy || 'opened_at'}
@@ -113,6 +194,7 @@ export const AlertsFilters = ({
             <SelectItem value="opened_at">Tempo aberto</SelectItem>
             <SelectItem value="status">Status</SelectItem>
             <SelectItem value="name">Nome do painel</SelectItem>
+            <SelectItem value="provider">Provedor</SelectItem>
           </SelectContent>
         </Select>
       </div>
