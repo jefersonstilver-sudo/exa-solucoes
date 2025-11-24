@@ -43,7 +43,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
   const [loadingPanels, setLoadingPanels] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { userInfo } = useUserPermissions();
+  const { userInfo, permissions } = useUserPermissions();
   const {
     formData,
     loading,
@@ -153,7 +153,7 @@ const BuildingFormDialog: React.FC<BuildingFormDialogProps> = ({
                   type="button" 
                   variant="destructive" 
                   onClick={handleDeleteClick}
-                  disabled={!userInfo.isSuperAdmin && (loading || loadingPanels || deleting)}
+                  disabled={!permissions.canDeleteBuildings || loading || loadingPanels || deleting}
                   className="gap-2"
                 >
                   <Trash2 className="h-4 w-4" />

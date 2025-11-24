@@ -61,5 +61,6 @@ export const useUserPermissions = () => {
     canManageHomepageConfig: permissions.canManageHomepageConfig,
     canManageProviderBenefits: permissions.canManageProviderBenefits,
     canManageEmails: permissions.canManageEmails,
+    canDeleteBuildings: permissions.canDeleteBuildings, // ✅ NOVA: Controle de deleção de prédios
   };
 };

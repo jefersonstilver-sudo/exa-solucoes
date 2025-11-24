@@ -34,6 +34,7 @@ export interface UserPermissions {
   
   // Ativos
   canManageBuildings: boolean;
+  canDeleteBuildings: boolean; // ✅ NOVA: Separar visualizar/editar de deletar
   canManagePanels: boolean;
   
   // Leads & Clientes
@@ -91,6 +92,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewCRM: true,
     canViewApprovals: true,
     canManageBuildings: true,
+    canDeleteBuildings: true, // ✅ Super admin pode deletar
     canManagePanels: true,
     canViewLeads: true,
     canViewSindicosInteressados: true,
@@ -112,30 +114,32 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewFinancialReports: true,
   },
   admin: {
-    canViewDashboard: true,
-    canViewOrders: true,
-    canViewCRM: true,
-    canViewApprovals: true,
-    canManageBuildings: true,
-    canManagePanels: true,
-    canViewLeads: true,
-    canViewSindicosInteressados: true,
-    canViewLeadsProdutora: true,
-    canViewLeadsCampanhas: true,
-    canViewLeadsLinkae: true,
-    canViewLeadsExa: true,
-    canManageUsers: false, // Apenas super_admin pode criar usuários
-    canManageCoupons: true,
-    canManageHomepageConfig: false, // Reservado para marketing
-    canManageSystemSettings: false, // Apenas super_admin
-    canViewAudit: false,
-    canViewSecurity: false,
-    canManageVideos: true,
-    canManagePortfolio: true,
-    canManageNotifications: true,
-    canManageEmails: true,
-    canManageProviderBenefits: true,
-    canViewFinancialReports: true,
+    // ⚠️ ADMIN GERAL - Permissões RESTRITAS conforme definido
+    canViewDashboard: false,              // ❌ Removido acesso ao Dashboard
+    canViewOrders: true,                  // ✅ Acesso a Pedidos
+    canViewCRM: true,                     // ✅ Acesso a CRM Clientes
+    canViewApprovals: true,               // ✅ Acesso a Aprovações
+    canManageBuildings: true,             // ✅ Acesso a Prédios (ver e editar)
+    canDeleteBuildings: false,            // ❌ NUNCA pode deletar prédios
+    canManagePanels: false,               // ❌ Removido acesso a Painéis
+    canViewLeads: false,                  // ❌ Removido acesso geral a leads
+    canViewSindicosInteressados: true,    // ✅ Acesso a Síndicos Interessados
+    canViewLeadsProdutora: false,         // ❌ Removido acesso a Leads Produtora
+    canViewLeadsCampanhas: false,         // ❌ Removido acesso a Leads Campanhas
+    canViewLeadsLinkae: false,            // ❌ Removido acesso a Leads Linkae
+    canViewLeadsExa: true,                // ✅ Acesso a Leads EXA
+    canManageUsers: false,                // ❌ Apenas super_admin pode criar usuários
+    canManageCoupons: true,               // ✅ Acesso a Cupons
+    canManageHomepageConfig: false,       // ❌ Removido acesso a Homepage Config
+    canManageSystemSettings: false,       // ❌ Apenas super_admin
+    canViewAudit: false,                  // ❌ Apenas super_admin
+    canViewSecurity: false,               // ❌ Apenas super_admin
+    canManageVideos: true,                // ✅ Acesso a Vídeos
+    canManagePortfolio: false,            // ❌ Removido acesso a Portfólio Produtora
+    canManageNotifications: false,        // ❌ Removido acesso a Notificações
+    canManageEmails: false,               // ❌ Removido acesso a Emails
+    canManageProviderBenefits: true,      // ✅ Acesso a Benefícios Prestadores
+    canViewFinancialReports: false,       // ❌ Removido acesso a Relatórios Financeiros
   },
   admin_marketing: {
     canViewDashboard: true,
@@ -143,6 +147,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewCRM: false, // ❌ Marketing não vê CRM de clientes
     canViewApprovals: true,
     canManageBuildings: false,
+    canDeleteBuildings: false,
     canManagePanels: false,
     canViewLeads: true,
     canViewSindicosInteressados: true,
@@ -169,6 +174,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewCRM: false,                 // ❌ Não vê CRM (corrigido)
     canViewApprovals: false,           // ❌ Não precisa aprovar vídeos
     canManageBuildings: false,         // ❌ Não gerencia prédios
+    canDeleteBuildings: false,
     canManagePanels: false,            // ❌ Não gerencia painéis
     canViewLeads: false,               // ❌ Não precisa ver leads
     canViewSindicosInteressados: false,
@@ -195,6 +201,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewCRM: false,
     canViewApprovals: false,
     canManageBuildings: false,
+    canDeleteBuildings: false,
     canManagePanels: false,
     canViewLeads: false,
     canViewSindicosInteressados: false,
@@ -221,6 +228,7 @@ export const USER_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canViewCRM: false,
     canViewApprovals: false,
     canManageBuildings: false,
+    canDeleteBuildings: false,
     canManagePanels: false,
     canViewLeads: false,
     canViewSindicosInteressados: false,
