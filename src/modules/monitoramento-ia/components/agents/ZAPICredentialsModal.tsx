@@ -128,20 +128,20 @@ export const ZAPICredentialsModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] !bg-white dark:!bg-gray-900 border-2 border-gray-200 dark:border-gray-700 shadow-2xl">
+      <DialogContent className="sm:max-w-[900px] bg-module-card border-2 border-module shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="text-gray-900 dark:text-gray-100 flex items-center gap-2 text-xl font-bold">
+          <DialogTitle className="text-module-primary flex items-center gap-2 text-xl font-bold">
             🔐 Configurar Credenciais Z-API
           </DialogTitle>
-          <DialogDescription className="text-gray-600 dark:text-gray-400">
+          <DialogDescription className="text-module-secondary">
             Configure as credenciais da sua instância Z-API para conectar o agente ao WhatsApp
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 max-h-[85vh] overflow-y-auto pr-2">
           {/* Instance ID */}
           <div className="space-y-2">
-            <Label htmlFor="instanceId" className="text-gray-900 dark:text-gray-100 font-medium text-sm">
+            <Label htmlFor="instanceId" className="text-module-primary font-medium text-sm">
               Instance ID *
             </Label>
             <Input
@@ -149,16 +149,16 @@ export const ZAPICredentialsModal = ({
               value={instanceId}
               onChange={(e) => setInstanceId(e.target.value)}
               placeholder="Ex: 3C6B8F4A-1234-5678-90AB-CDEF12345678"
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+              className="bg-module-secondary border-module text-module-primary placeholder:text-module-secondary/50"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-module-secondary">
               Encontre no painel Z-API em "Minhas Instâncias"
             </p>
           </div>
 
           {/* Token */}
           <div className="space-y-2">
-            <Label htmlFor="token" className="text-gray-900 dark:text-gray-100 font-medium text-sm">
+            <Label htmlFor="token" className="text-module-primary font-medium text-sm">
               Token *
             </Label>
             <Input
@@ -166,16 +166,16 @@ export const ZAPICredentialsModal = ({
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="Ex: 1A2B3C4D5E6F7G8H9I0J"
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 font-mono text-sm placeholder:text-gray-400"
+              className="bg-module-secondary border-module text-module-primary font-mono text-sm placeholder:text-module-secondary/50"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-module-secondary">
               Token de autenticação da instância
             </p>
           </div>
 
           {/* Client-Token */}
           <div className="space-y-2">
-            <Label htmlFor="clientToken" className="text-gray-900 dark:text-gray-100 font-medium text-sm">
+            <Label htmlFor="clientToken" className="text-module-primary font-medium text-sm">
               Client-Token (Token de Segurança da Conta) *
             </Label>
             <Input
@@ -184,16 +184,16 @@ export const ZAPICredentialsModal = ({
               value={clientToken}
               onChange={(e) => setClientToken(e.target.value)}
               placeholder="Ex: E29F7B3C..."
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 font-mono text-sm placeholder:text-gray-400"
+              className="bg-module-secondary border-module text-module-primary font-mono text-sm placeholder:text-module-secondary/50"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-module-secondary">
               Token de segurança da conta (encontre em: Segurança → Token de Segurança)
             </p>
           </div>
 
           {/* API URL */}
           <div className="space-y-2">
-            <Label htmlFor="apiUrl" className="text-gray-900 dark:text-gray-100 font-medium text-sm">
+            <Label htmlFor="apiUrl" className="text-module-primary font-medium text-sm">
               API URL
             </Label>
             <Input
@@ -201,26 +201,26 @@ export const ZAPICredentialsModal = ({
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
               placeholder="https://api.z-api.io"
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+              className="bg-module-secondary border-module text-module-primary placeholder:text-module-secondary/50"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-module-secondary">
               URL base da API (geralmente não precisa alterar)
             </p>
           </div>
 
           {/* Info Box with Visual Guide */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-5">
-            <p className="text-sm text-blue-900 dark:text-blue-100 font-bold mb-3 flex items-center gap-2">
+          <div className="bg-module-secondary/30 border-2 border-module rounded-lg p-5">
+            <p className="text-sm text-module-primary font-bold mb-3 flex items-center gap-2">
               💡 Guia Visual: Como obter as credenciais
             </p>
             
             <div className="space-y-4">
               {/* Etapa 1 */}
-              <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3">
-                <p className="text-xs font-bold text-blue-900 dark:text-blue-100 mb-1">
+              <div className="bg-module-card/60 rounded-lg p-3 border border-module/50">
+                <p className="text-xs font-bold text-module-primary mb-1">
                   1️⃣ Instance ID e Token
                 </p>
-                <p className="text-xs text-blue-800 dark:text-blue-200">
+                <p className="text-xs text-module-secondary">
                   • Painel Z-API → <strong>"Minhas Instâncias"</strong><br/>
                   • Selecione sua instância<br/>
                   • Copie o <strong>Instance ID</strong> (formato: 3C6B8F4A-1234-...)<br/>
@@ -229,11 +229,11 @@ export const ZAPICredentialsModal = ({
               </div>
 
               {/* Etapa 2 */}
-              <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3">
-                <p className="text-xs font-bold text-blue-900 dark:text-blue-100 mb-1">
+              <div className="bg-module-card/60 rounded-lg p-3 border border-module/50">
+                <p className="text-xs font-bold text-module-primary mb-1">
                   2️⃣ Client-Token (Token de Segurança da Conta)
                 </p>
-                <p className="text-xs text-blue-800 dark:text-blue-200">
+                <p className="text-xs text-module-secondary">
                   • Painel Z-API → <strong>"Segurança"</strong><br/>
                   • Procure por <strong>"Token de Segurança da Conta"</strong><br/>
                   • Copie o token exibido (diferente do token da instância)<br/>
@@ -242,14 +242,14 @@ export const ZAPICredentialsModal = ({
               </div>
 
               {/* Etapa 3 */}
-              <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3">
-                <p className="text-xs font-bold text-blue-900 dark:text-blue-100 mb-1">
+              <div className="bg-module-card/60 rounded-lg p-3 border border-module/50">
+                <p className="text-xs font-bold text-module-primary mb-1">
                   3️⃣ Diferença entre os tokens
                 </p>
-                <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                <div className="text-xs text-module-secondary space-y-1">
                   <p>• <strong>Instance Token:</strong> Específico da instância (na URL)</p>
                   <p>• <strong>Client-Token:</strong> Segurança da conta (no header HTTP)</p>
-                  <p className="text-red-600 dark:text-red-400 font-bold mt-2">
+                  <p className="text-red-500 font-bold mt-2">
                     ⚠️ AMBOS são necessários para funcionar!
                   </p>
                 </div>
@@ -258,16 +258,16 @@ export const ZAPICredentialsModal = ({
           </div>
         </div>
 
-        <div className="flex justify-between gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-between gap-3 pt-4 border-t border-module">
           <Button
             variant="outline"
             onClick={handleTestConnection}
             disabled={saving || testing}
-            className="border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            className="border-module text-module-primary hover:bg-module-secondary/50"
           >
             {testing ? (
               <>
-                <div className="w-4 h-4 mr-2 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 mr-2 border-2 border-module-primary border-t-transparent rounded-full animate-spin" />
                 Testando...
               </>
             ) : (
@@ -283,7 +283,7 @@ export const ZAPICredentialsModal = ({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={saving || testing}
-              className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="border-module text-module-primary hover:bg-module-secondary/50"
             >
               <X className="w-4 h-4 mr-2" />
               Cancelar
