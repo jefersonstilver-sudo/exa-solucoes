@@ -166,7 +166,7 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
                 </span>
               </div>
 
-              <p className="text-sm text-module-secondary mb-3">{agent.description}</p>
+              <p className="text-sm text-module-secondary mb-3 line-clamp-3">{agent.description}</p>
 
               {status?.lastCheck && (
                 <p className="text-xs text-module-tertiary mb-2">
