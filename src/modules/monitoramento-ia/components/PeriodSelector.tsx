@@ -65,7 +65,7 @@ export const PeriodSelector = ({ value, onChange, customStartDate, customEndDate
         </button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-auto p-0 bg-[#1a1625] border border-[#2d2640] shadow-xl z-50" 
+        className="w-auto p-0 bg-[#1a1625] border border-[#2d2640] shadow-2xl z-[9999]" 
         align="end"
         sideOffset={8}
       >
