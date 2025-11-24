@@ -437,13 +437,25 @@ Obrigado pela compreensão!`;
           .maybeSingle();
 
         if (existing) {
-          // UPDATE simples
+          // UPDATE - atualizar contact_name e is_group se for grupo
+          const updateData: any = { 
+            last_message_at: new Date().toISOString(),
+            status: 'open'
+          };
+          
+          // Se for grupo, forçar atualização do nome e flag
+          if (isGroup) {
+            updateData.is_group = true;
+            updateData.contact_name = payload.chatName || 'Grupo sem nome';
+            console.log('[ZAPI-WEBHOOK] 🔄 Updating group conversation:', {
+              id: existing.id,
+              newName: updateData.contact_name
+            });
+          }
+          
           const { data: updated, error: updateError } = await supabase
             .from('conversations')
-            .update({ 
-              last_message_at: new Date().toISOString(),
-              status: 'open'
-            })
+            .update(updateData)
             .eq('id', existing.id)
             .select()
             .single();
