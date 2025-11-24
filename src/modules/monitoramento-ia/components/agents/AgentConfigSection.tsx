@@ -234,21 +234,21 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
               <TabsContent value="section1" className="mt-6">
                 <AgentSections 
                   sections={sections.filter(s => s.section_number === 1)} 
-                  agentId={agent.id}
+                  agentId={agent.key}
                 />
               </TabsContent>
 
               <TabsContent value="section2" className="mt-6">
                 <AgentSections 
                   sections={sections.filter(s => s.section_number === 2)} 
-                  agentId={agent.id}
+                  agentId={agent.key}
                 />
               </TabsContent>
 
               <TabsContent value="section3" className="mt-6">
                 <AgentSections 
                   sections={sections.filter(s => s.section_number === 3)} 
-                  agentId={agent.id}
+                  agentId={agent.key}
                 />
               </TabsContent>
 

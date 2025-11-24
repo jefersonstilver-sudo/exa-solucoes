@@ -148,20 +148,56 @@ serve(async (req) => {
     const isFullListRequest = message.match(/todos|lista completa|quantos prédios|quais prédios|mostre.*prédios|ver.*prédios/i);
     const isComplexSearch = message.match(/preço|valor|quanto custa|endereço|onde fica|visualizações/i);
     
-    // ====== BUSCAR DADOS EM PARALELO (OTIMIZADO) ======
+    // 🆕 DETECTAR BUSCA EM BASE DE CONHECIMENTO (Seção 4 + Knowledge Items)
+    const isKnowledgeSearch = message.match(/institucional|empresa|quem.*exa|história|missão|proposta|cnpj|endereço.*empresa|media kit|midia kit|apresentação|sobre.*exa|quem são vocês|fale.*empresa|documento|pdf|arquivo|material/i);
+    const needsHeavyKnowledge = isKnowledgeSearch || false;
+    
+    // ====== BUSCAR DADOS EM PARALELO (OTIMIZADO - CARREGAMENTO INTELIGENTE) ======
+    // 🚀 Camada 1: SEMPRE carregar seções essenciais (1, 2, 3)
     const [
       { data: agent },
-      { data: agentSections },
-      { data: agentKnowledgeItems },
+      { data: essentialSections },
       { data: conversationHistory },
       { data: conversation }
     ] = await Promise.all([
       supabase.from('agents').select('*').eq('key', agentKey).single(),
-      supabase.from('agent_sections').select('*').eq('agent_id', agentKey).order('section_number'),
-      supabase.from('agent_knowledge_items').select('*').eq('agent_id', agentKey).eq('active', true),
+      supabase.from('agent_sections').select('*').eq('agent_id', agentKey).in('section_number', [1, 2, 3]).order('section_number'),
       supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true }).limit(10),
       supabase.from('conversations').select('provider').eq('id', conversationId).single()
     ]);
+
+    // 📚 Camada 2: CARREGAR seção 4 + knowledge items SOMENTE SE NECESSÁRIO
+    let section4 = null;
+    let fullKnowledgeItems = [];
+
+    if (needsHeavyKnowledge) {
+      console.log('[AI-RESPONSE] 📚 Knowledge search detected, loading full knowledge base...');
+      
+      const [sec4Result, knowledgeResult] = await Promise.all([
+        supabase
+          .from('agent_sections')
+          .select('*')
+          .eq('agent_id', agentKey)
+          .eq('section_number', 4)
+          .maybeSingle(),
+        
+        supabase
+          .from('agent_knowledge_items')
+          .select('*')
+          .eq('agent_id', agentKey)
+          .eq('active', true)
+      ]);
+      
+      section4 = sec4Result.data;
+      fullKnowledgeItems = knowledgeResult.data || [];
+      
+      console.log(`[AI-RESPONSE] 📚 Loaded section 4 + ${fullKnowledgeItems.length} knowledge items`);
+    } else {
+      console.log('[AI-RESPONSE] ⚡ Fast mode: Loading only essential sections (1,2,3)');
+    }
+
+    const agentSections = essentialSections; // Para compatibilidade com código abaixo
+    const agentKnowledgeItems = needsHeavyKnowledge ? fullKnowledgeItems : [];
 
     // ====== CONTROLE DE ACESSO VIA SEÇÃO LIMITES (SEÇÃO 3) ======
     const limitesSection = agentSections?.find((s: any) => s.section_number === 3);
@@ -359,25 +395,40 @@ serve(async (req) => {
         }).filter(b => b !== null).join('\n\n') // Remover prédios sem preço
       : 'Nenhum prédio disponível';
 
-    // ====== CONSTRUIR KNOWLEDGE BASE DAS 4 SEÇÕES ======
+    // ====== CONSTRUIR KNOWLEDGE BASE DAS 4 SEÇÕES (OTIMIZADO) ======
     let knowledgeContext = '';
     
+    // ✅ SEMPRE: Adicionar seções 1, 2, 3 (essenciais)
     if (agentSections && agentSections.length > 0) {
-      const sections = agentSections.sort((a: any, b: any) => a.section_number - b.section_number);
-      knowledgeContext += sections.map((s: any) => `## SEÇÃO ${s.section_number} - ${s.section_title.toUpperCase()}\n${s.content}`).join('\n\n');
+      const sortedSections = agentSections.sort((a: any, b: any) => a.section_number - b.section_number);
+      knowledgeContext += sortedSections
+        .map((s: any) => `## SEÇÃO ${s.section_number} - ${s.section_title.toUpperCase()}\n${s.content}`)
+        .join('\n\n');
+      
+      console.log(`[AI-RESPONSE] ✅ Loaded essential sections: ${agentSections.map((s: any) => s.section_number).join(', ')}`);
     }
     
-    if (agentKnowledgeItems && agentKnowledgeItems.length > 0) {
-      knowledgeContext += '\n\n## SEÇÃO 4 - BASE DE CONHECIMENTO\n\n';
-      knowledgeContext += agentKnowledgeItems.map((k: any) => {
-        let item = `### ${k.title}\n`;
-        if (k.description) item += `${k.description}\n\n`;
-        item += k.content;
-        if (k.keywords && k.keywords.length > 0) {
-          item += `\n\n**Palavras-chave:** ${k.keywords.join(', ')}`;
-        }
-        return item;
-      }).join('\n\n---\n\n');
+    // 🆕 CONDICIONAL: Adicionar seção 4 + knowledge items se necessário
+    if (needsHeavyKnowledge) {
+      if (section4 && section4.content) {
+        knowledgeContext += `\n\n## SEÇÃO 4 - ${section4.section_title.toUpperCase()}\n${section4.content}`;
+        console.log('[AI-RESPONSE] ✅ Added section 4 to context');
+      }
+      
+      if (fullKnowledgeItems.length > 0) {
+        knowledgeContext += '\n\n## DOCUMENTOS E RECURSOS EXTRAS\n\n';
+        knowledgeContext += fullKnowledgeItems.map((k: any) => {
+          let item = `### ${k.title}\n`;
+          if (k.description) item += `${k.description}\n\n`;
+          item += k.content;
+          if (k.keywords && k.keywords.length > 0) {
+            item += `\n\n**Palavras-chave:** ${k.keywords.join(', ')}`;
+          }
+          return item;
+        }).join('\n\n---\n\n');
+        
+        console.log(`[AI-RESPONSE] 📚 Added ${fullKnowledgeItems.length} knowledge items to context`);
+      }
     }
 
     // ====== FASE 1: CONSTRUIR HISTÓRICO ESTRUTURADO PARA OpenAI ======
@@ -454,20 +505,32 @@ ${isFullListRequest ? `
     });
 
     // ====== FASE 2: ENVIAR MENSAGEM HUMANIZADA DE AGUARDE (SEM EMOJIS) ======
-    if (isFullListRequest || isComplexSearch) {
+    if (isFullListRequest || isComplexSearch || needsHeavyKnowledge) {
       console.log('[AI-RESPONSE] 💬 Sending "wait" message...');
       
-      const waitMessages = isFullListRequest 
-        ? [
-            "Um momento, estou buscando todos os prédios disponíveis.",
-            "Deixa eu organizar a lista completa pra você.",
-            "Preparando a lista completa."
-          ]
-        : [
-            "Deixa eu procurar isso no sistema.",
-            "Um momento, já te respondo.",
-            "Só um instante, estou verificando."
-          ];
+      let waitMessages;
+      
+      if (isFullListRequest) {
+        waitMessages = [
+          "Um momento, estou buscando todos os prédios disponíveis.",
+          "Deixa eu organizar a lista completa pra você.",
+          "Preparando a lista completa."
+        ];
+      } else if (needsHeavyKnowledge) {
+        // 🆕 MENSAGENS PARA BUSCA EM DOCUMENTOS
+        waitMessages = [
+          "Um minutinho, vou buscar essa informação pra você...",
+          "Deixa eu verificar no nosso material institucional...",
+          "Aguarde um momento enquanto consulto os documentos...",
+          "Vou checar isso no sistema, só um instante..."
+        ];
+      } else {
+        waitMessages = [
+          "Deixa eu procurar isso no sistema.",
+          "Um momento, já te respondo.",
+          "Só um instante, estou verificando."
+        ];
+      }
       
       const waitMsg = waitMessages[Math.floor(Math.random() * waitMessages.length)];
       

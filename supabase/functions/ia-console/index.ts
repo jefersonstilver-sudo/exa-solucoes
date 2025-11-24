@@ -86,44 +86,84 @@ Usuário: "Quantos prédios vocês têm?"
 
 Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de prédios.`;
     
-    // Carregar AMBAS as bases de conhecimento
+    // Carregar AMBAS as bases de conhecimento (COM CARREGAMENTO INTELIGENTE)
     try {
+      // 🆕 DETECTAR se precisa de conhecimento extra (documentos pesados)
+      const needsExtraKnowledge = message.match(
+        /institucional|empresa|quem.*exa|história|missão|media kit|documento|pdf|arquivo|material|apresentação|sobre.*exa|proposta|cnpj/i
+      );
+
       // 1. Carregar agent_sections (Base principal estruturada - Identidade, Operacional, Limites)
-      const { data: sections } = await supabase
+      // 🔧 FIX: Usar agent.key ao invés de agent.id (UUID)
+      // 🚀 SEMPRE carregar seções 1, 2, 3 (essenciais)
+      const { data: essentialSections } = await supabase
         .from('agent_sections')
         .select('section_number, section_title, content')
-        .eq('agent_id', agent.id)
+        .eq('agent_id', agentKey)
+        .in('section_number', [1, 2, 3])
         .order('section_number');
       
-      if (sections && sections.length > 0) {
-        const sectionsText = sections
+      if (essentialSections && essentialSections.length > 0) {
+        const sectionsText = essentialSections
           .filter(s => s.content && s.content.trim())
           .map(s => `### SEÇÃO ${s.section_number}: ${s.section_title}\n\n${s.content}`)
           .join('\n\n---\n\n');
         
         if (sectionsText) {
-          systemPrompt += `\n\n=== BASE DE CONHECIMENTO PRINCIPAL ===\n${sectionsText}`;
-          console.log(`[IA-CONSOLE] ✅ Loaded ${sections.filter(s => s.content && s.content.trim()).length}/${sections.length} sections with content`);
+          systemPrompt += `\n\n=== BASE DE CONHECIMENTO ESSENCIAL (Seções 1, 2, 3) ===\n${sectionsText}`;
+          console.log(`[IA-CONSOLE] ✅ Loaded essential sections (1-3): ${essentialSections.length} sections`);
         }
       }
 
-      // 2. Carregar agent_knowledge_items (Documentos/Links adicionais como Midia Kit)
-      const { data: knowledge } = await supabase
-        .from('agent_knowledge_items')
-        .select('title, content, instruction')
-        .eq('agent_id', agent.id)
-        .eq('active', true);
-      
-      if (knowledge && knowledge.length > 0) {
-        const knowledgeText = knowledge.map(k => 
-          `### ${k.title}\n${k.instruction || ''}\n\n${k.content}`
-        ).join('\n\n---\n\n');
+      // 📚 CARREGAR seção 4 + knowledge items SOMENTE SE NECESSÁRIO
+      if (needsExtraKnowledge) {
+        console.log('[IA-CONSOLE] 📚 Knowledge search detected, loading full knowledge base...');
         
-        systemPrompt += `\n\n=== DOCUMENTOS E RECURSOS ===\n${knowledgeText}`;
-        console.log(`[IA-CONSOLE] ✅ Loaded ${knowledge.length} knowledge items`);
+        const { data: section4 } = await supabase
+          .from('agent_sections')
+          .select('*')
+          .eq('agent_id', agentKey)
+          .eq('section_number', 4)
+          .maybeSingle();
+        
+        if (section4 && section4.content) {
+          systemPrompt += `\n\n### SEÇÃO 4: ${section4.section_title}\n\n${section4.content}\n\n---\n\n`;
+          console.log('[IA-CONSOLE] ✅ Loaded section 4');
+        }
+        
+        // 2. Carregar agent_knowledge_items (Documentos/Links adicionais como Midia Kit)
+        // 🔧 FIX: Usar agentKey ao invés de agent.id (UUID)
+        const { data: knowledge } = await supabase
+          .from('agent_knowledge_items')
+          .select('title, content, instruction')
+          .eq('agent_id', agentKey)
+          .eq('active', true);
+        
+        if (knowledge && knowledge.length > 0) {
+          const knowledgeText = knowledge.map(k => 
+            `### ${k.title}\n${k.instruction || ''}\n\n${k.content}`
+          ).join('\n\n---\n\n');
+          
+          systemPrompt += `\n\n=== DOCUMENTOS E RECURSOS EXTRAS ===\n${knowledgeText}`;
+          console.log(`[IA-CONSOLE] ✅ Loaded ${knowledge.length} knowledge items`);
+        }
+      } else {
+        console.log('[IA-CONSOLE] ⚡ Fast mode: Only essential sections loaded');
       }
     } catch (error) {
       console.error('[IA-CONSOLE] ❌ Failed to load knowledge:', error);
+      
+      // 🆕 LOG DETALHADO EM agent_logs
+      await supabase.from('agent_logs').insert({
+        agent_key: agentKey,
+        event_type: 'console_knowledge_load_error',
+        metadata: {
+          error: String(error),
+          message: error?.message || 'Unknown error',
+          stack: error?.stack,
+          timestamp: new Date().toISOString()
+        }
+      });
     }
     
     // Se há conversationId, buscar contexto adicional
@@ -440,6 +480,21 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
 
       } catch (error) {
         console.error('[IA-CONSOLE] Second OpenAI call failed:', error);
+        
+        // 🆕 LOG DETALHADO EM agent_logs
+        await supabase.from('agent_logs').insert({
+          agent_key: agentKey,
+          event_type: 'console_format_error',
+          metadata: {
+            error: String(error),
+            message: error?.message || 'Unknown error',
+            stack: error?.stack,
+            functionCalled: functionName,
+            functionResult: functionResult,
+            userMessage: message.substring(0, 200),
+            timestamp: new Date().toISOString()
+          }
+        });
         
         // Retornar mensagem amigável com o resultado da função
         return new Response(
