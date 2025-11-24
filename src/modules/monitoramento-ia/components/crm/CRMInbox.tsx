@@ -18,10 +18,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
     <button
       onClick={onClick}
       className={cn(
-        'w-full p-4 text-left transition-colors border-b border-module-border relative',
-        'hover:bg-module-secondary/20',
-        isSelected && 'bg-module-secondary/30',
-        hasUnread && 'border-l-4 border-l-[#25D366] bg-[#25D366]/5'
+        'w-full p-4 text-left transition-all border border-module-border relative',
+        'rounded-lg mb-2 bg-module-card',
+        'hover:bg-[#25D366]/10 hover:border-l-4 hover:border-l-[#25D366] hover:shadow-md',
+        isSelected && 'bg-[#25D366]/15 border-l-4 border-l-[#25D366] shadow-lg',
+        hasUnread && 'border-l-4 border-l-[#25D366] bg-[#25D366]/8'
       )}
     >
       {/* Header com nome e badges */}
@@ -75,10 +76,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       <div className="flex items-center gap-2 mb-2 text-xs text-module-secondary">
         <Phone className="w-3 h-3" />
         <span>{conversation.contact_phone}</span>
-        <Badge variant="outline" className="text-xs">
+        <Badge className="text-xs bg-module-secondary text-module-primary border-module">
           {conversation.provider === 'manychat' ? 'ManyChat' : 'WhatsApp'}
         </Badge>
-        <Badge variant="outline" className="text-xs capitalize">
+        <Badge className="text-xs bg-module-secondary text-module-primary border-module capitalize">
           {conversation.agent_key}
         </Badge>
       </div>
@@ -152,7 +153,7 @@ export const CRMInbox: React.FC<CRMInboxProps> = ({ conversations, selectedId, o
   }
 
   return (
-    <div className="divide-y">
+    <div className="p-2 space-y-0">
       {conversations.map((conv) => (
         <ConversationItem
           key={conv.id}
