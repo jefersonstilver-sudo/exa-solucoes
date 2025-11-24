@@ -273,18 +273,20 @@ export const PaineisPage = () => {
                   if (referenceTime) {
                     const offlineStart = new Date(referenceTime);
                     const now = new Date();
-                    const diffMinutes = Math.floor((now.getTime() - offlineStart.getTime()) / (1000 * 60));
+                    const diffMs = now.getTime() - offlineStart.getTime();
+                    const diffSeconds = Math.floor(diffMs / 1000);
+                    const diffMinutes = Math.floor(diffSeconds / 60);
+                    const diffHours = Math.floor(diffMinutes / 60);
+                    const diffDays = Math.floor(diffHours / 24);
                     
-                    if (diffMinutes < 60) {
-                      tempoOffline = `${diffMinutes}min`;
-                    } else if (diffMinutes < 1440) { // menos de 24h
-                      const hours = Math.floor(diffMinutes / 60);
-                      const minutes = diffMinutes % 60;
-                      tempoOffline = `${hours}h${minutes > 0 ? ` ${minutes}min` : ''}`;
+                    if (diffDays > 0) {
+                      tempoOffline = `${diffDays}d ${diffHours % 24}h`;
+                    } else if (diffHours > 0) {
+                      tempoOffline = `${diffHours}h ${diffMinutes % 60}m`;
+                    } else if (diffMinutes > 0) {
+                      tempoOffline = `${diffMinutes}m ${diffSeconds % 60}s`;
                     } else {
-                      const days = Math.floor(diffMinutes / 1440);
-                      const hours = Math.floor((diffMinutes % 1440) / 60);
-                      tempoOffline = `${days}d ${hours}h`;
+                      tempoOffline = `${diffSeconds}s`;
                     }
                   }
                   
