@@ -115,7 +115,7 @@ Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de pr�
         }
       }
 
-      // 📚 CARREGAR seção 4 + knowledge items SOMENTE SE NECESSÁRIO
+      // 📚 CARREGAR seção 4 + knowledge items SOMENTE SE NECESSÁRIO (com limite de 5 documentos)
       if (needsExtraKnowledge) {
         console.log('[IA-CONSOLE] 📚 Knowledge search detected, loading full knowledge base...');
         
@@ -131,13 +131,14 @@ Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de pr�
           console.log('[IA-CONSOLE] ✅ Loaded section 4');
         }
         
-        // 2. Carregar agent_knowledge_items (Documentos/Links adicionais como Midia Kit)
-        // 🔧 FIX: Usar agentKey ao invés de agent.id (UUID)
+        // 2. Carregar agent_knowledge_items (LIMITADO a 5 documentos mais relevantes)
         const { data: knowledge } = await supabase
           .from('agent_knowledge_items')
           .select('title, content, instruction')
           .eq('agent_id', agentKey)
-          .eq('active', true);
+          .eq('active', true)
+          .order('created_at', { ascending: false })
+          .limit(5); // FASE 2.1: Limitar a 5 documentos para reduzir tokens
         
         if (knowledge && knowledge.length > 0) {
           const knowledgeText = knowledge.map(k => 
@@ -145,7 +146,7 @@ Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de pr�
           ).join('\n\n---\n\n');
           
           systemPrompt += `\n\n=== DOCUMENTOS E RECURSOS EXTRAS ===\n${knowledgeText}`;
-          console.log(`[IA-CONSOLE] ✅ Loaded ${knowledge.length} knowledge items`);
+          console.log(`[IA-CONSOLE] ✅ Loaded ${knowledge.length} knowledge items (limited to 5 for performance)`);
         }
       } else {
         console.log('[IA-CONSOLE] ⚡ Fast mode: Only essential sections loaded');
@@ -260,10 +261,11 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
       { role: 'system', content: systemPrompt }
     ];
 
-    // Adicionar histórico se existir
+    // Adicionar histórico se existir (LIMITADO às últimas 10 mensagens para reduzir tokens)
     if (context?.conversationHistory && Array.isArray(context.conversationHistory)) {
-      console.log(`[IA-CONSOLE] Adding ${context.conversationHistory.length} messages from history`);
-      messagesArray.push(...context.conversationHistory);
+      const limitedHistory = context.conversationHistory.slice(-10); // FASE 2.1: Limitar histórico
+      console.log(`[IA-CONSOLE] Adding ${limitedHistory.length} messages from history (total: ${context.conversationHistory.length})`);
+      messagesArray.push(...limitedHistory);
     }
 
     // Adicionar mensagem atual
@@ -307,52 +309,115 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
       }
     ];
 
-    // Chamar OpenAI com proteção contra timeout
+    // Função auxiliar para chamar OpenAI com retry automático
+    async function callOpenAIWithRetry(requestBody: any, maxRetries = 3): Promise<any> {
+      let lastError;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`[IA-CONSOLE] 🔄 OpenAI attempt ${attempt}/${maxRetries}`);
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 60000);
+          
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          // Se sucesso, retornar
+          if (response.ok) {
+            return await response.json();
+          }
+
+          // Se erro 429 (rate limit), fazer retry com backoff
+          if (response.status === 429) {
+            const errorBody = await response.json();
+            lastError = errorBody;
+            
+            // Extrair tempo de espera sugerido pela API
+            const retryAfter = response.headers.get('retry-after');
+            const waitTime = retryAfter 
+              ? parseInt(retryAfter) * 1000 
+              : Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff: 2s, 4s, 8s
+            
+            console.warn(`[IA-CONSOLE] ⚠️ Rate limit (429), waiting ${waitTime}ms before retry ${attempt}/${maxRetries}`);
+            
+            if (attempt < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              continue;
+            }
+          }
+
+          // Outros erros: não fazer retry
+          const errorText = await response.text();
+          console.error('[IA-CONSOLE] ❌ OpenAI error response:', errorText);
+          throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
+          
+        } catch (error) {
+          if (attempt === maxRetries) {
+            throw error;
+          }
+          lastError = error;
+          console.error(`[IA-CONSOLE] ❌ Attempt ${attempt} failed:`, error.message);
+          
+          // Backoff para erros de rede também
+          const waitTime = Math.min(1000 * Math.pow(2, attempt), 10000);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+      
+      throw new Error(`Failed after ${maxRetries} retries: ${JSON.stringify(lastError)}`);
+    }
+
+    // Chamar OpenAI com proteção contra timeout e retry automático
     const startTime = Date.now();
 
-    let openaiResponse;
     let data;
     let assistantMessage;
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
-      
-      openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: agent.openai_config?.model || 'gpt-4o-mini',
-          messages: messagesArray,
-          tools: tools,
-          temperature: agent.openai_config?.temperature || 0.7,
-          max_tokens: agent.openai_config?.max_tokens || 2000
-        }),
-        signal: controller.signal
+      data = await callOpenAIWithRetry({
+        model: 'gpt-4o-mini', // Modelo otimizado para melhor performance e limite maior
+        messages: messagesArray,
+        tools: tools,
+        temperature: agent.openai_config?.temperature || 0.7,
+        max_tokens: agent.openai_config?.max_tokens || 2000
       });
       
-      clearTimeout(timeoutId);
-      
-      if (!openaiResponse.ok) {
-        const errorText = await openaiResponse.text();
-        console.error('[IA-CONSOLE] OpenAI error response:', errorText);
-        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
-      }
-
-      data = await openaiResponse.json();
       assistantMessage = data.choices[0].message;
+      console.log('[IA-CONSOLE] ✅ OpenAI response received:', {
+        tokens: data.usage?.total_tokens,
+        model: 'gpt-4o-mini',
+        duration_ms: Date.now() - startTime
+      });
 
     } catch (error) {
-      console.error('[IA-CONSOLE] First OpenAI call failed:', error);
+      console.error('[IA-CONSOLE] 💥 OpenAI call failed after retries:', error);
+      
+      // Mensagens de erro contextuais baseadas no tipo de erro
+      let userMessage = 'Desculpe, estou com dificuldades para processar sua mensagem agora.';
+      
+      if (error.message?.includes('429') || error.message?.includes('rate_limit')) {
+        userMessage = '⏳ Recebi muitas mensagens ao mesmo tempo! Aguarde alguns segundos e tente novamente. 🙏';
+      } else if (error.message?.includes('401') || error.message?.includes('Invalid API key')) {
+        userMessage = '🔧 Nosso sistema de IA está temporariamente indisponível. Por favor, tente novamente em alguns minutos.';
+      } else if (error.message?.includes('timeout') || error.message?.includes('AbortError')) {
+        userMessage = '⏱️ Sua solicitação demorou mais que o esperado. Pode ser muita informação para processar. Tente perguntar de forma mais específica. 😊';
+      }
       
       // Retornar mensagem amigável SEM resetar conversa
       return new Response(
         JSON.stringify({
-          success: true, // success=true para não resetar no frontend
-          response: '⚠️ Desculpe, estou com dificuldades para processar sua mensagem agora. Pode tentar novamente? Se persistir, pode ser timeout ou limite de requisições.',
+          success: false,
+          response: userMessage,
           tokens: 0,
           latency: Date.now() - startTime,
           error: error.message
@@ -433,53 +498,33 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
         console.log(`[IA-CONSOLE] Query result: ${buildings?.length || 0} buildings found`);
       }
       
-      // Chamar OpenAI novamente com o resultado da função (com proteção)
-      let secondCallResponse;
+      // Chamar OpenAI novamente com o resultado da função (com retry automático)
       let finalData;
       let finalMessage;
       let tokensUsed;
 
       try {
-        const controller2 = new AbortController();
-        const timeoutId2 = setTimeout(() => controller2.abort(), 60000);
-        
-        secondCallResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openaiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: agent.openai_config?.model || 'gpt-4o-mini',
-            messages: [
-              ...messagesArray,
-              assistantMessage,
-              {
-                role: 'tool',
-                tool_call_id: toolCall.id,
-                content: JSON.stringify(functionResult)
-              }
-            ],
-            temperature: agent.openai_config?.temperature || 0.7,
-            max_tokens: agent.openai_config?.max_tokens || 2000
-          }),
-          signal: controller2.signal
+        finalData = await callOpenAIWithRetry({
+          model: 'gpt-4o-mini',
+          messages: [
+            ...messagesArray,
+            assistantMessage,
+            {
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: JSON.stringify(functionResult)
+            }
+          ],
+          temperature: agent.openai_config?.temperature || 0.7,
+          max_tokens: agent.openai_config?.max_tokens || 2000
         });
-        
-        clearTimeout(timeoutId2);
-        
-        if (!secondCallResponse.ok) {
-          const errorText = await secondCallResponse.text();
-          console.error('[IA-CONSOLE] Second OpenAI call error:', errorText);
-          throw new Error(`OpenAI API error: ${secondCallResponse.status}`);
-        }
 
-        finalData = await secondCallResponse.json();
         finalMessage = finalData.choices[0].message.content;
         tokensUsed = finalData.usage.total_tokens;
+        console.log('[IA-CONSOLE] ✅ Second OpenAI call succeeded');
 
       } catch (error) {
-        console.error('[IA-CONSOLE] Second OpenAI call failed:', error);
+        console.error('[IA-CONSOLE] 💥 Second OpenAI call failed after retries:', error);
         
         // Detectar erro 429 (Rate Limit)
         const isRateLimit = error.message?.includes('429');
@@ -663,6 +708,16 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
     // Se não houve function call, retornar resposta normalmente
     const finalMessage = assistantMessage.content;
     const tokensUsed = data.usage.total_tokens;
+
+    // Registrar métricas de performance (Fase 3.2)
+    await supabase.from('agent_performance_metrics').insert({
+      agent_key: agentKey,
+      metric_type: 'success',
+      duration_ms: Date.now() - startTime,
+      tokens_used: tokensUsed,
+      model: data.model || 'gpt-4o-mini',
+      metadata: { message_preview: message.substring(0, 50) }
+    });
 
     // Registrar em logs (resposta sem function call)
     await supabase.from('agent_logs').insert({
