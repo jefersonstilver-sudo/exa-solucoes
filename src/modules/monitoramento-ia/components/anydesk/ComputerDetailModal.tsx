@@ -104,11 +104,11 @@ export const ComputerDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`max-w-7xl max-h-[95vh] overflow-y-auto ${themeClass} !bg-transparent !border-none !shadow-none`}>
-        <div className="glass-card bg-module-card/80 backdrop-blur-xl border-module/30 rounded-lg p-6 shadow-2xl">
+      <DialogContent className={`max-w-7xl max-h-[95vh] overflow-y-auto ${themeClass} !bg-module-primary !border-module !shadow-lg`}>
+        <div className="glass-card bg-module-card border-module rounded-lg p-6 shadow-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-module-primary">
-              <Monitor className="h-6 w-6 text-[#9C1E1E]" />
+              <Monitor className="h-6 w-6 text-module-accent" />
               <span>{displayName}</span>
             </DialogTitle>
             <DialogDescription className="sr-only">
@@ -119,10 +119,10 @@ export const ComputerDetailModal = ({
           {/* 3 CARDS SUPERIORES */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             {/* CARD 1: INFORMAÇÕES DO SISTEMA */}
-            <Card className="bg-module-card border-module">
+            <Card className="bg-module-card border-module shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
-                  <Info className="h-4 w-4 text-[#9C1E1E]" />
+                  <Info className="h-4 w-4 text-module-accent" />
                   Sistema
                 </CardTitle>
               </CardHeader>
@@ -139,7 +139,7 @@ export const ComputerDetailModal = ({
                     <Wifi className="h-3 w-3" />
                     Provedor
                   </p>
-                  <Badge variant="outline" className="text-module-primary border-module">
+                  <Badge variant="outline" className="text-module-primary border-module bg-module-secondary">
                     {computer.provider || 'Sem provedor'}
                   </Badge>
                 </div>
@@ -155,7 +155,7 @@ export const ComputerDetailModal = ({
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {computer.tags.map((tag: string, i: number) => (
-                        <Badge key={i} variant="outline" className="text-xs text-module-primary border-module">{tag}</Badge>
+                        <Badge key={i} variant="outline" className="text-xs text-module-primary border-module bg-module-secondary">{tag}</Badge>
                       ))}
                     </div>
                   </div>
@@ -164,10 +164,10 @@ export const ComputerDetailModal = ({
             </Card>
 
             {/* CARD 2: ATIVIDADE */}
-            <Card className="bg-module-card border-module">
+            <Card className="bg-module-card border-module shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
-                  <Activity className="h-4 w-4 text-[#9C1E1E]" />
+                  <Activity className="h-4 w-4 text-module-accent" />
                   Atividade
                 </CardTitle>
               </CardHeader>
@@ -178,8 +178,8 @@ export const ComputerDetailModal = ({
                     className={cn(
                       "flex items-center gap-1 w-fit",
                       isOnline 
-                        ? "bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30" 
-                        : "bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30"
+                        ? "bg-green-100 text-green-700 border-green-300" 
+                        : "bg-red-100 text-red-700 border-red-300"
                     )}
                   >
                     {isOnline ? "Online" : "Offline"}
@@ -189,9 +189,9 @@ export const ComputerDetailModal = ({
                   <p className="text-xs text-module-secondary mb-1">Última Conexão</p>
                   <p className="text-sm font-semibold text-module-primary">
                     {computer.status === 'offline' ? (
-                      <span className="text-red-600 dark:text-red-400">Offline há {offlineCounter}</span>
+                      <span className="text-red-600">Offline há {offlineCounter}</span>
                     ) : (
-                      <span className="text-green-600 dark:text-green-400">Online agora</span>
+                      <span className="text-green-600">Online agora</span>
                     )}
                   </p>
                 </div>
@@ -201,19 +201,19 @@ export const ComputerDetailModal = ({
                 </div>
                 <div>
                   <p className="text-xs text-module-secondary mb-1 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                    <AlertTriangle className="h-3 w-3 text-red-600" />
                     Quedas
                   </p>
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">{computer.offline_count || 0}</p>
+                  <p className="text-2xl font-bold text-red-600">{computer.offline_count || 0}</p>
                 </div>
               </CardContent>
             </Card>
 
             {/* CARD 3: CONFIGURAÇÃO DE ALERTAS */}
-            <Card className="bg-module-card border-module">
+            <Card className="bg-module-card border-module shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2 text-module-primary">
-                  <Bell className="h-4 w-4 text-[#9C1E1E]" />
+                  <Bell className="h-4 w-4 text-module-accent" />
                   Alertas
                 </CardTitle>
               </CardHeader>
@@ -236,13 +236,13 @@ export const ComputerDetailModal = ({
                     min="1"
                     value={alertConfig.offline_threshold_minutes}
                     onChange={(e) => setAlertConfig({ ...alertConfig, offline_threshold_minutes: parseInt(e.target.value) || 5 })}
-                    className="mt-1 bg-module-primary/5 border-module text-module-primary"
+                    className="mt-1 bg-module-secondary border-module text-module-primary"
                   />
                 </div>
                 <Button 
                   onClick={saveAlertConfig} 
                   disabled={loading}
-                  className="w-full bg-[#9C1E1E] hover:bg-[#7A1717] text-white"
+                  className="w-full bg-module-accent hover:bg-module-accent-hover text-white"
                   size="sm"
                 >
                   {loading ? 'Salvando...' : 'Salvar Configurações'}
@@ -252,7 +252,7 @@ export const ComputerDetailModal = ({
           </div>
 
           {/* INFORMAÇÕES ADICIONAIS */}
-          <Card className="mb-6 bg-module-card border-module">
+          <Card className="mb-6 bg-module-card border-module shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm text-module-primary">Informações Adicionais</CardTitle>
             </CardHeader>
@@ -288,23 +288,23 @@ export const ComputerDetailModal = ({
 
           {/* TABS */}
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-module-primary/10 border-module">
-              <TabsTrigger value="info" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white text-module-primary">
+            <TabsList className="grid w-full grid-cols-3 bg-module-secondary border-module">
+              <TabsTrigger value="info" className="data-[state=active]:!bg-module-accent data-[state=active]:!text-white text-module-primary">
                 <Info className="h-4 w-4 mr-2" />
                 Informações
               </TabsTrigger>
-              <TabsTrigger value="timeline" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white text-module-primary">
+              <TabsTrigger value="timeline" className="data-[state=active]:!bg-module-accent data-[state=active]:!text-white text-module-primary">
                 <Clock className="h-4 w-4 mr-2" />
                 Timeline
               </TabsTrigger>
-              <TabsTrigger value="graficos" className="data-[state=active]:!bg-[#9C1E1E] data-[state=active]:!text-white text-module-primary">
+              <TabsTrigger value="graficos" className="data-[state=active]:!bg-module-accent data-[state=active]:!text-white text-module-primary">
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Gráficos
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="info" className="space-y-4 mt-4">
-              <Card className="bg-module-card border-module">
+              <Card className="bg-module-card border-module shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-module-primary">Resumo Completo</CardTitle>
                 </CardHeader>

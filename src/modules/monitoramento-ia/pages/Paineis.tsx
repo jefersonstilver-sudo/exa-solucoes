@@ -22,14 +22,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 const SimpleStatCard = ({ label, value, color }: { label: string; value: number; color: 'blue' | 'green' | 'red' | 'gray' }) => {
   
   const colorClasses = {
-    blue: 'text-blue-500',
-    green: 'text-green-500',
+    blue: 'text-blue-600',
+    green: 'text-green-600',
     red: 'text-[#9C1E1E]',
     gray: 'text-module-secondary',
   };
   
   return (
-    <div className="glass-card rounded-[14px] p-4 hover:scale-105 transition-all">
+    <div className="glass-card border-module rounded-[14px] p-4 hover:scale-105 transition-all shadow-sm">
       <p className="text-module-secondary text-sm mb-1">{label}</p>
       <p className={`text-2xl font-bold ${colorClasses[color]}`}>
         {value}
@@ -132,9 +132,9 @@ export const PaineisPage = () => {
     return () => clearInterval(syncInterval);
   }, []);
 
-  // Buscar top 3 painéis com mais quedas filtrado por período
+  // Buscar TODAS as quedas do período selecionado (hoje/7dias/30dias)
   useEffect(() => {
-    const fetchTopOffline = async () => {
+    const fetchAllDrops = async () => {
       try {
         let startDate: Date;
         const endDate = endOfDay(new Date());
@@ -153,27 +153,34 @@ export const PaineisPage = () => {
             startDate = startOfDay(new Date());
         }
 
-        const { data: topData } = await supabase
+        // Buscar TODOS os painéis que tiveram quedas no período (sem limit)
+        const { data: dropsData } = await supabase
           .from('devices')
           .select('*')
-          .gte('last_offline_at', startDate.toISOString())
-          .lte('last_offline_at', endDate.toISOString())
-          .order('offline_count', { ascending: false })
-          .limit(3);
+          .gt('offline_count', 0)
+          .order('offline_count', { ascending: false });
 
-        if (topData) setTopOfflinePanels(topData as Device[]);
+        if (dropsData) {
+          // Filtrar apenas os que realmente tiveram quedas no período
+          const filteredDrops = dropsData.filter(device => {
+            if (!device.last_online_at) return false;
+            const lastOnline = new Date(device.last_online_at);
+            return lastOnline >= startDate && lastOnline <= endDate;
+          });
+          setTopOfflinePanels(filteredDrops as Device[]);
+        }
       } catch (error) {
-        console.error('Erro ao buscar dados de offline:', error);
+        console.error('Erro ao buscar dados de quedas:', error);
       }
     };
 
-    fetchTopOffline();
+    fetchAllDrops();
   }, [devices, quedaPeriod]);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="glass-card border-white/10 px-6 py-4 rounded-xl">
+      <div className="glass-card border-module px-6 py-4 rounded-xl shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-module-primary">
@@ -227,16 +234,20 @@ export const PaineisPage = () => {
         <SimpleStatCard label="Desconhecido" value={stats.unknown} color="gray" />
       </div>
 
-      {/* Card de Mais Quedas - Colapsável */}
+      {/* Card de TODAS as Quedas - Colapsável */}
       <Collapsible open={isQuedasOpen} onOpenChange={setIsQuedasOpen}>
-        <div className="glass-card border-white/10 rounded-[14px] p-4">
+        <div className="glass-card border-module rounded-[14px] p-4 shadow-sm">
           <CollapsibleTrigger className="w-full">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-                <h3 className="text-lg font-bold text-module-primary">Painéis com Mais Quedas</h3>
-                <Badge variant="destructive" className="ml-2 animate-pulse">
-                  {topOfflinePanels.reduce((sum, panel) => sum + (panel.offline_count || 0), 0)}
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+                <h3 className="text-lg font-bold text-module-primary">
+                  {quedaPeriod === 'hoje' ? 'Todas as Quedas de Hoje' : 
+                   quedaPeriod === '7dias' ? 'Quedas dos Últimos 7 Dias' : 
+                   'Quedas dos Últimos 30 Dias'}
+                </h3>
+                <Badge variant="destructive" className="ml-2 animate-pulse bg-red-600 text-white">
+                  {topOfflinePanels.reduce((sum, panel) => sum + (panel.offline_count || 0), 0)} quedas
                 </Badge>
               </div>
               <ChevronDown className={`w-5 h-5 text-module-secondary transition-transform ${isQuedasOpen ? 'rotate-180' : ''}`} />
@@ -244,22 +255,22 @@ export const PaineisPage = () => {
           </CollapsibleTrigger>
           
           <CollapsibleContent className="mt-4">
-            <div className="space-y-3">
+            <div className="space-y-2 max-h-96 overflow-y-auto">
               {topOfflinePanels.length > 0 ? (
                 topOfflinePanels.map((panel) => {
                   const displayName = (panel.comments || panel.name).split(' - ')[0].trim();
                   return (
-                    <div key={panel.id} className="flex items-center justify-between p-3 bg-module-input rounded-lg border border-module-border">
-                      <div>
+                    <div key={panel.id} className="flex items-center justify-between p-3 bg-module-secondary rounded-lg border border-module hover:bg-module-hover transition-colors">
+                      <div className="flex-1">
                         <p className="text-sm font-medium text-module-primary">{displayName}</p>
-                        <p className="text-xs text-module-tertiary">{panel.condominio_name}</p>
+                        <p className="text-xs text-module-tertiary">{panel.condominio_name || 'Sem condomínio'}</p>
                       </div>
-                      <span className="text-lg font-bold text-red-500">{panel.offline_count || 0} quedas</span>
+                      <span className="text-base font-bold text-red-600 ml-4">{panel.offline_count || 0}</span>
                     </div>
                   );
                 })
               ) : (
-                <p className="text-sm text-module-secondary">Nenhum dado disponível</p>
+                <p className="text-sm text-module-secondary text-center py-4">Nenhuma queda registrada no período selecionado</p>
               )}
             </div>
           </CollapsibleContent>
