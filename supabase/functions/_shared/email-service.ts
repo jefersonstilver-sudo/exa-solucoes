@@ -18,34 +18,46 @@ export class UnifiedEmailService {
   // AUTENTICAÇÃO
   // ==========================================
 
-  async sendConfirmationEmail(data: EmailTemplates.ConfirmationEmailData) {
-    const html = EmailTemplates.createConfirmationEmail(data);
+  async sendConfirmationEmail(userEmail: string, userName: string, confirmationUrl: string) {
+    const html = EmailTemplates.createConfirmationEmail({
+      userEmail,
+      userName,
+      confirmationUrl
+    });
     
     return await this.resend.emails.send({
       from: this.fromAddress,
-      to: [data.userEmail],
+      to: [userEmail],
       subject: '🎯 Confirme seu email na EXA - Bem-vindo!',
       html
     });
   }
 
-  async sendResendConfirmationEmail(data: EmailTemplates.ConfirmationEmailData) {
-    const html = EmailTemplates.createResendConfirmationEmail(data);
+  async sendResendConfirmationEmail(userEmail: string, userName: string, confirmationUrl: string) {
+    const html = EmailTemplates.createResendConfirmationEmail({
+      userEmail,
+      userName,
+      confirmationUrl
+    });
     
     return await this.resend.emails.send({
       from: this.fromAddress,
-      to: [data.userEmail],
+      to: [userEmail],
       subject: '🎯 Confirme seu email na EXA (Reenviado)',
       html
     });
   }
 
-  async sendPasswordRecoveryEmail(data: EmailTemplates.PasswordRecoveryEmailData) {
-    const html = EmailTemplates.createPasswordRecoveryEmail(data);
+  async sendPasswordRecoveryEmail(userEmail: string, userName: string, recoveryUrl: string) {
+    const html = EmailTemplates.createPasswordRecoveryEmail({
+      userEmail,
+      userName,
+      recoveryUrl
+    });
     
     return await this.resend.emails.send({
       from: this.fromAddress,
-      to: [data.userEmail],
+      to: [userEmail],
       subject: '🔒 Recuperação de senha - EXA',
       html
     });
@@ -70,34 +82,84 @@ export class UnifiedEmailService {
   // VÍDEOS
   // ==========================================
 
-  async sendVideoSubmittedEmail(data: EmailTemplates.VideoSubmittedEmailData) {
-    const html = EmailTemplates.createVideoSubmittedEmail(data);
+  async sendVideoSubmittedEmail(
+    userEmail: string,
+    userName: string,
+    videoTitle: string,
+    orderId?: string,
+    userId?: string,
+    videoId?: string
+  ) {
+    const html = EmailTemplates.createVideoSubmittedEmail({
+      userEmail,
+      userName,
+      videoTitle,
+      orderId,
+      userId,
+      videoId
+    });
     
     return await this.resend.emails.send({
       from: this.fromAddress,
-      to: [data.userEmail],
+      to: [userEmail],
       subject: '🎬 Vídeo Recebido - Em Análise | EXA',
       html
     });
   }
 
-  async sendVideoApprovedEmail(data: EmailTemplates.VideoApprovedEmailData) {
-    const html = EmailTemplates.createVideoApprovedEmail(data);
+  async sendVideoApprovedEmail(
+    userEmail: string,
+    userName: string,
+    videoTitle: string,
+    buildings: string[],
+    startDate: string,
+    endDate: string,
+    orderId?: string,
+    userId?: string,
+    videoId?: string
+  ) {
+    const html = EmailTemplates.createVideoApprovedEmail({
+      userEmail,
+      userName,
+      videoTitle,
+      buildings,
+      startDate,
+      endDate,
+      orderId,
+      userId,
+      videoId
+    });
     
     return await this.resend.emails.send({
       from: this.fromAddress,
-      to: [data.userEmail],
+      to: [userEmail],
       subject: '🎉 Parabéns! Seu Vídeo Foi Aprovado | EXA',
       html
     });
   }
 
-  async sendVideoRejectedEmail(data: EmailTemplates.VideoRejectedEmailData) {
-    const html = EmailTemplates.createVideoRejectedEmail(data);
+  async sendVideoRejectedEmail(
+    userEmail: string,
+    userName: string,
+    videoTitle: string,
+    rejectionReason: string,
+    orderId?: string,
+    userId?: string,
+    videoId?: string
+  ) {
+    const html = EmailTemplates.createVideoRejectedEmail({
+      userEmail,
+      userName,
+      videoTitle,
+      rejectionReason,
+      orderId,
+      userId,
+      videoId
+    });
     
     return await this.resend.emails.send({
       from: this.fromAddress,
-      to: [data.userEmail],
+      to: [userEmail],
       subject: '⚠️ Vídeo Precisa de Ajustes | EXA',
       html
     });
