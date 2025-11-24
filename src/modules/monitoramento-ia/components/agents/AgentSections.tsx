@@ -27,13 +27,26 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [lineInfo, setLineInfo] = useState<{ current: number; total: number }>({ current: 1, total: 1 });
   const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+  const lineNumberRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Inicializar contador de linhas quando entrar em modo de edição
   useEffect(() => {
     if (editingId) {
       const textarea = textareaRefs.current[editingId];
+      const lineNumbers = lineNumberRefs.current[editingId];
+      
       if (textarea) {
         updateLineInfo(textarea);
+        
+        // Sincronizar scroll entre textarea e numeração
+        const handleScroll = () => {
+          if (lineNumbers) {
+            lineNumbers.scrollTop = textarea.scrollTop;
+          }
+        };
+        
+        textarea.addEventListener('scroll', handleScroll);
+        return () => textarea.removeEventListener('scroll', handleScroll);
       }
     }
   }, [editingId]);
@@ -207,16 +220,43 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
                       {section.content.length.toLocaleString('pt-BR')} caracteres
                     </span>
                   </div>
-                  <Textarea
-                    ref={(el) => {
-                      textareaRefs.current[section.id] = el;
-                    }}
-                    defaultValue={section.content}
-                    className="min-h-[300px] font-mono text-sm bg-module-input border-module text-module-primary"
-                    onChange={(e) => updateLineInfo(e.target)}
-                    onKeyUp={(e) => updateLineInfo(e.currentTarget)}
-                    onClick={(e) => updateLineInfo(e.currentTarget)}
-                  />
+                  <div className="flex gap-0 border border-module rounded-md overflow-hidden">
+                    {/* Numeração de linhas */}
+                    <div 
+                      ref={(el) => {
+                        lineNumberRefs.current[section.id] = el;
+                      }}
+                      className="bg-module-secondary/10 border-r border-module px-2 py-3 select-none overflow-hidden"
+                      style={{ 
+                        minHeight: '600px',
+                        maxHeight: '600px'
+                      }}
+                    >
+                      {Array.from({ length: lineInfo.total }, (_, i) => (
+                        <div 
+                          key={i} 
+                          className={`text-xs font-mono text-right leading-[1.5rem] ${
+                            i + 1 === lineInfo.current 
+                              ? 'text-module-primary font-semibold' 
+                              : 'text-module-secondary/60'
+                          }`}
+                        >
+                          {i + 1}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Textarea */}
+                    <Textarea
+                      ref={(el) => {
+                        textareaRefs.current[section.id] = el;
+                      }}
+                      defaultValue={section.content}
+                      className="min-h-[600px] max-h-[600px] font-mono text-sm leading-[1.5rem] bg-module-input border-0 text-module-primary resize-none rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                      onChange={(e) => updateLineInfo(e.target)}
+                      onKeyUp={(e) => updateLineInfo(e.currentTarget)}
+                      onClick={(e) => updateLineInfo(e.currentTarget)}
+                    />
+                  </div>
                 </div>
               </>
             ) : (
