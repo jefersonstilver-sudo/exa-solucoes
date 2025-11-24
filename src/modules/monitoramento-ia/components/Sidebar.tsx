@@ -185,7 +185,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
               to={item.path}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative',
                   collapsed ? 'justify-center' : '',
                   isActive
                     ? 'bg-[#9C1E1E] text-white font-medium shadow-lg glow-exa'
@@ -194,7 +194,24 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
               }
               title={collapsed ? item.title : undefined}
             >
-              <item.icon size={20} className="flex-shrink-0" />
+              <div className="relative">
+                <item.icon size={20} className="flex-shrink-0" />
+                
+                {/* Badge compacto quando collapsed - OFFLINE */}
+                {collapsed && item.path === '/admin/monitoramento-ia/paineis' && totalOffline > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center animate-pulse shadow-lg shadow-red-500/80 ring-2 ring-red-400/50">
+                    {totalOffline}
+                  </span>
+                )}
+                
+                {/* Badge compacto quando collapsed - CRM */}
+                {collapsed && item.path === '/admin/monitoramento-ia/crm' && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse shadow-lg shadow-red-500/50">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
+              
               {!collapsed && (
                 <>
                   <span className="text-sm">{item.title}</span>
