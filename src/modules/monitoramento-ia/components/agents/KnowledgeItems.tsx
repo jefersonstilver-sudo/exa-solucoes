@@ -305,9 +305,9 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
         </Dialog>
       </div>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {items.length === 0 ? (
-          <Card className="bg-module-card border-module">
+          <Card className="bg-module-card border-module col-span-full">
             <CardContent className="py-12 text-center">
               <FileText className="h-12 w-12 mx-auto mb-4 text-module-secondary" />
               <p className="text-module-secondary mb-2">
@@ -319,68 +319,97 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
             </CardContent>
           </Card>
         ) : (
-          items.map((item) => (
-            <Card key={item.id} className="bg-module-card border-module">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
+          items.map((item, index) => (
+            <Card 
+              key={item.id} 
+              className={cn(
+                "bg-module-card border-module group relative overflow-hidden",
+                "transition-all duration-300 ease-in-out",
+                "hover:shadow-lg hover:scale-[1.02] hover:border-module-accent",
+                editingId === item.id && "ring-2 ring-module-accent col-span-full"
+              )}
+            >
+              {/* Número do card */}
+              <div className="absolute top-2 left-2 w-8 h-8 rounded-full bg-module-accent flex items-center justify-center text-white font-bold text-sm z-10">
+                {index + 1}
+              </div>
+
+              <CardHeader className="pb-3 pt-12">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex-1 min-w-0">
                     {editingId === item.id && editingItem ? (
                       <div className="space-y-3">
                         <div>
-                          <Label className="text-module-primary">Título</Label>
+                          <Label className="text-module-primary text-xs">Título</Label>
                           <Input
                             value={editingItem.title}
                             onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                            className="bg-module-input border-module text-module-primary"
+                            className="bg-module-input border-module text-module-primary text-sm"
                           />
                         </div>
                         <div>
-                          <Label className="text-module-primary">Descrição</Label>
+                          <Label className="text-module-primary text-xs">Descrição</Label>
                           <Input
                             value={editingItem.description || ''}
                             onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                            className="bg-module-input border-module text-module-primary"
+                            className="bg-module-input border-module text-module-primary text-sm"
                           />
                         </div>
                         <div>
-                          <Label className="text-module-primary">Palavras-chave (separadas por vírgula)</Label>
+                          <Label className="text-module-primary text-xs">Palavras-chave</Label>
                           <Input
                             value={editingItem.keywords.join(', ')}
                             onChange={(e) => setEditingItem({ 
                               ...editingItem, 
                               keywords: e.target.value.split(',').map(k => k.trim()).filter(Boolean)
                             })}
-                            className="bg-module-input border-module text-module-primary"
+                            className="bg-module-input border-module text-module-primary text-sm"
                           />
                         </div>
                       </div>
                     ) : (
                       <>
-                        <div className="flex items-center gap-2 mb-2">
-                          {getIcon(item.content_type)}
-                          <CardTitle className="text-base text-module-primary">{item.title}</CardTitle>
-                          <Badge variant="secondary" className="text-xs">
-                            {item.content_type}
-                          </Badge>
-                        </div>
-                        {item.description && (
-                          <p className="text-sm text-module-secondary mb-2">
-                            {item.description}
-                          </p>
-                        )}
-                        {item.keywords.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {item.keywords.map((keyword, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
-                                {keyword}
-                              </Badge>
-                            ))}
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="mt-0.5 flex-shrink-0">
+                            {getIcon(item.content_type)}
                           </div>
-                        )}
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-sm font-semibold text-module-primary line-clamp-2 group-hover:text-module-accent transition-colors">
+                              {item.title}
+                            </CardTitle>
+                            <Badge variant="secondary" className="text-xs mt-1">
+                              {item.content_type}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        {/* Conteúdo retraído - só expande no hover */}
+                        <div className="max-h-0 opacity-0 overflow-hidden transition-all duration-300 group-hover:max-h-96 group-hover:opacity-100">
+                          {item.description && (
+                            <p className="text-xs text-module-secondary mb-2 pt-2">
+                              {item.description}
+                            </p>
+                          )}
+                          {item.keywords.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {item.keywords.slice(0, 4).map((keyword, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs">
+                                  {keyword}
+                                </Badge>
+                              ))}
+                              {item.keywords.length > 4 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{item.keywords.length - 4}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  
+                  <div className="flex gap-1 flex-shrink-0">
                     {editingId === item.id ? (
                       <>
                         <Button
@@ -388,16 +417,18 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                           variant="ghost"
                           onClick={handleCancelEdit}
                           disabled={saving}
+                          className="h-7 w-7 p-0"
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={handleSaveEdit}
                           disabled={saving}
+                          className="h-7 w-7 p-0 text-module-accent"
                         >
-                          <Save className="h-4 w-4" />
+                          <Save className="h-3.5 w-3.5" />
                         </Button>
                       </>
                     ) : (
@@ -406,58 +437,62 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleEdit(item)}
+                          className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-destructive"
+                          className="h-7 w-7 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => handleDelete(item.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </>
                     )}
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                {editingId === item.id && editingItem ? (
+
+              {/* Conteúdo expandido apenas no modo de edição */}
+              {editingId === item.id && editingItem && (
+                <CardContent className="pt-0">
                   <div className="space-y-3">
                     <div>
-                      <Label className="text-module-primary">Conteúdo</Label>
+                      <Label className="text-module-primary text-xs">Conteúdo</Label>
                       <Textarea
                         value={editingItem.content}
                         onChange={(e) => setEditingItem({ ...editingItem, content: e.target.value })}
-                        className="min-h-[200px] bg-module-input border-module text-module-primary"
+                        className="min-h-[200px] bg-module-input border-module text-module-primary text-sm"
                       />
                     </div>
                     <div>
-                      <Label className="text-module-primary">Instrução Específica</Label>
+                      <Label className="text-module-primary text-xs">Instrução Específica</Label>
                       <Textarea
                         value={editingItem.instruction || ''}
                         onChange={(e) => setEditingItem({ ...editingItem, instruction: e.target.value })}
-                        className="min-h-[100px] bg-module-input border-module text-module-primary"
+                        className="min-h-[100px] bg-module-input border-module text-module-primary text-sm"
                       />
                     </div>
                   </div>
-                 ) : (
-                  <>
-                    <p className="text-sm text-module-primary whitespace-pre-wrap">
-                      {item.content.length > 300
-                        ? `${item.content.substring(0, 300)}...`
-                        : item.content}
-                    </p>
-                    {item.instruction && (
-                      <div className="mt-3 p-3 bg-module-input rounded-md">
-                        <p className="text-xs font-semibold mb-1 text-module-primary">Instrução de Uso:</p>
-                        <p className="text-xs text-module-secondary">{item.instruction}</p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
+                </CardContent>
+              )}
+
+              {/* Preview do conteúdo - só aparece no hover quando não está editando */}
+              {editingId !== item.id && (
+                <div className="max-h-0 opacity-0 overflow-hidden transition-all duration-300 group-hover:max-h-32 group-hover:opacity-100 px-6 pb-4">
+                  <div className="text-xs text-module-secondary line-clamp-3 whitespace-pre-wrap">
+                    {item.content.substring(0, 150)}...
+                  </div>
+                  {item.instruction && (
+                    <div className="mt-2 pt-2 border-t border-module-muted">
+                      <p className="text-xs font-semibold text-module-accent">Uso:</p>
+                      <p className="text-xs text-module-secondary line-clamp-2">{item.instruction}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
           ))
         )}
