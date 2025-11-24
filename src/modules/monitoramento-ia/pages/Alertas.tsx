@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, Clock } from 'lucide-react';
+import { RefreshCw, Clock, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { AlertStatsCards } from '../components/AlertStatsCards';
@@ -7,6 +7,7 @@ import { AlertsFilters } from '../components/AlertsFilters';
 import { AlertCard } from '../components/AlertCard';
 import { AlertsTable } from '../components/AlertsTable';
 import { AlertDetailModal } from '../components/AlertDetailModal';
+import { startOfDay, endOfDay } from 'date-fns';
 import {
   fetchAlerts,
   calculateAlertStats,
@@ -26,7 +27,10 @@ export const AlertasPage = () => {
     critical: 0,
   });
   const [condominios, setCondominios] = useState<string[]>([]);
-  const [filters, setFilters] = useState<AlertFilters>({});
+  const [filters, setFilters] = useState<AlertFilters>({
+    startDate: startOfDay(new Date()),
+    endDate: endOfDay(new Date())
+  });
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [selectedAlert, setSelectedAlert] = useState<DeviceAlert | null>(null);
@@ -62,7 +66,42 @@ export const AlertasPage = () => {
   };
 
   const handleClearFilters = () => {
-    setFilters({});
+    setFilters({
+      startDate: startOfDay(new Date()),
+      endDate: endOfDay(new Date())
+    });
+  };
+
+  const handleExportCSV = () => {
+    try {
+      const headers = ['Painel', 'Condomínio', 'Torre', 'Tipo', 'Provedor', 'Severidade', 'Status', 'Aberto em', 'Fechado em'];
+      const rows = alerts.map(alert => [
+        alert.devices?.name || 'Desconhecido',
+        alert.devices?.condominio_name || 'N/A',
+        alert.devices?.comments?.split('-')[1]?.trim() || '-',
+        alert.alert_type,
+        alert.provider || 'AnyDesk',
+        alert.severity,
+        alert.status,
+        new Date(alert.opened_at).toLocaleString('pt-BR'),
+        alert.closed_at ? new Date(alert.closed_at).toLocaleString('pt-BR') : '-'
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `alertas_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      toast.success('Relatório exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast.error('Erro ao exportar relatório');
+    }
   };
 
   const handleViewDetails = (alert: DeviceAlert) => {
@@ -92,13 +131,23 @@ export const AlertasPage = () => {
               Monitoramento técnico em tempo real da rede EXA.
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm text-module-tertiary">
               <Clock className="w-4 h-4" />
               <span>
                 Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
               </span>
             </div>
+            <Button
+              onClick={handleExportCSV}
+              variant="outline"
+              size="sm"
+              disabled={alerts.length === 0}
+              className="bg-module-input hover:bg-module-hover text-module-primary border-module"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </Button>
             <Button
               onClick={handleRefresh}
               disabled={loading}
@@ -138,8 +187,13 @@ export const AlertasPage = () => {
         </div>
       ) : (
         <>
+          {/* Total Count */}
+          <div className="text-sm text-module-secondary mb-4">
+            Mostrando <span className="font-semibold text-module-primary">{alerts.length}</span> alertas
+          </div>
+
           {/* Mobile: Cards */}
-          <div className="block md:hidden space-y-4">
+          <div className="block lg:hidden space-y-4">
             {alerts.map((alert) => (
               <AlertCard
                 key={alert.id}
@@ -150,7 +204,7 @@ export const AlertasPage = () => {
           </div>
 
           {/* Desktop: Table */}
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <AlertsTable alerts={alerts} onViewDetails={handleViewDetails} />
           </div>
         </>

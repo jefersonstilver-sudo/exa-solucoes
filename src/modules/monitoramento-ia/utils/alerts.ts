@@ -10,6 +10,8 @@ export interface DeviceAlert {
   closed_at: string | null;
   evidence: any;
   created_at: string;
+  provider?: string; // AnyDesk, String, etc.
+  duration_seconds?: number;
   devices?: {
     id: string;
     name: string;
@@ -18,6 +20,7 @@ export interface DeviceAlert {
     anydesk_client_id?: string;
     last_online_at?: string;
     metadata?: any;
+    comments?: string;
   };
 }
 
@@ -34,7 +37,10 @@ export interface AlertFilters {
   status?: string[];
   severity?: string[];
   condominio?: string;
-  orderBy?: 'severity' | 'opened_at' | 'status' | 'name';
+  provider?: string;
+  orderBy?: 'severity' | 'opened_at' | 'status' | 'name' | 'provider';
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export async function fetchAlerts(filters?: AlertFilters) {
@@ -46,10 +52,21 @@ export async function fetchAlerts(filters?: AlertFilters) {
         id,
         name,
         condominio_name,
-        status
+        status,
+        anydesk_client_id,
+        comments,
+        metadata
       )
     `)
     .order('opened_at', { ascending: false });
+
+  // Date range filter
+  if (filters?.startDate) {
+    query = query.gte('opened_at', filters.startDate.toISOString());
+  }
+  if (filters?.endDate) {
+    query = query.lte('opened_at', filters.endDate.toISOString());
+  }
 
   if (filters?.status && filters.status.length > 0) {
     query = query.in('status', filters.status);
@@ -84,6 +101,19 @@ export async function fetchAlerts(filters?: AlertFilters) {
       alert.devices?.condominio_name === filters.condominio
     );
   }
+
+  // Apply provider filter
+  if (filters?.provider) {
+    filteredData = filteredData.filter((alert: any) => 
+      (alert.provider || 'AnyDesk') === filters.provider
+    );
+  }
+
+  // Add provider info if not present (default to AnyDesk)
+  filteredData = filteredData.map((alert: any) => ({
+    ...alert,
+    provider: alert.provider || 'AnyDesk'
+  }));
 
   // Apply ordering
   if (filters?.orderBy) {
