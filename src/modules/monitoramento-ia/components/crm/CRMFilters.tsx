@@ -25,15 +25,15 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
           onFilterChange({ ...filters, agentKey: value === 'all' ? undefined : value })
         }
       >
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-[180px] bg-module-card border-module text-module-primary">
           <SelectValue placeholder="Todos os agentes" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos os agentes</SelectItem>
-          <SelectItem value="sofia">Sofia (IA Vendas)</SelectItem>
-          <SelectItem value="eduardo">Eduardo (Humano)</SelectItem>
-          <SelectItem value="iris">IRIS (IA Diretoria)</SelectItem>
-          <SelectItem value="exa_alert">EXA Alert</SelectItem>
+        <SelectContent className="bg-module-card border-module text-module-primary z-50">
+          <SelectItem value="all" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Todos os agentes</SelectItem>
+          <SelectItem value="sofia" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Sofia (IA Vendas)</SelectItem>
+          <SelectItem value="eduardo" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Eduardo (Humano)</SelectItem>
+          <SelectItem value="iris" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">IRIS (IA Diretoria)</SelectItem>
+          <SelectItem value="exa_alert" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">EXA Alert</SelectItem>
         </SelectContent>
       </Select>
 
@@ -44,15 +44,15 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
           onFilterChange({ ...filters, sentiment: value === 'all' ? undefined : value })
         }
       >
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-[180px] bg-module-card border-module text-module-primary">
           <SelectValue placeholder="Todos os sentimentos" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos</SelectItem>
-          <SelectItem value="positive">Positivo</SelectItem>
-          <SelectItem value="neutral">Neutro</SelectItem>
-          <SelectItem value="negative">Negativo</SelectItem>
-          <SelectItem value="angry">Irritado</SelectItem>
+        <SelectContent className="bg-module-card border-module text-module-primary z-50">
+          <SelectItem value="all" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Todos</SelectItem>
+          <SelectItem value="positive" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Positivo</SelectItem>
+          <SelectItem value="neutral" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Neutro</SelectItem>
+          <SelectItem value="negative" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Negativo</SelectItem>
+          <SelectItem value="angry" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Irritado</SelectItem>
         </SelectContent>
       </Select>
 
@@ -62,6 +62,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
           variant={filters.unreadOnly ? 'default' : 'outline'}
           size="sm"
           onClick={() => onFilterChange({ ...filters, unreadOnly: !filters.unreadOnly })}
+          className={filters.unreadOnly ? '' : 'border-module text-module-primary hover:bg-module-secondary/50'}
         >
           Não Lidas
         </Button>
@@ -69,6 +70,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
           variant={filters.criticalOnly ? 'destructive' : 'outline'}
           size="sm"
           onClick={() => onFilterChange({ ...filters, criticalOnly: !filters.criticalOnly })}
+          className={filters.criticalOnly ? '' : 'border-module text-module-primary hover:bg-module-secondary/50'}
         >
           Críticas
         </Button>
@@ -76,14 +78,14 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
           variant={filters.hotLeadsOnly ? 'default' : 'outline'}
           size="sm"
           onClick={() => onFilterChange({ ...filters, hotLeadsOnly: !filters.hotLeadsOnly })}
-          className="bg-orange-500 hover:bg-orange-600"
+          className={filters.hotLeadsOnly ? 'bg-orange-500 hover:bg-orange-600' : 'border-module text-module-primary hover:bg-module-secondary/50'}
         >
           Leads Quentes
         </Button>
       </div>
 
       <div className="ml-auto">
-        <Button variant="outline" size="sm" onClick={onRefresh}>
+        <Button variant="outline" size="sm" onClick={onRefresh} className="border-module text-module-primary hover:bg-module-secondary/50">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar
         </Button>
