@@ -556,8 +556,9 @@ const ProviderBenefits = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px]">Prestador</TableHead>
-                    <TableHead className="w-[250px]">Presente Escolhido</TableHead>
-                    <TableHead className="w-[180px]">Status</TableHead>
+                    <TableHead className="w-[200px]">Presente Escolhido</TableHead>
+                    <TableHead className="w-[140px]">Status Email</TableHead>
+                    <TableHead className="w-[140px]">Status</TableHead>
                     <TableHead className="w-[120px]">Data</TableHead>
                     <TableHead className="text-center w-[100px]">Ações</TableHead>
                   </TableRow>
@@ -568,6 +569,9 @@ const ProviderBenefits = () => {
                     const selectedBenefitOption = benefit.benefit_choice 
                       ? benefitOptions.find(b => b.id === benefit.benefit_choice) 
                       : null;
+                    
+                    const hasInvitationEmail = !!benefit.invitation_sent_at;
+                    const hasFinalEmail = !!benefit.final_email_sent_at;
 
                     return (
                       <TableRow 
@@ -607,6 +611,32 @@ const ProviderBenefits = () => {
                           ) : (
                             <span className="text-muted-foreground text-sm">Aguardando escolha</span>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1.5">
+                            {hasInvitationEmail && (
+                              <div className="flex items-center gap-1.5 text-xs">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 text-green-700 border border-green-200">
+                                  <Mail className="h-3 w-3" />
+                                  <span className="font-medium">Convite enviado</span>
+                                </div>
+                              </div>
+                            )}
+                            {hasFinalEmail && (
+                              <div className="flex items-center gap-1.5 text-xs">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                                  <Gift className="h-3 w-3" />
+                                  <span className="font-medium">Código enviado</span>
+                                </div>
+                              </div>
+                            )}
+                            {!hasInvitationEmail && (
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-gray-100 text-gray-600 text-xs">
+                                <Mail className="h-3 w-3" />
+                                <span className="font-medium">Sem envio</span>
+                              </div>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">

@@ -67,6 +67,21 @@ const BenefitMobileCard: React.FC<BenefitMobileCardProps> = ({
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Email</p>
             <p className="text-xs font-medium text-gray-900 truncate">{benefit.provider_email}</p>
+            {/* Indicadores de email enviado */}
+            <div className="flex items-center gap-1 mt-1">
+              {benefit.invitation_sent_at && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] bg-green-50 text-green-700 border border-green-200 px-1.5 py-0.5 rounded">
+                  <Mail className="w-2.5 h-2.5" />
+                  Convite enviado
+                </span>
+              )}
+              {benefit.final_email_sent_at && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded">
+                  <Gift className="w-2.5 h-2.5" />
+                  Código enviado
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
