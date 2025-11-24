@@ -161,7 +161,7 @@ export const PaineisPage = () => {
             *,
             devices!inner(id, name, comments, condominio_name)
           `)
-          .eq('event_type', 'disconnect')
+          .eq('event_type', 'offline')
           .gte('started_at', startDate.toISOString())
           .lte('started_at', endDate.toISOString())
           .order('started_at', { ascending: false });
