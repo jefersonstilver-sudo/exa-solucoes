@@ -1,4 +1,4 @@
-import { Search, Filter, ArrowUpDown } from 'lucide-react';
+import { Search, ArrowUpDown, Wifi, WifiOff, HelpCircle } from 'lucide-react';
 import { DevicesFilters, DevicesSort } from '../utils/devices';
 
 interface FiltersBarProps {
@@ -16,93 +16,96 @@ export const FiltersBar = ({
   onSortChange,
   onNewPanel,
 }: FiltersBarProps) => {
+  const statusButtons = [
+    { value: '', label: 'Todos', icon: null },
+    { value: 'offline', label: 'Offline', icon: WifiOff },
+    { value: 'online', label: 'Online', icon: Wifi },
+    { value: 'unknown', label: 'Desconhecido', icon: HelpCircle },
+  ];
+
+  const sortOptions = [
+    { value: 'status-desc', label: 'Offline Primeiro' },
+    { value: 'status-asc', label: 'Online Primeiro' },
+    { value: 'name-asc', label: 'Nome (A-Z)' },
+    { value: 'name-desc', label: 'Nome (Z-A)' },
+    { value: 'last_online-desc', label: 'Recente' },
+    { value: 'last_online-asc', label: 'Antigo' },
+  ];
+
   return (
-    <div className="bg-module-card border-module border rounded-xl shadow-sm p-4 lg:p-6 mb-6">
-      {/* Linha 1: Busca e botão novo */}
-      <div className="flex flex-col lg:flex-row gap-4 mb-4">
+    <div className="bg-module-card border-module border rounded-xl shadow-sm p-4 mb-6">
+      {/* Busca */}
+      <div className="flex flex-col lg:flex-row gap-3 mb-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-module-tertiary" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-module-tertiary" />
           <input
             type="text"
-            placeholder="Buscar por nome, prédio ou AnyDesk ID..."
+            placeholder="Buscar..."
             value={filters.search || ''}
             onChange={(e) =>
               onFiltersChange({ ...filters, search: e.target.value })
             }
-            className="w-full pl-10 pr-4 py-2.5 bg-module-input border-module border rounded-lg text-module-primary placeholder-module-muted focus:outline-none focus:ring-2 focus:ring-module-accent focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 bg-module-input border-module border rounded-lg text-sm text-module-primary placeholder-module-muted focus:outline-none focus:ring-1 focus:ring-module-accent"
           />
         </div>
         <button
           onClick={onNewPanel}
-          className="bg-module-accent hover:bg-module-accent-hover text-white font-semibold px-6 py-2.5 rounded-lg transition-colors whitespace-nowrap"
+          className="bg-module-accent hover:bg-module-accent-hover text-white font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap text-sm"
         >
-          + Novo Painel
+          + Novo
         </button>
       </div>
 
-      {/* Linha 2: Filtros e ordenação */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Filtro de Status */}
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-module-secondary" />
-          <select
-            value={filters.status?.[0] || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              onFiltersChange({ ...filters, status: value ? [value] : [] });
-            }}
-            className="bg-module-input border-module border rounded-lg px-3 py-2 text-sm text-module-primary focus:outline-none focus:ring-2 focus:ring-module-accent"
-          >
-            <option value="">Todos os status</option>
-            <option value="online">Online</option>
-            <option value="offline">Offline</option>
-            <option value="unknown">Desconhecido</option>
-          </select>
-        </div>
+      {/* Filtros por Status - Botões */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        {statusButtons.map((btn) => {
+          const isActive = (filters.status?.[0] || '') === btn.value;
+          const Icon = btn.icon;
+          return (
+            <button
+              key={btn.value}
+              onClick={() =>
+                onFiltersChange({ ...filters, status: btn.value ? [btn.value] : [] })
+              }
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                isActive
+                  ? 'bg-module-accent text-white'
+                  : 'bg-module-input text-module-secondary hover:bg-module-accent/10 border border-module'
+              }`}
+            >
+              {Icon && <Icon className="w-3.5 h-3.5" />}
+              {btn.label}
+            </button>
+          );
+        })}
+      </div>
 
-        {/* Filtro de Condomínio */}
-        <input
-          type="text"
-          placeholder="Filtrar por condomínio..."
-          value={filters.condominio || ''}
-          onChange={(e) =>
-            onFiltersChange({ ...filters, condominio: e.target.value })
-          }
-          className="bg-module-input border-module border rounded-lg px-3 py-2 text-sm text-module-primary placeholder-module-muted focus:outline-none focus:ring-2 focus:ring-module-accent"
-        />
-
-        {/* Filtro de Torre */}
-        <input
-          type="text"
-          placeholder="Filtrar por torre..."
-          value={filters.torre || ''}
-          onChange={(e) =>
-            onFiltersChange({ ...filters, torre: e.target.value })
-          }
-          className="bg-module-input border-module border rounded-lg px-3 py-2 text-sm text-module-primary placeholder-module-muted focus:outline-none focus:ring-2 focus:ring-module-accent"
-        />
-
-        {/* Ordenação */}
-        <div className="flex items-center gap-2">
-          <ArrowUpDown className="w-4 h-4 text-module-secondary" />
-          <select
-            value={`${sort.field}-${sort.order}`}
-            onChange={(e) => {
-              const [field, order] = e.target.value.split('-');
-              onSortChange({
-                field: field as DevicesSort['field'],
-                order: order as DevicesSort['order'],
-              });
-            }}
-            className="bg-module-input border-module border rounded-lg px-3 py-2 text-sm text-module-primary focus:outline-none focus:ring-2 focus:ring-module-accent"
-          >
-            <option value="name-asc">Nome (A-Z)</option>
-            <option value="name-desc">Nome (Z-A)</option>
-            <option value="status-asc">Status (A-Z)</option>
-            <option value="status-desc">Status (Z-A)</option>
-            <option value="last_online-desc">Último online (Recente)</option>
-            <option value="last_online-asc">Último online (Antigo)</option>
-          </select>
+      {/* Ordenação - Botões */}
+      <div className="flex items-center gap-2">
+        <ArrowUpDown className="w-3.5 h-3.5 text-module-tertiary" />
+        <div className="flex flex-wrap gap-2">
+          {sortOptions.map((option) => {
+            const isActive = `${sort.field}-${sort.order}` === option.value;
+            return (
+              <button
+                key={option.value}
+                onClick={() => {
+                  const [field, order] = option.value.split('-');
+                  onSortChange({
+                    field: field as DevicesSort['field'],
+                    order: order as DevicesSort['order'],
+                  });
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  isActive
+                    ? 'bg-module-accent text-white'
+                    : 'bg-module-input text-module-secondary hover:bg-module-accent/10 border border-module'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
