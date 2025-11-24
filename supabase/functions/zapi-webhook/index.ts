@@ -241,26 +241,32 @@ serve(async (req) => {
       });
     }
 
-    // Log inbound message COM messageId para deduplicação (UPSERT para evitar erro de duplicata)
-    const { error: logError } = await supabase.from('zapi_logs').upsert({
-      agent_key: agent.key,
-      direction: 'inbound',
-      phone_number: phone,
-      message_text: messageText,
-      media_url: mediaUrl,
-      zapi_message_id: messageId,
-      status: 'received',
-      metadata: { 
-        raw_payload: payload,
-        media_type: mediaType
-      }
-    }, {
-      onConflict: 'zapi_message_id',
-      ignoreDuplicates: true
-    });
+    // Log inbound message COM messageId para deduplicação (INSERT com tratamento de duplicata)
+    if (messageId) {
+      const { error: logError } = await supabase
+        .from('zapi_logs')
+        .insert({
+          agent_key: agent.key,
+          direction: 'inbound',
+          phone_number: phone,
+          message_text: messageText,
+          media_url: mediaUrl,
+          zapi_message_id: messageId,
+          status: 'received',
+          metadata: { 
+            raw_payload: payload,
+            media_type: mediaType
+          }
+        })
+        .select()
+        .maybeSingle();
 
-    if (logError) {
-      console.error('[ZAPI-WEBHOOK] ❌ Error logging message:', logError);
+      // Se erro 23505 (duplicate), ignorar silenciosamente
+      if (logError && logError.code !== '23505') {
+        console.error('[ZAPI-WEBHOOK] ❌ Error logging message:', logError);
+      }
+    } else {
+      console.warn('[ZAPI-WEBHOOK] ⚠️ No messageId, skipping log');
     }
 
     console.log('[ZAPI-WEBHOOK] ✅ Message logged with ID:', messageId);

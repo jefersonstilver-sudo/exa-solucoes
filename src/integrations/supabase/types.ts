@@ -209,6 +209,42 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_performance_metrics: {
+        Row: {
+          agent_key: string
+          duration_ms: number | null
+          error_code: string | null
+          id: string
+          metadata: Json | null
+          metric_type: string
+          model: string | null
+          timestamp: string | null
+          tokens_used: number | null
+        }
+        Insert: {
+          agent_key: string
+          duration_ms?: number | null
+          error_code?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          model?: string | null
+          timestamp?: string | null
+          tokens_used?: number | null
+        }
+        Update: {
+          agent_key?: string
+          duration_ms?: number | null
+          error_code?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          model?: string | null
+          timestamp?: string | null
+          tokens_used?: number | null
+        }
+        Relationships: []
+      }
       agent_preview_conversations: {
         Row: {
           agent_key: string
