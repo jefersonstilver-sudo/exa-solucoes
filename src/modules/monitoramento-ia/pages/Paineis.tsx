@@ -206,9 +206,15 @@ export const PaineisPage = () => {
           if (!painelData) return;
 
           if (!quedaPorPainel.has(painelId)) {
+            // Limpar nome do painel para evitar duplicação
+            const rawName = painelData.comments || painelData.name || '';
+            const cleanName = rawName.includes(' - ') 
+              ? rawName.split(' - ')[0].trim() 
+              : rawName.trim();
+            
             quedaPorPainel.set(painelId, {
               painel_id: painelId,
-              painel_nome: (painelData.comments || painelData.name || '').split(' - ')[0].trim(),
+              painel_nome: cleanName,
               condominio_nome: painelData.condominio_name || 'Sem condomínio',
               total_ocorrencias: 0,
               tempo_total_offline_segundos: 0,

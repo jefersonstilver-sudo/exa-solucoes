@@ -23,7 +23,16 @@ interface QuedaDiariaListProps {
 }
 
 export const QuedaDiariaList = ({ paineis }: QuedaDiariaListProps) => {
-  const [expandedPanels, setExpandedPanels] = useState<Set<string>>(new Set());
+  // Iniciar com todos os painéis com múltiplas quedas expandidos
+  const [expandedPanels, setExpandedPanels] = useState<Set<string>>(() => {
+    const initialExpanded = new Set<string>();
+    paineis.forEach(painel => {
+      if (painel.total_ocorrencias > 1) {
+        initialExpanded.add(painel.painel_id);
+      }
+    });
+    return initialExpanded;
+  });
 
   const togglePanel = (painelId: string) => {
     setExpandedPanels(prev => {
@@ -106,41 +115,80 @@ export const QuedaDiariaList = ({ paineis }: QuedaDiariaListProps) => {
               </span>
             </div>
 
-            {isExpanded && temMultiplasQuedas && (
+            {/* Sempre mostrar detalhes das ocorrências */}
+            {temMultiplasQuedas ? (
+              // Múltiplas quedas: mostrar expandível
+              isExpanded && (
+                <div className="bg-module p-3 border-t border-module">
+                  <p className="text-xs font-semibold text-module-secondary mb-2 uppercase">
+                    Detalhes das Ocorrências
+                  </p>
+                  <div className="space-y-2">
+                    {painel.ocorrencias.map((ocorrencia, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-2 bg-module-secondary rounded border border-module"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 text-xs text-module-primary">
+                            <span className="font-medium">Ocorrência {idx + 1}</span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-module-secondary">
+                            <span>
+                              Início: {format(new Date(ocorrencia.inicio), 'HH:mm:ss', { locale: ptBR })}
+                            </span>
+                            {ocorrencia.fim && (
+                              <>
+                                <span>→</span>
+                                <span>
+                                  Fim: {format(new Date(ocorrencia.fim), 'HH:mm:ss', { locale: ptBR })}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-sm font-bold text-red-600 ml-4">
+                          {formatDuracao(ocorrencia.duracao_segundos)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            ) : (
+              // Única queda: mostrar direto sem expansão
               <div className="bg-module p-3 border-t border-module">
                 <p className="text-xs font-semibold text-module-secondary mb-2 uppercase">
-                  Detalhes das Ocorrências
+                  Detalhes da Ocorrência
                 </p>
-                <div className="space-y-2">
-                  {painel.ocorrencias.map((ocorrencia, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-2 bg-module-secondary rounded border border-module"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 text-xs text-module-primary">
-                          <span className="font-medium">Ocorrência {idx + 1}</span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-module-secondary">
-                          <span>
-                            Início: {format(new Date(ocorrencia.inicio), 'HH:mm:ss', { locale: ptBR })}
-                          </span>
-                          {ocorrencia.fim && (
-                            <>
-                              <span>→</span>
-                              <span>
-                                Fim: {format(new Date(ocorrencia.fim), 'HH:mm:ss', { locale: ptBR })}
-                              </span>
-                            </>
-                          )}
-                        </div>
+                {painel.ocorrencias.map((ocorrencia, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-2 bg-module-secondary rounded border border-module"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 text-xs text-module-primary">
+                        <span className="font-medium">Ocorrência {idx + 1}</span>
                       </div>
-                      <span className="text-sm font-bold text-red-600 ml-4">
-                        {formatDuracao(ocorrencia.duracao_segundos)}
-                      </span>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-module-secondary">
+                        <span>
+                          Início: {format(new Date(ocorrencia.inicio), 'HH:mm:ss', { locale: ptBR })}
+                        </span>
+                        {ocorrencia.fim && (
+                          <>
+                            <span>→</span>
+                            <span>
+                              Fim: {format(new Date(ocorrencia.fim), 'HH:mm:ss', { locale: ptBR })}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    <span className="text-sm font-bold text-red-600 ml-4">
+                      {formatDuracao(ocorrencia.duracao_segundos)}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
