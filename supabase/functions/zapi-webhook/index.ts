@@ -45,15 +45,89 @@ serve(async (req) => {
       });
     }
 
-    // ========== FILTRO: IGNORAR STATUS UPDATES ==========
+    // ========== PROCESSAR EVENTOS DE STATUS ==========
     const eventType = payload.type;
 
-    if (eventType === 'MessageStatusCallback' || eventType === 'DeliveryCallback') {
-      console.log('[ZAPI-WEBHOOK] ⏭️ Status update ignorado:', eventType);
+    // Status de mensagem: delivered, read
+    if (eventType === 'MessageStatusCallback') {
+      console.log('[ZAPI-WEBHOOK] 📊 Message status update:', payload.status);
+      
+      const messageId = payload.messageId || payload.id;
+      const status = payload.status; // 'sent', 'delivered', 'read'
+      
+      if (messageId && status) {
+        // Atualizar status na tabela messages
+        const { error: updateError } = await supabase
+          .from('messages')
+          .update({ 
+            metadata: supabase.raw(`
+              COALESCE(metadata, '{}'::jsonb) || 
+              jsonb_build_object('delivery_status', '${status}'::text, 'status_updated_at', NOW()::text)
+            `)
+          })
+          .eq('raw_payload->>messageId', messageId);
+
+        if (updateError) {
+          console.error('[ZAPI-WEBHOOK] Failed to update message status:', updateError);
+        } else {
+          console.log('[ZAPI-WEBHOOK] ✅ Message status updated:', messageId, status);
+        }
+      }
+
       return new Response(JSON.stringify({ 
         success: true, 
-        skipped: true,
-        reason: 'status_update'
+        processed: 'status_update'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Status de conexão
+    if (eventType === 'DisconnectedCallback') {
+      console.log('[ZAPI-WEBHOOK] 🔴 WhatsApp disconnected!');
+      
+      // Criar alerta de desconexão
+      const { data: agent } = await supabase
+        .from('agents')
+        .select('key, display_name')
+        .eq('whatsapp_provider', 'zapi')
+        .eq('zapi_config->>instance_id', instanceId)
+        .single();
+
+      if (agent) {
+        await supabase.from('agent_logs').insert({
+          agent_key: agent.key,
+          event_type: 'whatsapp_disconnected',
+          metadata: { 
+            instance_id: instanceId,
+            timestamp: new Date().toISOString()
+          }
+        });
+
+        // Enviar alerta via EXA Alert
+        await supabase.functions.invoke('notify-exa-alert', {
+          body: {
+            severity: 'critical',
+            title: `🔴 WhatsApp Desconectado - ${agent.display_name}`,
+            message: `O WhatsApp do agente ${agent.display_name} foi desconectado. Verifique a conexão imediatamente.`,
+            metadata: { agent_key: agent.key, instance_id: instanceId }
+          }
+        });
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        processed: 'disconnect_alert'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (eventType === 'ConnectedCallback') {
+      console.log('[ZAPI-WEBHOOK] 🟢 WhatsApp connected');
+      return new Response(JSON.stringify({ 
+        success: true, 
+        processed: 'connected'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
