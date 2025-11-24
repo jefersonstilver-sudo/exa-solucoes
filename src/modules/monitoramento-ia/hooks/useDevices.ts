@@ -23,7 +23,7 @@ export function useDevices(
   const [total, setTotal] = useState(0);
   const [filters, setFilters] = useState<DevicesFilters>(initialFilters || {});
   const [sort, setSort] = useState<DevicesSort>(
-    initialSort || { field: 'name', order: 'asc' }
+    initialSort || { field: 'status', order: 'desc' }
   );
 
   const loadDevices = useCallback(async (silent = false) => {
