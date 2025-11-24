@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { StickyNote, Tag, MessageSquare, FileText, Play, Volume2, Bot } from 'lucide-react';
+import { StickyNote, Tag, MessageSquare, FileText, Play, Volume2, Bot, User } from 'lucide-react';
 import { MediaInputBar } from './MediaInputBar';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
+import { LeadDetailDrawer } from './LeadDetailDrawer';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ interface CRMChatProps {
 export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, loading, onRefresh }) => {
   const [showNotes, setShowNotes] = useState(false);
   const [showTags, setShowTags] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [conversation, setConversation] = useState<any>(null);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -89,6 +91,14 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
         <div className="p-4 border-b border-module-border flex items-center justify-between glass-card">
           <h2 className="font-semibold text-module-primary">Conversa</h2>
           <div className="flex gap-2">
+            <Button
+              variant={showDetails ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowDetails(!showDetails)}
+            >
+              <User className="w-4 h-4 mr-2" />
+              Detalhes
+            </Button>
             <Button
               variant={showNotes ? 'default' : 'outline'}
               size="sm"
@@ -285,6 +295,13 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
           )}
         </div>
       )}
+
+      {/* Lead Detail Drawer */}
+      <LeadDetailDrawer
+        conversationId={conversationId}
+        open={showDetails}
+        onClose={() => setShowDetails(false)}
+      />
     </div>
   );
 };
