@@ -34,12 +34,12 @@ serve(async (req) => {
     if (req.method === 'GET' && path === '') {
       console.log('📋 Fetching active logos for ticker');
       
-      // ✅ FIX: Select apenas colunas necessárias + LIMIT da tabela correta
+      // ✅ FIX: Select apenas colunas necessárias + LIMIT
       const { data: logos, error } = await supabaseClient
-        .from('logos')
-        .select('id, name, file_url, link_url, is_active, sort_order, storage_bucket, storage_key, color_variant, scale_factor')
+        .from('client_logos')
+        .select('id, name, logo_url, link, is_active, order_position')
         .eq('is_active', true)
-        .order('sort_order', { ascending: true })
+        .order('order_position', { ascending: true })
         .limit(20);
 
       if (error) {
@@ -74,20 +74,16 @@ serve(async (req) => {
       for (let i = 0; i < (logos || []).length; i += BATCH_SIZE) {
         const batch = (logos || []).slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(batch.map(async (logo: any) => {
-          const info = extractBucketAndPath(logo.file_url);
+          const info = extractBucketAndPath(logo.logo_url);
           if (!info) {
-            const cacheBustedUrl = logo.file_url + (logo.file_url.includes('?') ? '&' : '?') + `v=${Date.now()}`;
+            const cacheBustedUrl = logo.logo_url + (logo.logo_url.includes('?') ? '&' : '?') + `v=${Date.now()}`;
             return { 
               id: logo.id,
               name: logo.name,
               file_url: cacheBustedUrl,
-              link_url: logo.link_url,
+              link_url: logo.link,
               is_active: logo.is_active,
-              sort_order: logo.sort_order,
-              color_variant: logo.color_variant,
-              scale_factor: logo.scale_factor,
-              storage_bucket: logo.storage_bucket,
-              storage_key: logo.storage_key
+              sort_order: logo.order_position
             };
           }
           try {
@@ -96,13 +92,9 @@ serve(async (req) => {
               id: logo.id,
               name: logo.name,
               file_url: s1.signedUrl,
-              link_url: logo.link_url,
+              link_url: logo.link,
               is_active: logo.is_active,
-              sort_order: logo.sort_order,
-              color_variant: logo.color_variant,
-              scale_factor: logo.scale_factor,
-              storage_bucket: logo.storage_bucket,
-              storage_key: logo.storage_key
+              sort_order: logo.order_position
             };
             
             let { data: s2 } = await supabaseClient.storage.from(info.bucket).createSignedUrl(info.pathRaw, 60 * 60 * 24 * 7);
@@ -110,13 +102,9 @@ serve(async (req) => {
               id: logo.id,
               name: logo.name,
               file_url: s2.signedUrl,
-              link_url: logo.link_url,
+              link_url: logo.link,
               is_active: logo.is_active,
-              sort_order: logo.sort_order,
-              color_variant: logo.color_variant,
-              scale_factor: logo.scale_factor,
-              storage_bucket: logo.storage_bucket,
-              storage_key: logo.storage_key
+              sort_order: logo.order_position
             };
             
             const { data: pub1 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathDecoded);
@@ -124,13 +112,9 @@ serve(async (req) => {
               id: logo.id,
               name: logo.name,
               file_url: pub1.publicUrl,
-              link_url: logo.link_url,
+              link_url: logo.link,
               is_active: logo.is_active,
-              sort_order: logo.sort_order,
-              color_variant: logo.color_variant,
-              scale_factor: logo.scale_factor,
-              storage_bucket: logo.storage_bucket,
-              storage_key: logo.storage_key
+              sort_order: logo.order_position
             };
             
             const { data: pub2 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathRaw);
@@ -138,13 +122,9 @@ serve(async (req) => {
               id: logo.id,
               name: logo.name,
               file_url: pub2.publicUrl,
-              link_url: logo.link_url,
+              link_url: logo.link,
               is_active: logo.is_active,
-              sort_order: logo.sort_order,
-              color_variant: logo.color_variant,
-              scale_factor: logo.scale_factor,
-              storage_bucket: logo.storage_bucket,
-              storage_key: logo.storage_key
+              sort_order: logo.order_position
             };
             
             return null;

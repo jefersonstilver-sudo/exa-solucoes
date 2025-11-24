@@ -44,22 +44,9 @@ const TickerLogoItem: React.FC<TickerLogoItemProps> = ({
     }
   };
 
-  // Se está carregando ou deu erro, não renderiza
-  if (loading || !imageUrl) {
+  // Don't render if loading or error
+  if (loading || !imageUrl || imageError) {
     return null;
-  }
-
-  // Se deu erro de imagem, mostra placeholder
-  if (imageError) {
-    return (
-      <div 
-        className={`flex items-center justify-center p-4 ${className}`}
-      >
-        <div className="max-h-16 max-w-40 flex items-center justify-center bg-white/10 rounded px-4 py-2">
-          <span className="text-white/60 text-xs font-medium">{logo.name}</span>
-        </div>
-      </div>
-    );
   }
 
   return (
