@@ -415,6 +415,7 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
         model: 'gpt-4o-mini', // Modelo otimizado para melhor performance e limite maior
         messages: messagesArray,
         tools: tools,
+        parallel_tool_calls: false,  // ← Forçar 1 tool_call por vez para simplificar processamento
         temperature: agent.openai_config?.temperature || 0.7,
         max_tokens: agent.openai_config?.max_tokens || 2000
       });
@@ -458,74 +459,100 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
 
     // Se a IA pediu para chamar uma função
     if (assistantMessage.tool_calls) {
-      console.log('[IA-CONSOLE] Function call requested:', assistantMessage.tool_calls[0].function.name);
+      const allToolCalls = assistantMessage.tool_calls;
+      console.log(`[IA-CONSOLE] 📞 Processing ${allToolCalls.length} tool_call(s)`, {
+        toolCallIds: allToolCalls.map(tc => tc.id),
+        functions: allToolCalls.map(tc => tc.function.name)
+      });
       
-      const toolCall = assistantMessage.tool_calls[0];
-      const functionName = toolCall.function.name;
-      const functionArgs = JSON.parse(toolCall.function.arguments);
+      // Processar TODOS os tool_calls
+      const toolResponses = [];
+      let consolidatedResult = [];
+      let totalCount = 0;
+      let hasCount = false;
       
-      let functionResult;
-      
-      if (functionName === 'consultar_predios') {
-        // Executar query no banco
-        let query = supabase.from('buildings').select('*');
+      for (const toolCall of allToolCalls) {
+        const functionName = toolCall.function.name;
+        const functionArgs = JSON.parse(toolCall.function.arguments);
         
-        // PRIORIDADE: Filtrar por nome do prédio se especificado
-        if (functionArgs.nome_predio) {
-          query = query.ilike('nome', `%${functionArgs.nome_predio}%`);
-          console.log(`[IA-CONSOLE] Filtering by building name: ${functionArgs.nome_predio}`);
-        }
+        console.log(`[IA-CONSOLE] 🔧 Executing ${functionName}:`, functionArgs);
         
-        // Filtrar por status
-        if (functionArgs.status === 'ativo') {
-          query = query.eq('status', 'ativo');
-        } else if (functionArgs.status === 'instalação') {
-          query = query.eq('status', 'instalação');
-        }
+        let functionResult;
         
-        // Filtrar por bairro se especificado
-        if (functionArgs.bairro) {
-          query = query.ilike('bairro', `%${functionArgs.bairro}%`);
-        }
-        
-        const { data: buildings, error: buildingsError } = await query;
-        
-        if (buildingsError) {
-          functionResult = { error: buildingsError.message };
-        } else {
-          // Formatar resultado baseado no tipo de consulta
-          if (functionArgs.tipo_consulta === 'count') {
-            functionResult = {
-              total: buildings.length,
-              status: functionArgs.status
-            };
-          } else if (functionArgs.tipo_consulta === 'list') {
-            functionResult = buildings.map(b => ({
-              nome: b.nome,
-              preco_base: b.preco_base,
-              visualizacoes_mes: b.visualizacoes_mes,
-              publico_estimado: b.publico_estimado,
-              status: b.status
-            }));
+        if (functionName === 'consultar_predios') {
+          // Executar query no banco
+          let query = supabase.from('buildings').select('*');
+          
+          // PRIORIDADE: Filtrar por nome do prédio se especificado
+          if (functionArgs.nome_predio) {
+            query = query.ilike('nome', `%${functionArgs.nome_predio}%`);
+            console.log(`[IA-CONSOLE] Filtering by building name: ${functionArgs.nome_predio}`);
+          }
+          
+          // Filtrar por status
+          if (functionArgs.status === 'ativo') {
+            query = query.eq('status', 'ativo');
+          } else if (functionArgs.status === 'instalação') {
+            query = query.eq('status', 'instalação');
+          }
+          
+          // Filtrar por bairro se especificado
+          if (functionArgs.bairro) {
+            query = query.ilike('bairro', `%${functionArgs.bairro}%`);
+          }
+          
+          const { data: buildings, error: buildingsError } = await query;
+          
+          if (buildingsError) {
+            functionResult = { error: buildingsError.message };
           } else {
-            // Tipo "details" - ordenar por exibições (maior primeiro)
-            functionResult = buildings
-              .sort((a, b) => (b.visualizacoes_mes || 0) - (a.visualizacoes_mes || 0))
-              .map(b => ({
+            // Formatar resultado baseado no tipo de consulta
+            if (functionArgs.tipo_consulta === 'count') {
+              functionResult = {
+                total: buildings.length,
+                status: functionArgs.status
+              };
+              hasCount = true;
+              totalCount = buildings.length;
+            } else if (functionArgs.tipo_consulta === 'list') {
+              functionResult = buildings.map(b => ({
                 nome: b.nome,
                 preco_base: b.preco_base,
                 visualizacoes_mes: b.visualizacoes_mes,
                 publico_estimado: b.publico_estimado,
-                bairro: b.bairro,
                 status: b.status
               }));
+              consolidatedResult = consolidatedResult.concat(functionResult);
+            } else {
+              // Tipo "details" - ordenar por exibições (maior primeiro)
+              functionResult = buildings
+                .sort((a, b) => (b.visualizacoes_mes || 0) - (a.visualizacoes_mes || 0))
+                .map(b => ({
+                  nome: b.nome,
+                  preco_base: b.preco_base,
+                  visualizacoes_mes: b.visualizacoes_mes,
+                  publico_estimado: b.publico_estimado,
+                  bairro: b.bairro,
+                  status: b.status
+                }));
+              consolidatedResult = consolidatedResult.concat(functionResult);
+            }
           }
+          
+          console.log(`[IA-CONSOLE] ✅ Query result: ${buildings?.length || 0} buildings found`);
         }
         
-        console.log(`[IA-CONSOLE] Query result: ${buildings?.length || 0} buildings found`);
+        // Adicionar resposta do tool
+        toolResponses.push({
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: JSON.stringify(functionResult)
+        });
       }
       
-      // Chamar OpenAI novamente com o resultado da função (com retry automático)
+      console.log(`[IA-CONSOLE] 📊 Collected ${toolResponses.length} tool responses`);
+      
+      // Chamar OpenAI novamente com TODAS as respostas dos tool_calls
       let finalData;
       let finalMessage;
       let tokensUsed;
@@ -535,23 +562,26 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
         const secondCallMessages = [
           ...messagesArray,
           assistantMessage,
-          {
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: JSON.stringify(functionResult)
-          }
+          ...toolResponses  // ← TODAS as respostas dos tool_calls
         ];
         
         console.log('[IA-CONSOLE] 📝 Second OpenAI call details:', {
           totalMessages: secondCallMessages.length,
-          hasToolCalls: secondCallMessages.some(m => m.role === 'assistant' && m.tool_calls),
+          assistantWithToolCalls: !!assistantMessage.tool_calls,
+          toolCallsCount: assistantMessage.tool_calls?.length || 0,
+          toolResponsesCount: toolResponses.length,
           messageRoles: secondCallMessages.map(m => m.role),
-          lastMessages: secondCallMessages.slice(-3).map(m => ({ role: m.role, hasToolCalls: !!m.tool_calls }))
+          lastMessages: secondCallMessages.slice(-5).map(m => ({ 
+            role: m.role, 
+            hasToolCalls: !!m.tool_calls,
+            toolCallId: m.tool_call_id 
+          }))
         });
         
         finalData = await callOpenAIWithRetry({
           model: 'gpt-4o-mini',
           messages: secondCallMessages,
+          parallel_tool_calls: false,  // ← Forçar 1 tool_call por vez (simplifica)
           temperature: agent.openai_config?.temperature || 0.7,
           max_tokens: agent.openai_config?.max_tokens || 2000
         });
@@ -574,49 +604,32 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
           
           let formattedResponse = '';
           
-          if (functionArgs.tipo_consulta === 'count') {
-            const total = functionResult.total || 0;
-            formattedResponse = `Encontrei ${total} ${total === 1 ? 'prédio' : 'prédios'} ${functionArgs.status === 'ativo' ? 'disponíveis' : functionArgs.status === 'instalação' ? 'em instalação' : 'no total'}. Posso ajudar com mais alguma coisa?`;
-          } else if (Array.isArray(functionResult)) {
-            if (functionResult.length === 0) {
-              formattedResponse = 'Não encontrei prédios com esses critérios. Posso ajudar de outra forma?';
-            } else if (functionArgs.nome_predio) {
-              // Detalhes de prédio específico
-              const predio = functionResult[0];
-              formattedResponse = `**${predio.nome}**\n\n`;
-              formattedResponse += `📊 Visualizações: ${predio.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'}/mês\n`;
-              formattedResponse += `👥 Público: ${predio.publico_estimado?.toLocaleString('pt-BR') || 'N/A'}\n`;
-              formattedResponse += `💰 Preço: R$ ${predio.preco_base?.toLocaleString('pt-BR') || 'N/A'}\n`;
-              formattedResponse += `📍 ${predio.bairro || 'N/A'}\n`;
-              formattedResponse += `✅ Status: ${predio.status}\n\n`;
-              formattedResponse += 'Posso ajudar com mais informações?';
-            } else {
-              // 🆕 Lista COMPLETA de prédios (tipo_consulta='list' ou 'details')
-              if (functionArgs.tipo_consulta === 'list' || functionArgs.tipo_consulta === 'details') {
-                formattedResponse = `Temos ${functionResult.length} ${functionResult.length === 1 ? 'prédio disponível' : 'prédios disponíveis'}! 🏢\n\n`;
-                
-                // Mostrar TODOS os prédios, não apenas 5
-                functionResult.forEach((p, i) => {
-                  formattedResponse += `🏢 **${p.nome}**\n`;
-                  formattedResponse += `   📊 ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} visualizações/mês\n`;
-                  formattedResponse += `   💰 R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/A'}/mês\n`;
-                  if (p.bairro) formattedResponse += `   📍 ${p.bairro}\n`;
-                  formattedResponse += `\n`;
-                });
-                
-                formattedResponse += 'Qual te interessou mais? Posso dar detalhes sobre qualquer um! 😊';
-              } else {
-                // Fallback: mostrar resumo com os 5 primeiros
-                formattedResponse = `Encontrei ${functionResult.length} ${functionResult.length === 1 ? 'prédio' : 'prédios'}:\n\n`;
-                functionResult.slice(0, 5).forEach((p, i) => {
-                  formattedResponse += `${i + 1}. **${p.nome}** - ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} vis/mês, R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/A'}\n`;
-                });
-                if (functionResult.length > 5) {
-                  formattedResponse += `\n...e mais ${functionResult.length - 5} ${functionResult.length - 5 === 1 ? 'prédio' : 'prédios'}.\n`;
-                }
-                formattedResponse += '\nPosso dar mais detalhes sobre algum?';
-              }
-            }
+          // Consolidar resultados de múltiplos tool_calls
+          if (hasCount && consolidatedResult.length === 0) {
+            // Apenas count
+            formattedResponse = `Temos ${totalCount} ${totalCount === 1 ? 'prédio disponível' : 'prédios disponíveis'}! 🏢`;
+            if (totalCount > 0) formattedResponse += ' Quer ver a lista completa?';
+          } else if (consolidatedResult.length > 0) {
+            // Lista completa de prédios
+            formattedResponse = `Temos ${consolidatedResult.length} ${consolidatedResult.length === 1 ? 'prédio disponível' : 'prédios disponíveis'}! 🏢\n\n`;
+            
+            // Remover duplicatas (se houver)
+            const uniqueBuildings = consolidatedResult.filter((building, index, self) =>
+              index === self.findIndex((b) => b.nome === building.nome)
+            );
+            
+            // Mostrar TODOS os prédios únicos
+            uniqueBuildings.forEach((p, i) => {
+              formattedResponse += `🏢 **${p.nome}**\n`;
+              formattedResponse += `   📊 ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} visualizações/mês\n`;
+              formattedResponse += `   💰 R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/A'}/mês\n`;
+              if (p.bairro) formattedResponse += `   📍 ${p.bairro}\n`;
+              formattedResponse += `\n`;
+            });
+            
+            formattedResponse += 'Qual te interessou mais? Posso dar detalhes sobre qualquer um! 😊';
+          } else {
+            formattedResponse = 'Não encontrei prédios com esses critérios. Posso ajudar de outra forma?';
           }
           
           // Log do fallback com tipo de erro
@@ -626,9 +639,8 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
             metadata: {
               reason: isRateLimit ? 'rate_limit_429' : isToolCallError ? 'tool_calls_error' : is400Error ? 'bad_request_400' : 'unknown',
               errorMessage: error.message?.substring(0, 200),
-              functionCalled: functionName,
-              functionArgs: functionArgs,
-              resultCount: functionResult.total || functionResult.length || 0,
+              toolCallsProcessed: allToolCalls.length,
+              resultCount: consolidatedResult.length || totalCount,
               userMessage: message.substring(0, 200),
               timestamp: new Date().toISOString()
             }
@@ -640,8 +652,8 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
               response: formattedResponse,
               tokens: 0,
               latency: Date.now() - startTime,
-              functionCalled: functionName,
-              functionResult: functionResult,
+              toolCallsProcessed: allToolCalls.length,
+              consolidatedResult: consolidatedResult.length > 0 ? consolidatedResult : { total: totalCount },
               fallbackUsed: true
             }),
             { 
@@ -670,12 +682,9 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
               messages: [
                 ...messagesArray,
                 assistantMessage,
-                {
-                  role: 'tool',
-                  tool_call_id: toolCall.id,
-                  content: JSON.stringify(functionResult)
-                }
+                ...toolResponses  // ← TODAS as respostas
               ],
+              parallel_tool_calls: false,
               temperature: agent.openai_config?.temperature || 0.7,
               max_tokens: agent.openai_config?.max_tokens || 2000
             }),
@@ -703,22 +712,38 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
               error: String(error),
               retryError: String(retryError),
               message: error?.message || 'Unknown error',
-              functionCalled: functionName,
-              functionResult: functionResult,
+              toolCallsProcessed: allToolCalls.length,
+              consolidatedResult: consolidatedResult.length || totalCount,
               userMessage: message.substring(0, 200),
               timestamp: new Date().toISOString()
             }
           });
           
-          // Retornar mensagem amigável
+          // Retornar mensagem amigável com fallback melhorado
+          let fallbackMsg = '';
+          if (consolidatedResult.length > 0) {
+            fallbackMsg = `Encontrei ${consolidatedResult.length} prédios:\n\n`;
+            consolidatedResult.slice(0, 5).forEach((p, i) => {
+              fallbackMsg += `${i + 1}. ${p.nome} - ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} vis/mês\n`;
+            });
+            if (consolidatedResult.length > 5) {
+              fallbackMsg += `\n...e mais ${consolidatedResult.length - 5}.\n`;
+            }
+            fallbackMsg += '\nPosso dar mais detalhes!';
+          } else if (totalCount > 0) {
+            fallbackMsg = `Temos ${totalCount} prédios disponíveis! Quer ver a lista?`;
+          } else {
+            fallbackMsg = `⚠️ Consegui consultar os dados, mas tive dificuldade em formatar a resposta. Pode tentar novamente?`;
+          }
+          
           return new Response(
             JSON.stringify({
               success: true,
-              response: `⚠️ Consegui consultar os dados (${functionResult.total || functionResult.length} prédios encontrados), mas tive dificuldade em formatar a resposta. Pode tentar novamente?`,
+              response: fallbackMsg,
               tokens: 0,
               latency: Date.now() - startTime,
-              functionCalled: functionName,
-              functionResult: functionResult,
+              toolCallsProcessed: allToolCalls.length,
+              consolidatedResult: consolidatedResult.length > 0 ? consolidatedResult : { total: totalCount },
               error: error.message
             }),
             { 
@@ -739,7 +764,7 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
           tokens: tokensUsed,
           latency: Date.now() - startTime,
           model: finalData.model,
-          function_called: functionName
+          tool_calls_processed: allToolCalls.length
         }
       });
       
@@ -751,8 +776,8 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
           latency: Date.now() - startTime,
           model: finalData.model,
           credentialsPresent: true,
-          functionCalled: functionName,
-          functionResult: functionResult
+          toolCallsProcessed: allToolCalls.length,
+          consolidatedResult: consolidatedResult.length > 0 ? consolidatedResult : { total: totalCount }
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
