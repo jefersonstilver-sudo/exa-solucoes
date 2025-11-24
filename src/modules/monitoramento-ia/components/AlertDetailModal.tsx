@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { DeviceAlert } from '../utils/alerts';
 import { updateAlertStatus, fetchAnyDeskMetadataStub } from '../utils/alerts';
+import { useModuleTheme, getThemeClass } from '../hooks/useModuleTheme';
+import { cn } from '@/lib/utils';
 
 interface AlertDetailModalProps {
   alert: DeviceAlert | null;
@@ -18,6 +20,7 @@ interface AlertDetailModalProps {
 
 export const AlertDetailModal = ({ alert, isOpen, onClose, onUpdate }: AlertDetailModalProps) => {
   const [loading, setLoading] = useState(false);
+  const { theme } = useModuleTheme();
 
   useEffect(() => {
     if (alert && isOpen) {
@@ -56,7 +59,7 @@ export const AlertDetailModal = ({ alert, isOpen, onClose, onUpdate }: AlertDeta
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-module-card border-module text-module-primary">
+      <DialogContent className={cn(getThemeClass(theme), "max-w-4xl max-h-[90vh] overflow-y-auto bg-module-card border-module text-module-primary")}>
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-module-primary flex items-center gap-3">
             <AlertCircle className="w-6 h-6 text-[#E30613]" />

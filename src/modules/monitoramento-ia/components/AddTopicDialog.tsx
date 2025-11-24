@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useModuleTheme, getThemeClass } from '@/modules/monitoramento-ia/hooks/useModuleTheme';
+import { cn } from '@/lib/utils';
 
 interface AddTopicDialogProps {
   agentKey: string;
@@ -29,6 +31,7 @@ interface AddTopicDialogProps {
 export const AddTopicDialog = ({ agentKey, onSuccess }: AddTopicDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { theme } = useModuleTheme();
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -105,7 +108,7 @@ export const AddTopicDialog = ({ agentKey, onSuccess }: AddTopicDialogProps) => 
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className={cn(getThemeClass(theme), "max-w-2xl bg-module-card border-module")}>
           <DialogHeader>
             <DialogTitle>Adicionar Novo Assunto</DialogTitle>
             <DialogDescription>

@@ -6,6 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useModuleTheme, getThemeClass } from '@/modules/monitoramento-ia/hooks/useModuleTheme';
+import { cn } from '@/lib/utils';
 
 interface ModificationLog {
   id: string;
@@ -22,6 +24,7 @@ export const SofiaModificationLog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [logs, setLogs] = useState<ModificationLog[]>([]);
   const [loading, setLoading] = useState(false);
+  const { theme } = useModuleTheme();
 
   const loadLogs = async () => {
     setLoading(true);
@@ -72,7 +75,7 @@ export const SofiaModificationLog = () => {
 
       {/* Modal de Logs */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className={cn(getThemeClass(theme), "max-w-4xl max-h-[80vh] bg-module-card border-module")}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="w-5 h-5" />

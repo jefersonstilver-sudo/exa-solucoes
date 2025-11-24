@@ -7,6 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, TestTube, Shield, Webhook } from 'lucide-react';
 import { toast } from 'sonner';
+import { useModuleTheme, getThemeClass } from '../../hooks/useModuleTheme';
+import { cn } from '@/lib/utils';
 
 interface APIConfigModalProps {
   open: boolean;
@@ -23,6 +25,7 @@ export const APIConfigModal = ({
 }: APIConfigModalProps) => {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const { theme } = useModuleTheme();
 
   // Config states
   const [rateLimit, setRateLimit] = useState('50');
@@ -63,7 +66,7 @@ export const APIConfigModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-module-card border-module">
+      <DialogContent className={cn(getThemeClass(theme), "max-w-2xl bg-module-card border-module")}>
         <DialogHeader>
           <DialogTitle className="text-2xl text-module-primary flex items-center gap-2">
             ⚙️ Configurações - {apiName}

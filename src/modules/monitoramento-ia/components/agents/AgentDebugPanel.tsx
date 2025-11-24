@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Bug, RefreshCw, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useModuleTheme, getThemeClass } from '../../hooks/useModuleTheme';
+import { cn } from '@/lib/utils';
 
 interface AgentDebugPanelProps {
   agentKey: string;
@@ -28,6 +30,7 @@ interface DebugData {
 export const AgentDebugPanel = ({ agentKey, displayName, open, onClose }: AgentDebugPanelProps) => {
   const [loading, setLoading] = useState(false);
   const [debugData, setDebugData] = useState<DebugData | null>(null);
+  const { theme } = useModuleTheme();
 
   const runCompleteDebug = async () => {
     setLoading(true);
@@ -137,7 +140,7 @@ export const AgentDebugPanel = ({ agentKey, displayName, open, onClose }: AgentD
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className={cn(getThemeClass(theme), "max-w-4xl max-h-[80vh] overflow-y-auto bg-module-card border-module")}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bug className="w-5 h-5" />

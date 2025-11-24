@@ -6,6 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { RefreshCw, CheckCircle2, XCircle, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
 import { useAPILogs, APILog, APIStats } from '@/modules/monitoramento-ia/hooks/useAPILogs';
 import { toast } from 'sonner';
+import { useModuleTheme, getThemeClass } from '../../hooks/useModuleTheme';
+import { cn } from '@/lib/utils';
 
 interface APIDetailsModalProps {
   open: boolean;
@@ -27,6 +29,7 @@ export const APIDetailsModal = ({
   const { fetchLogs, getStats, loading } = useAPILogs();
   const [logs, setLogs] = useState<APILog[]>([]);
   const [stats, setStats] = useState<APIStats | null>(null);
+  const { theme } = useModuleTheme();
 
   useEffect(() => {
     if (open) {
@@ -58,7 +61,7 @@ export const APIDetailsModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl bg-module-card border-module">
+      <DialogContent className={cn(getThemeClass(theme), "max-w-4xl bg-module-card border-module")}>
         <DialogHeader>
           <DialogTitle className="text-2xl text-module-primary flex items-center gap-2">
             📊 Detalhes - {apiName}
