@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
+import { validateEmail, sanitizeEmail } from '@/utils/emailValidation';
 import type { ProviderBenefit, CreateBenefitRequest, TokenValidationResponse, BenefitChoiceResponse } from '@/types/providerBenefits';
 
 export const useBenefitManagement = () => {
@@ -21,13 +22,41 @@ export const useBenefitManagement = () => {
         throw new Error('Usuário não autenticado');
       }
 
+      // 1. Validar email
+      const sanitizedEmail = sanitizeEmail(data.provider_email);
+      const validation = validateEmail(sanitizedEmail);
+      
+      if (!validation.valid) {
+        toast.error(validation.error || 'Email inválido');
+        throw new Error(validation.error || 'Email inválido');
+      }
+
+      // 2. Verificar duplicatas (mesmo email em status ativo)
+      const { data: existingBenefits, error: checkError } = await supabase
+        .from('provider_benefits')
+        .select('id, provider_name, status')
+        .eq('provider_email', sanitizedEmail)
+        .neq('status', 'cancelled');
+
+      if (checkError) throw checkError;
+
+      if (existingBenefits && existingBenefits.length > 0) {
+        toast.warning(`⚠️ Já existe um benefício ativo para ${sanitizedEmail}`, {
+          description: 'Use o botão "Reenviar" para enviar o link novamente',
+          duration: 5000,
+        });
+        throw new Error('Email já possui benefício ativo');
+      }
+
       const accessToken = generateAccessToken();
+
+      console.log('📧 Criando benefício para:', sanitizedEmail);
 
       const { data: benefit, error } = await supabase
         .from('provider_benefits')
         .insert({
           provider_name: data.provider_name,
-          provider_email: data.provider_email,
+          provider_email: sanitizedEmail,
           activation_point: data.activation_point,
           observation: data.observation,
           access_token: accessToken,
@@ -38,21 +67,41 @@ export const useBenefitManagement = () => {
 
       if (error) throw error;
 
+      console.log('✅ Benefício criado:', benefit.id);
+
       // Enviar email de convite
-      await sendInvitationEmail(benefit as ProviderBenefit);
+      try {
+        await sendInvitationEmail(benefit as ProviderBenefit);
+        
+        // Atualizar com data de envio
+        await supabase
+          .from('provider_benefits')
+          .update({ invitation_sent_at: new Date().toISOString() })
+          .eq('id', benefit.id);
 
-      // Atualizar com data de envio
-      await supabase
-        .from('provider_benefits')
-        .update({ invitation_sent_at: new Date().toISOString() })
-        .eq('id', benefit.id);
+        console.log('📧 Email enviado com sucesso para:', sanitizedEmail);
+        
+        toast.success(`✅ Email enviado para ${sanitizedEmail}`, {
+          description: '📮 Lembre o prestador de verificar a pasta de spam/lixeira',
+          duration: 6000,
+        });
+      } catch (emailError: any) {
+        console.error('❌ Erro ao enviar email:', emailError);
+        toast.error(`Benefício criado mas email falhou para ${sanitizedEmail}`, {
+          description: 'Use o botão "Reenviar" para tentar novamente',
+          duration: 5000,
+        });
+      }
 
-      toast.success('Benefício criado e email enviado!');
       await listBenefits();
       return benefit;
     } catch (error: any) {
-      console.error('Erro ao criar benefício:', error);
-      toast.error(error.message || 'Erro ao criar benefício');
+      console.error('❌ Erro ao criar benefício:', error);
+      
+      if (!error.message?.includes('Email já possui benefício ativo')) {
+        toast.error(error.message || 'Erro ao criar benefício');
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -140,6 +189,8 @@ export const useBenefitManagement = () => {
         throw new Error('Prestador ainda não escolheu o presente');
       }
 
+      console.log('🎁 Inserindo código para:', benefit.provider_email);
+
       // Atualizar com código
       const { error: updateError } = await supabase
         .from('provider_benefits')
@@ -156,32 +207,46 @@ export const useBenefitManagement = () => {
       if (updateError) throw updateError;
 
       // Enviar email com código
-      const { error: emailError } = await supabase.functions.invoke('send-benefit-emails', {
-        body: {
-          type: 'gift_code',
-          data: {
-            provider_name: benefit.provider_name,
-            provider_email: benefit.provider_email,
-            benefit_choice: benefit.benefit_choice,
-            gift_code: giftCode,
-            delivery_type: deliveryType,
-            redemption_instructions: instructions,
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-benefit-emails', {
+          body: {
+            type: 'gift_code',
+            data: {
+              provider_name: benefit.provider_name,
+              provider_email: benefit.provider_email,
+              benefit_choice: benefit.benefit_choice,
+              gift_code: giftCode,
+              delivery_type: deliveryType,
+              redemption_instructions: instructions,
+            },
           },
-        },
-      });
+        });
 
-      if (emailError) throw emailError;
+        if (emailError) throw emailError;
 
-      // Atualizar data de envio final
-      await supabase
-        .from('provider_benefits')
-        .update({ final_email_sent_at: new Date().toISOString() })
-        .eq('id', benefitId);
+        // Atualizar data de envio final
+        await supabase
+          .from('provider_benefits')
+          .update({ final_email_sent_at: new Date().toISOString() })
+          .eq('id', benefitId);
 
-      toast.success('Código enviado com sucesso!');
+        console.log('✅ Código enviado com sucesso');
+
+        toast.success(`✅ Código enviado para ${benefit.provider_email}`, {
+          description: '🎁 O prestador receberá o código/link por email',
+          duration: 5000,
+        });
+      } catch (emailError: any) {
+        console.error('❌ Erro ao enviar email com código:', emailError);
+        toast.error(`Código salvo mas email falhou para ${benefit.provider_email}`, {
+          description: 'Você pode tentar reenviar manualmente',
+          duration: 5000,
+        });
+      }
+
       await listBenefits();
     } catch (error: any) {
-      console.error('Erro ao inserir código:', error);
+      console.error('❌ Erro ao inserir código:', error);
       toast.error(error.message || 'Erro ao inserir código');
       throw error;
     } finally {
@@ -200,6 +265,8 @@ export const useBenefitManagement = () => {
 
       if (error) throw error;
 
+      console.log('📧 Reenviando email para:', benefit.provider_email);
+
       await sendInvitationEmail(benefit as ProviderBenefit);
 
       await supabase
@@ -207,9 +274,14 @@ export const useBenefitManagement = () => {
         .update({ invitation_sent_at: new Date().toISOString() })
         .eq('id', benefitId);
 
-      toast.success('Email reenviado com sucesso!');
+      console.log('✅ Email reenviado com sucesso');
+
+      toast.success(`✅ Email reenviado para ${benefit.provider_email}`, {
+        description: '📮 Lembre o prestador de verificar a pasta de spam/lixeira',
+        duration: 6000,
+      });
     } catch (error: any) {
-      console.error('Erro ao reenviar email:', error);
+      console.error('❌ Erro ao reenviar email:', error);
       toast.error(error.message || 'Erro ao reenviar email');
       throw error;
     } finally {

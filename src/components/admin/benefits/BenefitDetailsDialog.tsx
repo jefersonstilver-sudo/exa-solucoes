@@ -199,7 +199,7 @@ export const BenefitDetailsDialog: React.FC<BenefitDetailsDialogProps> = ({
             <div>
               <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
-                Datas
+                Datas e Comunicações
               </h3>
               <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
                 <div className="flex items-center justify-between">
@@ -208,20 +208,62 @@ export const BenefitDetailsDialog: React.FC<BenefitDetailsDialogProps> = ({
                     {format(new Date(benefit.created_at), "dd/MM/yyyy", { locale: ptBR })}
                   </span>
                 </div>
+                
+                {/* Status de Email de Convite */}
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <Mail className="h-4 w-4" />
+                    Email Convite:
+                  </span>
+                  {benefit.invitation_sent_at ? (
+                    <div className="flex flex-col items-end gap-0.5">
+                      <Badge variant="secondary" className="bg-green-50 text-green-700 border border-green-200">
+                        ✓ Enviado
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(benefit.invitation_sent_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </span>
+                    </div>
+                  ) : (
+                    <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                      Não enviado
+                    </Badge>
+                  )}
+                </div>
+
                 {benefit.benefit_chosen_at && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pt-2 border-t">
                     <span className="text-sm text-muted-foreground">Data da Escolha:</span>
                     <span className="font-medium">
                       {format(new Date(benefit.benefit_chosen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </span>
                   </div>
                 )}
+                
                 {benefit.gift_code_inserted_at && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pt-2 border-t">
                     <span className="text-sm text-muted-foreground">Código Inserido em:</span>
                     <span className="font-medium">
                       {format(new Date(benefit.gift_code_inserted_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </span>
+                  </div>
+                )}
+                
+                {/* Status de Email Final (código) */}
+                {benefit.final_email_sent_at && (
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                      <Gift className="h-4 w-4" />
+                      Email Código:
+                    </span>
+                    <div className="flex flex-col items-end gap-0.5">
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-200">
+                        ✓ Enviado
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(benefit.final_email_sent_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
