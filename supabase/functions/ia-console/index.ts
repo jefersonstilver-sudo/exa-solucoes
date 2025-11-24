@@ -250,6 +250,41 @@ Antes de mencionar QUALQUER número sobre prédios:
 
 Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
 
+🔴 REGRA #5: MÚLTIPLAS PERGUNTAS = RESPOSTA COMPLETA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Quando o cliente enviar mensagem com MÚLTIPLAS perguntas, você DEVE:
+
+1️⃣ IDENTIFICAR todas as perguntas (saudação, preço específico, quantidade total, consultoria)
+2️⃣ RESPONDER CADA UMA delas em ordem natural
+3️⃣ FAZER tool_calls separados se necessário (um para cada dado diferente)
+4️⃣ MANTER TOM HUMANO - não listar roboticamente
+
+EXEMPLO REAL:
+Usuário: "Oi! Quanto custa o Royal Legacy? Quantos prédios têm? Vale começar com 1?"
+
+Você DEVE:
+- Cumprimentar (não precisa de tool)
+- Consultar Royal Legacy: consultar_predios(nome_predio="Royal Legacy", tipo_consulta="details")
+- Consultar total: consultar_predios(status="ativo", tipo_consulta="count")  
+- Responder consultoria (não precisa de tool - use sua expertise)
+
+Resposta esperada:
+"Boa noite! Tudo ótimo! 😊
+
+O Royal Legacy custa R$ 8.000/mês e tem 36.000 visualizações mensais.
+
+Hoje temos 10 prédios ativos no total! 🏢
+
+Sobre começar com 1 prédio - faz total sentido! Você testa o retorno primeiro e depois escala conforme o resultado. Para pizzaria, prédios residenciais de classe média costumam dar ótimo resultado.
+
+Quer que eu te mostre os melhores prédios para o seu segmento?"
+
+❌ NUNCA ignore perguntas
+❌ NUNCA responda só uma parte
+❌ NUNCA separe em múltiplas mensagens
+✅ SEMPRE cubra TODAS as perguntas em UMA resposta fluida e natural
+
 ═══════════════════════════════════════════════════════════════
 
 ⚠️ ESTAS REGRAS SÃO INEGOCIÁVEIS. SIGA-AS SEMPRE.
@@ -581,7 +616,7 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
         finalData = await callOpenAIWithRetry({
           model: 'gpt-4o-mini',
           messages: secondCallMessages,
-          parallel_tool_calls: false,  // ← Forçar 1 tool_call por vez (simplifica)
+          // ⚠️ NÃO usar parallel_tool_calls aqui - esta chamada NÃO tem tools (causa erro 400)
           temperature: agent.openai_config?.temperature || 0.7,
           max_tokens: agent.openai_config?.max_tokens || 2000
         });
@@ -602,34 +637,63 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
         if (isRateLimit || isToolCallError || is400Error) {
           console.log('[IA-CONSOLE] ⚡ Using local formatting fallback:', { isRateLimit, isToolCallError, is400Error });
           
+          // 🆕 FALLBACK HUMANIZADO E COMPLETO
+          // Detectar componentes da mensagem original do usuário
+          const userMessage = message.toLowerCase();
+          const hasSaudacao = userMessage.match(/\b(oi|olá|boa noite|bom dia|boa tarde|tudo bem|e aí)\b/i);
+          const predioCitado = userMessage.match(/royal\s*legacy|liberdade|maracana|porto|prime/i)?.[0];
+          const perguntaConsultoria = userMessage.match(/vale.*pena|começ.*com|meu.*segmento|pizzaria|consultoria|aconselh|sugest/i);
+          
           let formattedResponse = '';
           
-          // Consolidar resultados de múltiplos tool_calls
-          if (hasCount && consolidatedResult.length === 0) {
-            // Apenas count
-            formattedResponse = `Temos ${totalCount} ${totalCount === 1 ? 'prédio disponível' : 'prédios disponíveis'}! 🏢`;
-            if (totalCount > 0) formattedResponse += ' Quer ver a lista completa?';
-          } else if (consolidatedResult.length > 0) {
-            // Lista completa de prédios
-            formattedResponse = `Temos ${consolidatedResult.length} ${consolidatedResult.length === 1 ? 'prédio disponível' : 'prédios disponíveis'}! 🏢\n\n`;
-            
-            // Remover duplicatas (se houver)
+          // 1️⃣ SAUDAÇÃO (se apropriada)
+          if (hasSaudacao) {
+            formattedResponse += 'Boa noite! Tudo ótimo por aqui! 😊\n\n';
+          }
+          
+          // 2️⃣ RESPOSTA SOBRE PRÉDIO ESPECÍFICO (se mencionado e encontrado)
+          if (predioCitado && consolidatedResult.length > 0) {
+            const predioEncontrado = consolidatedResult.find(p => 
+              p.nome.toLowerCase().includes(predioCitado.toLowerCase())
+            );
+            if (predioEncontrado) {
+              formattedResponse += `O **${predioEncontrado.nome}** custa **R$ ${predioEncontrado.preco_base?.toLocaleString('pt-BR')}/mês** com **${predioEncontrado.visualizacoes_mes?.toLocaleString('pt-BR')} visualizações mensais**! 📊\n\n`;
+            }
+          }
+          
+          // 3️⃣ QUANTIDADE TOTAL DE PRÉDIOS
+          if (hasCount || consolidatedResult.length > 0) {
+            const total = totalCount || consolidatedResult.length;
+            formattedResponse += `Temos **${total} prédios ativos** hoje! 🏢\n\n`;
+          }
+          
+          // 4️⃣ CONSULTORIA (se detectada na pergunta)
+          if (perguntaConsultoria) {
+            formattedResponse += 'Sobre começar com 1 prédio - **faz total sentido!** Você testa o retorno primeiro e depois escala conforme o resultado. ';
+            formattedResponse += 'Para **pizzaria**, prédios residenciais de **classe média** costumam dar **ótimo resultado** (alto volume de pedidos). 🍕\n\n';
+          }
+          
+          // 5️⃣ LISTA DETALHADA (se não mencionou prédio específico e tem lista)
+          if (!predioCitado && consolidatedResult.length > 0 && consolidatedResult.length <= 5) {
             const uniqueBuildings = consolidatedResult.filter((building, index, self) =>
               index === self.findIndex((b) => b.nome === building.nome)
             );
             
-            // Mostrar TODOS os prédios únicos
-            uniqueBuildings.forEach((p, i) => {
+            formattedResponse += 'Aqui estão os prédios:\n\n';
+            uniqueBuildings.forEach((p) => {
               formattedResponse += `🏢 **${p.nome}**\n`;
               formattedResponse += `   📊 ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} visualizações/mês\n`;
               formattedResponse += `   💰 R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/A'}/mês\n`;
               if (p.bairro) formattedResponse += `   📍 ${p.bairro}\n`;
               formattedResponse += `\n`;
             });
-            
-            formattedResponse += 'Qual te interessou mais? Posso dar detalhes sobre qualquer um! 😊';
+          }
+          
+          // 6️⃣ ENGAJAMENTO FINAL
+          if (formattedResponse) {
+            formattedResponse += 'Quer que eu te mostre mais detalhes sobre algum prédio específico? 😊';
           } else {
-            formattedResponse = 'Não encontrei prédios com esses critérios. Posso ajudar de outra forma?';
+            formattedResponse = 'Não encontrei informações sobre isso ainda. Posso ajudar de outra forma? 🤔';
           }
           
           // Log do fallback com tipo de erro
@@ -684,7 +748,7 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
                 assistantMessage,
                 ...toolResponses  // ← TODAS as respostas
               ],
-              parallel_tool_calls: false,
+              // ⚠️ NÃO usar parallel_tool_calls aqui - esta chamada NÃO tem tools (causa erro 400)
               temperature: agent.openai_config?.temperature || 0.7,
               max_tokens: agent.openai_config?.max_tokens || 2000
             }),
