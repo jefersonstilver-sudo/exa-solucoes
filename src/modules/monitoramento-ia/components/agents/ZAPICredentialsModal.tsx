@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Save, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useModuleTheme, getThemeClass } from '../../hooks/useModuleTheme';
+import { cn } from '@/lib/utils';
 
 interface ZAPICredentialsModalProps {
   open: boolean;
@@ -33,6 +35,7 @@ export const ZAPICredentialsModal = ({
   const [apiUrl, setApiUrl] = useState('https://api.z-api.io');
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const { theme } = useModuleTheme();
 
   // Reseta os valores quando o modal abre ou quando a config muda
   useEffect(() => {
@@ -128,7 +131,7 @@ export const ZAPICredentialsModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] bg-module-card border-2 border-module shadow-2xl">
+      <DialogContent className={cn(getThemeClass(theme), "sm:max-w-[900px] bg-module-card border-2 border-module shadow-2xl")}>
         <DialogHeader>
           <DialogTitle className="text-module-primary flex items-center gap-2 text-xl font-bold">
             🔐 Configurar Credenciais Z-API
