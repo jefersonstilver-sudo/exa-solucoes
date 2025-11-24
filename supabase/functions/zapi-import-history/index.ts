@@ -32,23 +32,31 @@ serve(async (req) => {
     }
 
     const zapiConfig = agent.zapi_config as any;
+    
+    // Log da configuração completa para debug
+    console.log('[ZAPI-IMPORT] Raw zapi_config:', JSON.stringify(zapiConfig, null, 2));
+    
     if (!zapiConfig?.token || !zapiConfig?.instance_id) {
-      throw new Error('Z-API configuration incomplete');
+      throw new Error('Z-API configuration incomplete - missing token or instance_id');
     }
 
-    const ZAPI_BASE_URL = 'https://api.z-api.io';
+    if (!zapiConfig?.client_token) {
+      throw new Error('Z-API configuration incomplete - missing client_token');
+    }
+
     const instanceId = zapiConfig.instance_id;
     const token = zapiConfig.token;
     const clientToken = zapiConfig.client_token;
 
-    console.log('[ZAPI-IMPORT] Agent config loaded:', {
-      instanceId,
-      baseUrl: ZAPI_BASE_URL
+    console.log('[ZAPI-IMPORT] Extracted config:', {
+      instanceId: instanceId?.substring(0, 8) + '...',
+      hasToken: !!token,
+      hasClientToken: !!clientToken
     });
 
     // Fetch chats from Z-API
-    const chatsUrl = `${ZAPI_BASE_URL}/instances/${instanceId}/token/${token}/chats`;
-    console.log('[ZAPI-IMPORT] Fetching chats from:', chatsUrl);
+    const chatsUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/chats`;
+    console.log('[ZAPI-IMPORT] Full URL:', chatsUrl);
     
     const chatsResponse = await fetch(chatsUrl, {
       method: 'GET',
