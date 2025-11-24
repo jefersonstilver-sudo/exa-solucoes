@@ -82,9 +82,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
       className={cn(
         `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r`,
         collapsed ? 'w-16' : 'w-64',
-        theme === 'dark' 
-          ? 'bg-[#3A0808] border-[#9C1E1E]/50 text-white shadow-2xl'
-          : 'bg-gradient-to-br from-white/95 via-gray-50/90 to-white/95 border-[#9C1E1E]/20 text-[#0A0A0A] backdrop-blur-xl shadow-lg',
+        'bg-[#3A0808] border-[#9C1E1E]/50 text-white shadow-2xl',
         'lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
@@ -92,22 +90,18 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
       {/* Header - Glassmorphism com logo reorganizado */}
       <div className={cn(
         "p-5 border-b flex items-center justify-center relative",
-        theme === 'dark' ? 'border-white/10' : 'border-[#9C1E1E]/15'
+        'border-white/10'
       )}>
         {!collapsed && (
           <div className="flex flex-col items-center gap-2 w-full">
             <img 
               src={EXA_LOGO_URL} 
               alt="EXA" 
-              className={cn(
-                "h-12 w-auto",
-                theme === 'dark' ? 'brightness-0 invert' : ''
-              )}
+              className="h-12 w-auto brightness-0 invert"
             />
-            <p className={cn(
-              "text-sm font-semibold tracking-wider uppercase",
-              theme === 'dark' ? 'text-white/80' : 'text-[#0A0A0A]/70'
-            )}>Monitoramento</p>
+            <p className="text-sm font-semibold tracking-wider uppercase text-white/80">
+              Monitoramento
+            </p>
           </div>
         )}
         
@@ -116,10 +110,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
             <img 
               src={EXA_LOGO_URL} 
               alt="EXA" 
-              className={cn(
-                "h-10 w-10 object-contain",
-                theme === 'dark' ? 'brightness-0 invert' : ''
-              )}
+              className="h-10 w-10 object-contain brightness-0 invert"
             />
           </div>
         )}
@@ -128,12 +119,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
         {!collapsed && (
           <button
             onClick={onToggleCollapse}
-            className={cn(
-              "hidden lg:block absolute right-4 top-4 p-1.5 rounded-lg transition-colors",
-              theme === 'dark' 
-                ? 'text-white hover:bg-white/10' 
-                : 'text-[#9C1E1E] hover:bg-[#9C1E1E]/10'
-            )}
+            className="hidden lg:block absolute right-4 top-4 p-1.5 rounded-lg transition-colors text-white hover:bg-white/10"
             title="Retrair sidebar"
           >
             <ChevronLeft size={18} />
@@ -143,12 +129,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
         {collapsed && (
           <button
             onClick={onToggleCollapse}
-            className={cn(
-              "hidden lg:block p-1.5 rounded-lg transition-colors",
-              theme === 'dark' 
-                ? 'text-white hover:bg-white/10' 
-                : 'text-[#9C1E1E] hover:bg-[#9C1E1E]/10'
-            )}
+            className="hidden lg:block p-1.5 rounded-lg transition-colors text-white hover:bg-white/10"
             title="Expandir sidebar"
           >
             <ChevronRight size={18} />
@@ -159,12 +140,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
         {!collapsed && (
           <button
             onClick={onClose}
-            className={cn(
-              "lg:hidden absolute right-4 top-4 p-1.5 rounded-lg transition-colors",
-              theme === 'dark' 
-                ? 'text-white hover:bg-white/10' 
-                : 'text-[#9C1E1E] hover:bg-[#9C1E1E]/10'
-            )}
+            className="lg:hidden absolute right-4 top-4 p-1.5 rounded-lg transition-colors text-white hover:bg-white/10"
           >
             <X size={18} />
           </button>
@@ -181,9 +157,8 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
           if ('divider' in item && item.divider) {
             return (
               <div key={`divider-${index}`} className={cn(
-                "my-4 border-t opacity-20",
-                collapsed ? 'mx-2' : 'mx-4',
-                theme === 'dark' ? 'border-white/20' : 'border-white/30'
+                "my-4 border-t opacity-20 border-white/20",
+                collapsed ? 'mx-2' : 'mx-4'
               )} />
             );
           }
@@ -193,10 +168,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
             if (collapsed) return null; // Hide section titles when collapsed
             return (
               <div key={`section-${index}`} className="px-4 py-2 mt-4">
-                <p className={cn(
-                  "text-xs font-bold uppercase tracking-wider",
-                  theme === 'dark' ? 'text-white/60' : 'text-[#0A0A0A]/50'
-                )}>
+                <p className="text-xs font-bold uppercase tracking-wider text-white/60">
                   {item.sectionTitle}
                 </p>
               </div>
@@ -213,12 +185,8 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
                   collapsed ? 'justify-center' : '',
                   isActive
-                    ? theme === 'dark'
-                      ? 'bg-[#9C1E1E] text-white font-medium shadow-lg glow-exa'
-                      : 'bg-[#9C1E1E] text-white font-medium shadow-lg glow-exa'
-                    : theme === 'dark'
-                      ? 'text-white/70 hover:text-white hover:bg-white/5'
-                      : 'text-[#0A0A0A]/70 hover:text-[#9C1E1E] hover:bg-[#9C1E1E]/5'
+                    ? 'bg-[#9C1E1E] text-white font-medium shadow-lg glow-exa'
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
                 )
               }
               title={collapsed ? item.title : undefined}
@@ -239,12 +207,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
                   )}
                   {/* Badge padrão (NOVO, BETA) - só mostra se não tiver unread */}
                   {item.badge && !(item.path === '/admin/monitoramento-ia/crm' && unreadCount > 0) && (
-                    <span className={cn(
-                      "ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded",
-                      theme === 'dark'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-green-600 text-white'
-                    )}>
+                    <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">
                       {item.badge}
                     </span>
                   )}
@@ -256,20 +219,12 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
       </nav>
 
       {/* Footer */}
-      <div className={cn(
-        "absolute bottom-0 left-0 right-0 border-t",
-        theme === 'dark' 
-          ? 'border-white/10 bg-[#0A0A0A]/80 backdrop-blur-sm' 
-          : 'border-[#9C1E1E]/15 bg-white/80 backdrop-blur-sm'
-      )}>
+      <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-[#0A0A0A]/80 backdrop-blur-sm">
         <button
           onClick={() => navigate('/')}
           className={cn(
-            "w-full flex items-center gap-3 p-4 transition-colors",
-            collapsed ? 'justify-center' : '',
-            theme === 'dark'
-              ? 'text-white/70 hover:text-white hover:bg-white/5'
-              : 'text-[#0A0A0A]/70 hover:text-[#9C1E1E] hover:bg-[#9C1E1E]/5'
+            "w-full flex items-center gap-3 p-4 transition-colors text-white/70 hover:text-white hover:bg-white/5",
+            collapsed ? 'justify-center' : ''
           )}
           title={collapsed ? 'Voltar ao início' : undefined}
         >
