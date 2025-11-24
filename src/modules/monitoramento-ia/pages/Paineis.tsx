@@ -7,6 +7,7 @@ import {
 import { PanelCard } from '../components/PanelCard';
 import { ComputerDetailModal } from '../components/anydesk/ComputerDetailModal';
 import { FiltersBar } from '../components/FiltersBar';
+import { QuedaDiariaList } from '../components/QuedaDiariaList';
 import { useDevices } from '../hooks/useDevices';
 import { useModuleTheme } from '../hooks/useModuleTheme';
 import { format, startOfDay, endOfDay, subDays } from 'date-fns';
@@ -57,7 +58,7 @@ export const PaineisPage = () => {
 
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
-  const [topOfflinePanels, setTopOfflinePanels] = useState<Device[]>([]);
+  const [todasQuedas, setTodasQuedas] = useState<any[]>([]);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [quedaPeriod, setQuedaPeriod] = useState<'hoje' | '7dias' | '30dias'>('hoje');
@@ -132,7 +133,7 @@ export const PaineisPage = () => {
     return () => clearInterval(syncInterval);
   }, []);
 
-  // Buscar TODAS as quedas do período selecionado (hoje/7dias/30dias)
+  // Buscar TODAS as quedas do período com detalhes de connection_history
   useEffect(() => {
     const fetchAllDrops = async () => {
       try {
@@ -153,24 +154,66 @@ export const PaineisPage = () => {
             startDate = startOfDay(new Date());
         }
 
-        // Buscar TODOS os painéis que tiveram quedas no período (sem limit)
-        const { data: dropsData } = await supabase
-          .from('devices')
-          .select('*')
-          .gt('offline_count', 0)
-          .order('offline_count', { ascending: false });
+        // Buscar todas as desconexões do período
+        const { data: connectionHistory, error } = await supabase
+          .from('connection_history')
+          .select(`
+            *,
+            devices!inner(id, name, comments, condominio_name)
+          `)
+          .eq('event_type', 'disconnect')
+          .gte('started_at', startDate.toISOString())
+          .lte('started_at', endDate.toISOString())
+          .order('started_at', { ascending: false });
 
-        if (dropsData) {
-          // Filtrar apenas os que realmente tiveram quedas no período
-          const filteredDrops = dropsData.filter(device => {
-            if (!device.last_online_at) return false;
-            const lastOnline = new Date(device.last_online_at);
-            return lastOnline >= startDate && lastOnline <= endDate;
-          });
-          setTopOfflinePanels(filteredDrops as Device[]);
+        if (error) {
+          console.error('Erro ao buscar connection_history:', error);
+          return;
         }
+
+        if (!connectionHistory || connectionHistory.length === 0) {
+          setTodasQuedas([]);
+          return;
+        }
+
+        // Agrupar por painel
+        const quedaPorPainel = new Map();
+
+        connectionHistory.forEach((conn: any) => {
+          const painelId = conn.computer_id;
+          const painelData = conn.devices;
+          
+          if (!painelData) return;
+
+          if (!quedaPorPainel.has(painelId)) {
+            quedaPorPainel.set(painelId, {
+              painel_id: painelId,
+              painel_nome: (painelData.comments || painelData.name || '').split(' - ')[0].trim(),
+              condominio_nome: painelData.condominio_name || 'Sem condomínio',
+              total_ocorrencias: 0,
+              tempo_total_offline_segundos: 0,
+              ocorrencias: []
+            });
+          }
+
+          const painelInfo = quedaPorPainel.get(painelId);
+          painelInfo.total_ocorrencias++;
+          painelInfo.tempo_total_offline_segundos += (conn.duration_seconds || 0);
+          painelInfo.ocorrencias.push({
+            inicio: conn.started_at,
+            fim: conn.ended_at,
+            duracao_segundos: conn.duration_seconds || 0
+          });
+        });
+
+        // Converter para array e ordenar por tempo total offline
+        const quedasArray = Array.from(quedaPorPainel.values())
+          .sort((a, b) => b.tempo_total_offline_segundos - a.tempo_total_offline_segundos);
+
+        setTodasQuedas(quedasArray);
       } catch (error) {
         console.error('Erro ao buscar dados de quedas:', error);
+        setTodasQuedas([]);
       }
     };
 
@@ -247,7 +290,7 @@ export const PaineisPage = () => {
                    'Quedas dos Últimos 30 Dias'}
                 </h3>
                 <Badge variant="destructive" className="ml-2 animate-pulse bg-red-600 text-white">
-                  {topOfflinePanels.reduce((sum, panel) => sum + (panel.offline_count || 0), 0)} quedas
+                  {todasQuedas.reduce((sum, painel) => sum + painel.total_ocorrencias, 0)} quedas
                 </Badge>
               </div>
               <ChevronDown className={`w-5 h-5 text-module-secondary transition-transform ${isQuedasOpen ? 'rotate-180' : ''}`} />
@@ -255,64 +298,7 @@ export const PaineisPage = () => {
           </CollapsibleTrigger>
           
           <CollapsibleContent className="mt-4">
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {topOfflinePanels.length > 0 ? (
-                topOfflinePanels.map((panel) => {
-                  const displayName = (panel.comments || panel.name).split(' - ')[0].trim();
-                  
-                  // Calcular hora da queda e tempo offline
-                  const quedaTime = panel.metadata?.last_drop_at 
-                    ? format(new Date(panel.metadata.last_drop_at), 'HH:mm', { locale: ptBR }) 
-                    : panel.last_online_at 
-                      ? format(new Date(panel.last_online_at), 'HH:mm', { locale: ptBR })
-                      : '-';
-                  
-                  let tempoOffline = '-';
-                  const referenceTime = panel.metadata?.last_drop_at || panel.last_online_at;
-                  
-                  if (referenceTime) {
-                    const offlineStart = new Date(referenceTime);
-                    const now = new Date();
-                    const diffMs = now.getTime() - offlineStart.getTime();
-                    const diffSeconds = Math.floor(diffMs / 1000);
-                    const diffMinutes = Math.floor(diffSeconds / 60);
-                    const diffHours = Math.floor(diffMinutes / 60);
-                    const diffDays = Math.floor(diffHours / 24);
-                    
-                    if (diffDays > 0) {
-                      tempoOffline = `${diffDays}d ${diffHours % 24}h`;
-                    } else if (diffHours > 0) {
-                      tempoOffline = `${diffHours}h ${diffMinutes % 60}m`;
-                    } else if (diffMinutes > 0) {
-                      tempoOffline = `${diffMinutes}m ${diffSeconds % 60}s`;
-                    } else {
-                      tempoOffline = `${diffSeconds}s`;
-                    }
-                  }
-                  
-                  return (
-                    <div key={panel.id} className="flex items-center justify-between p-3 bg-module-secondary rounded-lg border border-module hover:bg-module-hover transition-colors">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-module-primary">{displayName}</p>
-                        <p className="text-xs text-module-tertiary">{panel.condominio_name || 'Sem condomínio'}</p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-module-secondary flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            Queda: {quedaTime}
-                          </span>
-                          <span className="text-xs text-module-secondary">
-                            Offline: {tempoOffline}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-base font-bold text-red-600 ml-4">{panel.offline_count || 0}</span>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-module-secondary text-center py-4">Nenhuma queda registrada no período selecionado</p>
-              )}
-            </div>
+            <QuedaDiariaList paineis={todasQuedas} />
           </CollapsibleContent>
         </div>
       </Collapsible>
