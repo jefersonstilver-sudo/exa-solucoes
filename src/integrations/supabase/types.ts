@@ -1837,6 +1837,39 @@ export type Database = {
           },
         ]
       }
+      contact_types: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          icon: string | null
+          id: string
+          is_default: boolean | null
+          label: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          label: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          label?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       contratos: {
         Row: {
           created_at: string

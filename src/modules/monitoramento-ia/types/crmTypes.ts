@@ -68,3 +68,43 @@ export interface ConversationGroup {
   contact_name?: string;
   tags?: ConversationTag[];
 }
+
+export interface ContactType {
+  id: string;
+  name: string;
+  label: string;
+  color: string;
+  icon: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LeadDetails {
+  id: string;
+  contact_name: string | null;
+  contact_phone: string;
+  contact_type: string | null;
+  agent_key: string;
+  is_sindico: boolean;
+  is_hot_lead: boolean;
+  is_critical: boolean;
+  lead_score: number | null;
+  mood_score: number | null;
+  urgency_level: number | null;
+  sentiment: string | null;
+  first_message_at: string | null;
+  last_message_at: string | null;
+  avg_response_time: string | null;
+  awaiting_response: boolean;
+  escalated_to_eduardo: boolean;
+  escalated_at: string | null;
+}
+
+export interface LeadMetrics {
+  totalMessages: number;
+  avgResponseTimeFormatted: string;
+  firstContactFormatted: string;
+  lastContactFormatted: string;
+  daysSinceLastContact: number;
+}
