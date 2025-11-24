@@ -259,11 +259,49 @@ export const PaineisPage = () => {
               {topOfflinePanels.length > 0 ? (
                 topOfflinePanels.map((panel) => {
                   const displayName = (panel.comments || panel.name).split(' - ')[0].trim();
+                  
+                  // Calcular hora da queda e tempo offline
+                  const quedaTime = panel.metadata?.last_drop_at 
+                    ? format(new Date(panel.metadata.last_drop_at), 'HH:mm', { locale: ptBR }) 
+                    : panel.last_online_at 
+                      ? format(new Date(panel.last_online_at), 'HH:mm', { locale: ptBR })
+                      : '-';
+                  
+                  let tempoOffline = '-';
+                  const referenceTime = panel.metadata?.last_drop_at || panel.last_online_at;
+                  
+                  if (referenceTime) {
+                    const offlineStart = new Date(referenceTime);
+                    const now = new Date();
+                    const diffMinutes = Math.floor((now.getTime() - offlineStart.getTime()) / (1000 * 60));
+                    
+                    if (diffMinutes < 60) {
+                      tempoOffline = `${diffMinutes}min`;
+                    } else if (diffMinutes < 1440) { // menos de 24h
+                      const hours = Math.floor(diffMinutes / 60);
+                      const minutes = diffMinutes % 60;
+                      tempoOffline = `${hours}h${minutes > 0 ? ` ${minutes}min` : ''}`;
+                    } else {
+                      const days = Math.floor(diffMinutes / 1440);
+                      const hours = Math.floor((diffMinutes % 1440) / 60);
+                      tempoOffline = `${days}d ${hours}h`;
+                    }
+                  }
+                  
                   return (
                     <div key={panel.id} className="flex items-center justify-between p-3 bg-module-secondary rounded-lg border border-module hover:bg-module-hover transition-colors">
                       <div className="flex-1">
                         <p className="text-sm font-medium text-module-primary">{displayName}</p>
                         <p className="text-xs text-module-tertiary">{panel.condominio_name || 'Sem condomínio'}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-xs text-module-secondary flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Queda: {quedaTime}
+                          </span>
+                          <span className="text-xs text-module-secondary">
+                            Offline: {tempoOffline}
+                          </span>
+                        </div>
                       </div>
                       <span className="text-base font-bold text-red-600 ml-4">{panel.offline_count || 0}</span>
                     </div>
