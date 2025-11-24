@@ -23,12 +23,28 @@ serve(async (req) => {
 
     // Parse webhook payload from Z-API
     const payload = await req.json();
-    console.log('[ZAPI-WEBHOOK] Received:', JSON.stringify(payload, null, 2));
+    console.log('[ZAPI-WEBHOOK] 📥 Received:', JSON.stringify(payload, null, 2));
+
+    // Detectar se é grupo ANTES de processar
+    const isGroup = payload.isGroup === true || 
+                    payload.phone?.includes('@g.us') || 
+                    payload.remoteJid?.includes('@g.us') ||
+                    payload.chatId?.includes('@g.us');
+    
+    console.log('[ZAPI-WEBHOOK] 🔍 Group detection:', {
+      isGroup,
+      payloadIsGroup: payload.isGroup,
+      phone: payload.phone,
+      remoteJid: payload.remoteJid,
+      chatId: payload.chatId,
+      chatName: payload.chatName,
+      senderName: payload.senderName
+    });
 
     // Z-API envia mensagens no formato:
     // { phone: "5545991415920", text: { message: "texto" }, instanceId: "..." }
-    // Também pode enviar: sticker, image, audio, video, document
-    const phone = payload.phone || payload.remoteJid?.replace('@s.whatsapp.net', '');
+    // Para grupos: phone termina em @g.us, isGroup: true
+    const phone = payload.phone || payload.remoteJid?.replace('@s.whatsapp.net', '').replace('@g.us', '');
     const instanceId = payload.instanceId;
 
     // ========== FILTRO: IGNORAR MENSAGENS ENVIADAS PELO PRÓPRIO AGENTE ==========
@@ -432,8 +448,14 @@ Obrigado pela compreensão!`;
           if (updateError) throw new Error(`Failed to update conversation: ${updateError.message}`);
           conversation = updated;
         } else {
-          // INSERT simples
-          const isGroup = payload.isGroup === true;
+          // INSERT - usar detecção de grupo já feita no início
+          console.log('[ZAPI-WEBHOOK] 📝 Creating conversation:', {
+            isGroup,
+            chatName: payload.chatName,
+            senderName: payload.senderName,
+            phone
+          });
+          
           const { data: inserted, error: insertError } = await supabase
             .from('conversations')
             .insert({
@@ -463,8 +485,10 @@ Obrigado pela compreensão!`;
 
         // Salvar mensagem (incluir sender_name para grupos)
         const messageMetadata: any = {};
-        if (payload.isGroup && payload.senderName) {
-          messageMetadata.sender_name = payload.senderName;
+        if (isGroup) {
+          messageMetadata.sender_name = payload.senderName || 'Participante';
+          messageMetadata.chat_name = payload.chatName;
+          console.log('[ZAPI-WEBHOOK] 👥 Group message from:', payload.senderName);
         }
         
         const { data: savedMessage, error: messageError } = await supabase.from('messages').insert({
