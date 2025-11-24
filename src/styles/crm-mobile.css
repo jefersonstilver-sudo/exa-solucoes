@@ -151,6 +151,23 @@
   }
 }
 
+/* Scrollbar invisível para mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Touch highlight personalizado */
+@media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: rgba(37, 211, 102, 0.1);
+  }
+}
+
 /* Reduzir motion para devices com preferência */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -159,5 +176,53 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode support para bolhas de mensagem */
+@media (prefers-color-scheme: dark) {
+  .dark\:bg-\[#0b141a\] {
+    background-color: #0b141a;
+  }
+  
+  .dark\:bg-\[#1f2c33\] {
+    background-color: #1f2c33;
+  }
+  
+  .dark\:bg-\[#005c4b\] {
+    background-color: #005c4b;
+  }
+  
+  .dark\:border-\[#1f2c33\] {
+    border-color: #1f2c33;
+  }
+}
+
+/* Keyboard aware - previne input de ser coberto pelo teclado */
+@media (max-width: 768px) {
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  }
+}
+
+/* Animação de entrada das mensagens otimizada */
+@keyframes message-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Performance: Force GPU acceleration */
+@media (max-width: 768px) {
+  .touch-manipulation,
+  .message-enter,
+  .animate-fade-in {
+    transform: translateZ(0);
+    will-change: transform;
   }
 }

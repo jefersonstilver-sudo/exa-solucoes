@@ -4,8 +4,11 @@ import { CRMChat } from '../components/crm/CRMChat';
 import { CRMFilters } from '../components/crm/CRMFilters';
 import { CRMMetrics } from '../components/crm/CRMMetrics';
 import { useUnifiedConversations } from '../hooks/useUnifiedConversations';
+import { CRMUnificadoMobile } from '../components/crm/mobile/CRMUnificadoMobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const CRMUnificado = () => {
+  const isMobile = useIsMobile();
   const [filters, setFilters] = useState({
     agentKey: undefined,
     unreadOnly: false,
@@ -26,6 +29,12 @@ export const CRMUnificado = () => {
     refetch
   } = useUnifiedConversations(filters);
 
+  // Renderizar versão mobile
+  if (isMobile) {
+    return <CRMUnificadoMobile initialFilters={filters} />;
+  }
+
+  // Renderizar versão desktop (sem alterações)
   return (
     <div className="h-screen flex flex-col bg-module-primary overflow-hidden">
       {/* Header com métricas */}
