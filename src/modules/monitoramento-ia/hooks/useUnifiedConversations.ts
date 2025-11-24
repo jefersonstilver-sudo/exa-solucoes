@@ -15,6 +15,7 @@ interface Conversation {
   lead_score: number;
   is_hot_lead: boolean;
   is_critical: boolean;
+  is_group: boolean;
   awaiting_response: boolean;
   is_sindico: boolean;
   escalated_to_eduardo: boolean;

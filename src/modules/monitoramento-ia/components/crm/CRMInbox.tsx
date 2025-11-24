@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AlertCircle, TrendingUp, Clock, User, Phone } from 'lucide-react';
+import { AlertCircle, TrendingUp, Clock, User, Phone, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ConversationItemProps {
@@ -29,10 +29,17 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="relative shrink-0">
-            <User className={cn(
-              "w-4 h-4",
-              hasUnread ? "text-[#25D366]" : "text-muted-foreground"
-            )} />
+            {conversation.is_group ? (
+              <Users className={cn(
+                "w-4 h-4",
+                hasUnread ? "text-[#25D366]" : "text-muted-foreground"
+              )} />
+            ) : (
+              <User className={cn(
+                "w-4 h-4",
+                hasUnread ? "text-[#25D366]" : "text-muted-foreground"
+              )} />
+            )}
             {hasUnread && (
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#25D366] rounded-full animate-pulse" />
             )}
@@ -43,6 +50,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
           )}>
             {conversation.contact_name || conversation.contact_phone}
           </span>
+          {conversation.is_group && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-[#25D366]/30 text-[#25D366]">
+              GRUPO
+            </Badge>
+          )}
           {hasUnread && (
             <Badge className="text-[10px] px-1.5 py-0 h-4 bg-[#25D366] hover:bg-[#20bd5a] animate-pulse">
               NOVA

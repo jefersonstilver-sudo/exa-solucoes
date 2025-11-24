@@ -66,6 +66,7 @@ export interface ConversationGroup {
   unread_count: number;
   total_messages: number;
   contact_name?: string;
+  is_group?: boolean;
   tags?: ConversationTag[];
 }
 
