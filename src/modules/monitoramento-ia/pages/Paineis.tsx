@@ -8,6 +8,9 @@ import { PanelCard } from '../components/PanelCard';
 import { ComputerDetailModal } from '../components/anydesk/ComputerDetailModal';
 import { FiltersBar } from '../components/FiltersBar';
 import { QuedaDiariaList } from '../components/QuedaDiariaList';
+import { OfflineAlert } from '../components/OfflineAlert';
+import { useOfflineAlerts } from '../hooks/useOfflineAlerts';
+import { AnimatePresence } from 'framer-motion';
 import { useDevices } from '../hooks/useDevices';
 import { useModuleTheme } from '../hooks/useModuleTheme';
 import { format, startOfDay, endOfDay, subDays } from 'date-fns';
@@ -63,6 +66,9 @@ export const PaineisPage = () => {
   const [syncing, setSyncing] = useState(false);
   const [quedaPeriod, setQuedaPeriod] = useState<'hoje' | '7dias' | '30dias'>('hoje');
   const [isQuedasOpen, setIsQuedasOpen] = useState(false);
+  
+  // Hook de alertas offline
+  const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
 
   const handleRefresh = () => {
     refresh();
@@ -375,6 +381,22 @@ export const PaineisPage = () => {
           theme={theme}
         />
       )}
+      
+      {/* Alertas flutuantes de painéis offline */}
+      <div className="fixed top-20 right-6 z-50 space-y-3 max-w-md">
+        <AnimatePresence mode="popLayout">
+          {offlineDevices
+            .filter(device => activeAlerts.includes(device.id))
+            .slice(0, 3) // Mostrar no máximo 3 alertas
+            .map(device => (
+              <OfflineAlert
+                key={device.id}
+                panelName={device.name}
+                onClose={() => dismissAlert(device.id)}
+              />
+            ))}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

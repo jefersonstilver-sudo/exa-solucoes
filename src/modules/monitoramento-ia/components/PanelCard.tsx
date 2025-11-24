@@ -53,10 +53,12 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
       return 'bg-green-500/10 border-green-500/30';
     }
     if (device.status === 'offline') {
-      if (offlineHours > 1) {
-        return 'bg-red-600/20 border-red-600/40'; // vermelho forte
+      if (offlineHours > 24) {
+        return 'bg-red-700/40 border-red-700/60 shadow-red-500/50'; // vermelho muito forte
+      } else if (offlineHours > 1) {
+        return 'bg-red-600/30 border-red-600/50 shadow-red-400/30'; // vermelho forte
       } else {
-        return 'bg-red-400/10 border-red-400/30'; // vermelho leve
+        return 'bg-red-500/20 border-red-500/40 shadow-red-300/20 animate-pulse'; // vermelho sutil com pulse
       }
     }
     return '';
@@ -146,7 +148,9 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
         </div>
         <div className="text-xs text-module-secondary">
           {device.status === 'offline' ? (
-            <span className="font-semibold text-red-600">Offline há {offlineCounter}</span>
+            <span className="font-bold text-red-600 text-sm animate-pulse">
+              ⚠️ {offlineCounter}
+            </span>
           ) : (
             lastOnline
           )}
