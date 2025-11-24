@@ -27,7 +27,7 @@ export const CRMUnificado = () => {
   } = useUnifiedConversations(filters);
 
   return (
-    <div className="h-screen flex flex-col bg-module-primary">
+    <div className="h-screen flex flex-col bg-module-primary overflow-hidden">
       {/* Header com métricas */}
       <div className="p-4 border-b border-module-border glass-card">
         <CRMMetrics metrics={metrics} />

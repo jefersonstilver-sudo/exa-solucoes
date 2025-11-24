@@ -109,7 +109,7 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
         </div>
 
         {/* Mensagens */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-module-secondary">
           {loading ? (
             <div className="text-center text-module-secondary py-8">
               Carregando mensagens...

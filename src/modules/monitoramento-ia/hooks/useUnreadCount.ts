@@ -7,27 +7,20 @@ export const useUnreadCount = () => {
 
   const fetchUnreadCount = async () => {
     try {
-      // Buscar mensagens inbound das últimas 24h
-      const { data, error } = await supabase
-        .from('zapi_logs')
-        .select('phone_number, agent_key, created_at')
-        .eq('direction', 'inbound')
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .order('created_at', { ascending: false });
+      // Buscar conversas aguardando resposta
+      const { data, count, error } = await supabase
+        .from('conversations')
+        .select('id', { count: 'exact', head: false })
+        .eq('awaiting_response', true);
 
       if (error) {
         console.error('[useUnreadCount] Error fetching:', error);
         throw error;
       }
 
-      // Contar conversas únicas (phone_number + agent_key)
-      const uniqueConversations = new Set(
-        data?.map(log => `${log.phone_number}_${log.agent_key}`) || []
-      );
-      
-      const count = uniqueConversations.size;
-      console.log('[useUnreadCount] Unread conversations:', count);
-      setUnreadCount(count);
+      const unreadCount = count || 0;
+      console.log('[useUnreadCount] Conversations awaiting response:', unreadCount);
+      setUnreadCount(unreadCount);
     } catch (error) {
       console.error('[useUnreadCount] Error:', error);
     } finally {
@@ -42,19 +35,18 @@ export const useUnreadCount = () => {
     // Atualizar a cada 30 segundos
     const interval = setInterval(fetchUnreadCount, 30000);
 
-    // Realtime subscription para atualizar imediatamente quando chegar nova mensagem
+    // Realtime subscription para atualizar quando conversas mudarem
     const channel = supabase
       .channel('unread_count_updates')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
-          table: 'zapi_logs',
-          filter: 'direction=eq.inbound'
+          table: 'conversations'
         },
         (payload) => {
-          console.log('[useUnreadCount] New inbound message received:', payload);
+          console.log('[useUnreadCount] Conversation updated:', payload);
           fetchUnreadCount();
         }
       )
