@@ -204,9 +204,10 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
                     <span className={cn(
                       "ml-auto text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1",
                       "bg-red-600 text-white",
-                      "animate-pulse shadow-lg shadow-red-500/50"
+                      "animate-[pulse_1s_ease-in-out_infinite] shadow-lg shadow-red-500/80",
+                      "ring-2 ring-red-400/50 ring-offset-1 ring-offset-transparent"
                     )}>
-                      <AlertTriangle className="w-3 h-3" />
+                      <AlertTriangle className="w-3 h-3 animate-[pulse_0.5s_ease-in-out_infinite]" />
                       {totalOffline}
                     </span>
                   )}
