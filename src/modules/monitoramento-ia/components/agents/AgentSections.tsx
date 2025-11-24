@@ -25,6 +25,7 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [lineInfo, setLineInfo] = useState<{ current: number; total: number }>({ current: 1, total: 1 });
   const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
 
   const handleUpdate = async (id: string, content: string) => {
@@ -55,6 +56,15 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
     }
   };
 
+  const updateLineInfo = (textarea: HTMLTextAreaElement) => {
+    const text = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = text.substring(0, cursorPos);
+    const currentLine = textBeforeCursor.split('\n').length;
+    const totalLines = text.split('\n').length;
+    setLineInfo({ current: currentLine, total: totalLines });
+  };
+
   const handleFormat = (sectionId: string, format: string, prefix: string, suffix?: string) => {
     const textarea = textareaRefs.current[sectionId];
     if (!textarea) return;
@@ -76,6 +86,7 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
     const newCursorPos = start + prefix.length + selectedText.length;
     textarea.setSelectionRange(newCursorPos, newCursorPos);
     textarea.focus();
+    updateLineInfo(textarea);
   };
 
   const highlightText = (text: string, query: string) => {
@@ -177,13 +188,29 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
                   }
                   disabled={saving}
                 />
-                <Textarea
-                  ref={(el) => {
-                    textareaRefs.current[section.id] = el;
-                  }}
-                  defaultValue={section.content}
-                  className="min-h-[300px] font-mono text-sm bg-module-input border-module text-module-primary"
-                />
+                <div className="relative">
+                  <div className="sticky top-0 z-10 bg-module-card/95 backdrop-blur-sm border-b border-module px-3 py-2 mb-2 flex justify-between items-center">
+                    <span className="text-xs font-mono text-module-secondary">
+                      Linha {lineInfo.current} de {lineInfo.total}
+                    </span>
+                    <span className="text-xs text-module-secondary">
+                      {section.content.length.toLocaleString('pt-BR')} caracteres
+                    </span>
+                  </div>
+                  <Textarea
+                    ref={(el) => {
+                      textareaRefs.current[section.id] = el;
+                      if (el) {
+                        updateLineInfo(el);
+                      }
+                    }}
+                    defaultValue={section.content}
+                    className="min-h-[300px] font-mono text-sm bg-module-input border-module text-module-primary"
+                    onChange={(e) => updateLineInfo(e.target)}
+                    onKeyUp={(e) => updateLineInfo(e.currentTarget)}
+                    onClick={(e) => updateLineInfo(e.currentTarget)}
+                  />
+                </div>
               </>
             ) : (
               <div className="text-sm text-module-primary font-mono">
