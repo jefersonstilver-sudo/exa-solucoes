@@ -59,26 +59,29 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
       {/* Toggles */}
       <div className="flex gap-2">
         <Button
-          variant={filters.unreadOnly ? 'default' : 'outline'}
           size="sm"
           onClick={() => onFilterChange({ ...filters, unreadOnly: !filters.unreadOnly })}
-          className={filters.unreadOnly ? '' : 'border-module text-module-primary hover:bg-module-secondary/50'}
+          className={filters.unreadOnly 
+            ? 'bg-module-accent text-white hover:bg-module-accent/90' 
+            : 'bg-module-card border-module text-module-primary hover:bg-module-secondary/50'}
         >
           Não Lidas
         </Button>
         <Button
-          variant={filters.criticalOnly ? 'destructive' : 'outline'}
           size="sm"
           onClick={() => onFilterChange({ ...filters, criticalOnly: !filters.criticalOnly })}
-          className={filters.criticalOnly ? '' : 'border-module text-module-primary hover:bg-module-secondary/50'}
+          className={filters.criticalOnly 
+            ? 'bg-red-500 text-white hover:bg-red-600' 
+            : 'bg-module-card border-module text-module-primary hover:bg-module-secondary/50'}
         >
           Críticas
         </Button>
         <Button
-          variant={filters.hotLeadsOnly ? 'default' : 'outline'}
           size="sm"
           onClick={() => onFilterChange({ ...filters, hotLeadsOnly: !filters.hotLeadsOnly })}
-          className={filters.hotLeadsOnly ? 'bg-orange-500 hover:bg-orange-600' : 'border-module text-module-primary hover:bg-module-secondary/50'}
+          className={filters.hotLeadsOnly 
+            ? 'bg-orange-500 text-white hover:bg-orange-600' 
+            : 'bg-module-card border-module text-module-primary hover:bg-module-secondary/50'}
         >
           Leads Quentes
         </Button>
