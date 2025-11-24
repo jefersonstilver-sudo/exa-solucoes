@@ -433,12 +433,16 @@ Obrigado pela compreensão!`;
           conversation = updated;
         } else {
           // INSERT simples
+          const isGroup = payload.isGroup === true;
           const { data: inserted, error: insertError } = await supabase
             .from('conversations')
             .insert({
               external_id: externalId,
               contact_phone: phone,
-              contact_name: payload.senderName || null,
+              contact_name: isGroup 
+                ? (payload.chatName || 'Grupo sem nome')
+                : (payload.senderName || null),
+              is_group: isGroup,
               agent_key: agent.key,
               provider: 'zapi',
               status: 'open',
@@ -457,7 +461,12 @@ Obrigado pela compreensão!`;
 
         console.log('[ZAPI-WEBHOOK] ✅ Conversation created/updated:', conversation.id);
 
-        // Salvar mensagem
+        // Salvar mensagem (incluir sender_name para grupos)
+        const messageMetadata: any = {};
+        if (payload.isGroup && payload.senderName) {
+          messageMetadata.sender_name = payload.senderName;
+        }
+        
         const { data: savedMessage, error: messageError } = await supabase.from('messages').insert({
           conversation_id: conversation.id,
           agent_key: agent.key,
@@ -465,6 +474,7 @@ Obrigado pela compreensão!`;
           direction: 'inbound',
           from_role: 'user',
           body: messageText,
+          metadata: messageMetadata,
           raw_payload: payload
         }).select().single();
 
