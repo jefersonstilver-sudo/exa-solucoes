@@ -72,12 +72,12 @@ serve(async (req) => {
 
         console.log('[ZAPI-IMPORT] Processing chat:', phoneNumber);
 
-        // Create or update conversation
+        // Create or update conversation (external_id includes agent_key for uniqueness)
+        const externalId = `${phoneNumber}_${agentKey}`;
         const { data: existingConv } = await supabase
           .from('conversations')
           .select('id')
-          .eq('external_id', phoneNumber)
-          .eq('agent_key', agentKey)
+          .eq('external_id', externalId)
           .maybeSingle();
 
         let conversationId;
@@ -89,7 +89,7 @@ serve(async (req) => {
           const { data: newConv, error: convError } = await supabase
             .from('conversations')
             .insert({
-              external_id: phoneNumber,
+              external_id: externalId,
               contact_phone: phoneNumber,
               contact_name: chat.name || null,
               agent_key: agentKey,

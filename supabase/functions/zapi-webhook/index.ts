@@ -409,12 +409,12 @@ Obrigado pela compreensão!`;
         // Criar/Atualizar conversation (OTIMIZADO: evita onConflict complexo)
         let conversation;
         
-        // Buscar existente primeiro
+        // Buscar existente primeiro (external_id inclui agent_key para unicidade)
+        const externalId = `${phone}_${agent.key}`;
         const { data: existing } = await supabase
           .from('conversations')
           .select('id')
-          .eq('external_id', phone)
-          .eq('agent_key', agent.key)
+          .eq('external_id', externalId)
           .maybeSingle();
 
         if (existing) {
@@ -436,7 +436,7 @@ Obrigado pela compreensão!`;
           const { data: inserted, error: insertError } = await supabase
             .from('conversations')
             .insert({
-              external_id: phone,
+              external_id: externalId,
               contact_phone: phone,
               contact_name: payload.senderName || null,
               agent_key: agent.key,
