@@ -65,7 +65,7 @@ export const PeriodSelector = ({ value, onChange, customStartDate, customEndDate
         </button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-auto p-0 bg-module-card border-module-border shadow-xl" 
+        className="w-auto p-0 bg-[#1a1625] border border-[#2d2640] shadow-xl z-50" 
         align="end"
         sideOffset={8}
       >
@@ -77,44 +77,44 @@ export const PeriodSelector = ({ value, onChange, customStartDate, customEndDate
                 onClick={() => handlePeriodSelect(period.value)}
                 className={cn(
                   "w-full text-left px-3 py-2 rounded-md transition-colors flex items-center justify-between",
-                  "hover:bg-module-hover text-module-primary text-sm",
-                  value === period.value && "bg-module-accent/10 font-medium"
+                  "hover:bg-white/10 text-white text-sm",
+                  value === period.value && "bg-[#9C1E1E]/20 font-medium"
                 )}
               >
                 {period.label}
                 {value === period.value && (
-                  <Check className="w-4 h-4 text-module-accent" />
+                  <Check className="w-4 h-4 text-[#9C1E1E]" />
                 )}
               </button>
             ))}
           </div>
         ) : (
-          <div className="p-4 space-y-4">
-            <div className="text-sm font-medium text-module-primary mb-3">
+          <div className="p-4 space-y-4 bg-[#1a1625]">
+            <div className="text-sm font-medium text-white mb-3">
               Selecione o Período
             </div>
             
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-module-secondary mb-1 block">Data Inicial</label>
+                <label className="text-xs text-gray-300 mb-1 block">Data Inicial</label>
                 <Calendar
                   mode="single"
                   selected={tempStartDate}
                   onSelect={setTempStartDate}
                   locale={ptBR}
-                  className="rounded-md border-module-border bg-module-primary/5"
+                  className="rounded-md border border-[#2d2640] bg-[#0f0d16] text-white"
                 />
               </div>
               
               <div>
-                <label className="text-xs text-module-secondary mb-1 block">Data Final</label>
+                <label className="text-xs text-gray-300 mb-1 block">Data Final</label>
                 <Calendar
                   mode="single"
                   selected={tempEndDate}
                   onSelect={setTempEndDate}
                   locale={ptBR}
                   disabled={(date) => tempStartDate ? date < tempStartDate : false}
-                  className="rounded-md border-module-border bg-module-primary/5"
+                  className="rounded-md border border-[#2d2640] bg-[#0f0d16] text-white"
                 />
               </div>
             </div>
@@ -126,14 +126,14 @@ export const PeriodSelector = ({ value, onChange, customStartDate, customEndDate
                   setTempStartDate(customStartDate);
                   setTempEndDate(customEndDate);
                 }}
-                className="flex-1 px-3 py-2 text-xs border-module-border border rounded-md hover:bg-module-hover text-module-secondary transition-colors"
+                className="flex-1 px-3 py-2 text-xs border border-[#2d2640] rounded-md hover:bg-white/10 text-gray-300 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleApplyCustomRange}
                 disabled={!tempStartDate || !tempEndDate}
-                className="flex-1 px-3 py-2 text-xs bg-module-accent text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-3 py-2 text-xs bg-[#9C1E1E] text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Aplicar
               </button>
