@@ -95,6 +95,22 @@ export default {
 					white: '#FFFFFF',         // EXA White
 					yellow: '#FFD54F',        // Mantém amarelo
 					blue: '#4FC3F7',          // Mantém azul
+				},
+				// WhatsApp Theme Colors
+				whatsapp: {
+					'green-dark': 'hsl(var(--whatsapp-green-dark))',
+					'green-medium': 'hsl(var(--whatsapp-green-medium))',
+					'green-light': 'hsl(var(--whatsapp-green-light))',
+					'bg-main': 'hsl(var(--whatsapp-bg-main))',
+					'bg-chat': 'hsl(var(--whatsapp-bg-chat))',
+					'msg-out': 'hsl(var(--whatsapp-msg-out))',
+					'msg-in': 'hsl(var(--whatsapp-msg-in))',
+					'text-primary': 'hsl(var(--whatsapp-text-primary))',
+					'text-secondary': 'hsl(var(--whatsapp-text-secondary))',
+					'border': 'hsl(var(--whatsapp-border))',
+					'hover': 'hsl(var(--whatsapp-hover))',
+					'panel-bg': 'hsl(var(--whatsapp-panel-bg))',
+					'icon-gray': 'hsl(var(--whatsapp-icon-gray))',
 				}
 			},
 			borderRadius: {

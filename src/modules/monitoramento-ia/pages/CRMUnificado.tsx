@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { CRMInbox } from '../components/crm/CRMInbox';
-import { CRMChat } from '../components/crm/CRMChat';
+import { WhatsAppCRMInbox } from '../components/crm/WhatsAppCRMInbox';
+import { WhatsAppCRMChat } from '../components/crm/WhatsAppCRMChat';
 import { CRMFilters } from '../components/crm/CRMFilters';
 import { CRMMetrics } from '../components/crm/CRMMetrics';
 import { useUnifiedConversations } from '../hooks/useUnifiedConversations';
@@ -34,24 +34,20 @@ export const CRMUnificado = () => {
     return <CRMUnificadoMobile initialFilters={filters} />;
   }
 
-  // Renderizar versão desktop (sem alterações)
+  // Renderizar versão desktop com tema WhatsApp
   return (
-    <div className="h-screen flex flex-col bg-module-primary overflow-hidden">
-      {/* Header com métricas */}
-      <div className="p-4 border-b border-module-border glass-card">
+    <div className="h-screen flex flex-col bg-whatsapp-bg-main overflow-hidden">
+      {/* Header com métricas e filtros */}
+      <div className="bg-whatsapp-panel-bg border-b border-whatsapp-border p-4 space-y-4">
         <CRMMetrics metrics={metrics} />
-      </div>
-
-      {/* Filtros */}
-      <div className="p-4 border-b border-module-border bg-module-secondary/30">
         <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
       </div>
 
-      {/* Layout principal */}
+      {/* Layout de 2 colunas estilo WhatsApp */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Lista de conversas (1/3) */}
-        <div className="w-1/3 border-r border-module-border overflow-y-auto glass-card">
-          <CRMInbox
+        {/* Painel de conversas (esquerda) */}
+        <div className="w-[400px] border-r border-whatsapp-border flex flex-col bg-whatsapp-panel-bg">
+          <WhatsAppCRMInbox
             conversations={conversations}
             selectedId={selectedConversationId}
             onSelect={selectConversation}
@@ -59,9 +55,9 @@ export const CRMUnificado = () => {
           />
         </div>
 
-        {/* Chat (2/3) */}
-        <div className="w-2/3 bg-module-primary">
-          <CRMChat
+        {/* Área de chat (direita) */}
+        <div className="flex-1">
+          <WhatsAppCRMChat
             conversationId={selectedConversationId}
             messages={messages}
             loading={messagesLoading}

@@ -83,6 +83,21 @@
     --linkae-accent: 17 100% 60%;      /* #FF6B35 - Laranja */
     --linkae-cyan: 340 77% 76%;        /* #F48FB1 - Rosa claro */
     --linkae-white: 0 0% 100%;         /* #ffffff - Branco */
+
+    /* WhatsApp Theme Colors */
+    --whatsapp-green-dark: 175 88% 19%;     /* #075E54 */
+    --whatsapp-green-medium: 174 76% 31%;   /* #128C7E */
+    --whatsapp-green-light: 142 70% 49%;    /* #25D366 */
+    --whatsapp-bg-main: 40 20% 92%;         /* #ECE5DD */
+    --whatsapp-bg-chat: 210 20% 95%;        /* #F0F2F5 */
+    --whatsapp-msg-out: 92 74% 92%;         /* #DCF8C6 */
+    --whatsapp-msg-in: 0 0% 100%;           /* #FFFFFF */
+    --whatsapp-text-primary: 200 31% 10%;   /* #111B21 */
+    --whatsapp-text-secondary: 200 8% 45%;  /* #667781 */
+    --whatsapp-border: 0 0% 88%;            /* #E0E0E0 */
+    --whatsapp-hover: 0 0% 96%;             /* #F5F5F5 */
+    --whatsapp-panel-bg: 0 0% 100%;         /* #FFFFFF */
+    --whatsapp-icon-gray: 210 11% 71%;      /* #8696A0 */
   }
 
   .dark {
