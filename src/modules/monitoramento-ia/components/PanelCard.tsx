@@ -3,16 +3,16 @@ import { humanizeDate } from '../utils/formatters';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { Badge } from '@/components/ui/badge';
 import { Wifi, MapPin, Activity } from 'lucide-react';
-
 interface PanelCardProps {
   device: Device;
   onClick: () => void;
 }
-
-export const PanelCard = ({ device, onClick }: PanelCardProps) => {
+export const PanelCard = ({
+  device,
+  onClick
+}: PanelCardProps) => {
   const hasCriticalAlert = (device as any).has_critical_alert === true;
   const offlineCounter = useRealTimeCounter(device.status === 'offline' ? device.last_online_at : null);
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
@@ -23,7 +23,6 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
         return 'bg-gray-400';
     }
   };
-
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'online':
@@ -43,7 +42,6 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
     const diffMs = now.getTime() - lastOnline.getTime();
     return diffMs / (1000 * 60 * 60); // converter para horas
   };
-
   const offlineHours = getOfflineHours();
 
   // Determinar cor de fundo do card baseado no status
@@ -63,15 +61,14 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
     }
     return '';
   };
-
   const lastOnline = humanizeDate(device.last_online_at);
-  
+
   // Usar provedor parseado automaticamente
   const provider = device.provider || 'Sem provedor';
 
   // Nome principal: comments (local) > name
   const rawName = device.comments || device.name;
-  
+
   // Extrair apenas o nome do prédio (primeira parte antes do " - ")
   const displayName = rawName.split(' - ')[0].trim();
 
@@ -83,16 +80,7 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
     if (upperProvider.includes('TELECOM FOZ')) return 'text-blue-400';
     return 'text-white/90';
   };
-
-  return (
-    <div
-      onClick={onClick}
-      className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border overflow-hidden group hover:scale-[1.03] ${
-        hasCriticalAlert 
-          ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200 glow-danger' 
-          : getCardBgClass()
-      }`}
-    >
+  return <div onClick={onClick} className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border overflow-hidden group hover:scale-[1.03] ${hasCriticalAlert ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200 glow-danger' : getCardBgClass()}`}>
       {/* Corpo do card */}
       <div className="p-6 text-center">
         {/* Nome principal grande */}
@@ -110,19 +98,13 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
         </div>
 
         {/* Nome do prédio (condomínio) */}
-        {device.condominio_name && (
-          <div className="mb-4">
-            <div className="text-base text-module-secondary font-medium">
-              {device.condominio_name}
-            </div>
-            {device.metadata?.torre && (
-              <div className="text-sm text-module-tertiary mt-1">
+        {device.condominio_name && <div className="mb-4">
+            
+            {device.metadata?.torre && <div className="text-sm text-module-tertiary mt-1">
                 Torre {device.metadata.torre}
                 {device.metadata?.elevador && ` - Elevador ${device.metadata.elevador}`}
-              </div>
-            )}
-          </div>
-        )}
+              </div>}
+          </div>}
 
         {/* Badge: Eventos */}
         <div className="flex flex-wrap gap-2 justify-center mb-4">
@@ -147,15 +129,10 @@ export const PanelCard = ({ device, onClick }: PanelCardProps) => {
           </span>
         </div>
         <div className="text-xs text-module-secondary">
-          {device.status === 'offline' ? (
-            <span className="font-bold text-red-600 text-sm animate-pulse">
+          {device.status === 'offline' ? <span className="font-bold text-red-600 text-sm animate-pulse">
               ⚠️ {offlineCounter}
-            </span>
-          ) : (
-            lastOnline
-          )}
+            </span> : lastOnline}
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
