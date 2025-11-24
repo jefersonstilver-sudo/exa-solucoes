@@ -6,9 +6,16 @@ import './index.css'
 import './styles/responsive-optimizations.css'
 import './modules/monitoramento-ia/styles/theme.css'
 import { ThemeProvider } from './components/ui/theme-provider'
-import './utils/debugHelpers' // Carrega helpers de debug globalmente
+import './utils/debugHelpers'
+import { APP_VERSION, setStoredVersion, clearVersionedCaches } from './config/version'
 
-console.log('🚀 Starting application...');
+console.log(`🚀 Starting application v${APP_VERSION}...`);
+
+// Limpar caches antigos na inicialização
+clearVersionedCaches().then(() => {
+  setStoredVersion();
+  console.log('✅ Cache cleanup completed');
+});
 
 try {
   const rootElement = document.getElementById('root');
@@ -26,7 +33,7 @@ try {
     </React.StrictMode>,
   );
   
-  console.log('✅ React app rendered successfully');
+  console.log(`✅ React app v${APP_VERSION} rendered successfully`);
 } catch (error) {
   console.error('❌ Critical error initializing app:', error);
   
