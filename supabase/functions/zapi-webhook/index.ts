@@ -27,6 +27,7 @@ serve(async (req) => {
 
     // Detectar se é grupo ANTES de processar
     const isGroup = payload.isGroup === true || 
+                    payload.phone?.endsWith('-group') ||
                     payload.phone?.includes('@g.us') || 
                     payload.remoteJid?.includes('@g.us') ||
                     payload.chatId?.includes('@g.us');
@@ -35,10 +36,12 @@ serve(async (req) => {
       isGroup,
       payloadIsGroup: payload.isGroup,
       phone: payload.phone,
+      phoneEndsWithGroup: payload.phone?.endsWith('-group'),
       remoteJid: payload.remoteJid,
       chatId: payload.chatId,
       chatName: payload.chatName,
-      senderName: payload.senderName
+      senderName: payload.senderName,
+      participantPhone: payload.participantPhone
     });
 
     // Z-API envia mensagens no formato:
@@ -453,7 +456,8 @@ Obrigado pela compreensão!`;
             isGroup,
             chatName: payload.chatName,
             senderName: payload.senderName,
-            phone
+            phone,
+            participantPhone: payload.participantPhone
           });
           
           const { data: inserted, error: insertError } = await supabase
@@ -483,12 +487,13 @@ Obrigado pela compreensão!`;
 
         console.log('[ZAPI-WEBHOOK] ✅ Conversation created/updated:', conversation.id);
 
-        // Salvar mensagem (incluir sender_name para grupos)
+        // Salvar mensagem (incluir sender_name e participant_phone para grupos)
         const messageMetadata: any = {};
         if (isGroup) {
           messageMetadata.sender_name = payload.senderName || 'Participante';
-          messageMetadata.chat_name = payload.chatName;
-          console.log('[ZAPI-WEBHOOK] 👥 Group message from:', payload.senderName);
+          messageMetadata.chat_name = payload.chatName || 'Grupo';
+          messageMetadata.participant_phone = payload.participantPhone;
+          console.log('[ZAPI-WEBHOOK] 👥 Group message from:', payload.senderName, 'phone:', payload.participantPhone);
         }
         
         const { data: savedMessage, error: messageError } = await supabase.from('messages').insert({
