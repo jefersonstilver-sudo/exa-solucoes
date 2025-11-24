@@ -325,7 +325,7 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: agent.openai_config?.model || 'gpt-4-turbo-preview',
+          model: agent.openai_config?.model || 'gpt-4o-mini',
           messages: messagesArray,
           tools: tools,
           temperature: agent.openai_config?.temperature || 0.7,
@@ -450,7 +450,7 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: agent.openai_config?.model || 'gpt-4-turbo-preview',
+            model: agent.openai_config?.model || 'gpt-4o-mini',
             messages: [
               ...messagesArray,
               assistantMessage,
@@ -481,37 +481,151 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
       } catch (error) {
         console.error('[IA-CONSOLE] Second OpenAI call failed:', error);
         
-        // 🆕 LOG DETALHADO EM agent_logs
-        await supabase.from('agent_logs').insert({
-          agent_key: agentKey,
-          event_type: 'console_format_error',
-          metadata: {
-            error: String(error),
-            message: error?.message || 'Unknown error',
-            stack: error?.stack,
-            functionCalled: functionName,
-            functionResult: functionResult,
-            userMessage: message.substring(0, 200),
-            timestamp: new Date().toISOString()
-          }
-        });
+        // Detectar erro 429 (Rate Limit)
+        const isRateLimit = error.message?.includes('429');
         
-        // Retornar mensagem amigável com o resultado da função
-        return new Response(
-          JSON.stringify({
-            success: true,
-            response: `⚠️ Consegui consultar os dados (${functionResult.total || functionResult.length} prédios encontrados), mas tive dificuldade em formatar a resposta. Pode tentar novamente?`,
-            tokens: 0,
-            latency: Date.now() - startTime,
-            functionCalled: functionName,
-            functionResult: functionResult,
-            error: error.message
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
+        // 🆕 FALLBACK INTELIGENTE: Formatar localmente quando erro 429
+        if (isRateLimit) {
+          console.log('[IA-CONSOLE] ⚡ Rate limit detected, using local formatting fallback');
+          
+          let formattedResponse = '';
+          
+          if (functionArgs.tipo_consulta === 'count') {
+            const total = functionResult.total || 0;
+            formattedResponse = `Encontrei ${total} ${total === 1 ? 'prédio' : 'prédios'} ${functionArgs.status === 'ativo' ? 'disponíveis' : functionArgs.status === 'instalação' ? 'em instalação' : 'no total'}. Posso ajudar com mais alguma coisa?`;
+          } else if (Array.isArray(functionResult)) {
+            if (functionResult.length === 0) {
+              formattedResponse = 'Não encontrei prédios com esses critérios. Posso ajudar de outra forma?';
+            } else if (functionArgs.nome_predio) {
+              // Detalhes de prédio específico
+              const predio = functionResult[0];
+              formattedResponse = `**${predio.nome}**\n\n`;
+              formattedResponse += `📊 Visualizações: ${predio.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'}/mês\n`;
+              formattedResponse += `👥 Público: ${predio.publico_estimado?.toLocaleString('pt-BR') || 'N/A'}\n`;
+              formattedResponse += `💰 Preço: R$ ${predio.preco_base?.toLocaleString('pt-BR') || 'N/A'}\n`;
+              formattedResponse += `📍 ${predio.bairro || 'N/A'}\n`;
+              formattedResponse += `✅ Status: ${predio.status}\n\n`;
+              formattedResponse += 'Posso ajudar com mais informações?';
+            } else {
+              // Lista de prédios
+              formattedResponse = `Encontrei ${functionResult.length} ${functionResult.length === 1 ? 'prédio' : 'prédios'}:\n\n`;
+              functionResult.slice(0, 5).forEach((p, i) => {
+                formattedResponse += `${i + 1}. **${p.nome}** - ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} vis/mês, R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/A'}\n`;
+              });
+              if (functionResult.length > 5) {
+                formattedResponse += `\n...e mais ${functionResult.length - 5} ${functionResult.length - 5 === 1 ? 'prédio' : 'prédios'}.\n`;
+              }
+              formattedResponse += '\nPosso dar mais detalhes sobre algum?';
+            }
           }
-        );
+          
+          // Log do fallback
+          await supabase.from('agent_logs').insert({
+            agent_key: agentKey,
+            event_type: 'console_fallback_success',
+            metadata: {
+              reason: 'rate_limit_429',
+              functionCalled: functionName,
+              functionArgs: functionArgs,
+              resultCount: functionResult.total || functionResult.length || 0,
+              userMessage: message.substring(0, 200),
+              timestamp: new Date().toISOString()
+            }
+          });
+          
+          return new Response(
+            JSON.stringify({
+              success: true,
+              response: formattedResponse,
+              tokens: 0,
+              latency: Date.now() - startTime,
+              functionCalled: functionName,
+              functionResult: functionResult,
+              fallbackUsed: true
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200
+            }
+          );
+        }
+        
+        // Para outros erros, tentar 1 RETRY com delay de 2s
+        console.log('[IA-CONSOLE] 🔄 Retrying second OpenAI call in 2s...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        try {
+          const controller3 = new AbortController();
+          const timeoutId3 = setTimeout(() => controller3.abort(), 60000);
+          
+          const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: agent.openai_config?.model || 'gpt-4o-mini',
+              messages: [
+                ...messagesArray,
+                assistantMessage,
+                {
+                  role: 'tool',
+                  tool_call_id: toolCall.id,
+                  content: JSON.stringify(functionResult)
+                }
+              ],
+              temperature: agent.openai_config?.temperature || 0.7,
+              max_tokens: agent.openai_config?.max_tokens || 2000
+            }),
+            signal: controller3.signal
+          });
+          
+          clearTimeout(timeoutId3);
+          
+          if (retryResponse.ok) {
+            console.log('[IA-CONSOLE] ✅ Retry succeeded');
+            finalData = await retryResponse.json();
+            finalMessage = finalData.choices[0].message.content;
+            tokensUsed = finalData.usage.total_tokens;
+          } else {
+            throw new Error('Retry failed');
+          }
+        } catch (retryError) {
+          console.error('[IA-CONSOLE] Retry also failed:', retryError);
+          
+          // Log do erro
+          await supabase.from('agent_logs').insert({
+            agent_key: agentKey,
+            event_type: 'console_format_error',
+            metadata: {
+              error: String(error),
+              retryError: String(retryError),
+              message: error?.message || 'Unknown error',
+              functionCalled: functionName,
+              functionResult: functionResult,
+              userMessage: message.substring(0, 200),
+              timestamp: new Date().toISOString()
+            }
+          });
+          
+          // Retornar mensagem amigável
+          return new Response(
+            JSON.stringify({
+              success: true,
+              response: `⚠️ Consegui consultar os dados (${functionResult.total || functionResult.length} prédios encontrados), mas tive dificuldade em formatar a resposta. Pode tentar novamente?`,
+              tokens: 0,
+              latency: Date.now() - startTime,
+              functionCalled: functionName,
+              functionResult: functionResult,
+              error: error.message
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200
+            }
+          );
+        }
       }
       
       // Registrar em logs
