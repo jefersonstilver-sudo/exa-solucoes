@@ -262,10 +262,37 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
     ];
 
     // Adicionar histórico se existir (LIMITADO às últimas 10 mensagens para reduzir tokens)
+    // 🔧 SANITIZAR: Remover mensagens assistant com tool_calls sem respostas (causam erro 400)
     if (context?.conversationHistory && Array.isArray(context.conversationHistory)) {
       const limitedHistory = context.conversationHistory.slice(-10); // FASE 2.1: Limitar histórico
-      console.log(`[IA-CONSOLE] Adding ${limitedHistory.length} messages from history (total: ${context.conversationHistory.length})`);
-      messagesArray.push(...limitedHistory);
+      
+      // Sanitizar histórico removendo assistant messages com tool_calls órfãos
+      const sanitizedHistory = limitedHistory.filter((msg, index) => {
+        // Se não é assistant message com tool_calls, manter
+        if (msg.role !== 'assistant' || !msg.tool_calls) {
+          return true;
+        }
+        
+        // Se é assistant com tool_calls, verificar se próxima mensagem é tool response
+        const nextMsg = limitedHistory[index + 1];
+        const hasToolResponse = nextMsg && nextMsg.role === 'tool';
+        
+        if (!hasToolResponse) {
+          console.log('[IA-CONSOLE] 🧹 Removing assistant message with orphaned tool_calls');
+          return false; // Remover
+        }
+        
+        return true; // Manter se tem resposta
+      }).map(msg => {
+        // Garantir que não há tool_calls residuais em assistant messages
+        if (msg.role === 'assistant' && msg.tool_calls) {
+          return { role: msg.role, content: msg.content || '', tool_calls: msg.tool_calls };
+        }
+        return msg;
+      });
+      
+      console.log(`[IA-CONSOLE] Adding ${sanitizedHistory.length} sanitized messages (removed ${limitedHistory.length - sanitizedHistory.length} contaminated)`);
+      messagesArray.push(...sanitizedHistory);
     }
 
     // Adicionar mensagem atual
@@ -504,17 +531,27 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
       let tokensUsed;
 
       try {
+        // 🔍 Log detalhado antes da chamada para debug
+        const secondCallMessages = [
+          ...messagesArray,
+          assistantMessage,
+          {
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: JSON.stringify(functionResult)
+          }
+        ];
+        
+        console.log('[IA-CONSOLE] 📝 Second OpenAI call details:', {
+          totalMessages: secondCallMessages.length,
+          hasToolCalls: secondCallMessages.some(m => m.role === 'assistant' && m.tool_calls),
+          messageRoles: secondCallMessages.map(m => m.role),
+          lastMessages: secondCallMessages.slice(-3).map(m => ({ role: m.role, hasToolCalls: !!m.tool_calls }))
+        });
+        
         finalData = await callOpenAIWithRetry({
           model: 'gpt-4o-mini',
-          messages: [
-            ...messagesArray,
-            assistantMessage,
-            {
-              role: 'tool',
-              tool_call_id: toolCall.id,
-              content: JSON.stringify(functionResult)
-            }
-          ],
+          messages: secondCallMessages,
           temperature: agent.openai_config?.temperature || 0.7,
           max_tokens: agent.openai_config?.max_tokens || 2000
         });
@@ -526,12 +563,14 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
       } catch (error) {
         console.error('[IA-CONSOLE] 💥 Second OpenAI call failed after retries:', error);
         
-        // Detectar erro 429 (Rate Limit)
-        const isRateLimit = error.message?.includes('429');
+        // Detectar tipos de erro que podem ser tratados com fallback local
+        const isRateLimit = error.message?.includes('429') || error.message?.includes('rate_limit');
+        const isToolCallError = error.message?.includes('tool_calls') || error.message?.includes('tool_call_id');
+        const is400Error = error.message?.includes('400');
         
-        // 🆕 FALLBACK INTELIGENTE: Formatar localmente quando erro 429
-        if (isRateLimit) {
-          console.log('[IA-CONSOLE] ⚡ Rate limit detected, using local formatting fallback');
+        // 🆕 FALLBACK INTELIGENTE: Formatar localmente para rate limit, tool_calls errors, etc
+        if (isRateLimit || isToolCallError || is400Error) {
+          console.log('[IA-CONSOLE] ⚡ Using local formatting fallback:', { isRateLimit, isToolCallError, is400Error });
           
           let formattedResponse = '';
           
@@ -552,24 +591,41 @@ Se QUALQUER resposta for NÃO → VOCÊ NÃO PODE RESPONDER. Use a ferramenta.
               formattedResponse += `✅ Status: ${predio.status}\n\n`;
               formattedResponse += 'Posso ajudar com mais informações?';
             } else {
-              // Lista de prédios
-              formattedResponse = `Encontrei ${functionResult.length} ${functionResult.length === 1 ? 'prédio' : 'prédios'}:\n\n`;
-              functionResult.slice(0, 5).forEach((p, i) => {
-                formattedResponse += `${i + 1}. **${p.nome}** - ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} vis/mês, R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/A'}\n`;
-              });
-              if (functionResult.length > 5) {
-                formattedResponse += `\n...e mais ${functionResult.length - 5} ${functionResult.length - 5 === 1 ? 'prédio' : 'prédios'}.\n`;
+              // 🆕 Lista COMPLETA de prédios (tipo_consulta='list' ou 'details')
+              if (functionArgs.tipo_consulta === 'list' || functionArgs.tipo_consulta === 'details') {
+                formattedResponse = `Temos ${functionResult.length} ${functionResult.length === 1 ? 'prédio disponível' : 'prédios disponíveis'}! 🏢\n\n`;
+                
+                // Mostrar TODOS os prédios, não apenas 5
+                functionResult.forEach((p, i) => {
+                  formattedResponse += `🏢 **${p.nome}**\n`;
+                  formattedResponse += `   📊 ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} visualizações/mês\n`;
+                  formattedResponse += `   💰 R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/A'}/mês\n`;
+                  if (p.bairro) formattedResponse += `   📍 ${p.bairro}\n`;
+                  formattedResponse += `\n`;
+                });
+                
+                formattedResponse += 'Qual te interessou mais? Posso dar detalhes sobre qualquer um! 😊';
+              } else {
+                // Fallback: mostrar resumo com os 5 primeiros
+                formattedResponse = `Encontrei ${functionResult.length} ${functionResult.length === 1 ? 'prédio' : 'prédios'}:\n\n`;
+                functionResult.slice(0, 5).forEach((p, i) => {
+                  formattedResponse += `${i + 1}. **${p.nome}** - ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} vis/mês, R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/A'}\n`;
+                });
+                if (functionResult.length > 5) {
+                  formattedResponse += `\n...e mais ${functionResult.length - 5} ${functionResult.length - 5 === 1 ? 'prédio' : 'prédios'}.\n`;
+                }
+                formattedResponse += '\nPosso dar mais detalhes sobre algum?';
               }
-              formattedResponse += '\nPosso dar mais detalhes sobre algum?';
             }
           }
           
-          // Log do fallback
+          // Log do fallback com tipo de erro
           await supabase.from('agent_logs').insert({
             agent_key: agentKey,
             event_type: 'console_fallback_success',
             metadata: {
-              reason: 'rate_limit_429',
+              reason: isRateLimit ? 'rate_limit_429' : isToolCallError ? 'tool_calls_error' : is400Error ? 'bad_request_400' : 'unknown',
+              errorMessage: error.message?.substring(0, 200),
               functionCalled: functionName,
               functionArgs: functionArgs,
               resultCount: functionResult.total || functionResult.length || 0,
