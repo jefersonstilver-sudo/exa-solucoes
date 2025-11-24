@@ -56,7 +56,7 @@ export const PanelCard = ({
       } else if (offlineHours > 1) {
         return 'bg-red-600/30 border-red-600/50 shadow-red-400/30'; // vermelho forte
       } else {
-        return 'bg-red-500/20 border-red-500/40 shadow-red-300/20 animate-pulse'; // vermelho sutil com pulse
+        return 'bg-red-500/20 border-red-500/40 shadow-red-300/20 animate-[pulse_3s_ease-in-out_infinite]'; // vermelho sutil com pulse suave
       }
     }
     return '';
