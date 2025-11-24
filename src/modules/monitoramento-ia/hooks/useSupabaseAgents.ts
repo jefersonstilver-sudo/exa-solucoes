@@ -18,18 +18,18 @@ export const useSupabaseAgents = () => {
       if (error) throw error;
 
       const mappedAgents: Agent[] = await Promise.all((data || []).map(async (agent: any) => {
-        // Fetch agent sections
+        // Fetch agent sections (usando KEY ao invés de UUID)
         const { data: sectionsData } = await supabase
           .from('agent_sections')
           .select('*')
-          .eq('agent_id', agent.id)
+          .eq('agent_id', agent.key)
           .order('section_number');
 
-        // Fetch agent knowledge items
+        // Fetch agent knowledge items (usando KEY ao invés de UUID)
         const { data: knowledgeData } = await supabase
           .from('agent_knowledge_items')
           .select('*')
-          .eq('agent_id', agent.id)
+          .eq('agent_id', agent.key)
           .eq('active', true);
 
         return {
