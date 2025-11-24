@@ -11,11 +11,49 @@ interface MobileMessageBubbleProps {
   index: number;
 }
 
+// Gerar cor suave baseada no agent_key
+const getAgentColor = (agentKey: string) => {
+  const colors = [
+    'hsl(220 60% 92%)', // azul suave
+    'hsl(160 60% 92%)', // verde suave
+    'hsl(280 60% 92%)', // roxo suave
+    'hsl(30 60% 92%)',  // laranja suave
+    'hsl(340 60% 92%)', // rosa suave
+  ];
+  
+  // Hash simples do agent_key
+  let hash = 0;
+  for (let i = 0; i < agentKey.length; i++) {
+    hash = agentKey.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  return colors[Math.abs(hash) % colors.length];
+};
+
 export const MobileMessageBubble: React.FC<MobileMessageBubbleProps> = ({ message, index }) => {
   const isOutbound = message.direction === 'outbound';
-  const mediaUrl = message.raw_payload?.mediaUrl || message.media_url;
-  const mediaType = message.raw_payload?.mediaType || message.metadata?.media_type;
+  
+  // Mapear mídia do raw_payload (suporta image, video, document, audio)
+  const mediaUrl = message.raw_payload?.image?.imageUrl || 
+                   message.raw_payload?.video?.videoUrl ||
+                   message.raw_payload?.document?.documentUrl ||
+                   message.raw_payload?.audio?.audioUrl ||
+                   message.raw_payload?.mediaUrl || 
+                   message.media_url;
+  
+  const mediaType = message.raw_payload?.image ? 'image' :
+                    message.raw_payload?.video ? 'video' :
+                    message.raw_payload?.document ? 'document' :
+                    message.raw_payload?.audio ? 'audio' :
+                    message.raw_payload?.mediaType || 
+                    message.metadata?.media_type;
+  
   const hasMedia = !!mediaUrl;
+  
+  // Cor suave por agente
+  const agentColor = isOutbound && message.agent_key 
+    ? getAgentColor(message.agent_key) 
+    : undefined;
 
   return (
     <motion.div
@@ -31,18 +69,20 @@ export const MobileMessageBubble: React.FC<MobileMessageBubbleProps> = ({ messag
         className={cn(
           'relative max-w-[85%] rounded-lg',
           isOutbound
-            ? 'bg-[#dcf8c6] dark:bg-[#005c4b] text-[#000000] dark:text-white rounded-br-none'
+            ? 'text-[#000000] dark:text-white rounded-br-none'
             : 'bg-white dark:bg-[#1f2c33] text-[#000000] dark:text-white shadow-sm rounded-bl-none'
         )}
+        style={isOutbound && agentColor ? { backgroundColor: agentColor } : undefined}
       >
         {/* Cauda da bolha (estilo WhatsApp) */}
         <div
           className={cn(
             'absolute bottom-0 w-0 h-0',
             isOutbound
-              ? 'right-0 -mr-2 border-l-8 border-l-[#dcf8c6] dark:border-l-[#005c4b] border-b-8 border-b-transparent'
+              ? 'right-0 -mr-2 border-l-8 border-b-8 border-b-transparent'
               : 'left-0 -ml-2 border-r-8 border-r-white dark:border-r-[#1f2c33] border-b-8 border-b-transparent'
           )}
+          style={isOutbound && agentColor ? { borderLeftColor: agentColor } : undefined}
         />
 
         <div className="p-2">
