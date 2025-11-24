@@ -21,17 +21,50 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
   const handleImportHistory = async () => {
     setImporting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('zapi-import-history', {
-        body: { agentKey: filters.agentKey || 'sofia' }
-      });
+      // Se nenhum agente selecionado, buscar todos os agentes com Z-API
+      if (!filters.agentKey) {
+        const { data: agents } = await supabase
+          .from('agents')
+          .select('key')
+          .eq('whatsapp_provider', 'zapi')
+          .eq('is_active', true);
 
-      if (error) throw error;
+        if (!agents || agents.length === 0) {
+          toast.error('❌ Nenhum agente com Z-API configurado');
+          return;
+        }
 
-      toast.success(`✅ Histórico importado: ${data.conversationsImported} conversas, ${data.messagesImported} mensagens`);
+        let totalConversations = 0;
+        let totalMessages = 0;
+
+        for (const agent of agents) {
+          toast.info(`📥 Importando de ${agent.key}...`);
+          const { data, error } = await supabase.functions.invoke('zapi-import-history', {
+            body: { agentKey: agent.key }
+          });
+
+          if (!error && data) {
+            totalConversations += data.conversationsImported || 0;
+            totalMessages += data.messagesImported || 0;
+          }
+        }
+
+        toast.success(`✅ Total importado: ${totalConversations} conversas, ${totalMessages} mensagens`);
+      } else {
+        // Importar apenas do agente selecionado
+        const { data, error } = await supabase.functions.invoke('zapi-import-history', {
+          body: { agentKey: filters.agentKey }
+        });
+
+        if (error) throw error;
+
+        toast.success(`✅ Histórico importado: ${data.conversationsImported} conversas, ${data.messagesImported} mensagens`);
+      }
+
       onRefresh();
     } catch (error) {
       console.error('Import error:', error);
-      toast.error('❌ Erro ao importar histórico');
+      toast.error('❌ Erro ao importar histórico: ' + (error as Error).message);
     } finally {
       setImporting(false);
     }
