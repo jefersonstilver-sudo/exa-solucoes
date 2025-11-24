@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, Filter } from 'lucide-react';
+import { RefreshCw, Filter, Download } from 'lucide-react';
+import { useModuleTheme, getThemeClass } from '../../hooks/useModuleTheme';
+import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface CRMFiltersProps {
   filters: any;
@@ -11,8 +15,30 @@ interface CRMFiltersProps {
 }
 
 export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange, onRefresh }) => {
+  const { theme } = useModuleTheme();
+  const [importing, setImporting] = useState(false);
+
+  const handleImportHistory = async () => {
+    setImporting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('zapi-import-history', {
+        body: { agentKey: filters.agentKey || 'sofia' }
+      });
+
+      if (error) throw error;
+
+      toast.success(`✅ Histórico importado: ${data.conversationsImported} conversas, ${data.messagesImported} mensagens`);
+      onRefresh();
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.error('❌ Erro ao importar histórico');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4 flex-wrap">
       <div className="flex items-center gap-2">
         <Filter className="w-4 h-4 text-muted-foreground" />
         <span className="text-sm font-medium">Filtros:</span>
@@ -28,7 +54,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
         <SelectTrigger className="w-[180px] bg-module-card border-module text-module-primary">
           <SelectValue placeholder="Todos os agentes" />
         </SelectTrigger>
-        <SelectContent className="bg-module-card border-module text-module-primary z-50">
+        <SelectContent className={cn(getThemeClass(theme), "bg-module-card border-module text-module-primary z-50")}>
           <SelectItem value="all" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Todos os agentes</SelectItem>
           <SelectItem value="sofia" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Sofia (IA Vendas)</SelectItem>
           <SelectItem value="eduardo" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Eduardo (Humano)</SelectItem>
@@ -47,7 +73,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
         <SelectTrigger className="w-[180px] bg-module-card border-module text-module-primary">
           <SelectValue placeholder="Todos os sentimentos" />
         </SelectTrigger>
-        <SelectContent className="bg-module-card border-module text-module-primary z-50">
+        <SelectContent className={cn(getThemeClass(theme), "bg-module-card border-module text-module-primary z-50")}>
           <SelectItem value="all" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Todos</SelectItem>
           <SelectItem value="positive" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Positivo</SelectItem>
           <SelectItem value="neutral" className="hover:bg-module-secondary/50 focus:bg-module-secondary/50">Neutro</SelectItem>
@@ -87,7 +113,16 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
         </Button>
       </div>
 
-      <div className="ml-auto">
+      <div className="ml-auto flex gap-2">
+        <Button 
+          size="sm" 
+          onClick={handleImportHistory}
+          disabled={importing}
+          className="bg-module-accent text-white hover:bg-module-accent/90"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          {importing ? 'Importando...' : 'Extrair Histórico'}
+        </Button>
         <Button size="sm" onClick={onRefresh} className="bg-module-card border border-module text-module-primary hover:bg-module-secondary/50">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar
