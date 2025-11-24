@@ -17,21 +17,46 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
-      // Don't use static manifest - we generate it dynamically per building
       manifest: false,
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,mp4,webm}'],
-        maximumFileSizeToCacheInBytes: 100 * 1024 * 1024, // 100MB
+        maximumFileSizeToCacheInBytes: 100 * 1024 * 1024,
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'CacheFirst',
+            // API REST - sempre da rede primeiro (dados dinâmicos)
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
+            handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-videos-cache',
+              cacheName: 'supabase-api-cache',
+              networkTimeoutSeconds: 10,
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 7
+                maxAgeSeconds: 5 * 60 // 5 minutos
               }
+            }
+          },
+          {
+            // Storage de vídeos/mídia - cache primeiro (arquivos grandes)
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'supabase-media-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 24 * 60 * 60 // 1 dia
+              }
+            }
+          },
+          {
+            // HTML - sempre validar (evitar páginas antigas)
+            urlPattern: /\.html$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-cache',
+              networkTimeoutSeconds: 3
             }
           }
         ]
