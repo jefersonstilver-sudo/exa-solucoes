@@ -88,7 +88,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
       </div>
 
       <div className="ml-auto">
-        <Button variant="outline" size="sm" onClick={onRefresh} className="border-module text-module-primary hover:bg-module-secondary/50">
+        <Button size="sm" onClick={onRefresh} className="bg-module-card border border-module text-module-primary hover:bg-module-secondary/50">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar
         </Button>
