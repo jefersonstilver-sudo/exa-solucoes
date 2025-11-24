@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +27,16 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [lineInfo, setLineInfo] = useState<{ current: number; total: number }>({ current: 1, total: 1 });
   const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+
+  // Inicializar contador de linhas quando entrar em modo de edição
+  useEffect(() => {
+    if (editingId) {
+      const textarea = textareaRefs.current[editingId];
+      if (textarea) {
+        updateLineInfo(textarea);
+      }
+    }
+  }, [editingId]);
 
   const handleUpdate = async (id: string, content: string) => {
     try {
@@ -200,9 +210,6 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
                   <Textarea
                     ref={(el) => {
                       textareaRefs.current[section.id] = el;
-                      if (el) {
-                        updateLineInfo(el);
-                      }
                     }}
                     defaultValue={section.content}
                     className="min-h-[300px] font-mono text-sm bg-module-input border-module text-module-primary"
