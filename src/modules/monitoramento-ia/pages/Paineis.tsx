@@ -13,14 +13,13 @@ import { useOfflineAlerts } from '../hooks/useOfflineAlerts';
 import { AnimatePresence } from 'framer-motion';
 import { useDevices } from '../hooks/useDevices';
 import { useModuleTheme } from '../hooks/useModuleTheme';
-import { format, startOfDay, endOfDay, subDays } from 'date-fns';
+import { format, startOfDay, endOfDay, subDays, startOfWeek, startOfYesterday, endOfYesterday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
 
 // Simple StatCard component for Paineis page
 const SimpleStatCard = ({ label, value, color }: { label: string; value: number; color: 'blue' | 'green' | 'red' | 'gray' }) => {
@@ -64,7 +63,9 @@ export const PaineisPage = () => {
   const [todasQuedas, setTodasQuedas] = useState<any[]>([]);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [quedaPeriod, setQuedaPeriod] = useState<'hoje' | '7dias' | '30dias'>('hoje');
+  const [quedaPeriod, setQuedaPeriod] = useState<PeriodType>('hoje');
+  const [customStartDate, setCustomStartDate] = useState<Date>();
+  const [customEndDate, setCustomEndDate] = useState<Date>();
   const [isQuedasOpen, setIsQuedasOpen] = useState(false);
   
   // Hook de alertas offline
@@ -150,11 +151,24 @@ export const PaineisPage = () => {
           case 'hoje':
             startDate = startOfDay(new Date());
             break;
+          case 'ontem':
+            startDate = startOfYesterday();
+            break;
+          case 'esta-semana':
+            startDate = startOfWeek(new Date(), { locale: ptBR });
+            break;
           case '7dias':
             startDate = startOfDay(subDays(new Date(), 7));
             break;
           case '30dias':
             startDate = startOfDay(subDays(new Date(), 30));
+            break;
+          case 'personalizado':
+            if (customStartDate && customEndDate) {
+              startDate = startOfDay(customStartDate);
+            } else {
+              startDate = startOfDay(new Date());
+            }
             break;
           default:
             startDate = startOfDay(new Date());
@@ -224,7 +238,7 @@ export const PaineisPage = () => {
     };
 
     fetchAllDrops();
-  }, [devices, quedaPeriod]);
+  }, [devices, quedaPeriod, customStartDate, customEndDate]);
 
   return (
     <div className="space-y-6">
@@ -241,26 +255,17 @@ export const PaineisPage = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {/* Seletor de Período - Ícone */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="p-2.5 border-module-border border text-module-primary rounded-lg hover:bg-module-secondary/20 transition-colors">
-                  <CalendarIcon className="w-4 h-4" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-2" align="end">
-                <Select value={quedaPeriod} onValueChange={(value: any) => setQuedaPeriod(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hoje">Hoje</SelectItem>
-                    <SelectItem value="7dias">Últimos 7 dias</SelectItem>
-                    <SelectItem value="30dias">Últimos 30 dias</SelectItem>
-                  </SelectContent>
-                </Select>
-              </PopoverContent>
-            </Popover>
+            {/* Seletor de Período */}
+            <PeriodSelector
+              value={quedaPeriod}
+              onChange={(value, customStart, customEnd) => {
+                setQuedaPeriod(value);
+                if (customStart) setCustomStartDate(customStart);
+                if (customEnd) setCustomEndDate(customEnd);
+              }}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+            />
 
             {/* Sincronizar AnyDesk - Apenas Ícone */}
             <button
@@ -292,8 +297,11 @@ export const PaineisPage = () => {
                 <AlertTriangle className="w-5 h-5 text-red-600" />
                 <h3 className="text-lg font-bold text-module-primary">
                   {quedaPeriod === 'hoje' ? 'Todas as Quedas de Hoje' : 
+                   quedaPeriod === 'ontem' ? 'Todas as Quedas de Ontem' :
+                   quedaPeriod === 'esta-semana' ? 'Quedas desta Semana' :
                    quedaPeriod === '7dias' ? 'Quedas dos Últimos 7 Dias' : 
-                   'Quedas dos Últimos 30 Dias'}
+                   quedaPeriod === '30dias' ? 'Quedas dos Últimos 30 Dias' :
+                   'Quedas do Período Selecionado'}
                 </h3>
                 <Badge variant="destructive" className="ml-2 animate-pulse bg-red-600 text-white">
                   {todasQuedas.reduce((sum, painel) => sum + painel.total_ocorrencias, 0)} quedas
