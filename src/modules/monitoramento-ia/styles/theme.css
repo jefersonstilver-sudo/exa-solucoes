@@ -76,21 +76,21 @@
    TEMA CLARO (Light Mode) - CORES CLARAS
    ======================================== */
 .theme-light {
-  /* Backgrounds - Tons claros e limpos */
+  /* Backgrounds - Sólidos e definidos */
   --bg-primary: #FFFFFF;
   --bg-secondary: #F9FAFB;
   --bg-tertiary: #F3F4F6;
-  --bg-card: rgba(255, 255, 255, 0.9);
-  --bg-input: rgba(255, 255, 255, 0.95);
+  --bg-card: #FFFFFF;
+  --bg-input: #FFFFFF;
   --bg-hover: rgba(156, 30, 30, 0.05);
   --bg-accent: #9C1E1E;
   --bg-accent-hover: #B82525;
   
-  /* Borders - Sutis e elegantes */
-  --border-default: rgba(156, 30, 30, 0.1);
+  /* Borders - Visíveis e definidas */
+  --border-default: rgba(0, 0, 0, 0.15);
   --border-accent: #9C1E1E;
-  --border-light: rgba(0, 0, 0, 0.05);
-  --border-muted: rgba(0, 0, 0, 0.1);
+  --border-light: rgba(0, 0, 0, 0.08);
+  --border-muted: rgba(0, 0, 0, 0.12);
   
   /* Text - Alto contraste */
   --text-primary: #0A0A0A;
@@ -107,16 +107,16 @@
   --status-offline: #DC2626;
   --status-unknown: #6B7280;
   
-  /* Shadows - Suaves */
-  --shadow-sm: 0 2px 4px 0 rgba(156, 30, 30, 0.08);
-  --shadow-md: 0 4px 6px -1px rgba(156, 30, 30, 0.12);
-  --shadow-lg: 0 10px 15px -3px rgba(156, 30, 30, 0.15);
-  --shadow-accent: 0 10px 25px -5px rgba(156, 30, 30, 0.2);
+  /* Shadows - Definidas */
+  --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.12);
+  --shadow-accent: 0 8px 20px -5px rgba(156, 30, 30, 0.25);
   
-  /* Glass Effects para tema claro */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-blur: 16px;
-  --glass-border: rgba(156, 30, 30, 0.15);
+  /* Glass Effects - Menos transparentes */
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-blur: 8px;
+  --glass-border: rgba(0, 0, 0, 0.15);
 }
 
 /* ========================================
@@ -179,8 +179,8 @@
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px var(--glow-exa);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-accent);
   transform: translateY(-2px);
 }
 
@@ -209,7 +209,7 @@
 }
 
 .content-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(156, 30, 30, 0.2);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-accent);
   transform: scale(1.02);
 }
