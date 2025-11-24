@@ -89,24 +89,36 @@ export const PeriodSelector = ({ value, onChange, customStartDate, customEndDate
             ))}
           </div>
         ) : (
-          <div className="p-4 space-y-4 bg-[#1a1625]">
-            <div className="text-sm font-medium text-white mb-3">
-              Selecione o Período
+          <div className="p-4 space-y-4 bg-[#1a1625] max-h-[500px] overflow-y-auto">
+            <div className="flex items-center justify-between mb-3">
+              <button
+                onClick={() => {
+                  setShowCustomRange(false);
+                  setTempStartDate(customStartDate);
+                  setTempEndDate(customEndDate);
+                }}
+                className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+              >
+                ← Voltar
+              </button>
+              <div className="text-sm font-medium text-white">
+                Período Personalizado
+              </div>
             </div>
             
-            <div className="space-y-3">
-              <div>
+            <div className="flex gap-4">
+              <div className="flex-1">
                 <label className="text-xs text-gray-300 mb-1 block">Data Inicial</label>
                 <Calendar
                   mode="single"
                   selected={tempStartDate}
                   onSelect={setTempStartDate}
                   locale={ptBR}
-                  className="rounded-md border border-[#2d2640] bg-[#0f0d16] text-white"
+                  className="rounded-md border border-[#2d2640] bg-[#0f0d16] text-white scale-90"
                 />
               </div>
               
-              <div>
+              <div className="flex-1">
                 <label className="text-xs text-gray-300 mb-1 block">Data Final</label>
                 <Calendar
                   mode="single"
@@ -114,7 +126,7 @@ export const PeriodSelector = ({ value, onChange, customStartDate, customEndDate
                   onSelect={setTempEndDate}
                   locale={ptBR}
                   disabled={(date) => tempStartDate ? date < tempStartDate : false}
-                  className="rounded-md border border-[#2d2640] bg-[#0f0d16] text-white"
+                  className="rounded-md border border-[#2d2640] bg-[#0f0d16] text-white scale-90"
                 />
               </div>
             </div>
@@ -123,6 +135,7 @@ export const PeriodSelector = ({ value, onChange, customStartDate, customEndDate
               <button
                 onClick={() => {
                   setShowCustomRange(false);
+                  setIsOpen(false);
                   setTempStartDate(customStartDate);
                   setTempEndDate(customEndDate);
                 }}
