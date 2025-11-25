@@ -86,6 +86,9 @@ export interface LeadDetails {
   contact_name: string | null;
   contact_phone: string;
   contact_type: string | null;
+  contact_type_source: 'ai' | 'manual' | 'unknown';
+  contact_type_updated_by: string | null;
+  contact_type_updated_at: string | null;
   agent_key: string;
   is_sindico: boolean;
   is_hot_lead: boolean;
@@ -100,6 +103,21 @@ export interface LeadDetails {
   awaiting_response: boolean;
   escalated_to_eduardo: boolean;
   escalated_at: string | null;
+}
+
+export interface ConversationReport {
+  id: string;
+  conversation_id: string;
+  agent_key: string;
+  report_data: any;
+  summary: string | null;
+  contact_profile: any;
+  interests: any;
+  conversation_stage: string | null;
+  recommendations: any;
+  generated_at: string;
+  generated_by: string | null;
+  created_at: string;
 }
 
 export interface LeadMetrics {

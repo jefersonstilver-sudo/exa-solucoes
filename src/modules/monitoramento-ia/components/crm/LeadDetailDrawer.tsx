@@ -19,12 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, User, Phone, Bot, Flame, AlertTriangle, Plus } from 'lucide-react';
+import { X, User, Phone, Bot, Flame, AlertTriangle, Plus, FileText, Sparkles } from 'lucide-react';
 import { useLeadDetails } from '../../hooks/useLeadDetails';
 import { useContactTypes } from '../../hooks/useContactTypes';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
 import { ContactTypeManager } from './ContactTypeManager';
+import { ConversationReportViewer } from './ConversationReportViewer';
 
 interface LeadDetailDrawerProps {
   conversationId: string | null;
@@ -37,9 +38,22 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
   open,
   onClose
 }) => {
-  const { lead, metrics, loading, updateLeadType, updateLeadScore, toggleSindico, toggleHotLead } = useLeadDetails(conversationId);
+  const { lead, metrics, loading, updateLeadType, updateLeadScore, toggleSindico, toggleHotLead, generateReport } = useLeadDetails(conversationId);
   const { contactTypes } = useContactTypes();
   const [showTypeManager, setShowTypeManager] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportData, setReportData] = useState<any>(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
+
+  const handleGenerateReport = async () => {
+    setGeneratingReport(true);
+    const data = await generateReport();
+    if (data) {
+      setReportData(data);
+      setShowReport(true);
+    }
+    setGeneratingReport(false);
+  };
 
   if (!conversationId || !lead) {
     return null;
@@ -120,7 +134,18 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                   </h4>
 
                   <div className="space-y-2">
-                    <Label>Tipo de Contato</Label>
+                    <div className="flex items-center gap-2">
+                      <Label>Tipo de Contato</Label>
+                      {lead.contact_type_source === 'manual' ? (
+                        <Badge variant="secondary" className="text-xs">
+                          👤 Manual
+                        </Badge>
+                      ) : lead.contact_type_source === 'ai' ? (
+                        <Badge variant="outline" className="text-xs">
+                          🤖 IA
+                        </Badge>
+                      ) : null}
+                    </div>
                     <div className="flex gap-2">
                       <Select
                         value={lead.contact_type || 'unknown'}
@@ -178,6 +203,25 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                       className="w-full"
                     />
                   </div>
+
+                  <Button 
+                    onClick={handleGenerateReport} 
+                    disabled={generatingReport}
+                    className="w-full"
+                    variant="default"
+                  >
+                    {generatingReport ? (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                        Gerando relatório...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Gerar Relatório da IA
+                      </>
+                    )}
+                  </Button>
                 </div>
 
                 {/* Métricas em Tempo Real */}
@@ -252,6 +296,14 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
       <ContactTypeManager
         open={showTypeManager}
         onClose={() => setShowTypeManager(false)}
+      />
+
+      {/* Visualizador de Relatório */}
+      <ConversationReportViewer
+        open={showReport}
+        onClose={() => setShowReport(false)}
+        conversationId={conversationId}
+        reportData={reportData}
       />
     </>
   );

@@ -2074,6 +2074,59 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_reports: {
+        Row: {
+          agent_key: string
+          contact_profile: Json | null
+          conversation_id: string | null
+          conversation_stage: string | null
+          created_at: string | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          interests: Json | null
+          recommendations: Json | null
+          report_data: Json
+          summary: string | null
+        }
+        Insert: {
+          agent_key: string
+          contact_profile?: Json | null
+          conversation_id?: string | null
+          conversation_stage?: string | null
+          created_at?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          interests?: Json | null
+          recommendations?: Json | null
+          report_data: Json
+          summary?: string | null
+        }
+        Update: {
+          agent_key?: string
+          contact_profile?: Json | null
+          conversation_id?: string | null
+          conversation_stage?: string | null
+          created_at?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          interests?: Json | null
+          recommendations?: Json | null
+          report_data?: Json
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_reports_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_tag_assignments: {
         Row: {
           agent_key: string
@@ -2136,6 +2189,9 @@ export type Database = {
           contact_name: string | null
           contact_phone: string
           contact_type: string | null
+          contact_type_source: string | null
+          contact_type_updated_at: string | null
+          contact_type_updated_by: string | null
           created_at: string | null
           escalated_at: string | null
           escalated_to_eduardo: boolean | null
@@ -2166,6 +2222,9 @@ export type Database = {
           contact_name?: string | null
           contact_phone: string
           contact_type?: string | null
+          contact_type_source?: string | null
+          contact_type_updated_at?: string | null
+          contact_type_updated_by?: string | null
           created_at?: string | null
           escalated_at?: string | null
           escalated_to_eduardo?: boolean | null
@@ -2196,6 +2255,9 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string
           contact_type?: string | null
+          contact_type_source?: string | null
+          contact_type_updated_at?: string | null
+          contact_type_updated_by?: string | null
           created_at?: string | null
           escalated_at?: string | null
           escalated_to_eduardo?: boolean | null
