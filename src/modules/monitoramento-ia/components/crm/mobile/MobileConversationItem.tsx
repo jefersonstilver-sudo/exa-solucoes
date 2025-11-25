@@ -101,7 +101,7 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
                 variant={conversation.contact_type_source === 'manual' ? 'secondary' : 'outline'}
                 className="text-[10px] px-1.5 py-0 h-4"
               >
-                {conversation.contact_type_source === 'manual' ? '👤' : '🤖'}
+                {conversation.contact_type_source === 'manual' ? '👤' : '🤖'} {conversation.contact_type}
               </Badge>
             )}
             
