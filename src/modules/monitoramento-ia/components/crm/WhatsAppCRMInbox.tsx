@@ -78,19 +78,23 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
     }
   };
 
+  // 🎯 FASE 2: Combinar cor de fundo com destaque de seleção
+  const cardBgColor = getCardBgColor();
+  
   return (
     <button
       onClick={onClick}
       className={cn(
-        'w-full px-3 py-2 text-left transition-all relative group',
+        'w-full px-3 py-2 text-left transition-all relative',
         'hover:bg-whatsapp-hover',
         isSelected && [
-          'bg-whatsapp-hover',
-          'border-l-4 border-whatsapp-green-light',
-          'shadow-md'
+          'border-l-4 border-whatsapp-green-dark',
+          'shadow-lg shadow-whatsapp-green-light/20',
+          'pl-2', // Compensar a borda
+          '!bg-whatsapp-hover' // Forçar background
         ]
       )}
-      style={{ backgroundColor: getCardBgColor() }}
+      style={!isSelected ? { backgroundColor: cardBgColor } : undefined}
     >
       {/* Container principal */}
       <div className="flex items-center gap-3">
