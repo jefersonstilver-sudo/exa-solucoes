@@ -199,6 +199,44 @@ serve(async (req) => {
     const agentSections = essentialSections; // Para compatibilidade com código abaixo
     const agentKnowledgeItems = needsHeavyKnowledge ? fullKnowledgeItems : [];
 
+    // ====== ETAPA 4: GERENCIAMENTO DE NOME DO CLIENTE ======
+    console.log('[AI-RESPONSE] 👤 Starting customer name detection...');
+    
+    // 1. Buscar nome salvo anteriormente nos logs
+    const { data: existingNameLog } = await supabase
+      .from('zapi_logs')
+      .select('metadata')
+      .eq('phone', phoneNumber)
+      .not('metadata->customer_name', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    let customerName = existingNameLog?.metadata?.customer_name || null;
+    
+    // 2. Detectar nome na mensagem atual (regex patterns)
+    if (!customerName) {
+      const namePatterns = [
+        /(?:me chamo|meu nome é|sou o|sou a|eu sou|pode me chamar de)\s+([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ][a-záàâãéèêíïóôõöúçñ]+)/i,
+        /(?:nome:?)\s+([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ][a-záàâãéèêíïóôõöúçñ]+)/i,
+        /^([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ][a-záàâãéèêíïóôõöúçñ]+)\s+(?:aqui|falando)/i
+      ];
+      
+      for (const pattern of namePatterns) {
+        const match = message.match(pattern);
+        if (match && match[1]) {
+          customerName = match[1].trim();
+          console.log('[AI-RESPONSE] 👤 Name detected in message:', customerName);
+          
+          // 3. Salvar nome detectado no metadata do log atual (será salvo no final)
+          // Criar variável para armazenar temporariamente
+          break;
+        }
+      }
+    } else {
+      console.log('[AI-RESPONSE] 👤 Name retrieved from previous logs:', customerName);
+    }
+    
     // ====== CONTROLE DE ACESSO VIA SEÇÃO LIMITES (SEÇÃO 3) ======
     const limitesSection = agentSections?.find((s: any) => s.section_number === 3);
     const canAccessBuildings = limitesSection?.content?.match(/prédios|buildings|painéis/i);
@@ -384,7 +422,9 @@ serve(async (req) => {
             : (b.quantidade_telas ? (b.quantidade_telas * 7350).toString() : '7350');
           
           // 🔧 FASE 3: Formato ultra-compacto para evitar truncamento do WhatsApp
-          let formatted = `🏢 ${nome} • R$ ${precoBase}/mês`;
+          // ETAPA 5: Adicionar indicador de status
+          const statusIndicator = b.status === 'instalação' ? ' (em instalação)' : '';
+          let formatted = `🏢 ${nome}${statusIndicator} • R$ ${precoBase}/mês`;
           
           // Adicionar detalhes SOMENTE se usuário pediu
           if (detailsRequested && bairro) {
@@ -466,6 +506,9 @@ ${conversationHistory && conversationHistory.length > 0 ? `
 ` : `
 ✅ Primeira mensagem - Faça saudação inicial
 `}
+
+## INFORMAÇÕES DO CLIENTE
+${customerName ? `✅ Nome do cliente: ${customerName}` : `⚠️ Nome do cliente ainda não identificado - Sofia pode perguntar naturalmente quando apropriado`}
 
 ## FORMATO DE RESPOSTA
 ${isFullListRequest ? `
@@ -846,6 +889,27 @@ Qual te interessou? 😊`;
       throw new Error('Failed to send message');
     }
 
+    // ====== SALVAR NOME DO CLIENTE SE DETECTADO ======
+    if (customerName) {
+      console.log('[AI-RESPONSE] 💾 Saving customer name to zapi_logs metadata:', customerName);
+      
+      // Atualizar o log mais recente desta conversa com o nome
+      const { error: updateError } = await supabase
+        .from('zapi_logs')
+        .update({ 
+          metadata: { customer_name: customerName }
+        })
+        .eq('phone', phoneNumber)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (updateError) {
+        console.error('[AI-RESPONSE] ⚠️ Failed to save customer name:', updateError);
+      } else {
+        console.log('[AI-RESPONSE] ✅ Customer name saved successfully');
+      }
+    }
+
     // ====== LOG SUCESSO FINAL EM AGENT_LOGS ======
     await supabase.from('agent_logs').insert({
       agent_key: agentKey,
@@ -854,6 +918,7 @@ Qual te interessou? 😊`;
       metadata: {
         messagePreview: message.substring(0, 100),
         responsePreview: sanitizedReply.substring(0, 100),
+        customerName: customerName || 'not_identified',
         success: true,
         timestamp: new Date().toISOString()
       }
