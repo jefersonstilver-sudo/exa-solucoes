@@ -127,8 +127,9 @@ const UserMenu = () => {
           
           <AnimatePresence>
             {open && <DropdownMenuContent 
-                className="w-[280px] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-lg bg-white border border-gray-200" 
+                className="w-[280px] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-xl bg-white border border-gray-200 max-h-[calc(100vh-100px)] overflow-y-auto" 
                 align="end" 
+                sideOffset={8}
                 forceMount
               >
                 <motion.div initial="hidden" animate="visible" exit="exit" variants={dropdownVariants}>
@@ -146,7 +147,7 @@ const UserMenu = () => {
                             <p className="text-xs text-gray-600 leading-none truncate">
                               {user?.email}
                             </p>
-                            {isSuperAdmin && <p className="text-xs text-amber-700 leading-none font-medium">
+                            {isSuperAdmin && <p className="text-xs leading-none font-medium" style={{ color: '#9C1E1E' }}>
                                 Super Administrador Master
                               </p>}
                             {isAdmin && <p className="text-xs text-blue-700 leading-none font-medium">
@@ -164,76 +165,97 @@ const UserMenu = () => {
                         <DropdownMenuGroup className="p-2">
                           {/* MENU PARA SUPER ADMIN */}
                           {isSuperAdmin && <>
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
+                              {/* Seção: Acesso Rápido */}
+                              <div className="px-3 py-2">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                  Acesso Rápido
+                                </p>
+                              </div>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-100 text-gray-900 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900">
                                 <Link to="/super_admin" className="flex items-center">
-                                  <ShieldCheck className="mr-3 h-5 w-5 text-amber-600" />
+                                  <ShieldCheck className="mr-3 h-5 w-5 text-gray-600" />
                                   <span className="font-medium">Master Control Panel</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-purple-50 text-gray-900 hover:text-purple-700 focus:bg-purple-50 focus:text-purple-700">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-100 text-gray-900 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900">
                                 <Link to="/admin/monitoramento-ia/agentes" className="flex items-center">
-                                  <Bot className="mr-3 h-5 w-5 text-purple-600" />
+                                  <Bot className="mr-3 h-5 w-5 text-gray-600" />
                                   <span className="font-medium">Módulo Agentes EXA</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuSeparator className="my-2 bg-gray-200" />
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
+                              {/* Seção: Gerenciamento */}
+                              <div className="px-3 py-2">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                  Gerenciamento
+                                </p>
+                              </div>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-100 text-gray-900 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900">
                                 <Link to="/super_admin" className="flex items-center">
-                                  <LayoutDashboard className="mr-3 h-5 w-5 text-amber-600" />
+                                  <LayoutDashboard className="mr-3 h-5 w-5 text-gray-600" />
                                   <span className="font-medium">Dashboard Administrativo</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-100 text-gray-900 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900">
                                 <Link to="/super_admin/usuarios" className="flex items-center">
-                                  <Users className="mr-3 h-5 w-5 text-amber-600" />
+                                  <Users className="mr-3 h-5 w-5 text-gray-600" />
                                   <span className="font-medium">Gerenciar Usuários</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-100 text-gray-900 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900">
                                 <Link to="/super_admin/pedidos" className="flex items-center">
-                                  <Package className="mr-3 h-5 w-5 text-amber-600" />
+                                  <Package className="mr-3 h-5 w-5 text-gray-600" />
                                   <span className="font-medium">Gerenciar Pedidos</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-100 text-gray-900 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900">
                                 <Link to="/super_admin/predios" className="flex items-center">
-                                  <Building className="mr-3 h-5 w-5 text-amber-600" />
+                                  <Building className="mr-3 h-5 w-5 text-gray-600" />
                                   <span className="font-medium">Gerenciar Prédios</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-100 text-gray-900 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900">
                                 <Link to="/super_admin/paineis" className="flex items-center">
-                                  <Monitor className="mr-3 h-5 w-5 text-amber-600" />
+                                  <Monitor className="mr-3 h-5 w-5 text-gray-600" />
                                   <span className="font-medium">Gerenciar Painéis</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-100 text-gray-900 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900">
                                 <Link to="/super_admin/aprovacoes" className="flex items-center">
-                                  <CheckCircle className="mr-3 h-5 w-5 text-amber-600" />
+                                  <CheckCircle className="mr-3 h-5 w-5 text-gray-600" />
                                   <span className="font-medium">Aprovações</span>
                                 </Link>
                               </DropdownMenuItem>
                               
                               <DropdownMenuSeparator className="my-2 bg-gray-200" />
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
+                              {/* Seção: Configurações */}
+                              <div className="px-3 py-2">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                  Configurações
+                                </p>
+                              </div>
+                              
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-100 text-gray-900 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900">
                                 <Link to="/super_admin/configuracoes" className="flex items-center">
-                                  <Settings className="mr-3 h-5 w-5 text-amber-600" />
+                                  <Settings className="mr-3 h-5 w-5 text-gray-600" />
                                   <span className="font-medium">Configurações do Sistema</span>
                                 </Link>
                               </DropdownMenuItem>
                               
-                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-amber-50 text-gray-900 hover:text-amber-700 focus:bg-amber-50 focus:text-amber-700">
+                              <DropdownMenuItem asChild className="rounded-lg cursor-pointer p-3 transition-colors hover:bg-gray-100 text-gray-900 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900">
                                 <Link to="/alterar-senha" className="flex items-center">
-                                  <Lock className="mr-3 h-5 w-5 text-amber-600" />
+                                  <Lock className="mr-3 h-5 w-5 text-gray-600" />
                                   <span className="font-medium">Alterar Senha</span>
                                 </Link>
                               </DropdownMenuItem>
