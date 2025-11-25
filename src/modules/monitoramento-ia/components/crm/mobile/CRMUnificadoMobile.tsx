@@ -8,6 +8,9 @@ import { useUnifiedConversations } from '../../../hooks/useUnifiedConversations'
 import { supabase } from '@/integrations/supabase/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import PullToRefresh from '@/components/mobile/PullToRefresh';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Home, Settings, User, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CRMUnificadoMobileProps {
   initialFilters: any;
@@ -17,6 +20,8 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
   const [filters, setFilters] = useState(initialFilters);
   const [showChat, setShowChat] = useState(false);
   const [agents, setAgents] = useState<Array<{ key: string; display_name: string }>>([]);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Pull to refresh states
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -112,7 +117,7 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
             {/* Header */}
             <MobileCRMHeader
               unreadCount={metrics.unread}
-              onMenuClick={() => {}}
+              onMenuClick={() => setIsDrawerOpen(true)}
               onSearchClick={() => {}}
               onRefreshClick={handleRefresh}
             />
@@ -184,6 +189,63 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
           />
         )}
       </AnimatePresence>
+
+      {/* Mobile Drawer Menu */}
+      <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        <SheetContent side="left" className="w-[280px] sm:w-[320px]">
+          <SheetHeader>
+            <SheetTitle className="text-left">Menu</SheetTitle>
+          </SheetHeader>
+          
+          <div className="mt-6 space-y-1">
+            <button
+              onClick={() => {
+                navigate('/monitoramento-ia');
+                setIsDrawerOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent rounded-lg transition-colors"
+            >
+              <Home className="w-5 h-5" />
+              <span>Dashboard</span>
+            </button>
+
+            <button
+              onClick={() => {
+                navigate('/monitoramento-ia/crm-unificado');
+                setIsDrawerOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left bg-accent rounded-lg"
+            >
+              <User className="w-5 h-5" />
+              <span>CRM Unificado</span>
+            </button>
+
+            <button
+              onClick={() => {
+                navigate('/monitoramento-ia/configuracoes');
+                setIsDrawerOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent rounded-lg transition-colors"
+            >
+              <Settings className="w-5 h-5" />
+              <span>Configurações</span>
+            </button>
+          </div>
+
+          <div className="absolute bottom-6 left-0 right-0 px-4">
+            <button
+              onClick={() => {
+                navigate('/login');
+                setIsDrawerOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-destructive/10 text-destructive rounded-lg transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>Sair</span>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
