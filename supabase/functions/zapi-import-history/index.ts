@@ -155,24 +155,43 @@ serve(async (req) => {
           console.log('[ZAPI-IMPORT] New conversation created:', conversationId);
         }
 
-        // Fetch messages for this chat - ENDPOINT OFICIAL DO Z-API
-        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/load-messages-chat-phone/${phoneNumber}`;
-        console.log('[ZAPI-IMPORT] 📞 Fetching messages from:', messagesUrl);
-        console.log('[ZAPI-IMPORT] 📞 Phone number:', phoneNumber);
+        // Tentar endpoints alternativos do Z-API até encontrar um que funcione
+        const endpoints = [
+          `/get-messages-chat/${phoneNumber}`,
+          `/chat-messages/${phoneNumber}`,
+          `/chat/${phoneNumber}/messages`,
+        ];
         
-        const messagesResponse = await fetch(messagesUrl, {
-          method: 'GET',
-          headers: {
-            'Client-Token': clientToken,
-            'Content-Type': 'application/json'
+        let messagesResponse = null;
+        let workingEndpoint = null;
+        
+        for (const endpoint of endpoints) {
+          const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}${endpoint}`;
+          console.log(`[ZAPI-IMPORT] 🔄 Trying endpoint: ${endpoint}`);
+          
+          const response = await fetch(messagesUrl, {
+            method: 'GET',
+            headers: {
+              'Client-Token': clientToken,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log(`[ZAPI-IMPORT] 📡 Status: ${response.status} ${response.statusText}`);
+          
+          if (response.ok) {
+            messagesResponse = response;
+            workingEndpoint = endpoint;
+            console.log(`[ZAPI-IMPORT] ✅ Success with endpoint: ${endpoint}`);
+            break;
+          } else {
+            const errorText = await response.text();
+            console.log(`[ZAPI-IMPORT] ❌ Failed: ${errorText.substring(0, 200)}`);
           }
-        });
+        }
 
-        console.log('[ZAPI-IMPORT] 📡 Response status:', messagesResponse.status, messagesResponse.statusText);
-
-        if (!messagesResponse.ok) {
-          const errorText = await messagesResponse.text();
-          console.error('[ZAPI-IMPORT] ❌ Failed to fetch messages for:', phoneNumber, 'Status:', messagesResponse.status, 'Error:', errorText);
+        if (!messagesResponse || !messagesResponse.ok) {
+          console.error('[ZAPI-IMPORT] ❌ All endpoints failed for:', phoneNumber);
           continue;
         }
 

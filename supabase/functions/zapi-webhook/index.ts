@@ -515,8 +515,9 @@ Obrigado pela compreensão!`;
           direction: 'inbound',
           from_role: 'user',
           body: messageText,
-          metadata: messageMetadata,
-          raw_payload: payload
+          raw_payload: isGroup 
+            ? { ...payload, group_metadata: messageMetadata } 
+            : payload
         }).select().single();
 
         if (messageError) {
