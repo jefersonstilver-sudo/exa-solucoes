@@ -12,6 +12,7 @@ import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 
 export const CRMUnificado = () => {
   const isMobile = useIsMobile();
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [filters, setFilters] = useState({
     agentKey: undefined,
     unreadOnly: false,
@@ -55,11 +56,13 @@ export const CRMUnificado = () => {
   // Renderizar versão desktop com tema WhatsApp
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 overflow-hidden">
-      {/* Header com métricas e filtros */}
-      <div className="p-4 space-y-4">
-        <CRMMetrics metrics={metrics} />
-        <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
-      </div>
+      {/* Header com métricas e filtros - Esconde em fullscreen */}
+      {!isFullscreen && (
+        <div className="p-4 space-y-4">
+          <CRMMetrics metrics={metrics} />
+          <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
+        </div>
+      )}
 
       {/* Layout de 2 colunas com painéis redimensionáveis */}
       <div className="flex-1 overflow-hidden relative">
@@ -98,6 +101,8 @@ export const CRMUnificado = () => {
               messages={messages}
               loading={messagesLoading}
               onRefresh={refetch}
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
             />
           </ResizablePanel>
         </ResizablePanelGroup>

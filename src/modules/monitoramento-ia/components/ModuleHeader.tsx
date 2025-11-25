@@ -36,27 +36,28 @@ export const ModuleHeader = ({ theme, onToggleTheme, onToggleSidebar }: ModuleHe
           {/* Notification Settings */}
           <NotificationSettings variant="icon" />
           
-          {/* Theme Toggle Button */}
+          {/* Theme Toggle 3D Glass Switch */}
           <button
             onClick={onToggleTheme}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium ${
-              theme === 'dark'
-                ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:glow-exa'
-                : 'bg-[#9C1E1E] border border-[#9C1E1E] text-white hover:bg-[#B82525] shadow-md hover:shadow-lg'
-            }`}
+            className="relative w-16 h-8 backdrop-blur-xl bg-gradient-to-br from-white/20 to-white/10 
+              rounded-full border border-white/30 shadow-lg cursor-pointer transition-all hover:scale-105
+              hover:shadow-xl hover:border-white/40"
             title={theme === 'dark' ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro'}
           >
-            {theme === 'dark' ? (
-              <>
-                <Sun size={18} />
-                <span className="hidden sm:inline text-sm">Modo Claro</span>
-              </>
-            ) : (
-              <>
-                <Moon size={18} />
-                <span className="hidden sm:inline text-sm">Modo Escuro</span>
-              </>
-            )}
+            <div className={`absolute top-1 w-6 h-6 rounded-full 
+              bg-gradient-to-br shadow-lg
+              transition-all duration-300 ease-out flex items-center justify-center ${
+                theme === 'dark' 
+                  ? 'left-1 from-slate-700 to-slate-800 shadow-slate-900/50' 
+                  : 'left-9 from-amber-400 to-orange-500 shadow-orange-600/50'
+              }`}
+            >
+              {theme === 'dark' ? (
+                <Moon size={14} className="text-white" />
+              ) : (
+                <Sun size={14} className="text-white" />
+              )}
+            </div>
           </button>
         </div>
       </div>

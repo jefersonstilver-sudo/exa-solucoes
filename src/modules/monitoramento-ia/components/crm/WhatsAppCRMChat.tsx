@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { StickyNote, Tag, User, Users, Phone, Video, Search, MoreVertical, Smile, Paperclip, Send, Mic, Pencil, Check, X } from 'lucide-react';
+import { StickyNote, Tag, User, Users, Phone, Video, Search, MoreVertical, Smile, Paperclip, Send, Mic, Pencil, Check, X, Maximize2, Minimize2 } from 'lucide-react';
 import { MediaInputBar } from './MediaInputBar';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
@@ -16,6 +16,8 @@ interface WhatsAppCRMChatProps {
   messages: any[];
   loading: boolean;
   onRefresh: () => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 // Função para gerar cores suaves por participante com melhor distribuição
@@ -44,7 +46,7 @@ const getParticipantColor = (identifier: string) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId, messages, loading, onRefresh }) => {
+export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId, messages, loading, onRefresh, isFullscreen = false, onToggleFullscreen }) => {
   const [showNotes, setShowNotes] = useState(false);
   const [showTags, setShowTags] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -182,6 +184,17 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
 
           {/* Ações do header */}
           <div className="flex items-center gap-2">
+            {onToggleFullscreen && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-whatsapp-icon-gray hover:bg-whatsapp-hover h-10 w-10"
+                onClick={onToggleFullscreen}
+                title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+              >
+                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
