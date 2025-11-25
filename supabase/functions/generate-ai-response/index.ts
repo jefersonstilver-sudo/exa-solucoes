@@ -746,10 +746,41 @@ ${isFullListRequest ? `
       }
     }
 
+    // ====== FUNÇÃO DE LIMPEZA DE SEPARADORES DE MILHARES ======
+    // Remove separadores de milhares que OpenAI pode adicionar (14.400 → 14400, 14 400 → 14400)
+    const cleanNumberSeparators = (text: string): string => {
+      // Remove ponto como separador de milhares (14.400 → 14400)
+      // Regex: número + ponto + 3 dígitos (não seguido por mais dígitos = não é decimal)
+      let cleaned = text.replace(/(\d+)\.(\d{3})(?!\d)/g, '$1$2');
+      
+      // Remove espaço como separador de milhares (14 400 → 14400)
+      cleaned = cleaned.replace(/(\d+)\s+(\d{3})(?!\d)/g, '$1$2');
+      
+      return cleaned;
+    };
+
     // Sanitizar resposta
     let sanitizedReply = aiReply
       .replace(/\n{3,}/g, '\n\n')
       .trim();
+    
+    // Aplicar limpeza de separadores de milhares (SAFETY NET)
+    const beforeClean = sanitizedReply;
+    sanitizedReply = cleanNumberSeparators(sanitizedReply);
+    
+    if (beforeClean !== sanitizedReply) {
+      console.log('[AI-RESPONSE] 🧹 Cleaned number separators from AI response');
+      await supabase.from('agent_logs').insert({
+        agent_key: agentKey,
+        conversation_id: conversationId,
+        event_type: 'number_separators_cleaned',
+        metadata: {
+          before: beforeClean.substring(0, 200),
+          after: sanitizedReply.substring(0, 200),
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
 
     // ====== VALIDAÇÃO DE RESPOSTA (FASE 4) ======
     if (isFullListRequest && buildingsData && buildingsData.length > 0) {
