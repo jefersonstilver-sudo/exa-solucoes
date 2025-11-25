@@ -6,6 +6,7 @@ import ModernSuperAdminLayout from '@/components/admin/layout/ModernSuperAdminLa
 import SuperAdminRoutes from '@/routes/SuperAdminRoutes';
 import { Loader2, Shield, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import UnifiedLogo from '@/components/layout/UnifiedLogo';
 
 const SuperAdminPage = () => {
   const navigate = useNavigate();
@@ -109,9 +110,14 @@ const SuperAdminPage = () => {
             <Loader2 className="h-12 w-12 animate-spin text-indexa-purple" />
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
           </div>
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-gray-800">INDEXA</h2>
-            <p className="text-gray-600">Carregando painel administrativo...</p>
+        <div className="text-center space-y-2">
+          <UnifiedLogo 
+            size="custom" 
+            className="w-32 h-auto mx-auto"
+            logoUrl="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0"
+            altText="EXA Mídia"
+          />
+          <p className="text-gray-600">Carregando painel administrativo...</p>
             <div className="flex items-center justify-center space-x-2 mt-3">
               <Shield className="h-4 w-4 text-indexa-purple" />
               <span className="text-sm text-indexa-purple font-medium">Sistema Seguro</span>
