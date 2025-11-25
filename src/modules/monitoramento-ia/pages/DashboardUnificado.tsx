@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { DashboardMobile } from '../components/dashboard/DashboardMobile';
 import { 
   Monitor, 
   AlertTriangle, 
@@ -85,6 +87,7 @@ const OfflinePanelCard = ({ device }: { device: OfflineDevice }) => {
 };
 
 export const DashboardUnificado = () => {
+  const isMobile = useIsMobile();
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     panels_online: 0,
     panels_offline: 0,
@@ -175,6 +178,11 @@ export const DashboardUnificado = () => {
     
     return () => clearInterval(interval);
   }, []);
+
+  // Renderizar versão mobile
+  if (isMobile) {
+    return <DashboardMobile onMenuClick={() => {}} />;
+  }
 
   if (loading) {
     return (
