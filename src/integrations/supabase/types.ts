@@ -3446,6 +3446,98 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_profiles: {
+        Row: {
+          administradora: string | null
+          bairro_interesse: string | null
+          conversation_id: string
+          created_at: string | null
+          empresa_nome: string | null
+          estagio_compra: string | null
+          hot_lead_score: number | null
+          id: string
+          intencao: string | null
+          interesse_real: boolean | null
+          is_hot_lead: boolean | null
+          motivo_escalacao: string | null
+          necessita_escalacao: boolean | null
+          objecoes_identificadas: string[] | null
+          orcamento_estimado: number | null
+          predio_andares: number | null
+          predio_nome: string | null
+          predio_tipo: string | null
+          predio_unidades: number | null
+          predios_desejados: number | null
+          probabilidade_fechamento: number | null
+          proximos_passos: Json | null
+          segmento: string | null
+          updated_at: string | null
+          urgencia: string | null
+        }
+        Insert: {
+          administradora?: string | null
+          bairro_interesse?: string | null
+          conversation_id: string
+          created_at?: string | null
+          empresa_nome?: string | null
+          estagio_compra?: string | null
+          hot_lead_score?: number | null
+          id?: string
+          intencao?: string | null
+          interesse_real?: boolean | null
+          is_hot_lead?: boolean | null
+          motivo_escalacao?: string | null
+          necessita_escalacao?: boolean | null
+          objecoes_identificadas?: string[] | null
+          orcamento_estimado?: number | null
+          predio_andares?: number | null
+          predio_nome?: string | null
+          predio_tipo?: string | null
+          predio_unidades?: number | null
+          predios_desejados?: number | null
+          probabilidade_fechamento?: number | null
+          proximos_passos?: Json | null
+          segmento?: string | null
+          updated_at?: string | null
+          urgencia?: string | null
+        }
+        Update: {
+          administradora?: string | null
+          bairro_interesse?: string | null
+          conversation_id?: string
+          created_at?: string | null
+          empresa_nome?: string | null
+          estagio_compra?: string | null
+          hot_lead_score?: number | null
+          id?: string
+          intencao?: string | null
+          interesse_real?: boolean | null
+          is_hot_lead?: boolean | null
+          motivo_escalacao?: string | null
+          necessita_escalacao?: boolean | null
+          objecoes_identificadas?: string[] | null
+          orcamento_estimado?: number | null
+          predio_andares?: number | null
+          predio_nome?: string | null
+          predio_tipo?: string | null
+          predio_unidades?: number | null
+          predios_desejados?: number | null
+          probabilidade_fechamento?: number | null
+          proximos_passos?: Json | null
+          segmento?: string | null
+          updated_at?: string | null
+          urgencia?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_profiles_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_qualifications: {
         Row: {
           budget_range: string | null

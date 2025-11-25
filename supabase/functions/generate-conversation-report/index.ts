@@ -55,7 +55,7 @@ serve(async (req) => {
       `[${m.direction === 'inbound' ? 'Cliente' : 'Atendente'}] ${m.message_text}`
     ).join('\n') || '';
 
-    // Chamar Lovable AI para gerar relatório
+    // Chamar Lovable AI para gerar relatório otimizado para mídia em elevadores
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -67,44 +67,71 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Você é um analista de conversas comerciais especializado em mídia out-of-home (painéis digitais em elevadores).
+            content: `Você é um analista de leads especializado em mídia OOH (out-of-home) em painéis digitais de elevadores de prédios.
 
-Analise a conversa completa e retorne um relatório estruturado em JSON com:
+TIPOS DE CONTATOS:
+- ANUNCIANTE: Empresário/negócio que quer anunciar nos prédios
+- SÍNDICO: Síndico/administradora interessado em instalar telas no prédio
+- MORADOR: Morador com dúvidas ou suporte
+- SUPORTE_TECNICO: Questões técnicas/defeitos
+- CLIENTE_ATIVO: Cliente já existente
+
+REGRAS DE HOT LEAD (ANUNCIANTE):
++30 pts: Pediu orçamento
++25 pts: Quer 5+ prédios
++20 pts: Perguntou preço diretamente
++15 pts: Demonstrou urgência
++10 pts: Já sabe o que quer anunciar
+≥70 pontos = HOT LEAD 🔥
+
+REGRAS DE HOT LEAD (SÍNDICO):
++25 pts: Prédio 10+ andares
++25 pts: 30+ unidades
++20 pts: Responde rápido
++30 pts: Interesse direto em instalar
+≥70 pontos = HOT LEAD 🔥
+
+CRITÉRIOS DE ESCALAÇÃO para Eduardo:
+- Negociações especiais
+- Contratos grandes (10+ prédios)
+- Síndico premium
+- Risco de cancelamento
+- Cliente irritado/reclamação grave
+
+Analise a conversa e retorne um relatório em JSON:
 
 {
   "summary": "Resumo executivo em 2-3 frases",
-  "contactProfile": {
-    "detectedName": "Nome identificado ou null",
-    "detectedType": "sindico | cliente_potencial | cliente_ativo | prestador_servico | parceiro | administrativo | outro",
-    "personality": "Descrição da personalidade (ex: direto, amigável, formal)",
-    "communicationStyle": "Estilo de comunicação detectado",
-    "estimatedBudget": "Estimativa de orçamento se mencionado"
+  "detectedType": "anunciante | sindico | morador | suporte_tecnico | cliente_ativo",
+  "leadProfile": {
+    "empresaNome": "string ou null (para anunciantes)",
+    "segmento": "saúde | restaurante | imobiliária | etc (para anunciantes)",
+    "bairroInteresse": "string ou null (para anunciantes)",
+    "prediosDesejados": number ou null (para anunciantes)",
+    "intencao": "baixa | media | alta",
+    "orcamentoEstimado": number ou null,
+    "estagioCompra": "consultando | orcamento | decidindo | comprando",
+    "predioNome": "string ou null (para síndicos)",
+    "predioAndares": number ou null (para síndicos)",
+    "predioUnidades": number ou null (para síndicos)",
+    "predioTipo": "residencial | comercial | misto (para síndicos)",
+    "administradora": "string ou null (para síndicos)",
+    "interesseReal": boolean ou null (para síndicos)"
   },
-  "conversationStage": "novo | qualificando | interessado | negociando | proposta_enviada | fechando | perdido | cliente_ativo",
-  "interests": [
-    {
-      "type": "predio | servico | informacao",
-      "description": "Descrição do interesse",
-      "priority": "alta | media | baixa"
-    }
-  ],
-  "keyPoints": ["Ponto importante 1", "Ponto importante 2"],
-  "concerns": ["Objeção ou dúvida 1", "Objeção 2"],
-  "nextSteps": ["Ação recomendada 1", "Ação 2"],
-  "riskFactors": ["Risco de perda 1", "Risco 2"],
-  "opportunityScore": 0-100,
-  "timeline": [
-    {
-      "date": "YYYY-MM-DD",
-      "event": "primeiro_contato | interesse_manifestado | proposta_solicitada | objecao | followup",
-      "summary": "Breve descrição do que aconteceu"
-    }
-  ],
+  "hotLeadScore": 0-100,
+  "isHotLead": boolean,
+  "probabilidadeFechamento": 0-100,
+  "urgencia": "baixa | media | alta | critica",
+  "necessitaEscalacao": boolean,
+  "motivoEscalacao": "string ou null",
+  "proximosPassos": ["Passo 1", "Passo 2", "Passo 3"],
+  "objecoesIdentificadas": ["Objeção 1", "Objeção 2"],
+  "keyPoints": ["Ponto importante 1", "Ponto 2"],
   "recommendations": [
     {
       "priority": "alta | media | baixa",
-      "action": "Ação específica recomendada",
-      "reasoning": "Por que essa ação é importante"
+      "action": "Ação específica",
+      "reasoning": "Por quê"
     }
   ]
 }`
@@ -125,7 +152,7 @@ DADOS DO CONTATO:
 CONVERSA (${messages?.length || 0} mensagens):
 ${conversationContext}
 
-Gere um relatório detalhado e acionável.`
+Gere um relatório detalhado e acionável seguindo EXATAMENTE o formato JSON solicitado.`
           }
         ],
         response_format: { type: "json_object" },
@@ -154,6 +181,17 @@ Gere um relatório detalhado e acionável.`
       userId = user?.id;
     }
 
+    // Atualizar tipo de contato na conversa se foi detectado pela IA
+    if (report.detectedType) {
+      await supabase
+        .from('conversations')
+        .update({ 
+          contact_type: report.detectedType,
+          contact_type_source: 'ai'
+        })
+        .eq('id', conversationId);
+    }
+
     // Salvar relatório no banco
     const { data: savedReport, error: saveError } = await supabase
       .from('conversation_reports')
@@ -162,9 +200,9 @@ Gere um relatório detalhado e acionável.`
         agent_key: conversation.agent_key,
         report_data: report,
         summary: report.summary,
-        contact_profile: report.contactProfile,
-        interests: report.interests,
-        conversation_stage: report.conversationStage,
+        contact_profile: report.leadProfile,
+        interests: report.keyPoints,
+        conversation_stage: report.leadProfile?.estagioCompra || null,
         recommendations: report.recommendations,
         generated_by: userId
       })
