@@ -155,17 +155,16 @@ serve(async (req) => {
           console.log('[ZAPI-IMPORT] New conversation created:', conversationId);
         }
 
-        // Endpoint compatível com Multi-Device do Z-API
-        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/read-messages`;
-        console.log('[ZAPI-IMPORT] 📞 Fetching messages (Multi-Device) for:', phoneNumber);
+        // Endpoint correto do Z-API (requer amount e lastMessageId como query params)
+        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/chat-messages/${phoneNumber}?amount=50`;
+        console.log('[ZAPI-IMPORT] 📞 Fetching messages from:', messagesUrl);
         
         const messagesResponse = await fetch(messagesUrl, {
-          method: 'POST',
+          method: 'GET',
           headers: {
             'Client-Token': clientToken,
             'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ phone: phoneNumber })
+          }
         });
 
         console.log('[ZAPI-IMPORT] 📡 Response:', messagesResponse.status, messagesResponse.statusText);
