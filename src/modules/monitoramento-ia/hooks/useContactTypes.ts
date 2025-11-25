@@ -28,7 +28,22 @@ export const useContactTypes = () => {
 
   const createContactType = async (name: string, label: string, color: string, icon: string) => {
     try {
-      const { error } = await supabase
+      console.log('[CREATE CONTACT TYPE] Starting creation:', { name, label, color, icon });
+      
+      // Verificar sessão
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('[CREATE CONTACT TYPE] Session check:', { 
+        hasSession: !!session, 
+        userId: session?.user?.id,
+        sessionError 
+      });
+
+      if (!session) {
+        toast.error('Você precisa estar autenticado para criar tipos de contato');
+        return;
+      }
+
+      const { data, error } = await supabase
         .from('contact_types')
         .insert({
           name,
@@ -36,17 +51,24 @@ export const useContactTypes = () => {
           color,
           icon,
           is_default: false
-        });
+        })
+        .select();
+
+      console.log('[CREATE CONTACT TYPE] Insert result:', { data, error });
 
       if (error) throw error;
+      
       toast.success('Tipo de contato criado com sucesso');
       await fetchContactTypes();
     } catch (error: any) {
-      console.error('Error creating contact type:', error);
+      console.error('[CREATE CONTACT TYPE] Error:', error);
+      
       if (error.code === '23505') {
         toast.error('Já existe um tipo de contato com este nome');
+      } else if (error.code === '42501') {
+        toast.error('Você não tem permissão para criar tipos de contato. Apenas admins podem fazer isso.');
       } else {
-        toast.error('Erro ao criar tipo de contato');
+        toast.error(`Erro ao criar tipo de contato: ${error.message || 'Erro desconhecido'}`);
       }
     }
   };

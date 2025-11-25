@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,50 @@ export const ContactTypeManager: React.FC<ContactTypeManagerProps> = ({
     color: '#6b7280',
     icon: 'user'
   });
+  const [permissionStatus, setPermissionStatus] = useState<{
+    isAuthenticated: boolean;
+    isAdmin: boolean;
+    userId: string | null;
+    role: string | null;
+  } | null>(null);
+
+  // Verificar permissões ao abrir o modal
+  React.useEffect(() => {
+    if (open) {
+      checkPermissions();
+    }
+  }, [open]);
+
+  const checkPermissions = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setPermissionStatus({
+          isAuthenticated: false,
+          isAdmin: false,
+          userId: null,
+          role: null
+        });
+        return;
+      }
+
+      const { data: user } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      setPermissionStatus({
+        isAuthenticated: true,
+        isAdmin: user?.role === 'admin' || user?.role === 'super_admin',
+        userId: session.user.id,
+        role: user?.role || null
+      });
+    } catch (error) {
+      console.error('Error checking permissions:', error);
+    }
+  };
 
   const handleCreate = async () => {
     if (!formData.name || !formData.label) return;
@@ -72,6 +117,29 @@ export const ContactTypeManager: React.FC<ContactTypeManagerProps> = ({
           <DialogDescription>
             Adicione, edite ou remova tipos de contato personalizados
           </DialogDescription>
+          
+          {/* Status de permissão */}
+          {permissionStatus && (
+            <div className="mt-2 p-2 rounded text-xs">
+              {permissionStatus.isAuthenticated ? (
+                <>
+                  {permissionStatus.isAdmin ? (
+                    <div className="text-green-600 dark:text-green-400">
+                      ✅ Autenticado como {permissionStatus.role} - Permissões OK
+                    </div>
+                  ) : (
+                    <div className="text-red-600 dark:text-red-400">
+                      ⚠️ Você não tem permissão de admin (role: {permissionStatus.role || 'desconhecido'})
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-red-600 dark:text-red-400">
+                  ⚠️ Você não está autenticado
+                </div>
+              )}
+            </div>
+          )}
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
