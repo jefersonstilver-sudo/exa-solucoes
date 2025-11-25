@@ -16,7 +16,6 @@ export const MonitoramentoIALayout = () => {
   const themeClass = getThemeClass(theme);
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { sidebarOpen, setSidebarOpen } = useSidebarContext();
   
   // Detectar se está na rota do CRM para layout fullscreen no mobile
   const isCRMRoute = location.pathname.includes('/crm');
