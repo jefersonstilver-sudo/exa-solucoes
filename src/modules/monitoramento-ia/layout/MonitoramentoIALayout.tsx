@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useModuleTheme, getThemeClass } from '../hooks/useModuleTheme';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { SidebarProvider } from '../context/SidebarContext';
 import '../styles/theme.css';
 import '../styles/scrollbar.css';
 import '../styles/anydesk.css';
@@ -22,12 +23,13 @@ export const MonitoramentoIALayout = () => {
   const isFullScreenMobile = isMobile && isCRMRoute;
 
   return (
-    <div className={`min-h-screen flex ${themeClass} relative`} style={{
-      background: theme === 'dark' 
-        ? 'linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%)'
-        : 'linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 50%, #FFFFFF 100%)',
-      backgroundAttachment: 'fixed'
-    }}>
+    <SidebarProvider>
+      <div className={`min-h-screen flex ${themeClass} relative`} style={{
+        background: theme === 'dark' 
+          ? 'linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%)'
+          : 'linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 50%, #FFFFFF 100%)',
+        backgroundAttachment: 'fixed'
+      }}>
       {/* Mobile Drawer (Sheet) */}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -93,5 +95,6 @@ export const MonitoramentoIALayout = () => {
         />
       )}
     </div>
+    </SidebarProvider>
   );
 };
