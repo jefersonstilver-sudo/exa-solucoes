@@ -59,25 +59,39 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
   };
   
   // Cor de fundo do card baseado no agent_key (PRIORIDADE) + fallbacks
-  const getCardBgColor = () => {
+  const getCardBgColor = (isDark: boolean) => {
     const agentKey = conversation.agent_key?.toLowerCase() || '';
     
     // Prioridade 1: agent_key
-    if (agentKey === 'eduardo') return 'hsl(150 60% 92%)';
-    if (agentKey === 'sofia') return 'hsl(340 70% 92%)';
+    if (agentKey === 'eduardo') {
+      return isDark ? 'hsl(150 50% 20%)' : 'hsl(150 60% 92%)';
+    }
+    if (agentKey === 'sofia') {
+      return isDark ? 'hsl(340 50% 20%)' : 'hsl(340 70% 92%)';
+    }
     
     // Prioridade 2: contact_name
     const name = conversation.contact_name?.toLowerCase() || '';
-    if (name.includes('eduardo')) return 'hsl(150 60% 92%)';
-    if (name.includes('sofia')) return 'hsl(340 70% 92%)';
+    if (name.includes('eduardo')) {
+      return isDark ? 'hsl(150 50% 20%)' : 'hsl(150 60% 92%)';
+    }
+    if (name.includes('sofia')) {
+      return isDark ? 'hsl(340 50% 20%)' : 'hsl(340 70% 92%)';
+    }
     
     // Prioridade 3: phone
     const phone = conversation.contact_phone?.toLowerCase() || '';
-    if (phone.includes('eduardo')) return 'hsl(150 60% 92%)';
-    if (phone.includes('sofia')) return 'hsl(340 70% 92%)';
+    if (phone.includes('eduardo')) {
+      return isDark ? 'hsl(150 50% 20%)' : 'hsl(150 60% 92%)';
+    }
+    if (phone.includes('sofia')) {
+      return isDark ? 'hsl(340 50% 20%)' : 'hsl(340 70% 92%)';
+    }
     
-    // Fallback: glass
-    return 'rgba(255, 255, 255, 0.6)';
+    // Fallback: glass com borda visível
+    return isDark 
+      ? 'rgba(255, 255, 255, 0.1)' 
+      : 'rgba(255, 255, 255, 0.6)';
   };
   
   const formatTime = (dateStr: string) => {
@@ -92,14 +106,15 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
   };
 
   // 🎯 FASE 2: Combinar cor de fundo com destaque de seleção
-  const cardBgColor = getCardBgColor();
+  const isDark = document.documentElement.classList.contains('theme-dark');
+  const cardBgColor = getCardBgColor(isDark);
   
   return (
     <button
       onClick={onClick}
       className={cn(
         'w-full px-3 py-2 text-left transition-all relative',
-        'hover:bg-whatsapp-hover',
+        'hover:bg-whatsapp-hover border-b border-white/20',
         isSelected && [
           'border-l-4 border-whatsapp-green-dark',
           'shadow-lg shadow-whatsapp-green-light/20',
@@ -107,7 +122,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
           '!bg-whatsapp-hover' // Forçar background
         ]
       )}
-      style={!isSelected ? { backgroundColor: cardBgColor } : undefined}
+      style={!isSelected ? { 
+        backgroundColor: cardBgColor,
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+      } : undefined}
     >
       {/* Container principal */}
       <div className="flex items-center gap-3">
