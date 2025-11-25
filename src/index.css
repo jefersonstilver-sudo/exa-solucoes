@@ -1,3 +1,5 @@
+/* Import EXA Design System */
+@import './design-system/tokens/index.css';
 
 /* Import all modular CSS files */
 @import './styles/base.css';
