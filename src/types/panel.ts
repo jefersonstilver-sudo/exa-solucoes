@@ -33,6 +33,7 @@ export interface Building {
   quantidade_telas?: number; // ADICIONADO
   numero_elevadores?: number; // ADICIONADO - número real de telas/elevadores no prédio
   publico_estimado?: number; // ADICIONADO - pessoas impactadas mensalmente
+  visualizacoes_mes?: number; // ADICIONADO - exibições por mês
 }
 
 export interface Panel {

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
+import { X, ShoppingBag, Trash2, ArrowRight, Play, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartItem } from '@/types/cart';
 import { formatCurrency } from '@/utils/priceUtils';
@@ -124,13 +124,11 @@ const ModernCartLayout = ({
                   
                   {/* Informações adicionais do prédio */}
                   <div className="flex flex-wrap gap-3 mt-2">
-                    {item.panel?.buildings?.publico_estimado && (
+                    {item.panel?.buildings?.visualizacoes_mes && (
                       <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        <span className="font-medium">{item.panel.buildings.publico_estimado.toLocaleString()}</span>
-                        <span className="text-gray-500">pessoas/mês</span>
+                        <Play className="w-4 h-4" />
+                        <span className="font-medium">{item.panel.buildings.visualizacoes_mes.toLocaleString()}</span>
+                        <span className="text-gray-500">exibições/mês</span>
                       </div>
                     )}
                     
@@ -187,18 +185,38 @@ const ModernCartLayout = ({
           
           <div className="bg-gray-50 p-3 rounded-lg">
             <div className="flex items-center gap-2 mb-1">
-              <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span className="text-xs text-gray-600 font-medium">Pessoas/mês</span>
+              <Play className="w-4 h-4 text-gray-600" />
+              <span className="text-xs text-gray-600 font-medium">Exibições por mês</span>
             </div>
             <p className="text-lg font-bold text-gray-900">
-              {cartItems.reduce((sum, item) => sum + (item.panel?.buildings?.publico_estimado || 0), 0).toLocaleString()}
+              {cartItems.reduce((sum, item) => sum + (item.panel?.buildings?.visualizacoes_mes || 0), 0).toLocaleString()}
             </p>
           </div>
         </div>
         
-        <div className="flex justify-between items-center">
+        {/* Investimento Diário */}
+        <div className="bg-gradient-to-br from-[#3C1361]/5 to-[#3C1361]/10 rounded-lg p-3 border border-[#3C1361]/20">
+          <div className="flex items-center gap-2 mb-2">
+            <DollarSign className="w-4 h-4 text-[#3C1361]" />
+            <span className="text-xs font-semibold text-[#3C1361]">Investimento Diário</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-xs text-gray-600 mb-0.5">Custo/dia</p>
+              <p className="text-base font-bold text-[#3C1361]">
+                {formatCurrency(totalPrice / 30)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 mb-0.5">R$/dia/painel</p>
+              <p className="text-base font-bold text-[#3C1361]">
+                {formatCurrency(totalPrice / 30 / cartItems.length)}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center pt-2">
           <span className="text-lg font-medium">Total:</span>
           <span className="text-2xl font-bold text-[#3C1361]">
             {formatCurrency(totalPrice)}
