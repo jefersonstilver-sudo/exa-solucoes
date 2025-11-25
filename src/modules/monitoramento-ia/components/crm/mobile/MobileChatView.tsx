@@ -3,6 +3,7 @@ import { MobileChatHeader } from './MobileChatHeader';
 import { MobileMessageBubble } from './MobileMessageBubble';
 import { MediaInputBar } from '../MediaInputBar';
 import { LeadDetailDrawer } from '../LeadDetailDrawer';
+import { MobileChatDetails } from './MobileChatDetails';
 import { MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -139,11 +140,12 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
         />
       </div>
 
-      {/* Lead Details Drawer */}
-      <LeadDetailDrawer
-        conversationId={conversationId}
-        open={showDetails}
+      {/* Chat Details */}
+      <MobileChatDetails
+        conversation={conversation}
+        isOpen={showDetails}
         onClose={() => setShowDetails(false)}
+        onUpdate={onRefresh}
       />
     </motion.div>
   );

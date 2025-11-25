@@ -1,11 +1,12 @@
 import React from 'react';
-import { User, AlertCircle, TrendingUp, Clock, Phone } from 'lucide-react';
+import { User, AlertCircle, TrendingUp, Clock, Phone, BellOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { formatContactName, formatPhoneSecondary } from '@/modules/monitoramento-ia/utils/contactFormatters';
+import { getUnrespondedTime } from '@/modules/monitoramento-ia/utils/timeUtils';
 
 interface MobileConversationItemProps {
   conversation: any;
@@ -20,7 +21,13 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
   onClick,
   index
 }) => {
-  const hasUnread = conversation.awaiting_response;
+  const hasUnread = conversation.awaiting_response && !conversation.is_muted;
+  const isMuted = conversation.is_muted;
+  
+  // Calcular tempo sem resposta
+  const unrespondedTime = hasUnread || conversation.awaiting_response 
+    ? getUnrespondedTime(conversation.last_message_at) 
+    : null;
   
   // Cores por agente
   const agentColors = {
@@ -51,12 +58,18 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
             'w-12 h-12 rounded-full flex items-center justify-center border-2',
             agentColor.bg,
             agentColor.border,
-            hasUnread && 'ring-2 ring-[#25D366] ring-offset-2'
+            hasUnread && 'ring-2 ring-[#25D366] ring-offset-2',
+            isMuted && 'opacity-60'
           )}>
             <User className={cn('w-6 h-6', agentColor.text)} />
           </div>
-          {hasUnread && (
+          {hasUnread && !isMuted && (
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#25D366] rounded-full border-2 border-background animate-pulse" />
+          )}
+          {isMuted && (
+            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-muted rounded-full border-2 border-background flex items-center justify-center">
+              <BellOff className="w-2.5 h-2.5 text-muted-foreground" />
+            </div>
           )}
         </div>
 
@@ -66,16 +79,29 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
           <div className="flex items-center justify-between mb-1">
             <span className={cn(
               'font-semibold truncate text-base',
-              hasUnread ? 'text-[#25D366]' : 'text-module-primary'
+              hasUnread ? 'text-[#25D366]' : 'text-module-primary',
+              isMuted && 'opacity-60'
             )}>
               {formatContactName(conversation.contact_name, conversation.contact_phone)}
             </span>
-            <span className="text-xs text-muted-foreground shrink-0 ml-2">
-              {formatDistanceToNow(new Date(conversation.last_message_at), {
-                addSuffix: false,
-                locale: ptBR
-              }).replace('cerca de ', '').replace('aproximadamente ', '')}
-            </span>
+            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+              {unrespondedTime && (conversation.awaiting_response || hasUnread) && (
+                <span className={cn(
+                  'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                  unrespondedTime.isCritical 
+                    ? 'bg-red-500/20 text-red-600 animate-pulse' 
+                    : 'bg-orange-500/20 text-orange-600'
+                )}>
+                  {unrespondedTime.formattedTime}
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(conversation.last_message_at), {
+                  addSuffix: false,
+                  locale: ptBR
+                }).replace('cerca de ', '').replace('aproximadamente ', '')}
+              </span>
+            </div>
           </div>
 
           {/* Telefone e Provider */}
@@ -88,7 +114,13 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
 
           {/* Badges Compactos */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {hasUnread && (
+            {isMuted && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                <BellOff className="w-2.5 h-2.5 mr-0.5" />
+                Silenciada
+              </Badge>
+            )}
+            {hasUnread && !isMuted && (
               <Badge className="text-[10px] px-1.5 py-0 h-4 bg-[#25D366] hover:bg-[#20bd5a]">
                 NOVA
               </Badge>

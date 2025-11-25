@@ -22,6 +22,7 @@ interface Conversation {
   awaiting_response: boolean;
   is_sindico: boolean;
   escalated_to_eduardo: boolean;
+  is_muted: boolean;
   metadata: any;
 }
 
@@ -140,13 +141,13 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
       const sofiaMsgToday = messagesData?.filter(m => m.agent_key === 'sofia').length || 0;
       const eduardoMsgToday = messagesData?.filter(m => m.agent_key === 'eduardo').length || 0;
 
-      // Calcular métricas
+      // Calcular métricas (excluindo silenciadas das não lidas)
       const newMetrics: CRMMetrics = {
         total: typedData?.length || 0,
-        unread: typedData?.filter(c => c.awaiting_response).length || 0,
+        unread: typedData?.filter(c => c.awaiting_response && !c.is_muted).length || 0,
         critical: typedData?.filter(c => c.is_critical).length || 0,
         hotLeads: typedData?.filter(c => c.is_hot_lead).length || 0,
-        awaiting: typedData?.filter(c => c.awaiting_response).length || 0,
+        awaiting: typedData?.filter(c => c.awaiting_response && !c.is_muted).length || 0,
         avgResponseTime: 0,
         sofiaMsgToday,
         eduardoMsgToday
@@ -272,15 +273,15 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
               .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
           );
           
-          // Recalcular métricas (mantém contagens de mensagens do dia)
+          // Recalcular métricas (mantém contagens de mensagens do dia, excluindo silenciadas)
           setConversations(convs => {
             setMetrics(prev => ({
               ...prev,
               total: convs.length,
-              unread: convs.filter(c => c.awaiting_response).length,
+              unread: convs.filter(c => c.awaiting_response && !c.is_muted).length,
               critical: convs.filter(c => c.is_critical).length,
               hotLeads: convs.filter(c => c.is_hot_lead).length,
-              awaiting: convs.filter(c => c.awaiting_response).length
+              awaiting: convs.filter(c => c.awaiting_response && !c.is_muted).length
             }));
             return convs;
           });
