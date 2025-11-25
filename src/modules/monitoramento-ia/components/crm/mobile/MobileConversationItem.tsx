@@ -94,6 +94,17 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
                 NOVA
               </Badge>
             )}
+            
+            {/* Indicador de Classificação */}
+            {conversation.contact_type && conversation.contact_type_source && conversation.contact_type_source !== 'unknown' && (
+              <Badge 
+                variant={conversation.contact_type_source === 'manual' ? 'secondary' : 'outline'}
+                className="text-[10px] px-1.5 py-0 h-4"
+              >
+                {conversation.contact_type_source === 'manual' ? '👤' : '🤖'}
+              </Badge>
+            )}
+            
             {conversation.is_critical && (
               <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
                 <AlertCircle className="w-2.5 h-2.5 mr-0.5" />
