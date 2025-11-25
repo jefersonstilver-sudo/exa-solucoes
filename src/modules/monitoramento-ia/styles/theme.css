@@ -1,122 +1,87 @@
-/* ========================================
-   MÓDULO IA & MONITORAMENTO EXA
-   Sistema de Tema com CSS Variables
-   ======================================== */
+/* =========================================================
+   MÓDULO IA & MONITORAMENTO EXA - DESIGN SYSTEM
+   Sincronizado com Tailwind (.dark class)
+========================================================= */
 
-/* Paleta Base EXA */
+/* === CORES SINCRONIZADAS COM base.css === */
 :root {
-  --exa-black: #0A0A0A;
-  --exa-gray-dark: #1A1A1A;
-  --exa-gray-medium: #2A2A2A;
-  --exa-red: #9C1E1E;
-  --exa-red-hover: #B82525;
-  --exa-white: #FFFFFF;
-  --exa-text-secondary: #A0A0A0;
-  --exa-text-tertiary: #6B7280;
+  /* Usar variáveis do design system global */
+  --exa-black: var(--apple-black);
+  --exa-red: var(--exa-red);
+  --exa-gray-dark: var(--apple-gray-800);
+  --exa-white: var(--apple-white);
+  --exa-gray-light: var(--apple-gray-400);
+  --exa-gray-muted: var(--apple-gray-500);
   
-  /* Glass Effect Variables */
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-blur: 12px;
-  --glass-border: rgba(255, 255, 255, 0.1);
+  /* Glassmorphism Effects */
+  --glass-bg: var(--glass-bg);
+  --glass-blur: var(--glass-blur);
+  --glass-border: var(--glass-border);
   
   /* Glow Effects */
-  --glow-exa: rgba(156, 30, 30, 0.5);
-  --glow-success: rgba(34, 197, 94, 0.4);
-  --glow-danger: rgba(156, 30, 30, 0.6);
+  --glow-exa: 0 0 20px hsl(var(--exa-red) / 0.5);
+  --glow-success: 0 0 15px hsl(142 76% 36% / 0.4);
+  --glow-danger: 0 0 15px hsl(0 84% 60% / 0.4);
 }
 
-/* ========================================
-   TEMA ESCURO (Dark Mode)
-   ======================================== */
-.theme-dark {
-  /* Backgrounds */
-  --bg-primary: #0A0A0A;
-  --bg-secondary: #1A1A1A;
-  --bg-tertiary: #2A2A2A;
-  --bg-card: rgba(26, 26, 26, 0.8);
-  --bg-input: rgba(10, 10, 10, 0.9);
-  --bg-hover: rgba(156, 30, 30, 0.1);
-  --bg-accent: #9C1E1E;
-  --bg-accent-hover: #B82525;
+/* === LIGHT THEME (padrão - sincronizado com Tailwind) === */
+:root {
+  /* Sincronizado com base.css light mode */
+  --bg-primary: hsl(var(--background));
+  --bg-secondary: hsl(var(--card));
+  --bg-card: hsl(var(--card));
+  --bg-input: hsl(var(--input));
+  --bg-hover: hsl(var(--accent));
+  --bg-accent: hsl(var(--primary));
+  --bg-accent-hover: hsl(var(--primary) / 0.9);
   
   /* Borders */
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-accent: #9C1E1E;
-  --border-light: rgba(255, 255, 255, 0.05);
-  --border-muted: rgba(255, 255, 255, 0.15);
+  --border-default: hsl(var(--border));
+  --border-accent: hsl(var(--primary));
   
-  /* Text */
-  --text-primary: #FFFFFF;
-  --text-secondary: #A0A0A0;
-  --text-tertiary: #6B7280;
-  --text-muted: rgba(255, 255, 255, 0.5);
-  --text-accent: #9C1E1E;
-  
-  /* Placeholders */
-  --placeholder: #6B7280;
-  
-  /* Status Colors */
-  --status-online: #22C55E;
-  --status-offline: #EF4444;
-  --status-unknown: #9CA3AF;
+  /* Text Colors */
+  --text-primary: hsl(var(--foreground));
+  --text-secondary: hsl(var(--muted-foreground));
+  --text-tertiary: hsl(var(--muted-foreground) / 0.7);
+  --text-accent: hsl(var(--primary));
   
   /* Shadows */
-  --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-  --shadow-accent: 0 10px 20px -5px rgba(156, 30, 30, 0.3);
+  --shadow-default: var(--shadow-sm);
+  --shadow-hover: var(--shadow-md);
   
-  /* Glass Effects para tema escuro */
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-blur: 12px;
-  --glass-border: rgba(255, 255, 255, 0.1);
+  /* Glass for Light */
+  --glass-bg-light: hsl(var(--card) / 0.7);
+  --glass-border-light: hsl(var(--border) / 0.5);
 }
 
-/* ========================================
-   TEMA CLARO (Light Mode) - CORES CLARAS
-   ======================================== */
-.theme-light {
-  /* Backgrounds - Sólidos e definidos */
-  --bg-primary: #FFFFFF;
-  --bg-secondary: #F9FAFB;
-  --bg-tertiary: #F3F4F6;
-  --bg-card: #FFFFFF;
-  --bg-input: #FFFFFF;
-  --bg-hover: rgba(156, 30, 30, 0.05);
-  --bg-accent: #9C1E1E;
-  --bg-accent-hover: #B82525;
+/* === DARK THEME (sincronizado com Tailwind) === */
+.dark {
+  /* Sincronizado com base.css dark mode */
+  --bg-primary: hsl(var(--background));
+  --bg-secondary: hsl(var(--card));
+  --bg-card: hsl(var(--card));
+  --bg-input: hsl(var(--input));
+  --bg-hover: hsl(var(--accent));
+  --bg-accent: hsl(var(--primary));
+  --bg-accent-hover: hsl(var(--primary) / 0.9);
   
-  /* Borders - Visíveis e definidas */
-  --border-default: rgba(0, 0, 0, 0.15);
-  --border-accent: #9C1E1E;
-  --border-light: rgba(0, 0, 0, 0.08);
-  --border-muted: rgba(0, 0, 0, 0.12);
+  /* Borders */
+  --border-default: hsl(var(--border));
+  --border-accent: hsl(var(--primary));
   
-  /* Text - Alto contraste */
-  --text-primary: #0A0A0A;
-  --text-secondary: #4B5563;
-  --text-tertiary: #6B7280;
-  --text-muted: rgba(0, 0, 0, 0.5);
-  --text-accent: #9C1E1E;
+  /* Text Colors */
+  --text-primary: hsl(var(--foreground));
+  --text-secondary: hsl(var(--muted-foreground));
+  --text-tertiary: hsl(var(--muted-foreground) / 0.7);
+  --text-accent: hsl(var(--primary));
   
-  /* Placeholders */
-  --placeholder: #9CA3AF;
+  /* Shadows */
+  --shadow-default: var(--shadow-md);
+  --shadow-hover: var(--shadow-lg);
   
-  /* Status Colors */
-  --status-online: #16A34A;
-  --status-offline: #DC2626;
-  --status-unknown: #6B7280;
-  
-  /* Shadows - Definidas */
-  --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.12);
-  --shadow-accent: 0 8px 20px -5px rgba(156, 30, 30, 0.25);
-  
-  /* Glass Effects - Menos transparentes */
-  --glass-bg: rgba(255, 255, 255, 0.95);
-  --glass-blur: 8px;
-  --glass-border: rgba(0, 0, 0, 0.15);
+  /* Glass for Dark */
+  --glass-bg-dark: hsl(var(--card) / 0.8);
+  --glass-border-dark: hsl(var(--border) / 0.5);
 }
 
 /* ========================================
@@ -126,7 +91,6 @@
 /* Backgrounds */
 .bg-module-primary { background-color: var(--bg-primary); }
 .bg-module-secondary { background-color: var(--bg-secondary); }
-.bg-module-tertiary { background-color: var(--bg-tertiary); }
 .bg-module-card { background-color: var(--bg-card); }
 .bg-module-input { background-color: var(--bg-input); }
 .bg-module-accent { background-color: var(--bg-accent); }
@@ -136,18 +100,12 @@
 /* Borders */
 .border-module { border-color: var(--border-default); }
 .border-module-accent { border-color: var(--border-accent); }
-.border-module-light { border-color: var(--border-light); }
-.border-module-muted { border-color: var(--border-muted); }
 
 /* Text */
 .text-module-primary { color: var(--text-primary); }
 .text-module-secondary { color: var(--text-secondary); }
 .text-module-tertiary { color: var(--text-tertiary); }
-.text-module-muted { color: var(--text-muted); }
 .text-module-accent { color: var(--text-accent); }
-
-/* Placeholder */
-.placeholder\:text-module-muted::placeholder { color: var(--placeholder); }
 
 /* Hover States */
 .hover-module-bg:hover { background-color: var(--bg-hover); }

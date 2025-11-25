@@ -57,24 +57,15 @@ const LayoutContent = ({
   const isMobile = useIsMobile();
 
   return (
-    <div className={`min-h-screen flex ${themeClass} relative`} style={{
-        background: theme === 'dark' 
-          ? 'linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%)'
-          : 'linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 50%, #FFFFFF 100%)',
-        backgroundAttachment: 'fixed'
-      }}>
+    <div className="min-h-screen flex relative bg-background"
+      style={{ backgroundAttachment: 'fixed' }}>
       
       {/* Mobile Drawer (Sheet) */}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent 
             side="left" 
-            className="p-0 w-64 border-0"
-            style={{
-              background: theme === 'dark' 
-                ? 'linear-gradient(180deg, #3A0808 0%, #1A0404 100%)'
-                : 'linear-gradient(180deg, #FFFFFF 0%, #F5F5F5 100%)',
-            }}
+            className="p-0 w-64 border-0 bg-card"
           >
             <Sidebar 
               isOpen={true}

@@ -13,11 +13,18 @@ const STORAGE_KEY = 'monitoramento-ia-theme';
 export const useModuleTheme = () => {
   const [theme, setTheme] = useState<ModuleTheme>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return (stored as ModuleTheme) || 'light'; // Agora padrão é light (cores claras)
+    return (stored as ModuleTheme) || 'light';
   });
 
   useEffect(() => {
+    // Sincronizar com o sistema global do Tailwind (.dark class)
     localStorage.setItem(STORAGE_KEY, theme);
+    
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [theme]);
 
   const toggleTheme = () => {
@@ -31,6 +38,6 @@ export const useModuleTheme = () => {
  * Retorna a classe CSS para aplicar no container raiz
  */
 export const getThemeClass = (theme: ModuleTheme): string => {
-  return theme === 'dark' ? 'theme-dark' : 'theme-light';
+  return theme === 'dark' ? 'dark' : '';
 };
 
