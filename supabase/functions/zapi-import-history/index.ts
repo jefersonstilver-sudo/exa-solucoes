@@ -167,172 +167,42 @@ serve(async (req) => {
           console.log('[ZAPI-IMPORT] New conversation created:', conversationId);
         }
 
-        // Endpoint correto do Z-API usando o ID completo com sufixo
-        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/chat-messages/${formattedChatId}?amount=50`;
-        console.log('[ZAPI-IMPORT] 📞 Fetching messages from:', messagesUrl);
-        console.log('[ZAPI-IMPORT] 📞 Using chatId format:', formattedChatId);
+        // IMPORTANTE: No modo Multi-Device do WhatsApp, não é possível buscar histórico antigo
+        // O endpoint /chat-messages retorna erro: "Does not work in multi device version"
+        // Solução: Sincronizar apenas conversas e usar mensagens já capturadas pelo webhook no zapi_logs
         
-        const messagesResponse = await fetch(messagesUrl, {
-          method: 'GET',
-          headers: {
-            'Client-Token': clientToken,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        console.log('[ZAPI-IMPORT] 📡 Response:', messagesResponse.status, messagesResponse.statusText);
-
-        if (!messagesResponse.ok) {
-          const errorText = await messagesResponse.text();
-          console.error('[ZAPI-IMPORT] ❌ Failed to fetch messages:', phoneNumber);
-          console.error('[ZAPI-IMPORT] ❌ Error:', errorText);
-          console.error('[ZAPI-IMPORT] ❌ URL used:', messagesUrl);
-          continue;
-        }
-
-        const messagesResponseData = await messagesResponse.json();
+        console.log('[ZAPI-IMPORT] ℹ️ Skipping message fetch (Multi-Device limitation)');
         
-        // LOG DETALHADO COMPLETO para debug
-        console.log('[ZAPI-IMPORT] 🔍 ========== RESPONSE DEBUG ==========');
-        console.log('[ZAPI-IMPORT] 🔍 Type:', typeof messagesResponseData);
-        console.log('[ZAPI-IMPORT] 🔍 Is array?', Array.isArray(messagesResponseData));
-        console.log('[ZAPI-IMPORT] 🔍 Keys:', messagesResponseData ? Object.keys(messagesResponseData).join(', ') : 'null');
-        console.log('[ZAPI-IMPORT] 🔍 Full response (first 500 chars):', JSON.stringify(messagesResponseData).substring(0, 500));
-        console.log('[ZAPI-IMPORT] 🔍 ====================================');
+        // Buscar última mensagem do zapi_logs para atualizar data da conversa corretamente
+        const { data: latestLog } = await supabaseClient
+          .from('zapi_logs')
+          .select('created_at, message_text, direction')
+          .eq('phone_number', phoneNumber)
+          .eq('agent_key', agentKey)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
         
-        // Z-API pode retornar array direto ou objeto com array
-        let messagesData = [];
-        
-        if (Array.isArray(messagesResponseData)) {
-          // Array direto
-          messagesData = messagesResponseData;
-          console.log('[ZAPI-IMPORT] ✅ Using direct array, length:', messagesData.length);
-        } else if (messagesResponseData && typeof messagesResponseData === 'object') {
-          // Objeto - tentar várias estruturas possíveis
-          const possibleKeys = ['messages', 'data', 'items', 'chats', 'list', 'result'];
+        if (latestLog) {
+          // Atualizar conversa com data correta do último log
+          const { error: updateError } = await supabaseClient
+            .from('conversations')
+            .update({
+              last_message_at: latestLog.created_at,
+              updated_at: new Date().toISOString()
+            })
+            .eq('contact_phone', phoneNumber)
+            .eq('agent_key', agentKey);
           
-          for (const key of possibleKeys) {
-            if (Array.isArray(messagesResponseData[key])) {
-              messagesData = messagesResponseData[key];
-              console.log(`[ZAPI-IMPORT] ✅ Using .${key} array, length:`, messagesData.length);
-              break;
-            }
-          }
-          
-          // Se ainda não encontrou, procurar em todas as chaves
-          if (messagesData.length === 0) {
-            const allKeys = Object.keys(messagesResponseData);
-            console.log('[ZAPI-IMPORT] 🔍 Searching in all keys:', allKeys.join(', '));
-            
-            for (const key of allKeys) {
-              if (Array.isArray(messagesResponseData[key]) && messagesResponseData[key].length > 0) {
-                messagesData = messagesResponseData[key];
-                console.log(`[ZAPI-IMPORT] ✅ Found array in key "${key}", length:`, messagesData.length);
-                break;
-              }
-            }
+          if (updateError) {
+            console.error('[ZAPI-IMPORT] ❌ Error updating conversation date:', updateError);
+          } else {
+            console.log('[ZAPI-IMPORT] ✅ Updated conversation date from zapi_logs:', latestLog.created_at);
           }
         }
         
-        console.log('[ZAPI-IMPORT] 📊 Final messages count:', messagesData.length || 0);
-        
-        if (messagesData.length === 0) {
-          console.log('[ZAPI-IMPORT] ⚠️ WARNING: No messages found in response for:', phoneNumber);
-          console.log('[ZAPI-IMPORT] ⚠️ Response structure:', JSON.stringify(messagesResponseData, null, 2).substring(0, 1000));
-        }
+        conversationsImported++;
 
-        // Import messages com ON CONFLICT para evitar duplicatas
-        if (messagesData && messagesData.length > 0) {
-          console.log('[ZAPI-IMPORT] Processing', messagesData.length, 'messages');
-          
-          for (const msg of messagesData) {
-            try {
-              const messageId = msg.messageId || msg.id;
-              if (!messageId) {
-                console.log('[ZAPI-IMPORT] Skipping message without ID');
-                continue;
-              }
-
-              // Extract message content
-              let messageBody = '';
-              if (msg.text?.message) {
-                messageBody = msg.text.message;
-              } else if (msg.body) {
-                messageBody = msg.body;
-              } else if (msg.image?.caption) {
-                messageBody = `[Imagem] ${msg.image.caption}`;
-              } else if (msg.audio) {
-                messageBody = '[Áudio]';
-              } else if (msg.video) {
-                messageBody = '[Vídeo]';
-              } else if (msg.document) {
-                messageBody = `[Documento] ${msg.document.fileName || ''}`;
-              } else if (msg.image) {
-                messageBody = '[Imagem]';
-              }
-
-              if (!messageBody) {
-                console.log('[ZAPI-IMPORT] Skipping message without body');
-                continue;
-              }
-
-              const direction = msg.fromMe ? 'outbound' : 'inbound';
-              const fromRole = msg.fromMe ? 'agent' : 'user';
-
-              // Converter timestamp corretamente
-              let createdAt = new Date().toISOString();
-              if (msg.timestamp) {
-                try {
-                  const timestamp = msg.timestamp > 9999999999 
-                    ? msg.timestamp // já em milissegundos
-                    : msg.timestamp * 1000; // converter de segundos
-                  createdAt = new Date(timestamp).toISOString();
-                } catch (e) {
-                  console.error('[ZAPI-IMPORT] Failed to parse message timestamp:', e);
-                }
-              }
-
-              // Criar registro com messageId no raw_payload para deduplicação
-              const messageData = {
-                conversation_id: conversationId,
-                agent_key: agentKey,
-                provider: 'zapi',
-                direction,
-                from_role: fromRole,
-                body: messageBody,
-                raw_payload: { ...msg, messageId }, // Garantir que messageId está no payload
-                created_at: createdAt
-              };
-
-              // Verificar duplicata antes de inserir (mais confiável)
-              const { data: existingMsg } = await supabase
-                .from('messages')
-                .select('id')
-                .eq('conversation_id', conversationId)
-                .eq('body', messageBody)
-                .eq('direction', direction)
-                .eq('created_at', createdAt)
-                .maybeSingle();
-
-              if (existingMsg) {
-                console.log('[ZAPI-IMPORT] Message already exists, skipping');
-                continue;
-              }
-
-              const { error: insertError } = await supabase
-                .from('messages')
-                .insert(messageData);
-
-              if (insertError) {
-                console.error('[ZAPI-IMPORT] Failed to insert message:', insertError);
-              } else {
-                messagesImported++;
-              }
-            } catch (msgError) {
-              console.error('[ZAPI-IMPORT] Failed to import message:', msgError);
-            }
-          }
-        }
 
         console.log('[ZAPI-IMPORT] Chat processed:', phoneNumber);
       } catch (chatError) {
@@ -340,15 +210,17 @@ serve(async (req) => {
       }
     }
 
-    console.log('[ZAPI-IMPORT] Import completed:', {
+    console.log('[ZAPI-IMPORT] Sincronização concluída:', {
       conversationsImported,
-      messagesImported
+      messagesImported: 0
     });
 
     return new Response(JSON.stringify({
       success: true,
+      message: 'Sincronização concluída',
       conversationsImported,
-      messagesImported
+      messagesImported: 0,
+      info: 'Mensagens antigas não podem ser importadas (limitação Multi-Device). Novas mensagens são capturadas automaticamente pelo webhook.'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
