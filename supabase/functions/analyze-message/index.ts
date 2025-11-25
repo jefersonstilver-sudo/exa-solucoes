@@ -64,7 +64,10 @@ serve(async (req) => {
 - is_sindico: boolean (se menciona ser síndico/gestor de condomínio)
 - is_critical: boolean (se requer atenção imediata)
 - key_points: array de strings (pontos principais da mensagem)
-- suggested_response: string (sugestão de resposta)`
+- suggested_response: string (sugestão de resposta)
+- contact_type_suggestion: 'sindico' | 'cliente_potencial' | 'cliente_ativo' | 'prestador_servico' | 'parceiro' | 'administrativo' | 'outro' | 'unknown'
+- contact_type_confidence: 0-100 (confiança na classificação)
+- contact_type_reasoning: string (explicação breve do porquê desta classificação)`
           },
           {
             role: 'user',
@@ -112,18 +115,58 @@ serve(async (req) => {
         .eq('id', messages[0].id);
     }
 
+    // Buscar dados atuais da conversa para verificar classificação manual
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('contact_type, contact_type_source, id')
+      .eq('id', conversationId)
+      .single();
+
+    // Contar mensagens da conversa
+    const { count: messageCount } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('conversation_id', conversationId);
+
+    // Determinar se deve atualizar contact_type automaticamente
+    const shouldUpdateContactType = conversation && (
+      conversation.contact_type_source !== 'manual' || // Não é manual
+      conversation.contact_type_source === 'unknown' || // Ou é desconhecido
+      !conversation.contact_type // Ou não tem tipo definido
+    ) && (
+      messageCount && messageCount >= 10 && // Tem pelo menos 10 mensagens
+      analysis.contact_type_confidence >= 70 // E confiança >= 70%
+    );
+
+    // Preparar update da conversa
+    const conversationUpdate: any = {
+      sentiment: analysis.sentiment,
+      mood_score: analysis.mood_score,
+      urgency_level: analysis.urgency_level,
+      lead_score: analysis.lead_score,
+      is_sindico: analysis.is_sindico,
+      is_critical: analysis.is_critical,
+      is_hot_lead: analysis.lead_score >= 75
+    };
+
+    // Adicionar classificação automática se permitido
+    if (shouldUpdateContactType && analysis.contact_type_suggestion) {
+      conversationUpdate.contact_type = analysis.contact_type_suggestion;
+      conversationUpdate.contact_type_source = 'ai';
+      conversationUpdate.contact_type_updated_at = new Date().toISOString();
+      
+      console.log('[ANALYZE-MESSAGE] Auto-classifying contact type:', {
+        suggestion: analysis.contact_type_suggestion,
+        confidence: analysis.contact_type_confidence,
+        reasoning: analysis.contact_type_reasoning,
+        messageCount
+      });
+    }
+
     // Atualizar conversation
     await supabase
       .from('conversations')
-      .update({
-        sentiment: analysis.sentiment,
-        mood_score: analysis.mood_score,
-        urgency_level: analysis.urgency_level,
-        lead_score: analysis.lead_score,
-        is_sindico: analysis.is_sindico,
-        is_critical: analysis.is_critical,
-        is_hot_lead: analysis.lead_score >= 75
-      })
+      .update(conversationUpdate)
       .eq('id', conversationId);
 
     return new Response(

@@ -48,6 +48,9 @@ export const useLeadDetails = (conversationId: string | null) => {
         contact_name: conv.contact_name,
         contact_phone: conv.contact_phone,
         contact_type: conv.contact_type,
+        contact_type_source: (conv.contact_type_source || 'unknown') as 'ai' | 'manual' | 'unknown',
+        contact_type_updated_by: conv.contact_type_updated_by,
+        contact_type_updated_at: conv.contact_type_updated_at,
         agent_key: conv.agent_key,
         is_sindico: conv.is_sindico || false,
         is_hot_lead: conv.is_hot_lead || false,
@@ -84,17 +87,45 @@ export const useLeadDetails = (conversationId: string | null) => {
     if (!conversationId) return;
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from('conversations')
-        .update({ contact_type: contactType })
+        .update({ 
+          contact_type: contactType,
+          contact_type_source: 'manual',
+          contact_type_updated_by: user?.id,
+          contact_type_updated_at: new Date().toISOString()
+        })
         .eq('id', conversationId);
 
       if (error) throw error;
-      toast.success('Tipo de contato atualizado');
+      toast.success('Tipo de contato atualizado manualmente');
       await fetchLeadDetails();
     } catch (error) {
       console.error('Error updating lead type:', error);
       toast.error('Erro ao atualizar tipo de contato');
+    }
+  };
+
+  const generateReport = async () => {
+    if (!conversationId) return null;
+
+    try {
+      toast.info('Gerando relatório com IA...');
+      
+      const { data, error } = await supabase.functions.invoke('generate-conversation-report', {
+        body: { conversationId }
+      });
+
+      if (error) throw error;
+      
+      toast.success('Relatório gerado com sucesso!');
+      return data;
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast.error('Erro ao gerar relatório');
+      return null;
     }
   };
 
@@ -164,6 +195,7 @@ export const useLeadDetails = (conversationId: string | null) => {
     updateLeadScore,
     toggleSindico,
     toggleHotLead,
+    generateReport,
     refetch: fetchLeadDetails
   };
 };
