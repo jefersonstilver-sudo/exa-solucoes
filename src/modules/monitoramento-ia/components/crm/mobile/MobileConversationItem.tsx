@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { formatContactName, formatPhoneSecondary } from '@/modules/monitoramento-ia/utils/contactFormatters';
 
 interface MobileConversationItemProps {
   conversation: any;
@@ -69,7 +70,7 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
               'font-semibold truncate text-base',
               hasUnread ? 'text-[#25D366]' : 'text-module-primary'
             )}>
-              {conversation.contact_name || conversation.contact_phone}
+              {formatContactName(conversation.contact_name, conversation.contact_phone)}
             </span>
             <span className="text-xs text-muted-foreground shrink-0 ml-2">
               {formatDistanceToNow(new Date(conversation.last_message_at), {
@@ -83,7 +84,7 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
           <div className="flex items-center gap-2 mb-1.5">
             <Phone className="w-3 h-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground truncate">
-              {conversation.contact_phone}
+              {formatPhoneSecondary(conversation.contact_phone)}
             </span>
           </div>
 
