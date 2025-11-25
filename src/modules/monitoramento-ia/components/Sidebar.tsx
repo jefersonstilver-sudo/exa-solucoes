@@ -83,11 +83,14 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
   return (
     <aside
       className={cn(
-        `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r relative`,
+        `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r relative flex flex-col`,
         collapsed ? 'w-16' : 'w-64',
         'bg-[#3A0808] border-[#9C1E1E]/50 text-white shadow-2xl',
+        // Desktop only by default
+        'hidden lg:flex',
         'lg:translate-x-0',
-        isOpen ? 'translate-x-0' : '-translate-x-full'
+        // Mobile drawer (only show when isOpen)
+        isOpen && 'max-lg:flex max-lg:translate-x-0'
       )}
     >
       {/* Botão flutuante glass na borda - SEMPRE VISÍVEL */}
