@@ -9,16 +9,16 @@ import { formatContactName } from '@/modules/monitoramento-ia/utils/contactForma
 // Função para gerar cores diferentes por conversa
 const getConversationColor = (identifier: string) => {
   const colors = [
-    'hsl(210 70% 60%)', // azul
-    'hsl(150 60% 50%)', // verde
-    'hsl(280 60% 60%)', // roxo
-    'hsl(40 80% 55%)',  // amarelo/dourado
-    'hsl(340 70% 60%)', // rosa
-    'hsl(180 60% 50%)', // ciano
-    'hsl(20 75% 60%)',  // coral
-    'hsl(260 65% 60%)', // azul violeta
-    'hsl(100 60% 50%)', // verde lima
-    'hsl(320 65% 60%)', // magenta
+    'hsl(210 45% 55%)', // azul suave
+    'hsl(160 40% 45%)', // verde sábio
+    'hsl(270 40% 55%)', // roxo lavanda
+    'hsl(35 50% 50%)',  // dourado suave
+    'hsl(340 45% 55%)', // rosa dusty
+    'hsl(185 40% 45%)', // ciano suave
+    'hsl(25 50% 55%)',  // coral suave
+    'hsl(255 40% 55%)', // índigo suave
+    'hsl(95 35% 45%)',  // verde oliva
+    'hsl(315 40% 55%)', // magenta suave
   ];
   
   let hash = 0;
@@ -261,7 +261,7 @@ export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({ conversation
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border-r border-white/20 h-full overflow-y-auto">
+    <div className="bg-white/40 dark:bg-gray-900/40 backdrop-blur-2xl border-r border-white/20 dark:border-white/10 shadow-xl h-full overflow-y-auto">
       {conversations.map((conv) => (
         <ConversationItem
           key={conv.id}

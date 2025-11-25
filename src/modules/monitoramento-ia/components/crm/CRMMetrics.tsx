@@ -78,8 +78,8 @@ export const CRMMetrics: React.FC<CRMMetricsProps> = ({ metrics }) => {
         return (
           <div 
             key={index}
-            className="backdrop-blur-xl bg-white/60 dark:bg-card/60 border border-white/30 dark:border-border rounded-2xl p-3 
-              hover:bg-white/70 dark:hover:bg-card/70 transition-all hover:scale-105 hover:shadow-lg group"
+            className="backdrop-blur-xl bg-white/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 rounded-2xl p-3 
+              shadow-lg shadow-slate-200/20 dark:shadow-black/20 hover:bg-white/60 dark:hover:bg-white/10 transition-all hover:scale-105 hover:shadow-xl group"
             title={metric.description}
           >
             <div className="flex items-center gap-2 mb-2">
