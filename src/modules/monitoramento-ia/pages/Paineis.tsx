@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
+import { DowntimeHistoryPanel } from '../components/paineis/DowntimeHistoryPanel';
 
 // Simple StatCard component for Paineis page
 const SimpleStatCard = ({ label, value, color }: { label: string; value: number; color: 'blue' | 'green' | 'red' | 'gray' }) => {
@@ -322,6 +323,9 @@ export const PaineisPage = () => {
           </CollapsibleContent>
         </div>
       </Collapsible>
+
+      {/* Histórico Detalhado de Quedas */}
+      <DowntimeHistoryPanel />
 
       {/* Filtros */}
       <FiltersBar
