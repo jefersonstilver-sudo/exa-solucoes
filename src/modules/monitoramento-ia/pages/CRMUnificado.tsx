@@ -8,11 +8,13 @@ import { CRMUnificadoMobile } from '../components/crm/mobile/CRMUnificadoMobile'
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { ImperativePanelHandle } from 'react-resizable-panels';
-import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
+import { PanelLeftOpen, PanelRightOpen, ChevronUp, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export const CRMUnificado = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showMetrics, setShowMetrics] = useState(true);
   const [filters, setFilters] = useState({
     agentKey: undefined,
     unreadOnly: false,
@@ -53,13 +55,42 @@ export const CRMUnificado = () => {
     return <CRMUnificadoMobile initialFilters={filters} />;
   }
 
-  // Renderizar versão desktop com tema WhatsApp
+  // Renderizar versão desktop
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header com métricas e filtros - Esconde em fullscreen */}
       {!isFullscreen && (
-        <div className="p-4 space-y-4">
-          <CRMMetrics metrics={metrics} />
+        <div className="p-4 space-y-3">
+          {/* Toggle minimalista para métricas */}
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowMetrics(!showMetrics)}
+              className="text-muted-foreground hover:text-foreground h-8 px-2"
+            >
+              {showMetrics ? (
+                <>
+                  <ChevronUp className="w-4 h-4 mr-2" />
+                  <span className="text-xs">Ocultar Métricas</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 mr-2" />
+                  <span className="text-xs">Mostrar Métricas</span>
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Métricas colapsáveis */}
+          {showMetrics && (
+            <div className="animate-in slide-in-from-top-2 duration-300">
+              <CRMMetrics metrics={metrics} />
+            </div>
+          )}
+          
+          {/* Filtros sempre visíveis mas minimalistas */}
           <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
         </div>
       )}
