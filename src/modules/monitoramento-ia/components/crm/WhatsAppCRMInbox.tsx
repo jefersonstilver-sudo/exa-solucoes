@@ -5,6 +5,31 @@ import { ptBR } from 'date-fns/locale';
 import { Users, Check, CheckCheck, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Função para gerar cores diferentes por conversa
+const getConversationColor = (identifier: string) => {
+  const colors = [
+    'hsl(210 70% 60%)', // azul
+    'hsl(150 60% 50%)', // verde
+    'hsl(280 60% 60%)', // roxo
+    'hsl(40 80% 55%)',  // amarelo/dourado
+    'hsl(340 70% 60%)', // rosa
+    'hsl(180 60% 50%)', // ciano
+    'hsl(20 75% 60%)',  // coral
+    'hsl(260 65% 60%)', // azul violeta
+    'hsl(100 60% 50%)', // verde lima
+    'hsl(320 65% 60%)', // magenta
+  ];
+  
+  let hash = 0;
+  for (let i = 0; i < identifier.length; i++) {
+    const char = identifier.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  
+  return colors[Math.abs(hash) % colors.length];
+};
+
 interface ConversationItemProps {
   conversation: any;
   isSelected: boolean;
@@ -13,6 +38,9 @@ interface ConversationItemProps {
 
 const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSelected, onClick }) => {
   const hasUnread = conversation.awaiting_response;
+  
+  // Gerar cor única por conversa (usando phone como identificador)
+  const avatarColor = getConversationColor(conversation.contact_phone || conversation.id);
   
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -37,10 +65,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       {/* Container principal */}
       <div className="flex items-center gap-3">
         {/* Avatar / Ícone */}
-        <div className={cn(
-          "relative shrink-0 w-12 h-12 rounded-full flex items-center justify-center",
-          conversation.is_group ? 'bg-whatsapp-icon-gray' : 'bg-whatsapp-green-light'
-        )}>
+        <div 
+          className="relative shrink-0 w-12 h-12 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: avatarColor }}
+        >
           {conversation.is_group ? (
             <Users className="w-6 h-6 text-white" />
           ) : (
