@@ -10,7 +10,7 @@ import '../styles/anydesk.css';
 
 export const MonitoramentoIALayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // Inicia recolhido por padrão
   const { theme, toggleTheme } = useModuleTheme();
   const themeClass = getThemeClass(theme);
   const location = useLocation();
