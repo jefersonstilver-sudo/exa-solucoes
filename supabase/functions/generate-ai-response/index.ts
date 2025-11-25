@@ -378,9 +378,10 @@ serve(async (req) => {
           }
           
           const precoBase = b.preco_base.toFixed(2);
+          // 🔧 Remover separador de milhares para evitar quebra no WhatsApp
           const visualizacoes = b.visualizacoes_mes && b.visualizacoes_mes > 0 
-            ? b.visualizacoes_mes 
-            : (b.quantidade_telas ? b.quantidade_telas * 7350 : 7350);
+            ? b.visualizacoes_mes.toString()
+            : (b.quantidade_telas ? (b.quantidade_telas * 7350).toString() : '7350');
           
           // 🔧 FASE 3: Formato ultra-compacto para evitar truncamento do WhatsApp
           let formatted = `🏢 ${nome} • R$ ${precoBase}/mês`;
@@ -388,7 +389,8 @@ serve(async (req) => {
           // Adicionar detalhes SOMENTE se usuário pediu
           if (detailsRequested && bairro) {
             formatted += `\n📍 ${bairro}${endereco ? ' - ' + endereco : ''}`;
-            formatted += `\n👥 ${visualizacoes.toLocaleString('pt-BR')}/mês`;
+            // 🔧 Usar número sem separador para evitar quebra no WhatsApp
+            formatted += `\n👥 ${visualizacoes}/mês`;
           }
           
           return formatted;
