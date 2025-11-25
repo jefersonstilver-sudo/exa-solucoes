@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit, Plus, X } from 'lucide-react';
 import { useContactTypes } from '../../hooks/useContactTypes';
+import { toast } from 'sonner';
 
 interface ContactTypeManagerProps {
   open: boolean;
@@ -78,7 +79,21 @@ export const ContactTypeManager: React.FC<ContactTypeManagerProps> = ({
   };
 
   const handleCreate = async () => {
-    if (!formData.name || !formData.label) return;
+    if (!formData.name || !formData.label) {
+      toast.error('Preencha o nome e o label');
+      return;
+    }
+
+    // Validar se o usuário está autenticado e tem permissões
+    if (!permissionStatus?.isAuthenticated) {
+      toast.error('❌ Você não está autenticado. Faça login novamente.');
+      return;
+    }
+
+    if (!permissionStatus?.isAdmin) {
+      toast.error(`❌ Você não tem permissão de admin (seu role: ${permissionStatus?.role || 'desconhecido'})`);
+      return;
+    }
     
     await createContactType(
       formData.name,
@@ -183,7 +198,11 @@ export const ContactTypeManager: React.FC<ContactTypeManagerProps> = ({
                 />
               </div>
               <div className="flex gap-2">
-                <Button onClick={handleCreate} className="flex-1">
+                <Button 
+                  onClick={handleCreate} 
+                  className="flex-1"
+                  disabled={!permissionStatus?.isAdmin || !formData.name || !formData.label}
+                >
                   Criar
                 </Button>
                 <Button
@@ -196,6 +215,12 @@ export const ContactTypeManager: React.FC<ContactTypeManagerProps> = ({
                   <X className="w-4 h-4" />
                 </Button>
               </div>
+              
+              {!permissionStatus?.isAdmin && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                  ⚠️ Você precisa ser admin para criar tipos de contato
+                </p>
+              )}
             </div>
           )}
 
