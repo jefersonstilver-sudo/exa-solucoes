@@ -524,6 +524,29 @@ ${conversationHistory && conversationHistory.length > 0 ? `
 ## INFORMAÇÕES DO CLIENTE
 ${customerName ? `✅ Nome do cliente: ${customerName}` : `⚠️ Nome do cliente ainda não identificado - Sofia pode perguntar naturalmente quando apropriado`}
 
+## 🚨🚨🚨 REGRAS CRÍTICAS DE FORMATAÇÃO - LEIA COM ATENÇÃO 🚨🚨🚨
+
+⚠️ NUNCA USE SEPARADOR DE MILHARES NOS NÚMEROS!
+❌ ERRADO: 36.000, 14.400, 1.152, 36 000, 14 400
+✅ CERTO: 36000, 14400, 1152
+
+⚠️ NUNCA USE ASTERISCOS PARA NEGRITO!
+❌ ERRADO: **Royal Legacy**, *texto*, **negrito**
+✅ CERTO: Royal Legacy, texto, negrito
+
+⚠️ NUNCA QUEBRE NÚMEROS EM LINHAS DIFERENTES!
+❌ ERRADO: "Exibições: 36." (quebra) "000/mês"
+✅ CERTO: "Exibições: 36000/mês" (tudo em uma linha)
+
+⚠️ ESCREVA OS NÚMEROS SEMPRE SEM PONTOS E SEM ESPAÇOS!
+Exemplos CORRETOS:
+- 36000/mês (não 36.000/mês)
+- 14400/mês (não 14.400/mês)
+- 1152/mês (não 1.152/mês)
+- 7200 pessoas (não 7.200 pessoas)
+
+🚫 Se você usar pontos ou espaços nos números, o WhatsApp vai QUEBRAR a mensagem e o cliente vai ver "36." em uma linha e "000/mês" em outra!
+
 ## FORMATO DE RESPOSTA
 ${isFullListRequest ? `
 ⚠️ LISTA COMPLETA SOLICITADA
@@ -746,41 +769,93 @@ ${isFullListRequest ? `
       }
     }
 
-    // ====== FUNÇÃO DE LIMPEZA DE SEPARADORES DE MILHARES ======
-    // Remove separadores de milhares que OpenAI pode adicionar (14.400 → 14400, 14 400 → 14400)
+    // ====== ETAPA 1 + 2: FUNÇÕES DE LIMPEZA MELHORADAS ======
+    
+    // ETAPA 1: Limpeza de separadores de milhares (MELHORADO - mais agressivo)
     const cleanNumberSeparators = (text: string): string => {
-      // Remove ponto como separador de milhares (14.400 → 14400)
-      // Regex: número + ponto + 3 dígitos (não seguido por mais dígitos = não é decimal)
-      let cleaned = text.replace(/(\d+)\.(\d{3})(?!\d)/g, '$1$2');
+      // Remove ponto como separador de milhares (14.400 → 14400, 1.152 → 1152)
+      // Regex melhorado: captura números mesmo com quebras de linha
+      let cleaned = text.replace(/(\d{1,3})\.(\d{3})(?!\d)/g, '$1$2');
+      
+      // Remove múltiplos pontos de milhares (ex: 1.234.567 → 1234567)
+      while (cleaned.match(/(\d{1,3})\.(\d{3})(?!\d)/)) {
+        cleaned = cleaned.replace(/(\d{1,3})\.(\d{3})(?!\d)/g, '$1$2');
+      }
       
       // Remove espaço como separador de milhares (14 400 → 14400)
       cleaned = cleaned.replace(/(\d+)\s+(\d{3})(?!\d)/g, '$1$2');
       
+      // 🔧 NOVO: Remove quebras de linha no meio de números (36.\n000 → 36000)
+      cleaned = cleaned.replace(/(\d+)\.\s*\n\s*(\d{3})/g, '$1$2');
+      
+      return cleaned;
+    };
+    
+    // ETAPA 2: Limpeza de formatação Markdown (NOVO)
+    const cleanMarkdownFormatting = (text: string): string => {
+      // Remove negrito duplo: **texto** → texto
+      let cleaned = text.replace(/\*\*([^*]+)\*\*/g, '$1');
+      
+      // Remove itálico simples: *texto* → texto
+      cleaned = cleaned.replace(/\*([^*]+)\*/g, '$1');
+      
       return cleaned;
     };
 
-    // Sanitizar resposta
+    // ====== ETAPA 5: LOGGING DETALHADO + ETAPA 4: LIMPEZA ANTES DE TUDO ======
+    console.log('[AI-RESPONSE] 🧹 Starting cleanup process...');
+    console.log('[BEFORE CLEAN - RAW AI RESPONSE]:', aiReply.substring(0, 300));
+    
+    // Sanitizar resposta básica
     let sanitizedReply = aiReply
       .replace(/\n{3,}/g, '\n\n')
       .trim();
     
-    // Aplicar limpeza de separadores de milhares (SAFETY NET)
-    const beforeClean = sanitizedReply;
+    console.log('[BEFORE CLEAN - AFTER BASIC SANITIZATION]:', sanitizedReply.substring(0, 300));
+    
+    // ETAPA 4: Aplicar limpezas ANTES de qualquer outra operação
+    const beforeNumberClean = sanitizedReply;
     sanitizedReply = cleanNumberSeparators(sanitizedReply);
     
-    if (beforeClean !== sanitizedReply) {
+    console.log('[AFTER CLEAN - NUMBER SEPARATORS]:', sanitizedReply.substring(0, 300));
+    
+    const beforeMarkdownClean = sanitizedReply;
+    sanitizedReply = cleanMarkdownFormatting(sanitizedReply);
+    
+    console.log('[AFTER CLEAN - MARKDOWN FORMATTING]:', sanitizedReply.substring(0, 300));
+    
+    // Log de mudanças detectadas
+    if (beforeNumberClean !== sanitizedReply) {
       console.log('[AI-RESPONSE] 🧹 Cleaned number separators from AI response');
       await supabase.from('agent_logs').insert({
         agent_key: agentKey,
         conversation_id: conversationId,
         event_type: 'number_separators_cleaned',
         metadata: {
-          before: beforeClean.substring(0, 200),
-          after: sanitizedReply.substring(0, 200),
+          before: beforeNumberClean.substring(0, 300),
+          after: sanitizedReply.substring(0, 300),
+          changes: sanitizedReply !== beforeNumberClean,
           timestamp: new Date().toISOString()
         }
       });
     }
+    
+    if (beforeMarkdownClean !== sanitizedReply) {
+      console.log('[AI-RESPONSE] 🧹 Cleaned markdown formatting from AI response');
+      await supabase.from('agent_logs').insert({
+        agent_key: agentKey,
+        conversation_id: conversationId,
+        event_type: 'markdown_formatting_cleaned',
+        metadata: {
+          before: beforeMarkdownClean.substring(0, 300),
+          after: sanitizedReply.substring(0, 300),
+          changes: sanitizedReply !== beforeMarkdownClean,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+    
+    console.log('[FINAL CLEAN MESSAGE]:', sanitizedReply.substring(0, 300));
 
     // ====== VALIDAÇÃO DE RESPOSTA (FASE 4) ======
     if (isFullListRequest && buildingsData && buildingsData.length > 0) {
