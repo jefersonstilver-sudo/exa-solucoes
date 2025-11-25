@@ -58,21 +58,19 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
     return (words[0][0] + (words[words.length - 1][0] || '')).toUpperCase();
   };
   
-  // Cor de fundo do card baseado no agent_key/número (para TODOS os cards, incluindo grupos)
+  // Cor de fundo do card baseado PRIMARIAMENTE no agent_key
   const getCardBgColor = () => {
-    const name = conversation.contact_name?.toLowerCase() || '';
-    const phone = conversation.contact_phone?.toLowerCase() || '';
     const agentKey = conversation.agent_key?.toLowerCase() || '';
     
-    // Verificar por nome OU número/agent_key
-    if (name.includes('eduardo') || phone.includes('eduardo') || agentKey.includes('eduardo')) {
-      return 'hsl(150 60% 92%)'; // Verde bem visível
+    // Priorizar agent_key para cores
+    if (agentKey === 'eduardo') {
+      return 'hsl(150 60% 96%)'; // Verde suave
     }
-    if (name.includes('sofia') || phone.includes('sofia') || agentKey.includes('sofia')) {
-      return 'hsl(340 70% 92%)'; // Rosa bem visível
+    if (agentKey === 'sofia') {
+      return 'hsl(340 70% 96%)'; // Rosa suave
     }
     
-    return undefined; // Outros mantêm cor padrão
+    return 'rgba(255, 255, 255, 0.7)'; // Glass default
   };
   
   const formatTime = (dateStr: string) => {
@@ -94,12 +92,13 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       onClick={onClick}
       className={cn(
         'w-full px-3 py-2 text-left transition-all relative',
-        'hover:bg-whatsapp-hover',
+        'backdrop-blur-sm border-b border-gray-200/30',
+        'hover:bg-white/40',
         isSelected && [
-          'border-l-4 border-whatsapp-green-dark',
-          'shadow-lg shadow-whatsapp-green-light/20',
-          'pl-2', // Compensar a borda
-          '!bg-whatsapp-hover' // Forçar background
+          'border-l-4 border-blue-500',
+          'shadow-md shadow-blue-500/10',
+          'pl-2',
+          '!bg-white/60'
         ]
       )}
       style={!isSelected ? { backgroundColor: cardBgColor } : undefined}
@@ -238,7 +237,7 @@ export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({ conversation
   }
 
   return (
-    <div className="bg-whatsapp-panel-bg h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto backdrop-blur-md bg-white/40">
       {conversations.map((conv) => (
         <ConversationItem
           key={conv.id}

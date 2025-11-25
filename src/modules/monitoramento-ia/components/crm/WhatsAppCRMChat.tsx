@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { StickyNote, Tag, User, Users, Phone, Video, Search, MoreVertical, Smile, Paperclip, Send, Mic } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { User, Users, Search, MoreVertical, Pencil, Check, X } from 'lucide-react';
 import { MediaInputBar } from './MediaInputBar';
-import { ConversationNotes } from './ConversationNotes';
-import { ConversationTags } from './ConversationTags';
 import { LeadDetailDrawer } from './LeadDetailDrawer';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface WhatsAppCRMChatProps {
   conversationId: string | null;
@@ -44,13 +44,11 @@ const getParticipantColor = (identifier: string) => {
 };
 
 export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId, messages, loading, onRefresh }) => {
-  const [showNotes, setShowNotes] = useState(false);
-  const [showTags, setShowTags] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [conversation, setConversation] = useState<any>(null);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingChannelRef = useRef<any>(null);
 
   useEffect(() => {
     if (conversationId) {
@@ -69,6 +67,25 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
     
     if (!error && data) {
       setConversation(data);
+      setEditedName(data.contact_name || '');
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!conversationId || !editedName.trim()) return;
+
+    const { error } = await supabase
+      .from('conversations')
+      .update({ contact_name: editedName.trim() })
+      .eq('id', conversationId);
+
+    if (error) {
+      toast.error('Erro ao salvar nome');
+    } else {
+      toast.success('Nome atualizado');
+      setConversation({ ...conversation, contact_name: editedName.trim() });
+      setIsEditingName(false);
+      onRefresh();
     }
   };
 
@@ -152,15 +169,6 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
             </Button>
           </div>
         </div>
-
-        {/* 🤖 FASE 4: Aviso se Sofia pausada */}
-        {conversation?.sofia_paused && conversation?.agent_key === 'sofia' && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-3 mx-4 mt-2">
-            <p className="text-sm text-yellow-800 dark:text-yellow-300">
-              ⚠️ <strong>Sofia pausada:</strong> Eduardo assumiu esta conversa
-            </p>
-          </div>
-        )}
 
         {/* Área de mensagens com scroll */}
         <div className="flex-1 overflow-y-auto px-16 py-4 space-y-2">
@@ -273,25 +281,11 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
               );
             })
           )}
-          
-          {/* Indicador de digitação */}
-          {isTyping && (
-            <div className="flex items-center gap-2">
-              <div className="bg-whatsapp-msg-in px-4 py-3 rounded-lg rounded-bl-none shadow-sm">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-whatsapp-icon-gray rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-whatsapp-icon-gray rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-whatsapp-icon-gray rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input de mensagem estilo WhatsApp */}
-        <div className="bg-whatsapp-panel-bg border-t border-whatsapp-border px-4 py-2">
+        {/* Input de mensagem glassmorphism */}
+        <div className="backdrop-blur-xl bg-white/70 border-t border-gray-200/50 px-4 py-3">
           {conversation && (
             <MediaInputBar 
               phoneNumber={conversation.contact_phone} 
