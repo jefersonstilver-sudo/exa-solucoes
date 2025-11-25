@@ -2683,6 +2683,7 @@ export type Database = {
           condominio_name: string
           created_at: string | null
           id: string
+          is_active: boolean | null
           last_online_at: string | null
           metadata: Json | null
           name: string
@@ -2699,6 +2700,7 @@ export type Database = {
           condominio_name: string
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           last_online_at?: string | null
           metadata?: Json | null
           name: string
@@ -2715,6 +2717,7 @@ export type Database = {
           condominio_name?: string
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           last_online_at?: string | null
           metadata?: Json | null
           name?: string
