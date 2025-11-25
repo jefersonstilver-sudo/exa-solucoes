@@ -155,8 +155,8 @@ serve(async (req) => {
           console.log('[ZAPI-IMPORT] New conversation created:', conversationId);
         }
 
-        // Fetch messages for this chat (aumentado para 500 mensagens)
-        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/chat/${phoneNumber}/messages?amount=500`;
+        // Fetch messages for this chat (ENDPOINT CORRETO DO Z-API)
+        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/chat-messages/${phoneNumber}`;
         console.log('[ZAPI-IMPORT] Fetching messages from:', messagesUrl);
         
         const messagesResponse = await fetch(messagesUrl, {
@@ -168,31 +168,47 @@ serve(async (req) => {
         });
 
         if (!messagesResponse.ok) {
-          console.error('[ZAPI-IMPORT] Failed to fetch messages for:', phoneNumber);
+          const errorText = await messagesResponse.text();
+          console.error('[ZAPI-IMPORT] Failed to fetch messages for:', phoneNumber, 'Status:', messagesResponse.status, 'Error:', errorText);
           continue;
         }
 
         const messagesResponseData = await messagesResponse.json();
         
+        // LOG DETALHADO para debug
+        console.log('[ZAPI-IMPORT] Raw response type:', typeof messagesResponseData);
+        console.log('[ZAPI-IMPORT] Is array?', Array.isArray(messagesResponseData));
+        console.log('[ZAPI-IMPORT] Response keys:', messagesResponseData ? Object.keys(messagesResponseData) : 'null');
+        console.log('[ZAPI-IMPORT] First 200 chars:', JSON.stringify(messagesResponseData).substring(0, 200));
+        
         // Z-API pode retornar array direto ou objeto com array
         let messagesData = [];
         if (Array.isArray(messagesResponseData)) {
           messagesData = messagesResponseData;
+          console.log('[ZAPI-IMPORT] Using direct array');
         } else if (messagesResponseData && Array.isArray(messagesResponseData.messages)) {
           messagesData = messagesResponseData.messages;
+          console.log('[ZAPI-IMPORT] Using .messages array');
+        } else if (messagesResponseData && Array.isArray(messagesResponseData.data)) {
+          messagesData = messagesResponseData.data;
+          console.log('[ZAPI-IMPORT] Using .data array');
         } else if (messagesResponseData && typeof messagesResponseData === 'object') {
           // Tentar encontrar o array em qualquer propriedade
           const keys = Object.keys(messagesResponseData);
           for (const key of keys) {
             if (Array.isArray(messagesResponseData[key])) {
               messagesData = messagesResponseData[key];
+              console.log('[ZAPI-IMPORT] Using array from key:', key);
               break;
             }
           }
         }
         
-        console.log('[ZAPI-IMPORT] Messages fetched:', messagesData.length || 0);
-        console.log('[ZAPI-IMPORT] Messages data type:', typeof messagesResponseData, 'is array?', Array.isArray(messagesResponseData));
+        console.log('[ZAPI-IMPORT] ✅ Messages extracted:', messagesData.length || 0);
+        
+        if (messagesData.length === 0) {
+          console.log('[ZAPI-IMPORT] ⚠️ No messages found in response for:', phoneNumber);
+        }
 
         // Import messages com ON CONFLICT para evitar duplicatas
         if (messagesData && messagesData.length > 0) {

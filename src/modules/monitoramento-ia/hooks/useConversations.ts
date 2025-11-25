@@ -39,6 +39,7 @@ export const useConversations = () => {
       setLoading(true);
       
       // Buscar conversas da tabela conversations (nova estrutura)
+      // Filtrar conversas inválidas (WhatsApp Business, phone = '0')
       const { data: conversations, error } = await supabase
         .from('conversations')
         .select(`
@@ -52,6 +53,8 @@ export const useConversations = () => {
           status
         `)
         .eq('provider', 'zapi')
+        .neq('contact_phone', '0')
+        .neq('contact_name', 'WhatsApp Business')
         .order('last_message_at', { ascending: false });
 
       if (error) throw error;
