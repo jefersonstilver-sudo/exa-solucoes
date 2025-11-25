@@ -36,10 +36,10 @@ serve(async (req) => {
       
       // ✅ FIX: Select apenas colunas necessárias + LIMIT
       const { data: logos, error } = await supabaseClient
-        .from('client_logos')
-        .select('id, name, logo_url, link, is_active, order_position')
+        .from('logos')
+        .select('id, name, file_url, link_url, is_active, sort_order, storage_bucket, storage_key, color_variant')
         .eq('is_active', true)
-        .order('order_position', { ascending: true })
+        .order('sort_order', { ascending: true })
         .limit(20);
 
       if (error) {
@@ -74,16 +74,19 @@ serve(async (req) => {
       for (let i = 0; i < (logos || []).length; i += BATCH_SIZE) {
         const batch = (logos || []).slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(batch.map(async (logo: any) => {
-          const info = extractBucketAndPath(logo.logo_url);
+          const info = extractBucketAndPath(logo.file_url);
           if (!info) {
-            const cacheBustedUrl = logo.logo_url + (logo.logo_url.includes('?') ? '&' : '?') + `v=${Date.now()}`;
+            const cacheBustedUrl = logo.file_url + (logo.file_url.includes('?') ? '&' : '?') + `v=${Date.now()}`;
             return { 
               id: logo.id,
               name: logo.name,
               file_url: cacheBustedUrl,
-              link_url: logo.link,
+              link_url: logo.link_url,
               is_active: logo.is_active,
-              sort_order: logo.order_position
+              sort_order: logo.sort_order,
+              storage_bucket: logo.storage_bucket,
+              storage_key: logo.storage_key,
+              color_variant: logo.color_variant
             };
           }
           try {
@@ -92,9 +95,12 @@ serve(async (req) => {
               id: logo.id,
               name: logo.name,
               file_url: s1.signedUrl,
-              link_url: logo.link,
+              link_url: logo.link_url,
               is_active: logo.is_active,
-              sort_order: logo.order_position
+              sort_order: logo.sort_order,
+              storage_bucket: logo.storage_bucket,
+              storage_key: logo.storage_key,
+              color_variant: logo.color_variant
             };
             
             let { data: s2 } = await supabaseClient.storage.from(info.bucket).createSignedUrl(info.pathRaw, 60 * 60 * 24 * 7);
@@ -102,9 +108,12 @@ serve(async (req) => {
               id: logo.id,
               name: logo.name,
               file_url: s2.signedUrl,
-              link_url: logo.link,
+              link_url: logo.link_url,
               is_active: logo.is_active,
-              sort_order: logo.order_position
+              sort_order: logo.sort_order,
+              storage_bucket: logo.storage_bucket,
+              storage_key: logo.storage_key,
+              color_variant: logo.color_variant
             };
             
             const { data: pub1 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathDecoded);
@@ -112,9 +121,12 @@ serve(async (req) => {
               id: logo.id,
               name: logo.name,
               file_url: pub1.publicUrl,
-              link_url: logo.link,
+              link_url: logo.link_url,
               is_active: logo.is_active,
-              sort_order: logo.order_position
+              sort_order: logo.sort_order,
+              storage_bucket: logo.storage_bucket,
+              storage_key: logo.storage_key,
+              color_variant: logo.color_variant
             };
             
             const { data: pub2 } = supabaseClient.storage.from(info.bucket).getPublicUrl(info.pathRaw);
@@ -122,9 +134,12 @@ serve(async (req) => {
               id: logo.id,
               name: logo.name,
               file_url: pub2.publicUrl,
-              link_url: logo.link,
+              link_url: logo.link_url,
               is_active: logo.is_active,
-              sort_order: logo.order_position
+              sort_order: logo.sort_order,
+              storage_bucket: logo.storage_bucket,
+              storage_key: logo.storage_key,
+              color_variant: logo.color_variant
             };
             
             return null;
@@ -182,25 +197,28 @@ serve(async (req) => {
 
       // Obter próxima ordem
         const { data: lastLogo } = await supabaseClient
-          .from('client_logos')
-          .select('order_position')
-          .order('order_position', { ascending: false })
+          .from('logos')
+          .select('sort_order')
+          .order('sort_order', { ascending: false })
           .limit(1)
           .single();
 
-        let nextOrderPosition = (lastLogo?.order_position || 0) + 1;
+        let nextSortOrder = (lastLogo?.sort_order || 0) + 1;
 
         // Inserir logos em batch
         const logosToInsert = logos.map((logo: any) => ({
           name: logo.name,
-          logo_url: logo.file_url || logo.logo_url,
-          link: logo.link_url || logo.link,
-          order_position: logo.order_position || nextOrderPosition++,
-          is_active: logo.is_active !== false
+          file_url: logo.file_url,
+          link_url: logo.link_url,
+          sort_order: logo.sort_order || nextSortOrder++,
+          is_active: logo.is_active !== false,
+          storage_bucket: logo.storage_bucket,
+          storage_key: logo.storage_key,
+          color_variant: logo.color_variant || 'dark'
         }));
 
         const { data: insertedLogos, error: insertError } = await supabaseClient
-          .from('client_logos')
+          .from('logos')
           .insert(logosToInsert)
           .select();
 
@@ -231,18 +249,18 @@ serve(async (req) => {
         const { id, ...updates } = payload;
         
         const mappedUpdates: any = {};
-        if (updates.file_url) mappedUpdates.logo_url = updates.file_url;
-        if (updates.logo_url) mappedUpdates.logo_url = updates.logo_url;
-        if (updates.link_url) mappedUpdates.link = updates.link_url;
-        if (updates.link) mappedUpdates.link = updates.link;
+        if (updates.file_url) mappedUpdates.file_url = updates.file_url;
+        if (updates.link_url) mappedUpdates.link_url = updates.link_url;
         if (updates.is_active !== undefined) mappedUpdates.is_active = updates.is_active;
-        if (updates.order_position !== undefined) mappedUpdates.order_position = updates.order_position;
-        if (updates.sort_order !== undefined) mappedUpdates.order_position = updates.sort_order;
+        if (updates.sort_order !== undefined) mappedUpdates.sort_order = updates.sort_order;
         if (updates.name) mappedUpdates.name = updates.name;
+        if (updates.storage_bucket) mappedUpdates.storage_bucket = updates.storage_bucket;
+        if (updates.storage_key) mappedUpdates.storage_key = updates.storage_key;
+        if (updates.color_variant) mappedUpdates.color_variant = updates.color_variant;
         mappedUpdates.updated_at = new Date().toISOString();
         
         const { data: updatedLogo, error: updateError } = await supabaseClient
-          .from('client_logos')
+          .from('logos')
           .update(mappedUpdates)
           .eq('id', id)
           .select()
@@ -334,25 +352,26 @@ serve(async (req) => {
 
       // Obter próxima ordem
       const { data: lastLogo } = await supabaseClient
-        .from('client_logos')
-        .select('order_position')
-        .order('order_position', { ascending: false })
+        .from('logos')
+        .select('sort_order')
+        .order('sort_order', { ascending: false })
         .limit(1)
         .single();
 
-      let nextOrderPosition = (lastLogo?.order_position || 0) + 1;
+      let nextSortOrder = (lastLogo?.sort_order || 0) + 1;
 
       // Inserir logos em batch
       const logosToInsert = logos.map((logo: Partial<Logo>) => ({
         name: logo.name,
-        logo_url: logo.file_url,
-        link: logo.link_url,
-        order_position: nextOrderPosition++,
-        is_active: true
+        file_url: logo.file_url,
+        link_url: logo.link_url,
+        sort_order: nextSortOrder++,
+        is_active: true,
+        color_variant: logo.color_variant || 'dark'
       }));
 
       const { data: insertedLogos, error: insertError } = await supabaseClient
-        .from('client_logos')
+        .from('logos')
         .insert(logosToInsert)
         .select();
 
@@ -411,18 +430,18 @@ serve(async (req) => {
       console.log('📝 Updating logo:', id, updates);
 
       const mappedUpdates: any = {};
-      if (updates.file_url) mappedUpdates.logo_url = updates.file_url;
-      if (updates.logo_url) mappedUpdates.logo_url = updates.logo_url;
-      if (updates.link_url) mappedUpdates.link = updates.link_url;
-      if (updates.link) mappedUpdates.link = updates.link;
+      if (updates.file_url) mappedUpdates.file_url = updates.file_url;
+      if (updates.link_url) mappedUpdates.link_url = updates.link_url;
       if (updates.is_active !== undefined) mappedUpdates.is_active = updates.is_active;
-      if (updates.order_position !== undefined) mappedUpdates.order_position = updates.order_position;
-      if (updates.sort_order !== undefined) mappedUpdates.order_position = updates.sort_order;
+      if (updates.sort_order !== undefined) mappedUpdates.sort_order = updates.sort_order;
       if (updates.name) mappedUpdates.name = updates.name;
+      if (updates.storage_bucket) mappedUpdates.storage_bucket = updates.storage_bucket;
+      if (updates.storage_key) mappedUpdates.storage_key = updates.storage_key;
+      if (updates.color_variant) mappedUpdates.color_variant = updates.color_variant;
       mappedUpdates.updated_at = new Date().toISOString();
 
       const { data: updatedLogo, error: updateError } = await supabaseClient
-        .from('client_logos')
+        .from('logos')
         .update(mappedUpdates)
         .eq('id', id)
         .select()
@@ -450,7 +469,7 @@ serve(async (req) => {
       const logoId = path.substring(1);
       
       const { data: updatedLogo, error: deleteError } = await supabaseClient
-        .from('client_logos')
+        .from('logos')
         .update({ is_active: false })
         .eq('id', logoId)
         .select()
