@@ -17,6 +17,22 @@ interface WhatsAppCRMChatProps {
   onRefresh: () => void;
 }
 
+// Função para gerar cores suaves por participante
+const getParticipantColor = (identifier: string) => {
+  const colors = [
+    'hsl(220 60% 92%)', // azul suave
+    'hsl(160 60% 92%)', // verde suave
+    'hsl(280 60% 92%)', // roxo suave
+    'hsl(30 60% 92%)',  // laranja suave
+    'hsl(340 60% 92%)', // rosa suave
+  ];
+  let hash = 0;
+  for (let i = 0; i < identifier.length; i++) {
+    hash = identifier.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
 export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId, messages, loading, onRefresh }) => {
   const [showNotes, setShowNotes] = useState(false);
   const [showTags, setShowTags] = useState(false);
@@ -144,6 +160,18 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
               const showTimestamp = index === 0 || 
                 (new Date(msg.created_at).getTime() - new Date(messages[index - 1].created_at).getTime() > 300000);
 
+              // Extrair dados do raw_payload
+              const isGroup = msg.raw_payload?.isGroup;
+              const senderName = msg.raw_payload?.senderName;
+              const participantPhone = msg.raw_payload?.participantPhone;
+              const imageUrl = msg.raw_payload?.image?.imageUrl;
+              const videoUrl = msg.raw_payload?.video?.videoUrl;
+
+              // Cor do participante (para inbound em grupos)
+              const participantColor = isGroup && !isOutbound && participantPhone
+                ? getParticipantColor(participantPhone)
+                : undefined;
+
               return (
                 <React.Fragment key={msg.id}>
                   {/* Timestamp separador */}
@@ -171,18 +199,43 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
                           "rounded-bl-none"
                         ]
                       )}
+                      style={participantColor ? { backgroundColor: participantColor } : undefined}
                     >
-                      {/* Sender name para grupos */}
-                      {!isOutbound && conversation?.is_group && msg.metadata?.sender_name && (
-                        <p className="text-xs font-semibold text-whatsapp-green-medium mb-1">
-                          {msg.metadata.sender_name}
+                      {/* Nome do remetente em grupos (apenas inbound) */}
+                      {!isOutbound && isGroup && senderName && (
+                        <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(220 80% 40%)' }}>
+                          {senderName}
                         </p>
                       )}
 
+                      {/* Imagem */}
+                      {imageUrl && (
+                        <img 
+                          src={imageUrl} 
+                          alt="Imagem" 
+                          className="rounded-lg max-w-full max-h-72 mb-2 cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => window.open(imageUrl, '_blank')}
+                        />
+                      )}
+
+                      {/* Vídeo */}
+                      {videoUrl && (
+                        <video 
+                          controls 
+                          className="rounded-lg max-w-full max-h-72 mb-2"
+                          preload="metadata"
+                        >
+                          <source src={videoUrl} />
+                          Seu navegador não suporta o elemento de vídeo.
+                        </video>
+                      )}
+
                       {/* Corpo da mensagem */}
-                      <p className="text-sm text-whatsapp-text-primary whitespace-pre-wrap break-words">
-                        {msg.body}
-                      </p>
+                      {msg.body && (
+                        <p className="text-sm text-whatsapp-text-primary whitespace-pre-wrap break-words">
+                          {msg.body}
+                        </p>
+                      )}
 
                       {/* Hora e status */}
                       <div className="flex items-center justify-end gap-1 mt-1">

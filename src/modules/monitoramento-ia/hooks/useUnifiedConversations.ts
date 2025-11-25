@@ -35,6 +35,9 @@ interface Message {
   intent: string;
   created_at: string;
   is_automated: boolean;
+  raw_payload?: any;
+  media_url?: string;
+  metadata?: any;
 }
 
 interface CRMFilters {
