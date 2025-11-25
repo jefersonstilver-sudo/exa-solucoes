@@ -27,9 +27,9 @@ export const MonitoramentoIALayout = () => {
         : 'linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 50%, #FFFFFF 100%)',
       backgroundAttachment: 'fixed'
     }}>
-      {/* Sidebar */}
+      {/* Sidebar - sempre visível no desktop */}
       <Sidebar 
-        isOpen={sidebarOpen} 
+        isOpen={isMobile ? sidebarOpen : true}
         onClose={() => setSidebarOpen(false)} 
         theme={theme}
         collapsed={sidebarCollapsed}
@@ -57,10 +57,10 @@ export const MonitoramentoIALayout = () => {
         </div>
       </main>
 
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
+      {/* Mobile Overlay - apenas no mobile */}
+      {isMobile && sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          className="fixed inset-0 bg-black/50 z-30"
           onClick={() => setSidebarOpen(false)}
         />
       )}
