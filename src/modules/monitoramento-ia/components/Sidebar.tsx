@@ -14,10 +14,14 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUnreadCount } from '../hooks/useUnreadCount';
 import { useOfflineAlerts } from '../hooks/useOfflineAlerts';
+import { useModuleTheme } from '../hooks/useModuleTheme';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
 
@@ -79,6 +83,8 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
   const navigate = useNavigate();
   const { unreadCount } = useUnreadCount();
   const { totalOffline } = useOfflineAlerts();
+  const { toggleTheme } = useModuleTheme();
+  const isMobile = useIsMobile();
   
   return (
     <aside
@@ -170,6 +176,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={() => isMobile && onClose()}
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative',
@@ -243,17 +250,30 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
 
       {/* Footer */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-[#0A0A0A]/80 backdrop-blur-sm">
-        <button
-          onClick={() => navigate('/')}
-          className={cn(
-            "w-full flex items-center gap-3 p-4 transition-colors text-white/70 hover:text-white hover:bg-white/5",
-            collapsed ? 'justify-center' : ''
-          )}
-          title={collapsed ? 'Voltar ao início' : undefined}
-        >
-          <Home size={20} />
-          {!collapsed && <span className="text-sm">Voltar ao Início</span>}
-        </button>
+        <div className={cn("flex items-center", collapsed ? 'flex-col gap-2 p-2' : 'justify-between p-4')}>
+          {/* Theme Mini Switch */}
+          <button
+            onClick={toggleTheme}
+            className="w-8 h-8 rounded-full backdrop-blur-xl bg-white/10 border border-white/20 
+              flex items-center justify-center transition-all hover:scale-110 hover:bg-white/20"
+            title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+          >
+            {theme === 'dark' ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-slate-300" />}
+          </button>
+          
+          {/* Voltar ao Início */}
+          <button
+            onClick={() => navigate('/')}
+            className={cn(
+              "flex items-center gap-3 transition-colors text-white/70 hover:text-white hover:bg-white/5",
+              collapsed ? 'p-2 justify-center' : 'flex-1 px-3 py-2 rounded-lg'
+            )}
+            title={collapsed ? 'Voltar ao início' : undefined}
+          >
+            <Home size={20} />
+            {!collapsed && <span className="text-sm">Voltar ao Início</span>}
+          </button>
+        </div>
       </div>
     </aside>
   );

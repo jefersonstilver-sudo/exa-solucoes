@@ -1,6 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
-import { ModuleHeader } from '../components/ModuleHeader';
 import { useState } from 'react';
 import { useModuleTheme, getThemeClass } from '../hooks/useModuleTheme';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -107,15 +106,6 @@ const LayoutContent = ({
       <main className={`flex-1 transition-all duration-300 relative z-10 ${
         !isFullScreenMobile && !isMobile ? (sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64') : ''
       }`}>
-      {/* Module Header - esconder no CRM */}
-        {!isCRMRoute && (
-          <ModuleHeader 
-            theme={theme} 
-            onToggleTheme={toggleTheme} 
-            onToggleSidebar={() => {}} 
-          />
-        )}
-
         {/* Page Content - sem padding no CRM mobile */}
         <div className={isFullScreenMobile ? '' : 'p-4 lg:p-8'}>
           <Outlet />
