@@ -81,7 +81,7 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
 
   return (
     <div className={cn(
-      "backdrop-blur-xl bg-white/60 dark:bg-card/60 border border-white/30 dark:border-border rounded-2xl shadow-sm overflow-hidden transition-all",
+      "backdrop-blur-xl bg-white/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 rounded-2xl shadow-lg shadow-slate-200/20 dark:shadow-black/20 overflow-hidden transition-all",
       isExpanded ? "max-h-96" : "max-h-14"
     )}>
       {/* Header minimalista com botão de collapse */}
