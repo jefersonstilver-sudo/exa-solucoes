@@ -20,6 +20,15 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
   index
 }) => {
   const hasUnread = conversation.awaiting_response;
+  
+  // Cores por agente
+  const agentColors = {
+    sofia: { bg: 'bg-blue-500/20', text: 'text-blue-600', border: 'border-blue-500/30' },
+    eduardo: { bg: 'bg-purple-500/20', text: 'text-purple-600', border: 'border-purple-500/30' },
+    exa_alert: { bg: 'bg-orange-500/20', text: 'text-orange-600', border: 'border-orange-500/30' }
+  };
+  
+  const agentColor = agentColors[conversation.agent_key as keyof typeof agentColors] || agentColors.sofia;
 
   return (
     <motion.button
@@ -35,15 +44,16 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Avatar */}
+        {/* Avatar com cor do agente */}
         <div className="relative shrink-0">
           <div className={cn(
-            'w-12 h-12 rounded-full flex items-center justify-center',
-            hasUnread ? 'bg-[#25D366]/20' : 'bg-muted'
+            'w-12 h-12 rounded-full flex items-center justify-center border-2',
+            hasUnread ? 'bg-[#25D366]/20 border-[#25D366]/50' : agentColor.bg,
+            !hasUnread && agentColor.border
           )}>
             <User className={cn(
               'w-6 h-6',
-              hasUnread ? 'text-[#25D366]' : 'text-muted-foreground'
+              hasUnread ? 'text-[#25D366]' : agentColor.text
             )} />
           </div>
           {hasUnread && (
