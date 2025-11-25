@@ -4029,6 +4029,86 @@ export type Database = {
           },
         ]
       }
+      panel_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          device_id: string
+          id: string
+          message: string
+          metadata: Json | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          updated_at: string | null
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          device_id: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          updated_at?: string | null
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          device_id?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panel_alerts_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      panel_monitoring_config: {
+        Row: {
+          alert_email: string | null
+          alert_webhook_url: string | null
+          check_interval_seconds: number | null
+          created_at: string | null
+          id: string
+          offline_threshold_seconds: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          alert_email?: string | null
+          alert_webhook_url?: string | null
+          check_interval_seconds?: number | null
+          created_at?: string | null
+          id?: string
+          offline_threshold_seconds?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          alert_email?: string | null
+          alert_webhook_url?: string | null
+          check_interval_seconds?: number | null
+          created_at?: string | null
+          id?: string
+          offline_threshold_seconds?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payment_processing_control: {
         Row: {
           amount: number | null
