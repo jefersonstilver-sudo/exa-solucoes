@@ -174,6 +174,8 @@ serve(async (req) => {
           alias,
           originalComments: comment,
           rawTags,
+          onlineStatus: client.online, // 🔍 LOG CRÍTICO: Ver valor exato de online
+          determinedStatus: status,
           parsed: {
             buildingName: parsed.buildingName,
             provider: parsed.provider,
