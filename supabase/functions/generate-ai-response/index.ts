@@ -351,20 +351,40 @@ serve(async (req) => {
     const allMatches = buildingsData?.map((b: any) => {
       const bNormalized = normalizeName(b.nome);
       
+      // Match exato
       if (userNormalized.includes(bNormalized)) {
         return { building: b, score: 1.0, method: 'exact' };
       }
       
-      const predioMatch = userNormalized.match(/predio\s+([a-z0-9\s]{2,40})/);
-      if (predioMatch) {
-        const mentionedName = predioMatch[1].trim();
-        const similarity = stringSimilarity(mentionedName, bNormalized);
-        
-        if (similarity >= 0.6) {
-          return { building: b, score: similarity, method: 'levenshtein' };
+      // MELHORIA: Padrões expandidos para captura de menção de prédio
+      const buildingPatterns = [
+        /predio\s+([a-z0-9\s]{2,40})/,
+        /preido\s+([a-z0-9\s]{2,40})/,  // erro de digitação comum
+        /predios?\s+([a-z0-9\s]{2,40})/,
+        /edificio\s+([a-z0-9\s]{2,40})/,
+        /edificios?\s+([a-z0-9\s]{2,40})/
+      ];
+      
+      for (const pattern of buildingPatterns) {
+        const predioMatch = userNormalized.match(pattern);
+        if (predioMatch) {
+          const mentionedName = predioMatch[1].trim();
+          const similarity = stringSimilarity(mentionedName, bNormalized);
+          
+          // MELHORIA: Threshold reduzido de 0.6 para 0.5 para pegar mais erros
+          if (similarity >= 0.5) {
+            return { building: b, score: similarity, method: 'levenshtein_pattern' };
+          }
         }
       }
       
+      // MELHORIA: Fuzzy matching GERAL em toda a mensagem contra o nome do prédio
+      const messageSimilarity = stringSimilarity(userNormalized, bNormalized);
+      if (messageSimilarity >= 0.5) {
+        return { building: b, score: messageSimilarity, method: 'fuzzy_full_message' };
+      }
+      
+      // Match por palavras
       const userWords = userNormalized.split(' ');
       const buildingWords = bNormalized.split(' ');
       const matchCount = buildingWords.filter(word => 
@@ -643,8 +663,59 @@ ${isFullListRequest ? `
       throw new Error('AI response invalid');
     }
 
-    // ====== FASE 5: VALIDAÇÃO DE CONTEXTO - REMOVER REAPRESENTAÇÕES ======
+    // ====== FASE 5: VALIDAÇÃO DE CONTEXTO - REMOVER REAPRESENTAÇÕES E CUMPRIMENTOS DUPLICADOS ======
     if (conversationHistory && conversationHistory.length > 0) {
+      // MELHORIA: Detectar cumprimentos genéricos duplicados
+      const greetingPatterns = [
+        /^Oi!?\s*/gi,
+        /^Olá!?\s*/gi,
+        /^Boa noite!?\s*/gi,
+        /^Boa tarde!?\s*/gi,
+        /^Bom dia!?\s*/gi,
+        /Como posso (te )?ajudar\?/gi,
+        /Tudo (bem|ótimo)\?/gi
+      ];
+      
+      // Verificar se já cumprimentou nas últimas 3 mensagens
+      const recentAssistantMessages = conversationHistory
+        .filter(m => m.role === 'assistant')
+        .slice(-3);
+      
+      let alreadyGreeted = false;
+      for (const msg of recentAssistantMessages) {
+        for (const pattern of greetingPatterns) {
+          if (pattern.test(msg.content)) {
+            alreadyGreeted = true;
+            break;
+          }
+        }
+        if (alreadyGreeted) break;
+      }
+      
+      // Se já cumprimentou, remover cumprimentos da resposta atual
+      if (alreadyGreeted) {
+        let hadDuplicateGreeting = false;
+        for (const pattern of greetingPatterns) {
+          if (pattern.test(aiReply)) {
+            console.warn('[AI-RESPONSE] ⚠️ FASE 5: Duplicate greeting detected - removing...');
+            aiReply = aiReply.replace(pattern, '').trim();
+            hadDuplicateGreeting = true;
+          }
+        }
+        
+        if (hadDuplicateGreeting) {
+          await supabase.from('agent_logs').insert({
+            agent_key: agentKey,
+            conversation_id: conversationId,
+            event_type: 'duplicate_greeting_removed',
+            metadata: {
+              cleanedLength: aiReply.length,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+      }
+      
       // Detectar e remover reapresentação desnecessária
       const reIntroPatterns = [
         /Oi!?\s*Sou a? Sofia[^\.!?]*[\.!?]/gi,
