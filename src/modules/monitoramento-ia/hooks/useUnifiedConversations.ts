@@ -59,6 +59,8 @@ interface CRMMetrics {
   hotLeads: number;
   awaiting: number;
   avgResponseTime: number;
+  sofiaMsgToday: number;
+  eduardoMsgToday: number;
 }
 
 export const useUnifiedConversations = (filters: CRMFilters) => {
@@ -71,7 +73,9 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
     critical: 0,
     hotLeads: 0,
     awaiting: 0,
-    avgResponseTime: 0
+    avgResponseTime: 0,
+    sofiaMsgToday: 0,
+    eduardoMsgToday: 0
   });
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -123,6 +127,19 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
 
       setConversations(typedData);
 
+      // Buscar mensagens dos agentes hoje
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data: messagesData } = await supabase
+        .from('messages')
+        .select('agent_key')
+        .eq('direction', 'outbound')
+        .gte('created_at', today.toISOString());
+      
+      const sofiaMsgToday = messagesData?.filter(m => m.agent_key === 'sofia').length || 0;
+      const eduardoMsgToday = messagesData?.filter(m => m.agent_key === 'eduardo').length || 0;
+
       // Calcular métricas
       const newMetrics: CRMMetrics = {
         total: typedData?.length || 0,
@@ -130,7 +147,9 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
         critical: typedData?.filter(c => c.is_critical).length || 0,
         hotLeads: typedData?.filter(c => c.is_hot_lead).length || 0,
         awaiting: typedData?.filter(c => c.awaiting_response).length || 0,
-        avgResponseTime: 0 // TODO: calcular baseado em avg_response_time
+        avgResponseTime: 0,
+        sofiaMsgToday,
+        eduardoMsgToday
       };
 
       setMetrics(newMetrics);
@@ -253,17 +272,16 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
               .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
           );
           
-          // Recalcular métricas
+          // Recalcular métricas (mantém contagens de mensagens do dia)
           setConversations(convs => {
-            const newMetrics: CRMMetrics = {
+            setMetrics(prev => ({
+              ...prev,
               total: convs.length,
               unread: convs.filter(c => c.awaiting_response).length,
               critical: convs.filter(c => c.is_critical).length,
               hotLeads: convs.filter(c => c.is_hot_lead).length,
-              awaiting: convs.filter(c => c.awaiting_response).length,
-              avgResponseTime: 0
-            };
-            setMetrics(newMetrics);
+              awaiting: convs.filter(c => c.awaiting_response).length
+            }));
             return convs;
           });
         }

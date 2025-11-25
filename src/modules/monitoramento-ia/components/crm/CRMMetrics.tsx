@@ -11,6 +11,8 @@ interface CRMMetricsProps {
     hotLeads: number;
     awaiting: number;
     avgResponseTime: number;
+    sofiaMsgToday: number;
+    eduardoMsgToday: number;
   };
 }
 
