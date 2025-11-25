@@ -150,8 +150,8 @@ serve(async (req) => {
           console.log('[ZAPI-IMPORT] New conversation created:', conversationId);
         }
 
-        // Fetch messages for this chat
-        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/chat/${phoneNumber}/messages?amount=100`;
+        // Fetch messages for this chat (aumentado para 500 mensagens)
+        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/chat/${phoneNumber}/messages?amount=500`;
         console.log('[ZAPI-IMPORT] Fetching messages from:', messagesUrl);
         
         const messagesResponse = await fetch(messagesUrl, {
@@ -170,70 +170,96 @@ serve(async (req) => {
         const messagesData = await messagesResponse.json();
         console.log('[ZAPI-IMPORT] Messages fetched:', messagesData.length || 0);
 
-        // Import messages
-        for (const msg of messagesData) {
-          try {
-            const messageId = msg.messageId || msg.id;
-            if (!messageId) continue;
-
-            // Check if message already exists
-            const { data: existingMsg } = await supabase
-              .from('messages')
-              .select('id')
-              .eq('conversation_id', conversationId)
-              .eq('raw_payload->messageId', messageId)
-              .maybeSingle();
-
-            if (existingMsg) continue;
-
-            // Extract message content
-            let messageBody = '';
-            if (msg.text?.message) {
-              messageBody = msg.text.message;
-            } else if (msg.body) {
-              messageBody = msg.body;
-            } else if (msg.image?.caption) {
-              messageBody = `[Imagem] ${msg.image.caption}`;
-            } else if (msg.audio) {
-              messageBody = '[Áudio]';
-            } else if (msg.video) {
-              messageBody = '[Vídeo]';
-            } else if (msg.document) {
-              messageBody = `[Documento] ${msg.document.fileName || ''}`;
-            }
-
-            if (!messageBody) continue;
-
-            const direction = msg.fromMe ? 'outbound' : 'inbound';
-            const fromRole = msg.fromMe ? 'agent' : 'user';
-
-            // Converter timestamp corretamente
-            let createdAt = new Date().toISOString();
-            if (msg.timestamp) {
-              try {
-                const timestamp = msg.timestamp > 9999999999 
-                  ? msg.timestamp // já em milissegundos
-                  : msg.timestamp * 1000; // converter de segundos
-                createdAt = new Date(timestamp).toISOString();
-              } catch (e) {
-                console.error('[ZAPI-IMPORT] Failed to parse message timestamp:', e);
+        // Import messages com ON CONFLICT para evitar duplicatas
+        if (messagesData && messagesData.length > 0) {
+          console.log('[ZAPI-IMPORT] Processing', messagesData.length, 'messages');
+          
+          for (const msg of messagesData) {
+            try {
+              const messageId = msg.messageId || msg.id;
+              if (!messageId) {
+                console.log('[ZAPI-IMPORT] Skipping message without ID');
+                continue;
               }
+
+              // Extract message content
+              let messageBody = '';
+              if (msg.text?.message) {
+                messageBody = msg.text.message;
+              } else if (msg.body) {
+                messageBody = msg.body;
+              } else if (msg.image?.caption) {
+                messageBody = `[Imagem] ${msg.image.caption}`;
+              } else if (msg.audio) {
+                messageBody = '[Áudio]';
+              } else if (msg.video) {
+                messageBody = '[Vídeo]';
+              } else if (msg.document) {
+                messageBody = `[Documento] ${msg.document.fileName || ''}`;
+              } else if (msg.image) {
+                messageBody = '[Imagem]';
+              }
+
+              if (!messageBody) {
+                console.log('[ZAPI-IMPORT] Skipping message without body');
+                continue;
+              }
+
+              const direction = msg.fromMe ? 'outbound' : 'inbound';
+              const fromRole = msg.fromMe ? 'agent' : 'user';
+
+              // Converter timestamp corretamente
+              let createdAt = new Date().toISOString();
+              if (msg.timestamp) {
+                try {
+                  const timestamp = msg.timestamp > 9999999999 
+                    ? msg.timestamp // já em milissegundos
+                    : msg.timestamp * 1000; // converter de segundos
+                  createdAt = new Date(timestamp).toISOString();
+                } catch (e) {
+                  console.error('[ZAPI-IMPORT] Failed to parse message timestamp:', e);
+                }
+              }
+
+              // Criar registro com messageId no raw_payload para deduplicação
+              const messageData = {
+                conversation_id: conversationId,
+                agent_key: agentKey,
+                provider: 'zapi',
+                direction,
+                from_role: fromRole,
+                body: messageBody,
+                raw_payload: { ...msg, messageId }, // Garantir que messageId está no payload
+                created_at: createdAt
+              };
+
+              // Verificar duplicata antes de inserir (mais confiável)
+              const { data: existingMsg } = await supabase
+                .from('messages')
+                .select('id')
+                .eq('conversation_id', conversationId)
+                .eq('body', messageBody)
+                .eq('direction', direction)
+                .eq('created_at', createdAt)
+                .maybeSingle();
+
+              if (existingMsg) {
+                console.log('[ZAPI-IMPORT] Message already exists, skipping');
+                continue;
+              }
+
+              const { error: insertError } = await supabase
+                .from('messages')
+                .insert(messageData);
+
+              if (insertError) {
+                console.error('[ZAPI-IMPORT] Failed to insert message:', insertError);
+              } else {
+                messagesImported++;
+              }
+            } catch (msgError) {
+              console.error('[ZAPI-IMPORT] Failed to import message:', msgError);
             }
-
-            await supabase.from('messages').insert({
-              conversation_id: conversationId,
-              agent_key: agentKey,
-              provider: 'zapi',
-              direction,
-              from_role: fromRole,
-              body: messageBody,
-              raw_payload: msg,
-              created_at: createdAt
-            });
-
-            messagesImported++;
-          } catch (msgError) {
-            console.error('[ZAPI-IMPORT] Failed to import message:', msgError);
           }
         }
 
