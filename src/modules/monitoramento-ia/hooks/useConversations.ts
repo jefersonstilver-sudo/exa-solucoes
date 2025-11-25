@@ -38,42 +38,64 @@ export const useConversations = () => {
     try {
       setLoading(true);
       
-      // Buscar logs agrupados por telefone e agente
-      const { data: logs, error } = await supabase
-        .from('zapi_logs')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Buscar conversas da tabela conversations (nova estrutura)
+      const { data: conversations, error } = await supabase
+        .from('conversations')
+        .select(`
+          id,
+          contact_phone,
+          contact_name,
+          agent_key,
+          last_message_at,
+          created_at,
+          provider,
+          status
+        `)
+        .eq('provider', 'zapi')
+        .order('last_message_at', { ascending: false });
 
       if (error) throw error;
 
-      // Agrupar conversas
-      const grouped = new Map<string, ConversationGroup>();
-      
-      logs?.forEach((log: any) => {
-        const key = `${log.phone_number}_${log.agent_key}`;
-        
-        if (!grouped.has(key)) {
-          grouped.set(key, {
-            phone_number: log.phone_number,
-            contact_name: log.metadata?.senderName || null,
-            agent_key: log.agent_key,
-            agent_name: log.agent_key.replace('_', ' ').toUpperCase(),
-            last_message: log.message_text,
-            last_message_at: log.created_at,
-            total_messages: 1,
-            unread_count: log.direction === 'inbound' ? 1 : 0,
-          });
-        } else {
-          const conv = grouped.get(key)!;
-          conv.total_messages++;
-          if (log.direction === 'inbound' && new Date(log.created_at) > new Date(conv.last_message_at)) {
-            conv.unread_count++;
-          }
-        }
-      });
+      // Buscar contagem de mensagens não lidas para cada conversa
+      const conversationsWithCounts = await Promise.all(
+        (conversations || []).map(async (conv) => {
+          // Contar total de mensagens
+          const { count: totalCount } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('conversation_id', conv.id);
 
-      // FASE 4: Ordenar por não lidas primeiro, depois por mais recente
-      const sortedConversations = Array.from(grouped.values()).sort((a, b) => {
+          // Contar mensagens não lidas (inbound)
+          const { count: unreadCount } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('conversation_id', conv.id)
+            .eq('direction', 'inbound');
+
+          // Buscar última mensagem
+          const { data: lastMessage } = await supabase
+            .from('messages')
+            .select('body, created_at')
+            .eq('conversation_id', conv.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          return {
+            phone_number: conv.contact_phone,
+            contact_name: conv.contact_name,
+            agent_key: conv.agent_key,
+            agent_name: conv.agent_key.replace('_', ' ').toUpperCase(),
+            last_message: lastMessage?.body || 'Sem mensagens',
+            last_message_at: conv.last_message_at || conv.created_at,
+            total_messages: totalCount || 0,
+            unread_count: unreadCount || 0,
+          };
+        })
+      );
+
+      // Ordenar por não lidas primeiro, depois por mais recente
+      const sortedConversations = conversationsWithCounts.sort((a, b) => {
         // 1. Prioridade: conversas não lidas primeiro
         if (a.unread_count > 0 && b.unread_count === 0) return -1;
         if (b.unread_count > 0 && a.unread_count === 0) return 1;
@@ -95,16 +117,45 @@ export const useConversations = () => {
     try {
       setMessagesLoading(true);
       
-      const { data, error } = await supabase
-        .from('zapi_logs')
-        .select('*')
-        .eq('phone_number', phoneNumber)
+      // Buscar conversa primeiro
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('contact_phone', phoneNumber)
         .eq('agent_key', agentKey)
+        .maybeSingle();
+
+      if (!conversation) {
+        console.log('No conversation found for:', phoneNumber, agentKey);
+        setMessages([]);
+        return;
+      }
+
+      // Buscar mensagens da conversa
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversation.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      setMessages(data as ZAPILog[]);
+      // Converter formato para ZAPILog (compatibilidade)
+      const formattedMessages = (data || []).map(msg => ({
+        id: msg.id,
+        agent_key: msg.agent_key,
+        direction: msg.direction as 'inbound' | 'outbound',
+        phone_number: phoneNumber,
+        message_text: msg.body,
+        metadata: msg.raw_payload || {},
+        status: 'success' as const,
+        error_message: null,
+        created_at: msg.created_at,
+        zapi_message_id: ((msg.raw_payload as any)?.messageId) || null,
+        media_url: null,
+      }));
+
+      setMessages(formattedMessages as ZAPILog[]);
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast.error('Erro ao carregar mensagens');
@@ -116,21 +167,6 @@ export const useConversations = () => {
   const selectConversation = async (phoneNumber: string, agentKey: string) => {
     const key = `${phoneNumber}_${agentKey}`;
     setSelectedConversation(key);
-    
-    // FASE 4: Marcar mensagens como lidas ao abrir conversa
-    try {
-      await supabase
-        .from('zapi_logs')
-        .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq('phone_number', phoneNumber)
-        .eq('agent_key', agentKey)
-        .eq('direction', 'inbound')
-        .is('is_read', false);
-      
-      console.log('Messages marked as read for:', phoneNumber, agentKey);
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-    }
     
     await fetchMessages(phoneNumber, agentKey);
     // Refresh conversations para atualizar contadores
