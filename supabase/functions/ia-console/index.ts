@@ -6,6 +6,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * Função anti-quebra de números grandes
+ * Evita que números como "108.000" sejam quebrados em "108." + "000" em mensagens separadas
+ * Também previne quebra de valores monetários e outras formatações numéricas
+ */
+function preventNumberBreak(text: string): string {
+  if (!text) return text;
+  
+  // 1. Normalizar espaços ao redor de números formatados
+  //    "72. 000" → "72.000" / "R$ 1. 639" → "R$ 1.639"
+  text = text.replace(/(\d+)\.\s+(\d{3})/g, '$1.$2');
+  
+  // 2. Proteger vírgulas decimais em valores monetários
+  //    "R$ 275,00" não deve virar "275, 00"
+  text = text.replace(/(\d+),\s+(\d{2})\b/g, '$1,$2');
+  
+  // 3. Evitar quebra de pontos de milhar seguidos
+  //    "108.000.000" não deve quebrar
+  text = text.replace(/(\d+)\.\s*(\d{3})\b/g, '$1.$2');
+  
+  // 4. Corrigir valores que foram quebrados com ponto final + espaço + número
+  //    "Total: 72.\n000" → "Total: 72.000"
+  text = text.replace(/(\d+)\.\s*\n\s*(\d{3})/g, '$1.$2');
+  
+  return text;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -713,7 +740,7 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
           return new Response(
             JSON.stringify({
               success: true,
-              response: formattedResponse,
+              response: preventNumberBreak(formattedResponse),
               tokens: 0,
               latency: Date.now() - startTime,
               toolCallsProcessed: allToolCalls.length,
@@ -760,7 +787,7 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
           if (retryResponse.ok) {
             console.log('[IA-CONSOLE] ✅ Retry succeeded');
             finalData = await retryResponse.json();
-            finalMessage = finalData.choices[0].message.content;
+            finalMessage = preventNumberBreak(finalData.choices[0].message.content);
             tokensUsed = finalData.usage.total_tokens;
           } else {
             throw new Error('Retry failed');
@@ -803,7 +830,7 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
           return new Response(
             JSON.stringify({
               success: true,
-              response: fallbackMsg,
+              response: preventNumberBreak(fallbackMsg),
               tokens: 0,
               latency: Date.now() - startTime,
               toolCallsProcessed: allToolCalls.length,
@@ -835,7 +862,7 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
       return new Response(
         JSON.stringify({
           success: true,
-          response: finalMessage,
+          response: preventNumberBreak(finalMessage),
           tokens: tokensUsed,
           latency: Date.now() - startTime,
           model: finalData.model,
@@ -851,7 +878,7 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
     }
 
     // Se não houve function call, retornar resposta normalmente
-    const finalMessage = assistantMessage.content;
+    const finalMessage = preventNumberBreak(assistantMessage.content);
     const tokensUsed = data.usage.total_tokens;
 
     // Registrar métricas de performance (Fase 3.2)
