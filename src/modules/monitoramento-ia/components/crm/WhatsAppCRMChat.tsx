@@ -127,8 +127,8 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
         backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100%25\' height=\'100%25\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cdefs%3E%3Cpattern id=\'a\' patternUnits=\'userSpaceOnUse\' width=\'20\' height=\'20\' patternTransform=\'scale(1) rotate(0)\'%3E%3Crect x=\'0\' y=\'0\' width=\'100%25\' height=\'100%25\' fill=\'hsla(40, 20%25, 92%25, 1)\'/%3E%3Cpath d=\'M10 0 L10 20 M0 10 L20 10\' stroke-width=\'0.2\' stroke=\'hsla(200, 10%25, 80%25, 0.15)\' fill=\'none\'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width=\'800%25\' height=\'800%25\' transform=\'translate(0,0)\' fill=\'url(%23a)\'/%3E%3C/svg%3E")',
         backgroundAttachment: 'fixed'
       }}>
-        {/* Header estilo WhatsApp */}
-        <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-lg px-4 py-2 flex items-center justify-between">
+        {/* Header estilo WhatsApp - Moderno */}
+        <div className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border-b border-border shadow-sm px-4 py-3 flex items-center justify-between rounded-t-3xl">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Avatar */}
             <div className={cn(
@@ -269,14 +269,14 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
                     isOutbound ? "justify-end" : "justify-start"
                   )}>
                     <div
-                      className={cn(
-                        "max-w-[65%] px-3 py-2 rounded-lg shadow-sm relative",
+                     className={cn(
+                        "max-w-[65%] px-3 py-2 shadow-sm relative",
                         isOutbound ? [
                           "bg-whatsapp-msg-out",
-                          "rounded-br-none"
+                          "rounded-3xl rounded-br-md"
                         ] : [
                           "bg-whatsapp-msg-in",
-                          "rounded-bl-none"
+                          "rounded-3xl rounded-bl-md"
                         ]
                       )}
                     >
@@ -351,8 +351,8 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input de mensagem estilo WhatsApp */}
-        <div className="bg-whatsapp-panel-bg border-t border-whatsapp-border px-4 py-2">
+        {/* Input de mensagem estilo WhatsApp - Moderno */}
+        <div className="bg-white/80 dark:bg-card/80 backdrop-blur-xl border-t border-border px-4 py-3 rounded-b-3xl">
           {conversation && (
             <MediaInputBar 
               phoneNumber={conversation.contact_phone} 
