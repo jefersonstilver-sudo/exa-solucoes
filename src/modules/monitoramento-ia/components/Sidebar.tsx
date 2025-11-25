@@ -83,13 +83,23 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
   return (
     <aside
       className={cn(
-        `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r`,
+        `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r relative`,
         collapsed ? 'w-16' : 'w-64',
         'bg-[#3A0808] border-[#9C1E1E]/50 text-white shadow-2xl',
         'lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
+      {/* Botão flutuante glass na borda - SEMPRE VISÍVEL */}
+      <button
+        onClick={onToggleCollapse}
+        className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 z-50 
+          backdrop-blur-xl bg-white/20 border border-white/30 
+          rounded-full p-2 shadow-lg hover:scale-110 transition-all hover:bg-white/30"
+        title={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
+      >
+        {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+      </button>
       {/* Header - Glassmorphism com logo reorganizado */}
       <div className={cn(
         "p-5 border-b flex items-center justify-center relative",
@@ -116,27 +126,6 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
               className="h-10 w-10 object-contain brightness-0 invert"
             />
           </div>
-        )}
-
-        {/* Toggle Button - Desktop (posição absoluta) */}
-        {!collapsed && (
-          <button
-            onClick={onToggleCollapse}
-            className="hidden lg:block absolute right-4 top-4 p-1.5 rounded-lg transition-colors text-white hover:bg-white/10"
-            title="Retrair sidebar"
-          >
-            <ChevronLeft size={18} />
-          </button>
-        )}
-        
-        {collapsed && (
-          <button
-            onClick={onToggleCollapse}
-            className="hidden lg:block p-1.5 rounded-lg transition-colors text-white hover:bg-white/10"
-            title="Expandir sidebar"
-          >
-            <ChevronRight size={18} />
-          </button>
         )}
 
         {/* Close Button - Mobile (posição absoluta) */}
