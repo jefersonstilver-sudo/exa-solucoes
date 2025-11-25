@@ -30,7 +30,8 @@ export const useSupabaseAgents = () => {
           .from('agent_knowledge_items')
           .select('*')
           .eq('agent_id', agent.key)
-          .eq('active', true);
+          .eq('active', true)
+          .order('display_order', { ascending: true, nullsFirst: false });
 
         return {
           id: agent.id,
@@ -74,6 +75,7 @@ export const useSupabaseAgents = () => {
             active: item.active,
             created_at: item.created_at,
             updated_at: item.updated_at,
+            display_order: item.display_order,
           })),
         rules: agent.routing_rules || [],
         integrationSettings: {
