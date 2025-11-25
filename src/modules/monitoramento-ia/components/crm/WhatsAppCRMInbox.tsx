@@ -84,7 +84,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       className={cn(
         'w-full px-3 py-2 text-left transition-all relative group',
         'hover:bg-whatsapp-hover',
-        isSelected && 'bg-whatsapp-hover'
+        isSelected && [
+          'bg-whatsapp-hover',
+          'border-l-4 border-whatsapp-green-light',
+          'shadow-md'
+        ]
       )}
       style={{ backgroundColor: getCardBgColor() }}
     >

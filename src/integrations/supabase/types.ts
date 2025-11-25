@@ -2154,6 +2154,7 @@ export type Database = {
           provider: string | null
           reported_to_iris: boolean | null
           sentiment: string | null
+          sofia_paused: boolean | null
           status: string | null
           urgency_level: number | null
         }
@@ -2183,6 +2184,7 @@ export type Database = {
           provider?: string | null
           reported_to_iris?: boolean | null
           sentiment?: string | null
+          sofia_paused?: boolean | null
           status?: string | null
           urgency_level?: number | null
         }
@@ -2212,6 +2214,7 @@ export type Database = {
           provider?: string | null
           reported_to_iris?: boolean | null
           sentiment?: string | null
+          sofia_paused?: boolean | null
           status?: string | null
           urgency_level?: number | null
         }

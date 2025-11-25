@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 interface MediaInputBarProps {
   phoneNumber: string;
@@ -358,7 +359,18 @@ export const MediaInputBar: React.FC<MediaInputBarProps> = ({
 
       {/* Campo de texto */}
       {!recording && (
-        <div className="flex-1 relative">
+        <div className="flex-1">
+          {/* 💬 FASE 3: Indicador de agente */}
+          <div className={cn(
+            "text-[10px] px-2 py-0.5 mb-1 rounded-t-lg flex items-center gap-1",
+            agentKey === 'sofia' ? 'bg-pink-50 text-pink-700 dark:bg-pink-900/20 dark:text-pink-400' : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+          )}>
+            <span>💬</span>
+            <span className="font-medium">
+              Você fala como {agentKey === 'sofia' ? 'Sofia' : 'Eduardo'}
+            </span>
+          </div>
+          
           <Textarea
             ref={textareaRef}
             placeholder="Mensagem..."
