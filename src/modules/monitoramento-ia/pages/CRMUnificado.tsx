@@ -6,6 +6,7 @@ import { CRMMetrics } from '../components/crm/CRMMetrics';
 import { useUnifiedConversations } from '../hooks/useUnifiedConversations';
 import { CRMUnificadoMobile } from '../components/crm/mobile/CRMUnificadoMobile';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 
 export const CRMUnificado = () => {
   const isMobile = useIsMobile();
@@ -36,34 +37,38 @@ export const CRMUnificado = () => {
 
   // Renderizar versão desktop com tema WhatsApp
   return (
-    <div className="h-screen flex flex-col bg-whatsapp-bg-main overflow-hidden">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 overflow-hidden">
       {/* Header com métricas e filtros */}
-      <div className="bg-whatsapp-panel-bg border-b border-whatsapp-border p-4 space-y-4">
+      <div className="p-4 space-y-4">
         <CRMMetrics metrics={metrics} />
         <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
       </div>
 
-      {/* Layout de 2 colunas estilo WhatsApp */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Painel de conversas (esquerda) */}
-        <div className="w-[400px] border-r border-whatsapp-border flex flex-col bg-whatsapp-panel-bg">
-          <WhatsAppCRMInbox
-            conversations={conversations}
-            selectedId={selectedConversationId}
-            onSelect={selectConversation}
-            loading={loading}
-          />
-        </div>
+      {/* Layout de 2 colunas com painéis redimensionáveis */}
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup direction="horizontal">
+          {/* Painel de conversas (esquerda) */}
+          <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
+            <WhatsAppCRMInbox
+              conversations={conversations}
+              selectedId={selectedConversationId}
+              onSelect={selectConversation}
+              loading={loading}
+            />
+          </ResizablePanel>
 
-        {/* Área de chat (direita) */}
-        <div className="flex-1">
-          <WhatsAppCRMChat
-            conversationId={selectedConversationId}
-            messages={messages}
-            loading={messagesLoading}
-            onRefresh={refetch}
-          />
-        </div>
+          <ResizableHandle withHandle className="w-1 bg-white/30 hover:bg-white/50" />
+
+          {/* Área de chat (direita) */}
+          <ResizablePanel defaultSize={70} minSize={50}>
+            <WhatsAppCRMChat
+              conversationId={selectedConversationId}
+              messages={messages}
+              loading={messagesLoading}
+              onRefresh={refetch}
+            />
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );

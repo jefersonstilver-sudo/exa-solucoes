@@ -58,21 +58,26 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
     return (words[0][0] + (words[words.length - 1][0] || '')).toUpperCase();
   };
   
-  // Cor de fundo do card baseado no agent_key/número (para TODOS os cards, incluindo grupos)
+  // Cor de fundo do card baseado no agent_key (PRIORIDADE) + fallbacks
   const getCardBgColor = () => {
-    const name = conversation.contact_name?.toLowerCase() || '';
-    const phone = conversation.contact_phone?.toLowerCase() || '';
     const agentKey = conversation.agent_key?.toLowerCase() || '';
     
-    // Verificar por nome OU número/agent_key
-    if (name.includes('eduardo') || phone.includes('eduardo') || agentKey.includes('eduardo')) {
-      return 'hsl(150 60% 92%)'; // Verde bem visível
-    }
-    if (name.includes('sofia') || phone.includes('sofia') || agentKey.includes('sofia')) {
-      return 'hsl(340 70% 92%)'; // Rosa bem visível
-    }
+    // Prioridade 1: agent_key
+    if (agentKey === 'eduardo') return 'hsl(150 60% 92%)';
+    if (agentKey === 'sofia') return 'hsl(340 70% 92%)';
     
-    return undefined; // Outros mantêm cor padrão
+    // Prioridade 2: contact_name
+    const name = conversation.contact_name?.toLowerCase() || '';
+    if (name.includes('eduardo')) return 'hsl(150 60% 92%)';
+    if (name.includes('sofia')) return 'hsl(340 70% 92%)';
+    
+    // Prioridade 3: phone
+    const phone = conversation.contact_phone?.toLowerCase() || '';
+    if (phone.includes('eduardo')) return 'hsl(150 60% 92%)';
+    if (phone.includes('sofia')) return 'hsl(340 70% 92%)';
+    
+    // Fallback: glass
+    return 'rgba(255, 255, 255, 0.6)';
   };
   
   const formatTime = (dateStr: string) => {
@@ -238,7 +243,7 @@ export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({ conversation
   }
 
   return (
-    <div className="bg-whatsapp-panel-bg h-full overflow-y-auto">
+    <div className="bg-white/70 backdrop-blur-xl border-r border-white/20 h-full overflow-y-auto">
       {conversations.map((conv) => (
         <ConversationItem
           key={conv.id}

@@ -42,8 +42,8 @@ export const MonitoramentoIALayout = () => {
 
       {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 relative z-10 ${!isFullScreenMobile && (sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64')}`}>
-        {/* Module Header - esconder no CRM mobile */}
-        {!isFullScreenMobile && (
+        {/* Module Header - esconder no CRM */}
+        {!isCRMRoute && (
           <ModuleHeader 
             theme={theme} 
             onToggleTheme={toggleTheme} 

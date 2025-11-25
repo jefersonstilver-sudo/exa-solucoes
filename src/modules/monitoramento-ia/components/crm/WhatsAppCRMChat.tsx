@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { StickyNote, Tag, User, Users, Phone, Video, Search, MoreVertical, Smile, Paperclip, Send, Mic } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { StickyNote, Tag, User, Users, Phone, Video, Search, MoreVertical, Smile, Paperclip, Send, Mic, Pencil, Check, X } from 'lucide-react';
 import { MediaInputBar } from './MediaInputBar';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
@@ -49,6 +50,8 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
   const [showDetails, setShowDetails] = useState(false);
   const [conversation, setConversation] = useState<any>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingChannelRef = useRef<any>(null);
 
@@ -69,6 +72,22 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
     
     if (!error && data) {
       setConversation(data);
+      setEditedName(data.contact_name || '');
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!conversationId || !editedName.trim()) return;
+    
+    const { error } = await supabase
+      .from('conversations')
+      .update({ contact_name: editedName.trim() })
+      .eq('id', conversationId);
+    
+    if (!error) {
+      setConversation((prev: any) => ({ ...prev, contact_name: editedName.trim() }));
+      setIsEditingName(false);
+      onRefresh();
     }
   };
 
@@ -107,7 +126,7 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
         backgroundAttachment: 'fixed'
       }}>
         {/* Header estilo WhatsApp */}
-        <div className="bg-whatsapp-panel-bg border-b border-whatsapp-border px-4 py-2 flex items-center justify-between shadow-sm">
+        <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-lg px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Avatar */}
             <div className={cn(
@@ -121,14 +140,43 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
               )}
             </div>
 
-            {/* Nome e status */}
+            {/* Nome e status - editável */}
             <div className="flex-1 min-w-0">
-              <h2 className="font-medium text-whatsapp-text-primary text-[15px] truncate">
-                {conversation?.contact_name || conversation?.contact_phone || 'Conversa'}
-              </h2>
-              <p className="text-xs text-whatsapp-text-secondary truncate">
-                {conversation?.contact_phone || 'Online'}
-              </p>
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    className="h-8 text-sm"
+                    autoFocus
+                  />
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleSaveName}>
+                    <Check className="w-4 h-4 text-green-600" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setIsEditingName(false)}>
+                    <X className="w-4 h-4 text-red-600" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-medium text-whatsapp-text-primary text-[15px] truncate">
+                      {conversation?.contact_name || conversation?.contact_phone || 'Conversa'}
+                    </h2>
+                    <p className="text-xs text-whatsapp-text-secondary truncate">
+                      {conversation?.contact_phone || 'Online'}
+                    </p>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-whatsapp-icon-gray hover:bg-whatsapp-hover"
+                    onClick={() => setIsEditingName(true)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
