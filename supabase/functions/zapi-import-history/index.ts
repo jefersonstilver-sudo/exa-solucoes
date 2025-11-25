@@ -90,7 +90,12 @@ serve(async (req) => {
     for (const chat of chatsData) {
       try {
         const phoneNumber = chat.phone || chat.id?.replace('@s.whatsapp.net', '');
-        if (!phoneNumber) continue;
+        
+        // Filtrar conversas inválidas (WhatsApp Business, grupos, IDs nulos/0)
+        if (!phoneNumber || phoneNumber === '0' || phoneNumber === 'null' || phoneNumber.includes('@g.us')) {
+          console.log('[ZAPI-IMPORT] Skipping invalid chat:', phoneNumber || 'null');
+          continue;
+        }
 
         console.log('[ZAPI-IMPORT] Processing chat:', phoneNumber);
 
@@ -167,8 +172,27 @@ serve(async (req) => {
           continue;
         }
 
-        const messagesData = await messagesResponse.json();
+        const messagesResponseData = await messagesResponse.json();
+        
+        // Z-API pode retornar array direto ou objeto com array
+        let messagesData = [];
+        if (Array.isArray(messagesResponseData)) {
+          messagesData = messagesResponseData;
+        } else if (messagesResponseData && Array.isArray(messagesResponseData.messages)) {
+          messagesData = messagesResponseData.messages;
+        } else if (messagesResponseData && typeof messagesResponseData === 'object') {
+          // Tentar encontrar o array em qualquer propriedade
+          const keys = Object.keys(messagesResponseData);
+          for (const key of keys) {
+            if (Array.isArray(messagesResponseData[key])) {
+              messagesData = messagesResponseData[key];
+              break;
+            }
+          }
+        }
+        
         console.log('[ZAPI-IMPORT] Messages fetched:', messagesData.length || 0);
+        console.log('[ZAPI-IMPORT] Messages data type:', typeof messagesResponseData, 'is array?', Array.isArray(messagesResponseData));
 
         // Import messages com ON CONFLICT para evitar duplicatas
         if (messagesData && messagesData.length > 0) {
