@@ -130,7 +130,6 @@ const UserMenu = () => {
                 className="w-[280px] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-lg bg-white border border-gray-200" 
                 align="end" 
                 forceMount
-                style={{ zIndex: 99999 }}
               >
                 <motion.div initial="hidden" animate="visible" exit="exit" variants={dropdownVariants}>
                   <div className="bg-white text-gray-900">
