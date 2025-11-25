@@ -50,6 +50,16 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
     return (words[0][0] + (words[words.length - 1][0] || '')).toUpperCase();
   };
   
+  // Cor de fundo do card baseado no nome (só para conversas individuais)
+  const getCardBgColor = () => {
+    if (conversation.is_group) return undefined; // Grupos mantêm cor padrão
+    
+    const name = conversation.contact_name?.toLowerCase() || '';
+    if (name.includes('eduardo')) return 'hsl(150 40% 96%)'; // verde muito suave
+    if (name.includes('sofia')) return 'hsl(340 45% 96%)'; // rosa muito suave
+    return undefined; // Outros mantêm cor padrão
+  };
+  
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
     if (isToday(date)) {
@@ -69,6 +79,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
         'hover:bg-whatsapp-hover',
         isSelected && 'bg-whatsapp-hover'
       )}
+      style={!isSelected ? { backgroundColor: getCardBgColor() } : undefined}
     >
       {/* Container principal */}
       <div className="flex items-center gap-3">
