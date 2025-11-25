@@ -173,7 +173,7 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
     // 🎯 FASE 1: Update otimista - atualizar UI imediatamente
     setConversations(prev => 
       prev.map(c => c.id === conversationId 
-        ? { ...c, awaiting_response: false, unread_count: 0 } 
+        ? { ...c, awaiting_response: false } 
         : c
       )
     );
@@ -182,10 +182,7 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
     try {
       const { data, error } = await supabase
         .from('conversations')
-        .update({ 
-          awaiting_response: false,
-          unread_count: 0 
-        })
+        .update({ awaiting_response: false })
         .eq('id', conversationId)
         .select();
       
