@@ -3,6 +3,7 @@ import { Copy, Check, ExternalLink, Settings, AlertTriangle, CheckCircle, Downlo
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ZAPICredentialsModal } from './ZAPICredentialsModal';
+import { ZAPIWebhookDiagnostics } from '../zapi/ZAPIWebhookDiagnostics';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ZAPIConfigSectionProps {
@@ -112,6 +113,12 @@ export const ZAPIConfigSection = ({ agentKey, zapiConfig, whatsappNumber, onConf
           </div>
         </div>
       </div>
+
+      {/* Diagnóstico do Webhook - CRÍTICO PARA fromMe=true */}
+      <ZAPIWebhookDiagnostics
+        agentKey={agentKey}
+        agentName={`Agente ${agentKey}`}
+      />
 
       {/* Info sobre importação de histórico */}
       <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
