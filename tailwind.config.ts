@@ -72,6 +72,8 @@ export default {
 				},
 				// Cores específicas do EXA - Nova Paleta EXA Red usando HSL
 				'exa-red': 'hsl(var(--exa-red))',
+				'exa-red-light': 'hsl(var(--exa-red-light))',
+				'exa-red-dark': 'hsl(var(--exa-red-dark))',
 				'exa-dark': 'hsl(var(--exa-dark))',
 				'exa-graphite': 'hsl(var(--exa-graphite))',
 				'exa-highlight-red': 'hsl(var(--exa-highlight-red))',
