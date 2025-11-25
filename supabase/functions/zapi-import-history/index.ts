@@ -36,12 +36,21 @@ serve(async (req) => {
     // Log da configuração completa para debug
     console.log('[ZAPI-IMPORT] Raw zapi_config:', JSON.stringify(zapiConfig, null, 2));
     
-    if (!zapiConfig?.token || !zapiConfig?.instance_id) {
-      throw new Error('Z-API configuration incomplete - missing token or instance_id');
+    // Verificar se é uma configuração pendente/incompleta
+    if (zapiConfig?.status === 'pending_setup' || zapiConfig?.instance_id === 'PENDING_SETUP') {
+      console.log('[ZAPI-IMPORT] Agent has pending setup, skipping');
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Agent configuration is pending setup',
+        conversationsImported: 0,
+        messagesImported: 0
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
-
-    if (!zapiConfig?.client_token) {
-      throw new Error('Z-API configuration incomplete - missing client_token');
+    
+    if (!zapiConfig?.token || !zapiConfig?.instance_id || !zapiConfig?.client_token) {
+      throw new Error('Z-API configuration incomplete - missing required fields');
     }
 
     const instanceId = zapiConfig.instance_id;
@@ -99,6 +108,24 @@ serve(async (req) => {
           conversationId = existingConv.id;
           console.log('[ZAPI-IMPORT] Conversation exists:', conversationId);
         } else {
+          // Converter timestamp corretamente
+          let lastMessageAt = new Date().toISOString();
+          if (chat.lastMessageTime) {
+            try {
+              // Se for número (timestamp em segundos ou milissegundos)
+              if (typeof chat.lastMessageTime === 'number') {
+                const timestamp = chat.lastMessageTime > 9999999999 
+                  ? chat.lastMessageTime // já em milissegundos
+                  : chat.lastMessageTime * 1000; // converter de segundos
+                lastMessageAt = new Date(timestamp).toISOString();
+              } else {
+                lastMessageAt = new Date(chat.lastMessageTime).toISOString();
+              }
+            } catch (e) {
+              console.error('[ZAPI-IMPORT] Failed to parse lastMessageTime:', e);
+            }
+          }
+
           const { data: newConv, error: convError } = await supabase
             .from('conversations')
             .insert({
@@ -108,7 +135,7 @@ serve(async (req) => {
               agent_key: agentKey,
               provider: 'zapi',
               status: 'open',
-              last_message_at: chat.lastMessageTime || new Date().toISOString()
+              last_message_at: lastMessageAt
             })
             .select()
             .single();
@@ -124,7 +151,7 @@ serve(async (req) => {
         }
 
         // Fetch messages for this chat
-        const messagesUrl = `${ZAPI_BASE_URL}/instances/${instanceId}/token/${token}/chat/${phoneNumber}/messages?amount=100`;
+        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/chat/${phoneNumber}/messages?amount=100`;
         console.log('[ZAPI-IMPORT] Fetching messages from:', messagesUrl);
         
         const messagesResponse = await fetch(messagesUrl, {
@@ -180,6 +207,19 @@ serve(async (req) => {
             const direction = msg.fromMe ? 'outbound' : 'inbound';
             const fromRole = msg.fromMe ? 'agent' : 'user';
 
+            // Converter timestamp corretamente
+            let createdAt = new Date().toISOString();
+            if (msg.timestamp) {
+              try {
+                const timestamp = msg.timestamp > 9999999999 
+                  ? msg.timestamp // já em milissegundos
+                  : msg.timestamp * 1000; // converter de segundos
+                createdAt = new Date(timestamp).toISOString();
+              } catch (e) {
+                console.error('[ZAPI-IMPORT] Failed to parse message timestamp:', e);
+              }
+            }
+
             await supabase.from('messages').insert({
               conversation_id: conversationId,
               agent_key: agentKey,
@@ -188,7 +228,7 @@ serve(async (req) => {
               from_role: fromRole,
               body: messageBody,
               raw_payload: msg,
-              created_at: msg.timestamp ? new Date(msg.timestamp * 1000).toISOString() : undefined
+              created_at: createdAt
             });
 
             messagesImported++;
