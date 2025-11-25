@@ -200,9 +200,9 @@ export const MonitorAPIs = () => {
           </Button>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-4 gap-4 mt-6">
-          <div className="bg-module-input rounded-lg border border-module p-4">
+        {/* Stats Overview - Responsive Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
+          <div className="bg-module-input rounded-lg border border-module p-3 sm:p-4">
             <p className="text-module-tertiary text-sm">APIs Online</p>
             <p className="text-2xl font-bold text-green-500 mt-1">
               {apis.filter(a => a.status === 'online').length}
@@ -231,8 +231,8 @@ export const MonitorAPIs = () => {
         </div>
       </div>
 
-      {/* API Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* API Cards - Fully Responsive */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         {apis.map((api) => {
           const Icon = api.icon;
           return (
