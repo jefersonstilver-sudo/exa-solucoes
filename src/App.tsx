@@ -19,6 +19,7 @@ import { useLoadingState } from '@/hooks/useLoadingState';
 import { GlobalActivityTracker } from '@/components/tracking/GlobalActivityTracker';
 import { FloatingDebugButton } from '@/components/debug/FloatingDebugButton';
 import { useActiveSession } from '@/hooks/useActiveSession';
+import { GlobalNotificationProvider } from '@/providers/GlobalNotificationProvider';
 
 // Importações diretas para páginas críticas
 import BuildingStore from './pages/BuildingStore';
@@ -491,15 +492,17 @@ function App() {
         <ResponsiveProvider>
           <TooltipProvider>
             <AuthProvider>
-              <DebugProvider>
-                <Router>
-                  <SimpleCartProvider>
-                    <ErrorBoundary>
-                      <AppContent />
-                    </ErrorBoundary>
-                  </SimpleCartProvider>
-                </Router>
-              </DebugProvider>
+              <GlobalNotificationProvider>
+                <DebugProvider>
+                  <Router>
+                    <SimpleCartProvider>
+                      <ErrorBoundary>
+                        <AppContent />
+                      </ErrorBoundary>
+                    </SimpleCartProvider>
+                  </Router>
+                </DebugProvider>
+              </GlobalNotificationProvider>
             </AuthProvider>
           </TooltipProvider>
         </ResponsiveProvider>

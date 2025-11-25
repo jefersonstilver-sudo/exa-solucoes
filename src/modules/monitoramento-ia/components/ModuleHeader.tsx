@@ -4,6 +4,7 @@
  */
 
 import { Sun, Moon, Menu } from 'lucide-react';
+import { NotificationSettings } from '@/components/admin/notifications/NotificationSettings';
 
 interface ModuleHeaderProps {
   theme: 'dark' | 'light';
@@ -30,28 +31,34 @@ export const ModuleHeader = ({ theme, onToggleTheme, onToggleSidebar }: ModuleHe
           <Menu size={20} />
         </button>
         
-        {/* Theme Toggle Button */}
-        <button
-          onClick={onToggleTheme}
-          className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium ${
-            theme === 'dark'
-              ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:glow-exa'
-              : 'bg-[#9C1E1E] border border-[#9C1E1E] text-white hover:bg-[#B82525] shadow-md hover:shadow-lg'
-          }`}
-          title={theme === 'dark' ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro'}
-        >
-          {theme === 'dark' ? (
-            <>
-              <Sun size={18} />
-              <span className="hidden sm:inline text-sm">Modo Claro</span>
-            </>
-          ) : (
-            <>
-              <Moon size={18} />
-              <span className="hidden sm:inline text-sm">Modo Escuro</span>
-            </>
-          )}
-        </button>
+        {/* Actions */}
+        <div className="ml-auto flex items-center gap-2">
+          {/* Notification Settings */}
+          <NotificationSettings variant="icon" />
+          
+          {/* Theme Toggle Button */}
+          <button
+            onClick={onToggleTheme}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium ${
+              theme === 'dark'
+                ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:glow-exa'
+                : 'bg-[#9C1E1E] border border-[#9C1E1E] text-white hover:bg-[#B82525] shadow-md hover:shadow-lg'
+            }`}
+            title={theme === 'dark' ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro'}
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun size={18} />
+                <span className="hidden sm:inline text-sm">Modo Claro</span>
+              </>
+            ) : (
+              <>
+                <Moon size={18} />
+                <span className="hidden sm:inline text-sm">Modo Escuro</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

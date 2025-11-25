@@ -24,6 +24,18 @@ serve(async (req) => {
     // Parse webhook payload from Z-API
     const payload = await req.json();
     console.log('[ZAPI-WEBHOOK] 📥 Received:', JSON.stringify(payload, null, 2));
+    
+    // 🔍 LOG ESPECIAL PARA EDUARDO - Detectar suas mensagens
+    if (payload.instanceId === '3EA943191043E27F5BEB7EDE6B443D3D') {
+      console.log('🔵 [EDUARDO] Mensagem recebida na instância do Eduardo:', {
+        phone: payload.phone,
+        messageId: payload.messageId || payload.id,
+        hasText: !!payload.text?.message,
+        hasImage: !!payload.image,
+        hasAudio: !!payload.audio,
+        timestamp: new Date().toISOString()
+      });
+    }
 
     // Detectar se é grupo ANTES de processar
     const isGroup = payload.isGroup === true || 
@@ -217,6 +229,16 @@ serve(async (req) => {
     }
 
     console.log('[ZAPI-WEBHOOK] ✅ Agent found:', agent.key, '- Instance:', instanceId);
+    
+    // 🔍 LOG ADICIONAL PARA EDUARDO
+    if (agent.key === 'eduardo') {
+      console.log('🔵 [EDUARDO] Agente encontrado! Processando mensagem:', {
+        phone,
+        messageText: messageText.substring(0, 50),
+        mediaType,
+        timestamp: new Date().toISOString()
+      });
+    }
 
     // ========== RATE LIMITING POR TELEFONE (PRIMEIRA LINHA DE DEFESA) ==========
     const cacheKey = `${phone}_${agent.key}_${messageText.substring(0, 50)}`;

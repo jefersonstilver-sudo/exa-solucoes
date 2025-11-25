@@ -3683,6 +3683,36 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          id: string
+          panel_alerts_enabled: boolean | null
+          panel_alerts_sound: boolean | null
+          panel_alerts_volume: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          panel_alerts_enabled?: boolean | null
+          panel_alerts_sound?: boolean | null
+          panel_alerts_volume?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          panel_alerts_enabled?: boolean | null
+          panel_alerts_sound?: boolean | null
+          panel_alerts_volume?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

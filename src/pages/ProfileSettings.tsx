@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { CompanyBrandSection } from '@/components/settings/CompanyBrandSection';
 import { cn } from '@/lib/utils';
+import { NotificationSettings } from '@/components/admin/notifications/NotificationSettings';
 
 // Validation schemas
 const profileSchema = z.object({
@@ -23,7 +24,7 @@ const profileSchema = z.object({
 
 const ProfileSettings = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const { settings, loading, updateSettings } = useUserSettings();
 
   const [formData, setFormData] = useState({
@@ -302,6 +303,11 @@ const ProfileSettings = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Notificações - Apenas Super Admins */}
+          {isSuperAdmin && (
+            <NotificationSettings variant="full" />
+          )}
         </div>
       </div>
     </div>
