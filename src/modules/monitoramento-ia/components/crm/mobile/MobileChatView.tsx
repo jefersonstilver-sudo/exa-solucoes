@@ -73,7 +73,7 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ type: 'tween', duration: 0.3 }}
-      className="h-full flex flex-col bg-[#e5ddd5] dark:bg-[#0b141a]"
+      className="h-[100dvh] flex flex-col bg-[#e5ddd5] dark:bg-[#0b141a] fixed inset-0 z-50"
     >
       {/* Header */}
       <MobileChatHeader
@@ -85,7 +85,7 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
       {/* Mensagens */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto pb-safe custom-scrollbar"
+        className="flex-1 overflow-y-auto custom-scrollbar"
         style={{
           backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23e5ddd5\'/%3E%3Cpath d=\'M0 0L10 10M10 0L0 10\' stroke=\'%23d1c7b7\' stroke-width=\'0.5\' opacity=\'0.1\'/%3E%3C/svg%3E")',
           backgroundSize: '100px 100px'
@@ -106,7 +106,7 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
             </div>
           </div>
         ) : (
-          <div className="py-4">
+          <div className="py-4 pb-safe">
             {messages.map((msg, index) => (
               <MobileMessageBubble key={msg.id} message={msg} index={index} />
             ))}

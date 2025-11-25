@@ -93,7 +93,7 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
   return (
-    <div className="h-screen flex flex-col bg-module-primary overflow-hidden">
+    <div className="h-[100dvh] flex flex-col fixed inset-0 z-50 bg-module-primary overflow-hidden">
       <AnimatePresence mode="wait">
         {!showChat ? (
           // Lista de Conversas
@@ -133,7 +133,7 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
             {/* Lista de Conversas */}
             <div
               ref={scrollContainerRef}
-              className="flex-1 overflow-y-auto custom-scrollbar"
+              className="flex-1 overflow-y-auto custom-scrollbar pb-safe"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
