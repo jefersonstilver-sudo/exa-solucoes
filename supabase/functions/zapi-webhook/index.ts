@@ -440,7 +440,9 @@ Obrigado pela compreensão!`;
           // UPDATE - atualizar contact_name e is_group se for grupo
           const updateData: any = { 
             last_message_at: new Date().toISOString(),
-            status: 'open'
+            status: 'open',
+            // ✅ Marcar como aguardando resposta quando receber mensagem inbound
+            awaiting_response: true
           };
           
           // Se for grupo, forçar atualização do nome e flag
@@ -452,6 +454,8 @@ Obrigado pela compreensão!`;
               newName: updateData.contact_name
             });
           }
+          
+          console.log('[ZAPI-WEBHOOK] 📬 Marking conversation as awaiting response (inbound message)');
           
           const { data: updated, error: updateError } = await supabase
             .from('conversations')
@@ -484,7 +488,8 @@ Obrigado pela compreensão!`;
               agent_key: agent.key,
               provider: 'zapi',
               status: 'open',
-              last_message_at: new Date().toISOString()
+              last_message_at: new Date().toISOString(),
+              awaiting_response: true // Nova conversa sempre aguarda resposta
             })
             .select()
             .single();

@@ -316,6 +316,17 @@ serve(async (req) => {
     }
 
     if (conversation) {
+      // ✅ Marcar conversa como NÃO aguardando resposta (outbound)
+      console.log('[ZAPI-SEND] 📤 Marking conversation as not awaiting response (outbound)');
+      
+      await supabase
+        .from('conversations')
+        .update({ 
+          awaiting_response: false,
+          last_message_at: new Date().toISOString()
+        })
+        .eq('id', conversation.id);
+      
       await supabase.from('messages').insert({
         conversation_id: conversation.id,
         agent_key: agentKey,

@@ -168,28 +168,41 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
     setSelectedConversationId(conversationId);
     fetchMessages(conversationId);
     
+    console.log('[selectConversation] 📖 Marking conversation as read:', conversationId);
+    
     // 🎯 FASE 1: Update otimista - atualizar UI imediatamente
     setConversations(prev => 
       prev.map(c => c.id === conversationId 
-        ? { ...c, awaiting_response: false } 
+        ? { ...c, awaiting_response: false, unread_count: 0 } 
         : c
       )
     );
     
     // Marcar como lida no banco (awaiting_response = false)
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('conversations')
-        .update({ awaiting_response: false })
-        .eq('id', conversationId);
+        .update({ 
+          awaiting_response: false,
+          unread_count: 0 
+        })
+        .eq('id', conversationId)
+        .select();
       
       if (error) {
-        console.error('[selectConversation] Error updating awaiting_response:', error);
+        console.error('[selectConversation] ❌ Error updating awaiting_response:', error);
+        // Reverter update otimista em caso de erro
+        setConversations(prev => 
+          prev.map(c => c.id === conversationId 
+            ? { ...c, awaiting_response: true } 
+            : c
+          )
+        );
       } else {
-        console.log('[selectConversation] Conversation marked as read:', conversationId);
+        console.log('[selectConversation] ✅ Conversation marked as read:', data);
       }
     } catch (error) {
-      console.error('[selectConversation] Failed to mark as read:', error);
+      console.error('[selectConversation] ❌ Failed to mark as read:', error);
     }
   };
 
