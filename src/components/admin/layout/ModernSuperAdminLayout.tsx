@@ -5,14 +5,12 @@ import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
-import { GlobalPanelAlertProvider } from '../providers/GlobalPanelAlertProvider';
 
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
   
   return (
-    <GlobalPanelAlertProvider>
-      <SidebarProvider 
+    <SidebarProvider
         defaultOpen={!isMobile} 
         style={{
           "--sidebar-width": isTablet ? "240px" : "320px",
@@ -41,7 +39,6 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
           </SidebarInset>
         </div>
       </SidebarProvider>
-    </GlobalPanelAlertProvider>
   );
 };
 
