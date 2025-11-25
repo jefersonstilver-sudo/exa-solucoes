@@ -50,13 +50,22 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
     return (words[0][0] + (words[words.length - 1][0] || '')).toUpperCase();
   };
   
-  // Cor de fundo do card baseado no nome (só para conversas individuais)
+  // Cor de fundo do card baseado no nome/número (identificar por agent ou phone)
   const getCardBgColor = () => {
     if (conversation.is_group) return undefined; // Grupos mantêm cor padrão
     
     const name = conversation.contact_name?.toLowerCase() || '';
-    if (name.includes('eduardo')) return 'hsl(150 40% 96%)'; // verde muito suave
-    if (name.includes('sofia')) return 'hsl(340 45% 96%)'; // rosa muito suave
+    const phone = conversation.contact_phone?.toLowerCase() || '';
+    const agentKey = conversation.agent_key?.toLowerCase() || '';
+    
+    // Verificar por nome OU número/agent_key
+    if (name.includes('eduardo') || phone.includes('eduardo') || agentKey.includes('eduardo')) {
+      return 'hsl(150 60% 92%)'; // Verde bem visível
+    }
+    if (name.includes('sofia') || phone.includes('sofia') || agentKey.includes('sofia')) {
+      return 'hsl(340 70% 92%)'; // Rosa bem visível
+    }
+    
     return undefined; // Outros mantêm cor padrão
   };
   
@@ -79,7 +88,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
         'hover:bg-whatsapp-hover',
         isSelected && 'bg-whatsapp-hover'
       )}
-      style={!isSelected ? { backgroundColor: getCardBgColor() } : undefined}
+      style={{ backgroundColor: getCardBgColor() }}
     >
       {/* Container principal */}
       <div className="flex items-center gap-3">
