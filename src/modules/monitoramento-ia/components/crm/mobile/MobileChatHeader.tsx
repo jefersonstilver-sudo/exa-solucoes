@@ -3,6 +3,7 @@ import { ArrowLeft, Phone, Video, MoreVertical, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { formatContactName } from '@/modules/monitoramento-ia/utils/contactFormatters';
 
 interface MobileChatHeaderProps {
   conversation: any;
@@ -47,7 +48,7 @@ export const MobileChatHeader: React.FC<MobileChatHeaderProps> = ({
             <div className="text-left flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-white font-medium text-sm truncate">
-                  {conversation.contact_name || conversation.contact_phone}
+                  {formatContactName(conversation.contact_name, conversation.contact_phone)}
                 </h2>
                 {conversation.is_sindico && (
                   <Badge className="text-[9px] px-1 py-0 h-3.5 bg-white/20 text-white border-0">

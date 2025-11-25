@@ -4,6 +4,7 @@ import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Users, Check, CheckCheck, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatContactName } from '@/modules/monitoramento-ia/utils/contactFormatters';
 
 // Função para gerar cores diferentes por conversa
 const getConversationColor = (identifier: string) => {
@@ -43,9 +44,16 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
   const avatarColor = getConversationColor(conversation.contact_phone || conversation.id);
   
   // Gerar iniciais do nome (primeiras letras de cada palavra)
-  const getInitials = (name: string | null) => {
-    if (!name) return '?';
-    const words = name.trim().split(' ').filter(w => w.length > 0);
+  const getInitials = (name: string | null, phone: string) => {
+    // Usar o nome formatado
+    const displayName = formatContactName(name, phone);
+    
+    // Se for um fallback genérico, usar "?"
+    if (displayName === 'Contato sem nome' || displayName === 'Grupo WhatsApp') {
+      return '?';
+    }
+    
+    const words = displayName.trim().split(' ').filter(w => w.length > 0);
     if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
     return (words[0][0] + (words[words.length - 1][0] || '')).toUpperCase();
   };
@@ -107,7 +115,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
             <Users className="w-5 h-5 text-white" />
           ) : (
             <span className="text-white font-semibold text-sm">
-              {getInitials(conversation.contact_name)}
+              {getInitials(conversation.contact_name, conversation.contact_phone)}
             </span>
           )}
           
@@ -126,7 +134,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
                 "text-[15px] truncate",
                 hasUnread ? "font-semibold text-whatsapp-text-primary" : "font-normal text-whatsapp-text-primary"
               )}>
-                {conversation.contact_name || conversation.contact_phone}
+                {formatContactName(conversation.contact_name, conversation.contact_phone)}
               </h3>
             </div>
 
