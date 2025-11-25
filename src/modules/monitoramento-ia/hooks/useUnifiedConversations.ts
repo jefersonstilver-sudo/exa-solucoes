@@ -164,9 +164,25 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
     }
   };
 
-  const selectConversation = (conversationId: string) => {
+  const selectConversation = async (conversationId: string) => {
     setSelectedConversationId(conversationId);
     fetchMessages(conversationId);
+    
+    // Marcar como lida (awaiting_response = false)
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .update({ awaiting_response: false })
+        .eq('id', conversationId);
+      
+      if (error) {
+        console.error('[selectConversation] Error updating awaiting_response:', error);
+      } else {
+        console.log('[selectConversation] Conversation marked as read:', conversationId);
+      }
+    } catch (error) {
+      console.error('[selectConversation] Failed to mark as read:', error);
+    }
   };
 
   // Realtime subscriptions (OTIMIZADO)
