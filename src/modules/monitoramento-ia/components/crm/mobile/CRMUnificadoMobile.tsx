@@ -36,6 +36,11 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
     refetch
   } = useUnifiedConversations(filters);
 
+  // Filtrar conversas silenciadas da lista (opcionalmente)
+  const filteredConversations = filters.unreadOnly 
+    ? conversations.filter(c => !c.is_muted)
+    : conversations;
+
   // Buscar agentes
   useEffect(() => {
     const fetchAgents = async () => {
@@ -90,7 +95,7 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
     setIsPulling(false);
   };
 
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+  const selectedConversation = filteredConversations.find(c => c.id === selectedConversationId);
 
   return (
     <div className="h-[100dvh] flex flex-col fixed inset-0 z-50 bg-module-primary overflow-hidden">
@@ -145,7 +150,7 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
                     <p className="text-sm">Carregando conversas...</p>
                   </div>
                 </div>
-              ) : conversations.length === 0 ? (
+              ) : filteredConversations.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center text-module-secondary py-8 px-4">
                     <p className="text-sm">Nenhuma conversa encontrada</p>
@@ -153,7 +158,7 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
                 </div>
               ) : (
                 <div className="pb-safe">
-                  {conversations.map((conv, index) => (
+                  {filteredConversations.map((conv, index) => (
                     <MobileConversationItem
                       key={conv.id}
                       conversation={conv}

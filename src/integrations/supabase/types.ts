@@ -2201,6 +2201,7 @@ export type Database = {
           is_critical: boolean | null
           is_group: boolean | null
           is_hot_lead: boolean | null
+          is_muted: boolean | null
           is_sindico: boolean | null
           last_message_at: string | null
           last_response_time: unknown
@@ -2234,6 +2235,7 @@ export type Database = {
           is_critical?: boolean | null
           is_group?: boolean | null
           is_hot_lead?: boolean | null
+          is_muted?: boolean | null
           is_sindico?: boolean | null
           last_message_at?: string | null
           last_response_time?: unknown
@@ -2267,6 +2269,7 @@ export type Database = {
           is_critical?: boolean | null
           is_group?: boolean | null
           is_hot_lead?: boolean | null
+          is_muted?: boolean | null
           is_sindico?: boolean | null
           last_message_at?: string | null
           last_response_time?: unknown
