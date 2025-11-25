@@ -1,8 +1,9 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { ModuleHeader } from '../components/ModuleHeader';
 import { useState } from 'react';
 import { useModuleTheme, getThemeClass } from '../hooks/useModuleTheme';
+import { useIsMobile } from '@/hooks/use-mobile';
 import '../styles/theme.css';
 import '../styles/scrollbar.css';
 import '../styles/anydesk.css';
@@ -12,6 +13,12 @@ export const MonitoramentoIALayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme, toggleTheme } = useModuleTheme();
   const themeClass = getThemeClass(theme);
+  const location = useLocation();
+  const isMobile = useIsMobile();
+  
+  // Detectar se está na rota do CRM para layout fullscreen no mobile
+  const isCRMRoute = location.pathname.includes('/crm');
+  const isFullScreenMobile = isMobile && isCRMRoute;
 
   return (
     <div className={`min-h-screen flex ${themeClass} relative`} style={{
@@ -34,16 +41,18 @@ export const MonitoramentoIALayout = () => {
       <div className="shape-2" />
 
       {/* Main Content */}
-      <main className={`flex-1 transition-all duration-300 relative z-10 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
-        {/* Module Header */}
-        <ModuleHeader 
-          theme={theme} 
-          onToggleTheme={toggleTheme} 
-          onToggleSidebar={() => setSidebarOpen(true)} 
-        />
+      <main className={`flex-1 transition-all duration-300 relative z-10 ${!isFullScreenMobile && (sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64')}`}>
+        {/* Module Header - esconder no CRM mobile */}
+        {!isFullScreenMobile && (
+          <ModuleHeader 
+            theme={theme} 
+            onToggleTheme={toggleTheme} 
+            onToggleSidebar={() => setSidebarOpen(true)} 
+          />
+        )}
 
-        {/* Page Content */}
-        <div className="p-4 lg:p-8">
+        {/* Page Content - sem padding no CRM mobile */}
+        <div className={isFullScreenMobile ? '' : 'p-4 lg:p-8'}>
           <Outlet />
         </div>
       </main>
