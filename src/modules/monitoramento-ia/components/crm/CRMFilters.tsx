@@ -71,7 +71,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
   };
 
   return (
-    <div className="flex items-center gap-4 flex-wrap">
+    <div className="bg-white/70 backdrop-blur-xl border border-white/20 shadow-lg rounded-xl p-4 flex items-center gap-4 flex-wrap">
       <div className="flex items-center gap-2">
         <Filter className="w-4 h-4 text-muted-foreground" />
         <span className="text-sm font-medium">Filtros:</span>
@@ -84,7 +84,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
           onFilterChange({ ...filters, agentKey: value === 'all' ? undefined : value })
         }
       >
-        <SelectTrigger className="w-[180px] bg-module-card border-module text-module-primary">
+        <SelectTrigger className="w-[180px] bg-white/50 border-white/30 text-module-primary">
           <SelectValue placeholder="Todos os agentes" />
         </SelectTrigger>
         <SelectContent className={cn(getThemeClass(theme), "bg-module-card border-module text-module-primary z-50")}>
@@ -103,7 +103,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
           onFilterChange({ ...filters, sentiment: value === 'all' ? undefined : value })
         }
       >
-        <SelectTrigger className="w-[180px] bg-module-card border-module text-module-primary">
+        <SelectTrigger className="w-[180px] bg-white/50 border-white/30 text-module-primary">
           <SelectValue placeholder="Todos os sentimentos" />
         </SelectTrigger>
         <SelectContent className={cn(getThemeClass(theme), "bg-module-card border-module text-module-primary z-50")}>
@@ -122,7 +122,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
           onClick={() => onFilterChange({ ...filters, unreadOnly: !filters.unreadOnly })}
           className={filters.unreadOnly 
             ? 'bg-module-accent text-white hover:bg-module-accent/90' 
-            : 'bg-module-card border-module text-module-primary hover:bg-module-secondary/50'}
+            : 'bg-white/50 border-white/30 text-module-primary hover:bg-white/70'}
         >
           Não Lidas
         </Button>
@@ -131,7 +131,7 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
           onClick={() => onFilterChange({ ...filters, criticalOnly: !filters.criticalOnly })}
           className={filters.criticalOnly 
             ? 'bg-red-500 text-white hover:bg-red-600' 
-            : 'bg-module-card border-module text-module-primary hover:bg-module-secondary/50'}
+            : 'bg-white/50 border-white/30 text-module-primary hover:bg-white/70'}
         >
           Críticas
         </Button>
@@ -140,25 +140,9 @@ export const CRMFilters: React.FC<CRMFiltersProps> = ({ filters, onFilterChange,
           onClick={() => onFilterChange({ ...filters, hotLeadsOnly: !filters.hotLeadsOnly })}
           className={filters.hotLeadsOnly 
             ? 'bg-orange-500 text-white hover:bg-orange-600' 
-            : 'bg-module-card border-module text-module-primary hover:bg-module-secondary/50'}
+            : 'bg-white/50 border-white/30 text-module-primary hover:bg-white/70'}
         >
           Leads Quentes
-        </Button>
-      </div>
-
-      <div className="ml-auto flex gap-2">
-        <Button 
-          size="sm" 
-          onClick={handleImportHistory}
-          disabled={importing}
-          className="bg-module-accent text-white hover:bg-module-accent/90"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          {importing ? 'Importando...' : 'Extrair Histórico'}
-        </Button>
-        <Button size="sm" onClick={onRefresh} className="bg-module-card border border-module text-module-primary hover:bg-module-secondary/50">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Atualizar
         </Button>
       </div>
     </div>
