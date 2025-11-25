@@ -17,19 +17,29 @@ interface WhatsAppCRMChatProps {
   onRefresh: () => void;
 }
 
-// Função para gerar cores suaves por participante
+// Função para gerar cores suaves por participante com melhor distribuição
 const getParticipantColor = (identifier: string) => {
   const colors = [
-    'hsl(220 60% 92%)', // azul suave
-    'hsl(160 60% 92%)', // verde suave
-    'hsl(280 60% 92%)', // roxo suave
-    'hsl(30 60% 92%)',  // laranja suave
-    'hsl(340 60% 92%)', // rosa suave
+    'hsl(210 65% 88%)', // azul claro
+    'hsl(150 55% 88%)', // verde menta
+    'hsl(280 50% 90%)', // roxo lavanda
+    'hsl(40 70% 88%)',  // amarelo suave
+    'hsl(340 60% 90%)', // rosa
+    'hsl(180 50% 88%)', // ciano
+    'hsl(20 65% 88%)',  // coral
+    'hsl(260 55% 90%)', // azul violeta
+    'hsl(100 50% 88%)', // verde lima
+    'hsl(320 55% 90%)', // magenta suave
   ];
+  
+  // Hash mais robusto usando múltiplos passes
   let hash = 0;
   for (let i = 0; i < identifier.length; i++) {
-    hash = identifier.charCodeAt(i) + ((hash << 5) - hash);
+    const char = identifier.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Converte para 32bit integer
   }
+  
   return colors[Math.abs(hash) % colors.length];
 };
 
