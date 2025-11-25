@@ -20,16 +20,16 @@ interface WhatsAppCRMChatProps {
 // Função para gerar cores suaves por participante com melhor distribuição
 const getParticipantColor = (identifier: string) => {
   const colors = [
-    'hsl(210 65% 88%)', // azul claro
-    'hsl(150 55% 88%)', // verde menta
-    'hsl(280 50% 90%)', // roxo lavanda
-    'hsl(40 70% 88%)',  // amarelo suave
-    'hsl(340 60% 90%)', // rosa
-    'hsl(180 50% 88%)', // ciano
-    'hsl(20 65% 88%)',  // coral
-    'hsl(260 55% 90%)', // azul violeta
-    'hsl(100 50% 88%)', // verde lima
-    'hsl(320 55% 90%)', // magenta suave
+    'hsl(210 85% 45%)', // azul forte
+    'hsl(150 70% 40%)', // verde escuro
+    'hsl(280 75% 50%)', // roxo
+    'hsl(30 90% 45%)',  // laranja
+    'hsl(340 80% 50%)', // rosa forte
+    'hsl(180 70% 40%)', // ciano escuro
+    'hsl(260 75% 50%)', // azul violeta
+    'hsl(100 70% 35%)', // verde lima escuro
+    'hsl(320 75% 45%)', // magenta
+    'hsl(190 85% 40%)', // azul petróleo
   ];
   
   // Hash mais robusto usando múltiplos passes
@@ -177,8 +177,8 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
               const imageUrl = msg.raw_payload?.image?.imageUrl;
               const videoUrl = msg.raw_payload?.video?.videoUrl;
 
-              // Cor do participante (para inbound em grupos)
-              const participantColor = isGroup && !isOutbound && participantPhone
+              // Cor apenas para o NOME do participante (não para a bolha)
+              const senderNameColor = isGroup && !isOutbound && participantPhone
                 ? getParticipantColor(participantPhone)
                 : undefined;
 
@@ -209,11 +209,13 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
                           "rounded-bl-none"
                         ]
                       )}
-                      style={participantColor ? { backgroundColor: participantColor } : undefined}
                     >
-                      {/* Nome do remetente em grupos (apenas inbound) */}
+                      {/* Nome do remetente em grupos (apenas inbound) com cor diferente por pessoa */}
                       {!isOutbound && isGroup && senderName && (
-                        <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(220 80% 40%)' }}>
+                        <p 
+                          className="text-xs font-semibold mb-1" 
+                          style={{ color: senderNameColor || 'hsl(220 80% 40%)' }}
+                        >
                           {senderName}
                         </p>
                       )}
