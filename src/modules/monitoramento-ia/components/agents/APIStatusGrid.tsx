@@ -138,7 +138,7 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
     <div className="bg-module-card rounded-[14px] border border-module p-6">
       <h2 className="text-xl font-bold text-module-primary mb-4">Status dos Agentes</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {activeAgents.map((agent) => {
           const status = statuses[agent.key];
           const isLoading = testing[agent.key];
