@@ -84,22 +84,39 @@ export const useLeadDetails = (conversationId: string | null) => {
   };
 
   const updateLeadType = async (contactType: string) => {
-    if (!conversationId) return;
+    if (!conversationId) {
+      console.error('No conversationId provided');
+      return;
+    }
+
+    console.log('Updating lead type to:', contactType, 'for conversation:', conversationId);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const { error } = await supabase
-        .from('conversations')
-        .update({ 
-          contact_type: contactType,
-          contact_type_source: 'manual',
-          contact_type_updated_by: user?.id,
-          contact_type_updated_at: new Date().toISOString()
-        })
-        .eq('id', conversationId);
+      const updateData = { 
+        contact_type: contactType,
+        contact_type_source: 'manual' as const,
+        contact_type_updated_by: user?.id || null,
+        contact_type_updated_at: new Date().toISOString()
+      };
 
-      if (error) throw error;
+      console.log('Update data:', updateData);
+      
+      const { data, error } = await supabase
+        .from('conversations')
+        .update(updateData)
+        .eq('id', conversationId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Update successful, returned data:', data);
+      
       toast.success('Tipo de contato atualizado manualmente');
       await fetchLeadDetails();
     } catch (error) {
