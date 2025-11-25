@@ -246,6 +246,20 @@ verify_jwt = true
 [functions.sofia-deep-analysis]
 verify_jwt = false
 
+[functions.sync-anydesk]
+verify_jwt = false
+
+[functions.monitor-panels]
+verify_jwt = false
+
 [[cron]]
 function_name = "conversation-follow-up"
 schedule = "*/2 * * * *"  # A cada 2 minutos
+
+[[cron]]
+function_name = "sync-anydesk"
+schedule = "* * * * *"  # A cada 1 minuto
+
+[[cron]]
+function_name = "monitor-panels"
+schedule = "* * * * *"  # A cada 1 minuto
