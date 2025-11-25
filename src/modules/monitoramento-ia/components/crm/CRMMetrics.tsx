@@ -23,63 +23,58 @@ export const CRMMetrics: React.FC<CRMMetricsProps> = ({ metrics }) => {
       value: metrics.total,
       icon: MessageSquare,
       color: 'text-blue-600',
-      bgColor: 'bg-blue-500/20'
+      bgColor: 'bg-blue-500/10'
     },
     {
       label: 'Não Lidas',
       value: metrics.unread,
       icon: Zap,
       color: 'text-orange-600',
-      bgColor: 'bg-orange-500/20'
+      bgColor: 'bg-orange-500/10'
+    },
+    {
+      label: 'Críticas',
+      value: metrics.critical,
+      icon: AlertCircle,
+      color: 'text-red-600',
+      bgColor: 'bg-red-500/10'
+    },
+    {
+      label: 'Leads Quentes',
+      value: metrics.hotLeads,
+      icon: TrendingUp,
+      color: 'text-green-600',
+      bgColor: 'bg-green-500/10'
     },
     {
       label: 'Aguardando',
       value: metrics.awaiting,
       icon: Clock,
       color: 'text-purple-600',
-      bgColor: 'bg-purple-500/20'
-    },
-    {
-      label: 'Msgs Sofia',
-      value: metrics.sofiaMsgToday,
-      icon: MessageSquare,
-      color: 'text-pink-600',
-      bgColor: 'bg-pink-500/20'
-    },
-    {
-      label: 'Msgs Eduardo',
-      value: metrics.eduardoMsgToday,
-      icon: MessageSquare,
-      color: 'text-green-600',
-      bgColor: 'bg-green-500/20'
+      bgColor: 'bg-purple-500/10'
     }
   ];
 
   return (
-    <div className="flex gap-4 items-center">
-      <h2 className="text-lg font-semibold text-gray-800">CRM & Conversas</h2>
-      <div className="flex-1 flex gap-3">
-        {metricsData.map((metric, index) => {
-          const Icon = metric.icon;
-          return (
-            <div 
-              key={index} 
-              className={cn(
-                "flex items-center gap-2.5 px-3 py-2 rounded-xl",
-                "backdrop-blur-md bg-white/60 border border-gray-200/50",
-                "shadow-sm hover:shadow-md transition-all"
-              )}
-            >
-              <div className={cn('p-1.5 rounded-lg', metric.bgColor)}>
-                <Icon className={cn('w-4 h-4', metric.color)} />
+    <div className="flex gap-4">
+      <div className="flex-1">
+        <h2 className="text-xl font-semibold mb-4 text-module-primary">CRM & Conversas Unificadas</h2>
+        <div className="grid grid-cols-5 gap-4">
+          {metricsData.map((metric, index) => {
+            const Icon = metric.icon;
+            return (
+              <div key={index} className="flex items-center gap-3">
+                <div className={cn('p-2 rounded-lg', metric.bgColor)}>
+                  <Icon className={cn('w-5 h-5', metric.color)} />
+                </div>
+                <div>
+                  <p className="text-xs text-module-secondary">{metric.label}</p>
+                  <p className={cn('text-2xl font-bold', metric.color)}>{metric.value}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] text-gray-600 font-medium">{metric.label}</p>
-                <p className={cn('text-lg font-bold', metric.color)}>{metric.value}</p>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
