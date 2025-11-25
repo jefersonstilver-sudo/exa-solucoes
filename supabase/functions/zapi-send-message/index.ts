@@ -287,12 +287,33 @@ serve(async (req) => {
     // Buscar conversation_id baseado em phone + agent
     const { data: conversation } = await supabase
       .from('conversations')
-      .select('id')
+      .select('id, agent_key')
       .eq('contact_phone', phone)
       .eq('agent_key', agentKey)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    // 🤖 FASE 4: Verificar se é Eduardo enviando em conversa da Sofia
+    if (conversation && agentKey === 'eduardo') {
+      // Buscar se existe conversa da Sofia com este telefone
+      const { data: sofiaConversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('contact_phone', phone)
+        .eq('agent_key', 'sofia')
+        .maybeSingle();
+      
+      if (sofiaConversation) {
+        console.log('[ZAPI-SEND] 🛑 Pausando Sofia - Eduardo assumiu a conversa');
+        
+        // Pausar Sofia nesta conversa
+        await supabase
+          .from('conversations')
+          .update({ sofia_paused: true })
+          .eq('id', sofiaConversation.id);
+      }
+    }
 
     if (conversation) {
       await supabase.from('messages').insert({

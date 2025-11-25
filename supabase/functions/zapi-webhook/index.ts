@@ -554,6 +554,23 @@ Obrigado pela compreensão!`;
 
         console.log('[ZAPI-WEBHOOK] ✅ Route result:', routeResult);
 
+        // 🤖 FASE 4: Verificar se Sofia está pausada antes de chamar IA
+        let sofiaPaused = false;
+        if (agent.key === 'sofia') {
+          const { data: conv } = await supabase
+            .from('conversations')
+            .select('sofia_paused')
+            .eq('id', conversation.id)
+            .single();
+          
+          sofiaPaused = conv?.sofia_paused === true;
+          
+          if (sofiaPaused) {
+            console.log('[ZAPI-WEBHOOK] 🛑 Sofia pausada - Eduardo assumiu. Não responder.');
+            return; // Não chamar Sofia
+          }
+        }
+
         // Verificar se precisa chamar IA automaticamente
         if (agent.ai_auto_response && routeResult?.routed_to) {
           console.log('[ZAPI-WEBHOOK] 🤖 AI auto-response enabled, calling generate-ai-response...');

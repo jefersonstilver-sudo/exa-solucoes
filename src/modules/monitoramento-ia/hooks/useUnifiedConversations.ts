@@ -168,7 +168,15 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
     setSelectedConversationId(conversationId);
     fetchMessages(conversationId);
     
-    // Marcar como lida (awaiting_response = false)
+    // 🎯 FASE 1: Update otimista - atualizar UI imediatamente
+    setConversations(prev => 
+      prev.map(c => c.id === conversationId 
+        ? { ...c, awaiting_response: false } 
+        : c
+      )
+    );
+    
+    // Marcar como lida no banco (awaiting_response = false)
     try {
       const { error } = await supabase
         .from('conversations')

@@ -153,6 +153,15 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
           </div>
         </div>
 
+        {/* 🤖 FASE 4: Aviso se Sofia pausada */}
+        {conversation?.sofia_paused && conversation?.agent_key === 'sofia' && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-3 mx-4 mt-2">
+            <p className="text-sm text-yellow-800 dark:text-yellow-300">
+              ⚠️ <strong>Sofia pausada:</strong> Eduardo assumiu esta conversa
+            </p>
+          </div>
+        )}
+
         {/* Área de mensagens com scroll */}
         <div className="flex-1 overflow-y-auto px-16 py-4 space-y-2">
           {loading ? (
