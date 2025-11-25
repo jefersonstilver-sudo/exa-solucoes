@@ -421,17 +421,11 @@ serve(async (req) => {
             ? b.visualizacoes_mes.toString()
             : (b.quantidade_telas ? (b.quantidade_telas * 7350).toString() : '7350');
           
-          // 🔧 FASE 3: Formato ultra-compacto para evitar truncamento do WhatsApp
-          // ETAPA 5: Adicionar indicador de status
-          const statusIndicator = b.status === 'instalação' ? ' (em instalação)' : '';
-          let formatted = `🏢 ${nome}${statusIndicator} • R$ ${precoBase}/mês`;
+          const publicoEstimado = b.publico_estimado || (b.numero_unidades ? b.numero_unidades * 3 : 300);
           
-          // Adicionar detalhes SOMENTE se usuário pediu
-          if (detailsRequested && bairro) {
-            formatted += `\n📍 ${bairro}${endereco ? ' - ' + endereco : ''}`;
-            // 🔧 Usar número sem separador para evitar quebra no WhatsApp
-            formatted += `\n👥 ${visualizacoes}/mês`;
-          }
+          // FORMATO UNIFICADO - Alinhado com knowledge items
+          const statusIndicator = b.status === 'instalação' ? ' (em instalação)' : '';
+          let formatted = `🏢 ${nome}${statusIndicator}\n👥 Público: ${publicoEstimado} pessoas/mês | Exibições: ${visualizacoes}/mês\n💰 R$ ${precoBase}/mês`;
           
           return formatted;
         }).filter(b => b !== null).join('\n\n') // Remover prédios sem preço
