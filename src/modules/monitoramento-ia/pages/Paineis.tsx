@@ -33,8 +33,8 @@ const SimpleStatCard = ({ label, value, color }: { label: string; value: number;
   };
   
   return (
-    <div className="glass-card border-module rounded-[14px] p-4 hover:scale-105 transition-all shadow-sm">
-      <p className="text-module-secondary text-sm mb-1">{label}</p>
+    <div className="bg-card border border-border rounded-[14px] p-4 hover:scale-105 transition-all shadow-sm">
+      <p className="text-muted-foreground text-sm mb-1">{label}</p>
       <p className={`text-2xl font-bold ${colorClasses[color]}`}>
         {value}
       </p>
@@ -250,13 +250,13 @@ export const PaineisPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="glass-card border-module px-6 py-4 rounded-xl shadow-sm">
+      <div className="bg-card border border-border px-6 py-4 rounded-xl shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-module-primary">
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
               Painéis
             </h1>
-            <p className="text-sm text-module-secondary mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Última atualização:{' '}
               {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
             </p>
@@ -297,12 +297,12 @@ export const PaineisPage = () => {
 
       {/* Card de TODAS as Quedas - Colapsável */}
       <Collapsible open={isQuedasOpen} onOpenChange={setIsQuedasOpen}>
-        <div className="glass-card border-module rounded-[14px] p-4 shadow-sm">
+        <div className="bg-card border border-border rounded-[14px] p-4 shadow-sm">
           <CollapsibleTrigger className="w-full">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-red-600" />
-                <h3 className="text-lg font-bold text-module-primary">
+                <h3 className="text-lg font-bold text-foreground">
                   {quedaPeriod === 'hoje' ? 'Todas as Quedas de Hoje' : 
                    quedaPeriod === 'ontem' ? 'Todas as Quedas de Ontem' :
                    quedaPeriod === 'esta-semana' ? 'Quedas desta Semana' :
@@ -314,7 +314,7 @@ export const PaineisPage = () => {
                   {todasQuedas.reduce((sum, painel) => sum + painel.total_ocorrencias, 0)} quedas
                 </Badge>
               </div>
-              <ChevronDown className={`w-5 h-5 text-module-secondary transition-transform ${isQuedasOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isQuedasOpen ? 'rotate-180' : ''}`} />
             </div>
           </CollapsibleTrigger>
           
@@ -339,12 +339,12 @@ export const PaineisPage = () => {
       {/* Loading state */}
       {loading && devices.length === 0 ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#9C1E1E]"></div>
-          <p className="mt-4 text-module-secondary">Carregando painéis...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Carregando painéis...</p>
         </div>
       ) : devices.length === 0 ? (
-        <div className="text-center py-12 bg-module-card rounded-xl shadow-sm border-module border p-8">
-          <p className="text-module-secondary">Nenhum painel encontrado</p>
+        <div className="text-center py-12 bg-card rounded-xl shadow-sm border border-border p-8">
+          <p className="text-muted-foreground">Nenhum painel encontrado</p>
         </div>
       ) : (
         <>

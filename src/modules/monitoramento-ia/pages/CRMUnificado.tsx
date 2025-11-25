@@ -55,7 +55,7 @@ export const CRMUnificado = () => {
 
   // Renderizar versão desktop com tema WhatsApp
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 overflow-hidden">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header com métricas e filtros - Esconde em fullscreen */}
       {!isFullscreen && (
         <div className="p-4 space-y-4">

@@ -91,7 +91,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
       className={cn(
         `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-40 border-r flex flex-col`,
         collapsed ? 'w-16' : 'w-64',
-        'bg-[#3A0808] border-[#9C1E1E]/50 text-white shadow-2xl'
+        'bg-[hsl(var(--exa-red-dark))] dark:bg-[hsl(var(--exa-red-dark))] border-border text-white shadow-2xl'
       )}
     >
       {/* Botão flutuante glass na borda - SEMPRE VISÍVEL */}

@@ -197,16 +197,16 @@ export const DashboardUnificado = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-module-card rounded-xl border border-module p-6 lg:p-8">
+      <div className="bg-card rounded-xl border border-border p-6 lg:p-8 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-module-primary mb-2">
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
               Dashboard Unificado
             </h1>
-            <p className="text-module-secondary">
+            <p className="text-muted-foreground">
               Visão geral completa: Painéis, CRM e Alertas
             </p>
-            <p className="text-xs text-module-tertiary mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Última atualização: {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
             </p>
           </div>
@@ -258,11 +258,11 @@ export const DashboardUnificado = () => {
 
       {/* Painéis Críticos Offline */}
       {offlineDevices.length > 0 && (
-        <div className="bg-module-card rounded-xl border border-module p-6">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-500" />
-              <h2 className="text-xl font-bold text-module-primary">
+              <h2 className="text-xl font-bold text-foreground">
                 Painéis Críticos - Offline Agora
               </h2>
             </div>
@@ -282,11 +282,11 @@ export const DashboardUnificado = () => {
       )}
 
       {/* Preview do CRM */}
-      <div className="bg-module-card rounded-xl border border-module p-6">
+      <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-blue-500" />
-            <h2 className="text-xl font-bold text-module-primary">
+            <h2 className="text-xl font-bold text-foreground">
               Conversas Recentes - Aguardando Resposta
             </h2>
           </div>
