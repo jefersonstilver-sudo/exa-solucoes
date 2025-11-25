@@ -62,15 +62,116 @@ serve(async (req) => {
     const phone = payload.phone || payload.remoteJid?.replace('@s.whatsapp.net', '').replace('@g.us', '');
     const instanceId = payload.instanceId;
 
-    // ========== FILTRO: IGNORAR MENSAGENS ENVIADAS PELO PRÓPRIO AGENTE ==========
+    // ========== CAPTURAR MENSAGENS ENVIADAS PELO PRÓPRIO AGENTE (fromMe=true) ==========
     const fromMe = payload.fromMe || (payload.isGroupMsg === false && !payload.author);
     
     if (fromMe) {
-      console.log('[ZAPI-WEBHOOK] ⏭️ Skipping outbound message (fromMe=true)');
+      console.log('[ZAPI-WEBHOOK] 📤 Processing outbound message (fromMe=true)');
+      
+      // Identificar agente pela instanceId
+      const { data: agent, error: agentError } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('whatsapp_provider', 'zapi')
+        .eq('zapi_config->>instance_id', instanceId)
+        .single();
+
+      if (agentError || !agent) {
+        console.error('[ZAPI-WEBHOOK] Agent not found for instance:', instanceId);
+        return new Response(JSON.stringify({ error: 'Agent not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Extrair texto da mensagem
+      let messageText = '';
+      if (payload.text?.message) {
+        messageText = payload.text.message;
+      } else if (payload.body) {
+        messageText = payload.body;
+      }
+
+      if (!messageText) {
+        console.log('[ZAPI-WEBHOOK] Outbound message has no text, skipping');
+        return new Response(JSON.stringify({ 
+          success: true, 
+          skipped: true,
+          reason: 'no_text'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Buscar conversa existente
+      const externalId = `${phone}_${agent.key}`;
+      const { data: conv } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('external_id', externalId)
+        .maybeSingle();
+
+      if (conv) {
+        console.log('[ZAPI-WEBHOOK] 💾 Saving outbound message to conversation:', conv.id);
+
+        // Salvar mensagem outbound
+        const { error: insertError } = await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conv.id,
+            agent_key: agent.key,
+            provider: 'zapi',
+            direction: 'outbound',
+            from_role: 'agent',
+            body: messageText,
+            is_automated: false,
+            raw_payload: { 
+              zapi_message_id: messageId,
+              sent_via: 'whatsapp_direct',
+              fromMe: true,
+              timestamp: new Date().toISOString()
+            }
+          });
+
+        if (insertError) {
+          console.error('[ZAPI-WEBHOOK] Error inserting outbound message:', insertError);
+        } else {
+          console.log('[ZAPI-WEBHOOK] ✅ Outbound message saved');
+        }
+
+        // Atualizar conversa: não está mais aguardando resposta
+        await supabase
+          .from('conversations')
+          .update({ 
+            awaiting_response: false,
+            last_message_at: new Date().toISOString()
+          })
+          .eq('id', conv.id);
+
+        // Log no zapi_logs
+        await supabase.from('zapi_logs').insert({
+          agent_key: agent.key,
+          direction: 'outbound',
+          phone_number: phone,
+          message_text: messageText,
+          status: 'sent',
+          zapi_message_id: messageId,
+          metadata: {
+            sent_via: 'whatsapp_direct',
+            fromMe: true
+          }
+        });
+
+        console.log('[ZAPI-WEBHOOK] ✅ Outbound message fully processed');
+      } else {
+        console.log('[ZAPI-WEBHOOK] ⚠️ No existing conversation found for outbound message');
+      }
+
       return new Response(JSON.stringify({ 
         success: true, 
-        skipped: true,
-        reason: 'outbound_message'
+        direction: 'outbound',
+        agent: agent.key,
+        messageId
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
