@@ -42,6 +42,14 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
   // Gerar cor única por conversa (usando phone como identificador)
   const avatarColor = getConversationColor(conversation.contact_phone || conversation.id);
   
+  // Gerar iniciais do nome (primeiras letras de cada palavra)
+  const getInitials = (name: string | null) => {
+    if (!name) return '?';
+    const words = name.trim().split(' ').filter(w => w.length > 0);
+    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+    return (words[0][0] + (words[words.length - 1][0] || '')).toUpperCase();
+  };
+  
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
     if (isToday(date)) {
@@ -70,10 +78,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
           style={{ backgroundColor: avatarColor }}
         >
           {conversation.is_group ? (
-            <Users className="w-6 h-6 text-white" />
+            <Users className="w-5 h-5 text-white" />
           ) : (
-            <span className="text-white font-medium text-lg">
-              {conversation.contact_name?.charAt(0)?.toUpperCase() || '?'}
+            <span className="text-white font-semibold text-sm">
+              {getInitials(conversation.contact_name)}
             </span>
           )}
           
@@ -141,12 +149,12 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
             </div>
           </div>
 
-          {/* Badges informativos (pequenos, discret os) */}
+          {/* Badges informativos (pequenos, discretos) */}
           {(conversation.is_group || conversation.is_sindico) && (
             <div className="flex gap-1 mt-1">
               {conversation.is_group && (
                 <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-whatsapp-green-light/30 text-whatsapp-green-light bg-transparent">
-                  Grupo
+                  {conversation.contact_name ? `Grupo ${conversation.contact_name.split(' ')[0]}` : 'Grupo'}
                 </Badge>
               )}
               {conversation.is_sindico && (
