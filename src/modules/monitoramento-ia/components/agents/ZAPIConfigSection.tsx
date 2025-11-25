@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Copy, Check, ExternalLink, Settings, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Copy, Check, ExternalLink, Settings, AlertTriangle, CheckCircle, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ZAPICredentialsModal } from './ZAPICredentialsModal';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ZAPIConfigSectionProps {
   agentKey: string;
@@ -20,12 +21,39 @@ interface ZAPIConfigSectionProps {
 export const ZAPIConfigSection = ({ agentKey, zapiConfig, whatsappNumber, onConfigUpdate }: ZAPIConfigSectionProps) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
     toast.success(`${field} copiado!`);
     setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const handleImportHistory = async () => {
+    setIsImporting(true);
+    try {
+      toast.info('Iniciando importação de histórico...', {
+        description: 'Isso pode levar alguns minutos dependendo do volume de mensagens'
+      });
+
+      const { data, error } = await supabase.functions.invoke('zapi-import-history', {
+        body: { agentKey }
+      });
+
+      if (error) throw error;
+
+      toast.success('Histórico importado com sucesso!', {
+        description: `${data.conversationsImported} conversas e ${data.messagesImported} mensagens importadas`
+      });
+    } catch (error: any) {
+      console.error('Error importing history:', error);
+      toast.error('Erro ao importar histórico', {
+        description: error.message || 'Verifique os logs para mais detalhes'
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   if (!zapiConfig) {
@@ -50,6 +78,25 @@ export const ZAPIConfigSection = ({ agentKey, zapiConfig, whatsappNumber, onConf
           <Button
             variant="outline"
             size="sm"
+            onClick={handleImportHistory}
+            disabled={isImporting || isPending}
+            className="border-module-accent text-module-accent hover:bg-module-accent/10"
+          >
+            {isImporting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Importando...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Importar Histórico
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowCredentialsModal(true)}
             className="border-module text-module-secondary hover:text-module-primary"
           >
@@ -62,6 +109,26 @@ export const ZAPIConfigSection = ({ agentKey, zapiConfig, whatsappNumber, onConf
               : 'bg-green-500/10 text-green-500'
           }`}>
             {isPending ? '⚠️ Configuração Pendente' : '✓ Conectado'}
+          </div>
+        </div>
+      </div>
+
+      {/* Info sobre importação de histórico */}
+      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <Download className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-blue-400">
+              Importar Histórico de Conversas
+            </p>
+            <p className="text-xs text-module-secondary">
+              Clique no botão "Importar Histórico" acima para buscar conversas antigas do Z-API. 
+              O sistema irá importar até 500 mensagens por conversa, incluindo conversas que 
+              existiam antes da conexão com este sistema.
+            </p>
+            <p className="text-xs text-yellow-500 font-medium">
+              ⚠️ A importação pode levar alguns minutos dependendo do volume de mensagens
+            </p>
           </div>
         </div>
       </div>
