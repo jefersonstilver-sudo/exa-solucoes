@@ -49,13 +49,11 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
         <div className="relative shrink-0">
           <div className={cn(
             'w-12 h-12 rounded-full flex items-center justify-center border-2',
-            hasUnread ? 'bg-[#25D366]/20 border-[#25D366]/50' : agentColor.bg,
-            !hasUnread && agentColor.border
+            agentColor.bg,
+            agentColor.border,
+            hasUnread && 'ring-2 ring-[#25D366] ring-offset-2'
           )}>
-            <User className={cn(
-              'w-6 h-6',
-              hasUnread ? 'text-[#25D366]' : agentColor.text
-            )} />
+            <User className={cn('w-6 h-6', agentColor.text)} />
           </div>
           {hasUnread && (
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#25D366] rounded-full border-2 border-background animate-pulse" />

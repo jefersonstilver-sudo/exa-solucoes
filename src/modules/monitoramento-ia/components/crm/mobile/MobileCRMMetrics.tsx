@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, MessageSquare, AlertCircle, TrendingUp, Clock, Zap } from 'lucide-react';
+import { ChevronDown, ChevronUp, MessageSquare, AlertCircle, TrendingUp, Clock, Zap, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,6 +11,8 @@ interface MobileCRMMetricsProps {
     hotLeads: number;
     awaiting: number;
     avgResponseTime: number;
+    sofiaMsgToday: number;
+    eduardoMsgToday: number;
   };
 }
 
@@ -69,18 +71,18 @@ export const MobileCRMMetrics: React.FC<MobileCRMMetricsProps> = ({ metrics }) =
                 bgColor="bg-[#25D366]/10"
               />
               <MetricCard
-                icon={AlertCircle}
-                label="Crítico"
-                value={metrics.critical}
-                color="text-red-500"
-                bgColor="bg-red-500/10"
+                icon={Bot}
+                label="Sofia"
+                value={metrics.sofiaMsgToday}
+                color="text-blue-500"
+                bgColor="bg-blue-500/10"
               />
               <MetricCard
-                icon={TrendingUp}
-                label="Hot"
-                value={metrics.hotLeads}
-                color="text-orange-500"
-                bgColor="bg-orange-500/10"
+                icon={Bot}
+                label="Eduardo"
+                value={metrics.eduardoMsgToday}
+                color="text-purple-500"
+                bgColor="bg-purple-500/10"
               />
               <MetricCard
                 icon={Clock}
