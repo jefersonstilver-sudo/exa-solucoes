@@ -60,6 +60,15 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
               NOVA
             </Badge>
           )}
+          {/* Indicador de Classificação */}
+          {conversation.contact_type && conversation.contact_type_source && conversation.contact_type_source !== 'unknown' && (
+            <Badge 
+              variant={conversation.contact_type_source === 'manual' ? 'secondary' : 'outline'}
+              className="text-[10px] px-1.5 py-0 h-4"
+            >
+              {conversation.contact_type_source === 'manual' ? '👤' : '🤖'}
+            </Badge>
+          )}
         </div>
 
         <div className="flex gap-1 flex-shrink-0">

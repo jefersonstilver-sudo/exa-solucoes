@@ -8,6 +8,9 @@ interface Conversation {
   provider: string;
   contact_name: string;
   contact_phone: string;
+  contact_type: string | null;
+  contact_type_source: 'ai' | 'manual' | 'unknown';
+  contact_type_updated_by: string | null;
   last_message_at: string;
   sentiment: string;
   urgency_level: number;
@@ -113,15 +116,20 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
         return;
       }
 
-      setConversations(data || []);
+      const typedData = (data || []).map(conv => ({
+        ...conv,
+        contact_type_source: (conv.contact_type_source || 'unknown') as 'ai' | 'manual' | 'unknown'
+      }));
+
+      setConversations(typedData);
 
       // Calcular métricas
       const newMetrics: CRMMetrics = {
-        total: data?.length || 0,
-        unread: data?.filter(c => c.awaiting_response).length || 0,
-        critical: data?.filter(c => c.is_critical).length || 0,
-        hotLeads: data?.filter(c => c.is_hot_lead).length || 0,
-        awaiting: data?.filter(c => c.awaiting_response).length || 0,
+        total: typedData?.length || 0,
+        unread: typedData?.filter(c => c.awaiting_response).length || 0,
+        critical: typedData?.filter(c => c.is_critical).length || 0,
+        hotLeads: typedData?.filter(c => c.is_hot_lead).length || 0,
+        awaiting: typedData?.filter(c => c.awaiting_response).length || 0,
         avgResponseTime: 0 // TODO: calcular baseado em avg_response_time
       };
 
@@ -219,7 +227,10 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
         },
         (payload) => {
           const newConv = payload.new as Conversation;
-          setConversations(prev => [newConv, ...prev]);
+          setConversations(prev => [{
+            ...newConv,
+            contact_type_source: (newConv.contact_type_source || 'unknown') as 'ai' | 'manual' | 'unknown'
+          }, ...prev]);
           setMetrics(prev => ({ ...prev, total: prev.total + 1 }));
         }
       )
@@ -232,8 +243,13 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
         },
         (payload) => {
           const updatedConv = payload.new as Conversation;
+          const typedConv = {
+            ...updatedConv,
+            contact_type_source: (updatedConv.contact_type_source || 'unknown') as 'ai' | 'manual' | 'unknown'
+          };
+          
           setConversations(prev => 
-            prev.map(c => c.id === updatedConv.id ? updatedConv : c)
+            prev.map(c => c.id === typedConv.id ? typedConv : c)
               .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
           );
           

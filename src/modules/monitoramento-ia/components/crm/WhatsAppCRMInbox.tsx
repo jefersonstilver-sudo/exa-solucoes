@@ -176,7 +176,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
           </div>
 
           {/* Badges informativos (pequenos, discretos) */}
-          {(conversation.is_group || conversation.is_sindico) && (
+          {(conversation.is_group || conversation.is_sindico || (conversation.contact_type && conversation.contact_type_source && conversation.contact_type_source !== 'unknown')) && (
             <div className="flex gap-1 mt-1">
               {conversation.is_group && (
                 <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-whatsapp-green-light/30 text-whatsapp-green-light bg-transparent">
@@ -186,6 +186,14 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
               {conversation.is_sindico && (
                 <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-blue-400/30 text-blue-600 bg-transparent">
                   Síndico
+                </Badge>
+              )}
+              {conversation.contact_type && conversation.contact_type_source && conversation.contact_type_source !== 'unknown' && (
+                <Badge 
+                  variant={conversation.contact_type_source === 'manual' ? 'secondary' : 'outline'}
+                  className="text-[10px] px-1 py-0 h-4"
+                >
+                  {conversation.contact_type_source === 'manual' ? '👤 Manual' : '🤖 IA'}
                 </Badge>
               )}
             </div>
