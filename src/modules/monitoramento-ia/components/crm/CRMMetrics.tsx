@@ -1,8 +1,6 @@
 import React from 'react';
 import { MessageSquare, MessageSquareOff, AlertCircle, TrendingUp, Clock, User } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface CRMMetricsProps {
   metrics: {
@@ -76,22 +74,46 @@ export const CRMMetrics: React.FC<CRMMetricsProps> = ({ metrics }) => {
         const Icon = metric.icon;
         
         return (
-          <div 
-            key={index}
-            className="backdrop-blur-xl bg-white/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 rounded-2xl p-3 
-              shadow-lg shadow-slate-200/20 dark:shadow-black/20 hover:bg-white/60 dark:hover:bg-white/10 transition-all hover:scale-105 hover:shadow-xl group"
-            title={metric.description}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`${metric.color} p-1.5 rounded-xl shadow-sm`}>
-                <Icon className="w-4 h-4 text-white" />
+          <HoverCard key={index} openDelay={200}>
+            <HoverCardTrigger asChild>
+              <div 
+                className="backdrop-blur-xl bg-white/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 rounded-2xl p-3 
+                  shadow-lg shadow-slate-200/20 dark:shadow-black/20 hover:bg-white/60 dark:hover:bg-white/10 transition-all hover:scale-105 hover:shadow-xl group cursor-pointer"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`${metric.color} p-1.5 rounded-xl shadow-sm`}>
+                    <Icon className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
+                  {metric.value}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">{metric.label}</div>
               </div>
-            </div>
-            <div className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
-              {metric.value}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">{metric.label}</div>
-          </div>
+            </HoverCardTrigger>
+            <HoverCardContent className="w-72 backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border-slate-200/50 dark:border-white/10">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className={`${metric.color} p-2 rounded-xl`}>
+                    <Icon className="w-4 h-4 text-white" />
+                  </div>
+                  <h4 className="font-semibold text-sm">{metric.label}</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">{metric.description}</p>
+                <div className="pt-2 border-t border-border/50">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">Valor atual:</span>
+                    <span className="font-bold text-foreground">{metric.value || 0}</span>
+                  </div>
+                  {metric.value === 0 && (
+                    <p className="text-xs text-muted-foreground mt-2 italic">
+                      Nenhum registro encontrado no momento
+                    </p>
+                  )}
+                </div>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
         );
       })}
     </div>

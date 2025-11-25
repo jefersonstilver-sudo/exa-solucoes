@@ -249,7 +249,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
       </nav>
 
       {/* Footer */}
-      <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-[#0A0A0A]/80 backdrop-blur-sm">
+      <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/40 backdrop-blur-sm">
         <div className={cn("flex items-center", collapsed ? 'flex-col gap-2 p-2' : 'justify-between p-4')}>
           {/* Theme Mini Switch */}
           <button
