@@ -22,10 +22,13 @@ import {
 import { X, User, Phone, Bot, Flame, AlertTriangle, Plus, FileText, Sparkles } from 'lucide-react';
 import { useLeadDetails } from '../../hooks/useLeadDetails';
 import { useContactTypes } from '../../hooks/useContactTypes';
+import { useLeadProfile } from '../../hooks/useLeadProfile';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
 import { ContactTypeManager } from './ContactTypeManager';
 import { ConversationReportViewer } from './ConversationReportViewer';
+import { LeadAnalysisSection } from './LeadAnalysisSection';
+import { ConversationReports } from './ConversationReports';
 
 interface LeadDetailDrawerProps {
   conversationId: string | null;
@@ -40,6 +43,7 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
 }) => {
   const { lead, metrics, loading, updateLeadType, updateLeadScore, toggleSindico, toggleHotLead, generateReport } = useLeadDetails(conversationId);
   const { contactTypes } = useContactTypes();
+  const { profile, saveFromReport } = useLeadProfile(conversationId);
   const [showTypeManager, setShowTypeManager] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportData, setReportData] = useState<any>(null);
@@ -51,6 +55,8 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
     if (data) {
       setReportData(data);
       setShowReport(true);
+      // Salvar dados extraídos no lead_profiles
+      await saveFromReport(data);
     }
     setGeneratingReport(false);
   };
@@ -172,24 +178,6 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="sindico-toggle">É Síndico</Label>
-                    <Switch
-                      id="sindico-toggle"
-                      checked={lead.is_sindico}
-                      onCheckedChange={toggleSindico}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="hotlead-toggle">Hot Lead</Label>
-                    <Switch
-                      id="hotlead-toggle"
-                      checked={lead.is_hot_lead}
-                      onCheckedChange={toggleHotLead}
-                    />
-                  </div>
-
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label>Lead Score</Label>
@@ -203,6 +191,19 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                       className="w-full"
                     />
                   </div>
+                </div>
+
+                {/* Análise do Lead com IA */}
+                <LeadAnalysisSection 
+                  profile={profile}
+                  detectedType={reportData?.detectedType}
+                />
+
+                {/* Relatórios da IA */}
+                <div className="glass-card p-4 rounded-lg space-y-4">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    📄 Relatórios da IA
+                  </h4>
 
                   <Button 
                     onClick={handleGenerateReport} 
@@ -218,10 +219,12 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                     ) : (
                       <>
                         <FileText className="w-4 h-4 mr-2" />
-                        Gerar Relatório da IA
+                        Gerar Novo Relatório
                       </>
                     )}
                   </Button>
+
+                  <ConversationReports conversationId={conversationId} />
                 </div>
 
                 {/* Métricas em Tempo Real */}
