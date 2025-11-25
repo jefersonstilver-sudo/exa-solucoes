@@ -89,10 +89,22 @@ serve(async (req) => {
     // Process each chat
     for (const chat of chatsData) {
       try {
-        const phoneNumber = chat.phone || chat.id?.replace('@s.whatsapp.net', '');
+        // Preservar o ID original completo com sufixo (@c.us ou @s.whatsapp.net)
+        const chatId = chat.id || chat.phone;
+        const phoneNumber = chatId?.replace('@s.whatsapp.net', '').replace('@c.us', '') || '';
+        
+        // Para buscar mensagens no Z-API - usar formato completo com sufixo
+        const formattedChatId = chatId?.includes('@') 
+          ? chatId 
+          : `${chatId}@c.us`;
+        
+        console.log('[ZAPI-IMPORT] 🔍 Original chat.id:', chat.id);
+        console.log('[ZAPI-IMPORT] 🔍 Original chat.phone:', chat.phone);
+        console.log('[ZAPI-IMPORT] 🔍 PhoneNumber (display):', phoneNumber);
+        console.log('[ZAPI-IMPORT] 🔍 Formatted chatId (for API):', formattedChatId);
         
         // Filtrar conversas inválidas (WhatsApp Business, grupos, IDs nulos/0)
-        if (!phoneNumber || phoneNumber === '0' || phoneNumber === 'null' || phoneNumber.includes('@g.us')) {
+        if (!phoneNumber || phoneNumber === '0' || phoneNumber === 'null' || phoneNumber.includes('@g.us') || chatId?.includes('@g.us')) {
           console.log('[ZAPI-IMPORT] Skipping invalid chat:', phoneNumber || 'null');
           continue;
         }
@@ -155,9 +167,10 @@ serve(async (req) => {
           console.log('[ZAPI-IMPORT] New conversation created:', conversationId);
         }
 
-        // Endpoint correto do Z-API (requer amount e lastMessageId como query params)
-        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/chat-messages/${phoneNumber}?amount=50`;
+        // Endpoint correto do Z-API usando o ID completo com sufixo
+        const messagesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/chat-messages/${formattedChatId}?amount=50`;
         console.log('[ZAPI-IMPORT] 📞 Fetching messages from:', messagesUrl);
+        console.log('[ZAPI-IMPORT] 📞 Using chatId format:', formattedChatId);
         
         const messagesResponse = await fetch(messagesUrl, {
           method: 'GET',
