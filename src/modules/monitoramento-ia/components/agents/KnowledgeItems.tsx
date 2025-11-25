@@ -23,6 +23,7 @@ interface KnowledgeItem {
   keywords: string[];
   instruction?: string;
   active: boolean;
+  display_order?: number;
 }
 
 interface KnowledgeItemsProps {
@@ -329,9 +330,9 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                 editingId === item.id && "ring-2 ring-module-accent col-span-full"
               )}
             >
-              {/* Número do card */}
-              <div className="absolute top-2 left-2 w-8 h-8 rounded-full bg-module-accent flex items-center justify-center text-white font-bold text-sm z-10">
-                {index + 1}
+              {/* Número do card com 4.X */}
+              <div className="absolute top-2 left-2 w-auto px-3 h-8 rounded-full bg-module-accent flex items-center justify-center text-white font-bold text-sm z-10">
+                4.{item.display_order || index + 1}
               </div>
 
               <CardHeader className="pb-3 pt-12">

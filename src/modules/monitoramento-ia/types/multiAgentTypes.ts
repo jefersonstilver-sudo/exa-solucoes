@@ -80,6 +80,7 @@ export interface Agent {
     active: boolean;
     created_at: string;
     updated_at: string;
+    display_order?: number;
   }>;
   rules: Array<{
     id: number;

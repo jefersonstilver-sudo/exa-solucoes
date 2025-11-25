@@ -109,6 +109,7 @@ export type Database = {
           content_type: string
           created_at: string | null
           description: string | null
+          display_order: number | null
           id: string
           instruction: string | null
           keywords: string[] | null
@@ -122,6 +123,7 @@ export type Database = {
           content_type: string
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           id?: string
           instruction?: string | null
           keywords?: string[] | null
@@ -135,6 +137,7 @@ export type Database = {
           content_type?: string
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           id?: string
           instruction?: string | null
           keywords?: string[] | null
