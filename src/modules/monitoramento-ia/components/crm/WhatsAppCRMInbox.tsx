@@ -50,10 +50,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
     return (words[0][0] + (words[words.length - 1][0] || '')).toUpperCase();
   };
   
-  // Cor de fundo do card baseado no nome/número (identificar por agent ou phone)
+  // Cor de fundo do card baseado no agent_key/número (para TODOS os cards, incluindo grupos)
   const getCardBgColor = () => {
-    if (conversation.is_group) return undefined; // Grupos mantêm cor padrão
-    
     const name = conversation.contact_name?.toLowerCase() || '';
     const phone = conversation.contact_phone?.toLowerCase() || '';
     const agentKey = conversation.agent_key?.toLowerCase() || '';
