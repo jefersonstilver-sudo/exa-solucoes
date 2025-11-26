@@ -179,25 +179,6 @@
   }
 }
 
-/* Dark mode support para bolhas de mensagem */
-@media (prefers-color-scheme: dark) {
-  .dark\:bg-\[#0b141a\] {
-    background-color: #0b141a;
-  }
-  
-  .dark\:bg-\[#1f2c33\] {
-    background-color: #1f2c33;
-  }
-  
-  .dark\:bg-\[#005c4b\] {
-    background-color: #005c4b;
-  }
-  
-  .dark\:border-\[#1f2c33\] {
-    border-color: #1f2c33;
-  }
-}
-
 /* Keyboard aware - previne input de ser coberto pelo teclado */
 @media (max-width: 768px) {
   .pb-safe {
