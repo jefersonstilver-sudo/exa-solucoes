@@ -270,17 +270,6 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
 
       const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-      // Listen for cart updates to re-render markers
-      const handleCartUpdate = () => {
-        setCartVersion(v => v + 1);
-      };
-      window.addEventListener('cart:updated', handleCartUpdate);
-      
-      // Cleanup listener on unmount
-      return () => {
-        window.removeEventListener('cart:updated', handleCartUpdate);
-      };
-
       const getCacheKey = (b: any) => {
         const id = (b.id || '').toString();
         if (id) return `geo_cache_${id}`;
@@ -495,10 +484,17 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
 
     updateMarkers();
 
+    // Listen for cart updates to trigger marker re-render
+    const handleCartUpdate = () => {
+      setCartVersion(v => v + 1);
+    };
+    window.addEventListener('cart:updated', handleCartUpdate);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('cart:updated', handleCartUpdate);
     };
-  }, [buildings, selectedLocation, defaultZoom, requirePreciseGeocode, enableClustering, isReady]);
+  }, [buildings, selectedLocation, defaultZoom, requirePreciseGeocode, enableClustering, isReady, hoveredBuildingId, selectedBuildingId, cartVersion]);
 
   // Handle business location marker
   useEffect(() => {
