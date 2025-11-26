@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, AlertTriangle, Clock, ChevronDown, Calendar as CalendarIcon, Maximize2 } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Clock, ChevronDown, Calendar as CalendarIcon, Maximize2, Monitor, Wifi, WifiOff, HelpCircle } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -26,6 +26,25 @@ import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
+import { MobileHeader } from '../components/MobileHeader';
+import { Sidebar } from '../components/Sidebar';
+
+// Compact Stat Icon Component for mobile
+const CompactStatIcon = ({ icon: Icon, value, color, label }: { 
+  icon: any; 
+  value: number; 
+  color: string;
+  label: string;
+}) => {
+  return (
+    <div className="relative flex items-center justify-center">
+      <Icon className={`w-10 h-10 ${color}`} strokeWidth={1.5} />
+      <span className="absolute text-xs font-bold text-white">
+        {value}
+      </span>
+    </div>
+  );
+};
 
 // Simple StatCard component for Paineis page
 const SimpleStatCard = ({ label, value, color }: { label: string; value: number; color: 'blue' | 'green' | 'red' | 'gray' }) => {
@@ -76,9 +95,19 @@ export const PaineisPage = () => {
   const [isQuedasOpen, setIsQuedasOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
+
+  // Ordenar devices por total_events (mais eventos primeiro)
+  const sortedDevices = [...devices].sort((a, b) => {
+    const eventsA = (a as any).total_events || 0;
+    const eventsB = (b as any).total_events || 0;
+    return eventsB - eventsA;
+  });
 
   const handleRefresh = () => {
     refresh();
@@ -256,26 +285,55 @@ export const PaineisPage = () => {
   }, [devices, quedaPeriod, customStartDate, customEndDate]);
 
   return (
-    <div className="space-y-6">
-      {/* Header - Mobile Otimizado */}
+    <div className="min-h-screen bg-background">
+      {/* Overlay para sidebar */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div className="lg:hidden">
+        <Sidebar 
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          theme={theme}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+      </div>
+
+      {/* Mobile Header */}
+      <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+
+      <div className="space-y-4 lg:space-y-6 p-4 lg:p-6">
+      {/* Header - Desktop e resumo mobile */}
       <div className="bg-card border border-border rounded-xl shadow-sm">
         <div className="px-4 py-3 lg:px-6 lg:py-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4">
-            {/* Título + Relógio inline no mobile */}
-            <div className="flex items-center justify-between lg:justify-start lg:gap-4">
+            {/* Desktop: Título completo */}
+            <div className="hidden lg:flex items-center justify-between lg:justify-start lg:gap-4 flex-1">
               <div>
                 <h1 className="text-lg lg:text-3xl font-bold text-foreground flex items-center gap-2">
                   <span className="inline-flex w-2 h-2 lg:w-3 lg:h-3 bg-primary rounded-full animate-pulse" />
                   Painéis
                 </h1>
-                <p className="hidden lg:block text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Última atualização: {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
                 </p>
               </div>
-              
-              {/* Relógio mobile inline */}
-              <div className="lg:hidden text-right">
-                <p className="text-xl font-bold tabular-nums text-foreground">
+            </div>
+
+            {/* Mobile: Título pequeno + Relógio */}
+            <div className="flex lg:hidden items-center justify-between">
+              <h1 className="text-base font-bold text-foreground flex items-center gap-2">
+                <span className="inline-flex w-2 h-2 bg-primary rounded-full animate-pulse" />
+                Painéis
+              </h1>
+              <div className="text-right">
+                <p className="text-lg font-bold tabular-nums text-foreground">
                   {format(lastUpdate, "HH:mm:ss")}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -285,7 +343,6 @@ export const PaineisPage = () => {
             </div>
             
             <div className="flex items-center gap-2 lg:gap-3">
-              {/* Seletor de Período - Compacto */}
               <PeriodSelector
                 value={quedaPeriod}
                 onChange={(value, customStart, customEnd) => {
@@ -297,7 +354,6 @@ export const PaineisPage = () => {
                 customEndDate={customEndDate}
               />
 
-              {/* Sincronizar AnyDesk */}
               <button
                 onClick={handleSyncAnyDesk}
                 disabled={syncing}
@@ -311,13 +367,67 @@ export const PaineisPage = () => {
         </div>
       </div>
 
-      {/* Stats - Coluna no mobile, grid no desktop */}
-      <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-4">
-        <SimpleStatCard label="Total" value={stats.total} color="blue" />
-        <SimpleStatCard label="Online" value={stats.online} color="green" />
-        <SimpleStatCard label="Offline" value={stats.offline} color="red" />
-        <SimpleStatCard label="Desconhecido" value={stats.unknown} color="gray" />
-      </div>
+      {/* Stats - Compacto em linha no mobile, collapsible */}
+      <Collapsible open={statsOpen} onOpenChange={setStatsOpen}>
+        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+          {/* Mobile: Linha compacta com ícones */}
+          <CollapsibleTrigger className="w-full lg:hidden">
+            <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-4">
+                <CompactStatIcon icon={Monitor} value={stats.total} color="text-blue-500" label="Total" />
+                <CompactStatIcon icon={Wifi} value={stats.online} color="text-green-500" label="Online" />
+                <CompactStatIcon icon={WifiOff} value={stats.offline} color="text-red-500" label="Offline" />
+                <CompactStatIcon icon={HelpCircle} value={stats.unknown} color="text-gray-400" label="Desc" />
+              </div>
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${statsOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </CollapsibleTrigger>
+
+          {/* Desktop: Grid normal - sempre visível */}
+          <div className="hidden lg:block p-4">
+            <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-4">
+              <div className="bg-card border border-border rounded-[14px] p-4 hover:scale-105 transition-all shadow-sm">
+                <p className="text-muted-foreground text-sm mb-1">Total</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
+              </div>
+              <div className="bg-card border border-border rounded-[14px] p-4 hover:scale-105 transition-all shadow-sm">
+                <p className="text-muted-foreground text-sm mb-1">Online</p>
+                <p className="text-2xl font-bold text-green-600">{stats.online}</p>
+              </div>
+              <div className="bg-card border border-border rounded-[14px] p-4 hover:scale-105 transition-all shadow-sm">
+                <p className="text-muted-foreground text-sm mb-1">Offline</p>
+                <p className="text-2xl font-bold text-[#9C1E1E]">{stats.offline}</p>
+              </div>
+              <div className="bg-card border border-border rounded-[14px] p-4 hover:scale-105 transition-all shadow-sm">
+                <p className="text-muted-foreground text-sm mb-1">Desconhecido</p>
+                <p className="text-2xl font-bold text-module-secondary">{stats.unknown}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile: Detalhes expandidos */}
+          <CollapsibleContent className="lg:hidden">
+            <div className="p-3 space-y-2 border-t">
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-muted-foreground">Total de Painéis</span>
+                <span className="text-lg font-bold text-blue-600">{stats.total}</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-muted-foreground">Online</span>
+                <span className="text-lg font-bold text-green-600">{stats.online}</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-muted-foreground">Offline</span>
+                <span className="text-lg font-bold text-red-600">{stats.offline}</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-muted-foreground">Desconhecido</span>
+                <span className="text-lg font-bold text-gray-600">{stats.unknown}</span>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
 
       {/* Quedas - Collapsible escondido por padrão no mobile */}
       <Collapsible open={isQuedasOpen} onOpenChange={setIsQuedasOpen}>
@@ -412,7 +522,7 @@ export const PaineisPage = () => {
           {/* Visualização: Cards (2 cols mobile) ou Tabela (responsiva) */}
           {viewMode === 'cards' ? (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
-              {devices.map((device) => (
+              {sortedDevices.map((device) => (
                 <PanelCard
                   key={device.id}
                   device={device}
@@ -425,7 +535,7 @@ export const PaineisPage = () => {
             </div>
           ) : (
             <PanelsListView
-              devices={devices}
+              devices={sortedDevices}
               sort={sort}
               onSortChange={setSort}
               onDeviceClick={(device) => {
@@ -492,6 +602,7 @@ export const PaineisPage = () => {
               />
             ))}
         </AnimatePresence>
+      </div>
       </div>
     </div>
   );
