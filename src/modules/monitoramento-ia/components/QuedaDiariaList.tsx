@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { UptimeTimelineRealTime } from './UptimeTimelineRealTime';
 
 interface QuedaOcorrencia {
   inicio: string;
@@ -104,33 +105,8 @@ export const QuedaDiariaList = ({ paineis }: QuedaDiariaListProps) => {
               </span>
             </div>
 
-            {/* Timeline Visual Horizontal */}
-            <div className="mb-3">
-              <div className="relative h-2 bg-muted/30 rounded-full overflow-hidden">
-                {painel.ocorrencias.map((ocorrencia, idx) => {
-                  const left = getTimePosition(ocorrencia.inicio);
-                  const width = getTimeWidth(ocorrencia.duracao_segundos);
-                  
-                  return (
-                    <div
-                      key={idx}
-                      className="absolute h-full bg-destructive"
-                      style={{
-                        left: `${left}%`,
-                        width: `${width}%`,
-                      }}
-                    />
-                  );
-                })}
-              </div>
-              <div className="flex justify-between mt-1 text-[10px] text-muted-foreground font-mono">
-                <span>00:00</span>
-                <span>06:00</span>
-                <span>12:00</span>
-                <span>18:00</span>
-                <span>24:00</span>
-              </div>
-            </div>
+            {/* Timeline Real-Time com Playhead */}
+            <UptimeTimelineRealTime ocorrencias={painel.ocorrencias} />
 
             {/* Condomínio */}
             <p className="text-xs text-muted-foreground mb-2">{painel.condominio_nome}</p>
