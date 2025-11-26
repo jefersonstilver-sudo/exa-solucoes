@@ -57,6 +57,7 @@ interface VideoSlotCardProps {
   currentDisplayVideoId?: string;
   totalApprovedVideos: number;
   hasAnyScheduledActiveNow?: boolean;
+  companyInfoComplete?: boolean;
 }
 export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   slot,
@@ -71,7 +72,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   orderId,
   currentDisplayVideoId,
   totalApprovedVideos,
-  hasAnyScheduledActiveNow = false
+  hasAnyScheduledActiveNow = false,
+  companyInfoComplete
 }) => {
   const {
     isVideoCurrentlyDisplaying,
@@ -505,7 +507,13 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
         </div>
       </div>
     ) : (
-      <VideoSlotUpload slotPosition={slot.slot_position} uploading={uploading} isUploading={currentProgress !== undefined} onUpload={onUpload} />
+      <VideoSlotUpload 
+        slotPosition={slot.slot_position} 
+        uploading={uploading} 
+        isUploading={currentProgress !== undefined} 
+        onUpload={onUpload}
+        companyInfoComplete={companyInfoComplete}
+      />
     )}
       </CardContent>
     </Card>;

@@ -1,8 +1,12 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { VideoSlotCard } from './VideoSlotCard';
 import { VideoSlotStatus } from './VideoSlotStatus';
 import { useCurrentVideoDisplay } from '@/hooks/useCurrentVideoDisplay';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, Lock } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VideoSlot {
   id?: string;
@@ -57,7 +61,45 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
   onScheduleVideo,
   orderId
 }) => {
+  const navigate = useNavigate();
   const { currentVideo, refreshCurrentVideo } = useCurrentVideoDisplay({ orderId, enabled: true });
+  const [companyInfoComplete, setCompanyInfoComplete] = useState<boolean | null>(null);
+
+  // Verificar cadastro de empresa
+  useEffect(() => {
+    const checkCompanyInfo = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setCompanyInfoComplete(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('users')
+          .select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_aceite_termo')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        const isComplete = !!(
+          data?.empresa_nome && 
+          data?.empresa_pais && 
+          data?.empresa_documento && 
+          data?.empresa_segmento && 
+          data?.empresa_aceite_termo
+        );
+        
+        setCompanyInfoComplete(isComplete);
+      } catch (error) {
+        console.error('Erro ao verificar informações da empresa:', error);
+        setCompanyInfoComplete(false);
+      }
+    };
+    
+    checkCompanyInfo();
+  }, []);
 
   // Atualizar currentVideo quando videoSlots mudar (importante para mudanças de vídeo base)
   useEffect(() => {
@@ -111,6 +153,56 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
     currentTime: new Date().toTimeString().slice(0, 5),
     currentDay: new Date().getDay()
   });
+
+  // Se cadastro ainda está sendo verificado, não renderizar nada
+  if (companyInfoComplete === null) {
+    return <div className="space-y-2 sm:space-y-3">
+      <VideoSlotStatus videoSlots={videoSlots} />
+      <div className="text-center py-8 text-muted-foreground">Verificando informações...</div>
+    </div>;
+  }
+
+  // Se cadastro incompleto, mostrar aviso centralizado + slots bloqueados
+  if (companyInfoComplete === false) {
+    return (
+      <div className="space-y-2 sm:space-y-3">
+        <VideoSlotStatus videoSlots={videoSlots} />
+        
+        {/* Aviso Centralizado */}
+        <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-4 sm:p-6 text-center">
+          <AlertTriangle className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-amber-500 mb-3" />
+          <h3 className="text-base sm:text-lg font-semibold text-amber-900 mb-2">
+            Cadastro de Empresa Pendente
+          </h3>
+          <p className="text-sm text-amber-700 mb-4">
+            Complete o cadastro para liberar o upload de vídeos
+          </p>
+          <Button 
+            onClick={() => navigate('/anunciante/configuracoes')} 
+            className="bg-amber-600 hover:bg-amber-700 text-white"
+          >
+            Completar Cadastro Agora
+          </Button>
+        </div>
+
+        {/* Slots Bloqueados - Visual Apenas */}
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-3 opacity-40 pointer-events-none">
+          {videoSlots.map((slot) => (
+            <div 
+              key={slot.slot_position}
+              className="bg-gray-100 border border-gray-300 rounded-lg p-4 sm:p-6 text-center"
+            >
+              <Lock className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-gray-400 mb-2" />
+              <span className="text-xs sm:text-sm text-gray-500 font-medium">Slot {slot.slot_position}</span>
+              <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Bloqueado</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Cadastro completo - renderizar normalmente
   return (
     <div className="space-y-2 sm:space-y-3">
       <VideoSlotStatus videoSlots={videoSlots} />
@@ -132,6 +224,7 @@ export const VideoSlotGrid: React.FC<VideoSlotGridProps> = ({
             currentDisplayVideoId={currentVideo?.video_id}
             totalApprovedVideos={totalApprovedVideos}
             hasAnyScheduledActiveNow={hasAnyScheduledActiveNow}
+            companyInfoComplete={companyInfoComplete}
           />
         ))}
       </div>
