@@ -1,0 +1,196 @@
+/* ====================================
+   EXA GLASSMORPHISM DESIGN SYSTEM
+   Cores: Vermelho (#9C1E1E), Preto (#0A0A0A), Branco (#FFFFFF)
+   ==================================== */
+
+/* === LIGHT MODE (padrão) === */
+:root {
+  /* Backgrounds */
+  --exa-bg-primary: #FFFFFF;
+  --exa-bg-secondary: #F8F9FA;
+  --exa-bg-card: #FFFFFF;
+  --exa-bg-sidebar: #FAFAFA;
+  --exa-bg-hover: rgba(156, 30, 30, 0.08);
+  --exa-bg-active: #9C1E1E;
+  
+  /* Text - Alto Contraste */
+  --exa-text-primary: #0A0A0A;
+  --exa-text-secondary: #4A4A4A;
+  --exa-text-muted: #6B7280;
+  --exa-text-on-accent: #FFFFFF;
+  
+  /* Accent */
+  --exa-accent: #9C1E1E;
+  --exa-accent-light: rgba(156, 30, 30, 0.1);
+  --exa-accent-hover: #7C1818;
+  
+  /* Borders */
+  --exa-border: #E5E7EB;
+  --exa-border-accent: #9C1E1E;
+  
+  /* Glass Effects - Light */
+  --exa-glass-bg: rgba(255, 255, 255, 0.8);
+  --exa-glass-border: rgba(156, 30, 30, 0.15);
+  --exa-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  
+  /* Status Colors */
+  --exa-success: #22C55E;
+  --exa-warning: #EAB308;
+  --exa-danger: #EF4444;
+  --exa-info: #3B82F6;
+}
+
+/* === DARK MODE === */
+.dark {
+  /* Backgrounds */
+  --exa-bg-primary: #0A0A0A;
+  --exa-bg-secondary: #1A1A1A;
+  --exa-bg-card: #1A1A1A;
+  --exa-bg-sidebar: #0F0F0F;
+  --exa-bg-hover: rgba(156, 30, 30, 0.15);
+  --exa-bg-active: #9C1E1E;
+  
+  /* Text - Alto Contraste */
+  --exa-text-primary: #FFFFFF;
+  --exa-text-secondary: #A0A0A0;
+  --exa-text-muted: #6B7280;
+  --exa-text-on-accent: #FFFFFF;
+  
+  /* Accent */
+  --exa-accent: #9C1E1E;
+  --exa-accent-light: rgba(156, 30, 30, 0.2);
+  --exa-accent-hover: #B52525;
+  
+  /* Borders */
+  --exa-border: rgba(255, 255, 255, 0.1);
+  --exa-border-accent: #9C1E1E;
+  
+  /* Glass Effects - Dark */
+  --exa-glass-bg: rgba(26, 26, 26, 0.8);
+  --exa-glass-border: rgba(156, 30, 30, 0.25);
+  --exa-glass-shadow: 0 8px 32px rgba(156, 30, 30, 0.2);
+}
+
+/* ========================================
+   CLASSES UTILITÁRIAS EXA
+   ======================================== */
+
+/* Glass Effect Base */
+.exa-glass {
+  background: var(--exa-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--exa-glass-border);
+  box-shadow: var(--exa-glass-shadow);
+}
+
+/* Content Cards */
+.exa-content-card {
+  background: var(--exa-bg-card);
+  border: 1px solid var(--exa-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.exa-content-card:hover {
+  border-color: var(--exa-accent);
+  box-shadow: 0 4px 20px rgba(156, 30, 30, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Navigation Links */
+.exa-nav-link {
+  color: var(--exa-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.exa-nav-link:hover {
+  background: var(--exa-bg-hover);
+  color: var(--exa-accent);
+}
+
+.exa-nav-link.active {
+  background: var(--exa-accent);
+  color: var(--exa-text-on-accent);
+}
+
+/* Tables */
+.exa-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.exa-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid var(--exa-border);
+  color: var(--exa-text-primary);
+  font-weight: 600;
+}
+
+.exa-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--exa-border);
+  color: var(--exa-text-secondary);
+}
+
+.exa-table tr:hover td {
+  background: var(--exa-bg-hover);
+}
+
+/* Task List */
+.exa-task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--exa-border);
+  color: var(--exa-text-primary);
+}
+
+.exa-task-item:last-child {
+  border-bottom: none;
+}
+
+/* Decorative Shapes */
+.exa-shape-1,
+.exa-shape-2 {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+  animation: exa-float 20s ease-in-out infinite;
+}
+
+.exa-shape-1 {
+  top: -10%;
+  right: -5%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(156, 30, 30, 0.15) 0%, transparent 70%);
+}
+
+.dark .exa-shape-1 {
+  background: radial-gradient(circle, rgba(156, 30, 30, 0.25) 0%, transparent 70%);
+}
+
+.exa-shape-2 {
+  bottom: -10%;
+  left: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(156, 30, 30, 0.1) 0%, transparent 70%);
+  animation-direction: reverse;
+  animation-duration: 25s;
+}
+
+.dark .exa-shape-2 {
+  background: radial-gradient(circle, rgba(156, 30, 30, 0.2) 0%, transparent 70%);
+}
+
+@keyframes exa-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -30px) scale(1.05); }
+}
