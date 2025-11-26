@@ -87,15 +87,15 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         )}
       </div>
 
-      {/* Glass-style Close Button - Top Left - Rendered AFTER map for z-index */}
+      {/* Elegant Red Close Button - Top Left - Rendered AFTER map for z-index */}
       <div className="fixed top-4 left-4 z-[10001]" style={{ pointerEvents: 'auto' }}>
         <Button
           onClick={onClose}
-          variant="outline"
+          variant="ghost"
           size="icon"
-          className="h-12 w-12 rounded-full bg-white/95 backdrop-blur-xl border border-gray-200 shadow-[0_8px_32px_rgba(0,0,0,0.15)] hover:bg-white hover:scale-110 hover:shadow-[0_12px_48px_rgba(0,0,0,0.25)] transition-all duration-200 active:scale-95"
+          className="h-12 w-12 rounded-full bg-red-600/95 backdrop-blur-xl shadow-[0_4px_20px_rgba(220,38,38,0.4)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.5)] transition-all duration-200 active:scale-95 border-0"
         >
-          <X className="h-5 w-5 text-gray-700" strokeWidth={2.5} />
+          <X className="h-5 w-5 text-white" strokeWidth={2.5} />
         </Button>
       </div>
 
