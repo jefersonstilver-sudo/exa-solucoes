@@ -21,7 +21,8 @@ export const CRMUnificado = () => {
     criticalOnly: false,
     hotLeadsOnly: false,
     awaitingOnly: false,
-    sentiment: undefined
+    sentiment: undefined,
+    contactType: undefined
   });
 
   const leftPanelRef = useRef<ImperativePanelHandle>(null);

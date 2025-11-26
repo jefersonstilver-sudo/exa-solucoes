@@ -51,6 +51,7 @@ interface CRMFilters {
   hotLeadsOnly?: boolean;
   awaitingOnly?: boolean;
   sentiment?: string;
+  contactType?: string;
 }
 
 interface CRMMetrics {
@@ -107,6 +108,9 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
       }
       if (filters.sentiment) {
         query = query.eq('sentiment', filters.sentiment);
+      }
+      if (filters.contactType) {
+        query = query.eq('contact_type', filters.contactType);
       }
 
       const { data, error } = await query;
