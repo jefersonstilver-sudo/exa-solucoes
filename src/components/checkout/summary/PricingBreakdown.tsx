@@ -36,6 +36,13 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   
   // Detectar cupom cortesia
   const isCortesia = couponCategoria === 'cortesia' || couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN';
+  
+  // Calcular exibições totais
+  const exibicoesPorMes = cartItems.reduce((total, item) => {
+    const visualizacoes = item.panel.buildings?.visualizacoes_mes || 0;
+    return total + visualizacoes;
+  }, 0);
+
   if (!selectedPlan || !cartItems || cartItems.length === 0) {
     return <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
         <CardContent className="p-6 text-center">
@@ -78,9 +85,16 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
       <CardContent className="p-3 sm:p-4 pt-0 space-y-1.5 sm:space-y-2">
         {/* Valor Base */}
         <div className="flex justify-between items-center py-1.5 sm:py-2 border-b">
-          <span className="text-xs sm:text-sm text-gray-600">
-            Valor base ({cartItems.length} × {selectedPlan}m)
-          </span>
+          <div className="flex flex-col">
+            <span className="text-xs sm:text-sm text-gray-600">
+              Valor base ({cartItems.length} × {selectedPlan}m)
+            </span>
+            {exibicoesPorMes > 0 && (
+              <span className="text-[10px] sm:text-xs text-purple-600 font-medium">
+                {exibicoesPorMes.toLocaleString('pt-BR')} exibições/mês
+              </span>
+            )}
+          </div>
           <span className="font-semibold text-sm sm:text-base text-gray-900">{formatCurrency(baseTotal)}</span>
         </div>
 
