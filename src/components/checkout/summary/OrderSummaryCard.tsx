@@ -72,9 +72,15 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     return acc;
   }, {} as Record<string, any>);
 
-  // Calcular público total
+  // Calcular público total e exibições
   const publicoTotal = Object.values(paineisPorPredio).reduce((total, building: any) => {
     return total + (building.publico_estimado || 0);
+  }, 0);
+
+  // Calcular exibições totais (usando visualizacoes_mes dos prédios)
+  const exibicoesPorMes = cartItems.reduce((total, item) => {
+    const visualizacoes = item.panel.buildings?.visualizacoes_mes || 0;
+    return total + visualizacoes;
   }, 0);
 
   return (
@@ -122,12 +128,12 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
             </div>
           </div>
 
-          {/* Público Total */}
-          {publicoTotal > 0 && (
-            <div className="p-2 sm:p-3 bg-orange-50 rounded-lg border border-orange-200">
-              <p className="text-[10px] sm:text-xs text-orange-700 font-medium">Público Total Estimado</p>
-              <p className="text-base sm:text-lg font-bold text-orange-900">
-                {publicoTotal.toLocaleString('pt-BR')} pessoas/mês
+          {/* Exibições por Mês */}
+          {exibicoesPorMes > 0 && (
+            <div className="p-2 sm:p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <p className="text-[10px] sm:text-xs text-purple-700 font-medium">Exibições por Mês</p>
+              <p className="text-base sm:text-lg font-bold text-purple-900">
+                {exibicoesPorMes.toLocaleString('pt-BR')} exibições/mês
               </p>
             </div>
           )}
