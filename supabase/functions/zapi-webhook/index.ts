@@ -68,6 +68,9 @@ serve(async (req) => {
     if (fromMe) {
       console.log('[ZAPI-WEBHOOK] 📤 Processing outbound message (fromMe=true)');
       
+      // ✅ Extrair messageId no início do bloco
+      const outboundMessageId = payload.messageId || payload.id || payload.key?.id || `outbound_${phone}_${Date.now()}`;
+      
       // Identificar agente pela instanceId
       const { data: agent, error: agentError } = await supabase
         .from('agents')
@@ -126,7 +129,7 @@ serve(async (req) => {
             body: messageText,
             is_automated: false,
             raw_payload: { 
-              zapi_message_id: messageId,
+              zapi_message_id: outboundMessageId,
               sent_via: 'whatsapp_direct',
               fromMe: true,
               timestamp: new Date().toISOString()
@@ -155,7 +158,7 @@ serve(async (req) => {
           phone_number: phone,
           message_text: messageText,
           status: 'sent',
-          zapi_message_id: messageId,
+          zapi_message_id: outboundMessageId,
           metadata: {
             sent_via: 'whatsapp_direct',
             fromMe: true
@@ -171,7 +174,7 @@ serve(async (req) => {
         success: true, 
         direction: 'outbound',
         agent: agent.key,
-        messageId
+        messageId: outboundMessageId
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
