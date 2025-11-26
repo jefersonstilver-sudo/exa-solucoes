@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AlertCircle, TrendingUp, Clock, User, Phone, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatContactNameWithBuilding } from '@/modules/monitoramento-ia/utils/contactFormatters';
+import { formatContactNameWithBuilding, buildConversationTitle, suggestContactType } from '@/modules/monitoramento-ia/utils/contactFormatters';
 
 interface ConversationItemProps {
   conversation: any;
@@ -45,12 +45,48 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#25D366] rounded-full animate-pulse" />
             )}
           </div>
-          <span className={cn(
-            "font-medium truncate text-module-primary",
-            hasUnread && "text-[#25D366] font-semibold"
-          )}>
-            {formatContactNameWithBuilding(conversation.contact_name, conversation.contact_phone, conversation.metadata?.building_name)}
-          </span>
+          
+          {/* Título no formato: [Agente] — [Tipo] (Contato) */}
+          <div className="flex-1 min-w-0">
+            <span className={cn(
+              "font-medium truncate block text-module-primary",
+              hasUnread && "text-[#25D366] font-semibold"
+            )}>
+              {buildConversationTitle(conversation)}
+            </span>
+            
+            {/* Badge de tipo - mobile friendly */}
+            <div className="flex items-center gap-1 mt-0.5">
+              {(() => {
+                const contactType = conversation.contact_type || suggestContactType(conversation);
+                const typeColors = {
+                  'Síndico': 'bg-blue-500/20 text-blue-400 border-blue-500/40',
+                  'Prestador': 'bg-purple-500/20 text-purple-400 border-purple-500/40',
+                  'Administrativo': 'bg-amber-500/20 text-amber-400 border-amber-500/40',
+                  'Anunciante': 'bg-green-500/20 text-green-400 border-green-500/40',
+                  'Equipe Exa': 'bg-primary/20 text-primary border-primary/40',
+                  'Contato': 'bg-muted/30 text-muted-foreground border-muted'
+                };
+                
+                return (
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-[10px] px-1.5 py-0 h-4 border font-medium",
+                      typeColors[contactType as keyof typeof typeColors] || typeColors['Contato']
+                    )}
+                  >
+                    {contactType}
+                  </Badge>
+                );
+              })()}
+              
+              {conversation.metadata?.agent_saved_name && (
+                <span className="text-[10px]" title="Salvo pelo agente">📌</span>
+              )}
+            </div>
+          </div>
+          
           {conversation.is_group && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-[#25D366]/30 text-[#25D366]">
               GRUPO
@@ -59,15 +95,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
           {hasUnread && (
             <Badge className="text-[10px] px-1.5 py-0 h-4 bg-[#25D366] hover:bg-[#20bd5a] animate-pulse">
               NOVA
-            </Badge>
-          )}
-          {/* Indicador de Classificação */}
-          {conversation.contact_type && conversation.contact_type_source && conversation.contact_type_source !== 'unknown' && (
-            <Badge 
-              variant={conversation.contact_type_source === 'manual' ? 'secondary' : 'outline'}
-              className="text-[10px] px-1.5 py-0 h-4"
-            >
-              {conversation.contact_type_source === 'manual' ? '👤' : '🤖'} {conversation.contact_type}
             </Badge>
           )}
         </div>
