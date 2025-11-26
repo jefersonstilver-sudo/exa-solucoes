@@ -5,7 +5,7 @@ import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Users, Check, CheckCheck, Clock, TrendingUp, AlertCircle, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatContactName } from '@/modules/monitoramento-ia/utils/contactFormatters';
+import { formatContactName, formatContactNameWithBuilding } from '@/modules/monitoramento-ia/utils/contactFormatters';
 
 // Função para gerar cores diferentes por conversa
 const getConversationColor = (identifier: string) => {
@@ -45,16 +45,18 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
   const avatarColor = getConversationColor(conversation.contact_phone || conversation.id);
   
   // Gerar iniciais do nome (primeiras letras de cada palavra)
-  const getInitials = (name: string | null, phone: string) => {
-    // Usar o nome formatado
-    const displayName = formatContactName(name, phone);
+  const getInitials = (name: string | null, phone: string, buildingName?: string | null) => {
+    // Usar o nome formatado COM prédio
+    const displayName = formatContactNameWithBuilding(name, phone, buildingName);
     
     // Se for um fallback genérico, usar "?"
     if (displayName === 'Contato sem nome' || displayName === 'Grupo WhatsApp') {
       return '?';
     }
     
-    const words = displayName.trim().split(' ').filter(w => w.length > 0);
+    // Pegar apenas o nome (antes do " - "), não o prédio
+    const nameOnly = displayName.split(' - ')[0];
+    const words = nameOnly.trim().split(' ').filter(w => w.length > 0);
     if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
     return (words[0][0] + (words[words.length - 1][0] || '')).toUpperCase();
   };
@@ -139,7 +141,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
             <Users className="w-5 h-5 text-white" />
           ) : (
             <span className="text-white font-semibold text-sm">
-              {getInitials(conversation.contact_name, conversation.contact_phone)}
+              {getInitials(conversation.contact_name, conversation.contact_phone, conversation.metadata?.building_name)}
             </span>
           )}
           
@@ -158,7 +160,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
                 "text-[15px] truncate",
                 hasUnread ? "font-semibold text-whatsapp-text-primary" : "font-normal text-whatsapp-text-primary"
               )}>
-                {formatContactName(conversation.contact_name, conversation.contact_phone)}
+                {formatContactNameWithBuilding(conversation.contact_name, conversation.contact_phone, conversation.metadata?.building_name)}
               </h3>
             </div>
 
@@ -259,11 +261,12 @@ export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({
     
     const term = searchTerm.toLowerCase();
     return conversations.filter(conv => {
-      const name = formatContactName(conv.contact_name, conv.contact_phone).toLowerCase();
+      const name = formatContactNameWithBuilding(conv.contact_name, conv.contact_phone, conv.metadata?.building_name).toLowerCase();
       const phone = conv.contact_phone?.toLowerCase() || '';
       const lastMessage = conv.last_message?.toLowerCase() || '';
+      const buildingName = conv.metadata?.building_name?.toLowerCase() || '';
       
-      return name.includes(term) || phone.includes(term) || lastMessage.includes(term);
+      return name.includes(term) || phone.includes(term) || lastMessage.includes(term) || buildingName.includes(term);
     });
   }, [conversations, searchTerm]);
 

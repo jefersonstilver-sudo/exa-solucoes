@@ -568,7 +568,12 @@ Obrigado pela compreensão!`;
             last_message_at: new Date().toISOString(),
             status: 'open',
             // ✅ Marcar como aguardando resposta quando receber mensagem inbound
-            awaiting_response: true
+            awaiting_response: true,
+            // 🏢 Salvar nome do prédio/grupo no metadata
+            metadata: {
+              building_name: payload.chatName || null,
+              last_sender_name: payload.senderName || null
+            }
           };
           
           // Se for grupo, forçar atualização do nome e flag
@@ -577,7 +582,8 @@ Obrigado pela compreensão!`;
             updateData.contact_name = payload.chatName || 'Grupo sem nome';
             console.log('[ZAPI-WEBHOOK] 🔄 Updating group conversation:', {
               id: existing.id,
-              newName: updateData.contact_name
+              newName: updateData.contact_name,
+              buildingName: payload.chatName
             });
           }
           
@@ -615,7 +621,12 @@ Obrigado pela compreensão!`;
               provider: 'zapi',
               status: 'open',
               last_message_at: new Date().toISOString(),
-              awaiting_response: true // Nova conversa sempre aguarda resposta
+              awaiting_response: true, // Nova conversa sempre aguarda resposta
+              // 🏢 Salvar nome do prédio/grupo no metadata
+              metadata: {
+                building_name: payload.chatName || null,
+                last_sender_name: payload.senderName || null
+              }
             })
             .select()
             .single();

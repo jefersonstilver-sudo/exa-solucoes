@@ -5,7 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { formatContactName, formatPhoneSecondary } from '@/modules/monitoramento-ia/utils/contactFormatters';
+import { formatContactName, formatPhoneSecondary, formatContactNameWithBuilding } from '@/modules/monitoramento-ia/utils/contactFormatters';
 import { getUnrespondedTime } from '@/modules/monitoramento-ia/utils/timeUtils';
 
 interface MobileConversationItemProps {
@@ -82,7 +82,7 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
               hasUnread ? 'text-[#25D366]' : 'text-module-primary',
               isMuted && 'opacity-60'
             )}>
-              {formatContactName(conversation.contact_name, conversation.contact_phone)}
+              {formatContactNameWithBuilding(conversation.contact_name, conversation.contact_phone, conversation.metadata?.building_name)}
             </span>
             <div className="flex items-center gap-1.5 shrink-0 ml-2">
               {unrespondedTime && (conversation.awaiting_response || hasUnread) && (
