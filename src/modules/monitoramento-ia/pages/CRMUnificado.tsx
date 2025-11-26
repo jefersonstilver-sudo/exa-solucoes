@@ -113,6 +113,7 @@ export const CRMUnificado = () => {
               selectedId={selectedConversationId}
               onSelect={selectConversation}
               loading={loading}
+              isFullscreen={isFullscreen}
             />
           </ResizablePanel>
 

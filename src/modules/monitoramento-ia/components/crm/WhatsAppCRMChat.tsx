@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { StickyNote, Tag, User, Users, Phone, Video, Search, MoreVertical, Smile, Paperclip, Send, Mic, Pencil, Check, X, Maximize2, Minimize2, MessageSquare } from 'lucide-react';
 import { MediaInputBar } from './MediaInputBar';
 import { ConversationNotes } from './ConversationNotes';
@@ -169,24 +170,48 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="font-semibold text-sm text-foreground truncate">
+                <div className="flex flex-col gap-1">
+                  {/* Nome e botão de editar */}
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold text-xs sm:text-sm text-foreground truncate">
                       {conversation?.contact_name || conversation?.contact_phone || 'Conversa'}
                     </h2>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 shrink-0 hover:bg-muted"
+                      onClick={() => setIsEditingName(true)}
+                      title="Editar nome"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  
+                  {/* Badges de tipo de contato */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                       {conversation?.contact_phone}
                     </p>
+                    
+                    {conversation?.is_sindico && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-blue-500/10 text-blue-600 border-blue-300">
+                        👔 Síndico
+                      </Badge>
+                    )}
+                    {conversation?.is_hot_lead && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-orange-500/10 text-orange-600 border-orange-300">
+                        🔥 Hot Lead
+                      </Badge>
+                    )}
+                    {conversation?.contact_type && conversation?.contact_type !== 'unknown' && (
+                      <Badge 
+                        variant={conversation.contact_type_source === 'manual' ? 'secondary' : 'outline'}
+                        className="text-[10px] px-1.5 py-0 h-4"
+                      >
+                        {conversation.contact_type_source === 'manual' ? '👤' : '🤖'} {conversation.contact_type}
+                      </Badge>
+                    )}
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 shrink-0 hover:bg-muted"
-                    onClick={() => setIsEditingName(true)}
-                    title="Editar nome"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
                 </div>
               )}
             </div>
@@ -252,8 +277,8 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
           </div>
         )}
 
-        {/* Área de mensagens com scroll */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 space-y-2">
+        {/* Área de mensagens com scroll - Responsivo */}
+        <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 space-y-2 min-h-0">
           {loading ? (
             <div className="text-center text-whatsapp-text-secondary py-8">
               <div className="animate-pulse">Carregando mensagens...</div>
@@ -292,14 +317,14 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
                     </div>
                   )}
 
-                  {/* Mensagem */}
+                  {/* Mensagem - Bolhas responsivas */}
                   <div className={cn(
                     "flex items-end gap-2",
                     isOutbound ? "justify-end" : "justify-start"
                   )}>
                     <div
                      className={cn(
-                        "max-w-[75%] md:max-w-[60%] px-3 py-2 shadow-sm relative",
+                        "max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-3 py-2 shadow-sm relative",
                         isOutbound ? [
                           "bg-whatsapp-msg-out",
                           "rounded-3xl rounded-br-md"
@@ -381,7 +406,7 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
         </div>
 
         {/* Input de mensagem - SEMPRE VISÍVEL quando há conversationId */}
-        <div className="px-4 py-3 border-t border-border/10 bg-background">
+        <div className="px-3 sm:px-4 py-3 border-t border-border/10 bg-background shrink-0">
           {conversationId && conversation ? (
             <MediaInputBar 
               phoneNumber={conversation.contact_phone} 
