@@ -18,13 +18,22 @@ function normalizeAddress(addr: string): string {
 }
 
 async function geocodeWithGoogle(address: string) {
-  const key = Deno.env.get('GOOGLE_GEOCODING_KEY');
-  if (!key) return null;
+  const key = Deno.env.get('GOOGLE_MAPS_API_KEY_SERVER');
+  if (!key) {
+    console.log('[GEOCODE] Google API key not found');
+    return null;
+  }
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&language=pt-BR&key=${key}`;
   const res = await fetch(url);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    console.log('[GEOCODE] Google API failed:', res.status);
+    return null;
+  }
   const data = await res.json();
-  if (data.status !== 'OK' || !data.results?.length) return null;
+  if (data.status !== 'OK' || !data.results?.length) {
+    console.log('[GEOCODE] Google returned:', data.status);
+    return null;
+  }
   const r = data.results[0];
   const lt = r.geometry?.location_type;
   const types: string[] = r.types || [];
@@ -40,7 +49,10 @@ async function geocodeWithGoogle(address: string) {
 
 async function geocodeWithMapbox(address: string) {
   const token = Deno.env.get('MAPBOX_TOKEN');
-  if (!token) return null;
+  if (!token) {
+    console.log('[GEOCODE] Mapbox token not found');
+    return null;
+  }
   const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}&limit=1&language=pt-BR&country=BR`;
   const res = await fetch(url);
   if (!res.ok) return null;
@@ -59,27 +71,39 @@ async function geocodeWithMapbox(address: string) {
 }
 
 async function geocodeWithNominatim(address: string) {
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1`;
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'IndexaDigitalWebApp/1.0',
-      'Accept-Language': 'pt-BR',
-    },
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (!Array.isArray(data) || !data.length) return null;
-  const r = data[0];
-  const cls = r.class || '';
-  const typ = r.type || '';
-  const isPrecise = cls === 'building' || typ === 'house' || typ === 'residential';
-  return {
-    lat: parseFloat(r.lat),
-    lng: parseFloat(r.lon),
-    precision: isPrecise ? 'rooftop' : 'approximate',
-    provider: 'nominatim',
-    raw: r,
-  };
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'IndexaDigitalWebApp/1.0',
+        'Accept-Language': 'pt-BR',
+      },
+    });
+    if (!res.ok) {
+      console.log('[GEOCODE] Nominatim failed:', res.status);
+      return null;
+    }
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) {
+      console.log('[GEOCODE] Nominatim no results');
+      return null;
+    }
+    const r = data[0];
+    const cls = r.class || '';
+    const typ = r.type || '';
+    const isPrecise = cls === 'building' || typ === 'house' || typ === 'residential';
+    console.log('[GEOCODE] Nominatim success:', r.display_name);
+    return {
+      lat: parseFloat(r.lat),
+      lng: parseFloat(r.lon),
+      precision: isPrecise ? 'rooftop' : 'approximate',
+      provider: 'nominatim',
+      raw: r,
+    };
+  } catch (error) {
+    console.error('[GEOCODE] Nominatim error:', error);
+    return null;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -135,13 +159,17 @@ Deno.serve(async (req) => {
     }
 
     // Provider order: Google → Mapbox → Nominatim
+    console.log('[GEOCODE] Trying to geocode:', fullAddress);
     let result = await geocodeWithGoogle(fullAddress);
     if (!result) result = await geocodeWithMapbox(fullAddress);
     if (!result) result = await geocodeWithNominatim(fullAddress);
 
     if (!result) {
-      return new Response(JSON.stringify({ error: 'Geocoding failed' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('[GEOCODE] All providers failed for:', fullAddress);
+      return new Response(JSON.stringify({ error: 'Geocoding failed', address: fullAddress }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+    
+    console.log('[GEOCODE] Success with provider:', result.provider);
 
     // Insert into cache table
     const { error: insertErr } = await supabase.from('building_geocodes').upsert({
