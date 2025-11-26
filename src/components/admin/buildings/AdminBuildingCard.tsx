@@ -8,6 +8,7 @@ import { generateCommercialPath, generatePanelPath, generateEmbedPath } from '@/
 import { generatePublicUrl } from '@/config/domain';
 import { Building } from '@/services/buildingsDataService';
 import { BuildingVideoPlaylistPreview } from './BuildingVideoPlaylistPreview';
+import { toast } from 'sonner';
 
 interface AdminBuildingCardProps {
   building: Building;
@@ -283,14 +284,12 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
               <Button 
                 size="sm" 
                 onClick={() => {
-                  const buildingCode = building.codigo_predio || '000';
+                const buildingCode = building.codigo_predio || '000';
                   const url = generatePublicUrl(generatePanelPath(building.nome, buildingCode));
                   navigator.clipboard.writeText(url);
-                  import('sonner').then(({ toast }) => {
-                    toast.success('Link Limpo Copiado!', {
-                      description: url,
-                      duration: 4000,
-                    });
+                  toast.success('Link Limpo Copiado!', {
+                    description: url,
+                    duration: 4000,
                   });
                 }}
                 className="flex items-center gap-1.5 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white"
@@ -321,11 +320,9 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                 const url = generatePublicUrl(generateEmbedPath(building.nome, buildingCode));
                 const embedCode = `<iframe src="${url}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>`;
                 navigator.clipboard.writeText(embedCode);
-                import('sonner').then(({ toast }) => {
-                  toast.success('Código Embed Copiado!', {
-                    description: 'Cole em qualquer site ou sistema',
-                    duration: 4000,
-                  });
+                toast.success('Código Embed Copiado!', {
+                  description: 'Cole em qualquer site ou sistema',
+                  duration: 4000,
                 });
               }}
               className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
@@ -351,11 +348,9 @@ const AdminBuildingCard: React.FC<AdminBuildingCardProps> = ({
                   const url = generatePublicUrl(generateCommercialPath(buildingName, buildingCode));
                   console.log('🌐 [LINK COMERCIAL] URL final gerada:', url);
                   navigator.clipboard.writeText(url);
-                  import('sonner').then(({ toast }) => {
-                    toast.success('Link Comercial Copiado!', {
-                      description: url,
-                      duration: 4000,
-                    });
+                  toast.success('Link Comercial Copiado!', {
+                    description: url,
+                    duration: 4000,
                   });
                 }}
                 className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
