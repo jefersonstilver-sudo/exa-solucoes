@@ -28,7 +28,7 @@ export const AppleMetricCard = ({
       'rounded-2xl p-4 sm:p-6',
       'shadow-[var(--shadow-glass)]',
       'hover:scale-[1.02] hover:shadow-[var(--shadow-xl)]',
-      'transition-all duration-[var(--duration-normal)] ease-[var(--ease-apple)]',
+      'transition-all duration-normal ease-apple',
       'group',
       className
     )}>

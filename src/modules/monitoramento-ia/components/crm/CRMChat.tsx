@@ -143,7 +143,7 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
                     className={cn(
                       'max-w-[70%] rounded-lg p-3',
                       msg.direction === 'outbound'
-                        ? 'bg-[#dcf8c6] dark:bg-[#005c4b] text-[#000000] dark:text-white'
+                        ? 'bg-whatsapp-msg-out dark:bg-whatsapp-green-dark text-whatsapp-text-primary dark:text-white'
                         : 'glass-card text-module-primary shadow-sm border border-module-border/30'
                     )}
                   >

@@ -97,9 +97,9 @@ export const ConversationDetail = ({
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#e5ddd5] dark:bg-[#0b141a]">
+    <div className="flex flex-col h-full bg-whatsapp-bg-chat dark:bg-whatsapp-bg-main">
       {/* Header - Oculto no mobile (já tem no ConversasCRMEnhanced) */}
-      <div className="hidden md:block p-3 md:p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1f2c33] shadow-sm shrink-0">
+      <div className="hidden md:block p-3 md:p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-whatsapp-panel-bg shadow-sm shrink-0">
         <div className="flex items-center justify-between gap-2 md:gap-3">
           <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
             <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center shrink-0">
@@ -152,7 +152,7 @@ export const ConversationDetail = ({
       </div>
 
       {/* Messages com scroll otimizado para mobile */}
-      <ScrollArea className="flex-1 bg-[#e5ddd5] dark:bg-[#0b141a]">
+      <ScrollArea className="flex-1 bg-whatsapp-bg-chat dark:bg-whatsapp-bg-main">
         <div className="p-3 md:p-4 space-y-2 md:space-y-3 pb-safe">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center">
@@ -182,7 +182,7 @@ export const ConversationDetail = ({
       </ScrollArea>
 
       {/* Input Bar - Fixo no bottom com safe area */}
-      <div className="shrink-0 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1f2c33] pb-safe">
+      <div className="shrink-0 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-whatsapp-panel-bg pb-safe">
         <MediaInputBar 
           phoneNumber={phoneNumber}
           agentKey={agentKey}

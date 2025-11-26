@@ -125,8 +125,8 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         className={`
           relative max-w-[85%] md:max-w-[70%] rounded-lg px-3 py-2
           ${isOutbound 
-            ? 'bg-[#d9fdd3] dark:bg-[#005c4b] text-[#111b21] dark:text-[#e9edef]' 
-            : 'bg-white dark:bg-[#1f2c33] text-[#111b21] dark:text-[#e9edef]'
+            ? 'bg-whatsapp-msg-out dark:bg-whatsapp-green-dark text-whatsapp-text-primary dark:text-white' 
+            : 'bg-white dark:bg-whatsapp-msg-in text-whatsapp-text-primary dark:text-white'
           }
           shadow-sm
         `}
