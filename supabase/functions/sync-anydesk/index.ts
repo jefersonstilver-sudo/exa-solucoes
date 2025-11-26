@@ -162,7 +162,41 @@ serve(async (req) => {
         const alias = client.alias || client.cid;
         const comment = client.comment || '';
         const label = client.label || '';
-        const status = client.online ? 'online' : 'offline';
+        
+        // Buscar dispositivo existente para debounce
+        const { data: existingDevice } = await supabase
+          .from('devices')
+          .select('*')
+          .eq('anydesk_client_id', anydeskId)
+          .maybeSingle();
+        
+        // Determinar status com anti-flutuação:
+        // 1. Validar online-time como fallback (se > 0, está online)
+        // 2. Debounce: só marca offline após 2 detecções consecutivas
+        const onlineTime = client['online-time'] || -1;
+        const isReallyOnline = client.online === true || onlineTime > 0;
+        
+        let status: string;
+        let newOfflineCount = 0;
+        
+        if (!isReallyOnline) {
+          // Incrementar contador de detecções offline
+          const currentCount = existingDevice?.consecutive_offline_count || 0;
+          newOfflineCount = currentCount + 1;
+          
+          // Só marca como offline após 2 confirmações consecutivas (≈30s)
+          if (newOfflineCount >= 2) {
+            status = 'offline';
+            newOfflineCount = 0; // Reset após confirmar offline
+          } else {
+            // Mantém status anterior na primeira detecção
+            status = existingDevice?.status || 'online';
+          }
+        } else {
+          // Online confirmado - reset contador e marca como online imediatamente
+          status = 'online';
+          newOfflineCount = 0;
+        }
         
         // Get tags from AnyDesk API (array of strings)
         const rawTags = Array.isArray(client.tags) ? client.tags : [];
@@ -174,8 +208,11 @@ serve(async (req) => {
           alias,
           originalComments: comment,
           rawTags,
-          onlineStatus: client.online, // 🔍 LOG CRÍTICO: Ver valor exato de online
+          onlineStatus: client.online,
+          onlineTime: onlineTime,
+          isReallyOnline: isReallyOnline,
           determinedStatus: status,
+          offlineCount: newOfflineCount,
           parsed: {
             buildingName: parsed.buildingName,
             provider: parsed.provider,
@@ -184,17 +221,12 @@ serve(async (req) => {
           }
         });
 
-        const { data: existingDevice } = await supabase
-          .from('devices')
-          .select('*')
-          .eq('anydesk_client_id', anydeskId)
-          .maybeSingle();
-
         const deviceData = {
           anydesk_client_id: anydeskId,
           name: parsed.buildingName,
           status: status,
-          last_online_at: client.online ? new Date().toISOString() : existingDevice?.last_online_at,
+          consecutive_offline_count: newOfflineCount,
+          last_online_at: isReallyOnline ? new Date().toISOString() : existingDevice?.last_online_at,
           condominio_name: parsed.buildingName,
           tags: rawTags,
           comments: comment,

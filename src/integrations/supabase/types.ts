@@ -2749,6 +2749,7 @@ export type Database = {
           anydesk_client_id: string
           comments: string | null
           condominio_name: string
+          consecutive_offline_count: number
           created_at: string | null
           id: string
           is_active: boolean | null
@@ -2766,6 +2767,7 @@ export type Database = {
           anydesk_client_id: string
           comments?: string | null
           condominio_name: string
+          consecutive_offline_count?: number
           created_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -2783,6 +2785,7 @@ export type Database = {
           anydesk_client_id?: string
           comments?: string | null
           condominio_name?: string
+          consecutive_offline_count?: number
           created_at?: string | null
           id?: string
           is_active?: boolean | null
