@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AlertCircle, TrendingUp, Clock, User, Phone, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatContactNameWithBuilding } from '@/modules/monitoramento-ia/utils/contactFormatters';
 
 interface ConversationItemProps {
   conversation: any;
@@ -48,7 +49,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
             "font-medium truncate text-module-primary",
             hasUnread && "text-[#25D366] font-semibold"
           )}>
-            {conversation.contact_name || conversation.contact_phone}
+            {formatContactNameWithBuilding(conversation.contact_name, conversation.contact_phone, conversation.metadata?.building_name)}
           </span>
           {conversation.is_group && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-[#25D366]/30 text-[#25D366]">

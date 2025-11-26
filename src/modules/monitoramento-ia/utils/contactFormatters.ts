@@ -91,3 +91,25 @@ export const isWhatsAppLeadId = (phone: string): boolean => {
 export const isWhatsAppGroup = (phone: string): boolean => {
   return phone.includes('@g.us') || phone.includes('-group');
 };
+
+/**
+ * Formata o nome do contato com o nome do prédio/grupo
+ * Exemplo: "Elaine Cristina - Vila Franciscatti"
+ */
+export const formatContactNameWithBuilding = (
+  contactName: string | null,
+  contactPhone: string,
+  buildingName?: string | null
+): string => {
+  const name = formatContactName(contactName, contactPhone);
+  
+  // Se tem nome do prédio e não é um contato genérico, adicionar o prédio
+  if (buildingName && buildingName.trim()) {
+    // Evitar duplicação: se o nome já contém o nome do prédio, não duplicar
+    if (!name.toLowerCase().includes(buildingName.toLowerCase())) {
+      return `${name} - ${buildingName}`;
+    }
+  }
+  
+  return name;
+};
