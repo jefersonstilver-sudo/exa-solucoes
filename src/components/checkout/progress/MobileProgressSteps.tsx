@@ -10,8 +10,8 @@ interface MobileProgressStepsProps {
 
 const MobileProgressSteps: React.FC<MobileProgressStepsProps> = ({ currentStep }) => {
   return (
-    <div className="flex sm:hidden justify-between items-center mb-3 px-1 py-2 min-h-[50px]">
-      <div className="flex items-center justify-center space-x-0.5 w-full">
+    <div className="flex sm:hidden justify-evenly items-center mb-4 px-4 py-4 min-h-[60px] bg-gray-50/50 rounded-xl">
+      <div className="flex items-center justify-evenly w-full gap-2">
         {PROGRESS_STEPS.map((step, index) => {
           const StepIcon = step.icon;
           const isCompleted = currentStep > index;
@@ -22,12 +22,12 @@ const MobileProgressSteps: React.FC<MobileProgressStepsProps> = ({ currentStep }
               key={step.name} 
               className="flex items-center flex-1"
             >
-              {/* Connection Line para mobile - mostra todas */}
+              {/* Connection Line - Thicker and more visible */}
               {index > 0 && (
-                <div className="w-full h-px mx-0.5 relative flex-1">
-                  <div className="h-full bg-gray-200 rounded-full" />
+                <div className="w-full h-1 mx-1 relative flex-1">
+                  <div className="h-full bg-gray-300 rounded-full" />
                   <motion.div 
-                    className="absolute top-0 left-0 h-full bg-[#3C1361] rounded-full"
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#9C1E1E] to-[#D72638] rounded-full"
                     initial={{ width: '0%' }}
                     animate={{ 
                       width: isCompleted ? '100%' : '0%'
@@ -37,25 +37,25 @@ const MobileProgressSteps: React.FC<MobileProgressStepsProps> = ({ currentStep }
                 </div>
               )}
               
-              {/* Step Circle - Compacto e visível */}
+              {/* Step Circle - Larger and more prominent */}
               <motion.div 
                 className={`
-                  flex items-center justify-center w-6 h-6 rounded-full flex-shrink-0
+                  flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 shadow-sm
                   ${isCompleted 
-                    ? 'bg-[#3C1361] text-white' 
+                    ? 'bg-[#9C1E1E] text-white' 
                     : isCurrent 
-                      ? 'bg-[#3C1361] text-white ring-2 ring-[#3C1361]/20' 
-                      : 'bg-gray-200 text-gray-400'
+                      ? 'bg-[#9C1E1E] text-white ring-2 ring-[#9C1E1E]/30' 
+                      : 'bg-white text-gray-400 border-2 border-gray-300'
                   }
                 `}
                 initial={{ scale: 0.9 }}
-                animate={{ scale: isCurrent ? 1.1 : 1 }}
-                transition={{ duration: 0.2 }}
+                animate={{ scale: isCurrent ? 1.15 : 1 }}
+                transition={{ duration: 0.3, type: "spring" }}
               >
                 {isCompleted ? (
-                  <Check className="w-3 h-3" strokeWidth={3} />
+                  <Check className="w-4 h-4" strokeWidth={3} />
                 ) : (
-                  <StepIcon className="w-3 h-3" strokeWidth={2.5} />
+                  <StepIcon className="w-4 h-4" strokeWidth={2.5} />
                 )}
               </motion.div>
             </div>

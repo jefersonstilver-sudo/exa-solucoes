@@ -31,24 +31,24 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
   const planKeys = Object.keys(plans).map(Number) as PlanKey[];
 
   return (
-    <div className="space-y-2.5 sm:space-y-6">
-      {/* Header - Mobile Compacto */}
+    <div className="space-y-6 sm:space-y-8">
+      {/* Header - Elegant */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <h2 className="text-sm sm:text-2xl font-bold text-gray-900 mb-0.5 sm:mb-2">
+        <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#D72638] bg-clip-text text-transparent mb-2">
           Escolha seu Plano
         </h2>
-        <p className="text-[10px] sm:text-base text-gray-600">
-          Selecione o período de veiculação
+        <p className="text-sm sm:text-base text-gray-600">
+          Selecione o período de veiculação ideal para sua campanha
         </p>
       </motion.div>
 
-      {/* Plans Grid - Mobile em 2 colunas */}
+      {/* Plans Grid - Responsive with better spacing */}
       <motion.div 
-        className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
         variants={{
           hidden: { opacity: 0 },
           visible: { 

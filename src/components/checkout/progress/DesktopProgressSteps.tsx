@@ -10,7 +10,7 @@ interface DesktopProgressStepsProps {
 
 const DesktopProgressSteps: React.FC<DesktopProgressStepsProps> = ({ currentStep }) => {
   return (
-    <div className="hidden sm:flex justify-between items-center mb-3 px-2">
+    <div className="hidden sm:flex justify-between items-center mb-6 px-4">
       {PROGRESS_STEPS.map((step, index) => {
         const StepIcon = step.icon;
         const isCompleted = currentStep > index;
@@ -21,12 +21,12 @@ const DesktopProgressSteps: React.FC<DesktopProgressStepsProps> = ({ currentStep
             key={step.name} 
             className="flex flex-col items-center relative flex-1"
           >
-            {/* Connection Line */}
+            {/* Connection Line - Centralized and thicker */}
             {index < PROGRESS_STEPS.length - 1 && (
-              <div className="absolute top-4 left-1/2 w-full h-0.5 -translate-y-1/2 z-0">
+              <div className="absolute top-5 left-1/2 w-full h-1 -translate-y-1/2 z-0">
                 <div className="h-full bg-gray-200 rounded-full" />
                 <motion.div 
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#3C1361] to-[#3C1361]/80 rounded-full"
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#9C1E1E] to-[#D72638] rounded-full"
                   initial={{ width: '0%' }}
                   animate={{ 
                     width: isCompleted ? '100%' : '0%'
@@ -36,35 +36,35 @@ const DesktopProgressSteps: React.FC<DesktopProgressStepsProps> = ({ currentStep
               </div>
             )}
             
-            {/* Step Circle */}
+            {/* Step Circle - Larger */}
             <motion.div 
               className={`
-                relative z-10 flex items-center justify-center w-8 h-8 rounded-full shadow-md transition-all duration-300
+                relative z-10 flex items-center justify-center w-10 h-10 rounded-full shadow-md transition-all duration-300
                 ${isCompleted 
-                  ? 'bg-[#3C1361] text-white' 
+                  ? 'bg-[#9C1E1E] text-white shadow-[#9C1E1E]/20' 
                   : isCurrent 
-                    ? 'bg-[#3C1361] text-white ring-2 ring-[#3C1361]/30' 
+                    ? 'bg-[#9C1E1E] text-white ring-4 ring-[#9C1E1E]/20 shadow-lg' 
                     : 'bg-white text-gray-400 border-2 border-gray-200'
                 }
               `}
               initial={{ scale: 0.8 }}
-              animate={{ scale: isCurrent ? 1.1 : 1 }}
-              transition={{ duration: 0.3 }}
+              animate={{ scale: isCurrent ? 1.15 : 1 }}
+              transition={{ duration: 0.3, type: "spring" }}
             >
               {isCompleted ? (
-                <Check className="w-4 h-4" />
+                <Check className="w-5 h-5" strokeWidth={2.5} />
               ) : (
-                <StepIcon className="w-4 h-4" />
+                <StepIcon className="w-5 h-5" strokeWidth={2} />
               )}
             </motion.div>
             
-            {/* Step Info */}
-            <div className="text-center mt-2 max-w-[70px]">
+            {/* Step Info - More legible */}
+            <div className="text-center mt-3">
               <span 
                 className={`
-                  text-xs font-medium block leading-tight
+                  text-sm font-medium block leading-tight
                   ${isCurrent 
-                    ? 'text-[#3C1361] font-semibold' 
+                    ? 'text-[#9C1E1E] font-semibold' 
                     : isCompleted 
                       ? 'text-gray-700' 
                       : 'text-gray-400'
