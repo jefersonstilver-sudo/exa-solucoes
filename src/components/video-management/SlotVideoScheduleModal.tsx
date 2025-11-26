@@ -419,8 +419,7 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
           <Button type="button" variant="outline" onClick={onClose} disabled={saving || validating} className="flex-1">
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={!canSave || saving || validating} className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md">
-            {validating ? <>
+          <Button onClick={handleSave} disabled={!canSave || saving || validating} className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md">Salvar {validating ? <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Validando...
               </> : saving ? <>
