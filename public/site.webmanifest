@@ -1,24 +1,46 @@
 {
-  "name": "EXA Display Comercial",
-  "short_name": "EXA Display",
-  "description": "Display comercial para exibição de vídeos em prédios - EXA Publicidade Inteligente",
+  "name": "EXA Mídia",
+  "short_name": "EXA",
+  "description": "Sistema de CRM, Painéis e IA Comercial - EXA Publicidade Inteligente",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/?pwa=true",
+  "scope": "/",
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/favicon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
     },
     {
-      "src": "/apple-touch-icon.png",
-      "sizes": "180x180",
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
       "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "theme_color": "#FF4430",
-  "background_color": "#0F172A",
-  "display": "standalone",
-  "orientation": "landscape",
-  "start_url": "/",
-  "scope": "/"
+  "screenshots": [],
+  "categories": ["business", "productivity"],
+  "lang": "pt-BR",
+  "dir": "ltr"
 }
