@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => ({
           {
             // API REST - sempre da rede primeiro (dados dinâmicos)
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-api-cache',
               networkTimeoutSeconds: 10,
