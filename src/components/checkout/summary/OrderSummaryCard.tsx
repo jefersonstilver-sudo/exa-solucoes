@@ -1,7 +1,8 @@
 
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Calendar, MapPin, Monitor, Clock, Users } from 'lucide-react';
+import { Building2, Calendar, MapPin, Monitor, Clock, Users, ChevronDown } from 'lucide-react';
 import { CartItem } from '@/types/cart';
 import { PlanKey } from '@/types/checkout';
 
@@ -14,6 +15,7 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
   cartItems,
   selectedPlan
 }) => {
+  const [expandedBuildings, setExpandedBuildings] = useState<Record<string, boolean>>({});
   console.log('[OrderSummaryCard] Debug:', {
     cartItemsCount: cartItems?.length || 0,
     selectedPlan,
@@ -78,7 +80,7 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
   return (
     <div className="space-y-3 sm:space-y-4">
       {/* Header Card */}
-      <Card className="shadow-sm border">
+      <Card className="shadow-2xl border rounded-2xl">
         <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
           <CardTitle className="flex items-center text-sm sm:text-lg font-semibold">
             <Building2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
@@ -132,31 +134,40 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Painéis por Prédio */}
+      {/* Painéis por Prédio - Compacto com Expand */}
       <div className="space-y-2 sm:space-y-3">
         <h3 className="text-xs sm:text-base font-semibold text-gray-900 px-1">
           Locais Selecionados
         </h3>
         
-        {Object.entries(paineisPorPredio).map(([buildingId, building]: [string, any]) => (
-          <div key={buildingId} className="bg-white border rounded-lg p-3 sm:p-4 hover:shadow-sm transition-shadow">
-            <div className="flex items-start space-x-2">
-              <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-1 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-gray-900 text-sm sm:text-base mb-1.5">
-                  {building.nome}
-                </h4>
-                
-                <div className="flex items-start space-x-1.5 mb-2">
-                  <MapPin className="h-3.5 w-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                    {building.endereco}
-                    {building.bairro && `, ${building.bairro}`}
-                    {building.cidade && ` - ${building.cidade}`}
-                    {building.estado && `/${building.estado}`}
-                  </p>
+        {Object.entries(paineisPorPredio).map(([buildingId, building]: [string, any]) => {
+          const isExpanded = expandedBuildings[buildingId];
+          
+          return (
+            <motion.div 
+              key={buildingId} 
+              className="bg-white border rounded-2xl shadow-lg hover:shadow-2xl transition-all overflow-hidden cursor-pointer"
+              onClick={() => setExpandedBuildings(prev => ({ ...prev, [buildingId]: !prev[buildingId] }))}
+            >
+              {/* Header - Sempre Visível */}
+              <div className="p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2 flex-1 min-w-0">
+                    <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-[#9C1E1E] flex-shrink-0" />
+                    <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                      {building.nome}
+                    </h4>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-shrink-0"
+                  >
+                    <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                  </motion.div>
                 </div>
                 
+                {/* Info Compacta - Sempre Visível */}
                 <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
                   <div className="flex items-center gap-1.5 text-blue-600">
                     <Monitor className="h-3.5 w-3.5" />
@@ -173,9 +184,32 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
                   )}
                 </div>
               </div>
-            </div>
-          </div>
-        ))}
+              
+              {/* Detalhes Expandidos - Condicional */}
+              <motion.div
+                initial={false}
+                animate={{ 
+                  height: isExpanded ? 'auto' : 0,
+                  opacity: isExpanded ? 1 : 0 
+                }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-0 border-t border-gray-100">
+                  <div className="flex items-start space-x-1.5 mt-3">
+                    <MapPin className="h-3.5 w-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                      {building.endereco}
+                      {building.bairro && `, ${building.bairro}`}
+                      {building.cidade && ` - ${building.cidade}`}
+                      {building.estado && `/${building.estado}`}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );
