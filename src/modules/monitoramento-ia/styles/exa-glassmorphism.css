@@ -7,7 +7,7 @@
 :root {
   /* Backgrounds */
   --exa-bg-primary: #FFFFFF;
-  --exa-bg-secondary: #F8F9FA;
+  --exa-bg-secondary: #F5F5F5;
   --exa-bg-card: #FFFFFF;
   --exa-bg-sidebar: #FAFAFA;
   --exa-bg-hover: rgba(156, 30, 30, 0.08);
@@ -44,7 +44,7 @@
 .dark {
   /* Backgrounds */
   --exa-bg-primary: #0A0A0A;
-  --exa-bg-secondary: #1A1A1A;
+  --exa-bg-secondary: #141414;
   --exa-bg-card: #1A1A1A;
   --exa-bg-sidebar: #0F0F0F;
   --exa-bg-hover: rgba(156, 30, 30, 0.15);
