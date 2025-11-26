@@ -30,7 +30,7 @@ const CheckoutLayout: React.FC<CheckoutLayoutProps> = ({
       <div className="min-h-screen bg-white sm:bg-gradient-to-br sm:from-gray-50 sm:via-gray-50 sm:to-gray-100">
         {/* Header com Progress integrado - FIXED para mobile */}
         {showProgress && (
-          <div className="sticky top-[60px] sm:top-20 z-20 bg-white shadow-sm border-b py-3 sm:py-4">
+          <div className="sticky top-[80px] sm:top-20 z-20 bg-white shadow-sm border-b py-3 sm:py-4">
             <div className={`container mx-auto px-3 sm:px-4 ${maxWidthClasses[maxWidth]}`}>
               <UnifiedCheckoutProgress currentStep={currentStep} />
             </div>
