@@ -127,9 +127,9 @@ const UserMenu = () => {
           
           <AnimatePresence>
             {open && <DropdownMenuContent 
-                className="w-[280px] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-xl bg-white border border-gray-200 max-h-[calc(100vh-100px)] overflow-y-auto z-[110]" 
+                className="w-[280px] sm:w-[320px] p-0 overflow-hidden rounded-2xl shadow-xl bg-white border border-gray-200 max-h-[calc(100vh-100px)] overflow-y-auto z-[110] mt-2 sm:mt-0" 
                 align="end" 
-                sideOffset={8}
+                sideOffset={12}
                 forceMount
               >
                 <motion.div initial="hidden" animate="visible" exit="exit" variants={dropdownVariants}>
