@@ -55,7 +55,7 @@ export default function Login() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="flex items-center justify-center min-h-[calc(100vh-80px)] sm:min-h-[calc(100vh-120px)] md:min-h-[calc(100vh-160px)] px-4 py-8 sm:py-12 md:py-16 lg:py-24"
+          className="flex items-center justify-center min-h-[calc(100vh-80px)] px-4 pt-24 pb-8 sm:pt-28 sm:pb-12 md:pt-32 md:pb-16"
         >
           <Card className="w-full max-w-md shadow-lg border-[#9C1E1E]/10">
             <CardHeader className="space-y-1 text-center">
