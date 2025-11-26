@@ -89,39 +89,53 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
 
       {/* UI Controls Layer - OUTSIDE map container */}
       {/* Elegant Red Close Button - Top Left */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
-        className="fixed top-4 left-4 z-[100000]"
-        style={{ pointerEvents: 'auto' }}
+      <div 
+        className="fixed top-4 left-4"
+        style={{ 
+          zIndex: 999999,
+          pointerEvents: 'auto',
+          isolation: 'isolate'
+        }}
       >
-        <Button
-          onClick={onClose}
-          variant="ghost"
-          size="icon"
-          className="h-12 w-12 rounded-full bg-red-600 shadow-[0_4px_20px_rgba(220,38,38,0.5)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.6)] transition-all duration-200 active:scale-95 border-0"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
         >
-          <X className="h-5 w-5 text-white" strokeWidth={2.5} />
-        </Button>
-      </motion.div>
+          <Button
+            onClick={onClose}
+            variant="ghost"
+            size="icon"
+            className="h-14 w-14 rounded-full bg-red-600 shadow-[0_4px_20px_rgba(220,38,38,0.5)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.6)] transition-all duration-200 active:scale-95 border-0"
+          >
+            <X className="h-6 w-6 text-white" strokeWidth={3} />
+          </Button>
+        </motion.div>
+      </div>
 
       {/* Glass-style Buildings Badge - Top Right */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
-        className="fixed top-4 right-4 z-[100000]"
-        style={{ pointerEvents: 'auto' }}
+      <div 
+        className="fixed top-4 right-4"
+        style={{ 
+          zIndex: 999999,
+          pointerEvents: 'auto',
+          isolation: 'isolate'
+        }}
       >
-        <Badge 
-          variant="secondary" 
-          className="h-14 px-5 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] text-base font-bold text-gray-800 flex items-center gap-2"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
         >
-          <Navigation className="h-5 w-5 text-blue-600" />
-          <span className="text-gray-800">{validBuildingsCount}</span>
-        </Badge>
-      </motion.div>
+          <Badge 
+            variant="secondary" 
+            className="h-14 px-5 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] text-base font-bold text-gray-800 flex items-center gap-2"
+          >
+            <Navigation className="h-5 w-5 text-blue-600" />
+            <span className="text-gray-800">{validBuildingsCount}</span>
+          </Badge>
+        </motion.div>
+      </div>
 
       {/* Bottom Sheet for Selected Building */}
       <AnimatePresence>
