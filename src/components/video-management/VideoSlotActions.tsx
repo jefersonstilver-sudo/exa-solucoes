@@ -102,17 +102,17 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
 
   return (
     <>
-      {/* Botões principais com apenas ícones */}
-      <div className="flex justify-center gap-2">
+      {/* Botões principais - Layout Responsivo */}
+      <div className="flex flex-wrap justify-center gap-0.5 sm:gap-2">
         {/* Download - sempre disponível */}
         <Button
           variant="outline"
           size="sm"
           onClick={() => onDownload(slot.video_data!.url, slot.video_data!.nome)}
-          className="border-black text-black hover:bg-black hover:text-white p-2"
+          className="border-black text-black hover:bg-black hover:text-white p-1 sm:p-2 h-6 sm:h-8"
           title="Download do vídeo"
         >
-          <Download className="h-4 w-4" />
+          <Download className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
         </Button>
 
         {/* Agendar Vídeo - apenas para vídeos aprovados, quando há 2+ vídeos e NÃO é vídeo principal */}
@@ -121,10 +121,10 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
             variant="outline"
             size="sm"
             onClick={() => setShowSlotScheduleModal(true)}
-            className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white p-2"
+            className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white p-1 sm:p-2 h-6 sm:h-8"
             title="Agendar horários de exibição"
           >
-            <Calendar className="h-4 w-4" />
+            <Calendar className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
           </Button>
         )}
         
@@ -134,10 +134,10 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
             variant="outline"
             size="sm"
             disabled
-            className="border-gray-300 text-gray-400 p-2 cursor-not-allowed"
+            className="border-gray-300 text-gray-400 p-1 sm:p-2 h-6 sm:h-8 cursor-not-allowed"
             title="Vídeos principais não podem ter agendamento"
           >
-            <Calendar className="h-4 w-4" />
+            <Calendar className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
           </Button>
         )}
         
@@ -147,10 +147,10 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
             variant="outline"
             size="sm"
             disabled
-            className="border-gray-300 text-gray-400 p-2 cursor-not-allowed"
+            className="border-gray-300 text-gray-400 p-1 sm:p-2 h-6 sm:h-8 cursor-not-allowed"
             title="Precisa de pelo menos 2 vídeos aprovados para agendar"
           >
-            <Calendar className="h-4 w-4" />
+            <Calendar className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
           </Button>
         )}
         
@@ -159,10 +159,10 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           variant="outline"
           size="sm"
           onClick={() => setShowScheduleModal(true)}
-          className="border-gray-600 text-gray-600 hover:bg-gray-600 hover:text-white p-2"
+          className="border-gray-600 text-gray-600 hover:bg-gray-600 hover:text-white p-1 sm:p-2 h-6 sm:h-8"
           title="Ver detalhes do vídeo"
         >
-          <Info className="h-4 w-4" />
+          <Info className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
         </Button>
         
         {/* Remover - verificar se é vídeo base */}
@@ -171,10 +171,10 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
           size="sm"
           onClick={() => slot.id && onRemove(slot.id)}
           disabled={slot.is_base_video}
-          className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white p-1 sm:p-2 h-6 sm:h-8 disabled:opacity-50 disabled:cursor-not-allowed"
           title={slot.is_base_video ? "Não é possível remover o vídeo base" : "Remover vídeo"}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
         </Button>
 
         {/* Limpeza Forçada - apenas se Force Cleanup estiver ativado no debug E (tiver onForceCleanup OU URL corrompida) */}
@@ -183,10 +183,10 @@ export const VideoSlotActions: React.FC<VideoSlotActionsProps> = ({
             variant="outline"
             size="sm"
             onClick={handleForceCleanup}
-            className="border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white p-2"
+            className="border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white p-1 sm:p-2 h-6 sm:h-8"
             title="⚠️ Limpeza Forçada - Remove vídeo corrompido bypassing validações (Ativado via Debug Mode)"
           >
-            <AlertTriangle className="h-4 w-4" />
+            <AlertTriangle className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
           </Button>
         )}
       </div>

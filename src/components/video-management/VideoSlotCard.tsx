@@ -229,148 +229,145 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
   };
   const cardElement = <Card className={cardClasses}>
       <CardContent className="p-1 sm:p-3 md:p-4 max-w-full overflow-hidden">
-        {/* Header do Slot - Ultra Compacto Mobile */}
-        <div className="flex items-center justify-between mb-0.5 sm:mb-2">
-          <div className="flex items-center space-x-0.5 sm:space-x-2">
+        {/* Header do Slot - Melhorado para Mobile */}
+        <div className="mb-0.5 sm:mb-2 space-y-0.5">
+          {/* Linha 1: Título do Slot + Status Icons */}
+          <div className="flex items-center justify-between">
             <h3 className="font-semibold text-[9px] sm:text-base text-gray-900">Slot {slot.slot_position}</h3>
-            
-            {/* Badge Vídeo Principal - Ultra Compacto Mobile */}
-            {slot.video_data && slot.approval_status === 'approved' && slot.is_base_video && <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center space-x-0.5 sm:space-x-2 cursor-help">
-                      {/* Badge Ultra Compacto */}
-                      <div className="flex items-center space-x-0.5 bg-slate-100 border border-slate-300 text-slate-700 px-0.5 py-0.5 sm:px-2 sm:py-1 rounded text-[7px] sm:text-xs font-medium">
+            <div className="flex items-center gap-0.5">
+              {slot.video_data && getStatusIcon(slot.approval_status)}
+              {/* Badges dos status - Ultra Compacto Mobile */}
+              {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">✗</Badge>}
+              {slot.approval_status === 'pending' && <Badge variant="secondary" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">⏱</Badge>}
+            </div>
+          </div>
+          
+          {/* Linha 2: Badges e Botões (quando há vídeo aprovado) */}
+          {slot.video_data && slot.approval_status === 'approved' && (
+            <div className="flex items-center flex-wrap gap-0.5 sm:gap-1">
+              {/* Badge Vídeo Principal */}
+              {slot.is_base_video && <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center space-x-0.5 bg-slate-100 border border-slate-300 text-slate-700 px-0.5 py-0.5 sm:px-2 sm:py-1 rounded text-[7px] sm:text-xs font-medium cursor-help">
                         <Star className="h-1.5 w-1.5 sm:h-3 sm:w-3" />
                         <span className="hidden sm:inline">Principal</span>
                         <span className="sm:hidden">★</span>
                       </div>
-                      
-                      {/* Badge "EM EXIBIÇÃO" - Ultra Compacto */}
-                      {!hasAnyScheduledActiveNow && <div className="flex items-center space-x-0.5 bg-green-50 border border-green-300 text-green-700 px-0.5 py-0.5 sm:px-1.5 sm:py-0.5 rounded text-[7px] sm:text-xs font-medium">
-                          <Tv className="h-1.5 w-1.5 sm:h-3 sm:w-3" />
-                          <span className="hidden sm:inline">ATIVO</span>
-                          <span className="sm:hidden">▶</span>
-                        </div>}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs bg-slate-900 text-white p-3">
-                    <p className="text-sm font-semibold mb-1">⭐ Vídeo Principal</p>
-                    <p className="text-xs leading-relaxed">
-                      Quando o pedido é ativado, o sistema sempre mantém pelo menos um vídeo em exibição. Este é o vídeo padrão que será exibido automaticamente quando não houver agendamentos ativos.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>}
-            
-            {/* Badge "EM EXIBIÇÃO" para vídeos agendados - quando estão no período ativo */}
-            {slot.video_data && slot.approval_status === 'approved' && !slot.is_base_video && hasActiveSchedule && isScheduledActiveNow() && <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center space-x-1 bg-green-50 border border-green-300 text-green-700 px-2.5 py-1.5 rounded-md text-xs font-semibold animate-pulse cursor-help">
-                      <Tv className="h-3.5 w-3.5" />
-                      <span>EM EXIBIÇÃO</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs bg-green-900 text-white p-3">
-                    <p className="text-sm font-semibold mb-1">🎬 Vídeo Agendado em Exibição</p>
-                    <p className="text-xs leading-relaxed">
-                      Este vídeo está sendo exibido agora de acordo com o agendamento configurado. Quando o período de agendamento terminar, o sistema voltará automaticamente para o vídeo principal.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>}
-            
-            {/* Botão para trocar vídeo principal - ULTRA COMPACTO */}
-            {slot.video_data && slot.approval_status === 'approved' && !slot.is_base_video && totalApprovedVideos >= 2 && <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={async () => {
-                  console.log('🔄 [BASE_VIDEO] Definindo novo vídeo base:', {
-                    oldBaseVideoId: slot.id,
-                    newBaseVideoId: slot.id,
-                    hasActiveSchedule,
-                    willRemoveSchedule: hasActiveSchedule,
-                    timestamp: new Date().toISOString()
-                  });
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs bg-slate-900 text-white p-3">
+                      <p className="text-sm font-semibold mb-1">⭐ Vídeo Principal</p>
+                      <p className="text-xs leading-relaxed">
+                        Quando o pedido é ativado, o sistema sempre mantém pelo menos um vídeo em exibição. Este é o vídeo padrão que será exibido automaticamente quando não houver agendamentos ativos.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>}
+              
+              {/* Badge "ATIVO" para vídeo principal */}
+              {slot.is_base_video && !hasAnyScheduledActiveNow && <div className="flex items-center space-x-0.5 bg-green-50 border border-green-300 text-green-700 px-0.5 py-0.5 sm:px-1.5 sm:py-0.5 rounded text-[7px] sm:text-xs font-medium">
+                  <Tv className="h-1.5 w-1.5 sm:h-3 sm:w-3" />
+                  <span className="hidden sm:inline">ATIVO</span>
+                  <span className="sm:hidden">▶</span>
+                </div>}
+              
+              {/* Badge "EM EXIBIÇÃO" para vídeos agendados ativos */}
+              {!slot.is_base_video && hasActiveSchedule && isScheduledActiveNow() && <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center space-x-0.5 sm:space-x-1 bg-green-50 border border-green-300 text-green-700 px-0.5 py-0.5 sm:px-2.5 sm:py-1.5 rounded text-[7px] sm:text-xs font-semibold cursor-help animate-pulse">
+                        <Tv className="h-1.5 w-1.5 sm:h-3.5 sm:w-3.5" />
+                        <span className="hidden sm:inline">EM EXIBIÇÃO</span>
+                        <span className="sm:hidden">▶</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs bg-green-900 text-white p-3">
+                      <p className="text-sm font-semibold mb-1">🎬 Vídeo Agendado em Exibição</p>
+                      <p className="text-xs leading-relaxed">
+                        Este vídeo está sendo exibido agora de acordo com o agendamento configurado. Quando o período de agendamento terminar, o sistema voltará automaticamente para o vídeo principal.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>}
+              
+              {/* Botão "Definir como Principal" */}
+              {!slot.is_base_video && totalApprovedVideos >= 2 && <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={async () => {
+                          console.log('🔄 [BASE_VIDEO] Definindo novo vídeo base:', {
+                            oldBaseVideoId: slot.id,
+                            newBaseVideoId: slot.id,
+                            hasActiveSchedule,
+                            willRemoveSchedule: hasActiveSchedule,
+                            timestamp: new Date().toISOString()
+                          });
 
-                  // Se tem agendamento, avisar que será removido
-                  if (hasActiveSchedule) {
-                    const confirmed = window.confirm('Este vídeo possui agendamentos ativos. Ao defini-lo como vídeo principal, todos os agendamentos serão removidos automaticamente. Deseja continuar?');
-                    if (!confirmed) return;
-                  }
-                  const clickData = {
-                    slotId: slot.id,
-                    slotPosition: slot.slot_position,
-                    videoName: slot.video_data?.nome,
-                    isBaseVideo: slot.is_base_video,
-                    totalApprovedVideos
-                  };
-                  console.log('🎯 [SLOT_CARD] Botão "Definir como Principal" clicado:', clickData);
-                  videoLogger.logUserClick('set_base_video_button', 'Clique no botão Definir como Principal', clickData);
-                  if (slot.id && onSetBaseVideo) {
-                    console.log('✅ [SLOT_CARD] Chamando onSetBaseVideo...');
-                    videoLogger.logUserClick('set_base_video_calling', 'Chamando callback onSetBaseVideo', {
-                      slotId: slot.id
-                    });
-                    try {
-                      onSetBaseVideo(slot.id);
-                      videoLogger.logUserClick('set_base_video_callback_called', 'Callback executado', {
-                        slotId: slot.id
-                      });
-                    } catch (error: any) {
-                      console.error('❌ [SLOT_CARD] Erro ao chamar onSetBaseVideo:', error);
-                      videoLogger.logUserClick('set_base_video_callback_error', 'Erro ao executar callback', {
-                        slotId: slot.id,
-                        error: error.message,
-                        stack: error.stack
-                      });
-                    }
-                  } else {
-                    const errorData = {
-                      hasSlotId: !!slot.id,
-                      hasCallback: !!onSetBaseVideo
-                    };
-                    console.error('❌ [SLOT_CARD] Não foi possível chamar onSetBaseVideo:', errorData);
-                    videoLogger.logUserClick('set_base_video_no_callback', 'Callback não disponível', errorData);
-                  }
-                }} className="text-[7px] sm:text-xs px-1 sm:px-2 py-0.5 h-4 sm:h-7 border-gray-300 text-gray-600 hover:bg-gray-50" title={hasActiveSchedule ? "Os agendamentos serão removidos" : "Clique para definir como vídeo principal"}>
-                      <span className="hidden sm:inline">Definir Principal</span>
-                      <span className="sm:hidden">★</span>
-                    </Button>
-                  </TooltipTrigger>
-                  {hasActiveSchedule && <TooltipContent>
-                      <p className="font-medium">⚠️ Atenção</p>
-                      <p className="text-xs mt-1">Os agendamentos deste vídeo serão removidos ao torná-lo principal</p>
-                    </TooltipContent>}
-                </Tooltip>
-              </TooltipProvider>}
-            
-            {/* Aviso se é o único vídeo aprovado (não pode ser removido/desmarcado) */}
-            {slot.is_base_video && totalApprovedVideos === 1 && <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs bg-red-900 text-white">
-                    <p className="text-sm font-medium">⚠️ Não Pode Ser Removido</p>
-                    <p className="text-xs mt-1">
-                      Este é o único vídeo aprovado do pedido. Envie outro vídeo e aguarde aprovação antes de remover este.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>}
-            
-            {slot.video_data && getStatusIcon(slot.approval_status)}
-            {isBlocked && <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                Não Selecionável
-              </span>}
-          </div>
-          <div className="flex flex-wrap gap-0.5 sm:gap-2">
-            {/* Badges dos status - Ultra Compacto Mobile */}
-            {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">✗</Badge>}
-            {slot.approval_status === 'pending' && <Badge variant="secondary" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">⏱</Badge>}
-          </div>
+                          if (hasActiveSchedule) {
+                            const confirmed = window.confirm('Este vídeo possui agendamentos ativos. Ao defini-lo como vídeo principal, todos os agendamentos serão removidos automaticamente. Deseja continuar?');
+                            if (!confirmed) return;
+                          }
+                          
+                          const clickData = {
+                            slotId: slot.id,
+                            slotPosition: slot.slot_position,
+                            videoName: slot.video_data?.nome,
+                            isBaseVideo: slot.is_base_video,
+                            totalApprovedVideos
+                          };
+                          console.log('🎯 [SLOT_CARD] Botão "Definir como Principal" clicado:', clickData);
+                          videoLogger.logUserClick('set_base_video_button', 'Clique no botão Definir como Principal', clickData);
+                          
+                          if (slot.id && onSetBaseVideo) {
+                            console.log('✅ [SLOT_CARD] Chamando onSetBaseVideo...');
+                            videoLogger.logUserClick('set_base_video_calling', 'Chamando callback onSetBaseVideo', {
+                              slotId: slot.id
+                            });
+                            try {
+                              onSetBaseVideo(slot.id);
+                              videoLogger.logUserClick('set_base_video_callback_called', 'Callback executado', {
+                                slotId: slot.id
+                              });
+                            } catch (error: any) {
+                              console.error('❌ [SLOT_CARD] Erro ao chamar onSetBaseVideo:', error);
+                              videoLogger.logUserClick('set_base_video_callback_error', 'Erro ao executar callback', {
+                                slotId: slot.id,
+                                error: error.message,
+                                stack: error.stack
+                              });
+                            }
+                          } else {
+                            const errorData = {
+                              hasSlotId: !!slot.id,
+                              hasCallback: !!onSetBaseVideo
+                            };
+                            console.error('❌ [SLOT_CARD] Não foi possível chamar onSetBaseVideo:', errorData);
+                            videoLogger.logUserClick('set_base_video_no_callback', 'Callback não disponível', errorData);
+                          }
+                        }} 
+                        className="text-[7px] sm:text-xs px-1 sm:px-2 py-0.5 h-4 sm:h-7 border-gray-300 text-gray-600 hover:bg-gray-50" 
+                        title={hasActiveSchedule ? "Os agendamentos serão removidos" : "Clique para definir como vídeo principal"}
+                      >
+                        <span className="hidden sm:inline">Definir Principal</span>
+                        <span className="sm:hidden">★</span>
+                      </Button>
+                    </TooltipTrigger>
+                    {hasActiveSchedule && <TooltipContent>
+                        <p className="font-medium">⚠️ Atenção</p>
+                        <p className="text-xs mt-1">Os agendamentos deste vídeo serão removidos ao torná-lo principal</p>
+                      </TooltipContent>}
+                  </Tooltip>
+                </TooltipProvider>}
+            </div>
+          )}
+          
+          {/* Aviso para vídeos bloqueados */}
+          {isBlocked && <span className="text-[9px] sm:text-xs text-gray-500 bg-gray-200 px-1 py-0.5 sm:px-2 sm:py-1 rounded inline-block">
+              Não Selecionável
+            </span>}
         </div>
 
         {/* Progress Bar para Upload - Compacto */}
