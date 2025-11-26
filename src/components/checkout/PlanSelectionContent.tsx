@@ -91,7 +91,7 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
           <div className="flex flex-col items-center text-center p-4 bg-gradient-to-br from-[#9C1E1E]/5 to-[#D72638]/5 rounded-xl border border-[#9C1E1E]/20">
             <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-[#9C1E1E] mb-2" />
             <p className="text-xs sm:text-sm text-gray-600 mb-1">Total</p>
-            <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#D72638] bg-clip-text text-transparent">
+            <p className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#D72638] bg-clip-text text-transparent leading-tight">
               {formatCurrency(recalculatedPrice)}
             </p>
           </div>
