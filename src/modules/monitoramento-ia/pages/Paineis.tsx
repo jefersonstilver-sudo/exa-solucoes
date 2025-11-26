@@ -20,7 +20,9 @@ import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
-import { DowntimeHistoryPanel } from '../components/paineis/DowntimeHistoryPanel';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react';
 
 // Simple StatCard component for Paineis page
 const SimpleStatCard = ({ label, value, color }: { label: string; value: number; color: 'blue' | 'green' | 'red' | 'gray' }) => {
@@ -43,6 +45,7 @@ const SimpleStatCard = ({ label, value, color }: { label: string; value: number;
 };
 
 export const PaineisPage = () => {
+  const navigate = useNavigate();
   const {
     devices,
     loading,
@@ -313,6 +316,18 @@ export const PaineisPage = () => {
                 <Badge variant="destructive" className="ml-2 animate-pulse bg-red-600 text-white">
                   {todasQuedas.reduce((sum, painel) => sum + painel.total_ocorrencias, 0)} quedas
                 </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto mr-8"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate('/admin/monitoramento-ia/historico-quedas');
+                  }}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Ver Histórico Completo
+                </Button>
               </div>
               <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isQuedasOpen ? 'rotate-180' : ''}`} />
             </div>
@@ -323,9 +338,6 @@ export const PaineisPage = () => {
           </CollapsibleContent>
         </div>
       </Collapsible>
-
-      {/* Histórico Detalhado de Quedas */}
-      <DowntimeHistoryPanel />
 
       {/* Filtros */}
       <FiltersBar
