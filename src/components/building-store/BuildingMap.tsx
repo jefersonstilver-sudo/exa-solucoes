@@ -227,8 +227,8 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
           if (projection) {
             const point = projection.fromLatLngToDivPixel(new maps.LatLng(position.lat, position.lng));
             if (point) {
-              customMarkerDiv.style.left = (point.x - 16) + 'px';
-              customMarkerDiv.style.top = (point.y - 32) + 'px';
+              customMarkerDiv.style.left = (point.x - 24) + 'px';
+              customMarkerDiv.style.top = (point.y - 48) + 'px';
             }
           }
         };
