@@ -5,7 +5,7 @@ import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 import { useToast } from '@/hooks/use-toast';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { getPersistentGeocode } from '@/services/geocodingCache';
-import CustomMapPin from '@/components/maps/CustomMapPin';
+import CustomPinImage from '@/components/maps/CustomPinImage';
 import BuildingHoverCard from '@/components/maps/BuildingHoverCard';
 import { createRoot } from 'react-dom/client';
 import BusinessLocationPin from '@/components/maps/BusinessLocationPin';
@@ -45,6 +45,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   const [isReady, setIsReady] = useState<boolean>(false);
   const [isEditingLocation, setIsEditingLocation] = useState<boolean>(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [cartVersion, setCartVersion] = useState(0);
   const { hoveredBuildingId, selectedBuildingId, setHoveredBuilding, setSelectedBuildingId, businessLocation, businessAddress, setBusinessLocation } = useBuildingStore();
   const { toast } = useToast();
 
@@ -196,8 +197,8 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         const CustomMarkerComponent = () => (
           <BuildingHoverCard building={building} businessLocation={businessLocation}>
             <div>
-              <CustomMapPin
-                status={building.status}
+              <CustomPinImage
+                buildingId={building.id}
                 isHovered={isHovered}
                 isSelected={isSelected}
               />
@@ -268,6 +269,17 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       };
 
       const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+      // Listen for cart updates to re-render markers
+      const handleCartUpdate = () => {
+        setCartVersion(v => v + 1);
+      };
+      window.addEventListener('cart:updated', handleCartUpdate);
+      
+      // Cleanup listener on unmount
+      return () => {
+        window.removeEventListener('cart:updated', handleCartUpdate);
+      };
 
       const getCacheKey = (b: any) => {
         const id = (b.id || '').toString();
