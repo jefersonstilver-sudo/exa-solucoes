@@ -111,8 +111,10 @@ export const QuedaDiariaList = ({ paineis }: QuedaDiariaListProps) => {
               painelId={painel.painel_id}
             />
 
-            {/* Condomínio */}
-            <p className="text-xs text-muted-foreground mb-2">{painel.condominio_nome}</p>
+            {/* Condomínio - apenas se diferente do nome do painel */}
+            {painel.condominio_nome !== painel.painel_nome && (
+              <p className="text-xs text-muted-foreground mb-2">{painel.condominio_nome}</p>
+            )}
 
             {/* Detalhes Expandíveis Minimalistas */}
             <Collapsible open={isExpanded} onOpenChange={() => togglePanel(painel.painel_id)}>

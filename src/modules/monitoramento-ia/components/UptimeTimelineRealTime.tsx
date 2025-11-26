@@ -6,6 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useTimelineDrag } from '../hooks/useTimelineDrag';
 import { supabase } from '@/integrations/supabase/client';
 import { format, startOfDay, endOfDay, subDays, isToday } from 'date-fns';
@@ -167,6 +168,7 @@ export const UptimeTimelineRealTime = ({ ocorrencias, painelId }: UptimeTimeline
     { date: new Date(), ocorrencias }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   const totalDays = loadedDays.length;
   const currentTimePosition = useCurrentTimePosition(totalDays);
@@ -238,6 +240,14 @@ export const UptimeTimelineRealTime = ({ ocorrencias, painelId }: UptimeTimeline
     onScrollToEnd: () => {}, // Não aplicável para dias futuros
   });
 
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.2 : 0.2;
+      setZoomLevel(prev => Math.max(1, Math.min(10, prev + delta)));
+    }
+  };
+
   // Scroll automático para o dia atual ao montar
   useEffect(() => {
     if (containerRef.current && totalDays > 1) {
@@ -253,16 +263,38 @@ export const UptimeTimelineRealTime = ({ ocorrencias, painelId }: UptimeTimeline
 
   return (
     <TooltipProvider delayDuration={100}>
-      <div className="mb-3">
+      <div className="mb-3 relative">
+        {/* Controles de Zoom */}
+        <div className="absolute -top-1 right-0 flex gap-1 z-[60]">
+          <button
+            onClick={() => setZoomLevel(z => Math.min(10, z + 1))}
+            className="p-1 bg-background/90 backdrop-blur-sm border border-border rounded hover:bg-accent transition-colors"
+            title="Zoom In (Ctrl + Scroll)"
+          >
+            <ZoomIn className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => setZoomLevel(z => Math.max(1, z - 1))}
+            className="p-1 bg-background/90 backdrop-blur-sm border border-border rounded hover:bg-accent transition-colors"
+            title="Zoom Out (Ctrl + Scroll)"
+          >
+            <ZoomOut className="w-3 h-3" />
+          </button>
+          <span className="px-2 py-1 bg-background/90 backdrop-blur-sm border border-border rounded text-[10px] font-mono">
+            {zoomLevel.toFixed(1)}x
+          </span>
+        </div>
+
         {/* Timeline Container - Scrollável Horizontalmente */}
         <div 
           ref={containerRef}
-          className="relative h-[14px] overflow-x-auto overflow-y-hidden rounded-lg"
+          className="relative h-12 overflow-x-auto overflow-y-hidden rounded-lg"
           style={{ 
             scrollBehavior: 'smooth',
             cursor: isDragging ? 'grabbing' : 'grab',
             scrollbarWidth: 'thin',
           }}
+          onWheel={handleWheel}
           onMouseDown={handleDragStart}
           onMouseMove={handleDragMove}
           onMouseUp={handleDragEnd}
@@ -271,10 +303,10 @@ export const UptimeTimelineRealTime = ({ ocorrencias, painelId }: UptimeTimeline
           onTouchMove={handleDragMove}
           onTouchEnd={handleDragEnd}
         >
-          {/* Timeline Interna com Largura Dinâmica */}
+          {/* Timeline Interna com Largura Dinâmica + Zoom */}
           <div 
             className="relative h-full bg-muted/20 rounded-lg"
-            style={{ width: `${totalDays * 100}%`, minWidth: '100%' }}
+            style={{ width: `${totalDays * 100 * zoomLevel}%`, minWidth: '100%' }}
           >
             {allSegments.length === 0 ? (
               // Se não há quedas, timeline toda verde
@@ -333,22 +365,29 @@ export const UptimeTimelineRealTime = ({ ocorrencias, painelId }: UptimeTimeline
           </div>
         </div>
         
-        {/* Régua de Horários Dinâmica */}
-        <div className="relative mt-1.5" style={{ width: `${totalDays * 100}%`, minWidth: '100%' }}>
+        {/* Régua de Horários Dinâmica com Data Visível */}
+        <div className="relative mt-2 overflow-x-auto" style={{ width: `${totalDays * 100 * zoomLevel}%`, minWidth: '100%' }}>
           {loadedDays.map((day, dayIndex) => (
             <div 
               key={dayIndex}
-              className="absolute flex justify-between text-[10px] text-muted-foreground font-mono"
+              className="absolute text-[10px] text-muted-foreground font-mono"
               style={{
                 left: `${(dayIndex / totalDays) * 100}%`,
                 width: `${(1 / totalDays) * 100}%`,
               }}
             >
-              <span>{format(day.date, 'dd/MM')}</span>
-              <span>06:00</span>
-              <span>12:00</span>
-              <span>18:00</span>
-              <span>24:00</span>
+              {/* Data em destaque */}
+              <div className="font-bold mb-1 text-foreground/80">
+                📅 {format(day.date, 'dd/MM/yyyy')}
+              </div>
+              {/* Horários */}
+              <div className="flex justify-between">
+                <span>00:00</span>
+                <span>06:00</span>
+                <span>12:00</span>
+                <span>18:00</span>
+                <span>24:00</span>
+              </div>
             </div>
           ))}
         </div>
