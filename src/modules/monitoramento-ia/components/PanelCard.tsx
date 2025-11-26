@@ -74,7 +74,19 @@ export const PanelCard = ({
     if (upperProvider.includes('TELECOM FOZ')) return 'text-blue-400';
     return 'text-white/90';
   };
-  return <div onClick={onClick} className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border overflow-hidden group hover:scale-[1.03] ${hasCriticalAlert ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200 glow-danger' : getCardBgClass()}`}>
+  return <div 
+    onClick={onClick} 
+    className={`glass-card rounded-[14px] shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border overflow-hidden group hover:scale-[1.03] ${hasCriticalAlert ? 'border-red-600 border-2 animate-pulse shadow-lg shadow-red-200 glow-danger' : getCardBgClass()}`}
+    style={{
+      backgroundColor: hasCriticalAlert 
+        ? undefined 
+        : device.status === 'online' 
+          ? '#1a2e1a' 
+          : device.status === 'offline' 
+            ? '#2e1a1a' 
+            : undefined
+    }}
+  >
       {/* Corpo do card */}
       <div className="p-2 sm:p-4 lg:p-6 text-center">
         {/* Nome principal grande */}
