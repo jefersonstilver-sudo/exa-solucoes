@@ -122,53 +122,53 @@ export const Agentes = () => {
             <TabsList className="bg-card backdrop-blur-xl border border-border inline-flex min-w-max gap-1 sm:gap-2 p-1 rounded-full shadow-sm">
               <TabsTrigger 
                 value="overview" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:text-muted-foreground whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium min-h-[44px] touch-manipulation transition-all duration-[var(--duration-normal)]"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:text-muted-foreground whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium min-h-[44px] touch-manipulation transition-all duration-normal"
               >
                 📊 Overview
               </TabsTrigger>
               <TabsTrigger 
                 value="apis" 
-                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium min-h-[44px] touch-manipulation transition-all duration-[var(--duration-normal)]"
+                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium min-h-[44px] touch-manipulation transition-all duration-normal"
               >
                 🔌 APIs
               </TabsTrigger>
               <TabsTrigger 
                 value="sofia" 
-                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium flex items-center gap-2 min-h-[44px] touch-manipulation transition-all duration-[var(--duration-normal)]"
+                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium flex items-center gap-2 min-h-[44px] touch-manipulation transition-all duration-normal"
               >
                 <Sparkles className="w-4 h-4" />
                 Sofia
               </TabsTrigger>
               <TabsTrigger 
                 value="iris" 
-                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium flex items-center gap-2 min-h-[44px] touch-manipulation transition-all duration-[var(--duration-normal)]"
+                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium flex items-center gap-2 min-h-[44px] touch-manipulation transition-all duration-normal"
               >
                 <Building2 className="w-4 h-4" />
                 IRIS
               </TabsTrigger>
               <TabsTrigger 
                 value="exa_alert" 
-                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium flex items-center gap-2 min-h-[44px] touch-manipulation transition-all duration-[var(--duration-normal)]"
+                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium flex items-center gap-2 min-h-[44px] touch-manipulation transition-all duration-normal"
               >
                 <Bell className="w-4 h-4" />
                 Alert
               </TabsTrigger>
               <TabsTrigger 
                 value="eduardo" 
-                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium flex items-center gap-2 min-h-[44px] touch-manipulation transition-all duration-[var(--duration-normal)]"
+                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium flex items-center gap-2 min-h-[44px] touch-manipulation transition-all duration-normal"
               >
                 <UserCircle className="w-4 h-4" />
                 Eduardo
               </TabsTrigger>
               <TabsTrigger 
                 value="console" 
-                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium min-h-[44px] touch-manipulation transition-all duration-[var(--duration-normal)]"
+                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium min-h-[44px] touch-manipulation transition-all duration-normal"
               >
                 🤖 Console
               </TabsTrigger>
               <TabsTrigger 
                 value="knowledge" 
-                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium min-h-[44px] touch-manipulation transition-all duration-[var(--duration-normal)]"
+                className="data-[state=active]:bg-[hsl(var(--exa-red))] data-[state=active]:text-white data-[state=inactive]:text-gray-600 whitespace-nowrap px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-medium min-h-[44px] touch-manipulation transition-all duration-normal"
               >
                 📚 Base
               </TabsTrigger>

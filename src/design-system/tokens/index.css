@@ -70,6 +70,21 @@
   --glass-bg: hsl(0 0% 100% / 0.7);
   --glass-border: hsl(0 0% 100% / 0.3);
   --glass-blur: blur(24px);
+  
+  /* === WhatsApp Theme Colors === */
+  --whatsapp-green-dark: 139 44% 30%;
+  --whatsapp-green-medium: 139 44% 41%;
+  --whatsapp-green-light: 142 70% 49%;
+  --whatsapp-bg-main: 210 11% 15%;
+  --whatsapp-bg-chat: 0 0% 90%;
+  --whatsapp-msg-out: 142 70% 85%;
+  --whatsapp-msg-in: 0 0% 100%;
+  --whatsapp-text-primary: 0 0% 7%;
+  --whatsapp-text-secondary: 0 0% 38%;
+  --whatsapp-border: 0 0% 85%;
+  --whatsapp-hover: 0 0% 96%;
+  --whatsapp-panel-bg: 0 0% 100%;
+  --whatsapp-icon-gray: 0 0% 60%;
 }
 
 .dark {
@@ -79,4 +94,15 @@
   --apple-gray-200: 240 5% 26%;
   --glass-bg: hsl(220 13% 9% / 0.7);
   --glass-border: hsl(0 0% 100% / 0.1);
+  
+  /* WhatsApp Dark Mode */
+  --whatsapp-bg-main: 0 0% 8%;
+  --whatsapp-bg-chat: 207 25% 7%;
+  --whatsapp-msg-out: 142 70% 22%;
+  --whatsapp-msg-in: 210 11% 15%;
+  --whatsapp-text-primary: 0 0% 95%;
+  --whatsapp-text-secondary: 0 0% 75%;
+  --whatsapp-border: 0 0% 20%;
+  --whatsapp-hover: 210 11% 20%;
+  --whatsapp-panel-bg: 210 11% 15%;
 }

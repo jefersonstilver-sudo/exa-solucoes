@@ -34,7 +34,7 @@ export const AppleScrollableTabs = ({
               className={cn(
                 "px-4 py-2.5 rounded-full text-sm font-medium transition-all",
                 "min-w-[80px] touch-manipulation whitespace-nowrap",
-                "duration-[var(--duration-normal)] ease-[var(--ease-apple)]",
+                "duration-normal ease-apple",
                 activeTab === tab.id
                   ? "bg-[hsl(var(--exa-red))] text-white shadow-lg"
                   : "bg-white/80 text-gray-600 hover:bg-white border border-gray-200"

@@ -74,7 +74,7 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ type: 'tween', duration: 0.3 }}
-      className="h-[100dvh] flex flex-col bg-[#e5ddd5] dark:bg-[#0b141a] fixed inset-0 z-50"
+      className="h-[100dvh] flex flex-col bg-whatsapp-bg-chat dark:bg-whatsapp-bg-main fixed inset-0 z-50"
     >
       {/* Header */}
       <MobileChatHeader
@@ -115,7 +115,7 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
             {/* Typing Indicator */}
             {isTyping && (
               <div className="px-4 mb-2">
-                <div className="bg-white dark:bg-[#1f2c33] rounded-lg rounded-bl-none shadow-sm p-3 max-w-[70px] inline-block">
+                <div className="bg-white dark:bg-whatsapp-msg-in rounded-lg rounded-bl-none shadow-sm p-3 max-w-[70px] inline-block">
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.1s]" />

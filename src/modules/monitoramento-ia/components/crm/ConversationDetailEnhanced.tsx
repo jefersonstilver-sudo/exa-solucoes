@@ -81,7 +81,7 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto overscroll-contain p-4 bg-[#e5ddd5] dark:bg-[#0b141a]" 
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 bg-whatsapp-bg-chat dark:bg-whatsapp-bg-main" 
              style={{ WebkitOverflowScrolling: 'touch' }}>
           {loading ? (
             <div className="flex items-center justify-center h-full">

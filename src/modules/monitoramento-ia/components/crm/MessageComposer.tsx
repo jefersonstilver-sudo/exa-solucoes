@@ -98,7 +98,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   };
 
   return (
-    <div className="flex gap-2 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1f2c33]">
+    <div className="flex gap-2 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-whatsapp-panel-bg">
       <div className="flex-1 relative">
         <Textarea
           placeholder="Digite uma mensagem"

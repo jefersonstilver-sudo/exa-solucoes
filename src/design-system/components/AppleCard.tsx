@@ -25,8 +25,8 @@ export const AppleCard = ({
     <div className={cn(
       'rounded-2xl p-6',
       'shadow-[var(--shadow-glass)]',
-      'transition-all ease-[var(--ease-apple)]',
-      'duration-[var(--duration-normal)]',
+      'transition-all ease-apple',
+      'duration-normal',
       variants[variant],
       hover && 'hover:scale-[1.01] hover:shadow-[var(--shadow-xl)]',
       className

@@ -121,6 +121,15 @@ export default {
 				sm: 'calc(var(--radius) - 4px)',
 				'2xl': '1rem' // Added 2xl border radius
 			},
+			transitionDuration: {
+				'fast': '150ms',
+				'normal': '250ms',
+				'slow': '350ms',
+			},
+			transitionTimingFunction: {
+				'apple': 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+				'apple-smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+			},
 			boxShadow: {
 				'enhanced': '0 10px 30px -5px rgba(74, 9, 104, 0.15), 0 8px 10px -6px rgba(74, 9, 104, 0.1)',
 				'enhanced-hover': '0 20px 35px -5px rgba(74, 9, 104, 0.2), 0 10px 15px -5px rgba(74, 9, 104, 0.15)',
