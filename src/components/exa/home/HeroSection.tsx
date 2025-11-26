@@ -49,11 +49,11 @@ const HeroSection = () => {
             A EXA conecta marcas aos instantes reais da vida urbana — atenção genuína, presença diária e resultados duradouros.
           </p>
 
-          <div className="flex gap-4 pt-4">
+          <div className="flex gap-4 pt-4 justify-center sm:justify-start">
             <ExaCTA 
               variant="primary" 
               size="lg" 
-              href="https://wa.me/554591415856"
+              href="https://wa.me/5545991415920?text=Oi%2C%20tenho%20interesse%20em%20anunciar%20na%20EXA!"
             >
               Falar com Vendedor
             </ExaCTA>

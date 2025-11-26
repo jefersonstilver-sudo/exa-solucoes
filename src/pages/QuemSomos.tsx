@@ -6,6 +6,7 @@ import EssenciaSection from '@/components/exa/quem-somos/EssenciaSection';
 import ValoresSection from '@/components/exa/quem-somos/ValoresSection';
 import ConfiancaSection from '@/components/exa/quem-somos/ConfiancaSection';
 import DadosInstitucionaisSection from '@/components/exa/quem-somos/DadosInstitucionaisSection';
+import FloatingCTA from '@/components/exa/FloatingCTA';
 
 const QuemSomos = () => {
   const companySchema = {
@@ -70,6 +71,7 @@ const QuemSomos = () => {
         <ConfiancaSection />
         <DadosInstitucionaisSection />
       </div>
+      <FloatingCTA />
     </Layout>
   );
 };

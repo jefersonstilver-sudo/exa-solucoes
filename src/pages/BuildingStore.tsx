@@ -5,6 +5,7 @@ import { organizationSchema, createFAQSchema, createBreadcrumbSchema, lojaFAQs }
 import BuildingStoreLayout from '@/components/building-store/BuildingStoreLayout';
 import BuildingStoreHeader from '@/components/building-store/BuildingStoreHeader';
 import useBuildingStore from '@/hooks/useBuildingStore';
+import FloatingCTA from '@/components/exa/FloatingCTA';
 
 const BuildingStore = () => {
   console.log('🏢 [BUILDING STORE] Página da loja carregada');
@@ -97,6 +98,7 @@ const BuildingStore = () => {
         />
         </div>
       </div>
+      <FloatingCTA variant="compact" />
     </Layout>
   );
 };
