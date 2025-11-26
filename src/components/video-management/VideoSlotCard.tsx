@@ -226,11 +226,11 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       </div>;
   };
   const cardElement = <Card className={cardClasses}>
-      <CardContent className="p-2 sm:p-3 md:p-4 max-w-full overflow-hidden">
+      <CardContent className="p-1.5 sm:p-3 md:p-4 max-w-full overflow-hidden">
         {/* Header do Slot - Ultra Compacto */}
-        <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-          <div className="flex items-center space-x-1.5 sm:space-x-2">
-            <h3 className="font-semibold text-xs sm:text-base text-gray-900">Slot {slot.slot_position}</h3>
+        <div className="flex items-center justify-between mb-1 sm:mb-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <h3 className="font-semibold text-[11px] sm:text-base text-gray-900">Slot {slot.slot_position}</h3>
             
             {/* Badge Vídeo Principal - Minimalista e Profissional */}
             {slot.video_data && slot.approval_status === 'approved' && slot.is_base_video && <TooltipProvider>
@@ -238,15 +238,15 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                   <TooltipTrigger asChild>
                     <div className="flex items-center space-x-1 sm:space-x-2 cursor-help">
                       {/* Badge Minimalista - Compacto */}
-                      <div className="flex items-center space-x-0.5 sm:space-x-1 bg-slate-100 border border-slate-300 text-slate-700 px-1 py-0.5 sm:px-2 sm:py-1 rounded text-[10px] sm:text-xs font-medium">
-                        <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                      <div className="flex items-center space-x-0.5 sm:space-x-1 bg-slate-100 border border-slate-300 text-slate-700 px-1 py-0.5 sm:px-2 sm:py-1 rounded text-[9px] sm:text-xs font-medium">
+                        <Star className="h-2 w-2 sm:h-3 sm:w-3" />
                         <span className="hidden xs:inline">Principal</span>
                         <span className="xs:hidden">P</span>
                       </div>
                       
                       {/* Badge "EM EXIBIÇÃO" - apenas se não houver agendamentos ativos */}
-                      {!hasAnyScheduledActiveNow && <div className="flex items-center space-x-0.5 sm:space-x-1 bg-green-50 border border-green-300 text-green-700 px-1 py-0.5 sm:px-1.5 sm:py-0.5 rounded text-[10px] sm:text-xs font-medium">
-                          <Tv className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                      {!hasAnyScheduledActiveNow && <div className="flex items-center space-x-0.5 sm:space-x-1 bg-green-50 border border-green-300 text-green-700 px-1 py-0.5 sm:px-1.5 sm:py-0.5 rounded text-[9px] sm:text-xs font-medium">
+                          <Tv className="h-2 w-2 sm:h-3 sm:w-3" />
                           <span className="hidden xs:inline">ATIVO</span>
                           <span className="xs:hidden">▶</span>
                         </div>}
@@ -364,10 +364,10 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 Não Selecionável
               </span>}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1 sm:gap-2">
             {/* Badges dos status - Minimalistas */}
-            {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-[10px] py-0 px-1.5 sm:text-xs sm:py-0.5 sm:px-2">REJEITADO</Badge>}
-            {slot.approval_status === 'pending' && <Badge variant="secondary" className="text-[10px] py-0 px-1.5 sm:text-xs sm:py-0.5 sm:px-2">PENDENTE</Badge>}
+            {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-[9px] py-0 px-1 sm:text-xs sm:py-0.5 sm:px-2">REJ</Badge>}
+            {slot.approval_status === 'pending' && <Badge variant="secondary" className="text-[9px] py-0 px-1 sm:text-xs sm:py-0.5 sm:px-2">PEND</Badge>}
           </div>
         </div>
 
@@ -382,28 +382,26 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
         {slot.video_data ? (
           <div className="space-y-2 sm:space-y-4">
-            {/* Mobile: Layout Ultra Compacto */}
+            {/* Mobile: Layout Ultra Compacto SEM PREVIEW */}
             <div className="lg:hidden">
-              <div className="flex items-center justify-between gap-2 bg-gray-50/50 rounded-lg p-2">
+              <div className="flex items-center justify-between gap-1.5 bg-gray-50/50 rounded-md p-1.5">
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-xs truncate text-gray-900 mb-0.5" title={slot.video_data.nome}>
+                  <h4 className="font-medium text-[11px] truncate text-gray-900" title={slot.video_data.nome}>
                     {slot.video_data.nome}
                   </h4>
-                  <div className="flex items-center gap-1.5 text-[10px] text-gray-600">
+                  <div className="flex items-center gap-1 text-[9px] text-gray-600 mt-0.5">
                     <span>{formatDuration(slot.video_data.duracao)}</span>
                     <span>•</span>
-                    <span>{slot.video_data.orientacao}</span>
-                    <span>•</span>
-                    <span>{formatFileSize(slot.video_data.tamanho_arquivo)}</span>
+                    <span className="truncate">{slot.video_data.orientacao}</span>
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-shrink-0 h-7 px-2 text-[10px]"
+                  className="flex-shrink-0 h-6 px-1.5 text-[9px]"
                   onClick={() => window.open(slot.video_data!.url, '_blank')}
                 >
-                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-2.5 h-2.5 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -413,8 +411,8 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
               {/* Motivo de Rejeição - Mobile Compacto */}
               {slot.approval_status === 'rejected' && slot.rejection_reason && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-1.5 mt-1.5">
-                  <p className="text-red-800 text-[10px]">
+                <div className="bg-red-50 border border-red-200 rounded-md p-1 mt-1">
+                  <p className="text-red-800 text-[9px]">
                     <strong>Motivo:</strong> {slot.rejection_reason}
                   </p>
                 </div>
@@ -422,10 +420,10 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
 
               {/* Aviso para vídeos não aprovados - Mobile Compacto */}
               {isBlocked && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-1.5 mt-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Lock className="h-3 w-3 text-gray-500 flex-shrink-0" />
-                    <p className="text-gray-700 text-[10px]">
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-1 mt-1">
+                  <div className="flex items-center gap-1">
+                    <Lock className="h-2.5 w-2.5 text-gray-500 flex-shrink-0" />
+                    <p className="text-gray-700 text-[9px]">
                       {slot.approval_status === 'pending' ? 'Aguardando aprovação' : 'Vídeo rejeitado'}
                     </p>
                   </div>
