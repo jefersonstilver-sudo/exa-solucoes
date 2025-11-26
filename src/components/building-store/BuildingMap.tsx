@@ -407,10 +407,22 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       console.log(`🗺️ [MARKERS] Total de marcadores criados: ${markersRef.current.length}`);
       console.log(`🗺️ [MARKERS] Endereços imprecisos: ${imprecise.length}`);
 
-      // Apply clustering to avoid overlap
+      // Apply clustering only if markers support getPosition
       if (enableClustering && markersRef.current.length > 0) {
-        console.log(`🗺️ [MARKERS] ✅ Aplicando clustering...`);
-        clustererRef.current = new MarkerClusterer({ markers: markersRef.current, map });
+        // Check if markers are compatible with MarkerClusterer (need getPosition method)
+        const firstMarker = markersRef.current[0] as any;
+        const hasGetPosition = firstMarker && typeof firstMarker.getPosition === 'function';
+        
+        if (hasGetPosition) {
+          try {
+            console.log(`🗺️ [MARKERS] ✅ Aplicando clustering com ${markersRef.current.length} markers`);
+            clustererRef.current = new MarkerClusterer({ markers: markersRef.current, map });
+          } catch (e) {
+            console.warn('🗺️ [MARKERS] ⚠️ Clustering falhou:', e);
+          }
+        } else {
+          console.log(`🗺️ [MARKERS] ⚠️ Clustering ignorado - markers são OverlayView (não suportam getPosition)`);
+        }
       } else if (markersRef.current.length > 0) {
         console.log(`🗺️ [MARKERS] ⚠️ Clustering desabilitado`);
       }
@@ -431,17 +443,11 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         console.log(`🗺️ [MARKERS] 📍 Ajustando bounds para todos os marcadores`);
         map.fitBounds(bounds, 40);
       } else {
-        console.log(`🗺️ [MARKERS] ❌ Nenhum marcador para exibir - adicionando fallback`);
-        // Add fallback center marker for Foz do Iguaçu when no pins are available
-        const fallbackCenter = { lat: -25.5163, lng: -54.5854 };
-        map.setCenter(fallbackCenter);
-        map.setZoom(12);
-        
-        toast({
-          title: 'Mapa sem localizações',
-          description: 'Nenhum endereço pôde ser localizado no mapa. Verifique os dados dos prédios.',
-          variant: 'destructive'
-        });
+        console.log(`🗺️ [MARKERS] ❌ Nenhum marcador para exibir - centralizando em Foz do Iguaçu`);
+        // Fallback: Center on Foz do Iguaçu when no markers are available
+        const FOZ_CENTER = { lat: -25.5163, lng: -54.5854 };
+        map.setCenter(FOZ_CENTER);
+        map.setZoom(13);
       }
 
       if (imprecise.length && requirePreciseGeocode) {
