@@ -20,6 +20,7 @@ interface BuildingMapProps {
   enableClustering?: boolean;
   autoFitAllBuildings?: boolean;
   hideDefaultControls?: boolean;
+  gestureHandling?: 'cooperative' | 'greedy' | 'auto';
 }
 
 const BuildingMap: React.FC<BuildingMapProps> = ({ 
@@ -30,7 +31,8 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   requirePreciseGeocode = true,
   enableClustering = false,
   autoFitAllBuildings = false,
-  hideDefaultControls = false
+  hideDefaultControls = false,
+  gestureHandling = 'cooperative'
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -91,7 +93,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
           streetViewControl: hideDefaultControls ? false : false,
           zoomControl: hideDefaultControls ? false : true,
           scrollwheel: scrollwheel,
-          gestureHandling: 'cooperative',
+          gestureHandling: gestureHandling,
           styles: [
             { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
             { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] }
