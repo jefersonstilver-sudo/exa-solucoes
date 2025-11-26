@@ -57,7 +57,7 @@ export const CRMUnificado = () => {
 
   // Renderizar versão desktop
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
+    <div className="h-full flex flex-col bg-[var(--exa-bg-primary)] overflow-hidden">
       {/* Header com métricas e filtros - Esconde em fullscreen */}
       {!isFullscreen && (
         <div className="p-4 space-y-3">

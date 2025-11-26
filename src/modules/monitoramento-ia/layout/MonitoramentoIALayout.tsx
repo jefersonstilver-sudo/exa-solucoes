@@ -5,6 +5,7 @@ import { useModuleTheme, getThemeClass } from '../hooks/useModuleTheme';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { SidebarProvider, useSidebarContext } from '../context/SidebarContext';
+import { cn } from '@/lib/utils';
 import '../styles/theme.css';
 import '../styles/scrollbar.css';
 import '../styles/anydesk.css';
@@ -57,7 +58,7 @@ const LayoutContent = ({
   const isMobile = useIsMobile();
 
   return (
-    <div className="min-h-screen flex relative bg-background"
+    <div className="h-screen flex relative bg-[var(--exa-bg-primary)] overflow-hidden"
       style={{ backgroundAttachment: 'fixed' }}>
       
       {/* Mobile Drawer (Sheet) */}
@@ -94,11 +95,14 @@ const LayoutContent = ({
       <div className="shape-2" />
 
       {/* Main Content */}
-      <main className={`flex-1 transition-all duration-300 relative z-10 ${
+      <main className={`flex-1 flex flex-col transition-all duration-300 relative z-10 overflow-hidden ${
         !isFullScreenMobile && !isMobile ? (sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64') : ''
       }`}>
-        {/* Page Content - sem padding no CRM mobile */}
-        <div className={isFullScreenMobile ? '' : 'p-4 lg:p-8'}>
+        {/* Page Content - sem padding/scroll no CRM */}
+        <div className={cn(
+          "flex-1",
+          isCRMRoute ? 'overflow-hidden' : 'p-4 lg:p-8 overflow-y-auto'
+        )}>
           <Outlet />
         </div>
       </main>
