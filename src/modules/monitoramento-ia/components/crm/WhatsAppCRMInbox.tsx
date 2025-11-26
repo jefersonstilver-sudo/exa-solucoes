@@ -115,12 +115,12 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       onClick={onClick}
       className={cn(
         'w-full px-3 py-2 text-left transition-all relative',
-        'hover:bg-whatsapp-hover border-b border-white/20',
+        'hover:bg-[var(--exa-bg-hover)] border-b border-[var(--exa-border)]',
         isSelected && [
-          'border-l-4 border-whatsapp-green-dark',
-          'shadow-lg shadow-whatsapp-green-light/20',
+          'border-l-4 border-l-[var(--exa-accent)]',
+          'shadow-lg',
           'pl-2', // Compensar a borda
-          '!bg-whatsapp-hover' // Forçar background
+          'bg-[var(--exa-accent-light)]' // Forçar background
         ]
       )}
       style={!isSelected ? { 
@@ -276,10 +276,10 @@ export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col bg-card/80 dark:bg-card/60 backdrop-blur-xl">
+    <div className="h-full flex flex-col bg-[var(--exa-bg-card)] backdrop-blur-xl">
       {/* Barra de busca - Visível apenas em fullscreen */}
       {isFullscreen && (
-        <div className="p-3 border-b border-border/30 bg-background/95 backdrop-blur-sm shrink-0">
+        <div className="p-3 border-b border-[var(--exa-border)] bg-[var(--exa-bg-primary)] backdrop-blur-sm shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
