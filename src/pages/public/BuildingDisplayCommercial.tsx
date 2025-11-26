@@ -479,12 +479,12 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
         </button>
       )}
       
-      {/* 📱 Header responsivo e adaptativo */}
+      {/* 📱 Header responsivo e adaptativo - maior no mobile */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900/95 via-red-800/95 to-red-900/95 backdrop-blur-md shadow-2xl border-b border-white/10">
-        <div className="container mx-auto px-2 sm:px-4 md:px-6 h-12 sm:h-14 md:h-16 lg:h-20 flex items-center justify-between">
-          {/* Logo EXA - escalável */}
+        <div className="container mx-auto px-2 sm:px-4 md:px-6 h-16 sm:h-18 md:h-20 lg:h-24 flex items-center justify-between">
+          {/* Logo EXA - escalável e maior no mobile */}
           <div className="flex items-center">
-            <div className="relative h-6 sm:h-8 md:h-10 lg:h-12 w-auto">
+            <div className="relative h-10 sm:h-12 md:h-14 lg:h-16 xl:h-20 w-auto">
               <div className="absolute inset-0 blur-xl bg-red-500/40 rounded-full animate-pulse" />
               <img 
                 src={exaLogo} 
@@ -525,7 +525,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       </header>
 
       {/* 🎯 Layout 100% responsivo - Mobile até TV 70" */}
-      <main className="fixed inset-0 pt-12 sm:pt-14 md:pt-16 lg:pt-20 overflow-hidden">
+      <main className="fixed inset-0 pt-16 sm:pt-18 md:pt-20 lg:pt-24 overflow-hidden">
         <div className="h-full w-full flex flex-col p-2 sm:p-3 md:p-4 lg:p-6 xl:p-8 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
           
           {/* 📺 Vídeo principal - 60% da altura */}
