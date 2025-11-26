@@ -51,15 +51,15 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
   const validBuildingsCount = buildings?.filter(hasValidCoordinates).length || 0;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[9999] bg-background pointer-events-none"
-    >
-      {/* Fullscreen Map - Must be first to render behind controls */}
-      <div className="absolute inset-0 pointer-events-auto">
+    <>
+      {/* Background Layer - Map Container */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 z-[9999] bg-background"
+      >
         {buildings && buildings.length > 0 ? (
           <BuildingMap 
             buildings={buildings} 
@@ -85,22 +85,33 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
 
-      {/* Elegant Red Close Button - Top Left - MUST be OUTSIDE map container */}
-      <div className="fixed top-4 left-4 z-[10050]" style={{ pointerEvents: 'auto' }}>
+      {/* UI Controls Layer - OUTSIDE map container */}
+      {/* Elegant Red Close Button - Top Left */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1 }}
+        className="fixed top-4 left-4 z-[10000]"
+      >
         <Button
           onClick={onClose}
           variant="ghost"
           size="icon"
-          className="h-12 w-12 rounded-full bg-red-600 backdrop-blur-xl shadow-[0_4px_20px_rgba(220,38,38,0.5)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.6)] transition-all duration-200 active:scale-95 border-0"
+          className="h-12 w-12 rounded-full bg-red-600 shadow-[0_4px_20px_rgba(220,38,38,0.5)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.6)] transition-all duration-200 active:scale-95 border-0"
         >
           <X className="h-5 w-5 text-white" strokeWidth={2.5} />
         </Button>
-      </div>
+      </motion.div>
 
-      {/* Glass-style Buildings Badge - Top Right - Rendered AFTER map for z-index */}
-      <div className="fixed top-4 right-4 z-[10050]" style={{ pointerEvents: 'auto' }}>
+      {/* Glass-style Buildings Badge - Top Right */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1 }}
+        className="fixed top-4 right-4 z-[10000]"
+      >
         <Badge 
           variant="secondary" 
           className="h-14 px-5 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] text-base font-bold text-gray-800 flex items-center gap-2"
@@ -108,7 +119,7 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
           <Navigation className="h-5 w-5 text-blue-600" />
           <span className="text-gray-800">{validBuildingsCount}</span>
         </Badge>
-      </div>
+      </motion.div>
 
       {/* Bottom Sheet for Selected Building */}
       <AnimatePresence>
@@ -119,7 +130,7 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
           />
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   );
 };
 
