@@ -100,41 +100,41 @@ const PlanCard: React.FC<PlanCardProps> = ({
         className={`
           relative h-full cursor-pointer transition-all duration-300 rounded-2xl overflow-hidden
           ${isSelected 
-            ? 'border-2 border-[#9C1E1E] ring-4 ring-[#9C1E1E]/10 shadow-xl shadow-[#9C1E1E]/5 bg-white' 
+            ? 'border-2 border-[#9C1E1E] ring-4 ring-[#9C1E1E]/10 shadow-xl shadow-[#9C1E1E]/5 bg-gradient-to-br from-white to-[#9C1E1E]/[0.02]' 
             : 'border border-gray-100 hover:border-gray-200 hover:shadow-lg bg-white'
           }
         `}
         onClick={onSelect}
       >
-        {/* Premium Badge - Annual Only - Top Position */}
+        {/* Premium Badge - Annual Only */}
         {plan.months === 12 && (
           <Badge 
-            className="absolute top-2 right-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs px-2.5 py-0.5 shadow-md z-20 font-bold whitespace-nowrap"
+            className="absolute top-1.5 right-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] px-1.5 py-0.5 shadow-sm z-20 font-semibold whitespace-nowrap"
           >
-            ⭐ MELHOR OFERTA
+            ⭐ MELHOR
           </Badge>
         )}
 
-        {/* Discount Badge - Below Premium if Annual */}
+        {/* Discount Badge */}
         {plan.discount > 0 && (
           <Badge 
-            className={`absolute ${plan.months === 12 ? 'top-9' : 'top-2'} right-2 bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white text-xs px-2.5 py-0.5 shadow-md z-10 font-medium whitespace-nowrap`}
+            className={`absolute ${plan.months === 12 ? 'top-6' : 'top-1.5'} right-1.5 bg-[#9C1E1E] text-white text-[9px] px-1.5 py-0.5 shadow-sm z-10 font-medium whitespace-nowrap`}
           >
-            {plan.discount}% OFF
+            -{plan.discount}%
           </Badge>
         )}
 
         {/* Card Content - Compact */}
-        <CardContent className="pt-6 pb-3 px-3 sm:px-4 text-center">
+        <CardContent className="pt-8 pb-3 px-3 sm:px-4 text-center">
           {/* Plan Name */}
-          <h3 className="text-sm sm:text-base font-medium text-gray-500 mb-3">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-700 mb-3">
             {plan.name}
           </h3>
 
           {/* Price per Month - Compact */}
           <div className="mb-3">
             <div className="flex items-baseline justify-center gap-1">
-              <span className="text-xl sm:text-2xl font-bold text-gray-900 whitespace-nowrap">
+              <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent whitespace-nowrap">
                 {formatCurrency(dynamicPricePerMonth)}
               </span>
               <span className="text-sm font-normal text-gray-400">/mês</span>
@@ -142,11 +142,11 @@ const PlanCard: React.FC<PlanCardProps> = ({
           </div>
 
           {/* Total Price */}
-          <div className="bg-gray-50/70 rounded-lg py-2 px-3">
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl py-2.5 px-3 border border-gray-100/50">
             <p className="text-xs sm:text-sm text-gray-600">
-              Total: <span className="font-semibold text-gray-900">{formatCurrency(dynamicTotalPrice)}</span>
+              Total: <span className="font-bold text-gray-900">{formatCurrency(dynamicTotalPrice)}</span>
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-gray-500 mt-0.5 font-medium">
               {plan.months} {plan.months === 1 ? 'mês' : 'meses'}
             </p>
           </div>
