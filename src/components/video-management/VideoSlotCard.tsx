@@ -226,29 +226,29 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
       </div>;
   };
   const cardElement = <Card className={cardClasses}>
-      <CardContent className="p-1.5 sm:p-3 md:p-4 max-w-full overflow-hidden">
-        {/* Header do Slot - Ultra Compacto */}
-        <div className="flex items-center justify-between mb-1 sm:mb-2">
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <h3 className="font-semibold text-[11px] sm:text-base text-gray-900">Slot {slot.slot_position}</h3>
+      <CardContent className="p-1 sm:p-3 md:p-4 max-w-full overflow-hidden">
+        {/* Header do Slot - Ultra Compacto Mobile */}
+        <div className="flex items-center justify-between mb-0.5 sm:mb-2">
+          <div className="flex items-center space-x-0.5 sm:space-x-2">
+            <h3 className="font-semibold text-[9px] sm:text-base text-gray-900">Slot {slot.slot_position}</h3>
             
-            {/* Badge Vídeo Principal - Minimalista e Profissional */}
+            {/* Badge Vídeo Principal - Ultra Compacto Mobile */}
             {slot.video_data && slot.approval_status === 'approved' && slot.is_base_video && <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center space-x-1 sm:space-x-2 cursor-help">
-                      {/* Badge Minimalista - Compacto */}
-                      <div className="flex items-center space-x-0.5 sm:space-x-1 bg-slate-100 border border-slate-300 text-slate-700 px-1 py-0.5 sm:px-2 sm:py-1 rounded text-[9px] sm:text-xs font-medium">
-                        <Star className="h-2 w-2 sm:h-3 sm:w-3" />
-                        <span className="hidden xs:inline">Principal</span>
-                        <span className="xs:hidden">P</span>
+                    <div className="flex items-center space-x-0.5 sm:space-x-2 cursor-help">
+                      {/* Badge Ultra Compacto */}
+                      <div className="flex items-center space-x-0.5 bg-slate-100 border border-slate-300 text-slate-700 px-0.5 py-0.5 sm:px-2 sm:py-1 rounded text-[7px] sm:text-xs font-medium">
+                        <Star className="h-1.5 w-1.5 sm:h-3 sm:w-3" />
+                        <span className="hidden sm:inline">Principal</span>
+                        <span className="sm:hidden">★</span>
                       </div>
                       
-                      {/* Badge "EM EXIBIÇÃO" - apenas se não houver agendamentos ativos */}
-                      {!hasAnyScheduledActiveNow && <div className="flex items-center space-x-0.5 sm:space-x-1 bg-green-50 border border-green-300 text-green-700 px-1 py-0.5 sm:px-1.5 sm:py-0.5 rounded text-[9px] sm:text-xs font-medium">
-                          <Tv className="h-2 w-2 sm:h-3 sm:w-3" />
-                          <span className="hidden xs:inline">ATIVO</span>
-                          <span className="xs:hidden">▶</span>
+                      {/* Badge "EM EXIBIÇÃO" - Ultra Compacto */}
+                      {!hasAnyScheduledActiveNow && <div className="flex items-center space-x-0.5 bg-green-50 border border-green-300 text-green-700 px-0.5 py-0.5 sm:px-1.5 sm:py-0.5 rounded text-[7px] sm:text-xs font-medium">
+                          <Tv className="h-1.5 w-1.5 sm:h-3 sm:w-3" />
+                          <span className="hidden sm:inline">ATIVO</span>
+                          <span className="sm:hidden">▶</span>
                         </div>}
                     </div>
                   </TooltipTrigger>
@@ -279,7 +279,7 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 </Tooltip>
               </TooltipProvider>}
             
-            {/* Botão para trocar vídeo principal - COMPACTO */}
+            {/* Botão para trocar vídeo principal - ULTRA COMPACTO */}
             {slot.video_data && slot.approval_status === 'approved' && !slot.is_base_video && totalApprovedVideos >= 2 && <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -332,9 +332,9 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                     console.error('❌ [SLOT_CARD] Não foi possível chamar onSetBaseVideo:', errorData);
                     videoLogger.logUserClick('set_base_video_no_callback', 'Callback não disponível', errorData);
                   }
-                }} className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 h-6 sm:h-7 border-gray-300 text-gray-600 hover:bg-gray-50" title={hasActiveSchedule ? "Os agendamentos serão removidos" : "Clique para definir como vídeo principal"}>
-                      <span className="hidden xs:inline">Definir Principal</span>
-                      <span className="xs:hidden">Principal</span>
+                }} className="text-[7px] sm:text-xs px-1 sm:px-2 py-0.5 h-4 sm:h-7 border-gray-300 text-gray-600 hover:bg-gray-50" title={hasActiveSchedule ? "Os agendamentos serão removidos" : "Clique para definir como vídeo principal"}>
+                      <span className="hidden sm:inline">Definir Principal</span>
+                      <span className="sm:hidden">★</span>
                     </Button>
                   </TooltipTrigger>
                   {hasActiveSchedule && <TooltipContent>
@@ -364,10 +364,10 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
                 Não Selecionável
               </span>}
           </div>
-          <div className="flex flex-wrap gap-1 sm:gap-2">
-            {/* Badges dos status - Minimalistas */}
-            {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-[9px] py-0 px-1 sm:text-xs sm:py-0.5 sm:px-2">REJ</Badge>}
-            {slot.approval_status === 'pending' && <Badge variant="secondary" className="text-[9px] py-0 px-1 sm:text-xs sm:py-0.5 sm:px-2">PEND</Badge>}
+          <div className="flex flex-wrap gap-0.5 sm:gap-2">
+            {/* Badges dos status - Ultra Compacto Mobile */}
+            {slot.approval_status === 'rejected' && <Badge variant="destructive" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">✗</Badge>}
+            {slot.approval_status === 'pending' && <Badge variant="secondary" className="text-[7px] py-0 px-0.5 sm:text-xs sm:py-0.5 sm:px-2">⏱</Badge>}
           </div>
         </div>
 

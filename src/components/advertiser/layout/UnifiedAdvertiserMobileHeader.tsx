@@ -23,14 +23,14 @@ const UnifiedAdvertiserMobileHeader = ({
           <Menu className="h-4 w-4 text-white" />
         </button>
 
-        {/* Logo EXA e Título no centro */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+        {/* Logo EXA e Título no centro - Layout Vertical */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center">
           <img 
             src={exaLogo} 
             alt="EXA" 
-            className="h-6 w-auto object-contain drop-shadow-lg"
+            className="h-5 w-auto object-contain drop-shadow-lg"
           />
-          <h1 className="text-white font-semibold text-xs">
+          <h1 className="text-white/90 font-medium text-[10px] mt-0.5">
             {title}
           </h1>
         </div>
