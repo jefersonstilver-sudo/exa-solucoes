@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Clock, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface QuedaOcorrencia {
   inicio: string;
@@ -62,6 +63,19 @@ export const QuedaDiariaList = ({ paineis }: QuedaDiariaListProps) => {
     }
   };
 
+  const getTimePosition = (dateString: string): number => {
+    const date = new Date(dateString);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+    return (hours + minutes / 60 + seconds / 3600) / 24 * 100;
+  };
+
+  const getTimeWidth = (durationSeconds: number): number => {
+    const hours = durationSeconds / 3600;
+    return (hours / 24) * 100;
+  };
+
   if (paineis.length === 0) {
     return (
       <p className="text-sm text-module-secondary text-center py-4">
@@ -71,126 +85,86 @@ export const QuedaDiariaList = ({ paineis }: QuedaDiariaListProps) => {
   }
 
   return (
-    <div className="space-y-2 max-h-96 overflow-y-auto">
+    <div className="space-y-3 max-h-96 overflow-y-auto">
       {paineis.map((painel) => {
         const isExpanded = expandedPanels.has(painel.painel_id);
-        const temMultiplasQuedas = painel.total_ocorrencias > 1;
 
         return (
-          <div key={painel.painel_id} className="border border-module rounded-lg overflow-hidden">
-            <div
-              className={`flex items-center justify-between p-3 bg-module-secondary hover:bg-module-hover transition-colors ${
-                temMultiplasQuedas ? 'cursor-pointer' : ''
-              }`}
-              onClick={() => temMultiplasQuedas && togglePanel(painel.painel_id)}
-            >
-              <div className="flex-1 flex items-center gap-2">
-                {temMultiplasQuedas && (
-                  <div className="flex-shrink-0">
-                    {isExpanded ? (
-                      <ChevronDown className="w-4 h-4 text-module-secondary" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-module-secondary" />
-                    )}
-                  </div>
-                )}
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-module-primary">{painel.painel_nome}</p>
-                  <p className="text-xs text-module-tertiary">{painel.condominio_nome}</p>
-                  <div className="flex items-center gap-3 mt-1 flex-wrap">
-                    <span className="text-xs text-module-secondary flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      Total offline: {formatDuracao(painel.tempo_total_offline_segundos)}
-                    </span>
-                    {temMultiplasQuedas && (
-                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
-                        {painel.total_ocorrencias} ocorrências
-                      </span>
-                    )}
-                  </div>
-                </div>
+          <div key={painel.painel_id} className="bg-card rounded-xl border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
+            {/* Header Compacto */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-foreground">{painel.painel_nome}</span>
+                <span className="text-xs px-2 py-0.5 bg-destructive/10 text-destructive rounded-full font-medium">
+                  {painel.total_ocorrencias}
+                </span>
               </div>
-              <span className="text-base font-bold text-red-600 ml-4">
-                {painel.total_ocorrencias}
+              <span className="text-sm text-muted-foreground">
+                {formatDuracao(painel.tempo_total_offline_segundos)} offline
               </span>
             </div>
 
-            {/* Sempre mostrar detalhes das ocorrências */}
-            {temMultiplasQuedas ? (
-              // Múltiplas quedas: mostrar expandível
-              isExpanded && (
-                <div className="bg-module p-3 border-t border-module">
-                  <p className="text-xs font-semibold text-module-secondary mb-2 uppercase">
-                    Detalhes das Ocorrências
-                  </p>
-                  <div className="space-y-2">
-                    {painel.ocorrencias.map((ocorrencia, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-2 bg-module-secondary rounded border border-module"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 text-xs text-module-primary">
-                            <span className="font-medium">Ocorrência {idx + 1}</span>
-                          </div>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-module-secondary">
-                            <span>
-                              Início: {format(new Date(ocorrencia.inicio), 'HH:mm:ss', { locale: ptBR })}
-                            </span>
-                            {ocorrencia.fim && (
-                              <>
-                                <span>→</span>
-                                <span>
-                                  Fim: {format(new Date(ocorrencia.fim), 'HH:mm:ss', { locale: ptBR })}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <span className="text-sm font-bold text-red-600 ml-4">
-                          {formatDuracao(ocorrencia.duracao_segundos)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
-            ) : (
-              // Única queda: mostrar direto sem expansão
-              <div className="bg-module p-3 border-t border-module">
-                <p className="text-xs font-semibold text-module-secondary mb-2 uppercase">
-                  Detalhes da Ocorrência
-                </p>
+            {/* Timeline Visual Horizontal */}
+            <div className="mb-3">
+              <div className="relative h-2 bg-muted/30 rounded-full overflow-hidden">
+                {painel.ocorrencias.map((ocorrencia, idx) => {
+                  const left = getTimePosition(ocorrencia.inicio);
+                  const width = getTimeWidth(ocorrencia.duracao_segundos);
+                  
+                  return (
+                    <div
+                      key={idx}
+                      className="absolute h-full bg-destructive"
+                      style={{
+                        left: `${left}%`,
+                        width: `${width}%`,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex justify-between mt-1 text-[10px] text-muted-foreground font-mono">
+                <span>00:00</span>
+                <span>06:00</span>
+                <span>12:00</span>
+                <span>18:00</span>
+                <span>24:00</span>
+              </div>
+            </div>
+
+            {/* Condomínio */}
+            <p className="text-xs text-muted-foreground mb-2">{painel.condominio_nome}</p>
+
+            {/* Detalhes Expandíveis Minimalistas */}
+            <Collapsible open={isExpanded} onOpenChange={() => togglePanel(painel.painel_id)}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full">
+                {isExpanded ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                )}
+                <span className="font-medium">
+                  {isExpanded ? 'Ocultar' : 'Ver'} detalhes das ocorrências
+                </span>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className="mt-3 space-y-1.5">
                 {painel.ocorrencias.map((ocorrencia, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-2 bg-module-secondary rounded border border-module"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 text-xs text-module-primary">
-                        <span className="font-medium">Ocorrência {idx + 1}</span>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-module-secondary">
-                        <span>
-                          Início: {format(new Date(ocorrencia.inicio), 'HH:mm:ss', { locale: ptBR })}
-                        </span>
-                        {ocorrencia.fim && (
-                          <>
-                            <span>→</span>
-                            <span>
-                              Fim: {format(new Date(ocorrencia.fim), 'HH:mm:ss', { locale: ptBR })}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-sm font-bold text-red-600 ml-4">
+                  <div key={idx} className="flex items-center gap-4 text-xs py-1.5">
+                    <span className="w-32 font-mono text-muted-foreground">
+                      {format(new Date(ocorrencia.inicio), 'HH:mm', { locale: ptBR })}
+                      {ocorrencia.fim && (
+                        <> → {format(new Date(ocorrencia.fim), 'HH:mm', { locale: ptBR })}</>
+                      )}
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="font-semibold text-destructive">
                       {formatDuracao(ocorrencia.duracao_segundos)}
                     </span>
                   </div>
                 ))}
-              </div>
-            )}
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         );
       })}
