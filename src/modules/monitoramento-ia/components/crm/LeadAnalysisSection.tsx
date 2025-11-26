@@ -2,7 +2,6 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { cn } from '@/lib/utils';
 import { 
   Flame, 
   TrendingUp, 
@@ -75,9 +74,9 @@ export const LeadAnalysisSection: React.FC<LeadAnalysisSectionProps> = ({
   }
 
   return (
-    <div className="space-y-4">
-      <h4 className="text-lg font-semibold text-[var(--exa-text-primary)] flex items-center gap-2">
-        📊 Análise Completa do Lead
+    <div className="glass-card p-4 rounded-lg space-y-4">
+      <h4 className="font-semibold flex items-center gap-2">
+        📊 Análise do Lead
       </h4>
 
       {/* Classificação e Intenção */}
@@ -163,18 +162,16 @@ export const LeadAnalysisSection: React.FC<LeadAnalysisSectionProps> = ({
       )}
 
       {/* Indicadores */}
-      <div className="space-y-3 pt-2 border-t border-[var(--exa-border)]">
-        <p className="text-xs text-[var(--exa-text-secondary)] font-semibold uppercase tracking-wide">🔥 INDICADORES</p>
+      <div className="space-y-3 pt-2 border-t border-module-border">
+        <p className="text-xs text-muted-foreground font-semibold">🔥 INDICADORES</p>
         
         {/* Hot Lead */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--exa-bg-hover)]">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Flame className={`w-5 h-5 ${profile?.is_hot_lead ? 'text-orange-500' : 'text-[var(--exa-text-secondary)]'}`} />
-            <span className="text-sm font-medium text-[var(--exa-text-primary)]">Hot Lead</span>
+            <Flame className={`w-4 h-4 ${profile?.is_hot_lead ? 'text-orange-500' : 'text-muted-foreground'}`} />
+            <span className="text-sm font-medium">Hot Lead</span>
           </div>
-          <Badge variant={profile?.is_hot_lead ? 'default' : 'outline'} className={cn(
-            profile?.is_hot_lead && "bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
-          )}>
+          <Badge variant={profile?.is_hot_lead ? 'destructive' : 'outline'}>
             {profile?.is_hot_lead ? '✅ SIM' : '❌ Não'}
             {profile?.hot_lead_score && ` (${profile.hot_lead_score} pts)`}
           </Badge>
@@ -221,14 +218,14 @@ export const LeadAnalysisSection: React.FC<LeadAnalysisSectionProps> = ({
 
       {/* Próximos Passos */}
       {profile?.proximos_passos && Array.isArray(profile.proximos_passos) && profile.proximos_passos.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-[var(--exa-border)]">
-          <p className="text-xs text-[var(--exa-text-secondary)] font-semibold uppercase tracking-wide flex items-center gap-1">
+        <div className="space-y-2 pt-2 border-t border-module-border">
+          <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
             💡 PRÓXIMOS PASSOS (IA)
           </p>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {profile.proximos_passos.map((step: string, index: number) => (
-              <div key={index} className="text-sm flex items-start gap-2 text-[var(--exa-text-primary)]">
-                <span className="text-[var(--exa-accent)] font-semibold">{index + 1}.</span>
+              <div key={index} className="text-sm flex items-start gap-2">
+                <span className="text-muted-foreground">{index + 1}.</span>
                 <span>{step}</span>
               </div>
             ))}
@@ -238,15 +235,15 @@ export const LeadAnalysisSection: React.FC<LeadAnalysisSectionProps> = ({
 
       {/* Objeções */}
       {profile?.objecoes_identificadas && profile.objecoes_identificadas.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-[var(--exa-border)]">
-          <p className="text-xs text-[var(--exa-text-secondary)] font-semibold uppercase tracking-wide flex items-center gap-1">
+        <div className="space-y-2 pt-2 border-t border-module-border">
+          <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
             ⚠️ OBJEÇÕES IDENTIFICADAS
           </p>
-          <div className="space-y-2">
+          <div className="space-y-1">
             {profile.objecoes_identificadas.map((objecao, index) => (
-              <div key={index} className="text-sm flex items-start gap-2 p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30">
-                <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0" />
-                <span className="italic text-[var(--exa-text-primary)]">"{objecao}"</span>
+              <div key={index} className="text-sm flex items-start gap-2">
+                <span className="text-muted-foreground">•</span>
+                <span className="italic">"{objecao}"</span>
               </div>
             ))}
           </div>
