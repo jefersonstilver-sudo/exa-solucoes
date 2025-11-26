@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { StickyNote, Tag, User, Users, Phone, Video, Search, MoreVertical, Smile, Paperclip, Send, Mic, Pencil, Check, X, Maximize2, Minimize2 } from 'lucide-react';
+import { StickyNote, Tag, User, Users, Phone, Video, Search, MoreVertical, Smile, Paperclip, Send, Mic, Pencil, Check, X, Maximize2, Minimize2, MessageSquare } from 'lucide-react';
 import { MediaInputBar } from './MediaInputBar';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
@@ -110,12 +110,13 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
 
   if (!conversationId) {
     return (
-      <div className="flex items-center justify-center h-full bg-card/50 dark:bg-card/30">
-        <div className="text-center text-whatsapp-text-secondary">
-          <Users className="w-24 h-24 mx-auto mb-4 opacity-20" />
-          <h3 className="text-xl font-semibold mb-2">WhatsApp CRM</h3>
-          <p className="text-sm">Selecione uma conversa para visualizar as mensagens</p>
+      <div className="flex flex-col items-center justify-center h-full bg-muted/20">
+        <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mb-6">
+          <MessageSquare className="w-10 h-10 text-muted-foreground/50" />
         </div>
+        <p className="text-sm text-muted-foreground">
+          Selecione uma conversa
+        </p>
       </div>
     );
   }
@@ -124,89 +125,45 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
     <div className="flex h-full">
       {/* Área de mensagens */}
       <div className="flex-1 flex flex-col bg-card/50 dark:bg-card/30">
-        {/* Header estilo WhatsApp - Moderno */}
-        <div className="bg-card/60 backdrop-blur-md border-b border-border/20 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            {/* Avatar */}
-            <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-              conversation?.is_group ? 'bg-whatsapp-icon-gray' : 'bg-whatsapp-green-light'
-            )}>
+        {/* Header minimalista */}
+        <div className="bg-card/60 backdrop-blur-md border-b border-border/10 px-4 py-3 flex items-center justify-between">
+          {/* Esquerda: Avatar + Info */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               {conversation?.is_group ? (
-                <Users className="w-5 h-5 text-white" />
+                <Users className="w-5 h-5 text-primary/70" />
               ) : (
-                <User className="w-5 h-5 text-white" />
+                <User className="w-5 h-5 text-primary/70" />
               )}
             </div>
-
-            {/* Nome e status - editável */}
-            <div className="flex-1 min-w-0">
-              {isEditingName ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={editedName}
-                    onChange={(e) => setEditedName(e.target.value)}
-                    className="h-8 text-sm"
-                    autoFocus
-                  />
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleSaveName}>
-                    <Check className="w-4 h-4 text-green-600" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setIsEditingName(false)}>
-                    <X className="w-4 h-4 text-red-600" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="font-medium text-whatsapp-text-primary text-[15px] truncate">
-                      {conversation?.contact_name || conversation?.contact_phone || 'Conversa'}
-                    </h2>
-                    <p className="text-xs text-whatsapp-text-secondary truncate">
-                      {conversation?.contact_phone || 'Online'}
-                    </p>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-whatsapp-icon-gray hover:bg-whatsapp-hover"
-                    onClick={() => setIsEditingName(true)}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
+            <div>
+              <h2 className="font-medium text-sm text-foreground">
+                {conversation?.contact_name || conversation?.contact_phone || 'Conversa'}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {conversation?.is_group ? 'Grupo' : 'Online'}
+              </p>
             </div>
           </div>
-
-          {/* Ações do header */}
-          <div className="flex items-center gap-2">
+          
+          {/* Direita: Ícones essenciais */}
+          <div className="flex items-center gap-1">
             {onToggleFullscreen && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-whatsapp-icon-gray hover:bg-whatsapp-hover h-10 w-10"
                 onClick={onToggleFullscreen}
                 title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
               >
-                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </Button>
             )}
             <Button
               variant="ghost"
               size="icon"
-              className="text-whatsapp-icon-gray hover:bg-whatsapp-hover h-10 w-10"
               onClick={() => setShowDetails(!showDetails)}
             >
-              <Search className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-whatsapp-icon-gray hover:bg-whatsapp-hover h-10 w-10"
-              onClick={() => setShowDetails(!showDetails)}
-            >
-              <MoreVertical className="w-5 h-5" />
+              <MoreVertical className="w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -348,8 +305,8 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input de mensagem estilo WhatsApp - Moderno */}
-        <div className="bg-card/60 backdrop-blur-md border-t border-border/20 px-4 py-3">
+        {/* Input de mensagem */}
+        <div className="px-4 py-3 border-t border-border/10 bg-background">
           {conversation && (
             <MediaInputBar 
               phoneNumber={conversation.contact_phone} 
