@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -43,25 +42,31 @@ export const LeadMetricsChart: React.FC<LeadMetricsChartProps> = ({
   // Preparar dados para o gráfico
   const chartData = messagesByDay.map(day => ({
     date: format(new Date(day.date), 'dd/MM', { locale: ptBR }),
-    'Enviadas': day.sent,
-    'Recebidas': day.received,
-    'Tempo Resposta (min)': Math.round(day.avgResponseTime)
+    sent: day.sent,
+    received: day.received,
+    responseTime: Math.round(day.avgResponseTime)
   }));
+
+  // Detectar dark mode
+  const isDark = document.documentElement.classList.contains('dark');
 
   return (
     <div className="space-y-4">
       {/* Controles */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex-1 min-w-[200px]">
-          <Label className="text-xs mb-2 block">Filtrar por Agente</Label>
+      <div className="flex flex-wrap gap-4 items-center justify-between bg-[var(--exa-bg-card)] p-4 rounded-lg border border-[var(--exa-border)]">
+        {/* Seletor de Agente */}
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-semibold text-[var(--exa-text-secondary)] uppercase tracking-wide">
+            Agente:
+          </label>
           <Select value={selectedAgent || 'all'} onValueChange={onAgentChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Todos os agentes" />
+            <SelectTrigger className="w-[180px] bg-[var(--exa-bg-primary)] border-[var(--exa-border)]">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os agentes</SelectItem>
+              <SelectItem value="all">Todos os Agentes</SelectItem>
               {agentMetrics.map((agent) => (
-                <SelectItem key={agent.agentKey} value={agent.agentKey}>
+                <SelectItem key={agent.agentKey} value={agent.agentKey} className="capitalize">
                   {agent.agentKey}
                 </SelectItem>
               ))}
@@ -69,81 +74,99 @@ export const LeadMetricsChart: React.FC<LeadMetricsChartProps> = ({
           </Select>
         </div>
 
-        <div className="flex-1 min-w-[200px]">
-          <Label className="text-xs mb-2 block">Tipo de Gráfico</Label>
-          <Select value={chartType} onValueChange={(v) => setChartType(v as any)}>
-            <SelectTrigger>
+        {/* Seletor de Tipo de Gráfico */}
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-semibold text-[var(--exa-text-secondary)] uppercase tracking-wide">
+            Visualização:
+          </label>
+          <Select value={chartType} onValueChange={(value: 'messages' | 'response_time') => setChartType(value)}>
+            <SelectTrigger className="w-[200px] bg-[var(--exa-bg-primary)] border-[var(--exa-border)]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="messages">Mensagens por Dia</SelectItem>
-              <SelectItem value="response_time">Tempo de Resposta</SelectItem>
+              <SelectItem value="messages">📊 Mensagens por Dia</SelectItem>
+              <SelectItem value="response_time">⏱️ Tempo de Resposta</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       {/* Gráfico */}
-      <div className="h-[300px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="exa-content-card p-6">
+        <ResponsiveContainer width="100%" height={300}>
           {chartType === 'messages' ? (
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'} 
+              />
               <XAxis 
                 dataKey="date" 
-                className="text-xs"
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                stroke={isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'}
+                style={{ fontSize: '12px' }}
               />
               <YAxis 
-                className="text-xs"
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                stroke={isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'}
+                style={{ fontSize: '12px' }}
               />
               <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
+                contentStyle={{ 
+                  backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}
+                labelStyle={{ color: isDark ? '#fff' : '#000' }}
               />
               <Legend />
               <Line 
                 type="monotone" 
-                dataKey="Enviadas" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2}
-                dot={{ fill: 'hsl(var(--primary))' }}
+                dataKey="sent" 
+                stroke="#3b82f6" 
+                strokeWidth={3}
+                name="Enviadas"
+                dot={{ fill: '#3b82f6', r: 5 }}
+                activeDot={{ r: 7 }}
               />
               <Line 
                 type="monotone" 
-                dataKey="Recebidas" 
-                stroke="hsl(var(--secondary))" 
-                strokeWidth={2}
-                dot={{ fill: 'hsl(var(--secondary))' }}
+                dataKey="received" 
+                stroke="#10b981" 
+                strokeWidth={3}
+                name="Recebidas"
+                dot={{ fill: '#10b981', r: 5 }}
+                activeDot={{ r: 7 }}
               />
             </LineChart>
           ) : (
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'} 
+              />
               <XAxis 
                 dataKey="date" 
-                className="text-xs"
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                stroke={isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'}
+                style={{ fontSize: '12px' }}
               />
               <YAxis 
-                className="text-xs"
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                stroke={isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'}
+                style={{ fontSize: '12px' }}
               />
               <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
+                contentStyle={{ 
+                  backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}
+                labelStyle={{ color: isDark ? '#fff' : '#000' }}
               />
               <Legend />
               <Bar 
-                dataKey="Tempo Resposta (min)" 
-                fill="hsl(var(--accent))" 
+                dataKey="responseTime" 
+                fill="#8b5cf6" 
+                name="Tempo de Resposta (min)"
                 radius={[8, 8, 0, 0]}
               />
             </BarChart>
@@ -153,22 +176,22 @@ export const LeadMetricsChart: React.FC<LeadMetricsChartProps> = ({
 
       {/* Métricas por Agente */}
       {selectedAgent && selectedAgent !== 'all' && (
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
+        <div className="grid grid-cols-3 gap-4 p-4 bg-[var(--exa-bg-card)] rounded-lg border border-[var(--exa-border)]">
           {agentMetrics
             .filter(agent => agent.agentKey === selectedAgent)
             .map((agent) => (
               <React.Fragment key={agent.agentKey}>
                 <div>
-                  <p className="text-xs text-muted-foreground">Enviadas</p>
-                  <p className="text-lg font-semibold">{agent.messagesSent}</p>
+                  <p className="text-xs text-[var(--exa-text-secondary)] uppercase tracking-wide">Enviadas</p>
+                  <p className="text-2xl font-bold text-[var(--exa-text-primary)] mt-1">{agent.messagesSent}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Recebidas</p>
-                  <p className="text-lg font-semibold">{agent.messagesReceived}</p>
+                  <p className="text-xs text-[var(--exa-text-secondary)] uppercase tracking-wide">Recebidas</p>
+                  <p className="text-2xl font-bold text-[var(--exa-text-primary)] mt-1">{agent.messagesReceived}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Tempo Médio</p>
-                  <p className="text-lg font-semibold">
+                  <p className="text-xs text-[var(--exa-text-secondary)] uppercase tracking-wide">Tempo Médio</p>
+                  <p className="text-2xl font-bold text-[var(--exa-text-primary)] mt-1">
                     {Math.round(agent.avgResponseTime)}min
                   </p>
                 </div>

@@ -91,10 +91,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       return isDark ? 'hsl(340 50% 20%)' : 'hsl(340 70% 92%)';
     }
     
-    // Fallback: glass com borda visível
+    // Fallback: usar variáveis CSS do design system
     return isDark 
-      ? 'rgba(255, 255, 255, 0.1)' 
-      : 'rgba(255, 255, 255, 0.6)';
+      ? 'var(--exa-bg-card)' 
+      : 'var(--exa-bg-card)';
   };
   
   const formatTime = (dateStr: string) => {
@@ -108,8 +108,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
     }
   };
 
-  // 🎯 FASE 2: Combinar cor de fundo com destaque de seleção
-  const isDark = document.documentElement.classList.contains('theme-dark');
+  // Detectar dark mode corretamente
+  const isDark = document.documentElement.classList.contains('dark');
   const cardBgColor = getCardBgColor(isDark);
   
   return (
@@ -127,7 +127,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       )}
       style={!isSelected ? { 
         backgroundColor: cardBgColor,
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+        borderColor: 'var(--exa-border)'
       } : undefined}
     >
       {/* Container principal */}
@@ -185,7 +185,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
               
               <p className={cn(
                 "text-[13px] truncate",
-                hasUnread ? "text-whatsapp-text-primary font-medium" : "text-whatsapp-text-secondary"
+                hasUnread ? "text-[var(--exa-text-primary)] font-medium" : "text-[var(--exa-text-secondary)]"
               )}>
                 {conversation.last_message || 'Nova conversa'}
               </p>
