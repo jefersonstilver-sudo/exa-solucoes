@@ -106,21 +106,21 @@ const PlanCard: React.FC<PlanCardProps> = ({
         `}
         onClick={onSelect}
       >
-        {/* Discount Badge */}
-        {plan.discount > 0 && (
+        {/* Premium Badge - Annual Only - Top Position */}
+        {plan.months === 12 && (
           <Badge 
-            className="absolute top-2 right-2 bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white text-xs px-2.5 py-0.5 shadow-md z-10 font-medium"
+            className="absolute top-2 right-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs px-2.5 py-0.5 shadow-md z-20 font-bold whitespace-nowrap"
           >
-            {plan.discount}% OFF
+            ⭐ MELHOR OFERTA
           </Badge>
         )}
 
-        {/* Premium Badge - Annual Only */}
-        {plan.months === 12 && (
+        {/* Discount Badge - Below Premium if Annual */}
+        {plan.discount > 0 && (
           <Badge 
-            className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs px-2.5 py-0.5 shadow-md z-10 font-bold"
+            className={`absolute ${plan.months === 12 ? 'top-9' : 'top-2'} right-2 bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white text-xs px-2.5 py-0.5 shadow-md z-10 font-medium whitespace-nowrap`}
           >
-            ⭐ MELHOR OFERTA
+            {plan.discount}% OFF
           </Badge>
         )}
 

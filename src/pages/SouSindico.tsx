@@ -15,6 +15,7 @@ import LogoTicker from '@/components/exa/LogoTicker';
 import AnimatedBackground from '@/components/exa/sindico/AnimatedBackground';
 import ExaSection from '@/components/exa/base/ExaSection';
 import { Link } from 'react-router-dom';
+import FloatingCTA from '@/components/exa/FloatingCTA';
 const SouSindico = () => {
   return <Layout>
       <SEO
@@ -56,6 +57,7 @@ const SouSindico = () => {
         
         <CTAFinalSindicoSection />
       </AnimatedBackground>
+      <FloatingCTA />
     </Layout>;
 };
 export default SouSindico;
