@@ -138,14 +138,16 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
             .limit(1)
             .maybeSingle();
 
-          const zapiChatName = lastMsg?.raw_payload?.chatName;
+          const rawPayload = lastMsg?.raw_payload as any;
+          const zapiChatName = rawPayload?.chatName;
+          const currentMetadata = conv.metadata as any;
           
           return {
             ...conv,
             contact_type_source: (conv.contact_type_source || 'unknown') as 'ai' | 'manual' | 'unknown',
             metadata: {
-              ...conv.metadata,
-              agent_saved_name: zapiChatName || conv.metadata?.building_name || conv.metadata?.agent_saved_name,
+              ...(currentMetadata || {}),
+              agent_saved_name: zapiChatName || currentMetadata?.building_name || currentMetadata?.agent_saved_name,
             }
           };
         })
@@ -168,11 +170,11 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
 
       // Calcular métricas (excluindo silenciadas das não lidas)
       const newMetrics: CRMMetrics = {
-        total: typedData?.length || 0,
-        unread: typedData?.filter(c => c.awaiting_response && !c.is_muted).length || 0,
-        critical: typedData?.filter(c => c.is_critical).length || 0,
-        hotLeads: typedData?.filter(c => c.is_hot_lead).length || 0,
-        awaiting: typedData?.filter(c => c.awaiting_response && !c.is_muted).length || 0,
+        total: enrichedConversations?.length || 0,
+        unread: enrichedConversations?.filter(c => c.awaiting_response && !c.is_muted).length || 0,
+        critical: enrichedConversations?.filter(c => c.is_critical).length || 0,
+        hotLeads: enrichedConversations?.filter(c => c.is_hot_lead).length || 0,
+        awaiting: enrichedConversations?.filter(c => c.awaiting_response && !c.is_muted).length || 0,
         avgResponseTime: 0,
         sofiaMsgToday,
         eduardoMsgToday

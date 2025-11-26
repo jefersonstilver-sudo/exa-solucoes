@@ -225,14 +225,17 @@ export const useConversationContextDetailed = (
         
         // 1. Verificar se alguma mensagem tem ai_analysis
         const aiSummaries = messages
-          .filter(m => m.ai_analysis?.summary || m.ai_analysis?.key_points)
+          .filter(m => {
+            const analysis = m.ai_analysis as any;
+            return analysis?.summary || analysis?.key_points;
+          })
           .slice(-3);
 
         if (aiSummaries.length > 0) {
-          const latestAI = aiSummaries[aiSummaries.length - 1].ai_analysis;
-          if (latestAI.summary) {
-            contextSummary = latestAI.summary;
-          } else if (latestAI.key_points?.length > 0) {
+          const latestAI = aiSummaries[aiSummaries.length - 1].ai_analysis as any;
+          if (latestAI?.summary) {
+            contextSummary = latestAI.summary as string;
+          } else if (latestAI?.key_points && Array.isArray(latestAI.key_points) && latestAI.key_points.length > 0) {
             contextSummary = `Pontos-chave: ${latestAI.key_points.slice(0, 3).join(', ')}`;
           }
         }
