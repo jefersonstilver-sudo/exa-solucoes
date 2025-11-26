@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { X, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,57 +46,6 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
 
   const validBuildingsCount = buildings?.filter(hasValidCoordinates).length || 0;
 
-  // Portal para renderizar botões FORA do container do mapa
-  const CloseButtonPortal = () => createPortal(
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.2 }}
-      style={{
-        position: 'fixed',
-        top: '1rem',
-        left: '1rem',
-        zIndex: 2147483647, // Máximo z-index possível
-        pointerEvents: 'auto'
-      }}
-    >
-      <Button
-        onClick={onClose}
-        variant="ghost"
-        size="icon"
-        className="h-14 w-14 rounded-full bg-red-600 shadow-[0_4px_20px_rgba(220,38,38,0.5)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.6)] transition-all duration-200 active:scale-95 border-0"
-      >
-        <X className="h-6 w-6 text-white" strokeWidth={3} />
-      </Button>
-    </motion.div>,
-    document.body
-  );
-
-  const BadgePortal = () => createPortal(
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.2 }}
-      style={{
-        position: 'fixed',
-        top: '1rem',
-        right: '1rem',
-        zIndex: 2147483647,
-        pointerEvents: 'auto'
-      }}
-    >
-      <Badge 
-        variant="secondary" 
-        className="h-14 px-5 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] text-base font-bold text-gray-800 flex items-center gap-2"
-      >
-        <Navigation className="h-5 w-5 text-blue-600" />
-        <span className="text-gray-800">{validBuildingsCount}</span>
-      </Badge>
-    </motion.div>,
-    document.body
-  );
 
   return (
     <>
@@ -109,6 +57,44 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-[99999] bg-background"
       >
+        {/* Botão de Fechar - Dentro do container */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.2 }}
+          className="absolute top-4 left-4 z-50"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <Button
+            onClick={onClose}
+            variant="ghost"
+            size="icon"
+            className="h-14 w-14 rounded-full bg-red-600 shadow-[0_4px_20px_rgba(220,38,38,0.5)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.6)] transition-all duration-200 active:scale-95 border-0"
+          >
+            <X className="h-6 w-6 text-white" strokeWidth={3} />
+          </Button>
+        </motion.div>
+
+        {/* Badge de Contagem - Dentro do container */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.2 }}
+          className="absolute top-4 right-4 z-50"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <Badge 
+            variant="secondary" 
+            className="h-14 px-5 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] text-base font-bold text-gray-800 flex items-center gap-2"
+          >
+            <Navigation className="h-5 w-5 text-blue-600" />
+            <span className="text-gray-800">{validBuildingsCount}</span>
+          </Badge>
+        </motion.div>
+
+        {/* Mapa */}
         {buildings && buildings.length > 0 ? (
           <BuildingMap 
             buildings={buildings} 
@@ -135,10 +121,6 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
           </div>
         )}
       </motion.div>
-
-      {/* Portals para UI - Renderizados diretamente no body */}
-      <CloseButtonPortal />
-      <BadgePortal />
 
       {/* Bottom Sheet */}
       <AnimatePresence>

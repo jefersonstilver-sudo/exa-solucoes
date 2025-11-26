@@ -494,7 +494,7 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       cancelled = true;
       window.removeEventListener('cart:updated', handleCartUpdate);
     };
-  }, [buildings, selectedLocation, defaultZoom, requirePreciseGeocode, enableClustering, isReady, hoveredBuildingId, selectedBuildingId, cartVersion]);
+  }, [buildings, selectedLocation, defaultZoom, requirePreciseGeocode, enableClustering, isReady, cartVersion, businessLocation]);
 
   // Handle business location marker
   useEffect(() => {
