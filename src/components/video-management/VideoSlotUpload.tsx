@@ -203,22 +203,22 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         </Button>
       </div>;
   }
-  return <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+  return <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-6 text-center bg-gray-50">
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/*" className="hidden" id={`file-upload-${slotPosition}`} />
       
-      <div className="space-y-4">
+      <div className="space-y-2 sm:space-y-4">
         <div>
-          <Video className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600 font-medium mb-2">Clique para enviar seu vídeo</p>
-          <p className="text-sm text-gray-500">
-            Formatos aceitos: MP4, MOV, AVI (máx. 100MB)
+          <Video className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-4 text-gray-400" />
+          <p className="text-sm sm:text-base text-gray-600 font-medium mb-1 sm:mb-2">Clique para enviar seu vídeo</p>
+          <p className="text-xs sm:text-sm text-gray-500">
+            MP4, MOV, AVI (máx. 100MB)
           </p>
         </div>
         
         <VideoTitleInput title={videoTitle} onTitleChange={setVideoTitle} error={titleError} placeholder={`Título do vídeo ${slotPosition}`} />
         
         <label htmlFor={`file-upload-${slotPosition}`}>
-          <Button asChild variant="outline" className="w-full cursor-pointer" disabled={uploading || isUploading}>
+          <Button asChild variant="outline" className="w-full cursor-pointer h-9 sm:h-10 text-xs sm:text-sm" disabled={uploading || isUploading}>
             <span>
               {selectedFile ? selectedFile.name : 'Selecionar Arquivo'}
             </span>
@@ -232,10 +232,10 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
       </div>
 
       {/* Botão principal - Upload direto */}
-      <Button onClick={handleDirectUpload} disabled={!canUpload} className="w-full mt-4">
+      <Button onClick={handleDirectUpload} disabled={!canUpload} className="w-full mt-3 sm:mt-4 h-9 sm:h-10 text-sm sm:text-base">
         {uploading || isUploading ? <>
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Enviando vídeo...
+            Enviando...
           </> : 'Enviar Vídeo'}
       </Button>
 

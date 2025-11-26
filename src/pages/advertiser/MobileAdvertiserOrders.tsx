@@ -10,10 +10,7 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  Upload,
-  Menu,
-  X,
-  ChevronRight
+  Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -22,7 +19,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import MobileDrawerNavigation from '@/components/mobile/MobileDrawerNavigation';
 import { CortesiaOrderSuccessModal } from '@/components/orders/CortesiaOrderSuccessModal';
 import { useCortesiaSuccessDetection } from '@/hooks/useCortesiaSuccessDetection';
 
@@ -57,7 +53,6 @@ const MobileAdvertiserOrders = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { 
@@ -256,13 +251,7 @@ const MobileAdvertiserOrders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Drawer Navigation */}
-      <MobileDrawerNavigation
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-      />
-
+    <>
       {/* Search Bar */}
       <AnimatePresence>
         {showSearch && (
@@ -282,8 +271,8 @@ const MobileAdvertiserOrders = () => {
         )}
       </AnimatePresence>
 
-      <div ref={containerRef} className="pb-20">
-        <div className="px-4 py-4">
+      <div ref={containerRef} className="pb-6">
+        <div className="py-4">
 
           {/* Stats Cards */}
           {orders.length > 0 && getStatsCards()}
@@ -412,7 +401,7 @@ const MobileAdvertiserOrders = () => {
         panelCount={orderData?.lista_paineis?.length || orderData?.selected_buildings?.length || 1}
         onClose={closeModal}
       />
-    </div>
+    </>
   );
 };
 
