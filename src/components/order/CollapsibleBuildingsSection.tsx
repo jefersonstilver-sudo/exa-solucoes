@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { SelectedBuildingsSection } from './SelectedBuildingsSection';
 
@@ -20,7 +20,10 @@ export const CollapsibleBuildingsSection: React.FC<CollapsibleBuildingsSectionPr
       >
         <CardHeader className="p-2 sm:p-3">
           <CardTitle className="flex items-center justify-between text-sm sm:text-base">
-            <span>📍 Locais Selecionados ({listaPredios.length})</span>
+            <span className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Locais Selecionados ({listaPredios.length})
+            </span>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </CardTitle>
         </CardHeader>
@@ -34,7 +37,10 @@ export const CollapsibleBuildingsSection: React.FC<CollapsibleBuildingsSectionPr
         className="flex items-center justify-between p-2 bg-muted/50 rounded cursor-pointer"
         onClick={() => setIsOpen(false)}
       >
-        <span className="text-xs sm:text-sm font-medium">📍 Locais Selecionados ({listaPredios.length})</span>
+        <span className="text-xs sm:text-sm font-medium flex items-center gap-2">
+          <MapPin className="h-4 w-4" />
+          Locais Selecionados ({listaPredios.length})
+        </span>
         <ChevronUp className="h-4 w-4 text-muted-foreground" />
       </div>
       <SelectedBuildingsSection listaPredios={listaPredios} />
