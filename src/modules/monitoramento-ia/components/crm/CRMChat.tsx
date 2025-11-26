@@ -4,7 +4,7 @@ import { StickyNote, Tag, MessageSquare, FileText, Play, Volume2, Bot, User } fr
 import { MediaInputBar } from './MediaInputBar';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
-import { LeadDetailDrawer } from './LeadDetailDrawer';
+import { LeadDetailModal } from './LeadDetailModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -296,8 +296,8 @@ export const CRMChat: React.FC<CRMChatProps> = ({ conversationId, messages, load
         </div>
       )}
 
-      {/* Lead Detail Drawer */}
-      <LeadDetailDrawer
+      {/* Lead Detail Modal */}
+      <LeadDetailModal
         conversationId={conversationId}
         open={showDetails}
         onClose={() => setShowDetails(false)}
