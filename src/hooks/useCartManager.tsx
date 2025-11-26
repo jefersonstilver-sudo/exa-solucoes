@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 export const useCartManager = () => {
   const simpleCart = useSimpleCart();
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>(1);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const navigate = useNavigate();
 
