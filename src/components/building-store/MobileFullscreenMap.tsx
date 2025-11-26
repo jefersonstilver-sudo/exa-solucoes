@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { X, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -51,7 +50,7 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
 
   const validBuildingsCount = buildings?.filter(hasValidCoordinates).length || 0;
 
-  return createPortal(
+  return (
     <>
       {/* Background Layer - Map Container */}
       <motion.div 
@@ -59,7 +58,7 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[9999] bg-background"
+        className="fixed inset-0 z-[99999] bg-background"
       >
         {buildings && buildings.length > 0 ? (
           <BuildingMap 
@@ -94,7 +93,8 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
-        className="fixed top-4 left-4 z-[10000]"
+        className="fixed top-4 left-4 z-[100000]"
+        style={{ pointerEvents: 'auto' }}
       >
         <Button
           onClick={onClose}
@@ -111,7 +111,8 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
-        className="fixed top-4 right-4 z-[10000]"
+        className="fixed top-4 right-4 z-[100000]"
+        style={{ pointerEvents: 'auto' }}
       >
         <Badge 
           variant="secondary" 
@@ -131,8 +132,7 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
           />
         )}
       </AnimatePresence>
-    </>,
-    document.body
+    </>
   );
 };
 
