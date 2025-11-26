@@ -3,13 +3,22 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { RefreshCw, Filter, ChevronDown, ChevronUp, CalendarIcon, Download } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from '@/components/ui/dropdown-menu';
+import { RefreshCw, Filter, ChevronDown, ChevronUp, CalendarIcon, Download, UserCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useContactTypes } from '../../hooks/useContactTypes';
 
 interface CRMFiltersProps {
   filters: any;
@@ -22,6 +31,7 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
   const [isImporting, setIsImporting] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [datePreset, setDatePreset] = useState<string>('all');
+  const { contactTypes } = useContactTypes();
 
   const handleImportHistorico = async () => {
     setIsImporting(true);
@@ -218,6 +228,66 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
             >
               Hot Leads
             </Button>
+            
+            {/* Dropdown de Tipos de Contato */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant={filters.contactType ? 'default' : 'outline'}
+                  size="sm"
+                  className={cn(
+                    'h-8 text-xs border-[var(--exa-border)] gap-1',
+                    filters.contactType && 'bg-[var(--exa-accent)] hover:bg-[var(--exa-accent-hover)] text-white border-transparent'
+                  )}
+                >
+                  <UserCircle className="w-3.5 h-3.5" />
+                  {filters.contactType 
+                    ? contactTypes.find(t => t.name === filters.contactType)?.label || 'Tipo'
+                    : 'Tipo Contato'}
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                align="start" 
+                className="bg-[var(--exa-bg-card)] border-[var(--exa-border)] min-w-[180px] z-50"
+              >
+                <DropdownMenuLabel className="text-xs text-[var(--exa-text-muted)]">
+                  Filtrar por tipo
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                {/* Opção "Todos" */}
+                <DropdownMenuItem
+                  onClick={() => onFilterChange({ ...filters, contactType: undefined })}
+                  className={cn(
+                    'cursor-pointer',
+                    !filters.contactType && 'bg-[var(--exa-accent-light)]'
+                  )}
+                >
+                  Todos os tipos
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                {/* Lista de tipos */}
+                {contactTypes.map((type) => (
+                  <DropdownMenuItem
+                    key={type.id}
+                    onClick={() => onFilterChange({ ...filters, contactType: type.name })}
+                    className={cn(
+                      'cursor-pointer flex items-center gap-2',
+                      filters.contactType === type.name && 'bg-[var(--exa-accent-light)]'
+                    )}
+                  >
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: type.color }} 
+                    />
+                    <span>{type.label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       )}
