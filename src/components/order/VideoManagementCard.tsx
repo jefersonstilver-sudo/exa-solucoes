@@ -64,8 +64,8 @@ export const VideoManagementCard: React.FC<VideoManagementCardProps> = ({
     }
   };
   return <>
-      <Card className="shadow-sm">
-        <CardHeader className="p-2 sm:p-4 pb-2">
+      <Card className="bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-lg">
+        <CardHeader className="p-3 sm:p-5 pb-2">
           <CardTitle className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <Video className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />

@@ -28,7 +28,7 @@ const UnifiedAdvertiserMobileHeader = ({
           <img 
             src={exaLogo} 
             alt="EXA" 
-            className="h-10 w-10 drop-shadow-lg"
+            className="h-8 w-auto object-contain drop-shadow-lg"
           />
         </div>
 

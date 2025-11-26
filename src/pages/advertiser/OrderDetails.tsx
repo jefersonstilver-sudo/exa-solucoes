@@ -426,12 +426,13 @@ const OrderDetails = () => {
 
   return (
     <>
-      <div className="space-y-2 sm:space-y-3 max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
-        {/* Header Simples */}
-        <div className="mb-3">
-          <h1 className="text-lg sm:text-2xl font-bold">Detalhes do Pedido</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">#{orderDetails.id.substring(0, 8)}</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
+          {/* Header Simples */}
+          <div className="mb-3">
+            <h1 className="text-lg sm:text-2xl font-bold">Detalhes do Pedido</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">#{orderDetails.id.substring(0, 8)}</p>
+          </div>
 
         {/* Alerta se pedido bloqueado */}
         {orderDetails.blocked_reason && (
@@ -493,17 +494,18 @@ const OrderDetails = () => {
         {/* 5. Compra - Colapsável e RETRAÍDO */}
         <CollapsiblePurchaseInfo orderDetails={orderDetails} />
 
-        {/* 6. Programação Semanal - Colapsável e RETRAÍDO */}
-        {!contractStatus.isExpired && (
-          <CollapsibleScheduleManager
-            videoSlots={videoSlots}
-            onScheduleUpdate={async (videoId: string, scheduleRules: any[]) => {
-              console.log('📅 Atualizando programação:', { videoId, scheduleRules });
-            }}
-            disabled={!contractStatus.isActive || contractStatus.isExpired}
-            orderId={id || ''}
-          />
-        )}
+          {/* 6. Programação Semanal - Colapsável e RETRAÍDO */}
+          {!contractStatus.isExpired && (
+            <CollapsibleScheduleManager
+              videoSlots={videoSlots}
+              onScheduleUpdate={async (videoId: string, scheduleRules: any[]) => {
+                console.log('📅 Atualizando programação:', { videoId, scheduleRules });
+              }}
+              disabled={!contractStatus.isActive || contractStatus.isExpired}
+              orderId={id || ''}
+            />
+          )}
+        </div>
       </div>
 
       {/* Popup de Sucesso */}

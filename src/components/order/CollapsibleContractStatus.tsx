@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EnhancedContractStatusCard from './EnhancedContractStatusCard';
 
@@ -22,7 +22,10 @@ export const CollapsibleContractStatus: React.FC<CollapsibleContractStatusProps>
       >
         <CardHeader className="p-2 sm:p-3">
           <CardTitle className="flex items-center justify-between text-sm sm:text-base">
-            <span>📊 Status do Contrato</span>
+            <span className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Status do Contrato
+            </span>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </CardTitle>
         </CardHeader>
@@ -36,7 +39,10 @@ export const CollapsibleContractStatus: React.FC<CollapsibleContractStatusProps>
         className="flex items-center justify-between p-2 bg-muted/50 rounded cursor-pointer"
         onClick={() => setIsOpen(false)}
       >
-        <span className="text-xs sm:text-sm font-medium">📊 Status do Contrato</span>
+        <span className="text-xs sm:text-sm font-medium flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          Status do Contrato
+        </span>
         <ChevronUp className="h-4 w-4 text-muted-foreground" />
       </div>
       <EnhancedContractStatusCard

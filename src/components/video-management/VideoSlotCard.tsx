@@ -379,50 +379,124 @@ export const VideoSlotCard: React.FC<VideoSlotCardProps> = ({
             <Progress value={currentProgress} className="h-2" />
           </div>}
 
-        {slot.video_data ? <div className="space-y-2 sm:space-y-4">
-            {/* Video Player - Compacto */}
-            <div className="aspect-video rounded-md sm:rounded-lg overflow-hidden relative">
-              <VideoPlayer src={slot.video_data.url} title={slot.video_data.nome} className="w-full h-full" muted={true} controls={true} onDownload={() => handleDownload(slot.video_data!.url, slot.video_data!.nome)} />
-              {isBlocked && <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-                  <div className="text-center text-white">
-                    <Lock className="h-8 w-8 mx-auto mb-2" />
-                    <p className="text-sm">Aguardando Aprovação</p>
+        {slot.video_data ? (
+          <div className="space-y-2 sm:space-y-4">
+            {/* Mobile: Layout Compacto Horizontal */}
+            <div className="lg:hidden">
+              <div className="flex items-center justify-between gap-3 bg-gray-50 rounded-lg p-3">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-sm truncate text-gray-900 mb-1" title={slot.video_data.nome}>
+                    {slot.video_data.nome}
+                  </h4>
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <span>{formatDuration(slot.video_data.duracao)}</span>
+                    <span>•</span>
+                    <span>{slot.video_data.orientacao}</span>
+                    <span>•</span>
+                    <span>{formatFileSize(slot.video_data.tamanho_arquivo)}</span>
                   </div>
-                </div>}
-            </div>
-
-            {/* Informações do Vídeo - Compactas */}
-            <div className="space-y-1 sm:space-y-2">
-              <h4 className="font-medium text-xs sm:text-sm truncate text-gray-900" title={slot.video_data.nome}>
-                {slot.video_data.nome}
-              </h4>
-              <div className="flex justify-between text-[10px] sm:text-xs text-gray-600">
-                <span>{formatDuration(slot.video_data.duracao)}</span>
-                <span className="hidden sm:inline">{slot.video_data.orientacao}</span>
-                <span>{formatFileSize(slot.video_data.tamanho_arquivo)}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0 h-9 px-3"
+                  onClick={() => window.open(slot.video_data!.url, '_blank')}
+                >
+                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Assistir
+                </Button>
               </div>
-            </div>
 
-            {/* Motivo de Rejeição - Compacto */}
-            {slot.approval_status === 'rejected' && slot.rejection_reason && <div className="bg-red-50 border border-red-200 rounded-md sm:rounded-lg p-2 sm:p-3">
-                <p className="text-red-800 text-xs sm:text-sm">
-                  <strong>Motivo:</strong> {slot.rejection_reason}
-                </p>
-              </div>}
-
-            {/* Aviso para vídeos não aprovados - Compacto */}
-            {isBlocked && <div className="bg-gray-50 border border-gray-200 rounded-md sm:rounded-lg p-2 sm:p-3">
-                <div className="flex items-center space-x-1.5 sm:space-x-2">
-                  <Lock className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
-                  <p className="text-gray-700 text-xs sm:text-sm">
-                    {slot.approval_status === 'pending' ? 'Aguardando aprovação' : 'Vídeo rejeitado'}
+              {/* Motivo de Rejeição - Mobile */}
+              {slot.approval_status === 'rejected' && slot.rejection_reason && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-2.5 mt-2">
+                  <p className="text-red-800 text-xs">
+                    <strong>Motivo:</strong> {slot.rejection_reason}
                   </p>
                 </div>
-              </div>}
+              )}
+
+              {/* Aviso para vídeos não aprovados - Mobile */}
+              {isBlocked && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 mt-2">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
+                    <p className="text-gray-700 text-xs">
+                      {slot.approval_status === 'pending' ? 'Aguardando aprovação' : 'Vídeo rejeitado'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop: Layout com Player (mantém original) */}
+            <div className="hidden lg:block">
+              <div className="aspect-video rounded-lg overflow-hidden relative">
+                <VideoPlayer 
+                  src={slot.video_data.url} 
+                  title={slot.video_data.nome} 
+                  className="w-full h-full" 
+                  muted={true} 
+                  controls={true} 
+                  onDownload={() => handleDownload(slot.video_data!.url, slot.video_data!.nome)} 
+                />
+                {isBlocked && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                    <div className="text-center text-white">
+                      <Lock className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">Aguardando Aprovação</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <h4 className="font-medium text-sm truncate text-gray-900" title={slot.video_data.nome}>
+                  {slot.video_data.nome}
+                </h4>
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>{formatDuration(slot.video_data.duracao)}</span>
+                  <span>{slot.video_data.orientacao}</span>
+                  <span>{formatFileSize(slot.video_data.tamanho_arquivo)}</span>
+                </div>
+              </div>
+
+              {slot.approval_status === 'rejected' && slot.rejection_reason && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
+                  <p className="text-red-800 text-sm">
+                    <strong>Motivo:</strong> {slot.rejection_reason}
+                  </p>
+                </div>
+              )}
+
+              {isBlocked && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-3">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <p className="text-gray-700 text-sm">
+                      {slot.approval_status === 'pending' ? 'Aguardando aprovação' : 'Vídeo rejeitado'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Botões de Ação */}
-            <VideoSlotActions slot={slot} onActivate={onActivate} onRemove={onRemove} onDownload={handleDownload} onScheduleVideo={onScheduleVideo} onForceCleanup={handleForceCleanup} totalApprovedVideos={totalApprovedVideos} orderId={orderId} />
-          </div> : slot.id ? (
+            <VideoSlotActions 
+              slot={slot} 
+              onActivate={onActivate} 
+              onRemove={onRemove} 
+              onDownload={handleDownload} 
+              onScheduleVideo={onScheduleVideo} 
+              onForceCleanup={handleForceCleanup} 
+              totalApprovedVideos={totalApprovedVideos} 
+              orderId={orderId} 
+            />
+          </div>
+        ) : slot.id ? (
       // Placeholder para vídeo enviado mas ainda não carregado
       <div className="bg-yellow-50 border border-yellow-300 rounded-md sm:rounded-lg p-3 sm:p-6 text-center space-y-2 sm:space-y-3">
         <Clock className="h-8 w-8 sm:h-12 sm:w-12 text-yellow-600 mx-auto" />
