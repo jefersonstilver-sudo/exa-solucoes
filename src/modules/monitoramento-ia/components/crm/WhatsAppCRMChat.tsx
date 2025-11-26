@@ -6,7 +6,7 @@ import { StickyNote, Tag, User, Users, Phone, Video, Search, MoreVertical, Smile
 import { MediaInputBar } from './MediaInputBar';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
-import { LeadDetailDrawer } from './LeadDetailDrawer';
+import { LeadDetailModal } from './LeadDetailModal';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -436,7 +436,7 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
 
       {/* Painel lateral de detalhes */}
       {conversation && (
-        <LeadDetailDrawer
+        <LeadDetailModal
           conversationId={conversationId}
           open={showDetails}
           onClose={() => setShowDetails(false)}

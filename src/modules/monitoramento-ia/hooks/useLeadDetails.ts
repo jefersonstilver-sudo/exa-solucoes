@@ -51,7 +51,7 @@ export const useLeadDetails = (conversationId: string | null) => {
         contact_type_source: (conv.contact_type_source || 'unknown') as 'ai' | 'manual' | 'unknown',
         contact_type_updated_by: conv.contact_type_updated_by,
         contact_type_updated_at: conv.contact_type_updated_at,
-        agent_key: conv.agent_key,
+        agent_key: conv.agent_key || 'unknown',
         is_sindico: conv.is_sindico || false,
         is_hot_lead: conv.is_hot_lead || false,
         is_critical: conv.is_critical || false,

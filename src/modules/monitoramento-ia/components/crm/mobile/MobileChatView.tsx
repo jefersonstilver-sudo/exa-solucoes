@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MobileChatHeader } from './MobileChatHeader';
 import { MobileMessageBubble } from './MobileMessageBubble';
 import { MediaInputBar } from '../MediaInputBar';
-import { LeadDetailDrawer } from '../LeadDetailDrawer';
+import { LeadDetailModal } from '../LeadDetailModal';
 import { MobileChatDetails } from './MobileChatDetails';
 import { MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
