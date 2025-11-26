@@ -204,7 +204,7 @@ const AdvertiserSettings = () => {
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Configurações do Perfil</h1>
-        <p className="text-gray-600 mt-2">Gerencie suas informações pessoais e documentação</p>
+        
       </div>
 
       {/* Dados Pessoais */}
@@ -299,31 +299,8 @@ const AdvertiserSettings = () => {
 
       {/* Notificações */}
       <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-exa-red/5 to-transparent">
-          <CardTitle className="flex items-center text-xl">
-            <Bell className="h-5 w-5 mr-2 text-exa-red" />
-            Preferências de Notificação
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-6">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="space-y-0.5">
-              <Label className="text-base font-medium">Notificações por Email</Label>
-              <p className="text-sm text-gray-500">Receba atualizações sobre suas campanhas por email</p>
-            </div>
-            <Switch checked={settings.notifications.email} onCheckedChange={checked => handleNotificationChange('email', checked)} />
-          </div>
-
-          
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="space-y-0.5">
-              <Label className="text-base font-medium">Notificações Push</Label>
-              <p className="text-sm text-gray-500">Receba notificações no navegador</p>
-            </div>
-            <Switch checked={settings.notifications.push} onCheckedChange={checked => handleNotificationChange('push', checked)} />
-          </div>
-        </CardContent>
+        
+        
       </Card>
 
       {/* Empresa/Marca */}
