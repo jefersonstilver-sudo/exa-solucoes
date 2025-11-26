@@ -129,12 +129,12 @@ const ProfileSettings = () => {
 
         <div className="space-y-6">
           {/* Informações do Perfil */}
-          <Card className="shadow-lg border-muted">
+          <Card className="shadow-2xl rounded-2xl border-muted">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                Informações Pessoais
-              </CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-[#9C1E1E]" />
+                  Informações Pessoais
+                </CardTitle>
               <CardDescription>
                 Atualize suas informações de perfil
               </CardDescription>
@@ -198,7 +198,7 @@ const ProfileSettings = () => {
 
                 <Button
                   type="submit"
-                  className="w-full mt-6"
+                  className="w-full mt-6 bg-[#9C1E1E] hover:bg-[#7A1818]"
                   disabled={saving}
                 >
                   {saving ? (
@@ -221,10 +221,10 @@ const ProfileSettings = () => {
           <CompanyBrandSection />
 
           {/* Alteração de Senha */}
-          <Card className="shadow-lg border-muted">
+          <Card className="shadow-2xl rounded-2xl border-muted">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-primary" />
+                <Lock className="h-5 w-5 text-[#9C1E1E]" />
                 Segurança da Conta
               </CardTitle>
               <CardDescription>
@@ -274,7 +274,7 @@ const ProfileSettings = () => {
           </Card>
 
           {/* Informações da Conta */}
-          <Card className="shadow-lg border-muted">
+          <Card className="shadow-2xl rounded-2xl border-muted">
             <CardHeader>
               <CardTitle>Informações da Conta</CardTitle>
             </CardHeader>
