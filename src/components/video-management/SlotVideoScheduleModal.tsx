@@ -285,15 +285,22 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5 text-blue-600" />
-            <span>Agendar Vídeo: {videoName}</span>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        {/* Header Moderno */}
+        <div className="px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+          <DialogTitle className="flex items-center gap-3 text-xl">
+            <div className="p-2 bg-blue-600 rounded-lg">
+              <Calendar className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Agendar Vídeo</h2>
+              <p className="text-sm text-gray-600 font-normal">{videoName}</p>
+            </div>
           </DialogTitle>
-        </DialogHeader>
+        </div>
 
-        <div className="space-y-6">
+        {/* Content Scrollable */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
           {/* Alerta de Conflitos */}
           {conflicts.length > 0 && (
             <ConflictAlert
@@ -303,185 +310,237 @@ export const SlotVideoScheduleModal: React.FC<SlotVideoScheduleModalProps> = ({
             />
           )}
 
-          {/* Indicador de Validação */}
+          {/* Indicador de Sucesso */}
           {conflicts.length === 0 && scheduleRules.length > 0 && !validating && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <span className="text-sm text-green-800 font-medium">
-                ✓ Sem conflitos detectados
-              </span>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-emerald-900">Sem conflitos detectados</p>
+                <p className="text-xs text-emerald-700">Pronto para salvar o agendamento</p>
+              </div>
             </div>
           )}
 
-          {/* Informações */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <strong>💡 Como funciona:</strong> Configure horários específicos para este vídeo ser exibido. 
-              Durante os horários agendados, este vídeo terá prioridade sobre o vídeo base.
-            </p>
+          {/* Info Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg h-fit">
+                <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-900 mb-1">Como funciona</p>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Configure horários específicos para este vídeo ser exibido. Durante os períodos agendados, 
+                  este vídeo terá prioridade sobre o vídeo base.
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Lista de Regras */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium text-gray-900">Regras de Agendamento</h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addNewRule}
-                className="flex items-center space-x-2"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Nova Regra</span>
-              </Button>
+          {/* Header das Regras */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-900">Regras de Agendamento</h3>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {scheduleRules.length === 0 ? 'Nenhuma regra configurada' : `${scheduleRules.length} ${scheduleRules.length === 1 ? 'regra' : 'regras'} configurada${scheduleRules.length === 1 ? '' : 's'}`}
+              </p>
             </div>
+            <Button
+              type="button"
+              onClick={addNewRule}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Regra
+            </Button>
+          </div>
 
-            {scheduleRules.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <Clock className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                <p>Nenhuma regra de agendamento configurada</p>
-                <p className="text-sm">Clique em "Nova Regra" para começar</p>
+          {/* Empty State */}
+          {scheduleRules.length === 0 && (
+            <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+              <div className="p-3 bg-gray-100 rounded-full w-fit mx-auto mb-4">
+                <Clock className="h-8 w-8 text-gray-400" />
               </div>
-            )}
+              <p className="text-gray-600 font-medium mb-1">Nenhuma regra de agendamento</p>
+              <p className="text-sm text-gray-500">Clique em "Nova Regra" para começar</p>
+            </div>
+          )}
 
+          {/* Lista de Regras - Novo Design */}
+          <div className="space-y-4">
             {scheduleRules.map((rule, index) => {
               const ruleIsValid = isRuleValid(rule);
               return (
-              <div key={index} className={`border rounded-lg p-4 space-y-4 ${ruleIsValid ? 'border-green-300 bg-green-50' : 'border-orange-300 bg-orange-50'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-sm text-gray-700">Regra {index + 1}</h4>
-                    {ruleIsValid ? (
-                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">✓ Válida</span>
-                    ) : (
-                      <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">⚠ Incompleta</span>
-                    )}
+                <div 
+                  key={index} 
+                  className={`border-2 rounded-xl p-5 transition-all ${
+                    ruleIsValid 
+                      ? 'border-emerald-200 bg-emerald-50/50' 
+                      : 'border-amber-200 bg-amber-50/50'
+                  }`}
+                >
+                  {/* Header da Regra */}
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${ruleIsValid ? 'bg-emerald-100' : 'bg-amber-100'}`}>
+                        <Calendar className={`h-4 w-4 ${ruleIsValid ? 'text-emerald-600' : 'text-amber-600'}`} />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 text-sm">Regra {index + 1}</h4>
+                        {ruleIsValid ? (
+                          <span className="text-xs text-emerald-600 font-medium">✓ Configuração válida</span>
+                        ) : (
+                          <span className="text-xs text-amber-600 font-medium">⚠ Preencha todos os campos</span>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeRule(index)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeRule(index)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
 
-                {/* Dias da Semana + Toggle Dia Inteiro */}
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <Label className={`text-sm font-medium mb-2 block ${rule.days_of_week.length === 0 ? 'text-orange-600' : ''}`}>
-                      Dias da Semana {rule.days_of_week.length === 0 && '(obrigatório)'}
-                    </Label>
+                  {/* Dias da Semana - Novo Design */}
+                  <div className="space-y-3 mb-5">
+                    <div className="flex items-center justify-between">
+                      <Label className={`text-sm font-medium ${rule.days_of_week.length === 0 ? 'text-amber-700' : 'text-gray-700'}`}>
+                        Dias da Semana {rule.days_of_week.length === 0 && <span className="text-amber-600">*</span>}
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`all-day-${index}`}
+                          checked={rule.is_all_day || false}
+                          onCheckedChange={(checked) => updateRule(index, 'is_all_day', checked)}
+                        />
+                        <Label htmlFor={`all-day-${index}`} className="text-sm font-medium text-gray-600 cursor-pointer">
+                          Dia Inteiro
+                        </Label>
+                      </div>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {DAYS_OF_WEEK.map((day) => {
                         const isSelected = rule.days_of_week.includes(day.value);
                         return (
-                          <Badge
+                          <button
                             key={day.value}
-                            variant={isSelected ? "default" : "outline"}
-                            className={`cursor-pointer ${isSelected ? 'bg-blue-600' : ''}`}
+                            type="button"
                             onClick={() => toggleDay(index, day.value)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                              isSelected
+                                ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
+                                : 'bg-white text-gray-600 border-2 border-gray-200 hover:border-blue-300'
+                            }`}
                           >
                             {day.label}
-                          </Badge>
+                          </button>
                         );
                       })}
                     </div>
                   </div>
-                  
-                  <div className="ml-4 mt-6">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`all-day-${index}`}
-                        checked={rule.is_all_day || false}
-                        onCheckedChange={(checked) => updateRule(index, 'is_all_day', checked)}
-                      />
-                      <Label htmlFor={`all-day-${index}`} className="text-sm font-medium">
-                        Dia Inteiro
-                      </Label>
+
+                  {/* Horários - Novo Design */}
+                  {!rule.is_all_day && (
+                    <div className="grid grid-cols-2 gap-4 mb-5">
+                      <div>
+                        <Label htmlFor={`start-${index}`} className="text-sm font-medium text-gray-700 mb-2 block">
+                          <Clock className="h-3.5 w-3.5 inline mr-1" />
+                          Horário Início
+                        </Label>
+                        <Input
+                          id={`start-${index}`}
+                          type="time"
+                          value={rule.start_time}
+                          onChange={(e) => updateRule(index, 'start_time', e.target.value)}
+                          className="border-2 focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`end-${index}`} className="text-sm font-medium text-gray-700 mb-2 block">
+                          <Clock className="h-3.5 w-3.5 inline mr-1" />
+                          Horário Fim
+                        </Label>
+                        <Input
+                          id={`end-${index}`}
+                          type="time"
+                          value={rule.end_time}
+                          onChange={(e) => updateRule(index, 'end_time', e.target.value)}
+                          className="border-2 focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
                     </div>
+                  )}
+
+                  {/* Preview da Regra */}
+                  {rule.days_of_week.length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <p className="text-xs font-medium text-gray-500 mb-1">PRÉVIA</p>
+                      <p className="text-sm text-gray-900">
+                        <strong>{formatDaysText(rule.days_of_week)}</strong>
+                        {rule.is_all_day ? ' • Dia inteiro' : ` • ${rule.start_time} às ${rule.end_time}`}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Status Ativo */}
+                  <div className="flex items-center gap-2 pt-4 border-t mt-4">
+                    <Checkbox
+                      id={`active-${index}`}
+                      checked={rule.is_active}
+                      onCheckedChange={(checked) => updateRule(index, 'is_active', checked as boolean)}
+                    />
+                    <Label htmlFor={`active-${index}`} className="text-sm font-medium text-gray-700 cursor-pointer">
+                      Regra ativa
+                    </Label>
                   </div>
                 </div>
-
-                {/* Horários - só aparecem se NÃO for dia inteiro */}
-                {!rule.is_all_day && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor={`start-${index}`} className={`text-sm font-medium ${!rule.start_time ? 'text-orange-600' : ''}`}>
-                        Horário Início {!rule.start_time && '(obrigatório)'}
-                      </Label>
-                      <Input
-                        id={`start-${index}`}
-                        type="time"
-                        value={rule.start_time}
-                        onChange={(e) => updateRule(index, 'start_time', e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor={`end-${index}`} className={`text-sm font-medium ${!rule.end_time ? 'text-orange-600' : ''}`}>
-                        Horário Fim {!rule.end_time && '(obrigatório)'}
-                      </Label>
-                      <Input
-                        id={`end-${index}`}
-                        type="time"
-                        value={rule.end_time}
-                        onChange={(e) => updateRule(index, 'end_time', e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Preview da Regra */}
-                {rule.days_of_week.length > 0 && (
-                  <div className="bg-gray-50 rounded p-3">
-                    <p className="text-sm text-gray-700">
-                      <strong>Preview:</strong> {formatDaysText(rule.days_of_week)} 
-                      {rule.is_all_day ? ' - Dia inteiro' : ` das ${rule.start_time} às ${rule.end_time}`}
-                    </p>
-                  </div>
-                )}
-
-                {/* Status Ativo */}
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`active-${index}`}
-                    checked={rule.is_active}
-                    onCheckedChange={(checked) => updateRule(index, 'is_active', checked)}
-                  />
-                  <Label htmlFor={`active-${index}`} className="text-sm">
-                    Regra ativa
-                  </Label>
-                </div>
-              </div>
               );
             })}
           </div>
+        </div>
 
-          {/* Botões */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={saving}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSave}
-              disabled={!canSave || saving || validating || conflicts.length > 0}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {validating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {validating ? 'Validando conflitos...' : saving ? 'Salvando...' : 'Salvar Agendamento'}
-            </Button>
-          </div>
+        {/* Footer com Botões */}
+        <div className="px-6 py-4 border-t bg-gray-50 flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={saving || validating}
+            className="flex-1"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={!canSave || saving || validating}
+            className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md"
+          >
+            {validating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Validando...
+              </>
+            ) : saving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Salvar Agendamento
+              </>
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
