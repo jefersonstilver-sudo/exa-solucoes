@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle } from 'lucide-react';
+import { Check, Circle } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plan, PlanKey } from '@/types/checkout';
@@ -52,26 +52,35 @@ const PlanCard: React.FC<PlanCardProps> = ({
 
   if (!cartItems.length) {
     return (
-      <Card className="border-2 border-gray-200 bg-gray-50 opacity-50">
-        <CardContent className="p-4 sm:p-5 text-center">
-          <p className="text-gray-500 text-sm">
-            Adicione prédios ao carrinho para ver os preços
+      <motion.div
+        variants={{
+          hidden: { opacity: 0, scale: 0.95 },
+          visible: { opacity: 1, scale: 1 }
+        }}
+        className="h-full"
+      >
+        <Card className="h-full flex items-center justify-center p-8 border-dashed border-2 border-gray-200 rounded-2xl bg-gray-50/30">
+          <p className="text-sm text-gray-400 text-center">
+            Adicione painéis ao carrinho
           </p>
-        </CardContent>
-      </Card>
+        </Card>
+      </motion.div>
     );
   }
 
   if (!dynamicPricing) {
     return (
-      <Card className="border-2 border-gray-200 bg-white">
-        <CardContent className="p-4 sm:p-5 text-center">
-          <div className="h-8 w-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p className="text-gray-500 text-sm">
-            Calculando preços...
-          </p>
-        </CardContent>
-      </Card>
+      <motion.div
+        variants={{
+          hidden: { opacity: 0, scale: 0.95 },
+          visible: { opacity: 1, scale: 1 }
+        }}
+        className="h-full"
+      >
+        <Card className="h-full flex items-center justify-center p-8 rounded-2xl bg-white shadow-md">
+          <p className="text-sm text-gray-400">Calculando...</p>
+        </Card>
+      </motion.div>
     );
   }
 
@@ -80,84 +89,78 @@ const PlanCard: React.FC<PlanCardProps> = ({
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0, y: 20 },
+        hidden: { opacity: 0, y: 10 },
         visible: { opacity: 1, y: 0 }
       }}
-      transition={{ duration: 0.3 }}
-      whileHover={{ scale: 1.01 }}
+      whileHover={{ scale: 1.02, y: -4 }}
+      whileTap={{ scale: 0.98 }}
+      className="h-full"
     >
       <Card 
         className={`
-          overflow-hidden transition-all cursor-pointer h-full flex flex-col border-2 bg-white
+          relative h-full cursor-pointer transition-all duration-300 rounded-2xl overflow-hidden
           ${isSelected 
-            ? 'border-blue-500 ring-2 ring-blue-100 shadow-lg' 
-            : 'border-gray-200 hover:border-blue-400 hover:shadow-md'
+            ? 'border-2 border-[#9C1E1E] ring-4 ring-[#9C1E1E]/10 shadow-xl shadow-[#9C1E1E]/5 bg-white' 
+            : 'border border-gray-100 hover:border-gray-200 hover:shadow-lg bg-white'
           }
         `}
         onClick={onSelect}
       >
-        <CardContent className="p-6 flex-grow flex flex-col">
-          {/* Plan Name */}
-          <div className="text-center mb-6">
-            <h3 className="text-xl font-semibold text-gray-900">
-              {plan.name}
-            </h3>
-          </div>
-          
-          {/* Price - Main Focus */}
-          <div className="text-center mb-6">
-            <div className="flex justify-center items-baseline mb-3">
-              <span className="text-4xl font-bold text-gray-900">
+        {/* Discount Badge - Positioned absolutely */}
+        {plan.discount > 0 && (
+          <Badge 
+            className="absolute -top-2 right-4 bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white text-xs px-3 py-1 shadow-md z-10 font-medium"
+          >
+            {plan.discount}% OFF
+          </Badge>
+        )}
+
+        {/* Card Content - Elegant & Spacious */}
+        <CardContent className="pt-8 pb-4 px-4 sm:px-6 text-center">
+          {/* Plan Name - Secondary */}
+          <h3 className="text-base sm:text-lg font-medium text-gray-500 mb-6">
+            {plan.name}
+          </h3>
+
+          {/* Price per Month - Main Focus */}
+          <div className="mb-6">
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-2xl sm:text-5xl font-bold text-gray-900 whitespace-nowrap">
                 {formatCurrency(dynamicPricePerMonth)}
               </span>
-              <span className="text-gray-500 text-base ml-1">/mês</span>
+              <span className="text-base sm:text-lg font-normal text-gray-400">/mês</span>
             </div>
-            
-            {/* Total Price */}
-            <div className="bg-gray-50 py-3 px-4 rounded-lg mb-3">
-              <div className="text-sm font-medium text-gray-700">
-                Total: {formatCurrency(dynamicTotalPrice)}
-              </div>
-              {plan.months > 1 && (
-                <div className="text-xs text-gray-500 mt-1">
-                  ({plan.months} meses)
-                </div>
-              )}
-            </div>
-            
-            {/* Discount Badge */}
-            {plan.discount > 0 && (
-              <Badge className="bg-green-50 text-green-700 hover:bg-green-50 text-sm px-3 py-1 border border-green-200">
-                {plan.discount}% OFF
-              </Badge>
-            )}
+          </div>
+
+          {/* Total Price - Subtle Background */}
+          <div className="bg-gray-50/70 rounded-xl py-3 px-4">
+            <p className="text-sm sm:text-base text-gray-600">
+              Total: <span className="font-semibold text-gray-900">{formatCurrency(dynamicTotalPrice)}</span>
+            </p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              {plan.months} {plan.months === 1 ? 'mês' : 'meses'}
+            </p>
           </div>
         </CardContent>
-        
-        <CardFooter className={`
-          px-6 py-4 border-t flex justify-between items-center
-          ${isSelected ? 'border-t-blue-200 bg-blue-50/50' : 'border-t-gray-100'}
-        `}>
-          {isSelected ? (
-            <span className="text-sm font-medium text-blue-600 flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
-              Selecionado
-            </span>
-          ) : (
-            <span className="text-sm text-gray-600">
-              Selecionar
-            </span>
-          )}
-          
+
+        {/* Footer - Single Selection Icon */}
+        <CardFooter className="pt-4 pb-6 px-6 justify-center border-t border-gray-50">
           <div className={`
-            h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all
-            ${isSelected 
-              ? 'border-blue-500 bg-blue-500' 
-              : 'border-gray-300'
-            }
+            flex items-center gap-2 text-sm font-medium transition-all duration-200
+            ${isSelected ? 'text-[#9C1E1E]' : 'text-gray-400'}
           `}>
-            {isSelected && (
-              <CheckCircle className="h-4 w-4 text-white" />
+            {isSelected ? (
+              <>
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#9C1E1E] to-[#D72638] flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                </div>
+                <span>Selecionado</span>
+              </>
+            ) : (
+              <>
+                <Circle className="w-5 h-5" strokeWidth={2} />
+                <span>Selecionar</span>
+              </>
             )}
           </div>
         </CardFooter>
