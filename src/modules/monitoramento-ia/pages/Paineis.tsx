@@ -311,20 +311,12 @@ export const PaineisPage = () => {
         </div>
       </div>
 
-      {/* Stats - Scroll horizontal no mobile */}
-      <div className="flex lg:grid lg:grid-cols-4 gap-3 lg:gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-        <div className="min-w-[140px] lg:min-w-0 snap-start">
-          <SimpleStatCard label="Total" value={stats.total} color="blue" />
-        </div>
-        <div className="min-w-[140px] lg:min-w-0 snap-start">
-          <SimpleStatCard label="Online" value={stats.online} color="green" />
-        </div>
-        <div className="min-w-[140px] lg:min-w-0 snap-start">
-          <SimpleStatCard label="Offline" value={stats.offline} color="red" />
-        </div>
-        <div className="min-w-[140px] lg:min-w-0 snap-start">
-          <SimpleStatCard label="Desconhecido" value={stats.unknown} color="gray" />
-        </div>
+      {/* Stats - Coluna no mobile, grid no desktop */}
+      <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-4">
+        <SimpleStatCard label="Total" value={stats.total} color="blue" />
+        <SimpleStatCard label="Online" value={stats.online} color="green" />
+        <SimpleStatCard label="Offline" value={stats.offline} color="red" />
+        <SimpleStatCard label="Desconhecido" value={stats.unknown} color="gray" />
       </div>
 
       {/* Quedas - Collapsible escondido por padrão no mobile */}
