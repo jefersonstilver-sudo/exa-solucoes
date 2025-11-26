@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Users, Check, CheckCheck, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { Users, Check, CheckCheck, Clock, TrendingUp, AlertCircle, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatContactName } from '@/modules/monitoramento-ia/utils/contactFormatters';
 
@@ -240,9 +241,32 @@ interface WhatsAppCRMInboxProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   loading: boolean;
+  isFullscreen?: boolean;
 }
 
-export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({ conversations, selectedId, onSelect, loading }) => {
+export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({ 
+  conversations, 
+  selectedId, 
+  onSelect, 
+  loading,
+  isFullscreen = false
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filtrar conversas baseado no termo de busca
+  const filteredConversations = useMemo(() => {
+    if (!searchTerm.trim()) return conversations;
+    
+    const term = searchTerm.toLowerCase();
+    return conversations.filter(conv => {
+      const name = formatContactName(conv.contact_name, conv.contact_phone).toLowerCase();
+      const phone = conv.contact_phone?.toLowerCase() || '';
+      const lastMessage = conv.last_message?.toLowerCase() || '';
+      
+      return name.includes(term) || phone.includes(term) || lastMessage.includes(term);
+    });
+  }, [conversations, searchTerm]);
+
   if (loading) {
     return (
       <div className="p-8 text-center text-whatsapp-text-secondary">
@@ -251,25 +275,46 @@ export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({ conversation
     );
   }
 
-  if (conversations.length === 0) {
-    return (
-      <div className="p-8 text-center text-whatsapp-text-secondary">
-        <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />
-        <p>Nenhuma conversa encontrada</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-card/80 dark:bg-card/60 backdrop-blur-xl h-full overflow-y-auto">
-      {conversations.map((conv) => (
-        <ConversationItem
-          key={conv.id}
-          conversation={conv}
-          isSelected={selectedId === conv.id}
-          onClick={() => onSelect(conv.id)}
-        />
-      ))}
+    <div className="h-full flex flex-col bg-card/80 dark:bg-card/60 backdrop-blur-xl">
+      {/* Barra de busca - Visível apenas em fullscreen */}
+      {isFullscreen && (
+        <div className="p-3 border-b border-border/30 bg-background/95 backdrop-blur-sm shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar conversas..."
+              className="pl-9 bg-muted/50 border-border/30 focus-visible:ring-primary/50"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          {searchTerm && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {filteredConversations.length} de {conversations.length} conversas
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Lista de conversas */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {filteredConversations.length === 0 ? (
+          <div className="p-8 text-center text-whatsapp-text-secondary">
+            <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />
+            <p>{searchTerm ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa disponível'}</p>
+          </div>
+        ) : (
+          filteredConversations.map((conv) => (
+            <ConversationItem
+              key={conv.id}
+              conversation={conv}
+              isSelected={selectedId === conv.id}
+              onClick={() => onSelect(conv.id)}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 };
