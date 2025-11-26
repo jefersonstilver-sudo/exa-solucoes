@@ -345,6 +345,7 @@ export type Database = {
           is_active: boolean | null
           kb_ids: Json | null
           key: string
+          manychat_config: Json | null
           openai_config: Json | null
           routing_rules: Json | null
           type: string
@@ -363,6 +364,7 @@ export type Database = {
           is_active?: boolean | null
           kb_ids?: Json | null
           key: string
+          manychat_config?: Json | null
           openai_config?: Json | null
           routing_rules?: Json | null
           type: string
@@ -381,6 +383,7 @@ export type Database = {
           is_active?: boolean | null
           kb_ids?: Json | null
           key?: string
+          manychat_config?: Json | null
           openai_config?: Json | null
           routing_rules?: Json | null
           type?: string
