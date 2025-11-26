@@ -11,6 +11,7 @@ import { format, isToday, isYesterday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import exaChatLogo from '@/assets/exa-chat-logo.png';
 
 interface WhatsAppCRMChatProps {
   conversationId: string | null;
@@ -118,11 +119,13 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
 
   if (!conversationId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-muted/20">
-        <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mb-6">
-          <MessageSquare className="w-10 h-10 text-muted-foreground/50" />
-        </div>
-        <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col items-center justify-center h-full bg-[#0b141a]">
+        <img 
+          src={exaChatLogo} 
+          alt="EXA Chat" 
+          className="w-64 h-64 opacity-15"
+        />
+        <p className="text-sm text-white/40 mt-4">
           Selecione uma conversa
         </p>
       </div>
