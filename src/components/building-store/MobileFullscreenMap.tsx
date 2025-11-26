@@ -47,20 +47,20 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
       className="fixed inset-0 z-[9999] bg-background"
     >
       {/* Glass-style Back Button - Top Left */}
-      <div className="absolute top-4 left-4 z-[10000]">
+      <div className="absolute top-4 left-4 z-[10001] pointer-events-auto">
         <Button
           onClick={onClose}
-          className="h-12 w-12 rounded-full bg-background/80 backdrop-blur-xl border-2 border-border/40 shadow-2xl hover:bg-background/90 hover:border-border/60 transition-all duration-200 p-0 flex items-center justify-center"
+          className="h-12 w-12 rounded-full bg-background/95 backdrop-blur-xl border-2 border-border/40 shadow-2xl hover:bg-background hover:scale-105 hover:border-border/60 transition-all duration-200 p-0 flex items-center justify-center"
         >
           <ArrowLeft className="h-6 w-6 text-foreground" />
         </Button>
       </div>
 
       {/* Glass-style Buildings Badge - Top Right */}
-      <div className="absolute top-4 right-4 z-[10000]">
+      <div className="absolute top-4 right-4 z-[10001] pointer-events-auto">
         <Badge 
           variant="secondary" 
-          className="h-12 px-4 rounded-full bg-background/80 backdrop-blur-xl border-2 border-border/40 shadow-2xl text-base font-semibold text-foreground flex items-center gap-2"
+          className="h-12 px-4 rounded-full bg-background/95 backdrop-blur-xl border-2 border-border/40 shadow-2xl text-base font-semibold text-foreground flex items-center gap-2"
         >
           <Navigation className="h-5 w-5" />
           {validBuildingsCount} {validBuildingsCount === 1 ? 'prédio' : 'prédios'}
@@ -72,13 +72,13 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         {buildings && buildings.length > 0 ? (
           <BuildingMap 
             buildings={buildings} 
-            selectedLocation={selectedLocation} 
+            selectedLocation={null}
             scrollwheel={true} 
             defaultZoom={14}
-            enableClustering={true}
+            enableClustering={false}
             requirePreciseGeocode={false}
             autoFitAllBuildings={true}
-            hideDefaultControls={false}
+            hideDefaultControls={true}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-muted/20">
