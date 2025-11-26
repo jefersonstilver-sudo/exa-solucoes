@@ -1,9 +1,90 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import ExaSection from '../base/ExaSection';
 import ExaCTA from '../base/ExaCTA';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useHomepageVideo } from '@/hooks/useHomepageVideo';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Volume2, VolumeX, RotateCcw } from 'lucide-react';
+// Mobile Hero Layout Component
+const HeroMobileLayout = () => {
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20Site/institucional.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3MgU2l0ZS9pbnN0aXR1Y2lvbmFsLm1wNCIsImlhdCI6MTc2NDE4NjY3OCwiZXhwIjoxNzY0NzkxNDc4fQ.BBEzGtBpbYm4Qd-ZlhVKwW4CtVAKiwn9K-Hdx3-y14I';
+  
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+  
+  const restartVideo = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play();
+    }
+  };
+  
+  return (
+    <section className="min-h-screen bg-gradient-to-b from-[#9C1E1E] via-[#180A0A]/80 to-exa-black pt-16">
+      {/* Vídeo Hero Imersivo */}
+      <div className="relative w-full aspect-video">
+        <video
+          ref={videoRef}
+          src={institutionalVideoUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        />
+        
+        {/* Botões Flutuantes Elegantes */}
+        <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+          <button 
+            onClick={toggleMute} 
+            className="glassmorphism-button"
+            aria-label={isMuted ? "Ativar som" : "Desativar som"}
+          >
+            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          </button>
+          <button 
+            onClick={restartVideo} 
+            className="glassmorphism-button"
+            aria-label="Reiniciar vídeo"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+      
+      {/* Texto + CTA */}
+      <div className="px-6 py-12 text-center space-y-6">
+        <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl text-white leading-tight">
+          Publicidade que <span className="text-exa-yellow">convive</span>.
+        </h1>
+        
+        <p className="font-poppins text-base md:text-lg text-gray-200 leading-relaxed max-w-xl mx-auto">
+          A EXA conecta marcas aos instantes reais da vida urbana — atenção genuína, presença diária e resultados duradouros.
+        </p>
+
+        <div className="flex gap-4 pt-4 justify-center">
+          <ExaCTA 
+            variant="primary" 
+            size="lg" 
+            href="https://wa.me/5545991415920?text=Oi%2C%20tenho%20interesse%20em%20anunciar%20na%20EXA!"
+          >
+            Falar com Vendedor
+          </ExaCTA>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const HeroSection = () => {
+  const isMobile = useIsMobile();
   const {
     ref,
     isVisible
@@ -13,7 +94,12 @@ const HeroSection = () => {
     loading
   } = useHomepageVideo();
 
-  // Fallback video URL
+  // Se for mobile, renderiza o novo layout imersivo
+  if (isMobile) {
+    return <HeroMobileLayout />;
+  }
+
+  // Desktop: mantém layout atual
   const defaultVideoUrl = 'https://indexa.net.br/wp-content/uploads/2025/01/indexa_exa.mp4';
   const displayVideoUrl = videoUrl || defaultVideoUrl;
   return <ExaSection background="dark" className="min-h-screen md:min-h-[75vh] lg:min-h-[80vh] flex items-center relative overflow-hidden pt-24 md:pt-28 lg:pt-24 pb-8 md:pb-12">
