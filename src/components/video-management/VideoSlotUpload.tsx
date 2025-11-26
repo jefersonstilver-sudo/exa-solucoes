@@ -210,10 +210,8 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         <div className="flex items-center gap-2 lg:flex-col">
           <Video className="h-4 w-4 sm:h-10 sm:w-10 text-gray-400 shrink-0 lg:mx-auto lg:mb-2" />
           <div className="flex-1 text-left lg:text-center">
-            <p className="text-[10px] sm:text-sm text-gray-600 font-medium leading-tight">Clique para enviar seu vídeo</p>
-            <p className="text-[9px] sm:text-xs text-gray-500">
-              MP4, MOV, AVI (máx. 100MB)
-            </p>
+            <p className="text-[10px] sm:text-sm text-gray-600 font-medium leading-tight">Envie seuvideo! </p>
+            
           </div>
         </div>
         
@@ -222,7 +220,7 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         <label htmlFor={`file-upload-${slotPosition}`}>
           <Button asChild variant="outline" className="w-full cursor-pointer h-6 sm:h-9 text-[9px] sm:text-xs px-2" disabled={uploading || isUploading}>
             <span>
-              {selectedFile ? (selectedFile.name.length > 15 ? selectedFile.name.substring(0, 15) + '...' : selectedFile.name) : 'Selecionar Arquivo'}
+              {selectedFile ? selectedFile.name.length > 15 ? selectedFile.name.substring(0, 15) + '...' : selectedFile.name : 'Selecionar Arquivo'}
             </span>
           </Button>
         </label>
