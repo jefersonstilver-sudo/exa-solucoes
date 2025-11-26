@@ -119,13 +119,13 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
 
   if (!conversationId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-[#0b141a]">
+      <div className="flex flex-col items-center justify-center h-full bg-[#f0f2f5]">
         <img 
           src={exaChatLogo} 
           alt="EXA Chat" 
-          className="w-64 h-64 opacity-15"
+          className="w-64 h-64 opacity-20"
         />
-        <p className="text-sm text-white/40 mt-4">
+        <p className="text-sm text-muted-foreground mt-4">
           Selecione uma conversa
         </p>
       </div>
