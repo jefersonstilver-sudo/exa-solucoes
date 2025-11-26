@@ -56,10 +56,10 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[9999] bg-background"
+      className="fixed inset-0 z-[9999] bg-background pointer-events-none"
     >
       {/* Fullscreen Map - Must be first to render behind controls */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 pointer-events-auto">
         {buildings && buildings.length > 0 ? (
           <BuildingMap 
             buildings={buildings} 
@@ -87,20 +87,20 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         )}
       </div>
 
-      {/* Elegant Red Close Button - Top Left - Rendered AFTER map for z-index */}
-      <div className="fixed top-4 left-4 z-[10001]" style={{ pointerEvents: 'auto' }}>
+      {/* Elegant Red Close Button - Top Left - MUST be OUTSIDE map container */}
+      <div className="fixed top-4 left-4 z-[10050]" style={{ pointerEvents: 'auto' }}>
         <Button
           onClick={onClose}
           variant="ghost"
           size="icon"
-          className="h-12 w-12 rounded-full bg-red-600/95 backdrop-blur-xl shadow-[0_4px_20px_rgba(220,38,38,0.4)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.5)] transition-all duration-200 active:scale-95 border-0"
+          className="h-12 w-12 rounded-full bg-red-600 backdrop-blur-xl shadow-[0_4px_20px_rgba(220,38,38,0.5)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.6)] transition-all duration-200 active:scale-95 border-0"
         >
           <X className="h-5 w-5 text-white" strokeWidth={2.5} />
         </Button>
       </div>
 
       {/* Glass-style Buildings Badge - Top Right - Rendered AFTER map for z-index */}
-      <div className="fixed top-4 right-4 z-[10001]" style={{ pointerEvents: 'auto' }}>
+      <div className="fixed top-4 right-4 z-[10050]" style={{ pointerEvents: 'auto' }}>
         <Badge 
           variant="secondary" 
           className="h-14 px-5 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] text-base font-bold text-gray-800 flex items-center gap-2"
