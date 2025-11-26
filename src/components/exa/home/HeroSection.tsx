@@ -4,11 +4,13 @@ import ExaCTA from '../base/ExaCTA';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useHomepageVideo } from '@/hooks/useHomepageVideo';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { Volume2, VolumeX, RotateCcw, Maximize, Minimize } from 'lucide-react';
 // Mobile Hero Layout Component
 const HeroMobileLayout = () => {
   const [isMuted, setIsMuted] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20Site/institucional.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3MgU2l0ZS9pbnN0aXR1Y2lvbmFsLm1wNCIsImlhdCI6MTc2NDE4NjY3OCwiZXhwIjoxNzY0NzkxNDc4fQ.BBEzGtBpbYm4Qd-ZlhVKwW4CtVAKiwn9K-Hdx3-y14I';
   
@@ -25,11 +27,23 @@ const HeroMobileLayout = () => {
       videoRef.current.play();
     }
   };
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+    
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
   
   return (
-    <section className="min-h-screen bg-gradient-to-b from-[#9C1E1E] via-[#180A0A]/80 to-exa-black pt-16">
+    <section className="bg-gradient-to-b from-[#9C1E1E] via-[#180A0A]/80 to-exa-black pt-16 pb-8">
       {/* Vídeo Hero Imersivo */}
-      <div className="relative w-full aspect-video">
+      <div ref={containerRef} className="relative w-full aspect-video bg-black">
         <video
           ref={videoRef}
           src={institutionalVideoUrl}
@@ -40,39 +54,46 @@ const HeroMobileLayout = () => {
           className="w-full h-full object-cover"
         />
         
-        {/* Botões Flutuantes Elegantes */}
-        <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+        {/* Botões Flutuantes - Abaixo do vídeo sobrepostos */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
           <button 
             onClick={toggleMute} 
-            className="glassmorphism-button"
+            className="glassmorphism-button-small"
             aria-label={isMuted ? "Ativar som" : "Desativar som"}
           >
-            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </button>
           <button 
             onClick={restartVideo} 
-            className="glassmorphism-button"
+            className="glassmorphism-button-small"
             aria-label="Reiniciar vídeo"
           >
-            <RotateCcw className="w-5 h-5" />
+            <RotateCcw className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={toggleFullscreen} 
+            className="glassmorphism-button-small"
+            aria-label="Tela cheia"
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
         </div>
       </div>
       
       {/* Texto + CTA */}
-      <div className="px-6 py-12 text-center space-y-6">
-        <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl text-white leading-tight">
+      <div className="px-6 py-8 text-center space-y-5">
+        <h1 className="font-montserrat font-extrabold text-3xl text-white leading-tight">
           Publicidade que <span className="text-exa-yellow">convive</span>.
         </h1>
         
-        <p className="font-poppins text-base md:text-lg text-gray-200 leading-relaxed max-w-xl mx-auto">
+        <p className="font-poppins text-sm text-gray-200 leading-relaxed max-w-xl mx-auto">
           A EXA conecta marcas aos instantes reais da vida urbana — atenção genuína, presença diária e resultados duradouros.
         </p>
 
-        <div className="flex gap-4 pt-4 justify-center">
+        <div className="flex gap-4 pt-2 justify-center">
           <ExaCTA 
             variant="primary" 
-            size="lg" 
+            size="md" 
             href="https://wa.me/5545991415920?text=Oi%2C%20tenho%20interesse%20em%20anunciar%20na%20EXA!"
           >
             Falar com Vendedor
