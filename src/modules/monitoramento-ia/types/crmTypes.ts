@@ -103,6 +103,10 @@ export interface LeadDetails {
   awaiting_response: boolean;
   escalated_to_eduardo: boolean;
   escalated_at: string | null;
+  metadata?: {
+    building_name?: string;
+    last_sender_name?: string;
+  } | null;
 }
 
 export interface ConversationReport {
@@ -126,4 +130,6 @@ export interface LeadMetrics {
   firstContactFormatted: string;
   lastContactFormatted: string;
   daysSinceLastContact: number;
+  firstContact?: string;
+  lastContact?: string;
 }

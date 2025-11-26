@@ -64,7 +64,8 @@ export const useLeadDetails = (conversationId: string | null) => {
         avg_response_time: avgResponseTimeFormatted,
         awaiting_response: conv.awaiting_response || false,
         escalated_to_eduardo: conv.escalated_to_eduardo || false,
-        escalated_at: conv.escalated_at
+        escalated_at: conv.escalated_at,
+        metadata: conv.metadata as any
       };
 
       setLead(leadData);
@@ -73,7 +74,9 @@ export const useLeadDetails = (conversationId: string | null) => {
         avgResponseTimeFormatted,
         firstContactFormatted,
         lastContactFormatted,
-        daysSinceLastContact
+        daysSinceLastContact,
+        firstContact: conv.first_message_at,
+        lastContact: conv.last_message_at
       });
     } catch (error) {
       console.error('Error fetching lead details:', error);
