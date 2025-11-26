@@ -1,11 +1,14 @@
-import React from 'react';
-import { BuildingStore } from '@/services/buildingStoreService';
+import React, { useState, useEffect } from 'react';
+import { BuildingStore, getImageUrl } from '@/services/buildingStoreService';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { MapPin, X, Eye, Users, Monitor, ShoppingCart } from 'lucide-react';
+import { MapPin, X, Eye, Users, Monitor, ShoppingCart, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useCart } from '@/contexts/SimpleCartContext';
+import { adaptBuildingToPanel } from '@/services/buildingToPanelAdapter';
+import { toast } from 'sonner';
 
 interface MobileBuildingSheetProps {
   building: BuildingStore;
@@ -14,6 +17,13 @@ interface MobileBuildingSheetProps {
 
 const MobileBuildingSheet: React.FC<MobileBuildingSheetProps> = ({ building, onClose }) => {
   const navigate = useNavigate();
+  const { addToCart, isItemInCart } = useCart();
+  const [isAdding, setIsAdding] = useState(false);
+  const [inCartLocal, setInCartLocal] = useState(false);
+
+  useEffect(() => {
+    setInCartLocal(isItemInCart(building.id));
+  }, [building.id, isItemInCart]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -57,6 +67,23 @@ const MobileBuildingSheet: React.FC<MobileBuildingSheetProps> = ({ building, onC
     navigate(`/loja/${building.id}`);
   };
 
+  const handleAddToCart = async () => {
+    if (inCartLocal || isAdding) return;
+
+    setIsAdding(true);
+    try {
+      const panel = adaptBuildingToPanel(building);
+      addToCart(panel, 30);
+      setInCartLocal(true);
+      toast.success('Prédio adicionado ao carrinho!');
+    } catch (error) {
+      console.error('Erro ao adicionar ao carrinho:', error);
+      toast.error('Erro ao adicionar ao carrinho');
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ y: '100%', opacity: 0 }}
@@ -72,36 +99,46 @@ const MobileBuildingSheet: React.FC<MobileBuildingSheetProps> = ({ building, onC
             <div className="w-12 h-1.5 rounded-full bg-border" />
           </div>
 
-          <CardContent className="p-4 space-y-4">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-lg text-foreground leading-tight mb-1.5">
-                  {building.nome}
-                </h3>
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <MapPin className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">{building.bairro}</span>
-                </div>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={onClose}
-                className="text-muted-foreground hover:bg-muted h-9 w-9 p-0 flex-shrink-0 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            {/* Status Badge */}
-            <div className="flex justify-start">
+          {/* Building Image */}
+          <div className="relative h-36 overflow-hidden">
+            <img 
+              src={getImageUrl(building.imagem_principal) || '/placeholder.svg'} 
+              alt={building.nome}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            
+            {/* Status Badge on Image */}
+            <div className="absolute top-3 left-3">
               <Badge 
                 variant="outline" 
-                className={`text-sm px-3 py-1.5 font-semibold ${getStatusColor(building.status)}`}
+                className={`text-xs px-2.5 py-1 font-semibold backdrop-blur-sm ${getStatusColor(building.status)}`}
               >
                 {getDisplayStatus(building.status)}
               </Badge>
+            </div>
+
+            {/* Close Button on Image */}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose}
+              className="absolute top-3 right-3 text-white hover:bg-white/20 h-8 w-8 p-0 flex-shrink-0 rounded-full backdrop-blur-sm"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          <CardContent className="p-4 space-y-3">
+            {/* Header */}
+            <div>
+              <h3 className="font-bold text-xl text-foreground leading-tight mb-2">
+                {building.nome}
+              </h3>
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <MapPin className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">{building.bairro}</span>
+              </div>
             </div>
 
             {/* Metrics Grid */}
@@ -156,11 +193,26 @@ const MobileBuildingSheet: React.FC<MobileBuildingSheetProps> = ({ building, onC
                 Ver Detalhes
               </Button>
               <Button
-                onClick={handleViewDetails}
-                className="w-full h-11 text-base font-semibold bg-primary hover:bg-primary/90"
+                onClick={handleAddToCart}
+                disabled={inCartLocal || isAdding}
+                className="w-full h-11 text-base font-semibold bg-primary hover:bg-primary/90 disabled:opacity-70"
               >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Adicionar
+                {isAdding ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Adicionando...
+                  </>
+                ) : inCartLocal ? (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    No Carrinho
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Adicionar
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>

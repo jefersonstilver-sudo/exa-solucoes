@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Navigation } from 'lucide-react';
+import { X, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import BuildingMap from './BuildingMap';
@@ -70,6 +70,7 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
             requirePreciseGeocode={false}
             autoFitAllBuildings={true}
             hideDefaultControls={true}
+            gestureHandling="greedy"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-muted/20">
@@ -86,15 +87,15 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         )}
       </div>
 
-      {/* Glass-style Back Button - Top Left - Rendered AFTER map for z-index */}
+      {/* Glass-style Close Button - Top Left - Rendered AFTER map for z-index */}
       <div className="fixed top-4 left-4 z-[10001]" style={{ pointerEvents: 'auto' }}>
         <Button
           onClick={onClose}
           variant="outline"
           size="icon"
-          className="h-14 w-14 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:bg-white hover:scale-110 hover:shadow-[0_12px_48px_rgba(0,0,0,0.3)] transition-all duration-200"
+          className="h-12 w-12 rounded-full bg-white/95 backdrop-blur-xl border border-gray-200 shadow-[0_8px_32px_rgba(0,0,0,0.15)] hover:bg-white hover:scale-110 hover:shadow-[0_12px_48px_rgba(0,0,0,0.25)] transition-all duration-200 active:scale-95"
         >
-          <ArrowLeft className="h-6 w-6 text-gray-800" />
+          <X className="h-5 w-5 text-gray-700" strokeWidth={2.5} />
         </Button>
       </div>
 
