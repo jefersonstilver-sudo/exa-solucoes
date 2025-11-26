@@ -1,5 +1,7 @@
-import { Search, Filter, ArrowUpDown } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, ChevronDown } from 'lucide-react';
 import { DevicesFilters, DevicesSort } from '../utils/devices';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useState } from 'react';
 
 interface FiltersBarProps {
   filters: DevicesFilters;
@@ -16,10 +18,27 @@ export const FiltersBar = ({
   onSortChange,
   onNewPanel,
 }: FiltersBarProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
   return (
-    <div className="bg-module-card border-module border rounded-xl shadow-sm p-4 lg:p-6 mb-6">
-      {/* Linha 1: Busca e botão novo */}
-      <div className="flex flex-col lg:flex-row gap-4 mb-4">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="bg-module-card border-module border rounded-xl shadow-sm mb-6">
+      <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-module-hover/30 transition-colors">
+        <div className="flex items-center gap-3">
+          <Search className="w-5 h-5 text-module-secondary" />
+          <span className="text-lg font-semibold text-module-primary">Buscar e Filtrar</span>
+          {(filters.search || filters.status?.length || filters.condominio || filters.torre) && (
+            <span className="text-xs bg-module-accent text-white px-2 py-1 rounded-full">
+              Filtros ativos
+            </span>
+          )}
+        </div>
+        <ChevronDown className={`w-5 h-5 text-module-secondary transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </CollapsibleTrigger>
+      
+      <CollapsibleContent>
+        <div className="px-6 pb-6 pt-2">
+          {/* Linha 1: Busca e botão novo */}
+          <div className="flex flex-col lg:flex-row gap-4 mb-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-module-tertiary" />
           <input
@@ -105,6 +124,8 @@ export const FiltersBar = ({
           </select>
         </div>
       </div>
-    </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
