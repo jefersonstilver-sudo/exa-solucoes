@@ -132,9 +132,18 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
   return (
     <div className="flex h-full">
       {/* Área de mensagens */}
-      <div className="flex-1 flex flex-col bg-[var(--exa-bg-secondary)]">
+      <div className="flex-1 flex flex-col bg-gradient-to-b from-[var(--exa-bg-secondary)] to-[var(--exa-bg-primary)] relative">
+        {/* Pattern sutil (estilo WhatsApp) */}
+        <div 
+          className="absolute inset-0 opacity-[0.015] pointer-events-none"
+          style={{ 
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C1E1E' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundSize: '200px'
+          }}
+        />
+        
         {/* Header funcional e limpo */}
-        <div className="bg-[var(--exa-bg-card)] backdrop-blur-sm border-b border-[var(--exa-border)] px-4 py-3 flex items-center justify-between">
+        <div className="relative z-10 bg-[var(--exa-bg-card)] backdrop-blur-sm border-b-2 border-b-[var(--exa-accent)]/30 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Avatar */}
             <div className={cn(
@@ -278,7 +287,7 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
         )}
 
         {/* Área de mensagens com scroll - Responsivo */}
-        <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 space-y-2 min-h-0">
+        <div className="relative z-10 flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 space-y-2 min-h-0">
           {loading ? (
             <div className="text-center text-whatsapp-text-secondary py-8">
               <div className="animate-pulse">Carregando mensagens...</div>
@@ -406,7 +415,7 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
         </div>
 
         {/* Input de mensagem - SEMPRE VISÍVEL quando há conversationId */}
-        <div className="px-3 sm:px-4 py-3 border-t border-[var(--exa-border)] bg-[var(--exa-bg-card)] shrink-0">
+        <div className="relative z-10 px-3 sm:px-4 py-3 border-t border-[var(--exa-border)] bg-[var(--exa-bg-card)] shrink-0">
           {conversationId && conversation ? (
             <MediaInputBar 
               phoneNumber={conversation.contact_phone} 

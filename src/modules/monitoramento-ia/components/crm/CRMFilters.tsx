@@ -81,7 +81,7 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
 
   return (
     <div className={cn(
-      "backdrop-blur-xl bg-white/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 rounded-2xl shadow-lg shadow-slate-200/20 dark:shadow-black/20 overflow-hidden transition-all",
+      "backdrop-blur-xl bg-gradient-to-r from-[var(--exa-accent)]/5 via-transparent to-transparent border border-[var(--exa-border)] rounded-2xl shadow-lg overflow-hidden transition-all",
       isExpanded ? "max-h-96" : "max-h-14"
     )}>
       {/* Header minimalista com botão de collapse */}
@@ -94,17 +94,17 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
           {!isExpanded && (
             <div className="flex items-center gap-2 ml-auto">
               {filters.agentKey && (
-                <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                <span className="text-xs px-2 py-1 rounded-full bg-[var(--exa-accent-light)] text-[var(--exa-accent)]">
                   {filters.agentKey === 'sofia' ? '🤖 Sofia' : '👤 Eduardo'}
                 </span>
               )}
               {filters.unreadOnly && (
-                <span className="text-xs px-2 py-1 rounded-full bg-orange-500/10 text-orange-600">
+                <span className="text-xs px-2 py-1 rounded-full bg-[var(--exa-accent-light)] text-[var(--exa-accent)]">
                   Não lidas
                 </span>
               )}
               {filters.criticalOnly && (
-                <span className="text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-600">
+                <span className="text-xs px-2 py-1 rounded-full bg-[var(--exa-accent-light)] text-[var(--exa-accent)]">
                   Críticas
                 </span>
               )}
@@ -135,14 +135,14 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
 
       {/* Conteúdo dos filtros */}
       {isExpanded && (
-        <div className="px-4 pb-4 space-y-3 border-t border-white/20 dark:border-border pt-3">
+        <div className="px-4 pb-4 space-y-3 border-t border-[var(--exa-border)]/50 pt-3">
           <div className="grid grid-cols-3 gap-2">
             {/* Filtro de Agente */}
             <Select
               value={filters.agentKey || 'all'}
               onValueChange={(value) => onFilterChange({ ...filters, agentKey: value === 'all' ? undefined : value })}
             >
-              <SelectTrigger className="bg-white/80 dark:bg-background/80 h-9 text-sm">
+              <SelectTrigger className="bg-[var(--exa-bg-card)] border-[var(--exa-border)] h-9 text-sm">
                 <SelectValue placeholder="Agente" />
               </SelectTrigger>
               <SelectContent>
@@ -157,7 +157,7 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
               value={filters.sentiment || 'all'}
               onValueChange={(value) => onFilterChange({ ...filters, sentiment: value === 'all' ? undefined : value })}
             >
-              <SelectTrigger className="bg-white/80 dark:bg-background/80 h-9 text-sm">
+              <SelectTrigger className="bg-[var(--exa-bg-card)] border-[var(--exa-border)] h-9 text-sm">
                 <SelectValue placeholder="Sentimento" />
               </SelectTrigger>
               <SelectContent>
@@ -170,7 +170,7 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
 
             {/* Filtro de Período */}
             <Select value={datePreset} onValueChange={handleDatePresetChange}>
-              <SelectTrigger className="bg-white/80 dark:bg-background/80 h-9 text-sm">
+              <SelectTrigger className="bg-[var(--exa-bg-card)] border-[var(--exa-border)] h-9 text-sm">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
@@ -189,7 +189,10 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
               variant={filters.unreadOnly ? 'default' : 'outline'}
               size="sm"
               onClick={() => onFilterChange({ ...filters, unreadOnly: !filters.unreadOnly })}
-              className="h-8 text-xs"
+              className={cn(
+                'h-8 text-xs border-[var(--exa-border)]',
+                filters.unreadOnly && 'bg-[var(--exa-accent)] hover:bg-[var(--exa-accent-hover)] text-white border-transparent'
+              )}
             >
               Não lidas
             </Button>
@@ -197,7 +200,10 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
               variant={filters.criticalOnly ? 'default' : 'outline'}
               size="sm"
               onClick={() => onFilterChange({ ...filters, criticalOnly: !filters.criticalOnly })}
-              className={cn('h-8 text-xs', filters.criticalOnly && 'bg-red-500 hover:bg-red-600')}
+              className={cn(
+                'h-8 text-xs border-[var(--exa-border)]',
+                filters.criticalOnly && 'bg-[var(--exa-accent)] hover:bg-[var(--exa-accent-hover)] text-white border-transparent'
+              )}
             >
               Críticas
             </Button>
@@ -205,7 +211,10 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
               variant={filters.hotLeadsOnly ? 'default' : 'outline'}
               size="sm"
               onClick={() => onFilterChange({ ...filters, hotLeadsOnly: !filters.hotLeadsOnly })}
-              className={cn('h-8 text-xs', filters.hotLeadsOnly && 'bg-orange-500 hover:bg-orange-600')}
+              className={cn(
+                'h-8 text-xs border-[var(--exa-border)]',
+                filters.hotLeadsOnly && 'bg-[var(--exa-accent)] hover:bg-[var(--exa-accent-hover)] text-white border-transparent'
+              )}
             >
               Hot Leads
             </Button>
