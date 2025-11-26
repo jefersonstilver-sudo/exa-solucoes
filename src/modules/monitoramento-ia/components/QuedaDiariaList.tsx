@@ -105,8 +105,11 @@ export const QuedaDiariaList = ({ paineis }: QuedaDiariaListProps) => {
               </span>
             </div>
 
-            {/* Timeline Real-Time com Playhead */}
-            <UptimeTimelineRealTime ocorrencias={painel.ocorrencias} />
+            {/* Timeline Real-Time com Navegação Multi-Dia */}
+            <UptimeTimelineRealTime 
+              ocorrencias={painel.ocorrencias}
+              painelId={painel.painel_id}
+            />
 
             {/* Condomínio */}
             <p className="text-xs text-muted-foreground mb-2">{painel.condominio_nome}</p>
