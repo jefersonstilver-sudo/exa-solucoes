@@ -112,15 +112,18 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
     updateLineInfo(textarea);
   };
 
-  const highlightText = (text: string, query: string) => {
+  const highlightText = (text: string, query: string): React.ReactNode => {
     if (!query.trim()) return text;
 
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    // Escape special regex characters to prevent regex injection
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+    
     return parts.map((part, i) => 
       part.toLowerCase() === query.toLowerCase() 
-        ? `<mark class="bg-yellow-200 dark:bg-yellow-800">${part}</mark>`
+        ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-800">{part}</mark>
         : part
-    ).join('');
+    );
   };
 
   const filteredSections = sections.filter(section => 
@@ -266,12 +269,9 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
                     <span className="text-module-secondary select-none min-w-[3ch] text-right">
                       {index + 1}
                     </span>
-                    <span 
-                      className="flex-1"
-                      dangerouslySetInnerHTML={{ 
-                        __html: highlightText(line, searchQuery) 
-                      }}
-                    />
+                    <span className="flex-1">
+                      {highlightText(line, searchQuery)}
+                    </span>
                   </div>
                 ))}
               </div>
