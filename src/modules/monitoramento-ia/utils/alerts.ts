@@ -38,6 +38,7 @@ export interface AlertFilters {
   severity?: string[];
   condominio?: string;
   provider?: string;
+  minDuration?: number; // Duração mínima em segundos
   orderBy?: 'severity' | 'opened_at' | 'status' | 'name' | 'provider';
   startDate?: Date;
   endDate?: Date;
@@ -107,6 +108,14 @@ export async function fetchAlerts(filters?: AlertFilters) {
     filteredData = filteredData.filter((alert: any) => 
       (alert.provider || 'AnyDesk') === filters.provider
     );
+  }
+
+  // Apply duration filter (minimum duration in seconds)
+  if (filters?.minDuration) {
+    filteredData = filteredData.filter((alert: any) => {
+      const duration = alert.duration_seconds || 0;
+      return duration >= filters.minDuration!;
+    });
   }
 
   // Add provider info if not present (default to AnyDesk)

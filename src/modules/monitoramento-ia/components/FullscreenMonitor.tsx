@@ -332,9 +332,8 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
           </main>
         </div>
         
-        {/* Sidebar de Alertas - Desktop ou Modal Mobile */}
-        {!isMobile && (
-          <aside className="w-80 h-full flex flex-col shrink-0 bg-gradient-to-b from-white/5 to-transparent backdrop-blur-2xl border-l border-white/10">
+        {/* Sidebar de Alertas - Sempre visível em Desktop */}
+        <aside className="hidden lg:flex w-80 h-full flex-col shrink-0 bg-gradient-to-b from-white/5 to-transparent backdrop-blur-2xl border-l border-white/10">
             <div className="p-5 border-b border-white/10 shrink-0">
               <div className="flex items-center gap-2 mb-1">
                 <div className="relative">
@@ -380,6 +379,9 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
                         <p className="text-xs text-red-400/90 mt-1.5 font-medium">
                           ⏱️ {formatDuration(alert.duration_seconds)} offline
                         </p>
+                        <p className="text-xs text-white/50 mt-1">
+                          {format(new Date(alert.started_at), "HH:mm", { locale: ptBR })} - {alert.ended_at ? format(new Date(alert.ended_at), "HH:mm", { locale: ptBR }) : 'em andamento'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -387,12 +389,11 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
               )}
             </div>
           </aside>
-        )}
 
         {/* Modal Alertas Mobile */}
-        {isMobile && showAlertsSidebar && alerts.length > 0 && (
+        {showAlertsSidebar && alerts.length > 0 && (
           <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end"
+            className="lg:hidden absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end"
             onClick={() => setShowAlertsSidebar(false)}
           >
             <div 
@@ -431,6 +432,9 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
                     </p>
                     <p className="text-xs text-red-400 mt-1">
                       ⏱️ {formatDuration(alert.duration_seconds)} offline
+                    </p>
+                    <p className="text-xs text-white/50 mt-1">
+                      {format(new Date(alert.started_at), "HH:mm", { locale: ptBR })} - {alert.ended_at ? format(new Date(alert.ended_at), "HH:mm", { locale: ptBR }) : 'em andamento'}
                     </p>
                   </div>
                 ))}
