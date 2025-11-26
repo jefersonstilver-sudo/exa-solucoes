@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,7 +51,7 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
 
   const validBuildingsCount = buildings?.filter(hasValidCoordinates).length || 0;
 
-  return (
+  return createPortal(
     <>
       {/* Background Layer - Map Container */}
       <motion.div 
@@ -130,7 +131,8 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
           />
         )}
       </AnimatePresence>
-    </>
+    </>,
+    document.body
   );
 };
 
