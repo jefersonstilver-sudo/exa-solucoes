@@ -23,7 +23,7 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   const finalAmount = isCupom573040 ? 0.05 : totalAmount;
 
   return (
-    <Card className="shadow-sm border">
+    <Card className="shadow-2xl border rounded-2xl">
       <CardHeader className="p-2 sm:p-4 pb-2 sm:pb-3">
         <CardTitle className="text-xs sm:text-lg font-semibold">
           Forma de Pagamento

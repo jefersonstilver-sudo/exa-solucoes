@@ -266,7 +266,7 @@ const CheckoutSummary = () => {
             animate={{ opacity: 1 }}
             className="text-center"
           >
-            <div className="h-8 w-8 border-4 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="h-8 w-8 border-4 border-[#9C1E1E] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-600">Carregando resumo do pedido...</p>
           </motion.div>
         </div>
@@ -329,7 +329,7 @@ const CheckoutSummary = () => {
               <Button 
                 onClick={handleFinalizarCortesia} 
                 disabled={!isLoggedIn || (cartItems?.length || 0) === 0}
-                className="w-full h-14 text-lg font-semibold bg-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 text-lg font-semibold bg-[#9C1E1E] hover:bg-[#7A1818] disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
               >
                 Finalizar Pedido Cortesia

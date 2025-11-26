@@ -68,7 +68,7 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
     }).format(value);
   };
   return (
-    <Card className="shadow-sm border">
+    <Card className="shadow-2xl border rounded-2xl">
       <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
         <CardTitle className="text-sm sm:text-lg font-semibold">
           Resumo Financeiro

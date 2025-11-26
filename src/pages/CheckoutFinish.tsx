@@ -58,9 +58,9 @@ const CheckoutFinish = () => {
         <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
         {/* Upload Now */}
         <div>
-          <Card className="border-2 border-[#3C1361] bg-gradient-to-br from-[#3C1361]/5 to-[#00FFAB]/5 hover:shadow-lg transition-shadow h-full">
+          <Card className="border-2 border-[#9C1E1E] bg-gradient-to-br from-[#9C1E1E]/5 to-[#9C1E1E]/10 hover:shadow-2xl transition-shadow h-full rounded-2xl">
             <CardContent className="p-4 sm:p-6 text-center h-full flex flex-col">
-              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-[#3C1361] rounded-full mb-4">
+              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-[#9C1E1E] rounded-full mb-4">
                 <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
@@ -72,7 +72,7 @@ const CheckoutFinish = () => {
               <Button
                 onClick={handleUploadNow}
                 disabled={isUploading}
-                className="w-full bg-[#3C1361] hover:bg-[#3C1361]/90"
+                className="w-full bg-[#9C1E1E] hover:bg-[#7A1818]"
               >
                 {isUploading ? (
                   <>
@@ -92,7 +92,7 @@ const CheckoutFinish = () => {
 
         {/* Finish Later */}
         <div>
-          <Card className="border-2 border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all h-full">
+          <Card className="border-2 border-gray-200 hover:border-gray-300 hover:shadow-2xl transition-all h-full rounded-2xl">
             <CardContent className="p-4 sm:p-6 text-center h-full flex flex-col">
               <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
                 <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-gray-600" />

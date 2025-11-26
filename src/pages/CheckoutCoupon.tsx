@@ -135,7 +135,7 @@ const CheckoutCoupon = () => {
     <CheckoutLayout currentStep={1} maxWidth="4xl">
       <div className="space-y-6 pb-20">
         {/* Main Content */}
-        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm sm:shadow-lg border p-4 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-2xl border p-4 sm:p-6">
           <CouponStep
             couponCode={couponCode}
             setCouponCode={setCouponCode}
@@ -148,7 +148,7 @@ const CheckoutCoupon = () => {
         </div>
 
         {/* Summary Card */}
-        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm sm:shadow-lg border p-3 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-2xl border p-3 sm:p-6">
           <h3 className="text-sm sm:text-lg font-semibold mb-3 sm:mb-4">Resumo do Pedido</h3>
           
           {/* Badge Cortesia - Design Corporativo */}
