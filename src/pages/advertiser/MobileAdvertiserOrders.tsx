@@ -195,57 +195,47 @@ const MobileAdvertiserOrders = () => {
   const getStatsCards = () => {
     const statsData = [
       { 
-        label: 'Pedidos Ativos', 
+        label: 'Ativos', 
         value: stats.pedidosAtivos, 
         color: 'bg-green-500',
-        icon: CheckCircle,
-        detail: 'em execução'
+        icon: CheckCircle
       },
       { 
-        label: 'Aguardando Vídeo', 
+        label: 'Aguardando', 
         value: stats.aguardandoVideo, 
         color: 'bg-blue-500',
-        icon: Upload,
-        detail: 'pagos sem vídeo'
+        icon: Upload
       },
       { 
-        label: 'Pedidos Finalizados', 
+        label: 'Finalizados', 
         value: stats.pedidosFinalizados, 
         color: 'bg-gray-500',
-        icon: CheckCircle,
-        detail: 'expirados'
+        icon: CheckCircle
       }
     ];
 
     return (
-      <div className="px-4 mb-6 space-y-3">
-        {statsData.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-lg p-4 shadow-sm border"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center`}>
-                    <Icon className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-sm font-medium text-gray-700">{stat.label}</p>
-                  </div>
+      <div className="px-4 mb-6">
+        <div className="grid grid-cols-3 gap-2">
+          {statsData.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white rounded-2xl p-3 shadow-lg"
+              >
+                <div className={`w-8 h-8 rounded-lg ${stat.color} flex items-center justify-center mb-2`}>
+                  <Icon className="h-4 w-4 text-white" />
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-500">{stat.detail}</p>
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
+                <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-[10px] text-gray-500 leading-tight">{stat.label}</p>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     );
   };
@@ -258,7 +248,7 @@ const MobileAdvertiserOrders = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <Loader2 className="h-12 w-12 animate-spin text-indexa-purple mx-auto mb-4" />
+          <Loader2 className="h-12 w-12 animate-spin text-[#9C1E1E] mx-auto mb-4" />
           <p className="text-lg font-medium text-gray-700">Carregando pedidos...</p>
         </motion.div>
       </div>
@@ -319,7 +309,7 @@ const MobileAdvertiserOrders = () => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <Card className="overflow-hidden border-l-4 border-l-indexa-purple hover:shadow-lg transition-all duration-300">
+                      <Card className="overflow-hidden border-l-4 border-l-[#9C1E1E] hover:shadow-2xl transition-all duration-300 rounded-2xl shadow-lg">
                         <CardContent className="p-4">
                           {/* Header */}
                           <div className="flex items-start justify-between mb-3">
@@ -328,7 +318,7 @@ const MobileAdvertiserOrders = () => {
                                 {order.nome_pedido ? `${order.nome_pedido} • #${order.id.substring(0, 8)}` : `Pedido #${order.id.substring(0, 8)}`}
                               </h3>
                               {order.nome_pedido && (
-                                <p className="text-xs text-indexa-purple mb-1">Nome personalizado</p>
+                                <p className="text-xs text-[#9C1E1E] mb-1">Nome personalizado</p>
                               )}
                               <Badge className={`${statusConfig.color} border flex items-center space-x-1 w-fit`}>
                                 <StatusIcon className="h-3 w-3" />
@@ -369,7 +359,7 @@ const MobileAdvertiserOrders = () => {
                               vibrate();
                               navigate(`/anunciante/pedido/${order.id}`);
                             }}
-                            className="w-full h-9 border-indexa-purple text-indexa-purple hover:bg-indexa-purple hover:text-white"
+                            className="w-full h-9 border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E] hover:text-white"
                           >
                             Ver Detalhes
                           </Button>
@@ -386,8 +376,8 @@ const MobileAdvertiserOrders = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-16 px-4"
             >
-              <div className="mx-auto w-24 h-24 bg-indexa-purple/10 rounded-full flex items-center justify-center mb-6">
-                <ShoppingBag className="h-12 w-12 text-indexa-purple" />
+              <div className="mx-auto w-24 h-24 bg-[#9C1E1E]/10 rounded-full flex items-center justify-center mb-6">
+                <ShoppingBag className="h-12 w-12 text-[#9C1E1E]" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Nenhum pedido encontrado</h3>
               <p className="text-gray-500 mb-8 max-w-sm mx-auto">
@@ -402,7 +392,7 @@ const MobileAdvertiserOrders = () => {
                     vibrate();
                     navigate('/paineis-digitais/loja');
                   }}
-                  className="bg-indexa-purple hover:bg-indexa-purple/90"
+                  className="bg-[#9C1E1E] hover:bg-[#7A1818]"
                 >
                   <ShoppingBag className="h-4 w-4 mr-2" />
                   Explorar Painéis

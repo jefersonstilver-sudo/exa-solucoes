@@ -147,7 +147,7 @@ const MyVideos = () => {
           <h1 className="text-3xl font-bold text-gray-900">Meus Vídeos</h1>
           <p className="text-gray-600 mt-1">Gerencie todos os seus vídeos publicitários</p>
         </div>
-        <Button onClick={handleUpload} className="bg-exa-red hover:bg-exa-red/90">
+        <Button onClick={handleUpload} className="bg-[#9C1E1E] hover:bg-[#7A1818]">
           <Upload className="h-4 w-4 mr-2" />
           Fazer Upload
         </Button>
@@ -155,58 +155,43 @@ const MyVideos = () => {
 
       {/* Vídeos */}
       {videos.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
           {videos.map((video) => (
-            <Card key={video.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg truncate">{video.nome}</CardTitle>
-                  {getStatusBadge(video.status)}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                  <Video className="h-12 w-12 text-gray-400" />
+            <Card key={video.id} className="hover:shadow-2xl transition-shadow rounded-2xl shadow-lg">
+              <CardContent className="p-3 md:p-4">
+                {/* Thumbnail pequeno para mobile, maior para desktop */}
+                <div className="w-full aspect-square bg-gray-100 rounded-xl flex items-center justify-center mb-2">
+                  <Video className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
                 </div>
 
-                <div className="space-y-2 text-sm text-gray-600">
+                {/* Nome + Badge */}
+                <h3 className="text-sm font-semibold truncate mb-1">{video.nome}</h3>
+                <div className="mb-2">{getStatusBadge(video.status)}</div>
+
+                {/* Detalhes - apenas desktop */}
+                <div className="hidden md:block space-y-1 text-xs text-gray-600 mb-3">
                   <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-2" />
-                    Duração: {formatDuration(video.duracao)}
+                    <Clock className="h-3 w-3 mr-1" />
+                    {formatDuration(video.duracao)}
                   </div>
-                  <div>
-                    Origem: {video.origem}
-                  </div>
-                  <div>
-                    Enviado em: {formatDate(video.created_at)}
-                  </div>
+                  <div>Origem: {video.origem}</div>
                 </div>
 
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handlePreview(video.id, video.url)}
-                    className="flex-1"
-                  >
-                    <Play className="h-4 w-4 mr-1" />
-                    Visualizar
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDeleteVideo(video.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {/* Botão Assistir */}
+                <Button 
+                  size="sm"
+                  onClick={() => handlePreview(video.id, video.url)}
+                  className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] h-8 md:h-9"
+                >
+                  <Play className="h-3 w-3 mr-1" />
+                  Assistir
+                </Button>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : (
-        <Card>
+        <Card className="shadow-2xl rounded-2xl">
           <CardContent className="p-8 text-center">
             <div className="mx-auto bg-gray-100 rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4">
               <Video className="h-8 w-8 text-gray-500" />
@@ -216,7 +201,7 @@ const MyVideos = () => {
               Você ainda não fez upload de nenhum vídeo. Comece enviando seus materiais criativos.
             </p>
             <div className="flex justify-center space-x-4">
-              <Button onClick={handleUpload} className="bg-exa-red hover:bg-exa-red/90">
+              <Button onClick={handleUpload} className="bg-[#9C1E1E] hover:bg-[#7A1818]">
                 <Upload className="h-4 w-4 mr-2" />
                 Fazer Primeiro Upload
               </Button>
