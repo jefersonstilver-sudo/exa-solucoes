@@ -45,87 +45,159 @@ export const PanelsListView = ({ devices, sort, onSortChange, onDeviceClick }: P
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead 
-              onClick={() => handleSort('name')} 
-              className="cursor-pointer hover:bg-muted/70 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                Nome/Prédio
-                <SortIcon field="name" />
-              </div>
-            </TableHead>
-            <TableHead 
-              onClick={() => handleSort('status')} 
-              className="cursor-pointer hover:bg-muted/70 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                Status
-                <SortIcon field="status" />
-              </div>
-            </TableHead>
-            <TableHead className="text-center">Operadora</TableHead>
-            <TableHead className="text-center">Nº Quedas</TableHead>
-            <TableHead 
-              onClick={() => handleSort('last_online_at')} 
-              className="cursor-pointer hover:bg-muted/70 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                Último Online
-                <SortIcon field="last_online_at" />
-              </div>
-            </TableHead>
-            <TableHead className="text-center">AnyDesk ID</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {devices.map((device) => {
-            const displayName = (device.comments || device.name).split(' - ')[0].trim();
-            const provider = device.provider || 'Sem provedor';
-            
-            return (
-              <TableRow 
-                key={device.id} 
-                onClick={() => onDeviceClick(device)}
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
+    <>
+      {/* Desktop: Tabela completa */}
+      <div className="hidden lg:block bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead 
+                onClick={() => handleSort('name')} 
+                className="cursor-pointer hover:bg-muted/70 transition-colors"
               >
-                <TableCell className="font-medium">
-                  <div>
-                    <div className="text-base font-bold">{displayName}</div>
-                    {device.condominio_name && (
-                      <div className="text-sm text-muted-foreground">{device.condominio_name}</div>
-                    )}
-                    {device.metadata?.torre && (
-                      <div className="text-xs text-muted-foreground">
-                        Torre {device.metadata.torre}
-                        {device.metadata?.elevador && ` - Elevador ${device.metadata.elevador}`}
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>{getStatusBadge(device.status)}</TableCell>
-                <TableCell className="text-center">
-                  <span className={`font-semibold ${getProviderColor(provider)}`}>
+                <div className="flex items-center gap-2">
+                  Nome/Prédio
+                  <SortIcon field="name" />
+                </div>
+              </TableHead>
+              <TableHead 
+                onClick={() => handleSort('status')} 
+                className="cursor-pointer hover:bg-muted/70 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  Status
+                  <SortIcon field="status" />
+                </div>
+              </TableHead>
+              <TableHead className="text-center">Operadora</TableHead>
+              <TableHead className="text-center">Nº Quedas</TableHead>
+              <TableHead 
+                onClick={() => handleSort('last_online_at')} 
+                className="cursor-pointer hover:bg-muted/70 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  Último Online
+                  <SortIcon field="last_online_at" />
+                </div>
+              </TableHead>
+              <TableHead className="text-center">AnyDesk ID</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {devices.map((device) => {
+              const displayName = (device.comments || device.name).split(' - ')[0].trim();
+              const provider = device.provider || 'Sem provedor';
+              
+              return (
+                <TableRow 
+                  key={device.id} 
+                  onClick={() => onDeviceClick(device)}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <TableCell className="font-medium">
+                    <div>
+                      <div className="text-base font-bold">{displayName}</div>
+                      {device.condominio_name && (
+                        <div className="text-sm text-muted-foreground">{device.condominio_name}</div>
+                      )}
+                      {device.metadata?.torre && (
+                        <div className="text-xs text-muted-foreground">
+                          Torre {device.metadata.torre}
+                          {device.metadata?.elevador && ` - Elevador ${device.metadata.elevador}`}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>{getStatusBadge(device.status)}</TableCell>
+                  <TableCell className="text-center">
+                    <span className={`font-semibold ${getProviderColor(provider)}`}>
+                      {provider}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center font-bold">
+                    {device.total_events || 0}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {humanizeDate(device.last_online_at)}
+                  </TableCell>
+                  <TableCell className="text-center font-mono text-xs text-muted-foreground">
+                    {device.anydesk_client_id}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile: Lista de cards compactos */}
+      <div className="lg:hidden space-y-2">
+        {devices.map((device) => {
+          const displayName = (device.comments || device.name).split(' - ')[0].trim();
+          const provider = device.provider || 'Sem provedor';
+          const statusConfig = (() => {
+            const variants: Record<string, { variant: 'default' | 'destructive' | 'secondary'; label: string }> = {
+              online: { variant: 'default', label: 'Online' },
+              offline: { variant: 'destructive', label: 'Offline' },
+              unknown: { variant: 'secondary', label: 'Desconhecido' },
+            };
+            return variants[device.status] || variants.unknown;
+          })();
+          
+          return (
+            <div
+              key={device.id}
+              onClick={() => onDeviceClick(device)}
+              className="bg-card border border-border rounded-lg p-3 shadow-sm active:scale-[0.98] transition-transform cursor-pointer"
+            >
+              {/* Header: Nome + Badge Status */}
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-sm text-foreground truncate">
+                    {displayName}
+                  </h3>
+                  {device.condominio_name && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {device.condominio_name}
+                    </p>
+                  )}
+                </div>
+                <Badge variant={statusConfig.variant} className="text-xs shrink-0">
+                  {statusConfig.label}
+                </Badge>
+              </div>
+
+              {/* Grid de infos */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <p className="text-muted-foreground">Operadora</p>
+                  <p className={`font-semibold truncate ${getProviderColor(provider)}`}>
                     {provider}
-                  </span>
-                </TableCell>
-                <TableCell className="text-center font-bold">
-                  {device.total_events || 0}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {humanizeDate(device.last_online_at)}
-                </TableCell>
-                <TableCell className="text-center font-mono text-xs text-muted-foreground">
-                  {device.anydesk_client_id}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Quedas</p>
+                  <p className="font-bold text-foreground">
+                    {device.total_events || 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Último Online</p>
+                  <p className="text-foreground truncate">
+                    {humanizeDate(device.last_online_at)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">AnyDesk</p>
+                  <p className="font-mono text-foreground truncate">
+                    {device.anydesk_client_id}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 };
