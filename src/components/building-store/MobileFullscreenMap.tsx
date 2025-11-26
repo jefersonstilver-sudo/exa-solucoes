@@ -33,10 +33,22 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
     setSelectedBuilding(null);
   };
 
-  const validBuildingsCount = buildings?.filter(b => 
-    b.latitude && b.longitude && 
-    b.latitude !== 0 && b.longitude !== 0
-  ).length || 0;
+  // Helper to count buildings with valid coordinates (checks both manual and auto coordinates)
+  const hasValidCoordinates = (b: BuildingStore) => {
+    // Check manual_latitude/manual_longitude first
+    if (b.manual_latitude && b.manual_longitude && 
+        b.manual_latitude !== 0 && b.manual_longitude !== 0) {
+      return true;
+    }
+    // Check latitude/longitude as fallback
+    if (b.latitude && b.longitude && 
+        b.latitude !== 0 && b.longitude !== 0) {
+      return true;
+    }
+    return false;
+  };
+
+  const validBuildingsCount = buildings?.filter(hasValidCoordinates).length || 0;
 
   return (
     <motion.div 

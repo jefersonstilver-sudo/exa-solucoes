@@ -61,13 +61,25 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
           return;
         }
 
-      // Determine center - filter out invalid coordinates (0,0)
+      // Determine center - prioritize manual_latitude/manual_longitude
       const defaultCenter = { lat: -25.5469, lng: -54.5882 }; // Foz do Iguaçu - Centro da cidade
-      const firstWithCoords = buildings?.find(b => 
-        !!b.latitude && !!b.longitude && 
-        b.latitude !== 0 && b.longitude !== 0
-      );
-      const center = selectedLocation || (firstWithCoords ? { lat: firstWithCoords.latitude, lng: firstWithCoords.longitude } : defaultCenter);
+      
+      // Helper to get valid coordinates (manual takes priority)
+      const getValidCoords = (b: any) => {
+        if (b.manual_latitude && b.manual_longitude && 
+            b.manual_latitude !== 0 && b.manual_longitude !== 0) {
+          return { lat: b.manual_latitude, lng: b.manual_longitude };
+        }
+        if (b.latitude && b.longitude && 
+            b.latitude !== 0 && b.longitude !== 0) {
+          return { lat: b.latitude, lng: b.longitude };
+        }
+        return null;
+      };
+      
+      const firstWithCoords = buildings?.find(b => getValidCoords(b) !== null);
+      const firstCoords = firstWithCoords ? getValidCoords(firstWithCoords) : null;
+      const center = selectedLocation || firstCoords || defaultCenter;
 
       console.log('🗺️ [BUILDING MAP] Centro do mapa:', center);
 
@@ -429,12 +441,20 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
 
       // Center on selected location or fit bounds
       if (autoFitAllBuildings && hasAny) {
-        console.log(`🗺️ [MARKERS] 📍 Auto-fit: Ajustando bounds para TODOS os prédios`);
+        console.log(`🗺️ [MARKERS] 📍 Auto-fit: Ajustando bounds para TODOS os ${markersRef.current.length} prédios`);
         // Add padding for mobile UI elements (top header + bottom sheet)
         const padding = window.innerWidth <= 768 
           ? { top: 100, bottom: 300, left: 40, right: 40 }
           : { top: 60, bottom: 60, left: 60, right: 60 };
         map.fitBounds(bounds, padding);
+        
+        // RETRY: Re-apply fitBounds after delay to ensure map is fully rendered
+        setTimeout(() => {
+          if (mapInstanceRef.current && !cancelled) {
+            console.log(`🗺️ [MARKERS] 🔄 Re-aplicando fitBounds após delay para garantir visualização`);
+            mapInstanceRef.current.fitBounds(bounds, padding);
+          }
+        }, 500);
       } else if (selectedLocation) {
         console.log(`🗺️ [MARKERS] 🎯 Centralizando na localização selecionada`);
         map.setCenter(selectedLocation);
