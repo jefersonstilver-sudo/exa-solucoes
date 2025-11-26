@@ -27,12 +27,17 @@ const MonitorCard = ({ device, compact }: { device: Device; compact: boolean }) 
   };
 
   return (
-    <div className={cn(
-      "relative overflow-hidden rounded-2xl h-full transition-all duration-300",
-      isOnline 
-        ? "bg-[#1a2e1a] border-2 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.2)]"
-        : "bg-[#2e1a1a] border-2 border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-pulse"
-    )}>
+    <div 
+      className={cn(
+        "relative overflow-hidden rounded-2xl h-full transition-all duration-300",
+        isOnline 
+          ? "bg-green-950/90 border-2 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.2)]"
+          : "bg-red-950/90 border-2 border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-pulse"
+      )}
+      style={{
+        backgroundColor: isOnline ? 'rgba(5, 46, 22, 0.9)' : 'rgba(69, 10, 10, 0.9)'
+      }}
+    >
       
       {/* LED Status (canto superior direito) */}
       <div className={cn(
