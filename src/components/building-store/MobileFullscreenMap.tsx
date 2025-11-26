@@ -46,29 +46,8 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
       transition={{ duration: 0.2 }}
       className="fixed inset-0 z-[9999] bg-background"
     >
-      {/* Glass-style Back Button - Top Left */}
-      <div className="absolute top-4 left-4 z-[10001] pointer-events-auto">
-        <Button
-          onClick={onClose}
-          className="h-12 w-12 rounded-full bg-background/95 backdrop-blur-xl border-2 border-border/40 shadow-2xl hover:bg-background hover:scale-105 hover:border-border/60 transition-all duration-200 p-0 flex items-center justify-center"
-        >
-          <ArrowLeft className="h-6 w-6 text-foreground" />
-        </Button>
-      </div>
-
-      {/* Glass-style Buildings Badge - Top Right */}
-      <div className="absolute top-4 right-4 z-[10001] pointer-events-auto">
-        <Badge 
-          variant="secondary" 
-          className="h-12 px-4 rounded-full bg-background/95 backdrop-blur-xl border-2 border-border/40 shadow-2xl text-base font-semibold text-foreground flex items-center gap-2"
-        >
-          <Navigation className="h-5 w-5" />
-          {validBuildingsCount} {validBuildingsCount === 1 ? 'prédio' : 'prédios'}
-        </Badge>
-      </div>
-
-      {/* Fullscreen Map */}
-      <div className="w-full h-full">
+      {/* Fullscreen Map - Must be first to render behind controls */}
+      <div className="absolute inset-0">
         {buildings && buildings.length > 0 ? (
           <BuildingMap 
             buildings={buildings} 
@@ -93,6 +72,29 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
             </div>
           </div>
         )}
+      </div>
+
+      {/* Glass-style Back Button - Top Left - Rendered AFTER map for z-index */}
+      <div className="fixed top-4 left-4 z-[10001]" style={{ pointerEvents: 'auto' }}>
+        <Button
+          onClick={onClose}
+          variant="outline"
+          size="icon"
+          className="h-14 w-14 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:bg-white hover:scale-110 hover:shadow-[0_12px_48px_rgba(0,0,0,0.3)] transition-all duration-200"
+        >
+          <ArrowLeft className="h-6 w-6 text-gray-800" />
+        </Button>
+      </div>
+
+      {/* Glass-style Buildings Badge - Top Right - Rendered AFTER map for z-index */}
+      <div className="fixed top-4 right-4 z-[10001]" style={{ pointerEvents: 'auto' }}>
+        <Badge 
+          variant="secondary" 
+          className="h-14 px-5 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] text-base font-bold text-gray-800 flex items-center gap-2"
+        >
+          <Navigation className="h-5 w-5 text-blue-600" />
+          <span className="text-gray-800">{validBuildingsCount}</span>
+        </Badge>
       </div>
 
       {/* Bottom Sheet for Selected Building */}
