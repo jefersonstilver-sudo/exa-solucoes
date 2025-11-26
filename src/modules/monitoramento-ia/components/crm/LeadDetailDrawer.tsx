@@ -266,49 +266,75 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                         </div>
                       )}
 
-                      {/* Tags */}
+                      {/* Toggles Síndico e Hot Lead */}
                       <div>
                         <label className="text-xs text-[var(--exa-text-secondary)] uppercase tracking-wide mb-2 block">
-                          Tags
+                          Classificação
                         </label>
-                        <div className="flex flex-wrap gap-2">
-                          {lead.is_sindico && (
-                            <Badge variant="outline" className="text-xs">
-                              <Tag className="w-3 h-3 mr-1" />
-                              Síndico
-                            </Badge>
-                          )}
-                          {lead.is_hot_lead && (
-                            <Badge className="text-xs bg-orange-500 hover:bg-orange-600">
-                              <TrendingUp className="w-3 h-3 mr-1" />
-                              Lead Quente
-                            </Badge>
-                          )}
-                          <Button variant="outline" size="sm" className="h-6 text-xs">
-                            + Adicionar Tag
+                        <div className="flex gap-2">
+                          <Button 
+                            variant={lead.is_sindico ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={toggleSindico}
+                            className={cn(
+                              "h-8 text-xs transition-all",
+                              lead.is_sindico && "bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                            )}
+                          >
+                            <Building2 className="w-3.5 h-3.5 mr-1.5" />
+                            Síndico
+                          </Button>
+                          <Button 
+                            variant={lead.is_hot_lead ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={toggleHotLead}
+                            className={cn(
+                              "h-8 text-xs transition-all",
+                              lead.is_hot_lead && "bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
+                            )}
+                          >
+                            <Flame className="w-3.5 h-3.5 mr-1.5" />
+                            Hot Lead
                           </Button>
                         </div>
                       </div>
 
-                      {/* Lead Score */}
+                      {/* Tags de Conversa */}
+                      <div>
+                        <label className="text-xs text-[var(--exa-text-secondary)] uppercase tracking-wide mb-2 block">
+                          Tags
+                        </label>
+                        <ConversationTags
+                          phoneNumber={lead.contact_phone}
+                          agentKey={lead.agent_key}
+                        />
+                      </div>
+
+                      {/* Lead Score - Slider Editável */}
                       {lead.lead_score !== undefined && (
                         <div>
-                          <label className="text-xs text-[var(--exa-text-secondary)] uppercase tracking-wide">
-                            Lead Score
-                          </label>
-                          <div className="mt-2">
-                            <div className="flex items-center justify-between text-xs mb-1">
-                              <span className="text-[var(--exa-text-primary)]">{lead.lead_score}/100</span>
-                              <span className="text-[var(--exa-text-secondary)]">
-                                {lead.lead_score >= 75 ? 'Alto' : lead.lead_score >= 50 ? 'Médio' : 'Baixo'}
-                              </span>
-                            </div>
-                            <div className="h-2 bg-[var(--exa-border)] rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-[var(--exa-accent)] to-[var(--exa-accent-light)] transition-all"
-                                style={{ width: `${lead.lead_score}%` }}
-                              />
-                            </div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-xs text-[var(--exa-text-secondary)] uppercase tracking-wide">
+                              Lead Score
+                            </label>
+                            <span className="text-sm font-bold text-[var(--exa-text-primary)]">
+                              {lead.lead_score}/100
+                            </span>
+                          </div>
+                          <Slider
+                            value={[lead.lead_score]}
+                            onValueChange={([value]) => {
+                              // Update local state for immediate feedback
+                            }}
+                            onValueCommit={([value]) => updateLeadScore(value)}
+                            max={100}
+                            step={5}
+                            className="cursor-pointer"
+                          />
+                          <div className="flex justify-between text-xs text-[var(--exa-text-secondary)] mt-1">
+                            <span>Baixo</span>
+                            <span>Médio</span>
+                            <span>Alto</span>
                           </div>
                         </div>
                       )}
