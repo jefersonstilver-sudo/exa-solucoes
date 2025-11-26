@@ -52,7 +52,7 @@ serve(async (req) => {
 
     // Preparar contexto da conversa para a IA
     const conversationContext = messages?.map(m => 
-      `[${m.direction === 'inbound' ? 'Cliente' : 'Atendente'}] ${m.message_text}`
+      `[${new Date(m.created_at).toLocaleString('pt-BR')}] [${m.direction === 'inbound' ? 'Cliente' : (m.agent_key || 'Atendente')}] ${m.body || ''}${m.has_image ? ' 📷' : ''}${m.has_audio ? ' 🎤' : ''}`
     ).join('\n') || '';
 
     // Chamar Lovable AI para gerar relatório otimizado para mídia em elevadores
