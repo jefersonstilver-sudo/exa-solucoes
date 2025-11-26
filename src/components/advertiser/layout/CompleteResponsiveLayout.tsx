@@ -1,16 +1,28 @@
 
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useMobileBreakpoints } from '@/hooks/useMobileBreakpoints';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import ResponsiveAdvertiserSidebar from './ResponsiveAdvertiserSidebar';
+import UnifiedAdvertiserMobileHeader from './UnifiedAdvertiserMobileHeader';
 
 const CompleteResponsiveLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isMobile, isTablet, isDesktop, isXl } = useMobileBreakpoints();
+  const location = useLocation();
+
+  // Define títulos para cada rota
+  const getPageTitle = () => {
+    if (location.pathname.includes('/pedido/')) return 'Detalhes do Pedido';
+    if (location.pathname.includes('/pedidos')) return 'Meus Pedidos';
+    if (location.pathname.includes('/videos')) return 'Meus Vídeos';
+    if (location.pathname.includes('/perfil')) return 'Perfil';
+    if (location.pathname.includes('/configuracoes')) return 'Configurações';
+    return 'Portal do Anunciante';
+  };
 
   const handleSidebarClose = () => {
     console.log('🔴 Fechando sidebar');
@@ -66,28 +78,12 @@ const CompleteResponsiveLayout = () => {
             </div>
           )}
           
-          {/* Header Mobile/Tablet com botão hambúrguer e busca */}
+          {/* Header Mobile/Tablet com logo EXA unificado */}
           {(isMobile || isTablet) && (
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-              <div className="px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleSidebarOpen}
-                      className="h-10 w-10 rounded-full bg-gradient-to-r from-exa-red to-exa-red/90 text-white hover:from-exa-red/90 hover:to-exa-red"
-                      aria-label="Abrir menu"
-                    >
-                      <Menu className="h-5 w-5" />
-                    </Button>
-                    <div>
-                      <h1 className="text-lg font-bold text-[#3C1361]">Meus Pedidos</h1>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <UnifiedAdvertiserMobileHeader
+              title={getPageTitle()}
+              onMenuClick={handleSidebarOpen}
+            />
           )}
 
           {/* Conteúdo */}
