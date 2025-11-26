@@ -257,96 +257,134 @@ export const PaineisPage = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-card border border-border px-6 py-4 rounded-xl shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
-              Painéis
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Última atualização:{' '}
-              {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Seletor de Período */}
-            <PeriodSelector
-              value={quedaPeriod}
-              onChange={(value, customStart, customEnd) => {
-                setQuedaPeriod(value);
-                if (customStart) setCustomStartDate(customStart);
-                if (customEnd) setCustomEndDate(customEnd);
-              }}
-              customStartDate={customStartDate}
-              customEndDate={customEndDate}
-            />
+      {/* Header - Mobile Otimizado */}
+      <div className="bg-card border border-border rounded-xl shadow-sm">
+        <div className="px-4 py-3 lg:px-6 lg:py-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4">
+            {/* Título + Relógio inline no mobile */}
+            <div className="flex items-center justify-between lg:justify-start lg:gap-4">
+              <div>
+                <h1 className="text-lg lg:text-3xl font-bold text-foreground flex items-center gap-2">
+                  <span className="inline-flex w-2 h-2 lg:w-3 lg:h-3 bg-primary rounded-full animate-pulse" />
+                  Painéis
+                </h1>
+                <p className="hidden lg:block text-sm text-muted-foreground mt-1">
+                  Última atualização: {format(lastUpdate, "HH:mm:ss", { locale: ptBR })}
+                </p>
+              </div>
+              
+              {/* Relógio mobile inline */}
+              <div className="lg:hidden text-right">
+                <p className="text-xl font-bold tabular-nums text-foreground">
+                  {format(lastUpdate, "HH:mm:ss")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {format(lastUpdate, "dd/MM", { locale: ptBR })}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 lg:gap-3">
+              {/* Seletor de Período - Compacto */}
+              <PeriodSelector
+                value={quedaPeriod}
+                onChange={(value, customStart, customEnd) => {
+                  setQuedaPeriod(value);
+                  if (customStart) setCustomStartDate(customStart);
+                  if (customEnd) setCustomEndDate(customEnd);
+                }}
+                customStartDate={customStartDate}
+                customEndDate={customEndDate}
+              />
 
-            {/* Sincronizar AnyDesk - Apenas Ícone */}
-            <button
-              onClick={handleSyncAnyDesk}
-              disabled={syncing}
-              title="Sincronizar AnyDesk"
-              className="p-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-            </button>
+              {/* Sincronizar AnyDesk */}
+              <button
+                onClick={handleSyncAnyDesk}
+                disabled={syncing}
+                title="Sincronizar AnyDesk"
+                className="p-2 lg:p-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Cards de estatísticas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <SimpleStatCard label="Total" value={stats.total} color="blue" />
-        <SimpleStatCard label="Online" value={stats.online} color="green" />
-        <SimpleStatCard label="Offline" value={stats.offline} color="red" />
-        <SimpleStatCard label="Desconhecido" value={stats.unknown} color="gray" />
+      {/* Stats - Scroll horizontal no mobile */}
+      <div className="flex lg:grid lg:grid-cols-4 gap-3 lg:gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+        <div className="min-w-[140px] lg:min-w-0 snap-start">
+          <SimpleStatCard label="Total" value={stats.total} color="blue" />
+        </div>
+        <div className="min-w-[140px] lg:min-w-0 snap-start">
+          <SimpleStatCard label="Online" value={stats.online} color="green" />
+        </div>
+        <div className="min-w-[140px] lg:min-w-0 snap-start">
+          <SimpleStatCard label="Offline" value={stats.offline} color="red" />
+        </div>
+        <div className="min-w-[140px] lg:min-w-0 snap-start">
+          <SimpleStatCard label="Desconhecido" value={stats.unknown} color="gray" />
+        </div>
       </div>
 
-      {/* Card de TODAS as Quedas - Colapsável */}
+      {/* Quedas - Collapsible escondido por padrão no mobile */}
       <Collapsible open={isQuedasOpen} onOpenChange={setIsQuedasOpen}>
-        <div className="bg-card border border-border rounded-[14px] p-4 shadow-sm">
+        <div className="bg-card border border-border rounded-[14px] p-3 lg:p-4 shadow-sm">
           <CollapsibleTrigger className="w-full">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-                <h3 className="text-lg font-bold text-foreground">
-                  {quedaPeriod === 'hoje' ? 'Todas as Quedas de Hoje' : 
-                   quedaPeriod === 'ontem' ? 'Todas as Quedas de Ontem' :
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <AlertTriangle className="w-4 h-4 lg:w-5 lg:h-5 text-red-600 shrink-0" />
+                <h3 className="text-sm lg:text-lg font-bold text-foreground truncate">
+                  {quedaPeriod === 'hoje' ? 'Quedas de Hoje' : 
+                   quedaPeriod === 'ontem' ? 'Quedas de Ontem' :
                    quedaPeriod === 'esta-semana' ? 'Quedas desta Semana' :
-                   quedaPeriod === '7dias' ? 'Quedas dos Últimos 7 Dias' : 
-                   quedaPeriod === '30dias' ? 'Quedas dos Últimos 30 Dias' :
-                   'Quedas do Período Selecionado'}
+                   quedaPeriod === '7dias' ? 'Últimos 7 Dias' : 
+                   quedaPeriod === '30dias' ? 'Últimos 30 Dias' :
+                   'Período Selecionado'}
                 </h3>
-                <Badge variant="destructive" className="ml-2 animate-pulse bg-red-600 text-white">
-                  {todasQuedas.reduce((sum, painel) => sum + painel.total_ocorrencias, 0)} quedas
+                <Badge variant="destructive" className="animate-pulse bg-red-600 text-white text-xs lg:text-sm shrink-0">
+                  {todasQuedas.reduce((sum, painel) => sum + painel.total_ocorrencias, 0)}
                 </Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="ml-auto mr-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate('/admin/monitoramento-ia/historico-quedas');
-                  }}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Ver Histórico Completo
-                </Button>
               </div>
-              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isQuedasOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 lg:w-5 lg:h-5 text-muted-foreground transition-transform shrink-0 ${isQuedasOpen ? 'rotate-180' : ''}`} />
             </div>
           </CollapsibleTrigger>
           
-          <CollapsibleContent className="mt-4">
+          <CollapsibleContent className="mt-3 lg:mt-4">
+            <div className="flex justify-end mb-2 lg:hidden">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/admin/monitoramento-ia/historico-quedas');
+                }}
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                Histórico
+              </Button>
+            </div>
+            <div className="hidden lg:flex justify-end mb-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/admin/monitoramento-ia/historico-quedas');
+                }}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Ver Histórico Completo
+              </Button>
+            </div>
             <QuedaDiariaList paineis={todasQuedas} />
           </CollapsibleContent>
         </div>
       </Collapsible>
 
-      {/* Barra de ações: Filtros, Toggle View, Fullscreen */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-        <div className="flex-1 w-full">
+      {/* Barra de ações - Mobile otimizado */}
+      <div className="flex flex-col gap-3 lg:gap-4">
+        <div className="w-full">
           <FiltersBar
             filters={filters}
             sort={sort}
@@ -355,14 +393,14 @@ export const PaineisPage = () => {
             onNewPanel={() => setShowNewModal(true)}
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2">
           <ViewToggle view={viewMode} onViewChange={setViewMode} />
           <button
             onClick={() => setIsFullscreen(true)}
-            className="p-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors shadow-sm"
+            className="p-2.5 lg:p-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors shadow-sm"
             title="Modo Monitor (Tela Cheia)"
           >
-            <Maximize2 className="w-5 h-5" />
+            <Maximize2 className="w-4 h-4 lg:w-5 lg:h-5" />
           </button>
         </div>
       </div>
@@ -379,9 +417,9 @@ export const PaineisPage = () => {
         </div>
       ) : (
         <>
-          {/* Visualização: Cards ou Tabela */}
+          {/* Visualização: Cards (2 cols mobile) ou Tabela (responsiva) */}
           {viewMode === 'cards' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
               {devices.map((device) => (
                 <PanelCard
                   key={device.id}
