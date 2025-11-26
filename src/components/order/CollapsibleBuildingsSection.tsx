@@ -15,16 +15,16 @@ export const CollapsibleBuildingsSection: React.FC<CollapsibleBuildingsSectionPr
   if (!isOpen) {
     return (
       <Card 
-        className="shadow-sm cursor-pointer hover:bg-accent/50 transition-colors" 
+        className="bg-white/80 backdrop-blur-sm border border-gray-100 rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-all" 
         onClick={() => setIsOpen(true)}
       >
         <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="flex items-center justify-between text-sm sm:text-base">
-            <span className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
+          <CardTitle className="flex items-center justify-between text-xs sm:text-sm">
+            <span className="flex items-center gap-1.5 sm:gap-2">
+              <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Locais Selecionados ({listaPredios.length})
             </span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardTitle>
         </CardHeader>
       </Card>
