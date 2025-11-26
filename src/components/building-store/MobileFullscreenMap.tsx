@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +17,6 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingStore | null>(null);
   const { buildings, selectedLocation } = useBuildingStore();
 
-  // Listen for mobile building card events
   useEffect(() => {
     const handleShowMobileCard = (event: CustomEvent) => {
       setSelectedBuilding(event.detail.building);
@@ -33,14 +33,11 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
     setSelectedBuilding(null);
   };
 
-  // Helper to count buildings with valid coordinates (checks both manual and auto coordinates)
   const hasValidCoordinates = (b: BuildingStore) => {
-    // Check manual_latitude/manual_longitude first
     if (b.manual_latitude && b.manual_longitude && 
         b.manual_latitude !== 0 && b.manual_longitude !== 0) {
       return true;
     }
-    // Check latitude/longitude as fallback
     if (b.latitude && b.longitude && 
         b.latitude !== 0 && b.longitude !== 0) {
       return true;
@@ -50,9 +47,61 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
 
   const validBuildingsCount = buildings?.filter(hasValidCoordinates).length || 0;
 
+  // Portal para renderizar botões FORA do container do mapa
+  const CloseButtonPortal = () => createPortal(
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.2 }}
+      style={{
+        position: 'fixed',
+        top: '1rem',
+        left: '1rem',
+        zIndex: 2147483647, // Máximo z-index possível
+        pointerEvents: 'auto'
+      }}
+    >
+      <Button
+        onClick={onClose}
+        variant="ghost"
+        size="icon"
+        className="h-14 w-14 rounded-full bg-red-600 shadow-[0_4px_20px_rgba(220,38,38,0.5)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.6)] transition-all duration-200 active:scale-95 border-0"
+      >
+        <X className="h-6 w-6 text-white" strokeWidth={3} />
+      </Button>
+    </motion.div>,
+    document.body
+  );
+
+  const BadgePortal = () => createPortal(
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.2 }}
+      style={{
+        position: 'fixed',
+        top: '1rem',
+        right: '1rem',
+        zIndex: 2147483647,
+        pointerEvents: 'auto'
+      }}
+    >
+      <Badge 
+        variant="secondary" 
+        className="h-14 px-5 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] text-base font-bold text-gray-800 flex items-center gap-2"
+      >
+        <Navigation className="h-5 w-5 text-blue-600" />
+        <span className="text-gray-800">{validBuildingsCount}</span>
+      </Badge>
+    </motion.div>,
+    document.body
+  );
+
   return (
     <>
-      {/* Background Layer - Map Container */}
+      {/* Map Container */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -87,57 +136,11 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         )}
       </motion.div>
 
-      {/* UI Controls Layer - OUTSIDE map container */}
-      {/* Elegant Red Close Button - Top Left */}
-      <div 
-        className="fixed top-4 left-4"
-        style={{ 
-          zIndex: 999999,
-          pointerEvents: 'auto',
-          isolation: 'isolate'
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            size="icon"
-            className="h-14 w-14 rounded-full bg-red-600 shadow-[0_4px_20px_rgba(220,38,38,0.5)] hover:bg-red-700 hover:scale-105 hover:shadow-[0_6px_30px_rgba(220,38,38,0.6)] transition-all duration-200 active:scale-95 border-0"
-          >
-            <X className="h-6 w-6 text-white" strokeWidth={3} />
-          </Button>
-        </motion.div>
-      </div>
+      {/* Portals para UI - Renderizados diretamente no body */}
+      <CloseButtonPortal />
+      <BadgePortal />
 
-      {/* Glass-style Buildings Badge - Top Right */}
-      <div 
-        className="fixed top-4 right-4"
-        style={{ 
-          zIndex: 999999,
-          pointerEvents: 'auto',
-          isolation: 'isolate'
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Badge 
-            variant="secondary" 
-            className="h-14 px-5 rounded-full bg-white/95 backdrop-blur-xl border-2 border-gray-300 shadow-[0_8px_32px_rgba(0,0,0,0.2)] text-base font-bold text-gray-800 flex items-center gap-2"
-          >
-            <Navigation className="h-5 w-5 text-blue-600" />
-            <span className="text-gray-800">{validBuildingsCount}</span>
-          </Badge>
-        </motion.div>
-      </div>
-
-      {/* Bottom Sheet for Selected Building */}
+      {/* Bottom Sheet */}
       <AnimatePresence>
         {selectedBuilding && (
           <MobileBuildingSheet 
