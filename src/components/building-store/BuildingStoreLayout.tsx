@@ -1,9 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
 import BuildingStoreSearchSection from './layout/BuildingStoreSearchSection';
 import BuildingStoreGridLayout from './layout/BuildingStoreGrid';
+import MobileBuildingSheet from './MobileBuildingSheet';
+import { AnimatePresence } from 'framer-motion';
 
 interface BuildingStoreLayoutProps {
   buildings: BuildingStore[] | undefined;
@@ -35,9 +37,27 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   setSortOption
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [selectedBuilding, setSelectedBuilding] = useState<BuildingStore | null>(null);
 
   const handleSidebarToggle = () => {
     setSidebarCollapsed(prev => !prev);
+  };
+
+  // Listen for map pin clicks
+  useEffect(() => {
+    const handleShowBuildingCard = (event: CustomEvent) => {
+      setSelectedBuilding(event.detail.building);
+    };
+
+    window.addEventListener('showMobileBuildingCard', handleShowBuildingCard as EventListener);
+    
+    return () => {
+      window.removeEventListener('showMobileBuildingCard', handleShowBuildingCard as EventListener);
+    };
+  }, []);
+
+  const handleCloseBuildingCard = () => {
+    setSelectedBuilding(null);
   };
   return (
     <div className="w-full">
@@ -73,6 +93,16 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
           setSortOption={setSortOption}
         />
       </div>
+
+      {/* Building Sheet for Pin Clicks */}
+      <AnimatePresence>
+        {selectedBuilding && (
+          <MobileBuildingSheet 
+            building={selectedBuilding}
+            onClose={handleCloseBuildingCard}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
