@@ -125,12 +125,33 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
         return;
       }
 
-      const typedData = (data || []).map(conv => ({
-        ...conv,
-        contact_type_source: (conv.contact_type_source || 'unknown') as 'ai' | 'manual' | 'unknown'
-      }));
+      // Enriquecer conversas com dados do ZAPI (chatName salvo)
+      const enrichedConversations = await Promise.all(
+        (data || []).map(async (conv) => {
+          // Buscar última mensagem com chatName do ZAPI
+          const { data: lastMsg } = await supabase
+            .from('messages')
+            .select('raw_payload')
+            .eq('conversation_id', conv.id)
+            .not('raw_payload', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-      setConversations(typedData);
+          const zapiChatName = lastMsg?.raw_payload?.chatName;
+          
+          return {
+            ...conv,
+            contact_type_source: (conv.contact_type_source || 'unknown') as 'ai' | 'manual' | 'unknown',
+            metadata: {
+              ...conv.metadata,
+              agent_saved_name: zapiChatName || conv.metadata?.building_name || conv.metadata?.agent_saved_name,
+            }
+          };
+        })
+      );
+
+      setConversations(enrichedConversations);
 
       // Buscar mensagens dos agentes hoje
       const today = new Date();
