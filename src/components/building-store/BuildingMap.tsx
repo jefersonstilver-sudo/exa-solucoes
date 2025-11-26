@@ -18,6 +18,8 @@ interface BuildingMapProps {
   defaultZoom?: number;
   requirePreciseGeocode?: boolean;
   enableClustering?: boolean;
+  autoFitAllBuildings?: boolean;
+  hideDefaultControls?: boolean;
 }
 
 const BuildingMap: React.FC<BuildingMapProps> = ({ 
@@ -26,7 +28,9 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
   scrollwheel = false, 
   defaultZoom = 14, 
   requirePreciseGeocode = true,
-  enableClustering = false 
+  enableClustering = false,
+  autoFitAllBuildings = false,
+  hideDefaultControls = false
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -70,10 +74,10 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         const map = new maps.Map(mapRef.current, {
           center,
           zoom: selectedLocation ? defaultZoom : 13, // Zoom ajustado para mostrar a cidade toda
-          mapTypeControl: false,
-          fullscreenControl: false,
-          streetViewControl: false,
-          zoomControl: true,
+          mapTypeControl: hideDefaultControls ? false : false,
+          fullscreenControl: hideDefaultControls ? false : false,
+          streetViewControl: hideDefaultControls ? false : false,
+          zoomControl: hideDefaultControls ? false : true,
           scrollwheel: scrollwheel,
           gestureHandling: 'cooperative',
           styles: [
@@ -412,7 +416,14 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
       }
 
       // Center on selected location or fit bounds
-      if (selectedLocation) {
+      if (autoFitAllBuildings && hasAny) {
+        console.log(`🗺️ [MARKERS] 📍 Auto-fit: Ajustando bounds para TODOS os prédios`);
+        // Add padding for mobile UI elements (top header + bottom sheet)
+        const padding = window.innerWidth <= 768 
+          ? { top: 100, bottom: 300, left: 40, right: 40 }
+          : { top: 60, bottom: 60, left: 60, right: 60 };
+        map.fitBounds(bounds, padding);
+      } else if (selectedLocation) {
         console.log(`🗺️ [MARKERS] 🎯 Centralizando na localização selecionada`);
         map.setCenter(selectedLocation);
         map.setZoom(defaultZoom);
