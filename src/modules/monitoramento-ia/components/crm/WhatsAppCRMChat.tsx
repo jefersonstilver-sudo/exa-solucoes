@@ -66,15 +66,22 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
   const fetchConversation = async () => {
     if (!conversationId) return;
     
+    console.log('[DEBUG] Fetching conversation:', conversationId);
+    
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
       .eq('id', conversationId)
       .single();
     
+    console.log('[DEBUG] Conversation result:', { data, error });
+    
     if (!error && data) {
       setConversation(data);
       setEditedName(data.contact_name || '');
+      console.log('[DEBUG] Conversation loaded successfully:', data.contact_name);
+    } else {
+      console.error('[ERROR] Failed to fetch conversation:', error);
     }
   };
 
@@ -185,16 +192,25 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
             </div>
           </div>
 
-          {/* Ações do header */}
+          {/* Ações do header - Toolbar completa */}
           <div className="flex items-center gap-1 ml-2">
             <Button
               variant="ghost"
               size="icon"
               className="hover:bg-muted h-9 w-9"
-              onClick={() => setShowDetails(!showDetails)}
               title="Buscar"
             >
               <Search className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={showDetails ? 'default' : 'ghost'}
+              size="sm"
+              className="h-9 px-3 hover:bg-muted"
+              onClick={() => setShowDetails(!showDetails)}
+              title="Detalhes do contato"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Detalhes
             </Button>
             {onToggleFullscreen && (
               <Button
@@ -211,8 +227,7 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
               variant="ghost"
               size="icon"
               className="hover:bg-muted h-9 w-9"
-              onClick={() => setShowDetails(!showDetails)}
-              title="Detalhes do contato"
+              title="Mais opções"
             >
               <MoreVertical className="w-4 h-4" />
             </Button>
@@ -224,6 +239,15 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-3 mx-4 mt-2">
             <p className="text-sm text-yellow-800 dark:text-yellow-300">
               ⚠️ <strong>Sofia pausada:</strong> Eduardo assumiu esta conversa
+            </p>
+          </div>
+        )}
+
+        {/* Estado de carregamento da conversa */}
+        {!conversation && conversationId && (
+          <div className="bg-muted/50 border-l-4 border-primary/50 p-3 mx-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              ⏳ Carregando conversa...
             </p>
           </div>
         )}
@@ -356,16 +380,20 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input de mensagem */}
+        {/* Input de mensagem - SEMPRE VISÍVEL quando há conversationId */}
         <div className="px-4 py-3 border-t border-border/10 bg-background">
-          {conversation && (
+          {conversationId && conversation ? (
             <MediaInputBar 
               phoneNumber={conversation.contact_phone} 
               agentKey={conversation.agent_key}
               conversationId={conversationId}
               onMessageSent={onRefresh} 
             />
-          )}
+          ) : conversationId && !conversation ? (
+            <div className="text-center py-2 text-sm text-muted-foreground">
+              Carregando dados da conversa...
+            </div>
+          ) : null}
         </div>
       </div>
 
