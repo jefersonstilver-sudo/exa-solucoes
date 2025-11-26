@@ -23,7 +23,6 @@ import { useLeadDetails } from '../../hooks/useLeadDetails';
 import { useContactTypes } from '../../hooks/useContactTypes';
 import { useLeadProfile } from '../../hooks/useLeadProfile';
 import { useLeadMetricsDetailed, type PeriodType } from '../../hooks/useLeadMetricsDetailed';
-import { useConversationContext } from '../../hooks/useConversationContext';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
 import { ContactTypeManager } from './ContactTypeManager';
@@ -61,11 +60,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   const [customEnd, setCustomEnd] = useState<Date>();
   const [selectedAgent, setSelectedAgent] = useState<string>('auto');
 
-  // Hook de contexto inteligente
-  const conversationContext = useConversationContext(
-    conversationId, 
-    lead?.contact_type || null
-  );
+  // Não é mais necessário - o LastContextCard usa o hook detalhado internamente
 
   const detailedMetrics = useLeadMetricsDetailed(
     conversationId,
@@ -221,7 +216,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
 
                 {/* ÚLTIMO CONTEXTO - Card Principal */}
                 <LastContextCard 
-                  context={conversationContext}
+                  conversationId={conversationId}
                   currentContactType={lead.contact_type}
                   onSuggestType={handleSuggestedType}
                 />
