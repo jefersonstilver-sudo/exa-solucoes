@@ -261,7 +261,7 @@ export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({ conversation
   }
 
   return (
-    <div className="bg-white/40 dark:bg-gray-900/40 backdrop-blur-2xl border-r border-white/20 dark:border-white/10 shadow-xl h-full overflow-y-auto">
+    <div className="bg-card/80 dark:bg-card/60 backdrop-blur-xl h-full overflow-y-auto">
       {conversations.map((conv) => (
         <ConversationItem
           key={conv.id}

@@ -57,7 +57,7 @@ export const CRMUnificado = () => {
 
   // Renderizar versão desktop
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-gray-100 dark:from-slate-900 dark:via-gray-900 dark:to-slate-800 overflow-hidden">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header com métricas e filtros - Esconde em fullscreen */}
       {!isFullscreen && (
         <div className="p-4 space-y-3">
@@ -116,7 +116,7 @@ export const CRMUnificado = () => {
             />
           </ResizablePanel>
 
-          <ResizableHandle withHandle className="w-1 bg-white/30 hover:bg-white/50" />
+          <ResizableHandle withHandle className="w-px bg-border/30 hover:bg-border/50" />
 
           {/* Área de chat (direita) */}
           <ResizablePanel 
