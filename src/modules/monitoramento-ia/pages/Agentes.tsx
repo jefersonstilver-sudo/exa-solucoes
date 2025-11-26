@@ -37,14 +37,16 @@ export const Agentes = () => {
       </div>;
   }
   return <>
-      {/* Sidebar - Apenas mobile */}
+      {/* Overlay - Apenas mobile */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:hidden transition-transform duration-300 ease-in-out`}>
+      
+      {/* Sidebar - Apenas mobile */}
+      <div className={`lg:hidden ${sidebarOpen ? '' : 'pointer-events-none'}`}>
         <Sidebar 
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -54,14 +56,14 @@ export const Agentes = () => {
         />
       </div>
 
-      <div className="min-h-screen bg-background space-y-4 lg:space-y-6">
-        {/* Header Mobile - Gradiente Vermelho EXA */}
-        <div className="lg:hidden sticky top-0 z-20 bg-gradient-to-r from-[#9C1E1E] via-[#B02424] to-[#9C1E1E] shadow-lg">
-          <div className="relative flex items-center justify-between p-3">
+      <div className="min-h-screen bg-background">
+        {/* Header Mobile - FIXO NO TOPO - Gradiente Vermelho EXA */}
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-[#9C1E1E] via-[#B02424] to-[#9C1E1E] shadow-lg">
+          <div className="relative flex items-center justify-between px-4 py-3">
             {/* Botão Hambúrguer */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors active:scale-95"
               aria-label="Abrir menu"
             >
               <Menu className="w-6 h-6 text-white" />
@@ -80,6 +82,9 @@ export const Agentes = () => {
             <div className="w-10" />
           </div>
         </div>
+
+        {/* Padding top para compensar header fixo no mobile */}
+        <div className="lg:hidden h-[60px]" />
 
         {/* Conteúdo Principal */}
         <div className="p-4 lg:p-6 max-w-[1600px] mx-auto space-y-4 lg:space-y-6">
