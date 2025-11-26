@@ -194,8 +194,11 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
         const isHovered = hoveredBuildingId === building.id;
         const isSelected = selectedBuildingId === building.id;
         
+        // Mobile: No HoverCard to avoid click interference
+        const isMobile = window.innerWidth <= 768;
+        
         const CustomMarkerComponent = () => (
-          <BuildingHoverCard building={building} businessLocation={businessLocation}>
+          isMobile ? (
             <div>
               <CustomPinImage
                 buildingId={building.id}
@@ -203,7 +206,17 @@ const BuildingMap: React.FC<BuildingMapProps> = ({
                 isSelected={isSelected}
               />
             </div>
-          </BuildingHoverCard>
+          ) : (
+            <BuildingHoverCard building={building} businessLocation={businessLocation}>
+              <div>
+                <CustomPinImage
+                  buildingId={building.id}
+                  isHovered={isHovered}
+                  isSelected={isSelected}
+                />
+              </div>
+            </BuildingHoverCard>
+          )
         );
 
         root.render(<CustomMarkerComponent />);

@@ -46,9 +46,9 @@ const PlanSelector: React.FC<PlanSelectorProps> = ({
         </p>
       </motion.div>
 
-      {/* Plans Grid - Responsive with better spacing */}
+      {/* Plans Grid - Compact Mobile 2x2 */}
       <motion.div 
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
         variants={{
           hidden: { opacity: 0 },
           visible: { 

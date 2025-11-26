@@ -16,6 +16,14 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingStore | null>(null);
   const { buildings, selectedLocation } = useBuildingStore();
 
+  // Hide header when map is open
+  useEffect(() => {
+    document.body.classList.add('map-fullscreen-open');
+    return () => {
+      document.body.classList.remove('map-fullscreen-open');
+    };
+  }, []);
+
   useEffect(() => {
     const handleShowMobileCard = (event: CustomEvent) => {
       setSelectedBuilding(event.detail.building);
@@ -57,14 +65,13 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-[99999] bg-background"
       >
-        {/* Botão de Fechar - Dentro do container */}
+        {/* Botão de Fechar - Visível no topo */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.2 }}
-          className="absolute top-4 left-4 z-50"
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          className="absolute top-4 left-4 z-[99999]"
         >
           <Button
             onClick={onClose}
@@ -76,14 +83,13 @@ const MobileFullscreenMap: React.FC<MobileFullscreenMapProps> = ({ onClose }) =>
           </Button>
         </motion.div>
 
-        {/* Badge de Contagem - Dentro do container */}
+        {/* Badge de Contagem - Visível no topo */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.2 }}
-          className="absolute top-4 right-4 z-50"
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          className="absolute top-4 right-4 z-[99999]"
         >
           <Badge 
             variant="secondary" 
