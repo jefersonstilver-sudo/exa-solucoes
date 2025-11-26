@@ -210,7 +210,7 @@ const MobileAdvertiserOrders = () => {
     ];
 
     return (
-      <div className="px-4 mb-6">
+      <div className="px-3 sm:px-4 mb-4">
         <div className="grid grid-cols-3 gap-2">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
@@ -220,12 +220,12 @@ const MobileAdvertiserOrders = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-2xl p-3 shadow-lg"
+                className="bg-white/80 backdrop-blur-sm border border-gray-100 rounded-xl p-2.5 shadow-sm"
               >
-                <div className={`w-8 h-8 rounded-lg ${stat.color} flex items-center justify-center mb-2`}>
-                  <Icon className="h-4 w-4 text-white" />
+                <div className={`w-6 h-6 rounded-lg ${stat.color} flex items-center justify-center mb-1.5`}>
+                  <Icon className="h-3.5 w-3.5 text-white" />
                 </div>
-                <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-lg font-bold text-gray-900">{stat.value}</p>
                 <p className="text-[10px] text-gray-500 leading-tight">{stat.label}</p>
               </motion.div>
             );
@@ -271,8 +271,8 @@ const MobileAdvertiserOrders = () => {
         )}
       </AnimatePresence>
 
-      <div ref={containerRef} className="pb-6">
-        <div className="py-4">
+      <div ref={containerRef} className="pb-6 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="py-3">
 
           {/* Stats Cards */}
           {orders.length > 0 && getStatsCards()}
@@ -298,42 +298,42 @@ const MobileAdvertiserOrders = () => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <Card className="overflow-hidden border-l-4 border-l-[#9C1E1E] hover:shadow-2xl transition-all duration-300 rounded-2xl shadow-lg">
-                        <CardContent className="p-4">
+                      <Card className="overflow-hidden border-l-4 border-l-[#9C1E1E] hover:shadow-lg transition-all duration-300 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm">
+                        <CardContent className="p-3">
                           {/* Header */}
-                          <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-start justify-between mb-2.5">
                             <div className="flex-1">
-                              <h3 className="font-semibold text-gray-900 text-base mb-1">
+                              <h3 className="font-semibold text-gray-900 text-sm mb-0.5">
                                 {order.nome_pedido ? `${order.nome_pedido} • #${order.id.substring(0, 8)}` : `Pedido #${order.id.substring(0, 8)}`}
                               </h3>
                               {order.nome_pedido && (
-                                <p className="text-xs text-[#9C1E1E] mb-1">Nome personalizado</p>
+                                <p className="text-[10px] text-[#9C1E1E] mb-1">Nome personalizado</p>
                               )}
-                              <Badge className={`${statusConfig.color} border flex items-center space-x-1 w-fit`}>
-                                <StatusIcon className="h-3 w-3" />
+                              <Badge className={`${statusConfig.color} border flex items-center space-x-1 w-fit text-[10px] py-0 px-1.5`}>
+                                <StatusIcon className="h-2.5 w-2.5" />
                                 <span>{statusConfig.label}</span>
                               </Badge>
                             </div>
                             <div className="text-right">
-                              <p className="text-lg font-bold text-gray-900">
+                              <p className="text-base font-bold text-gray-900">
                                 {formatCurrency(order.valor_total || 0)}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-[10px] text-gray-500">
                                 {formatDate(order.created_at)}
                               </p>
                             </div>
                           </div>
 
                           {/* Details */}
-                          <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                          <div className="grid grid-cols-2 gap-2 text-xs mb-3">
                             <div>
-                              <p className="text-gray-500">Duração</p>
+                              <p className="text-gray-500 text-[10px]">Duração</p>
                               <p className="font-medium text-gray-900">
                                 {order.plano_meses} {order.plano_meses === 1 ? 'mês' : 'meses'}
                               </p>
                             </div>
                             <div>
-                              <p className="text-gray-500">Painéis</p>
+                              <p className="text-gray-500 text-[10px]">Painéis</p>
                               <p className="font-medium text-gray-900">
                                 {order.lista_paineis?.length || 0} selecionados
                               </p>
@@ -348,7 +348,7 @@ const MobileAdvertiserOrders = () => {
                               vibrate();
                               navigate(`/anunciante/pedido/${order.id}`);
                             }}
-                            className="w-full h-9 border-[#9C1E1E] text-[#9C1E1E] hover:bg-[#9C1E1E] hover:text-white"
+                            className="w-full h-8 text-xs border-gray-200 hover:bg-[#9C1E1E] hover:text-white hover:border-[#9C1E1E]"
                           >
                             Ver Detalhes
                           </Button>

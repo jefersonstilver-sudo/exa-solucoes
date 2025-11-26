@@ -13,34 +13,30 @@ const UnifiedAdvertiserMobileHeader = ({
 }: UnifiedAdvertiserMobileHeaderProps) => {
   return (
     <header className="lg:hidden sticky top-0 z-40 bg-gradient-to-r from-[#9C1E1E] via-[#D72638] to-[#9C1E1E] border-b border-white/20 shadow-lg">
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center justify-between px-3 py-2">
         {/* Menu Button */}
         <button
           onClick={onMenuClick}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
           aria-label="Abrir menu"
         >
-          <Menu className="h-5 w-5 text-white" />
+          <Menu className="h-4 w-4 text-white" />
         </button>
 
-        {/* Logo EXA no centro */}
-        <div className="absolute left-1/2 transform -translate-x-1/2">
+        {/* Logo EXA e Título no centro */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
           <img 
             src={exaLogo} 
             alt="EXA" 
-            className="h-8 w-auto object-contain drop-shadow-lg"
+            className="h-6 w-auto object-contain drop-shadow-lg"
           />
+          <h1 className="text-white font-semibold text-xs">
+            {title}
+          </h1>
         </div>
 
         {/* Spacer para manter simetria */}
-        <div className="w-10" />
-      </div>
-      
-      {/* Title abaixo do logo */}
-      <div className="px-4 pb-3 text-center">
-        <h1 className="text-white font-semibold text-sm">
-          {title}
-        </h1>
+        <div className="w-8" />
       </div>
     </header>
   );

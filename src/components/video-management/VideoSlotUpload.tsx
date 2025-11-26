@@ -203,14 +203,14 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         </Button>
       </div>;
   }
-  return <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 sm:p-6 text-center bg-gray-50">
+  return <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 sm:p-4 text-center bg-gray-50">
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/*" className="hidden" id={`file-upload-${slotPosition}`} />
       
-      <div className="space-y-2 sm:space-y-4">
+      <div className="space-y-1.5 sm:space-y-3">
         <div>
-          <Video className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-4 text-gray-400" />
-          <p className="text-sm sm:text-base text-gray-600 font-medium mb-1 sm:mb-2">Clique para enviar seu vídeo</p>
-          <p className="text-xs sm:text-sm text-gray-500">
+          <Video className="h-6 w-6 sm:h-10 sm:w-10 mx-auto mb-1 sm:mb-2 text-gray-400" />
+          <p className="text-xs sm:text-sm text-gray-600 font-medium">Clique para enviar seu vídeo</p>
+          <p className="text-[10px] sm:text-xs text-gray-500">
             MP4, MOV, AVI (máx. 100MB)
           </p>
         </div>
@@ -218,23 +218,23 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
         <VideoTitleInput title={videoTitle} onTitleChange={setVideoTitle} error={titleError} placeholder={`Título do vídeo ${slotPosition}`} />
         
         <label htmlFor={`file-upload-${slotPosition}`}>
-          <Button asChild variant="outline" className="w-full cursor-pointer h-9 sm:h-10 text-xs sm:text-sm" disabled={uploading || isUploading}>
+          <Button asChild variant="outline" className="w-full cursor-pointer h-7 sm:h-9 text-[10px] sm:text-xs" disabled={uploading || isUploading}>
             <span>
-              {selectedFile ? selectedFile.name : 'Selecionar Arquivo'}
+              {selectedFile ? (selectedFile.name.length > 20 ? selectedFile.name.substring(0, 20) + '...' : selectedFile.name) : 'Selecionar Arquivo'}
             </span>
           </Button>
         </label>
         
-        {selectedFile && <div className="text-xs text-gray-500 bg-white p-2 rounded border">
-            <strong>Arquivo:</strong> {selectedFile.name}<br />
-            <strong>Tamanho:</strong> {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+        {selectedFile && <div className="text-[10px] sm:text-xs text-gray-500 bg-white p-1.5 sm:p-2 rounded border">
+            <div className="truncate"><strong>Arquivo:</strong> {selectedFile.name}</div>
+            <div><strong>Tamanho:</strong> {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</div>
           </div>}
       </div>
 
       {/* Botão principal - Upload direto */}
-      <Button onClick={handleDirectUpload} disabled={!canUpload} className="w-full mt-3 sm:mt-4 h-9 sm:h-10 text-sm sm:text-base">
+      <Button onClick={handleDirectUpload} disabled={!canUpload} className="w-full mt-2 sm:mt-3 h-7 sm:h-9 text-xs sm:text-sm">
         {uploading || isUploading ? <>
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1.5" />
             Enviando...
           </> : 'Enviar Vídeo'}
       </Button>
