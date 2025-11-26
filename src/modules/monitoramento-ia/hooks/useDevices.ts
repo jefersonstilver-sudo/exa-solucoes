@@ -8,8 +8,8 @@ import { Device, DevicesFilters, DevicesSort, fetchDevices } from '../utils/devi
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Auto-refresh a cada 4 segundos
-const POLLING_INTERVAL_MS = 4000;
+// Auto-refresh a cada 15 segundos (reduzido para evitar oscilações de status)
+const POLLING_INTERVAL_MS = 15000;
 
 export function useDevices(
   initialPage: number = 0,
