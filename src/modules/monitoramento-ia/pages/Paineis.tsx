@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, AlertTriangle, Clock, ChevronDown, Calendar as CalendarIcon, Maximize2 } from 'lucide-react';
-import { useSidebar } from '@/components/ui/sidebar';
 import {
   Device,
   calculateDeviceStats,
@@ -50,8 +49,6 @@ const SimpleStatCard = ({ label, value, color }: { label: string; value: number;
 
 export const PaineisPage = () => {
   const navigate = useNavigate();
-  const sidebar = useSidebar();
-  
   const {
     devices,
     loading,
@@ -361,14 +358,7 @@ export const PaineisPage = () => {
         <div className="flex items-center gap-3">
           <ViewToggle view={viewMode} onViewChange={setViewMode} />
           <button
-            onClick={() => {
-              setIsFullscreen(true);
-              // Ocultar sidebar ao entrar no fullscreen
-              if (sidebar) {
-                sidebar.setOpen(false);
-                sidebar.setOpenMobile(false);
-              }
-            }}
+            onClick={() => setIsFullscreen(true)}
             className="p-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors shadow-sm"
             title="Modo Monitor (Tela Cheia)"
           >
@@ -455,16 +445,7 @@ export const PaineisPage = () => {
       
       {/* Modo Monitor Fullscreen */}
       {isFullscreen && (
-        <FullscreenMonitor 
-          devices={devices} 
-          onClose={() => {
-            setIsFullscreen(false);
-            // Restaurar sidebar ao sair do fullscreen
-            if (sidebar) {
-              sidebar.setOpen(true);
-            }
-          }} 
-        />
+        <FullscreenMonitor devices={devices} onClose={() => setIsFullscreen(false)} />
       )}
       
       {/* Alertas flutuantes de painéis offline */}
