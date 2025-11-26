@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Video, Gift, Building, X, Star, Crown, Zap } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plan, PlanKey } from '@/types/checkout';
 import { formatCurrency } from '@/utils/priceUtils';
@@ -32,24 +30,15 @@ const PlanCard: React.FC<PlanCardProps> = ({
   onSelect,
   cartItems
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
   const [dynamicPricing, setDynamicPricing] = useState<any>(null);
   
-  // CORREÇÃO: Calcular preços dinamicamente baseados no carrinho com preços corretos
   useEffect(() => {
     if (cartItems.length > 0) {
-      console.log("💰 [PlanCard] Calculando preços dinâmicos corrigidos:", {
-        planKey,
-        cartItemsLength: cartItems.length
-      });
-      
-      // Usar função centralizada para calcular preços
       const dynamicPlan = getPlanWithDynamicPricing(planKey, cartItems);
       
       if (dynamicPlan) {
         setDynamicPricing(dynamicPlan);
         
-        // Log para auditoria
         logPriceCalculation(`PlanCard-${planKey}`, {
           planKey,
           cartItemsCount: cartItems.length,
@@ -57,73 +46,10 @@ const PlanCard: React.FC<PlanCardProps> = ({
         });
       }
     } else {
-      console.log("💰 [PlanCard] Carrinho vazio, resetando preços");
       setDynamicPricing(null);
     }
   }, [planKey, cartItems]);
-  
-  // Definir cores e estilos específicos para cada plano - DESIGN PROFISSIONAL
-  const getPlanStyle = () => {
-    switch (planKey) {
-      case 1: // Mensal - Design neutro
-        return {
-          border: isSelected ? 'border-gray-400 bg-gray-50' : 'border-gray-300 hover:border-gray-400 bg-gray-50',
-          text: 'text-gray-600',
-          header: 'bg-gray-100 text-gray-700',
-          accent: 'text-gray-500',
-          icon: CheckCircle,
-          iconColor: 'text-gray-400',
-          opacity: 'opacity-90'
-        };
-      case 3: // Trimestral - Destaque profissional
-        return {
-          border: isSelected ? 'border-green-500 bg-green-50 ring-2 ring-green-200' : 'border-green-400 hover:border-green-500 bg-white hover:bg-green-50',
-          text: 'text-green-800',
-          header: 'bg-gradient-to-r from-green-500 to-green-600 text-white',
-          accent: 'text-green-600',
-          icon: Star,
-          iconColor: 'text-green-500',
-          popularBadge: 'bg-green-600 text-white font-semibold',
-          glow: 'shadow-lg shadow-green-200'
-        };
-      case 6: // Semestral - Design elegante
-        return {
-          border: isSelected ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-300' : 'border-purple-400 hover:border-purple-500 bg-white hover:bg-purple-50',
-          text: 'text-purple-800',
-          header: 'bg-gradient-to-r from-purple-600 to-purple-700 text-white',
-          accent: 'text-purple-600',
-          icon: Crown,
-          iconColor: 'text-purple-500',
-          recommendedBadge: 'bg-purple-600 text-white font-semibold',
-          glow: 'shadow-lg shadow-purple-200'
-        };
-      case 12: // Anual - Design premium
-        return {
-          border: isSelected ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-300' : 'border-blue-400 hover:border-blue-500 bg-white hover:bg-blue-50',
-          text: 'text-blue-800',
-          header: 'bg-gradient-to-r from-blue-600 to-blue-700 text-white',
-          accent: 'text-blue-600',
-          icon: Zap,
-          iconColor: 'text-blue-500',
-          maxEconomyBadge: 'bg-blue-600 text-white font-semibold',
-          glow: 'shadow-lg shadow-blue-200'
-        };
-      default:
-        return {
-          border: 'border-gray-300',
-          text: 'text-gray-700',
-          header: 'bg-gray-200 text-gray-700',
-          accent: 'text-gray-600',
-          icon: CheckCircle,
-          iconColor: 'text-gray-500'
-        };
-    }
-  };
-  
-  const style = getPlanStyle();
-  const IconComponent = style.icon;
 
-  // Não mostrar card se carrinho estiver vazio
   if (!cartItems.length) {
     return (
       <Card className="border-2 border-gray-200 bg-gray-50 opacity-50">
@@ -136,12 +62,11 @@ const PlanCard: React.FC<PlanCardProps> = ({
     );
   }
 
-  // Aguardar cálculo dos preços dinâmicos
   if (!dynamicPricing) {
     return (
       <Card className="border-2 border-gray-200 bg-white">
         <CardContent className="p-4 sm:p-5 text-center">
-          <div className="h-8 w-8 border-2 border-[#3C1361] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <div className="h-8 w-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
           <p className="text-gray-500 text-sm">
             Calculando preços...
           </p>
@@ -150,7 +75,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
     );
   }
 
-  const { dynamicPricePerMonth, dynamicTotalPrice, dynamicSavings } = dynamicPricing;
+  const { dynamicPricePerMonth, dynamicTotalPrice } = dynamicPricing;
 
   return (
     <motion.div
@@ -158,195 +83,81 @@ const PlanCard: React.FC<PlanCardProps> = ({
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0 }
       }}
-      transition={{ duration: 0.4 }}
-      whileHover={{ 
-        scale: planKey === 1 ? 1 : 1.02,
-        boxShadow: planKey === 1 ? 'none' : '0 10px 30px rgba(0, 0, 0, 0.1)' 
-      }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
-      className={planKey === 1 ? style.opacity : ''}
+      transition={{ duration: 0.3 }}
+      whileHover={{ scale: 1.01 }}
     >
       <Card 
         className={`
-          overflow-hidden transition-all cursor-pointer h-full flex flex-col border-2
-          ${style.border}
-          ${style.glow || ''}
+          overflow-hidden transition-all cursor-pointer h-full flex flex-col border-2 bg-white
+          ${isSelected 
+            ? 'border-blue-500 ring-2 ring-blue-100 shadow-lg' 
+            : 'border-gray-200 hover:border-blue-400 hover:shadow-md'
+          }
         `}
         onClick={onSelect}
       >
-        {/* Headers Profissionais - Mobile Compacto */}
-        {planKey === 3 && (
-          <div className={`${style.header} text-center py-1 sm:py-2 text-[9px] sm:text-sm font-bold tracking-wide`}>
-            MAIS POPULAR
-          </div>
-        )}
-        
-        {planKey === 6 && (
-          <div className={`${style.header} text-center py-1 sm:py-2 text-[9px] sm:text-sm font-bold tracking-wide`}>
-            RECOMENDADO
-          </div>
-        )}
-        
-        {planKey === 12 && (
-          <div className={`${style.header} text-center py-1 sm:py-2 text-[9px] sm:text-sm font-bold tracking-wide`}>
-            MAX ECONOMIA
-          </div>
-        )}
-
-        {planKey === 1 && (
-          <div className={`${style.header} text-center py-0.5 sm:py-1.5 text-[8px] sm:text-xs font-medium`}>
-            Básico
-          </div>
-        )}
-        
-        <CardContent className="p-2 sm:p-5 flex-grow flex flex-col">
-          {/* Plan Title com ícone - Mobile Compacto */}
-          <div className="text-center mb-2 sm:mb-4">
-            <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-              <IconComponent className={`h-3 w-3 sm:h-5 sm:w-5 ${style.iconColor}`} />
-              <h3 className={`text-xs sm:text-xl font-bold ${style.text}`}>
-                {plan.name}
-              </h3>
-            </div>
-            <p className="text-[9px] sm:text-sm text-gray-500 hidden sm:block">
-              {plan.description}
-            </p>
+        <CardContent className="p-6 flex-grow flex flex-col">
+          {/* Plan Name */}
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">
+              {plan.name}
+            </h3>
           </div>
           
-          {/* Dynamic Pricing - Mobile Compacto */}
-          <div className="text-center mb-2 sm:mb-6">
-            <div className="flex justify-center items-baseline mb-1 sm:mb-2">
-              <span className={`text-base sm:text-3xl font-bold ${planKey === 1 ? 'text-gray-600' : style.text}`}>
+          {/* Price - Main Focus */}
+          <div className="text-center mb-6">
+            <div className="flex justify-center items-baseline mb-3">
+              <span className="text-4xl font-bold text-gray-900">
                 {formatCurrency(dynamicPricePerMonth)}
               </span>
-              <span className="text-gray-500 text-[9px] sm:text-sm ml-0.5 sm:ml-1">/mês</span>
+              <span className="text-gray-500 text-base ml-1">/mês</span>
             </div>
             
-            {/* Total Price - Sempre visível no mobile */}
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-50 py-1 sm:py-2 px-2 sm:px-3 rounded-md sm:rounded-lg shadow-sm border border-gray-100 mb-1 sm:mb-2"
-            >
-              <div className="text-[10px] sm:text-sm font-medium text-gray-700">
+            {/* Total Price */}
+            <div className="bg-gray-50 py-3 px-4 rounded-lg mb-3">
+              <div className="text-sm font-medium text-gray-700">
                 Total: {formatCurrency(dynamicTotalPrice)}
               </div>
               {plan.months > 1 && (
-                <div className="text-[9px] sm:text-xs text-gray-500">
+                <div className="text-xs text-gray-500 mt-1">
                   ({plan.months} meses)
                 </div>
               )}
-            </motion.div>
+            </div>
             
-            {/* Discount Badge - Compacto */}
+            {/* Discount Badge */}
             {plan.discount > 0 && (
-              <div className="flex justify-center gap-1 sm:gap-2 flex-wrap">
-                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5">
-                  {plan.discount}% OFF
-                </Badge>
-                {dynamicSavings > 0 && (
-                  <Badge variant="outline" className="text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 hidden sm:inline-flex">
-                    -{formatCurrency(dynamicSavings)}
-                  </Badge>
-                )}
-              </div>
-            )}
-          </div>
-          
-          {/* Features profissionais - Mobile Compacto */}
-          <div className="space-y-1 sm:space-y-3 mt-auto">
-            {planKey === 1 && (
-              <>
-                <div className="flex items-start gap-1 sm:gap-2">
-                  <X className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-gray-500 leading-tight">Sem vídeos</span>
-                </div>
-                <div className="flex items-start gap-1 sm:gap-2">
-                  <X className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-gray-500 leading-tight">Sem extras</span>
-                </div>
-                <div className="flex items-start gap-1 sm:gap-2">
-                  <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-gray-500 leading-tight">Básico</span>
-                </div>
-              </>
-            )}
-
-            {planKey === 3 && (
-              <>
-                <div className="flex items-start gap-1 sm:gap-2">
-                  <Video className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-green-700 leading-tight font-medium">1 vídeo/mês</span>
-                </div>
-                <div className="flex items-start gap-1 sm:gap-2 hidden sm:flex">
-                  <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-green-700 leading-tight">Economize R$ 40/mês</span>
-                </div>
-              </>
-            )}
-
-            {planKey === 6 && (
-              <>
-                <div className="flex items-start gap-1 sm:gap-2">
-                  <Video className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-purple-700 leading-tight font-medium">1 vídeo/mês</span>
-                </div>
-                <div className="flex items-start gap-1 sm:gap-2 bg-purple-100 p-1 sm:p-2 rounded-md sm:rounded-lg">
-                  <Building className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-purple-800 leading-tight font-bold">Estúdio GRÁTIS</span>
-                </div>
-                <div className="flex items-start gap-1 sm:gap-2 hidden sm:flex">
-                  <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-purple-700 leading-tight">Economize R$ 60/mês</span>
-                </div>
-              </>
-            )}
-
-            {planKey === 12 && (
-              <>
-                <div className="flex items-start gap-1 sm:gap-2">
-                  <Video className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-blue-700 leading-tight font-medium">1 vídeo/mês</span>
-                </div>
-                <div className="flex items-start gap-1 sm:gap-2 bg-blue-100 p-1 sm:p-2 rounded-md sm:rounded-lg">
-                  <Gift className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-blue-800 leading-tight font-bold">Vídeo 1min GRÁTIS</span>
-                </div>
-                <div className="flex items-start gap-1 sm:gap-2 hidden sm:flex">
-                  <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-[9px] sm:text-sm text-blue-700 leading-tight">Para redes sociais</span>
-                </div>
-              </>
+              <Badge className="bg-green-50 text-green-700 hover:bg-green-50 text-sm px-3 py-1 border border-green-200">
+                {plan.discount}% OFF
+              </Badge>
             )}
           </div>
         </CardContent>
         
         <CardFooter className={`
-          px-2 sm:px-5 py-1.5 sm:py-3 border-t flex justify-between items-center
-          ${isSelected ? 'border-t-green-200 bg-white/50' : 'border-t-gray-100'}
+          px-6 py-4 border-t flex justify-between items-center
+          ${isSelected ? 'border-t-blue-200 bg-blue-50/50' : 'border-t-gray-100'}
         `}>
           {isSelected ? (
-            <span className="text-[9px] sm:text-sm font-medium text-green-600 flex items-center">
-              <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
-              <span className="hidden sm:inline">Selecionado</span>
-              <span className="sm:hidden">OK</span>
+            <span className="text-sm font-medium text-blue-600 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              Selecionado
             </span>
           ) : (
-            <span className={`text-[9px] sm:text-sm ${planKey === 1 ? 'text-gray-400' : style.text}`}>
-              {planKey === 1 ? 'Básico' : 'Selecionar'}
+            <span className="text-sm text-gray-600">
+              Selecionar
             </span>
           )}
           
           <div className={`
-            h-4 w-4 sm:h-6 sm:w-6 rounded-full border flex items-center justify-center
+            h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all
             ${isSelected 
-              ? planKey === 1 ? 'border-gray-400 bg-gray-400' : `${style.border.split(' ')[0].replace('border-', 'border-')} bg-${style.border.split(' ')[0].replace('border-', '').replace('-400', '-500')}`
-              : 'border-gray-300'}`
+              ? 'border-blue-500 bg-blue-500' 
+              : 'border-gray-300'
             }
-          >
+          `}>
             {isSelected && (
-              <CheckCircle className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-white" />
+              <CheckCircle className="h-4 w-4 text-white" />
             )}
           </div>
         </CardFooter>

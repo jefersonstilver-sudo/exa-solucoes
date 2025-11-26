@@ -61,8 +61,7 @@ const CustomPinImage: React.FC<CustomPinImageProps> = ({
       className="relative flex items-center justify-center"
       style={{ 
         width: '48px', 
-        height: '60px',
-        pointerEvents: 'none'
+        height: '60px'
       }}
     >
       <img 
