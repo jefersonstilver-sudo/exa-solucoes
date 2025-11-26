@@ -13,3 +13,8 @@
 
 /* Import EXA Glassmorphism System */
 @import './modules/monitoramento-ia/styles/exa-glassmorphism.css';
+
+/* Hide header when fullscreen map is open */
+body.map-fullscreen-open header {
+  display: none !important;
+}

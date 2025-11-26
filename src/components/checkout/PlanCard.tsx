@@ -106,38 +106,47 @@ const PlanCard: React.FC<PlanCardProps> = ({
         `}
         onClick={onSelect}
       >
-        {/* Discount Badge - Positioned absolutely */}
+        {/* Discount Badge */}
         {plan.discount > 0 && (
           <Badge 
-            className="absolute -top-2 right-4 bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white text-xs px-3 py-1 shadow-md z-10 font-medium"
+            className="absolute top-2 right-2 bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white text-xs px-2.5 py-0.5 shadow-md z-10 font-medium"
           >
             {plan.discount}% OFF
           </Badge>
         )}
 
-        {/* Card Content - Elegant & Spacious */}
-        <CardContent className="pt-8 pb-4 px-4 sm:px-6 text-center">
-          {/* Plan Name - Secondary */}
-          <h3 className="text-base sm:text-lg font-medium text-gray-500 mb-6">
+        {/* Premium Badge - Annual Only */}
+        {plan.months === 12 && (
+          <Badge 
+            className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs px-2.5 py-0.5 shadow-md z-10 font-bold"
+          >
+            ⭐ MELHOR OFERTA
+          </Badge>
+        )}
+
+        {/* Card Content - Compact */}
+        <CardContent className="pt-6 pb-3 px-3 sm:px-4 text-center">
+          {/* Plan Name */}
+          <h3 className="text-sm sm:text-base font-medium text-gray-500 mb-3">
             {plan.name}
           </h3>
 
-          {/* Price per Month - Main Focus */}
-          <div className="mb-6">
+          {/* Price per Month - Compact */}
+          <div className="mb-3">
             <div className="flex items-baseline justify-center gap-1">
-              <span className="text-2xl sm:text-5xl font-bold text-gray-900 whitespace-nowrap">
+              <span className="text-xl sm:text-2xl font-bold text-gray-900 whitespace-nowrap">
                 {formatCurrency(dynamicPricePerMonth)}
               </span>
-              <span className="text-base sm:text-lg font-normal text-gray-400">/mês</span>
+              <span className="text-sm font-normal text-gray-400">/mês</span>
             </div>
           </div>
 
-          {/* Total Price - Subtle Background */}
-          <div className="bg-gray-50/70 rounded-xl py-3 px-4">
-            <p className="text-sm sm:text-base text-gray-600">
+          {/* Total Price */}
+          <div className="bg-gray-50/70 rounded-lg py-2 px-3">
+            <p className="text-xs sm:text-sm text-gray-600">
               Total: <span className="font-semibold text-gray-900">{formatCurrency(dynamicTotalPrice)}</span>
             </p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-0.5">
               {plan.months} {plan.months === 1 ? 'mês' : 'meses'}
             </p>
           </div>
