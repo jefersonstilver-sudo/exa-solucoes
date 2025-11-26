@@ -59,6 +59,7 @@ import VideoEditorPage from './pages/video-editor/VideoEditorPage';
 import { MonitoramentoIALayout } from './modules/monitoramento-ia/layout/MonitoramentoIALayout';
 import { DashboardUnificado } from './modules/monitoramento-ia/pages/DashboardUnificado';
 import { PaineisPage } from './modules/monitoramento-ia/pages/Paineis';
+import { HistoricoQuedasPage } from './modules/monitoramento-ia/pages/HistoricoQuedas';
 import { AlertasPage } from './modules/monitoramento-ia/pages/Alertas';
 import { Agentes } from './modules/monitoramento-ia/pages/Agentes';
 
@@ -445,6 +446,7 @@ const AppContent = () => {
             
             {/* Seção Painéis */}
             <Route path="paineis" element={<PaineisPage />} />
+            <Route path="historico-quedas" element={<HistoricoQuedasPage />} />
             <Route path="alertas" element={<AlertasPage />} />
             
             {/* Seção Agentes */}
