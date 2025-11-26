@@ -9,11 +9,23 @@ import { Volume2, VolumeX, RotateCcw, Maximize, Minimize } from 'lucide-react';
 const HeroMobileLayout = () => {
   const [isMuted, setIsMuted] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20Site/institucional.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3MgU2l0ZS9pbnN0aXR1Y2lvbmFsLm1wNCIsImlhdCI6MTc2NDE4NjY3OCwiZXhwIjoxNzY0NzkxNDc4fQ.BBEzGtBpbYm4Qd-ZlhVKwW4CtVAKiwn9K-Hdx3-y14I';
   
+  const togglePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
   const toggleMute = () => {
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
@@ -25,6 +37,7 @@ const HeroMobileLayout = () => {
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
       videoRef.current.play();
+      setIsPlaying(true);
     }
   };
 
@@ -43,45 +56,50 @@ const HeroMobileLayout = () => {
   return (
     <section className="bg-gradient-to-b from-[#9C1E1E] via-[#180A0A]/80 to-exa-black pt-16 pb-8">
       {/* Vídeo Hero Imersivo */}
-      <div ref={containerRef} className="relative w-full aspect-video bg-black">
-        <video
-          ref={videoRef}
-          src={institutionalVideoUrl}
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover"
-        />
+      <div ref={containerRef} className="relative w-full">
+        <div 
+          className="relative w-full aspect-video bg-black cursor-pointer"
+          onClick={togglePlayPause}
+        >
+          <video
+            ref={videoRef}
+            src={institutionalVideoUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
+        </div>
         
-        {/* Botões Flutuantes - Abaixo do vídeo sobrepostos */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+        {/* Botões de Controle - Abaixo do vídeo */}
+        <div className="flex justify-center items-center gap-3 py-3 bg-gradient-to-b from-black/40 to-transparent">
           <button 
             onClick={toggleMute} 
-            className="glassmorphism-button-small"
+            className="video-control-btn"
             aria-label={isMuted ? "Ativar som" : "Desativar som"}
           >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
           <button 
             onClick={restartVideo} 
-            className="glassmorphism-button-small"
+            className="video-control-btn"
             aria-label="Reiniciar vídeo"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
           <button 
             onClick={toggleFullscreen} 
-            className="glassmorphism-button-small"
+            className="video-control-btn"
             aria-label="Tela cheia"
           >
-            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
       
       {/* Texto + CTA */}
-      <div className="px-6 py-8 text-center space-y-5">
+      <div className="px-6 py-6 text-center space-y-4">
         <h1 className="font-montserrat font-extrabold text-3xl text-white leading-tight">
           Publicidade que <span className="text-exa-yellow">convive</span>.
         </h1>
