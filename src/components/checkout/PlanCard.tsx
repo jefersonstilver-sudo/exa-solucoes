@@ -100,16 +100,27 @@ const PlanCard: React.FC<PlanCardProps> = ({
         className={`
           relative h-full cursor-pointer transition-all duration-300 rounded-2xl overflow-hidden
           ${isSelected 
-            ? 'border-2 border-[#9C1E1E] ring-4 ring-[#9C1E1E]/10 shadow-xl shadow-[#9C1E1E]/5 bg-gradient-to-br from-white to-[#9C1E1E]/[0.02]' 
-            : 'border border-gray-100 hover:border-gray-200 hover:shadow-lg bg-white'
+            ? 'border-2 border-[#9C1E1E] ring-4 ring-[#9C1E1E]/10 shadow-2xl shadow-[#9C1E1E]/10 bg-gradient-to-br from-white to-[#9C1E1E]/[0.02]' 
+            : `border ${plan.months === 12 ? 'border-amber-400/30 shadow-lg shadow-amber-500/5' : 'border-gray-100 shadow-md'} hover:border-gray-200 hover:shadow-xl bg-white`
           }
         `}
         onClick={onSelect}
       >
+        {/* Selection Indicator - Top Right */}
+        <div className="absolute top-2 right-2 z-30">
+          {isSelected ? (
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#9C1E1E] to-[#D72638] flex items-center justify-center shadow-lg">
+              <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+            </div>
+          ) : (
+            <Circle className="w-6 h-6 text-gray-300" strokeWidth={2} />
+          )}
+        </div>
+
         {/* Premium Badge - Annual Only */}
         {plan.months === 12 && (
           <Badge 
-            className="absolute top-1.5 right-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] px-1.5 py-0.5 shadow-sm z-20 font-semibold whitespace-nowrap"
+            className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] px-1.5 py-0.5 shadow-sm z-20 font-semibold whitespace-nowrap"
           >
             ⭐ MELHOR
           </Badge>
@@ -118,14 +129,14 @@ const PlanCard: React.FC<PlanCardProps> = ({
         {/* Discount Badge */}
         {plan.discount > 0 && (
           <Badge 
-            className={`absolute ${plan.months === 12 ? 'top-6' : 'top-1.5'} right-1.5 bg-[#9C1E1E] text-white text-[9px] px-1.5 py-0.5 shadow-sm z-10 font-medium whitespace-nowrap`}
+            className={`absolute ${plan.months === 12 ? 'top-8' : 'top-2'} left-2 bg-[#9C1E1E] text-white text-[9px] px-1.5 py-0.5 shadow-sm z-10 font-medium whitespace-nowrap`}
           >
             -{plan.discount}%
           </Badge>
         )}
 
         {/* Card Content - Compact */}
-        <CardContent className="pt-8 pb-3 px-3 sm:px-4 text-center">
+        <CardContent className="pt-12 pb-4 px-3 sm:px-4 text-center">
           {/* Plan Name */}
           <h3 className="text-sm sm:text-base font-semibold text-gray-700 mb-3">
             {plan.name}
@@ -149,30 +160,14 @@ const PlanCard: React.FC<PlanCardProps> = ({
             <p className="text-xs text-gray-500 mt-0.5 font-medium">
               {plan.months} {plan.months === 1 ? 'mês' : 'meses'}
             </p>
-          </div>
-        </CardContent>
-
-        {/* Footer - Single Selection Icon */}
-        <CardFooter className="pt-4 pb-6 px-6 justify-center border-t border-gray-50">
-          <div className={`
-            flex items-center gap-2 text-sm font-medium transition-all duration-200
-            ${isSelected ? 'text-[#9C1E1E]' : 'text-gray-400'}
-          `}>
-            {isSelected ? (
-              <>
-                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#9C1E1E] to-[#D72638] flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                </div>
-                <span>Selecionado</span>
-              </>
-            ) : (
-              <>
-                <Circle className="w-5 h-5" strokeWidth={2} />
-                <span>Selecionar</span>
-              </>
+            {/* Loyalty Contract Text - Only for 3, 6, 12 months */}
+            {plan.months >= 3 && (
+              <p className="text-[9px] text-gray-400 mt-1.5 italic">
+                contrato fidelidade
+              </p>
             )}
           </div>
-        </CardFooter>
+        </CardContent>
       </Card>
     </motion.div>
   );
