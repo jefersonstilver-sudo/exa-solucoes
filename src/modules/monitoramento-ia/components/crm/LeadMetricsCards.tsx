@@ -1,7 +1,5 @@
 import React from 'react';
-import { MessageSquare, Clock, Send, Download } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { MessageSquare, Clock, Send, User } from 'lucide-react';
 
 interface LeadMetricsCardsProps {
   totalSent: number;
@@ -18,8 +16,6 @@ export const LeadMetricsCards: React.FC<LeadMetricsCardsProps> = ({
   totalReceived,
   avgResponseTimeContact,
   avgResponseTimeAgent,
-  firstContact,
-  lastContact,
   loading
 }) => {
   const formatTime = (minutes: number) => {
@@ -27,87 +23,79 @@ export const LeadMetricsCards: React.FC<LeadMetricsCardsProps> = ({
     if (minutes < 60) return `${Math.round(minutes)}min`;
     const hours = Math.floor(minutes / 60);
     const mins = Math.round(minutes % 60);
-    return `${hours}h ${mins}min`;
+    return `${hours}h ${mins > 0 ? mins + 'min' : ''}`;
   };
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="glass-card p-4 rounded-lg animate-pulse">
-            <div className="h-4 bg-muted rounded w-20 mb-2"></div>
-            <div className="h-6 bg-muted rounded w-12"></div>
+          <div key={i} className="exa-metric-card animate-pulse">
+            <div className="h-4 bg-[var(--exa-border)] rounded w-20 mb-3"></div>
+            <div className="h-8 bg-[var(--exa-border)] rounded w-16"></div>
           </div>
         ))}
       </div>
     );
   }
 
-  const cards = [
-    {
-      icon: Send,
-      label: 'Mensagens Enviadas',
-      value: totalSent,
-      color: 'text-primary'
-    },
-    {
-      icon: Download,
-      label: 'Mensagens Recebidas',
-      value: totalReceived,
-      color: 'text-secondary'
-    },
-    {
-      icon: Clock,
-      label: 'Tempo Resp. Contato',
-      value: formatTime(avgResponseTimeContact),
-      color: 'text-accent'
-    },
-    {
-      icon: MessageSquare,
-      label: 'Tempo Resp. Agente',
-      value: formatTime(avgResponseTimeAgent),
-      color: 'text-muted-foreground'
-    }
-  ];
-
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {cards.map((card, idx) => {
-          const Icon = card.icon;
-          return (
-            <div key={idx} className="glass-card p-4 rounded-lg hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon className={`w-4 h-4 ${card.color}`} />
-                <p className="text-xs text-muted-foreground">{card.label}</p>
-              </div>
-              <p className="text-2xl font-bold">{card.value}</p>
-            </div>
-          );
-        })}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Card: Mensagens Enviadas */}
+      <div className="exa-metric-card group">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-2 rounded-lg bg-[var(--exa-bg-hover)] group-hover:bg-blue-500/10 transition-colors">
+            <Send className="w-4 h-4 text-blue-500" />
+          </div>
+          <span className="text-xs font-semibold text-[var(--exa-text-secondary)] uppercase tracking-wide">
+            Enviadas
+          </span>
+        </div>
+        <p className="text-3xl font-bold text-[var(--exa-text-primary)]">{totalSent}</p>
       </div>
 
-      {/* Datas importantes */}
-      {(firstContact || lastContact) && (
-        <div className="grid grid-cols-2 gap-4">
-          {firstContact && (
-            <div className="glass-card p-4 rounded-lg">
-              <p className="text-xs text-muted-foreground mb-1">Primeiro Contato</p>
-              <p className="text-sm font-medium">
-                {format(new Date(firstContact), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-              </p>
-            </div>
-          )}
-          {lastContact && (
-            <div className="glass-card p-4 rounded-lg">
-              <p className="text-xs text-muted-foreground mb-1">Último Contato</p>
-              <p className="text-sm font-medium">
-                {format(new Date(lastContact), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-              </p>
-            </div>
-          )}
+      {/* Card: Mensagens Recebidas */}
+      <div className="exa-metric-card group">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-2 rounded-lg bg-[var(--exa-bg-hover)] group-hover:bg-green-500/10 transition-colors">
+            <MessageSquare className="w-4 h-4 text-green-500" />
+          </div>
+          <span className="text-xs font-semibold text-[var(--exa-text-secondary)] uppercase tracking-wide">
+            Recebidas
+          </span>
         </div>
-      )}
+        <p className="text-3xl font-bold text-[var(--exa-text-primary)]">{totalReceived}</p>
+      </div>
+
+      {/* Card: Tempo de Resposta do Contato */}
+      <div className="exa-metric-card group">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-2 rounded-lg bg-[var(--exa-bg-hover)] group-hover:bg-purple-500/10 transition-colors">
+            <Clock className="w-4 h-4 text-purple-500" />
+          </div>
+          <span className="text-xs font-semibold text-[var(--exa-text-secondary)] uppercase tracking-wide">
+            T.R. Contato
+          </span>
+        </div>
+        <p className="text-3xl font-bold text-[var(--exa-text-primary)]">
+          {formatTime(avgResponseTimeContact)}
+        </p>
+      </div>
+
+      {/* Card: Tempo de Resposta do Agente */}
+      <div className="exa-metric-card group">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-2 rounded-lg bg-[var(--exa-bg-hover)] group-hover:bg-orange-500/10 transition-colors">
+            <User className="w-4 h-4 text-orange-500" />
+          </div>
+          <span className="text-xs font-semibold text-[var(--exa-text-secondary)] uppercase tracking-wide">
+            T.R. Agente
+          </span>
+        </div>
+        <p className="text-3xl font-bold text-[var(--exa-text-primary)]">
+          {formatTime(avgResponseTimeAgent)}
+        </p>
+      </div>
     </div>
   );
 };
