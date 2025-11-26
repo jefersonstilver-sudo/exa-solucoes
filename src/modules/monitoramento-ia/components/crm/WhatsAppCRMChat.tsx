@@ -125,33 +125,82 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
     <div className="flex h-full">
       {/* Área de mensagens */}
       <div className="flex-1 flex flex-col bg-card/50 dark:bg-card/30">
-        {/* Header minimalista */}
-        <div className="bg-card/60 backdrop-blur-md border-b border-border/10 px-4 py-3 flex items-center justify-between">
-          {/* Esquerda: Avatar + Info */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+        {/* Header funcional e limpo */}
+        <div className="bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {/* Avatar */}
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+              conversation?.is_group ? 'bg-primary/20' : 'bg-primary/20'
+            )}>
               {conversation?.is_group ? (
-                <Users className="w-5 h-5 text-primary/70" />
+                <Users className="w-5 h-5 text-primary" />
               ) : (
-                <User className="w-5 h-5 text-primary/70" />
+                <User className="w-5 h-5 text-primary" />
               )}
             </div>
-            <div>
-              <h2 className="font-medium text-sm text-foreground">
-                {conversation?.contact_name || conversation?.contact_phone || 'Conversa'}
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {conversation?.is_group ? 'Grupo' : 'Online'}
-              </p>
+
+            {/* Nome e telefone - editável */}
+            <div className="flex-1 min-w-0">
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    className="h-8 text-sm"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveName();
+                      if (e.key === 'Escape') setIsEditingName(false);
+                    }}
+                  />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={handleSaveName}>
+                    <Check className="w-4 h-4 text-green-600" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => setIsEditingName(false)}>
+                    <X className="w-4 h-4 text-red-600" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-semibold text-sm text-foreground truncate">
+                      {conversation?.contact_name || conversation?.contact_phone || 'Conversa'}
+                    </h2>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {conversation?.contact_phone}
+                    </p>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 shrink-0 hover:bg-muted"
+                    onClick={() => setIsEditingName(true)}
+                    title="Editar nome"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-          
-          {/* Direita: Ícones essenciais */}
-          <div className="flex items-center gap-1">
+
+          {/* Ações do header */}
+          <div className="flex items-center gap-1 ml-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-muted h-9 w-9"
+              onClick={() => setShowDetails(!showDetails)}
+              title="Buscar"
+            >
+              <Search className="w-4 h-4" />
+            </Button>
             {onToggleFullscreen && (
               <Button
                 variant="ghost"
                 size="icon"
+                className="hover:bg-muted h-9 w-9"
                 onClick={onToggleFullscreen}
                 title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
               >
@@ -161,7 +210,9 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
             <Button
               variant="ghost"
               size="icon"
+              className="hover:bg-muted h-9 w-9"
               onClick={() => setShowDetails(!showDetails)}
+              title="Detalhes do contato"
             >
               <MoreVertical className="w-4 h-4" />
             </Button>
