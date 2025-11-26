@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, AlertTriangle, Clock, ChevronDown, Calendar as CalendarIcon } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Clock, ChevronDown, Calendar as CalendarIcon, Maximize2 } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -7,6 +7,9 @@ import {
 import { PanelCard } from '../components/PanelCard';
 import { ComputerDetailModal } from '../components/anydesk/ComputerDetailModal';
 import { FiltersBar } from '../components/FiltersBar';
+import { PanelsListView } from '../components/PanelsListView';
+import { FullscreenMonitor } from '../components/FullscreenMonitor';
+import { ViewToggle } from '../components/ViewToggle';
 import { QuedaDiariaList } from '../components/QuedaDiariaList';
 import { OfflineAlert } from '../components/OfflineAlert';
 import { useOfflineAlerts } from '../hooks/useOfflineAlerts';
@@ -71,6 +74,8 @@ export const PaineisPage = () => {
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
   const [isQuedasOpen, setIsQuedasOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
@@ -339,14 +344,28 @@ export const PaineisPage = () => {
         </div>
       </Collapsible>
 
-      {/* Filtros */}
-      <FiltersBar
-        filters={filters}
-        sort={sort}
-        onFiltersChange={setFilters}
-        onSortChange={setSort}
-        onNewPanel={() => setShowNewModal(true)}
-      />
+      {/* Barra de ações: Filtros, Toggle View, Fullscreen */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+        <div className="flex-1 w-full">
+          <FiltersBar
+            filters={filters}
+            sort={sort}
+            onFiltersChange={setFilters}
+            onSortChange={setSort}
+            onNewPanel={() => setShowNewModal(true)}
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <ViewToggle view={viewMode} onViewChange={setViewMode} />
+          <button
+            onClick={() => setIsFullscreen(true)}
+            className="p-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors shadow-sm"
+            title="Modo Monitor (Tela Cheia)"
+          >
+            <Maximize2 className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
 
       {/* Loading state */}
       {loading && devices.length === 0 ? (
@@ -360,19 +379,31 @@ export const PaineisPage = () => {
         </div>
       ) : (
         <>
-          {/* Grid de cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {devices.map((device) => (
-              <PanelCard
-                key={device.id}
-                device={device}
-                onClick={() => {
-                  setSelectedDevice(device);
-                  setIsDetailModalOpen(true);
-                }}
-              />
-            ))}
-          </div>
+          {/* Visualização: Cards ou Tabela */}
+          {viewMode === 'cards' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {devices.map((device) => (
+                <PanelCard
+                  key={device.id}
+                  device={device}
+                  onClick={() => {
+                    setSelectedDevice(device);
+                    setIsDetailModalOpen(true);
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <PanelsListView
+              devices={devices}
+              sort={sort}
+              onSortChange={setSort}
+              onDeviceClick={(device) => {
+                setSelectedDevice(device);
+                setIsDetailModalOpen(true);
+              }}
+            />
+          )}
 
           {/* Paginação */}
           {total > 30 && (
@@ -410,6 +441,11 @@ export const PaineisPage = () => {
           }}
           theme={theme}
         />
+      )}
+      
+      {/* Modo Monitor Fullscreen */}
+      {isFullscreen && (
+        <FullscreenMonitor devices={devices} onClose={() => setIsFullscreen(false)} />
       )}
       
       {/* Alertas flutuantes de painéis offline */}
