@@ -83,6 +83,7 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
               <TableHead className="text-module-primary font-semibold">Severidade</TableHead>
               <TableHead className="text-module-primary font-semibold">Status</TableHead>
               <TableHead className="text-module-primary font-semibold">Aberto em</TableHead>
+              <TableHead className="text-module-primary font-semibold">Fechado em</TableHead>
               <TableHead className="text-module-primary font-semibold">Tempo</TableHead>
               <TableHead className="text-module-primary font-semibold text-right">Ações</TableHead>
             </TableRow>
@@ -121,6 +122,18 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
                     hour: '2-digit',
                     minute: '2-digit'
                   })}
+                </TableCell>
+                <TableCell className="text-module-secondary text-xs">
+                  {alert.closed_at ? (
+                    new Date(alert.closed_at).toLocaleString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                  ) : (
+                    <span className="text-module-muted">Em andamento</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-module-secondary text-xs">
                   {formatDistanceToNow(new Date(alert.opened_at), {

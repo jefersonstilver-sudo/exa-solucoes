@@ -91,7 +91,7 @@ export const AlertsFilters = ({
       </div>
 
       {/* Filters Row */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         {/* Status */}
         <Select
           value={filters.status?.[0] || 'all'}
@@ -173,6 +173,27 @@ export const AlertsFilters = ({
             <SelectItem value="AnyDesk">AnyDesk</SelectItem>
             <SelectItem value="String">String</SelectItem>
             <SelectItem value="Manual">Manual</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Duração */}
+        <Select
+          value={filters.minDuration?.toString() || 'all'}
+          onValueChange={(value) => 
+            onFiltersChange({ 
+              ...filters, 
+              minDuration: value === 'all' ? undefined : parseInt(value)
+            })
+          }
+        >
+          <SelectTrigger className="bg-module-input border-module border text-module-primary">
+            <SelectValue placeholder="Duração" />
+          </SelectTrigger>
+          <SelectContent className="bg-module-card border-module border z-50">
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="300">Acima de 5 minutos</SelectItem>
+            <SelectItem value="1800">Acima de 30 minutos</SelectItem>
+            <SelectItem value="3600">Acima de 1 hora</SelectItem>
           </SelectContent>
         </Select>
 

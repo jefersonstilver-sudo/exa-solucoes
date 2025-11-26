@@ -96,9 +96,29 @@ export const AlertCard = ({ alert, onClick }: AlertCardProps) => {
         </button>
       </div>
 
-      {/* Alert Type */}
-      <div className="mt-2 text-xs text-module-muted">
-        Tipo: {alert.alert_type}
+      {/* Time and Type */}
+      <div className="mt-2 text-xs space-y-1">
+        <div className="text-module-muted">
+          Tipo: {alert.alert_type}
+        </div>
+        {alert.opened_at && (
+          <div className="text-module-tertiary">
+            Aberto: {new Date(alert.opened_at).toLocaleString('pt-BR', { 
+              day: '2-digit', 
+              month: '2-digit', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })}
+            {alert.closed_at && (
+              <> • Fechado: {new Date(alert.closed_at).toLocaleString('pt-BR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}</>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
