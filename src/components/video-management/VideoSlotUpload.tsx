@@ -11,12 +11,14 @@ interface VideoSlotUploadProps {
   uploading: boolean;
   isUploading: boolean;
   onUpload: (slotPosition: number, file: File, title: string, scheduleRules?: ScheduleRule[]) => void;
+  companyInfoComplete?: boolean;
 }
 export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   slotPosition,
   uploading,
   isUploading,
-  onUpload
+  onUpload,
+  companyInfoComplete: companyInfoCompleteProp
 }) => {
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -24,11 +26,20 @@ export const VideoSlotUpload: React.FC<VideoSlotUploadProps> = ({
   const [titleError, setTitleError] = useState('');
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [companyInfoComplete, setCompanyInfoComplete] = useState(false);
-  const [checkingCompanyInfo, setCheckingCompanyInfo] = useState(true);
+  const [checkingCompanyInfo, setCheckingCompanyInfo] = useState(companyInfoCompleteProp === undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
+    // Se recebeu a prop do pai, usar ela e não verificar
+    if (companyInfoCompleteProp !== undefined) {
+      setCompanyInfoComplete(companyInfoCompleteProp);
+      setCheckingCompanyInfo(false);
+      return;
+    }
+    
+    // Caso contrário, verificar (fallback)
     checkCompanyInfo();
-  }, []);
+  }, [companyInfoCompleteProp]);
   const checkCompanyInfo = async () => {
     try {
       const {
