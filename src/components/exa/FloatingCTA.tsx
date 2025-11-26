@@ -44,19 +44,19 @@ const FloatingCTA = ({ variant = 'default' }: FloatingCTAProps) => {
   const whatsappLink = "https://wa.me/5545991415920?text=Oi%2C%20tenho%20interesse%20em%20anunciar%20na%20EXA!";
   
   const sizeClasses = variant === 'compact' 
-    ? 'w-12 h-12' 
-    : 'w-14 h-14';
+    ? 'w-14 h-14' 
+    : 'w-16 h-16';
     
   const iconSize = variant === 'compact' 
-    ? 'w-6 h-6' 
-    : 'w-7 h-7';
+    ? 'w-7 h-7' 
+    : 'w-8 h-8';
 
   return (
     <a
       href={whatsappLink}
       target="_blank"
       rel="noopener noreferrer"
-      className={`fixed bottom-6 right-6 z-50 ${sizeClasses} rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group animate-fade-in`}
+      className={`fixed bottom-6 right-6 z-50 ${sizeClasses} rounded-full border-0 shadow-md hover:shadow-lg hover:scale-110 transition-all duration-300 flex items-center justify-center group animate-fade-in`}
       aria-label="Falar no WhatsApp 24h"
     >
       <img 
