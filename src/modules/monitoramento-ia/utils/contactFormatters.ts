@@ -113,3 +113,73 @@ export const formatContactNameWithBuilding = (
   
   return name;
 };
+
+/**
+ * Capitaliza primeira letra de cada palavra
+ */
+const capitalize = (str: string): string => {
+  return str.split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ');
+};
+
+/**
+ * Heurística para sugerir tipo de contato baseado em keywords
+ */
+export const suggestContactType = (conversation: {
+  contact_name?: string | null;
+  contact_phone: string;
+  metadata?: {
+    agent_saved_name?: string;
+    building_name?: string;
+  };
+}): string => {
+  const name = (conversation.contact_name || '').toLowerCase();
+  const buildingName = (conversation.metadata?.agent_saved_name || conversation.metadata?.building_name || '').toLowerCase();
+  const combinedText = `${name} ${buildingName}`;
+  
+  if (/tke|schindler|thyssen|elevador/i.test(combinedText)) return 'Prestador';
+  if (/vivo|claro|oi|tim|provedor|internet|ligga/i.test(combinedText)) return 'Prestador';
+  if (/síndico|sindico|condomínio|residencial|edif[íi]cio/i.test(combinedText)) return 'Síndico';
+  if (/financeiro|cobrança|pagamento/i.test(combinedText)) return 'Administrativo';
+  if (/anunciante|campanha|publicidade|mídia/i.test(combinedText)) return 'Anunciante';
+  if (/exa|equipe/i.test(combinedText)) return 'Equipe Exa';
+  
+  return 'Contato';
+};
+
+/**
+ * Constrói o título da conversa no formato:
+ * [Agente] — [Tipo/Tag] (Nome do Contato)
+ * Ex: "Eduardo — TKE (Ederson Souza)" ou "Eduardo — Síndico (Taelli VIVO)"
+ */
+export const buildConversationTitle = (conversation: {
+  agent_key?: string;
+  contact_name?: string | null;
+  contact_phone: string;
+  contact_type?: string | null;
+  metadata?: {
+    agent_saved_name?: string;
+    building_name?: string;
+  };
+}): string => {
+  // 1. Nome do Contato (WhatsApp)
+  const contactName = conversation.contact_name || formatPhoneNumber(conversation.contact_phone);
+  
+  // 2. Nome salvo pelo agente (ZAPI/CRM) ou fallback para agent_key
+  const agentSavedName = conversation.metadata?.agent_saved_name;
+  const ownerLabel = agentSavedName 
+    || capitalize(conversation.agent_key || 'Contato');
+  
+  // 3. Tipo de contato - prioridade: contact_type > heurística
+  const contactType = conversation.contact_type && conversation.contact_type !== 'unknown'
+    ? conversation.contact_type
+    : suggestContactType(conversation);
+
+  // 4. Construir título
+  if (ownerLabel && ownerLabel !== contactName && ownerLabel !== 'Contato') {
+    return `${ownerLabel} — ${contactType} (${contactName})`;
+  }
+  
+  return `${contactName} — ${contactType}`;
+};

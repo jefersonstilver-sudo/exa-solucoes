@@ -217,8 +217,45 @@ export const useConversationContextDetailed = (
           conversationStatus = 'dormant';
         }
 
-        // === GERAR RESUMO CONTEXTUAL ===
-        const contextSummary = `Conversa iniciada em ${firstMessageDate.toLocaleDateString('pt-BR')} ${whoStarted === 'contact' ? 'pelo contato' : 'pelo agente'}. Total de ${totalMessages} mensagens (${messagesByContact} do contato, ${messagesByAgent} do agente). ${dominantSpeaker} domina a conversa com ${dominantPercentage}% das mensagens. Última interação: ${lastMessageDate.toLocaleDateString('pt-BR')} às ${lastMessageDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`;
+        // === GERAR RESUMO CONTEXTUAL MELHORADO ===
+        const shorten = (text: string, maxLen: number = 120) => 
+          text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
+
+        let contextSummary = '';
+        
+        // 1. Verificar se alguma mensagem tem ai_analysis
+        const aiSummaries = messages
+          .filter(m => m.ai_analysis?.summary || m.ai_analysis?.key_points)
+          .slice(-3);
+
+        if (aiSummaries.length > 0) {
+          const latestAI = aiSummaries[aiSummaries.length - 1].ai_analysis;
+          if (latestAI.summary) {
+            contextSummary = latestAI.summary;
+          } else if (latestAI.key_points?.length > 0) {
+            contextSummary = `Pontos-chave: ${latestAI.key_points.slice(0, 3).join(', ')}`;
+          }
+        }
+
+        // 2. Se não tem AI summary, gerar baseado em regras
+        if (!contextSummary) {
+          if (lastIssue && lastResolution) {
+            const issueAuthor = messages.find(m => m.body === lastIssue)?.direction === 'inbound' ? 'Contato' : 'Agente';
+            const resolutionAuthor = messages.find(m => m.body === lastResolution)?.direction === 'inbound' ? 'Contato' : 'Agente';
+            contextSummary = `${issueAuthor} reportou: "${shorten(lastIssue, 80)}". ${resolutionAuthor} respondeu: "${shorten(lastResolution, 80)}"`;
+          } else if (lastIssue) {
+            const issueAuthor = messages.find(m => m.body === lastIssue)?.direction === 'inbound' ? 'Contato' : 'Agente';
+            contextSummary = `${issueAuthor} reportou: "${shorten(lastIssue)}"`;
+          } else if (lastResolution) {
+            const resolutionAuthor = messages.find(m => m.body === lastResolution)?.direction === 'inbound' ? 'Contato' : 'Agente';
+            contextSummary = `${resolutionAuthor}: "${shorten(lastResolution)}"`;
+          } else if (lastMessage) {
+            const lastAuthor = lastMessage.direction === 'inbound' ? 'Contato' : lastMessage.agent_key || 'Agente';
+            contextSummary = `Última mensagem de ${lastAuthor}: "${shorten(lastMessage.body || '', 100)}"`;
+          } else {
+            contextSummary = `Conversa iniciada em ${firstMessageDate.toLocaleDateString('pt-BR')} ${whoStarted === 'contact' ? 'pelo contato' : 'pelo agente'}. Total de ${totalMessages} mensagens.`;
+          }
+        }
 
         // === SUGESTÃO DE TIPO DE CONTATO ===
         let suggestedContactType: SuggestedContactType | null = null;
