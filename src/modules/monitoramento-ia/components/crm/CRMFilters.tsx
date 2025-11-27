@@ -27,7 +27,7 @@ interface CRMFiltersProps {
 }
 
 export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false); // Inicia colapsado
   const [isImporting, setIsImporting] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [datePreset, setDatePreset] = useState<string>('all');
@@ -89,86 +89,107 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
     }
   };
 
+  // Contador de filtros ativos
+  const activeFiltersCount = [
+    filters.agentKey,
+    filters.unreadOnly,
+    filters.criticalOnly,
+    filters.hotLeadsOnly,
+    filters.sentiment,
+    filters.contactType
+  ].filter(Boolean).length;
+
   return (
     <div className={cn(
-      "backdrop-blur-xl bg-gradient-to-r from-[var(--exa-accent)]/5 via-transparent to-transparent border border-[var(--exa-border)] rounded-2xl shadow-lg overflow-hidden transition-all",
-      isExpanded ? "max-h-96" : "max-h-14"
+      "bg-white/50 backdrop-blur-sm border border-gray-200 rounded-xl overflow-hidden transition-all duration-300",
+      isExpanded ? "shadow-md" : "shadow-sm"
     )}>
-      {/* Header minimalista com botão de collapse */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3 flex-1">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <h3 className="font-medium text-foreground text-sm">Filtros</h3>
+      {/* Header minimalista elegante */}
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Botão de expansão elegante */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="h-7 px-2 gap-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
+          >
+            <Filter className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">Filtros</span>
+            {activeFiltersCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold bg-[var(--exa-accent)] text-white rounded-full">
+                {activeFiltersCount}
+              </span>
+            )}
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </Button>
           
-          {/* Quick filters quando colapsado */}
-          {!isExpanded && (
-            <div className="flex items-center gap-2 ml-auto">
+          {/* Badges minimalistas quando colapsado */}
+          {!isExpanded && activeFiltersCount > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
               {filters.agentKey && (
-                <span className="text-xs px-2 py-1 rounded-full bg-[var(--exa-accent-light)] text-[var(--exa-accent)]">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">
                   {filters.agentKey === 'sofia' ? '🤖 Sofia' : '👤 Eduardo'}
                 </span>
               )}
+              {filters.contactType && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 whitespace-nowrap flex items-center gap-1">
+                  {contactTypes.find(t => t.name === filters.contactType)?.icon || '📋'}
+                  {contactTypes.find(t => t.name === filters.contactType)?.label || filters.contactType}
+                </span>
+              )}
               {filters.unreadOnly && (
-                <span className="text-xs px-2 py-1 rounded-full bg-[var(--exa-accent-light)] text-[var(--exa-accent)]">
-                  Não lidas
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 whitespace-nowrap">
+                  💬 Não lidas
                 </span>
               )}
               {filters.criticalOnly && (
-                <span className="text-xs px-2 py-1 rounded-full bg-[var(--exa-accent-light)] text-[var(--exa-accent)]">
-                  Críticas
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700 whitespace-nowrap">
+                  🔴 Críticas
                 </span>
               )}
             </div>
           )}
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onRefresh}
-            className="h-8 w-8 p-0"
-            title="Atualizar"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="h-8 w-8 p-0"
-          >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onRefresh}
+          className="h-7 w-7 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg flex-shrink-0"
+          title="Atualizar"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+        </Button>
       </div>
 
-      {/* Conteúdo dos filtros */}
+      {/* Conteúdo dos filtros - expansível */}
       {isExpanded && (
-        <div className="px-4 pb-4 space-y-3 border-t border-[var(--exa-border)]/50 pt-3">
+        <div className="px-3 pb-3 pt-2 space-y-2.5 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200">
+          {/* Filtros principais em grid */}
           <div className="grid grid-cols-3 gap-2">
-            {/* Filtro de Agente */}
+            {/* Agente */}
             <Select
               value={filters.agentKey || 'all'}
               onValueChange={(value) => onFilterChange({ ...filters, agentKey: value === 'all' ? undefined : value })}
             >
-              <SelectTrigger className="bg-[var(--exa-bg-card)] border-[var(--exa-border)] h-9 text-sm">
+              <SelectTrigger className="bg-white border-gray-200 h-8 text-xs">
                 <SelectValue placeholder="Agente" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos Agentes</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="sofia">🤖 Sofia</SelectItem>
                 <SelectItem value="eduardo">👤 Eduardo</SelectItem>
               </SelectContent>
             </Select>
 
-            {/* Filtro de Sentimento */}
+            {/* Sentimento */}
             <Select
               value={filters.sentiment || 'all'}
               onValueChange={(value) => onFilterChange({ ...filters, sentiment: value === 'all' ? undefined : value })}
             >
-              <SelectTrigger className="bg-[var(--exa-bg-card)] border-[var(--exa-border)] h-9 text-sm">
-                <SelectValue placeholder="Sentimento" />
+              <SelectTrigger className="bg-white border-gray-200 h-8 text-xs">
+                <SelectValue placeholder="Humor" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
@@ -178,9 +199,9 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
               </SelectContent>
             </Select>
 
-            {/* Filtro de Período */}
+            {/* Período */}
             <Select value={datePreset} onValueChange={handleDatePresetChange}>
-              <SelectTrigger className="bg-[var(--exa-bg-card)] border-[var(--exa-border)] h-9 text-sm">
+              <SelectTrigger className="bg-white border-gray-200 h-8 text-xs">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
@@ -193,96 +214,99 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
             </Select>
           </div>
 
-          {/* Botões de filtro rápido minimalistas */}
-          <div className="flex flex-wrap gap-2">
+          {/* Filtros rápidos elegantes */}
+          <div className="flex flex-wrap gap-1.5">
             <Button
-              variant={filters.unreadOnly ? 'default' : 'outline'}
+              variant={filters.unreadOnly ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onFilterChange({ ...filters, unreadOnly: !filters.unreadOnly })}
               className={cn(
-                'h-8 text-xs border-[var(--exa-border)]',
-                filters.unreadOnly && 'bg-[var(--exa-accent)] hover:bg-[var(--exa-accent-hover)] text-white border-transparent'
+                'h-7 text-[11px] px-2.5',
+                filters.unreadOnly ? 'bg-[var(--exa-accent)] hover:bg-[var(--exa-accent-hover)] text-white' : 'text-gray-600 hover:bg-gray-100'
               )}
             >
-              Não lidas
+              💬 Não lidas
             </Button>
+            
             <Button
-              variant={filters.criticalOnly ? 'default' : 'outline'}
+              variant={filters.criticalOnly ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onFilterChange({ ...filters, criticalOnly: !filters.criticalOnly })}
               className={cn(
-                'h-8 text-xs border-[var(--exa-border)]',
-                filters.criticalOnly && 'bg-[var(--exa-accent)] hover:bg-[var(--exa-accent-hover)] text-white border-transparent'
+                'h-7 text-[11px] px-2.5',
+                filters.criticalOnly ? 'bg-red-500 hover:bg-red-600 text-white' : 'text-gray-600 hover:bg-gray-100'
               )}
             >
-              Críticas
+              🔴 Críticas
             </Button>
+            
             <Button
-              variant={filters.hotLeadsOnly ? 'default' : 'outline'}
+              variant={filters.hotLeadsOnly ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onFilterChange({ ...filters, hotLeadsOnly: !filters.hotLeadsOnly })}
               className={cn(
-                'h-8 text-xs border-[var(--exa-border)]',
-                filters.hotLeadsOnly && 'bg-[var(--exa-accent)] hover:bg-[var(--exa-accent-hover)] text-white border-transparent'
+                'h-7 text-[11px] px-2.5',
+                filters.hotLeadsOnly ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'text-gray-600 hover:bg-gray-100'
               )}
             >
-              Hot Leads
+              🔥 Hot Leads
             </Button>
             
             {/* Dropdown de Tipos de Contato */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant={filters.contactType ? 'default' : 'outline'}
+                  variant={filters.contactType ? 'default' : 'ghost'}
                   size="sm"
                   className={cn(
-                    'h-8 text-xs border-[var(--exa-border)] gap-1',
-                    filters.contactType && 'bg-[var(--exa-accent)] hover:bg-[var(--exa-accent-hover)] text-white border-transparent'
+                    'h-7 text-[11px] px-2.5 gap-1',
+                    filters.contactType 
+                      ? 'bg-[var(--exa-accent)] hover:bg-[var(--exa-accent-hover)] text-white' 
+                      : 'text-gray-600 hover:bg-gray-100'
                   )}
                 >
-                  <UserCircle className="w-3.5 h-3.5" />
-                  {filters.contactType 
-                    ? contactTypes.find(t => t.name === filters.contactType)?.label || 'Tipo'
-                    : 'Tipo Contato'}
+                  {filters.contactType ? (
+                    <>
+                      {contactTypes.find(t => t.name === filters.contactType)?.icon || '📋'}
+                      {contactTypes.find(t => t.name === filters.contactType)?.label || 'Tipo'}
+                    </>
+                  ) : (
+                    <>
+                      <UserCircle className="w-3 h-3" />
+                      Tipo
+                    </>
+                  )}
                   <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                align="start" 
-                className="bg-[var(--exa-bg-card)] border-[var(--exa-border)] min-w-[180px] z-50"
-              >
-                <DropdownMenuLabel className="text-xs text-[var(--exa-text-muted)]">
-                  Filtrar por tipo
+              <DropdownMenuContent align="start" className="bg-white border-gray-200 min-w-[160px]">
+                <DropdownMenuLabel className="text-[10px] text-gray-500">
+                  Tipo de Contato
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
-                {/* Opção "Todos" */}
                 <DropdownMenuItem
                   onClick={() => onFilterChange({ ...filters, contactType: undefined })}
                   className={cn(
-                    'cursor-pointer',
-                    !filters.contactType && 'bg-[var(--exa-accent-light)]'
+                    'cursor-pointer text-xs',
+                    !filters.contactType && 'bg-gray-100'
                   )}
                 >
-                  Todos os tipos
+                  Todos
                 </DropdownMenuItem>
                 
                 <DropdownMenuSeparator />
                 
-                {/* Lista de tipos */}
                 {contactTypes.map((type) => (
                   <DropdownMenuItem
                     key={type.id}
                     onClick={() => onFilterChange({ ...filters, contactType: type.name })}
                     className={cn(
-                      'cursor-pointer flex items-center gap-2',
-                      filters.contactType === type.name && 'bg-[var(--exa-accent-light)]'
+                      'cursor-pointer flex items-center gap-2 text-xs',
+                      filters.contactType === type.name && 'bg-gray-100'
                     )}
                   >
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: type.color }} 
-                    />
+                    <span className="text-sm">{type.icon}</span>
                     <span>{type.label}</span>
                   </DropdownMenuItem>
                 ))}

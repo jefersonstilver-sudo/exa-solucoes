@@ -27,21 +27,20 @@ const DashboardHeader = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-      <div className="flex-1">
-        <div className="flex items-center space-x-2 md:space-x-3 mb-3 md:mb-4">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] rounded-xl flex items-center justify-center shadow-lg">
-            <Crown className="h-5 w-5 md:h-6 md:w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">Dashboard Executivo</h1>
-          </div>
+    <div className="flex items-center justify-between gap-3">
+      {/* Left: Logo + Title compacto */}
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+          <Crown className="h-4 w-4 md:h-5 md:w-5 text-white" />
         </div>
-        
-        <DashboardBreadcrumb periodFilter={periodFilter} />
+        <div className="min-w-0">
+          <h1 className="text-base md:text-lg font-semibold text-gray-900 truncate">Dashboard</h1>
+          <DashboardBreadcrumb periodFilter={periodFilter} />
+        </div>
       </div>
       
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+      {/* Right: Actions minimalistas */}
+      <div className="flex items-center gap-2 flex-shrink-0">
         <AdminPeriodSelector
           value={periodFilter}
           onChange={onPeriodChange}
@@ -50,16 +49,15 @@ const DashboardHeader = ({
           onCustomDateChange={onCustomDateChange}
         />
         
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onRefetch} className="shadow-sm flex-1 sm:flex-none touch-target">
-            <RefreshCw className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Atualizar</span>
-          </Button>
-          <Button onClick={handleExportReport} className="bg-[#9C1E1E] hover:bg-[#180A0A] shadow-lg flex-1 sm:flex-none touch-target">
-            <Download className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Exportar</span>
-          </Button>
-        </div>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={onRefetch} 
+          className="h-8 w-8 p-0"
+          title="Atualizar"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
