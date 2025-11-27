@@ -1,55 +1,75 @@
 import React from 'react';
-import { MessageSquare, Send, Inbox, Users } from 'lucide-react';
+import { MessageSquare, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { UnifiedDashboardStats } from '@/hooks/useDashboardUnifiedStats';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@/components/ui/hover-card';
 
 interface AgentStatsRowProps {
   stats: UnifiedDashboardStats;
 }
 
 const AgentStatsRow: React.FC<AgentStatsRowProps> = ({ stats }) => {
-  const eduardoStats = stats.conversasPorAgente['Eduardo'] || { conversas: 0, enviadas: 0, recebidas: 0 };
-  const sofiaStats = stats.conversasPorAgente['Sofia'] || { conversas: 0, enviadas: 0, recebidas: 0 };
+  const eduardoStats = stats.conversasPorAgente['Eduardo'] || { 
+    conversas: 0, 
+    enviadas: 0, 
+    recebidas: 0,
+    enviadasPorTipo: {}
+  };
+  const sofiaStats = stats.conversasPorAgente['Sofia'] || { 
+    conversas: 0, 
+    enviadas: 0, 
+    recebidas: 0,
+    enviadasPorTipo: {}
+  };
 
   const formatNumber = (num: number) => {
     return num.toLocaleString('pt-BR');
   };
 
+  // Ordenar tipos por quantidade (decrescente)
+  const getSortedTypes = (enviadasPorTipo: Record<string, number>) => {
+    return Object.entries(enviadasPorTipo)
+      .sort(([, a], [, b]) => b - a);
+  };
+
   const compactCards = [
     {
-      label: 'Eduardo Enviadas',
+      label: 'Mensagens Eduardo',
       value: formatNumber(eduardoStats.enviadas),
-      icon: Send,
+      icon: MessageSquare,
       color: 'text-blue-600/70',
       bg: 'bg-blue-500/5',
+      showHover: true,
+      hoverData: getSortedTypes(eduardoStats.enviadasPorTipo),
     },
     {
-      label: 'Eduardo Recebidas',
-      value: formatNumber(eduardoStats.recebidas),
-      icon: Inbox,
-      color: 'text-blue-600/70',
-      bg: 'bg-blue-500/5',
-    },
-    {
-      label: 'Sofia Enviadas',
-      value: formatNumber(sofiaStats.enviadas),
-      icon: Send,
-      color: 'text-pink-600/70',
-      bg: 'bg-pink-500/5',
-    },
-    {
-      label: 'Sofia Recebidas',
-      value: formatNumber(sofiaStats.recebidas),
-      icon: Inbox,
-      color: 'text-pink-600/70',
-      bg: 'bg-pink-500/5',
-    },
-    {
-      label: 'Leads Conversados',
-      value: formatNumber(stats.conversas),
+      label: 'Leads Eduardo',
+      value: formatNumber(eduardoStats.conversas),
       icon: Users,
-      color: 'text-emerald-600/70',
-      bg: 'bg-emerald-500/5',
+      color: 'text-blue-600/70',
+      bg: 'bg-blue-500/5',
+      showHover: false,
+    },
+    {
+      label: 'Mensagens Sofia',
+      value: formatNumber(sofiaStats.enviadas),
+      icon: MessageSquare,
+      color: 'text-pink-600/70',
+      bg: 'bg-pink-500/5',
+      showHover: true,
+      hoverData: getSortedTypes(sofiaStats.enviadasPorTipo),
+    },
+    {
+      label: 'Leads Sofia',
+      value: formatNumber(sofiaStats.conversas),
+      icon: Users,
+      color: 'text-pink-600/70',
+      bg: 'bg-pink-500/5',
+      showHover: false,
     },
   ];
 
@@ -59,11 +79,11 @@ const AgentStatsRow: React.FC<AgentStatsRowProps> = ({ stats }) => {
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.3 }}
-      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
+      className="grid grid-cols-2 lg:grid-cols-4 gap-3"
     >
       {compactCards.map((card, index) => {
         const Icon = card.icon;
-        return (
+        const cardContent = (
           <motion.div
             key={card.label}
             initial={{ opacity: 0, y: 20 }}
@@ -84,6 +104,35 @@ const AgentStatsRow: React.FC<AgentStatsRowProps> = ({ stats }) => {
             </div>
           </motion.div>
         );
+
+        if (card.showHover && card.hoverData && card.hoverData.length > 0) {
+          return (
+            <HoverCard key={card.label} openDelay={200} closeDelay={100}>
+              <HoverCardTrigger asChild>
+                {cardContent}
+              </HoverCardTrigger>
+              <HoverCardContent className="w-64" side="bottom" align="start">
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-foreground">
+                    Detalhes por Tipo
+                  </h4>
+                  <div className="space-y-1.5">
+                    {card.hoverData.map(([tipo, quantidade]) => (
+                      <div key={tipo} className="flex items-center justify-between text-sm">
+                        <span className="text-foreground/70">{tipo}:</span>
+                        <span className="font-medium text-foreground">
+                          {formatNumber(quantidade)} mensagens
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+          );
+        }
+
+        return cardContent;
       })}
     </motion.div>
   );
