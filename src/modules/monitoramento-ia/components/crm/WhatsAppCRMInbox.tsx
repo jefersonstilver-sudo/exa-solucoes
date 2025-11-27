@@ -314,9 +314,8 @@ export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({
 
   return (
     <div className="h-full flex flex-col bg-[var(--exa-bg-card)] backdrop-blur-xl">
-      {/* Barra de busca - Visível apenas em fullscreen */}
-      {isFullscreen && (
-        <div className="p-3 border-b border-[var(--exa-border)] bg-[var(--exa-bg-primary)] backdrop-blur-sm shrink-0">
+      {/* Barra de busca - Sempre visível (estilo WhatsApp) */}
+      <div className="p-3 border-b border-[var(--exa-border)] bg-[var(--exa-bg-primary)] backdrop-blur-sm shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
@@ -332,7 +331,6 @@ export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({
             </p>
           )}
         </div>
-      )}
 
       {/* Lista de conversas */}
       <div className="flex-1 overflow-y-auto min-h-0">

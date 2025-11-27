@@ -95,10 +95,7 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
   };
 
   return (
-    <>
-      {/* Botão Flutuante Elegante - Sempre visível */}
-      <div className="fixed top-20 left-4 z-40">
-        <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
             <Button
               size="sm"
@@ -283,8 +280,6 @@ export const CRMFilters = ({ filters, onFilterChange, onRefresh }: CRMFiltersPro
               </div>
             </div>
           </PopoverContent>
-        </Popover>
-      </div>
-    </>
+    </Popover>
   );
 };
