@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Filter, ChevronDown, User, Users } from 'lucide-react';
+import { Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
+import { useContactTypes } from '../../../hooks/useContactTypes';
 import { motion } from 'framer-motion';
 
 interface MobileCRMFiltersProps {
@@ -20,7 +22,9 @@ export const MobileCRMFilters: React.FC<MobileCRMFiltersProps> = ({
   agents
 }) => {
   const [open, setOpen] = useState(false);
+  const { contactTypes, loading: contactTypesLoading } = useContactTypes();
 
+  // Contar filtros ativos
   const activeFilterCount = [
     filters.unreadOnly,
     filters.criticalOnly,
@@ -28,235 +32,210 @@ export const MobileCRMFilters: React.FC<MobileCRMFiltersProps> = ({
     filters.awaitingOnly,
     filters.agentKey,
     filters.sentiment,
-    filters.clientType
-  ].filter(Boolean).length;
+    filters.contactTypes?.length || 0
+  ].filter(v => v && (typeof v === 'boolean' || v.length > 0)).length;
 
-  const quickFilters = [
-    { key: 'unreadOnly', label: '💬 Não Lidas', active: filters.unreadOnly },
-    { key: 'criticalOnly', label: '🔴 Crítico', active: filters.criticalOnly },
-    { key: 'hotLeadsOnly', label: '🔥 Hot', active: filters.hotLeadsOnly },
-    { key: 'awaitingOnly', label: '⏰ Aguardando', active: filters.awaitingOnly }
-  ];
+  // Limpar todos os filtros
+  const clearAllFilters = () => {
+    onFilterChange({
+      agentKey: undefined,
+      contactTypes: [],
+      unreadOnly: false,
+      criticalOnly: false,
+      hotLeadsOnly: false,
+      awaitingOnly: false,
+      sentiment: undefined
+    });
+    setOpen(false);
+  };
 
-  const toggleQuickFilter = (key: string) => {
-    onFilterChange({ ...filters, [key]: !filters[key] });
+  // Toggle tipo de contato (multi-select)
+  const toggleContactType = (typeName: string) => {
+    const currentTypes = filters.contactTypes || [];
+    const newTypes = currentTypes.includes(typeName)
+      ? currentTypes.filter((t: string) => t !== typeName)
+      : [...currentTypes, typeName];
+    onFilterChange({ ...filters, contactTypes: newTypes });
   };
 
   return (
-    <div className="bg-white border-b border-border shadow-sm">
-      {/* Filtros Principais - Estilo iOS */}
-      <div className="px-4 py-3 space-y-2">
-        {/* Agente Filter - Chips estilo iOS */}
-        <div className="flex items-center gap-2">
-          <User className="w-4 h-4 text-muted-foreground" />
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {['all', ...agents.map(a => a.key)].map((agentKey) => {
-              const agent = agents.find(a => a.key === agentKey);
-              const label = agentKey === 'all' ? 'Todos' : agent?.display_name || agentKey;
-              const isActive = filters.agentKey === agentKey || (!filters.agentKey && agentKey === 'all');
-              
-              return (
-                <motion.button
-                  key={agentKey}
-                  onClick={() => onFilterChange({ ...filters, agentKey: agentKey === 'all' ? undefined : agentKey })}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
-                    isActive 
-                      ? 'bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white shadow-md' 
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {label}
-                </motion.button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Cliente Type Filter */}
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-muted-foreground" />
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {[
-              { value: undefined, label: 'Todos' },
-              { value: 'sindico', label: 'Síndico' },
-              { value: 'prestador', label: 'Prestador' },
-              { value: 'anunciante', label: 'Anunciante' }
-            ].map((type) => {
-              const isActive = filters.clientType === type.value || (!filters.clientType && !type.value);
-              
-              return (
-                <motion.button
-                  key={type.label}
-                  onClick={() => onFilterChange({ ...filters, clientType: type.value })}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
-                    isActive 
-                      ? 'bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white shadow-md' 
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {type.label}
-                </motion.button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Filters - Chips secundários */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar bg-muted/30">
-        {quickFilters.map((filter) => (
-          <motion.button
-            key={filter.key}
-            onClick={() => toggleQuickFilter(filter.key)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
-              filter.active 
-                ? 'bg-[#25D366] text-white shadow-md' 
-                : 'bg-white border text-muted-foreground hover:bg-muted/50'
-            }`}
-            whileTap={{ scale: 0.95 }}
+    <>
+      {/* Botão Flutuante Elegante */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <motion.div
+            className="fixed bottom-20 right-4 z-50"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
           >
-            {filter.label}
-          </motion.button>
-        ))}
-
-        {/* Filtros Avançados */}
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
             <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0 touch-manipulation h-8 relative"
+              size="lg"
+              className={cn(
+                "h-14 w-14 rounded-full shadow-lg backdrop-blur-sm transition-all",
+                activeFilterCount > 0
+                  ? "bg-gradient-to-r from-[#9C1E1E] to-[#D72638]"
+                  : "bg-background/80 border-2"
+              )}
             >
-              <Filter className="w-4 h-4 mr-1" />
-              Filtros
+              <Filter className="h-5 w-5" />
               {activeFilterCount > 0 && (
-                <Badge className="ml-2 h-4 min-w-4 px-1 bg-[#25D366] text-white text-xs">
+                <Badge className="absolute -top-1 -right-1 h-6 min-w-6 rounded-full px-1.5 bg-[#25D366] text-white">
                   {activeFilterCount}
                 </Badge>
               )}
             </Button>
-          </SheetTrigger>
-          
-          <SheetContent side="bottom" className="pb-safe rounded-t-3xl max-h-[80vh] overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Filtros Avançados</SheetTitle>
-            </SheetHeader>
-            
-            <div className="space-y-6 mt-6">
-              {/* Agente */}
-              <div className="space-y-2">
-                <Label>Agente</Label>
-                <Select
-                  value={filters.agentKey || 'all'}
-                  onValueChange={(value) =>
-                    onFilterChange({ ...filters, agentKey: value === 'all' ? undefined : value })
-                  }
-                >
-                  <SelectTrigger className="touch-manipulation h-12 text-base">
-                    <SelectValue placeholder="Todos os agentes" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os agentes</SelectItem>
-                    {agents.map((agent) => (
-                      <SelectItem key={agent.key} value={agent.key}>
-                        {agent.display_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          </motion.div>
+        </SheetTrigger>
 
-              {/* Sentimento */}
-              <div className="space-y-2">
-                <Label>Sentimento</Label>
-                <Select
-                  value={filters.sentiment || 'all'}
-                  onValueChange={(value) =>
-                    onFilterChange({ ...filters, sentiment: value === 'all' ? undefined : value })
-                  }
+        <SheetContent side="bottom" className="pb-safe rounded-t-3xl max-h-[85vh] overflow-y-auto">
+          <SheetHeader className="pb-4">
+            <SheetTitle className="flex items-center justify-between">
+              Filtros
+              {activeFilterCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="text-xs text-muted-foreground hover:text-destructive"
                 >
-                  <SelectTrigger className="touch-manipulation h-12 text-base">
-                    <SelectValue placeholder="Todos os sentimentos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="positive">😊 Positivo</SelectItem>
-                    <SelectItem value="neutral">😐 Neutro</SelectItem>
-                    <SelectItem value="negative">😟 Negativo</SelectItem>
-                    <SelectItem value="angry">😡 Irritado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <X className="h-3 w-3 mr-1" />
+                  Limpar tudo
+                </Button>
+              )}
+            </SheetTitle>
+          </SheetHeader>
 
-              {/* Switches */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="unread">Apenas não lidas</Label>
+          <div className="space-y-6 pb-6">
+            {/* Agentes Section */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Agentes</Label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onFilterChange({ ...filters, agentKey: undefined })}
+                  className={cn(
+                    "h-9 px-4 text-xs",
+                    !filters.agentKey && "bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white"
+                  )}
+                >
+                  Todos
+                </Button>
+                {agents.map((agent) => (
+                  <Button
+                    key={agent.key}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onFilterChange({ ...filters, agentKey: agent.key })}
+                    className={cn(
+                      "h-9 px-4 text-xs",
+                      filters.agentKey === agent.key && "bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white"
+                    )}
+                  >
+                    {agent.display_name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tipos de Contato Section - Multi-Select */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">
+                Tipos de Contato
+                {filters.contactTypes && filters.contactTypes.length > 0 && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ({filters.contactTypes.length} selecionados)
+                  </span>
+                )}
+              </Label>
+              {contactTypesLoading ? (
+                <p className="text-sm text-muted-foreground">Carregando tipos...</p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {contactTypes.map((type) => (
+                    <motion.div
+                      key={type.id}
+                      className="flex items-center space-x-3 p-3 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+                      onClick={() => toggleContactType(type.name)}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Checkbox
+                        checked={filters.contactTypes?.includes(type.name) || false}
+                        onCheckedChange={() => toggleContactType(type.name)}
+                        className="pointer-events-none"
+                      />
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="text-lg">{type.icon}</span>
+                        <Label className="text-sm font-normal cursor-pointer flex-1">
+                          {type.label}
+                        </Label>
+                        {type.color && (
+                          <div
+                            className="w-3 h-3 rounded-full border border-border/50"
+                            style={{ backgroundColor: type.color }}
+                          />
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Status Section */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Status</Label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent">
+                  <Label className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                    💬 Não Lidas
+                  </Label>
                   <Switch
-                    id="unread"
-                    checked={filters.unreadOnly}
-                    onCheckedChange={(checked) =>
+                    checked={filters.unreadOnly || false}
+                    onCheckedChange={(checked) => 
                       onFilterChange({ ...filters, unreadOnly: checked })
                     }
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="critical">Apenas críticas</Label>
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent">
+                  <Label className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                    🔴 Crítico
+                  </Label>
                   <Switch
-                    id="critical"
-                    checked={filters.criticalOnly}
-                    onCheckedChange={(checked) =>
+                    checked={filters.criticalOnly || false}
+                    onCheckedChange={(checked) => 
                       onFilterChange({ ...filters, criticalOnly: checked })
                     }
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="hot">Apenas hot leads</Label>
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent">
+                  <Label className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                    🔥 Hot Lead
+                  </Label>
                   <Switch
-                    id="hot"
-                    checked={filters.hotLeadsOnly}
-                    onCheckedChange={(checked) =>
+                    checked={filters.hotLeadsOnly || false}
+                    onCheckedChange={(checked) => 
                       onFilterChange({ ...filters, hotLeadsOnly: checked })
                     }
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="awaiting">Aguardando resposta</Label>
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent">
+                  <Label className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                    ⏰ Aguardando Resposta
+                  </Label>
                   <Switch
-                    id="awaiting"
-                    checked={filters.awaitingOnly}
-                    onCheckedChange={(checked) =>
+                    checked={filters.awaitingOnly || false}
+                    onCheckedChange={(checked) => 
                       onFilterChange({ ...filters, awaitingOnly: checked })
                     }
                   />
                 </div>
               </div>
-
-              {/* Botão Limpar */}
-              <Button
-                variant="outline"
-                className="w-full touch-manipulation h-12"
-                onClick={() => {
-                  onFilterChange({
-                    agentKey: undefined,
-                    clientType: undefined,
-                    unreadOnly: false,
-                    criticalOnly: false,
-                    hotLeadsOnly: false,
-                    awaitingOnly: false,
-                    sentiment: undefined
-                  });
-                  setOpen(false);
-                }}
-              >
-                Limpar Filtros
-              </Button>
             </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-    </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
