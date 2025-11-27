@@ -156,28 +156,26 @@ export const ConversationReportViewer: React.FC<ConversationReportViewerProps> =
   };
 
   const handleDownloadPDF = async () => {
-    if (!selectedReport || !conversation) return;
+    if (!selectedReport) return;
 
-    const buildings = conversation.conversation_buildings?.map((cb: any) => ({
-      nome: cb.building?.nome || ''
-    })) || [];
-
-    const conversationData = {
-      metrics: {
-        totalConversations: 1,
-        totalMessages: conversation.message_count || 0,
-        averageMessagesPerConv: conversation.message_count || 0,
-        awaitingResponse: 0,
-        criticalConversations: 0,
-        hotLeads: 0,
-      }
+    const reportData = {
+      conversationId: selectedReport.conversation_id,
+      generatedAt: selectedReport.generated_at,
+      report: selectedReport.report_data,
+      conversation: conversation || {}
     };
 
-    await generateConversationReportPDF(
-      conversationData,
-      selectedReport.report_data,
-      selectedReport.generated_at
-    );
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], {
+      type: 'application/json'
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `relatorio-conversa-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   if (!selectedReport) {
@@ -441,7 +439,7 @@ export const ConversationReportViewer: React.FC<ConversationReportViewerProps> =
               className="gap-2"
             >
               <Download className="w-4 h-4" />
-              Baixar PDF
+              Baixar Relatório
             </Button>
             <Button onClick={onClose}>Fechar</Button>
           </div>

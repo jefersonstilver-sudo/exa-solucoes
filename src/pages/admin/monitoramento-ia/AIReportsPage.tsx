@@ -12,8 +12,8 @@ const AIReportsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      {/* Header Fixo Moderno com Logo EXA */}
-      <header className="sticky top-0 z-50 bg-gradient-to-r from-[#9C1E1E] via-[#D72638] to-[#9C1E1E] border-b border-white/20 shadow-lg">
+      {/* Header Fixo Moderno com Logo EXA - Apenas Mobile */}
+      <header className="lg:hidden sticky top-0 z-50 bg-gradient-to-r from-[#9C1E1E] via-[#D72638] to-[#9C1E1E] border-b border-white/20 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-3 lg:py-4">
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Botão Voltar */}
