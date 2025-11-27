@@ -19,7 +19,15 @@ const MobileBottomNav = () => {
   const { buildPath } = useAdminBasePath();
   const { permissions, userInfo } = useUserPermissions();
 
-  // Definir itens baseado na role
+  // Debug: verificar role
+  console.log('🔍 MobileBottomNav - Role:', {
+    isSuperAdmin: userInfo.isSuperAdmin,
+    isAdmin: userInfo.isAdmin,
+    isFinancialAdmin: userInfo.isFinancialAdmin,
+    isMarketingAdmin: userInfo.isMarketingAdmin
+  });
+
+  // Definir itens baseado na role do usuário
   const getNavItems = (): NavItem[] => {
     const items: NavItem[] = [
       {
@@ -29,7 +37,7 @@ const MobileBottomNav = () => {
       }
     ];
 
-    // Itens específicos por role
+    // Itens específicos por role - ATUALIZADO
     if (userInfo.isSuperAdmin) {
       items.push(
         {
