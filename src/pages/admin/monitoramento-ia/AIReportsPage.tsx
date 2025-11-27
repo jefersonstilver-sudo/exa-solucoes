@@ -12,38 +12,38 @@ const AIReportsPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
+      <div className="lg:hidden sticky top-0 z-40 bg-gradient-to-r from-[#9C1E1E]/95 to-[#D72638]/95 backdrop-blur-xl border-b border-white/20 shadow-lg">
         <div className="flex items-center gap-3 px-4 py-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            className="hover:bg-gray-100 rounded-full"
+            className="hover:bg-white/10 rounded-full text-white"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Relatórios IA</h1>
-            <p className="text-xs text-gray-500">Configuração e geração</p>
+            <h1 className="text-lg font-semibold text-white">Relatórios IA</h1>
+            <p className="text-xs text-white/80">Análises avançadas com IA</p>
           </div>
         </div>
       </div>
 
       {/* Desktop Header */}
-      <div className="hidden lg:block bg-white border-b border-gray-200 shadow-sm">
+      <div className="hidden lg:block bg-gradient-to-r from-[#9C1E1E] to-[#D72638] border-b border-white/20 shadow-lg">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate(-1)}
-              className="hover:bg-gray-100 rounded-full"
+              className="hover:bg-white/10 rounded-full text-white"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Relatórios IA</h1>
-              <p className="text-sm text-gray-600">Configure e gere relatórios de conversas automaticamente</p>
+              <h1 className="text-2xl font-bold text-white">Relatórios IA</h1>
+              <p className="text-sm text-white/90">Configure e gere relatórios com análise de IA avançada</p>
             </div>
           </div>
         </div>
