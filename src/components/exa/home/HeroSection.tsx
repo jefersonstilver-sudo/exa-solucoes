@@ -13,7 +13,7 @@ const HeroMobileLayout = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/Videos%20Site/institucional.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9WaWRlb3MgU2l0ZS9pbnN0aXR1Y2lvbmFsLm1wNCIsImlhdCI6MTc2NDE4NjY3OCwiZXhwIjoxNzY0NzkxNDc4fQ.BBEzGtBpbYm4Qd-ZlhVKwW4CtVAKiwn9K-Hdx3-y14I';
+  const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/video%20vertical%20novo%20exa.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvdmlkZW8gdmVydGljYWwgbm92byBleGEubXA0IiwiaWF0IjoxNzY0MjcxMTA2LCJleHAiOjE3OTU4MDcxMDZ9.p7LRGVwfDFMfQZIB-60RiMiqlYSJD6-gDQz4HlnZYLk';
   
   const togglePlayPause = () => {
     if (videoRef.current) {
