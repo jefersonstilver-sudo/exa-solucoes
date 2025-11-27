@@ -7,6 +7,7 @@ import DashboardFinancialSummary from '@/components/admin/dashboard/DashboardFin
 import DashboardErrorState from '@/components/admin/dashboard/DashboardErrorState';
 import DashboardLoadingState from '@/components/admin/dashboard/DashboardLoadingState';
 import UnifiedStatsRow from '@/components/admin/dashboard/UnifiedStatsRow';
+import AgentStatsRow from '@/components/admin/dashboard/AgentStatsRow';
 import CRMInboxPreview from '@/components/admin/dashboard/CRMInboxPreview';
 import PanelsStatusCard from '@/components/admin/dashboard/PanelsStatusCard';
 import RecentSalesCard from '@/components/admin/dashboard/RecentSalesCard';
@@ -18,6 +19,7 @@ const Dashboard = () => {
   const [periodFilter, setPeriodFilter] = useState<ElegantPeriodType>('today');
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
+  const [showSecondaryStats, setShowSecondaryStats] = useState(false);
 
   const { start, end } = useMemo(() => {
     return getElegantPeriodDates(periodFilter, customStartDate, customEndDate);
@@ -78,10 +80,15 @@ const Dashboard = () => {
           customEndDate={customEndDate}
           onCustomDateChange={handleCustomDateChange}
           onRefetch={refetch}
+          showSecondaryStats={showSecondaryStats}
+          onToggleSecondaryStats={() => setShowSecondaryStats(!showSecondaryStats)}
         />
 
         {/* Unified Stats Row - Nova linha única com 6 cards elegantes */}
         <UnifiedStatsRow stats={unifiedStats} />
+
+        {/* Agent Stats Row - Segunda linha com métricas por agente */}
+        {showSecondaryStats && <AgentStatsRow stats={unifiedStats} />}
 
         {/* Priority Cards Grid - Mobile: Stack, Desktop: 3 cols */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
