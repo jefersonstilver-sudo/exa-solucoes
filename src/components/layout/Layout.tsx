@@ -15,7 +15,7 @@ const Layout: React.FC<LayoutProps> = memo(({ children, className = '' }) => {
   const cart = useCartOptional();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 mobile-scroll-fix">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 mobile-scroll-fix safe-area-top">
       <Header 
         cartItemsCount={cart?.itemCount || 0}
         cartAnimation={false}

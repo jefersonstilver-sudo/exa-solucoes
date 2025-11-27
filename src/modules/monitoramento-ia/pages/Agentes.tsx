@@ -58,7 +58,7 @@ export const Agentes = () => {
 
       <div className="min-h-screen bg-background">
         {/* Header Mobile - FIXO NO TOPO - Gradiente Vermelho EXA */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-[#9C1E1E] via-[#B02424] to-[#9C1E1E] shadow-lg">
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-[#9C1E1E] via-[#B02424] to-[#9C1E1E] shadow-lg pt-[env(safe-area-inset-top,0px)]">
           <div className="relative flex items-center justify-between px-4 py-3">
             {/* Botão Hambúrguer */}
             <button

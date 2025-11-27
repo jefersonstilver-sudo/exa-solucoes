@@ -125,3 +125,44 @@ input, select, textarea {
 .safe-right {
   padding-right: env(safe-area-inset-right);
 }
+
+/* === PWA STANDALONE SAFE AREAS === */
+@media all and (display-mode: standalone) {
+  /* Header fixo DEVE começar abaixo da safe area */
+  header,
+  .fixed-header {
+    top: env(safe-area-inset-top) !important;
+  }
+  
+  /* Para headers que usam top-0, adicionar padding-top */
+  .pwa-safe-header {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  /* Sidebar deve começar abaixo da safe area */
+  aside.fixed {
+    top: env(safe-area-inset-top) !important;
+  }
+}
+
+/* Classe utilitária para safe area top */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Para elementos fixed que precisam de offset */
+.fixed-safe-top {
+  top: env(safe-area-inset-top, 0px);
+}
+
+/* CSS Root Safe Area */
+:root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media all and (display-mode: standalone) {
+  html {
+    padding-top: env(safe-area-inset-top);
+  }
+}

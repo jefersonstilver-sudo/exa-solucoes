@@ -89,7 +89,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
   return (
     <aside
       className={cn(
-        `fixed top-0 left-0 h-full transition-all duration-300 ease-in-out z-50 border-r flex flex-col`,
+        `fixed left-0 h-full transition-all duration-300 ease-in-out z-50 border-r flex flex-col fixed-safe-top`,
         collapsed ? 'w-16' : 'w-64',
         'bg-[hsl(var(--exa-red-dark))] dark:bg-[hsl(var(--exa-red-dark))] border-border text-white shadow-2xl',
         // Mobile: controlar visibilidade com transform
