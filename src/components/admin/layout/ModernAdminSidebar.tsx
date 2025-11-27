@@ -292,10 +292,14 @@ export function ModernAdminSidebar() {
 
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#180A0A] via-[#3B1E1E] to-[#9C1E1E] border-r border-white/20 shadow-2xl"
+      className="h-screen bg-gradient-to-b from-[#180A0A] via-[#3B1E1E] to-[#9C1E1E] border-r border-white/20 shadow-2xl overscroll-contain"
       collapsible={isMobile ? "offcanvas" : "icon"}
       variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
-      style={{ backgroundColor: '#180A0A' }}
+      style={{ 
+        backgroundColor: '#180A0A',
+        height: '100dvh',
+        paddingTop: 'env(safe-area-inset-top)'
+      }}
     >
       <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-6'} border-b border-white/20 bg-[#180A0A]`}>
         <div className="flex items-center justify-center mb-3 md:mb-4">
@@ -359,10 +363,13 @@ export function ModernAdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent 
-        className={`${collapsed ? 'px-2' : 'px-3 md:px-4'} py-4 md:py-6 space-y-4 md:space-y-6 overflow-y-auto admin-sidebar-scroll`}
+        className={`${collapsed ? 'px-2' : 'px-3 md:px-4'} py-4 md:py-6 space-y-4 md:space-y-6 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain`}
         style={{ 
           background: 'linear-gradient(180deg, #180A0A 0%, #3B1E1E 50%, #9C1E1E 100%)',
-          backgroundColor: '#180A0A'
+          backgroundColor: '#180A0A',
+          WebkitOverflowScrolling: 'touch',
+          scrollBehavior: 'smooth',
+          paddingBottom: 'env(safe-area-inset-bottom)'
         }}
       >
         {filteredGroups.map((group) => (
@@ -380,13 +387,17 @@ export function ModernAdminSidebar() {
                    const Icon = item.icon;
 
                     const linkContent = (
-                      <NavLink
+                       <NavLink
                         to={item.href}
-                        className={`flex flex-row items-center ${collapsed ? 'px-3 py-3 gap-0 justify-center' : 'px-4 py-4 gap-3'} rounded-xl transition-all duration-200 font-medium group touch-target ${
+                        className={`flex flex-row items-center ${collapsed ? 'px-3 py-3 gap-0 justify-center' : 'px-4 py-4 gap-3'} rounded-xl transition-all duration-200 font-medium group ${
                           isActive 
                             ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
-                            : "text-white hover:bg-white/20 hover:text-white"
-                        }`}
+                            : "text-white hover:bg-white/20 hover:text-white active:scale-95"
+                        } min-h-[48px] touch-manipulation`}
+                        style={{
+                          WebkitTapHighlightColor: 'transparent',
+                          WebkitTouchCallout: 'none'
+                        }}
                         onClick={() => {
                           // Auto-fechar sidebar no mobile após clicar
                           if (isMobile) {

@@ -32,10 +32,9 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
               }`} />
               <ModernAdminHeader />
             </header>
-            <main className={`flex-1 p-3 md:p-6 overflow-y-auto bg-background min-h-0 overflow-x-hidden ${isMobile ? 'pb-20' : ''}`}>
+            <main className="flex-1 p-3 md:p-6 overflow-y-auto bg-background min-h-0 overflow-x-hidden">
               {children || <Outlet />}
             </main>
-            {isMobile && <MobileBottomNav />}
           </SidebarInset>
         </div>
       </SidebarProvider>
