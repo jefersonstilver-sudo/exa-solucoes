@@ -175,8 +175,11 @@ const HeroSection = () => {
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        {/* Vídeo Vertical - Lado Esquerdo com clip-path para cortar pontas */}
-        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px]">
+        {/* Vídeo Vertical - Lado Esquerdo enterrado com clip-path */}
+        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] -my-16 lg:-my-20">
+          {/* Sombra de transição no topo */}
+          <div className="absolute -top-16 lg:-top-20 inset-x-0 h-16 lg:h-20 bg-gradient-to-b from-black via-black/50 to-transparent z-10 pointer-events-none" />
+          
           {/* Container do vídeo com clip-path - corta 8% topo e 8% base */}
           <div 
             className="relative bg-black shadow-2xl"
@@ -199,9 +202,12 @@ const HeroSection = () => {
             </div>
           </div>
           
+          {/* Sombra de transição na base */}
+          <div className="absolute -bottom-16 lg:-bottom-20 inset-x-0 h-16 lg:h-20 bg-gradient-to-t from-black via-black/50 to-transparent z-10 pointer-events-none" />
+          
           {/* Botões FORA do clip-path - sempre visíveis */}
           {!loading && (
-            <div className="absolute bottom-[12%] right-4 flex gap-2 z-50">
+            <div className="absolute bottom-[16%] right-4 flex gap-2 z-50">
               {/* Botão Som com Tooltip */}
               <div className="relative">
                 {showSoundTooltip && (
