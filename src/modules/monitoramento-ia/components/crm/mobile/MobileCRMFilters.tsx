@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useContactTypes } from '../../../hooks/useContactTypes';
 import { motion } from 'framer-motion';
+import { IconMapper } from './IconMapper';
 
 interface MobileCRMFiltersProps {
   filters: any;
@@ -166,7 +167,7 @@ export const MobileCRMFilters: React.FC<MobileCRMFiltersProps> = ({
                         className="pointer-events-none"
                       />
                       <div className="flex items-center gap-2 flex-1">
-                        <span className="text-lg">{type.icon}</span>
+                        <IconMapper iconName={type.icon} className="w-5 h-5" />
                         <Label className="text-sm font-normal cursor-pointer flex-1">
                           {type.label}
                         </Label>

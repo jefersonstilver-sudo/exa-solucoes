@@ -16,10 +16,12 @@ import { useLeadDetails } from '../../../hooks/useLeadDetails';
 import { ConversationTags } from '../ConversationTags';
 import { ConversationNotes } from '../ConversationNotes';
 import { LeadAnalysisSection } from '../LeadAnalysisSection';
+import { ConversationReports } from '../ConversationReports';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useContactTypes } from '../../../hooks/useContactTypes';
 import { useLeadProfile } from '../../../hooks/useLeadProfile';
+import { IconMapper } from './IconMapper';
 
 interface MobileChatDetailsProps {
   conversation: any;
@@ -161,7 +163,7 @@ export const MobileChatDetails: React.FC<MobileChatDetailsProps> = ({
                 </TabsTrigger>
               </TabsList>
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 h-[calc(100vh-180px)]">
                 {/* Tab: Informações */}
                 <TabsContent value="info" className="p-4 space-y-6 m-0">
                   {/* Avatar e Nome */}
@@ -193,7 +195,7 @@ export const MobileChatDetails: React.FC<MobileChatDetailsProps> = ({
                         {contactTypes.map((type) => (
                           <SelectItem key={type.id} value={type.name}>
                             <div className="flex items-center gap-2">
-                              <span>{type.icon}</span>
+                              <IconMapper iconName={type.icon} className="w-4 h-4" />
                               <span>{type.label}</span>
                             </div>
                           </SelectItem>
@@ -372,7 +374,7 @@ export const MobileChatDetails: React.FC<MobileChatDetailsProps> = ({
 
                 {/* Tab: Análise de IA */}
                 <TabsContent value="ai" className="p-4 space-y-4 m-0">
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold text-sm flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-purple-500" />
@@ -395,11 +397,18 @@ export const MobileChatDetails: React.FC<MobileChatDetailsProps> = ({
                         <p className="text-sm text-muted-foreground">Carregando análise...</p>
                       </div>
                     ) : (
-                      <LeadAnalysisSection 
-                        profile={profile} 
-                        detectedType={lead?.contact_type || null}
-                        loading={leadLoading}
-                      />
+                      <>
+                        <LeadAnalysisSection 
+                          profile={profile} 
+                          detectedType={lead?.contact_type || null}
+                          loading={leadLoading}
+                        />
+                        
+                        {/* Relatórios Gerados */}
+                        <div className="pt-4 border-t">
+                          <ConversationReports conversationId={conversation.id} />
+                        </div>
+                      </>
                     )}
                   </div>
                 </TabsContent>
