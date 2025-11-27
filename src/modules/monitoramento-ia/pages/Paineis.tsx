@@ -11,6 +11,8 @@ import { PanelsListView } from '../components/PanelsListView';
 import { FullscreenMonitor } from '../components/FullscreenMonitor';
 import { ViewToggle } from '../components/ViewToggle';
 import { QuedaDiariaList } from '../components/QuedaDiariaList';
+import { UnifiedUptimeTimeline } from '../components/timeline/UnifiedUptimeTimeline';
+import { GroupedTimelineView } from '../components/timeline/GroupedTimelineView';
 import { OfflineAlert } from '../components/OfflineAlert';
 import { useOfflineAlerts } from '../hooks/useOfflineAlerts';
 import { AnimatePresence } from 'framer-motion';
@@ -98,6 +100,7 @@ export const PaineisPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [timelineView, setTimelineView] = useState<'unified' | 'grouped' | 'list'>('unified');
   
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
@@ -429,60 +432,123 @@ export const PaineisPage = () => {
         </div>
       </Collapsible>
 
-      {/* Quedas - Collapsible escondido por padrão no mobile */}
-      <Collapsible open={isQuedasOpen} onOpenChange={setIsQuedasOpen}>
-        <div className="bg-card border border-border rounded-[14px] p-3 lg:p-4 shadow-sm">
-          <CollapsibleTrigger className="w-full">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <AlertTriangle className="w-4 h-4 lg:w-5 lg:h-5 text-red-600 shrink-0" />
-                <h3 className="text-sm lg:text-lg font-bold text-foreground truncate">
-                  {quedaPeriod === 'hoje' ? 'Quedas de Hoje' : 
-                   quedaPeriod === 'ontem' ? 'Quedas de Ontem' :
-                   quedaPeriod === 'esta-semana' ? 'Quedas desta Semana' :
-                   quedaPeriod === '7dias' ? 'Últimos 7 Dias' : 
-                   quedaPeriod === '30dias' ? 'Últimos 30 Dias' :
-                   'Período Selecionado'}
-                </h3>
-                <Badge variant="destructive" className="animate-pulse bg-red-600 text-white text-xs lg:text-sm shrink-0">
-                  {todasQuedas.reduce((sum, painel) => sum + painel.total_ocorrencias, 0)}
-                </Badge>
-              </div>
-              <ChevronDown className={`w-4 h-4 lg:w-5 lg:h-5 text-muted-foreground transition-transform shrink-0 ${isQuedasOpen ? 'rotate-180' : ''}`} />
-            </div>
-          </CollapsibleTrigger>
-          
-          <CollapsibleContent className="mt-3 lg:mt-4">
-            <div className="flex justify-end mb-2 lg:hidden">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate('/admin/monitoramento-ia/historico-quedas');
-                }}
-              >
-                <ExternalLink className="w-3 h-3 mr-1" />
-                Histórico
-              </Button>
-            </div>
-            <div className="hidden lg:flex justify-end mb-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate('/admin/monitoramento-ia/historico-quedas');
-                }}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Ver Histórico Completo
-              </Button>
-            </div>
-            <QuedaDiariaList paineis={todasQuedas} />
-          </CollapsibleContent>
+      {/* Timeline Premium Section */}
+      <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
+        {/* View Toggle */}
+        <div className="flex items-center justify-between p-3 lg:p-4 border-b border-border/20">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <AlertTriangle className="w-4 h-4 lg:w-5 lg:h-5 text-red-600 shrink-0" />
+            <h3 className="text-sm lg:text-base font-bold text-foreground truncate">
+              {quedaPeriod === 'hoje' ? 'Quedas de Hoje' : 
+               quedaPeriod === 'ontem' ? 'Quedas de Ontem' :
+               quedaPeriod === 'esta-semana' ? 'Quedas desta Semana' :
+               quedaPeriod === '7dias' ? 'Últimos 7 Dias' : 
+               quedaPeriod === '30dias' ? 'Últimos 30 Dias' :
+               'Período Selecionado'}
+            </h3>
+            <Badge variant="destructive" className="animate-pulse bg-red-600 text-white text-xs lg:text-sm shrink-0">
+              {todasQuedas.reduce((sum, painel) => sum + painel.total_ocorrencias, 0)}
+            </Badge>
+          </div>
+
+          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+            <Button
+              variant={timelineView === 'unified' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setTimelineView('unified')}
+              className="h-7 text-xs px-2"
+              title="Timeline Unificada"
+            >
+              📊
+            </Button>
+            <Button
+              variant={timelineView === 'grouped' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setTimelineView('grouped')}
+              className="h-7 text-xs px-2"
+              title="Agrupado por Local"
+            >
+              📁
+            </Button>
+            <Button
+              variant={timelineView === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setTimelineView('list')}
+              className="h-7 text-xs px-2"
+              title="Lista Detalhada"
+            >
+              📋
+            </Button>
+          </div>
         </div>
-      </Collapsible>
+
+        {/* Timeline Content */}
+        <div className="min-h-[400px]">
+          {timelineView === 'unified' && (
+            <UnifiedUptimeTimeline
+              panels={todasQuedas.map(queda => ({
+                id: queda.painel_id,
+                code: queda.painel_nome,
+                condominiumName: queda.condominio_nome,
+                segments: queda.ocorrencias.map((occ: any, idx: number) => ({
+                  id: `${queda.painel_id}-${idx}`,
+                  startTime: new Date(occ.inicio),
+                  endTime: occ.fim ? new Date(occ.fim) : undefined,
+                  status: 'offline' as const,
+                  duration: occ.duracao_segundos
+                }))
+              }))}
+            />
+          )}
+
+          {timelineView === 'grouped' && (
+            <div className="p-3 lg:p-4">
+              <GroupedTimelineView
+                panels={todasQuedas.map(queda => ({
+                  id: queda.painel_id,
+                  code: queda.painel_nome,
+                  condominiumName: queda.condominio_nome,
+                  segments: queda.ocorrencias.map((occ: any, idx: number) => ({
+                    id: `${queda.painel_id}-${idx}`,
+                    startTime: new Date(occ.inicio),
+                    endTime: occ.fim ? new Date(occ.fim) : undefined,
+                    status: 'offline' as const,
+                    duration: occ.duracao_segundos
+                  }))
+                }))}
+                pixelsPerHour={100}
+                startHour={0}
+              />
+            </div>
+          )}
+
+          {timelineView === 'list' && (
+            <div className="p-3 lg:p-4">
+              <div className="flex justify-end mb-2 lg:hidden">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/admin/monitoramento-ia/historico-quedas')}
+                >
+                  <ExternalLink className="w-3 h-3 mr-1" />
+                  Histórico
+                </Button>
+              </div>
+              <div className="hidden lg:flex justify-end mb-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/admin/monitoramento-ia/historico-quedas')}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Ver Histórico Completo
+                </Button>
+              </div>
+              <QuedaDiariaList paineis={todasQuedas} />
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Barra de ações - Mobile otimizado */}
       <div className="flex flex-col gap-3 lg:gap-4">
