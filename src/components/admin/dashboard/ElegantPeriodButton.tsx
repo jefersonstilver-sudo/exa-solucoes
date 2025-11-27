@@ -154,18 +154,6 @@ const ElegantPeriodButton = ({
           >
             <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
             <span className="font-medium">{displayLabel}</span>
-            {!isToday && value !== 'custom' && (
-              <>
-                <span className="mx-2 text-muted-foreground">•</span>
-                <span className="text-sm text-muted-foreground">{displayDate}</span>
-              </>
-            )}
-            {isToday && (
-              <>
-                <span className="mx-2 text-muted-foreground">•</span>
-                <span className="text-sm text-muted-foreground">{displayDate}</span>
-              </>
-            )}
             <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
