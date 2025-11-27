@@ -388,6 +388,20 @@ Analise PROFUNDAMENTE os dados e retorne um JSON com a estrutura EXATA abaixo. S
       }, {}),
     };
 
+    // Buscar nome do agente se foi especificado
+    let agentDisplayName = 'Sistema';
+    if (agentKey) {
+      const { data: agentData } = await supabase
+        .from('agents')
+        .select('display_name')
+        .eq('key', agentKey)
+        .single();
+      
+      if (agentData) {
+        agentDisplayName = agentData.display_name;
+      }
+    }
+
     // Salvar log do relatório para aprendizado contínuo
     const { error: logError } = await supabase
       .from('ai_reports_log')
@@ -403,7 +417,7 @@ Analise PROFUNDAMENTE os dados e retorne um JSON com a estrutura EXATA abaixo. S
           agentKey: agentKey || 'unknown',
           messagesByType: aiInsights.messagesByType || [],
         },
-        generated_by: agentKey || 'system',
+        generated_by: agentDisplayName,
       });
 
     if (logError) {
