@@ -68,8 +68,8 @@ const Dashboard = () => {
   console.log('✅ [DASHBOARD] Renderizando dashboard completo');
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--apple-gray-50))] via-white to-[hsl(var(--apple-gray-50))] p-2 md:p-4 lg:p-6">
-      <div className="max-w-[1600px] mx-auto space-y-4 md:space-y-6">
+    <div className="min-h-screen bg-background p-2 md:p-4 lg:p-6">
+      <div className="max-w-[2000px] mx-auto space-y-4 md:space-y-6">
         {/* Header Compacto */}
         <DashboardHeader 
           periodFilter={periodFilter}

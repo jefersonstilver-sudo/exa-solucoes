@@ -24,20 +24,22 @@ export const AppleMetricCard = ({
 }: AppleMetricCardProps) => {
   return (
     <div className={cn(
-      'bg-white/90 backdrop-blur-xl border border-white/40',
+      'bg-gradient-to-br from-background via-background to-accent/5',
+      'backdrop-blur-xl border border-border/40',
       'rounded-2xl p-4 sm:p-6',
-      'shadow-[var(--shadow-glass)]',
-      'hover:scale-[1.02] hover:shadow-[var(--shadow-xl)]',
-      'transition-all duration-normal ease-apple',
-      'group',
+      'shadow-lg hover:shadow-xl',
+      'hover:scale-[1.02] hover:border-primary/20',
+      'transition-all duration-300 ease-out',
+      'relative overflow-hidden group',
+      'before:absolute before:inset-0 before:bg-gradient-to-br before:from-primary/5 before:to-transparent before:opacity-0 before:hover:opacity-100 before:transition-opacity',
       className
     )}>
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between relative z-10">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-[hsl(var(--apple-gray-500))] mb-2 truncate">
+          <p className="text-sm font-medium text-muted-foreground mb-2 truncate">
             {title}
           </p>
-          <p className="text-2xl sm:text-3xl font-bold text-[hsl(var(--apple-gray-900))] group-hover:text-[hsl(var(--exa-red))] transition-colors truncate">
+          <p className="text-2xl sm:text-3xl font-bold text-foreground group-hover:text-primary transition-colors truncate">
             {value}
           </p>
           {trend && (
@@ -50,11 +52,11 @@ export const AppleMetricCard = ({
           )}
         </div>
         <div className={cn(
-          'p-3 rounded-lg bg-gray-50 border border-gray-100',
-          iconColor,
-          'group-hover:border-[hsl(var(--exa-red))] transition-colors flex-shrink-0'
+          'p-3 rounded-lg bg-primary/10 border border-primary/20',
+          'group-hover:bg-primary/20 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/20',
+          'transition-all duration-300 flex-shrink-0'
         )}>
-          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+          <Icon className={cn("w-5 h-5 sm:w-6 sm:h-6", iconColor)} />
         </div>
       </div>
     </div>
