@@ -29,13 +29,13 @@ const DashboardMetricCardWithHover = ({
           transition={{ duration: 0.2 }}
           className="relative group cursor-pointer h-full"
         >
-          <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between min-h-[140px]">
+            <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col justify-between min-h-[140px]">
             <div className="flex items-start justify-between mb-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-muted-foreground mb-2 truncate">
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-sm font-medium text-muted-foreground mb-2 line-clamp-2">
                   {title}
                 </p>
-                <p className="text-3xl md:text-4xl font-bold text-foreground break-words">
+                <p className="text-2xl font-bold text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
                   {value}
                 </p>
               </div>

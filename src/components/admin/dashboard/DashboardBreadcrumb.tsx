@@ -1,28 +1,28 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
-import { PeriodType } from '@/components/admin/common/AdminPeriodSelector';
+import { ElegantPeriodType } from './ElegantPeriodButton';
 
 interface DashboardBreadcrumbProps {
-  periodFilter: PeriodType;
+  periodFilter: ElegantPeriodType;
 }
 
 const DashboardBreadcrumb = ({ periodFilter }: DashboardBreadcrumbProps) => {
   const getPeriodLabel = () => {
     switch (periodFilter) {
-      case 'current_month':
-        return 'Mês Atual';
-      case 'last_month':
-        return 'Mês Passado';
+      case 'today':
+        return 'Hoje';
+      case 'yesterday':
+        return 'Ontem';
+      case '3days':
+        return 'Últimos 3 dias';
+      case '7days':
+        return 'Últimos 7 dias';
+      case '30days':
+        return 'Últimos 30 dias';
       case 'custom':
         return 'Customizado';
-      case '30':
-        return '30 dias';
-      case '90':
-        return '90 dias';
-      case 'all':
-        return 'Todos';
       default:
-        return 'Mês Atual';
+        return 'Hoje';
     }
   };
 

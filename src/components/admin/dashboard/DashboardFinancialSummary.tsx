@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign } from 'lucide-react';
 import GrowthIndicator from './GrowthIndicator';
 import { MonthlyDashboardStats } from '@/hooks/useMonthlyDashboardData';
-import { PeriodType } from '@/components/admin/common/AdminPeriodSelector';
+import { ElegantPeriodType } from './ElegantPeriodButton';
 
 interface DashboardFinancialSummaryProps {
   stats: MonthlyDashboardStats;
-  periodFilter: PeriodType;
+  periodFilter: ElegantPeriodType;
   growthData: {
     revenue: number;
   } | null;

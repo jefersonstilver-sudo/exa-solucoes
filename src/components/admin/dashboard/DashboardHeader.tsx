@@ -1,13 +1,13 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Crown, RefreshCw } from 'lucide-react';
-import { PeriodType } from '@/components/admin/common/AdminPeriodSelector';
+import { ElegantPeriodType } from './ElegantPeriodButton';
 import ElegantPeriodButton from './ElegantPeriodButton';
 import DashboardBreadcrumb from './DashboardBreadcrumb';
 
 interface DashboardHeaderProps {
-  periodFilter: PeriodType;
-  onPeriodChange: (period: PeriodType) => void;
+  periodFilter: ElegantPeriodType;
+  onPeriodChange: (period: ElegantPeriodType) => void;
   customStartDate?: Date;
   customEndDate?: Date;
   onCustomDateChange?: (start: Date | undefined, end: Date | undefined) => void;

@@ -132,22 +132,44 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           hoverContent={
             <div className="space-y-3">
               <div className="flex justify-between items-center pb-2 border-b">
-                <span className="font-semibold text-foreground">Conversas no Período</span>
+                <span className="font-semibold text-foreground">Conversas do Período</span>
                 <span className="text-2xl font-bold text-primary">{stats.conversas}</span>
               </div>
-              <div className="space-y-2 text-sm max-h-48 overflow-y-auto">
-                <p className="text-muted-foreground font-medium mb-2">Por agente:</p>
-                {Object.entries(stats.conversasPorAgente).length > 0 ? (
-                  Object.entries(stats.conversasPorAgente).map(([agent, count]) => (
-                    <div key={agent} className="flex justify-between">
-                      <span className="text-muted-foreground truncate max-w-[180px]">{agent}:</span>
-                      <span className="font-medium">{count}</span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-muted-foreground text-center py-2">Nenhuma conversa</p>
-                )}
-              </div>
+              
+              {Object.keys(stats.conversasPorTipo).length > 0 ? (
+                <div className="space-y-2">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-xs text-muted-foreground">
+                        <th className="text-left py-2 font-medium">Tipo</th>
+                        <th className="text-center py-2 font-medium">Conv.</th>
+                        <th className="text-center py-2 font-medium">Enviadas</th>
+                        <th className="text-center py-2 font-medium">Recebidas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(stats.conversasPorTipo).map(([tipo, statsData]) => (
+                        <tr key={tipo} className="border-b last:border-0">
+                          <td className="py-2 text-foreground truncate max-w-[120px]">{tipo}</td>
+                          <td className="py-2 text-center font-medium">{statsData.conversas}</td>
+                          <td className="py-2 text-center text-blue-600">{statsData.enviadas}</td>
+                          <td className="py-2 text-center text-green-600">{statsData.recebidas}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 font-semibold">
+                        <td className="py-2 text-foreground">Total</td>
+                        <td className="py-2 text-center">--</td>
+                        <td className="py-2 text-center text-blue-600">{stats.mensagensEnviadas}</td>
+                        <td className="py-2 text-center text-green-600">{stats.mensagensRecebidas}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-2">Nenhuma conversa no período</p>
+              )}
             </div>
           }
         />

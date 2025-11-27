@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface ConversationTypeStats {
+  conversas: number;
+  enviadas: number;
+  recebidas: number;
+}
+
 export interface UnifiedDashboardStats {
   cadastros: number;
   cadastrosAnterior: number;
@@ -13,7 +19,9 @@ export interface UnifiedDashboardStats {
   vendas: number;
   vendasAnterior: number;
   conversas: number;
-  conversasPorAgente: Record<string, number>;
+  conversasPorTipo: Record<string, ConversationTypeStats>;
+  mensagensEnviadas: number;
+  mensagensRecebidas: number;
   prediosAtivos: number;
   prediosTotal: number;
   prediosPercentual: number;
@@ -35,7 +43,9 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
     vendas: 0,
     vendasAnterior: 0,
     conversas: 0,
-    conversasPorAgente: {},
+    conversasPorTipo: {},
+    mensagensEnviadas: 0,
+    mensagensRecebidas: 0,
     prediosAtivos: 0,
     prediosTotal: 0,
     prediosPercentual: 0,
@@ -105,19 +115,60 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
 
       const vendasAnterior = vendasAnteriores?.reduce((sum, p) => sum + (p.valor_total || 0), 0) || 0;
 
-      // 4. Conversas
-      const { data: conversasData } = await supabase
-        .from('conversations')
-        .select('agent_key')
+      // 4. Conversas com Mensagens do Período
+      const { data: mensagensData } = await supabase
+        .from('messages')
+        .select(`
+          conversation_id,
+          direction,
+          conversations!inner(contact_type)
+        `)
         .gte('created_at', start)
         .lte('created_at', end);
 
-      const conversas = conversasData?.length || 0;
-      const conversasPorAgente: Record<string, number> = {};
-      conversasData?.forEach(conv => {
-        const agent = conv.agent_key || 'unknown';
-        conversasPorAgente[agent] = (conversasPorAgente[agent] || 0) + 1;
+      // Contar conversas únicas
+      const conversasUnicas = new Set(mensagensData?.map(m => m.conversation_id) || []);
+      const conversas = conversasUnicas.size;
+
+      // Agrupar por tipo de contato
+      const conversasPorTipo: Record<string, ConversationTypeStats> = {};
+      const conversasPorId: Record<string, string> = {};
+
+      mensagensData?.forEach(msg => {
+        const contactType = (msg.conversations as any)?.contact_type || 'Sem tipo';
+        
+        // Registrar tipo de conversa
+        if (!conversasPorId[msg.conversation_id]) {
+          conversasPorId[msg.conversation_id] = contactType;
+        }
+
+        // Inicializar stats se não existir
+        if (!conversasPorTipo[contactType]) {
+          conversasPorTipo[contactType] = {
+            conversas: 0,
+            enviadas: 0,
+            recebidas: 0
+          };
+        }
+
+        // Contar mensagens
+        if (msg.direction === 'outgoing') {
+          conversasPorTipo[contactType].enviadas++;
+        } else if (msg.direction === 'incoming') {
+          conversasPorTipo[contactType].recebidas++;
+        }
       });
+
+      // Contar conversas únicas por tipo
+      Object.values(conversasPorId).forEach(tipo => {
+        if (conversasPorTipo[tipo]) {
+          conversasPorTipo[tipo].conversas++;
+        }
+      });
+
+      // Totais gerais
+      const mensagensEnviadas = Object.values(conversasPorTipo).reduce((sum, stats) => sum + stats.enviadas, 0);
+      const mensagensRecebidas = Object.values(conversasPorTipo).reduce((sum, stats) => sum + stats.recebidas, 0);
 
       // 5. Prédios Ativos
       const { data: predios } = await supabase
@@ -144,7 +195,9 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         vendas,
         vendasAnterior,
         conversas,
-        conversasPorAgente,
+        conversasPorTipo,
+        mensagensEnviadas,
+        mensagensRecebidas,
         prediosAtivos,
         prediosTotal,
         prediosPercentual,
