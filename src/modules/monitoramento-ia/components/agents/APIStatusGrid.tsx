@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Bug, Settings, Bot, Sparkles, Building2, Bell, UserCircle, AlertTriangle, ChevronDown, ChevronUp, Activity } from 'lucide-react';
+import { RefreshCw, Bug, Settings, Bot, Sparkles, Building2, Bell, UserCircle, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AgentStatus } from '../../hooks/useAgentStatus';
 import { AgentDebugPanel } from './AgentDebugPanel';
@@ -54,39 +54,6 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
   } | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(false);
   const { agentStatuses } = useZAPIRealtimeMonitor();
-  
-  const getStatusIcon = (status?: string) => {
-    switch (status) {
-      case 'online':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-      case 'offline':
-        return <XCircle className="w-5 h-5 text-red-500" />;
-      default:
-        return <AlertCircle className="w-5 h-5 text-yellow-500" />;
-    }
-  };
-
-  const getStatusText = (status?: string) => {
-    switch (status) {
-      case 'online':
-        return 'Operacional';
-      case 'offline':
-        return 'Offline';
-      default:
-        return 'Pendente';
-    }
-  };
-
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'online':
-        return 'text-green-500';
-      case 'offline':
-        return 'text-red-500';
-      default:
-        return 'text-yellow-500';
-    }
-  };
 
   const handleConfigureAgent = async (agentKey: string, provider: string) => {
     setLoadingConfig(true);
@@ -175,29 +142,6 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
                   latency={status?.latency}
                   phone={zapiStatus.phone}
                 />
-              )}
-
-              {status?.credentialsPresent === false && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-2">
-                  <p className="text-xs text-yellow-500 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    Credenciais não configuradas
-                  </p>
-                </div>
-              )}
-
-              {status?.errorMessage && (
-                <div className={`rounded p-2 ${
-                  status.status === 'pending' 
-                    ? 'bg-yellow-500/10 border border-yellow-500/20' 
-                    : 'bg-red-500/10 border border-red-500/20'
-                }`}>
-                  <p className={`text-xs ${
-                    status.status === 'pending' ? 'text-yellow-500' : 'text-red-400'
-                  }`}>
-                    {status.errorMessage}
-                  </p>
-                </div>
               )}
 
               <div className="grid grid-cols-3 gap-2">
