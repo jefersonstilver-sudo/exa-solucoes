@@ -1,201 +1,138 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
-import { motion, useAnimationControls } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface GlowMetricCardProps {
   title: string;
   value: string | number;
   icon: LucideIcon;
+  colorScheme: 'blue' | 'amber' | 'emerald' | 'violet' | 'red' | 'pink';
   trend?: string;
   trendPositive?: boolean;
-  colorScheme: 'blue' | 'amber' | 'emerald' | 'violet' | 'red' | 'pink';
-  onClick?: () => void;
   delay?: number;
+  hoverContent?: React.ReactNode;
 }
 
-const colorConfig = {
-  blue: {
-    gradient: 'from-blue-500/20 via-blue-500/10 to-blue-600/5',
-    iconBg: 'bg-blue-500/10',
-    iconColor: 'text-blue-500',
-    glowColor: 'shadow-blue-500/20',
-    hoverGlow: 'group-hover:shadow-blue-500/40',
-    progressBg: 'bg-gradient-to-r from-blue-500 to-blue-600',
-  },
-  amber: {
-    gradient: 'from-amber-500/20 via-amber-500/10 to-amber-600/5',
-    iconBg: 'bg-amber-500/10',
-    iconColor: 'text-amber-500',
-    glowColor: 'shadow-amber-500/20',
-    hoverGlow: 'group-hover:shadow-amber-500/40',
-    progressBg: 'bg-gradient-to-r from-amber-500 to-amber-600',
-  },
-  emerald: {
-    gradient: 'from-emerald-500/20 via-emerald-500/10 to-emerald-600/5',
-    iconBg: 'bg-emerald-500/10',
-    iconColor: 'text-emerald-500',
-    glowColor: 'shadow-emerald-500/20',
-    hoverGlow: 'group-hover:shadow-emerald-500/40',
-    progressBg: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
-  },
-  violet: {
-    gradient: 'from-violet-500/20 via-violet-500/10 to-violet-600/5',
-    iconBg: 'bg-violet-500/10',
-    iconColor: 'text-violet-500',
-    glowColor: 'shadow-violet-500/20',
-    hoverGlow: 'group-hover:shadow-violet-500/40',
-    progressBg: 'bg-gradient-to-r from-violet-500 to-violet-600',
-  },
-  red: {
-    gradient: 'from-[#9C1E1E]/20 via-[#9C1E1E]/10 to-[#9C1E1E]/5',
-    iconBg: 'bg-[#9C1E1E]/10',
-    iconColor: 'text-[#9C1E1E]',
-    glowColor: 'shadow-[#9C1E1E]/20',
-    hoverGlow: 'group-hover:shadow-[#9C1E1E]/40',
-    progressBg: 'bg-gradient-to-r from-[#9C1E1E] to-[#7C1818]',
-  },
-  pink: {
-    gradient: 'from-pink-500/20 via-pink-500/10 to-pink-600/5',
-    iconBg: 'bg-pink-500/10',
-    iconColor: 'text-pink-500',
-    glowColor: 'shadow-pink-500/20',
-    hoverGlow: 'group-hover:shadow-pink-500/40',
-    progressBg: 'bg-gradient-to-r from-pink-500 to-pink-600',
-  },
-};
-
-const AnimatedCounter: React.FC<{ value: string | number; className?: string }> = ({ value, className }) => {
-  const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^\d.-]/g, '')) || 0 : value;
-  const isNumeric = !isNaN(numericValue);
-  
-  if (!isNumeric) {
-    return <span className={className}>{value}</span>;
-  }
-
-  return (
-    <motion.span
-      className={className}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-    >
-      {value}
-    </motion.span>
-  );
-};
-
-const GlowMetricCard: React.FC<GlowMetricCardProps> = ({
+const GlowMetricCard = ({
   title,
   value,
   icon: Icon,
-  trend,
-  trendPositive,
   colorScheme,
-  onClick,
+  trend,
+  trendPositive = true,
   delay = 0,
-}) => {
-  const colors = colorConfig[colorScheme];
-  const controls = useAnimationControls();
+  hoverContent
+}: GlowMetricCardProps) => {
+  // Sophisticated neutral palette with subtle accents
+  const colorConfig = {
+    blue: {
+      accent: 'text-blue-600/70',
+      iconBg: 'bg-blue-500/5',
+    },
+    amber: {
+      accent: 'text-amber-600/70',
+      iconBg: 'bg-amber-500/5',
+    },
+    emerald: {
+      accent: 'text-emerald-600/70',
+      iconBg: 'bg-emerald-500/5',
+    },
+    violet: {
+      accent: 'text-violet-600/70',
+      iconBg: 'bg-violet-500/5',
+    },
+    red: {
+      accent: 'text-[#9C1E1E]/70',
+      iconBg: 'bg-[#9C1E1E]/5',
+    },
+    pink: {
+      accent: 'text-pink-600/70',
+      iconBg: 'bg-pink-500/5',
+    }
+  };
 
-  return (
+  const colors = colorConfig[colorScheme];
+
+  const cardContent = (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: delay * 0.1, ease: "easeOut" }}
-      whileHover={{ 
-        scale: 1.02, 
-        y: -4,
-        transition: { duration: 0.2 }
-      }}
-      onClick={onClick}
-      className={cn(
-        "group relative overflow-hidden rounded-2xl p-5",
-        "bg-background/60 backdrop-blur-md",
-        "border border-border/40",
-        "shadow-lg transition-all duration-300",
-        colors.glowColor,
-        colors.hoverGlow,
-        onClick && "cursor-pointer"
-      )}
+      transition={{ duration: 0.5, delay: delay * 0.1 }}
+      whileHover={{ scale: 1.02, y: -2 }}
+      className="group relative h-full"
     >
-      {/* Background Glow - Animated on hover */}
-      <div 
-        className={cn(
-          "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-          "bg-gradient-to-br",
-          colors.gradient
-        )}
-      />
-
-      {/* Content */}
-      <div className="relative z-10 flex flex-col h-full">
-        {/* Header: Title + 3D Icon */}
-        <div className="flex items-start justify-between mb-4">
-          <h3 className="text-sm font-semibold text-muted-foreground leading-tight flex-1 pr-2">
-            {title}
-          </h3>
-          
-          <motion.div
-            whileHover={{ 
-              rotate: [0, -10, 10, -10, 0],
-              scale: 1.1,
-              transition: { duration: 0.5 }
-            }}
-            className={cn(
-              "flex-shrink-0 p-2.5 rounded-xl",
-              "shadow-lg transition-all duration-300",
-              colors.iconBg,
-              "group-hover:shadow-xl"
-            )}
-          >
-            <Icon className={cn("w-5 h-5", colors.iconColor)} />
-          </motion.div>
-        </div>
-
-        {/* Value - Large and Bold */}
-        <div className="mb-4">
-          <AnimatedCounter 
-            value={value} 
-            className="text-3xl font-black text-foreground leading-none"
-          />
-        </div>
-
-        {/* Trend Indicator */}
-        {trend && (
-          <div className="mt-auto flex items-center gap-2">
-            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: '70%' }}
-                transition={{ duration: 1, delay: delay * 0.1 + 0.3, ease: "easeOut" }}
-                className={cn("h-full", colors.progressBg)}
-              />
+      {/* Sophisticated Card - Neutral with Subtle Accent */}
+      <div className="relative overflow-hidden rounded-2xl backdrop-blur-sm bg-background/60 border border-border/40 transition-all duration-500 shadow-lg hover:shadow-xl hover:border-border/60 p-6 h-full flex flex-col">
+        {/* Content Container */}
+        <div className="relative z-10 flex flex-col h-full">
+          {/* Header: Large Icon + Title */}
+          <div className="flex items-start gap-4 mb-6">
+            {/* Large Icon with Subtle Background */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.3 }}
+              className={`p-4 rounded-2xl ${colors.iconBg} backdrop-blur-sm transition-all duration-300`}
+            >
+              <Icon className={`w-8 h-8 ${colors.accent}`} />
+            </motion.div>
+            
+            {/* Title - Emphasized */}
+            <div className="flex-1 pt-1">
+              <h3 className="text-base font-semibold text-foreground/90 leading-tight">
+                {title}
+              </h3>
             </div>
-            <span className={cn(
-              "text-xs font-medium whitespace-nowrap",
-              trendPositive ? "text-emerald-500" : "text-muted-foreground"
-            )}>
-              {trend}
-            </span>
           </div>
-        )}
 
-        {/* "Ver detalhes" indicator on hover */}
-        {onClick && (
-          <motion.div
-            initial={{ opacity: 0, y: 5 }}
-            whileHover={{ opacity: 1, y: 0 }}
-            className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          >
-            <span className="text-[10px] font-medium text-muted-foreground">
-              Detalhes →
-            </span>
-          </motion.div>
-        )}
+          {/* Value - Large and Bold */}
+          <div className="mb-4 flex-1">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: delay * 0.1 + 0.2 }}
+              className="text-4xl font-black text-foreground tracking-tight"
+            >
+              {value}
+            </motion.div>
+          </div>
+
+          {/* Trend - Minimal and Elegant */}
+          {trend && (
+            <div className="pt-3 border-t border-border/30">
+              <span className={`text-sm font-medium ${trendPositive ? 'text-foreground/70' : 'text-foreground/60'}`}>
+                {trend}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </motion.div>
   );
+
+  // If there's hover content, wrap in HoverCard
+  if (hoverContent) {
+    return (
+      <HoverCard openDelay={200} closeDelay={100}>
+        <HoverCardTrigger asChild>
+          {cardContent}
+        </HoverCardTrigger>
+        <HoverCardContent 
+          side="top" 
+          align="center"
+          className="w-80 p-4"
+        >
+          {hoverContent}
+        </HoverCardContent>
+      </HoverCard>
+    );
+  }
+
+  return cardContent;
 };
 
 export default GlowMetricCard;
