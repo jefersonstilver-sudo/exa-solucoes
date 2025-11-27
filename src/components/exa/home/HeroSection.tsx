@@ -175,12 +175,12 @@ const HeroSection = () => {
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        {/* Vídeo Vertical - Lado Esquerdo */}
-        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] overflow-hidden">
-          {/* Camada de Cobertura - TOPO (cor do header) - BLOQUEIA VAZAMENTO */}
-          <div className="absolute top-0 inset-x-0 h-24 lg:h-32 bg-gradient-to-r from-[#9C1E1E] to-[#180A0A] z-30 pointer-events-none" />
+        {/* Vídeo Vertical - Lado Esquerdo enterrado sob header/ticker */}
+        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] -my-32 lg:-my-40">
+          {/* Sombra escura no topo - pontinha sob o header */}
+          <div className="absolute -top-32 lg:-top-40 inset-x-0 h-32 lg:h-40 bg-gradient-to-b from-black via-black/70 to-transparent z-10 pointer-events-none" />
           
-          {/* Container do vídeo */}
+          {/* Container do vídeo - sem bordas arredondadas nas pontas escondidas */}
           <div className="relative bg-black overflow-hidden shadow-2xl">
             <div className="aspect-[9/16]">
               {!loading && <video 
@@ -242,8 +242,8 @@ const HeroSection = () => {
             )}
           </div>
           
-          {/* Camada de Cobertura - BASE (preto sólido) - BLOQUEIA VAZAMENTO */}
-          <div className="absolute bottom-0 inset-x-0 h-24 lg:h-32 bg-black z-30 pointer-events-none" />
+          {/* Sombra escura na base - pontinha sob o ticker */}
+          <div className="absolute -bottom-32 lg:-bottom-40 inset-x-0 h-32 lg:h-40 bg-gradient-to-t from-black via-black/70 to-transparent z-10 pointer-events-none" />
         </div>
 
         {/* Texto + CTA - Lado Direito */}
