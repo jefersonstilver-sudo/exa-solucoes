@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, PieChart as PieChartIcon, BarChart3, Users, Database, AlertCircle } from 'lucide-react';
+import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp, PieChart as PieChartIcon, Users, AlertCircle } from 'lucide-react';
 import { ChartData } from '@/hooks/useSupabaseData';
 
 interface DashboardChartsProps {
@@ -13,30 +12,29 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
   const formatCurrency = (value: number) => `R$ ${value.toFixed(2)}`;
 
   const EmptyState = ({ title, description }: { title: string; description: string }) => (
-    <div className="flex flex-col items-center justify-center h-[300px] text-center p-6">
-      <AlertCircle className="h-12 w-12 text-gray-400 mb-4" />
-      <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
-      <p className="text-sm text-gray-500">{description}</p>
+    <div className="flex flex-col items-center justify-center h-[180px] text-center p-4">
+      <AlertCircle className="h-8 w-8 text-gray-400 mb-2" />
+      <h3 className="text-sm font-medium text-gray-900 mb-1">{title}</h3>
+      <p className="text-xs text-gray-500">{description}</p>
     </div>
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6 md:mt-8">
-      {/* Receita Mensal - Dados Reais */}
-      <Card className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[var(--shadow-glass)] hover:shadow-[var(--shadow-xl)] transition-all duration-normal ease-apple rounded-2xl">
-        <CardHeader className="pb-3 md:pb-6">
-          <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
-            <TrendingUp className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
-            Receita Total (Dados Reais)
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Receita Mensal */}
+      <Card className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm md:text-base text-gray-900 flex items-center">
+            <TrendingUp className="h-4 w-4 mr-2 text-[hsl(var(--exa-red))]" />
+            Receita Total
           </CardTitle>
-          <CardDescription className="text-xs md:text-sm text-gray-600 flex items-center">
-            <Database className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-            Baseado em pedidos pagos no Supabase
+          <CardDescription className="text-[10px] md:text-xs text-gray-600">
+            Últimos 12 meses
           </CardDescription>
         </CardHeader>
         <CardContent>
           {data.revenueData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={180}>
               <LineChart data={data.revenueData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis 
@@ -54,7 +52,6 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                 />
                 <Tooltip 
                   formatter={(value: any) => [formatCurrency(value), 'Receita']}
-                  labelStyle={{ color: '#1e293b' }}
                   contentStyle={{ 
                     backgroundColor: '#f8fafc', 
                     border: '1px solid #e2e8f0',
@@ -65,37 +62,36 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                 <Line 
                   type="monotone" 
                   dataKey="revenue" 
-                  stroke="#4A0968" 
+                  stroke="#9C1E1E" 
                   strokeWidth={2}
-                  dot={{ fill: '#4A0968', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: '#4A0968' }}
+                  dot={{ fill: '#9C1E1E', strokeWidth: 2, r: 3 }}
+                  activeDot={{ r: 5, fill: '#9C1E1E' }}
                 />
               </LineChart>
             </ResponsiveContainer>
           ) : (
             <EmptyState 
-              title="Nenhuma receita registrada" 
-              description="Ainda não há pedidos pagos no sistema. A receita aparecerá aqui quando os primeiros pagamentos forem processados." 
+              title="Sem receita registrada" 
+              description="Aguardando primeiros pagamentos" 
             />
           )}
         </CardContent>
       </Card>
 
-      {/* Status dos Pedidos - Dados Reais */}
-      <Card className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[var(--shadow-glass)] hover:shadow-[var(--shadow-xl)] transition-all duration-normal ease-apple rounded-2xl">
-        <CardHeader className="pb-3 md:pb-6">
-          <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
-            <PieChartIcon className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
-            Status dos Pedidos (Dados Reais)
+      {/* Status dos Pedidos */}
+      <Card className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm md:text-base text-gray-900 flex items-center">
+            <PieChartIcon className="h-4 w-4 mr-2 text-[hsl(var(--exa-red))]" />
+            Status dos Pedidos
           </CardTitle>
-          <CardDescription className="text-xs md:text-sm text-gray-600 flex items-center">
-            <Database className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-            Status atual dos pedidos no sistema
+          <CardDescription className="text-[10px] md:text-xs text-gray-600">
+            Distribuição atual
           </CardDescription>
         </CardHeader>
         <CardContent>
           {data.orderStatusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie
                   data={data.orderStatusData}
@@ -105,7 +101,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                   label={({ name, value, percent }) => 
                     `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
                   }
-                  outerRadius={70}
+                  outerRadius={60}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -121,79 +117,27 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
             </ResponsiveContainer>
           ) : (
             <EmptyState 
-              title="Nenhum pedido encontrado" 
-              description="Ainda não há pedidos no sistema. Os dados aparecerão aqui quando os primeiros pedidos forem criados." 
+              title="Sem pedidos" 
+              description="Aguardando primeiros pedidos" 
             />
           )}
         </CardContent>
       </Card>
 
-      {/* Status dos Painéis - Dados Reais */}
-      <Card className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[var(--shadow-glass)] hover:shadow-[var(--shadow-xl)] transition-all duration-normal ease-apple rounded-2xl">
-        <CardHeader className="pb-3 md:pb-6">
-          <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
-            <BarChart3 className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
-            Status dos Painéis (Dados Reais)
+      {/* Crescimento de Usuários */}
+      <Card className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow lg:col-span-2">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm md:text-base text-gray-900 flex items-center">
+            <Users className="h-4 w-4 mr-2 text-[hsl(var(--exa-red))]" />
+            Crescimento de Usuários
           </CardTitle>
-          <CardDescription className="text-xs md:text-sm text-gray-600 flex items-center">
-            <Database className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-            Status operacional dos painéis cadastrados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {data.panelStatusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={data.panelStatusData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="status" 
-                  stroke="#64748b"
-                  fontSize={10}
-                />
-                <YAxis 
-                  stroke="#64748b"
-                  fontSize={10}
-                />
-                <Tooltip 
-                  formatter={(value: any) => [value, 'Painéis']}
-                  contentStyle={{ 
-                    backgroundColor: '#f8fafc', 
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    fontSize: '12px'
-                  }}
-                />
-                <Bar 
-                  dataKey="count" 
-                  fill="#4A0968" 
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <EmptyState 
-              title="Nenhum painel encontrado" 
-              description="Ainda não há painéis cadastrados no sistema. Os dados de status aparecerão aqui quando os painéis forem registrados." 
-            />
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Crescimento de Usuários - Dados Reais */}
-      <Card className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[var(--shadow-glass)] hover:shadow-[var(--shadow-xl)] transition-all duration-normal ease-apple rounded-2xl">
-        <CardHeader className="pb-3 md:pb-6">
-          <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
-            <Users className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
-            Total de Usuários (Dados Reais)
-          </CardTitle>
-          <CardDescription className="text-xs md:text-sm text-gray-600 flex items-center">
-            <Database className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-            Usuários registrados no sistema
+          <CardDescription className="text-[10px] md:text-xs text-gray-600">
+            Evolução nos últimos meses
           </CardDescription>
         </CardHeader>
         <CardContent>
           {data.userGrowthData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={data.userGrowthData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis 
@@ -220,22 +164,22 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
                 <Area 
                   type="monotone" 
                   dataKey="users" 
-                  stroke="#4A0968" 
+                  stroke="#9C1E1E" 
                   fill="url(#colorUsers)" 
                   strokeWidth={2}
                 />
                 <defs>
                   <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4A0968" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#4A0968" stopOpacity={0.05}/>
+                    <stop offset="5%" stopColor="#9C1E1E" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#9C1E1E" stopOpacity={0.05}/>
                   </linearGradient>
                 </defs>
               </AreaChart>
             </ResponsiveContainer>
           ) : (
             <EmptyState 
-              title="Nenhum usuário encontrado" 
-              description="Ainda não há usuários registrados no sistema. Os dados aparecerão aqui quando os primeiros usuários se cadastrarem." 
+              title="Sem usuários" 
+              description="Aguardando primeiros cadastros" 
             />
           )}
         </CardContent>
