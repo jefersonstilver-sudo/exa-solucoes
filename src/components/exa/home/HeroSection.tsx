@@ -149,7 +149,7 @@ const HeroSection = () => {
         }`}
       >
         {/* Vídeo Vertical - Lado Esquerdo enterrado sob header/ticker */}
-        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] -my-16 lg:-my-20">
+        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] -my-24 lg:-my-32">
           {/* Sombra escura no topo - pontinha sob o header */}
           <div className="absolute -top-16 lg:-top-20 inset-x-0 h-20 lg:h-24 bg-gradient-to-b from-black/80 via-black/50 to-transparent z-10 pointer-events-none" />
           
