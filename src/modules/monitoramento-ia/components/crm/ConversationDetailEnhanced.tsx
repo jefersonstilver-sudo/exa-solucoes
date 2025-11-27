@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { ZAPILog } from '../../types/crmTypes';
@@ -8,6 +8,9 @@ import { Check, CheckCheck } from 'lucide-react';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
 import { MessageComposer } from './MessageComposer';
+import { useZAPIRealtimeMonitor } from '../../hooks/useZAPIRealtimeMonitor';
+import { ConnectionLostBanner } from '@/components/notifications/ConnectionLostBanner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ConversationDetailProps {
   phoneNumber: string;
@@ -25,6 +28,30 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
   onRefresh
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [agentDisplayName, setAgentDisplayName] = useState('');
+  const { agentStatuses } = useZAPIRealtimeMonitor();
+
+  const agentStatus = agentKey ? agentStatuses[agentKey] : null;
+  const isDisconnected = agentStatus?.status === 'disconnected';
+
+  // Buscar display name do agente
+  useEffect(() => {
+    const fetchAgentDisplayName = async () => {
+      if (!agentKey) return;
+      
+      const { data } = await supabase
+        .from('agents')
+        .select('display_name')
+        .eq('key', agentKey)
+        .single();
+
+      if (data) {
+        setAgentDisplayName(data.display_name);
+      }
+    };
+
+    fetchAgentDisplayName();
+  }, [agentKey]);
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -83,6 +110,14 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
         {/* Messages */}
         <div className="flex-1 overflow-y-auto overscroll-contain p-4 bg-whatsapp-bg-chat dark:bg-whatsapp-bg-main" 
              style={{ WebkitOverflowScrolling: 'touch' }}>
+          {/* Banner de conexão perdida */}
+          {isDisconnected && (
+            <ConnectionLostBanner 
+              agentName={agentDisplayName}
+              disconnectedSince={agentStatus?.last_check}
+            />
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-3">

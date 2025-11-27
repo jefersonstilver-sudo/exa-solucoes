@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Bug, Settings, Bot, Sparkles, Building2, Bell, UserCircle, AlertTriangle, ChevronDown, ChevronUp, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AgentStatus } from '../../hooks/useAgentStatus';
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { ConnectionStatusIndicator } from './ConnectionStatusIndicator';
 import { ZAPIConnectionTimeline } from './ZAPIConnectionTimeline';
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
+import { useZAPIRealtimeMonitor } from '../../hooks/useZAPIRealtimeMonitor';
 
 interface APIStatusGridProps {
   agents: Array<{
@@ -52,6 +53,7 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
     config: any 
   } | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(false);
+  const { agentStatuses } = useZAPIRealtimeMonitor();
   
   const getStatusIcon = (status?: string) => {
     switch (status) {
@@ -146,6 +148,7 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
           const status = statuses[agent.key];
           const isLoading = testing[agent.key];
           const isZAPI = agent.whatsapp_provider === 'zapi';
+          const zapiStatus = isZAPI ? agentStatuses[agent.key] : null;
 
           const previewContent = (
             <>
@@ -165,12 +168,12 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
               </div>
 
               {/* Status Indicator Premium */}
-              {isZAPI && status && (
+              {isZAPI && zapiStatus && (
                 <ConnectionStatusIndicator
-                  status={status.status as any}
-                  lastCheck={status.lastCheck}
-                  latency={status.latency}
-                  phone={status.phone}
+                  status={zapiStatus.status}
+                  lastCheck={zapiStatus.last_check}
+                  latency={status?.latency}
+                  phone={zapiStatus.phone}
                 />
               )}
 

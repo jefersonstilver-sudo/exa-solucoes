@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAgentConfig } from '../hooks/useAgentConfig';
 import { useAgentStatus } from '../hooks/useAgentStatus';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,17 @@ export const Agentes = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme } = useModuleTheme();
+  const [lastRefresh, setLastRefresh] = useState(new Date());
+
+  // Auto-refresh a cada 15 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      testAllAgents(agents);
+      setLastRefresh(new Date());
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [agents, testAllAgents]);
   if (loading) {
     return <div className="flex items-center justify-center h-screen bg-background">
         <p className="text-foreground">Carregando agentes...</p>
