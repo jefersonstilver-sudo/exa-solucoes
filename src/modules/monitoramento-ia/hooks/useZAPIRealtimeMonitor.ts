@@ -20,17 +20,52 @@ export const useZAPIRealtimeMonitor = () => {
         .eq('is_active', true);
 
       if (agents) {
-        const statuses: Record<string, ZAPIStatus> = {};
-        
-        agents.forEach((agent) => {
+        // Verificar status real de cada agente via API do Z-API
+        const statusPromises = agents.map(async (agent) => {
           const zapiConfig = agent.zapi_config as any;
-          if (zapiConfig) {
-            statuses[agent.key] = {
-              status: zapiConfig.status || 'pending',
-              last_check: zapiConfig.last_check || new Date().toISOString(),
-              phone: zapiConfig.phone,
+          if (!zapiConfig?.instance_id) {
+            return {
+              key: agent.key,
+              status: {
+                status: 'pending' as const,
+                last_check: new Date().toISOString(),
+              }
             };
           }
+
+          try {
+            // Chamar edge function para verificar status real
+            const { data: statusData, error } = await supabase.functions.invoke('check-zapi-status', {
+              body: { instanceId: zapiConfig.instance_id }
+            });
+
+            if (error) throw error;
+
+            return {
+              key: agent.key,
+              status: {
+                status: statusData?.status?.connected ? 'connected' as const : 'disconnected' as const,
+                last_check: new Date().toISOString(),
+                phone: statusData?.status?.phone,
+              }
+            };
+          } catch (error) {
+            console.error(`[useZAPIRealtimeMonitor] Erro ao verificar ${agent.key}:`, error);
+            return {
+              key: agent.key,
+              status: {
+                status: 'disconnected' as const,
+                last_check: new Date().toISOString(),
+              }
+            };
+          }
+        });
+
+        const results = await Promise.all(statusPromises);
+        const statuses: Record<string, ZAPIStatus> = {};
+        
+        results.forEach(({ key, status }) => {
+          statuses[key] = status;
         });
 
         setAgentStatuses(statuses);
