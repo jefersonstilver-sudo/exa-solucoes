@@ -1,7 +1,7 @@
 import React from 'react';
-import { Menu, Search, RefreshCw } from 'lucide-react';
+import { Menu, Search, RefreshCw, FileBarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 
 interface MobileCRMHeaderProps {
   unreadCount: number;
@@ -16,6 +16,8 @@ export const MobileCRMHeader: React.FC<MobileCRMHeaderProps> = ({
   onSearchClick,
   onRefreshClick
 }) => {
+  const navigate = useNavigate();
+
   return (
     <header className="admin-header sticky top-0 z-50 shadow-lg">
       <div className="flex items-center justify-between px-4 py-3">
@@ -54,13 +56,15 @@ export const MobileCRMHeader: React.FC<MobileCRMHeaderProps> = ({
             <RefreshCw className="w-5 h-5" />
           </Button>
 
-          {unreadCount > 0 && (
-            <div className="relative">
-              <Badge className="bg-white text-[#25D366] hover:bg-white/90 badge-pulse min-w-[20px] h-5 flex items-center justify-center px-1.5 text-xs font-bold">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Badge>
-            </div>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/admin/monitoramento-ia/relatorios-ia')}
+            className="text-white hover:bg-white/10 touch-manipulation h-10 w-10"
+            aria-label="Relatórios IA"
+          >
+            <FileBarChart className="w-5 h-5" />
+          </Button>
         </div>
       </div>
     </header>

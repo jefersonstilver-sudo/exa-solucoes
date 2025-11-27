@@ -21,6 +21,7 @@ import BenefitPurchaseInstructions from '@/pages/admin/BenefitPurchaseInstructio
 import BenefitManagement from '@/pages/admin/BenefitManagement';
 import FinancialReports from '@/pages/admin/FinancialReports';
 import EmailLogs from '@/pages/admin/EmailLogs';
+import AIReportsPage from '@/pages/admin/monitoramento-ia/AIReportsPage';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 const AdminRoutes = () => {
@@ -62,6 +63,9 @@ const AdminRoutes = () => {
       <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="comunicacoes" element={<ComunicacoesPage />} />
       <Route path="email-logs" element={<EmailLogs />} />
+      
+      {/* MONITORAMENTO IA */}
+      <Route path="monitoramento-ia/relatorios-ia" element={<AIReportsPage />} />
     </Routes>
   );
 };
