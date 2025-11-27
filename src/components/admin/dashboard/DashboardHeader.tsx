@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Crown, RefreshCw, Download } from 'lucide-react';
-import AdminPeriodSelector, { PeriodType } from '@/components/admin/common/AdminPeriodSelector';
+import { Crown, RefreshCw } from 'lucide-react';
+import { PeriodType } from '@/components/admin/common/AdminPeriodSelector';
+import ElegantPeriodButton from './ElegantPeriodButton';
 import DashboardBreadcrumb from './DashboardBreadcrumb';
-import { toast } from 'sonner';
 
 interface DashboardHeaderProps {
   periodFilter: PeriodType;
@@ -22,10 +22,6 @@ const DashboardHeader = ({
   onCustomDateChange,
   onRefetch
 }: DashboardHeaderProps) => {
-  const handleExportReport = () => {
-    toast.info('Funcionalidade de exportação será implementada em breve');
-  };
-
   return (
     <div className="flex items-center justify-between gap-3">
       {/* Left: Logo + Title compacto */}
@@ -41,7 +37,7 @@ const DashboardHeader = ({
       
       {/* Right: Actions minimalistas */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <AdminPeriodSelector
+        <ElegantPeriodButton
           value={periodFilter}
           onChange={onPeriodChange}
           customStartDate={customStartDate}
@@ -51,9 +47,9 @@ const DashboardHeader = ({
         
         <Button 
           variant="ghost" 
-          size="sm"
+          size="icon"
           onClick={onRefetch} 
-          className="h-8 w-8 p-0"
+          className="h-9 w-9"
           title="Atualizar"
         >
           <RefreshCw className="h-4 w-4" />
