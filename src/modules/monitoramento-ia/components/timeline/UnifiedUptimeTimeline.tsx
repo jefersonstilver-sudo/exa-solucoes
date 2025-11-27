@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef } from 'react';
-import { ZoomIn, ZoomOut, Maximize2, Minimize2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Minimize2, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { TimelineRulerPremium } from './TimelineRulerPremium';
 import { TimelineTrackRow } from './TimelineTrackRow';
 import { AnimatedPlayhead } from './AnimatedPlayhead';
@@ -220,6 +222,16 @@ export const UnifiedUptimeTimeline = ({
             currentTime={currentTime}
             height={timelineHeight}
           />
+        </div>
+      </div>
+
+      {/* Data atual abaixo da timeline */}
+      <div className="px-4 py-3 bg-background/60 backdrop-blur-sm border-t border-border/20">
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Calendar className="w-4 h-4" />
+          <span>
+            {format(currentTime, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: require('date-fns/locale/pt-BR').ptBR })}
+          </span>
         </div>
       </div>
 
