@@ -29,6 +29,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ConversationReport } from '../../types/crmTypes';
+import { generateConversationReportPDF } from './ConversationReportPDF';
+import { Download } from 'lucide-react';
 
 interface ConversationReportViewerProps {
   conversationId: string | null;
@@ -46,12 +48,41 @@ export const ConversationReportViewer: React.FC<ConversationReportViewerProps> =
   const [reports, setReports] = useState<ConversationReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<ConversationReport | null>(null);
   const [loading, setLoading] = useState(false);
+  const [conversation, setConversation] = useState<any>(null);
 
   useEffect(() => {
     if (open && conversationId) {
       fetchReports();
+      fetchConversationData();
     }
   }, [open, conversationId]);
+
+  const fetchConversationData = async () => {
+    if (!conversationId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select(`
+          *,
+          conversation_buildings (
+            building:buildings (
+              id,
+              nome,
+              endereco,
+              bairro
+            )
+          )
+        `)
+        .eq('id', conversationId)
+        .single();
+
+      if (error) throw error;
+      setConversation(data);
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+    }
+  };
 
   useEffect(() => {
     if (initialReportData) {
@@ -123,6 +154,31 @@ export const ConversationReportViewer: React.FC<ConversationReportViewerProps> =
       cliente_ativo: 'Cliente Ativo'
     };
     return labels[stage] || stage;
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!selectedReport || !conversation) return;
+
+    const buildings = conversation.conversation_buildings?.map((cb: any) => ({
+      nome: cb.building?.nome || ''
+    })) || [];
+
+    const conversationData = {
+      phone_number: conversation.contact_phone,
+      contact_name: conversation.contact_name,
+      contact_type: conversation.contact_type,
+      buildings: buildings,
+      first_message_at: conversation.first_message_at,
+      last_message_at: conversation.last_message_at,
+      message_count: conversation.message_count,
+      avg_response_time: conversation.avg_response_time
+    };
+
+    await generateConversationReportPDF(
+      conversationData,
+      selectedReport.report_data,
+      selectedReport.generated_at
+    );
   };
 
   if (!selectedReport) {
@@ -379,7 +435,17 @@ export const ConversationReportViewer: React.FC<ConversationReportViewerProps> =
           <div className="text-xs text-muted-foreground">
             {reports.length > 1 && `${reports.length} relatórios disponíveis`}
           </div>
-          <Button onClick={onClose}>Fechar</Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleDownloadPDF}
+              className="gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Baixar PDF
+            </Button>
+            <Button onClick={onClose}>Fechar</Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
