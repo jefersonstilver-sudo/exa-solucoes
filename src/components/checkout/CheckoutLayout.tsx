@@ -1,16 +1,14 @@
 import React, { ReactNode } from 'react';
 import Layout from '@/components/layout/Layout';
 import UnifiedCheckoutProgress from './UnifiedCheckoutProgress';
-
 interface CheckoutLayoutProps {
   children: ReactNode;
   currentStep: number;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | '6xl';
   showProgress?: boolean;
 }
-
-const CheckoutLayout: React.FC<CheckoutLayoutProps> = ({ 
-  children, 
+const CheckoutLayout: React.FC<CheckoutLayoutProps> = ({
+  children,
   currentStep,
   maxWidth = '6xl',
   showProgress = true
@@ -24,26 +22,20 @@ const CheckoutLayout: React.FC<CheckoutLayoutProps> = ({
     '4xl': 'max-w-4xl',
     '6xl': 'max-w-6xl'
   };
-
-  return (
-    <Layout>
+  return <Layout>
       <div className="min-h-screen bg-white sm:bg-gradient-to-br sm:from-gray-50 sm:via-gray-50 sm:to-gray-100">
         {/* Header com Progress integrado - FIXED para mobile */}
-        {showProgress && (
-          <div className="sticky top-[80px] sm:top-20 z-20 bg-white shadow-sm border-b py-3 sm:py-4">
+        {showProgress && <div className="sticky top-[80px] sm:top-20 z-20 bg-white shadow-sm border-b py-3 sm:py-4 px-0 my-[9px]">
             <div className={`container mx-auto px-3 sm:px-4 ${maxWidthClasses[maxWidth]}`}>
               <UnifiedCheckoutProgress currentStep={currentStep} />
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Main Content - FIXED padding mobile com espaço extra para não sobrepor stepper */}
         <div className={`container mx-auto px-3 pt-6 pb-4 sm:px-4 sm:pt-8 sm:pb-6 md:pt-10 md:pb-8 ${maxWidthClasses[maxWidth]}`}>
           {children}
         </div>
       </div>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default CheckoutLayout;
