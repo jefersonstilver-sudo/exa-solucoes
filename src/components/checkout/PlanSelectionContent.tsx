@@ -59,41 +59,74 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
     return result;
   }, [selectedPlan, cartItems, totalPrice]);
 
+  // Calcular número total de exibições (média de 245 por painel por dia * 30 dias)
+  const totalExibicoesMes = React.useMemo(() => {
+    return panelCount * 245 * 30;
+  }, [panelCount]);
+
   return (
     <div className="space-y-6 sm:space-y-8 mt-6 sm:mt-8">
-      {/* Cart Summary - Elegant Card */}
+      {/* Cart Summary - Minimalista */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-lg"
+        className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-sm"
       >
-        <div className="grid grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
           {/* Buildings */}
-          <div className="flex flex-col items-center text-center p-4 bg-gray-50/50 rounded-xl">
-            <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-[#9C1E1E] mb-2" />
-            <p className="text-xs sm:text-sm text-gray-600 mb-1">Prédios</p>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{panelCount}</p>
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#9C1E1E]/10 flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-[#9C1E1E]" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Prédios</p>
+              <p className="text-2xl font-bold text-gray-900">{panelCount}</p>
+            </div>
           </div>
 
           {/* Duration */}
-          <div className="flex flex-col items-center text-center p-4 bg-gray-50/50 rounded-xl">
-            <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-[#9C1E1E] mb-2" />
-            <p className="text-xs sm:text-sm text-gray-600 mb-1">Duração</p>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {selectedPlan ? plans[selectedPlan].months : 0}
-            </p>
-            <p className="text-xs text-gray-500">
-              {selectedPlan && plans[selectedPlan].months === 1 ? 'mês' : 'meses'}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#9C1E1E]/10 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-[#9C1E1E]" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Duração</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {selectedPlan ? plans[selectedPlan].months : 0}
+                <span className="text-sm font-normal text-gray-600 ml-1">
+                  {selectedPlan && plans[selectedPlan].months === 1 ? 'mês' : 'meses'}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {/* Exibições */}
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#9C1E1E]/10 flex items-center justify-center">
+              <svg className="w-5 h-5 text-[#9C1E1E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Exibições/mês</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {totalExibicoesMes.toLocaleString('pt-BR')}
+              </p>
+            </div>
           </div>
 
           {/* Total */}
-          <div className="flex flex-col items-center text-center p-4 bg-gradient-to-br from-[#9C1E1E]/5 to-[#D72638]/5 rounded-xl border border-[#9C1E1E]/20">
-            <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-[#9C1E1E] mb-2" />
-            <p className="text-xs sm:text-sm text-gray-600 mb-1">Total</p>
-            <p className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#D72638] bg-clip-text text-transparent leading-tight">
-              {formatCurrency(recalculatedPrice)}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-[#9C1E1E] to-[#D72638] flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#D72638] bg-clip-text text-transparent">
+                {formatCurrency(recalculatedPrice)}
+              </p>
+            </div>
           </div>
         </div>
       </motion.div>
