@@ -2,7 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { useState } from 'react';
 import { useModuleTheme, getThemeClass } from '../hooks/useModuleTheme';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { SidebarProvider, useSidebarContext } from '../context/SidebarContext';
 import { cn } from '@/lib/utils';
@@ -11,11 +11,11 @@ import '../styles/scrollbar.css';
 import '../styles/anydesk.css';
 
 export const MonitoramentoIALayout = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop: inicia expandido
+  const { isMobile, isTablet } = useAdvancedResponsive();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(isTablet); // Tablet: inicia colapsado
   const { theme, toggleTheme } = useModuleTheme();
   const themeClass = getThemeClass(theme);
   const location = useLocation();
-  const isMobile = useIsMobile();
   
   // Detectar se está na rota do CRM para layout fullscreen no mobile
   const isCRMRoute = location.pathname.includes('/crm');
@@ -55,7 +55,7 @@ const LayoutContent = ({
   isFullScreenMobile: boolean;
 }) => {
   const { sidebarOpen, setSidebarOpen } = useSidebarContext();
-  const isMobile = useIsMobile();
+  const { isMobile } = useAdvancedResponsive();
 
   return (
     <div className="h-screen flex relative bg-[var(--exa-bg-primary)] overflow-hidden"
