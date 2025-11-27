@@ -36,7 +36,10 @@ export const useZAPIRealtimeMonitor = () => {
           try {
             // Chamar edge function para verificar status real
             const { data: statusData, error } = await supabase.functions.invoke('check-zapi-status', {
-              body: { instanceId: zapiConfig.instance_id }
+              body: { 
+                instanceId: zapiConfig.instance_id,
+                instanceToken: zapiConfig.token
+              }
             });
 
             if (error) throw error;

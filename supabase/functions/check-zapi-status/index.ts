@@ -11,23 +11,16 @@ serve(async (req) => {
   }
 
   try {
-    const { instanceId } = await req.json();
+    const { instanceId, instanceToken } = await req.json();
     
-    if (!instanceId) {
-      throw new Error('instanceId is required');
+    if (!instanceId || !instanceToken) {
+      throw new Error('instanceId and instanceToken are required');
     }
 
     console.log(`[CHECK-STATUS] Verificando status da instância: ${instanceId}`);
 
-    // Buscar configuração da instância
-    const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN');
-    
-    if (!ZAPI_CLIENT_TOKEN) {
-      throw new Error('ZAPI_CLIENT_TOKEN not configured');
-    }
-
     // 1. Verificar status de conexão da instância
-    const statusUrl = `https://api.z-api.io/instances/${instanceId}/token/${ZAPI_CLIENT_TOKEN}/status`;
+    const statusUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/status`;
     console.log(`[CHECK-STATUS] Chamando: ${statusUrl}`);
     
     const statusResponse = await fetch(statusUrl);
@@ -36,7 +29,7 @@ serve(async (req) => {
     console.log(`[CHECK-STATUS] Status response:`, statusData);
 
     // 2. Verificar webhook configurado
-    const webhookUrl = `https://api.z-api.io/instances/${instanceId}/token/${ZAPI_CLIENT_TOKEN}/webhook`;
+    const webhookUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/webhook`;
     const webhookResponse = await fetch(webhookUrl);
     const webhookData = await webhookResponse.json();
     
@@ -45,7 +38,7 @@ serve(async (req) => {
     // 3. Verificar QR Code (se necessário reconectar)
     let qrCode = null;
     if (!statusData.connected) {
-      const qrUrl = `https://api.z-api.io/instances/${instanceId}/token/${ZAPI_CLIENT_TOKEN}/qr-code/image`;
+      const qrUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/qr-code/image`;
       const qrResponse = await fetch(qrUrl);
       if (qrResponse.ok) {
         const qrData = await qrResponse.json();
