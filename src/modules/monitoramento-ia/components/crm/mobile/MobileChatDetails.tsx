@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatContactName, formatPhoneSecondary } from '@/modules/monitoramento-ia/utils/contactFormatters';
+import { formatResponseTime } from '@/modules/monitoramento-ia/utils/formatters';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -349,7 +350,7 @@ export const MobileChatDetails: React.FC<MobileChatDetailsProps> = ({
                       <div className="p-3 bg-card rounded-lg border text-center">
                         <p className="text-xs text-muted-foreground mb-1">Tempo Resp.</p>
                         <p className="text-xl font-bold text-foreground">
-                          {metrics.avgResponseTimeFormatted || 'N/A'}
+                          {formatResponseTime(conversation.avg_response_time)}
                         </p>
                       </div>
                     </div>
