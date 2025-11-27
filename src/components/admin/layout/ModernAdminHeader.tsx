@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -9,12 +9,22 @@ import { useUserPermissions } from '@/hooks/useUserPermissions';
 import NotificationCenter from '@/components/admin/layout/NotificationCenter';
 import exaLogo from '@/assets/exa-logo.png';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const ModernAdminHeader = () => {
   const { userProfile, logout } = useAuth();
   const { userInfo } = useUserPermissions();
   const navigate = useNavigate();
   const { isMobile } = useAdvancedResponsive();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000); // Atualiza a cada segundo
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -79,6 +89,16 @@ const ModernAdminHeader = () => {
       )}
 
       <div className="flex items-center space-x-2 md:space-x-4">
+        {/* Data e hora com segundos em tempo real */}
+        <div className="hidden md:flex flex-col items-end text-right border-r border-border/30 pr-3 mr-1">
+          <span className="text-sm font-medium text-foreground leading-tight">
+            {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+          </span>
+          <span className="text-xs text-muted-foreground leading-tight font-mono">
+            {format(currentTime, 'HH:mm:ss')}
+          </span>
+        </div>
+        
         <NotificationCenter />
         
         <DropdownMenu>

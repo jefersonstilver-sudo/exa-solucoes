@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Crown, RefreshCw } from 'lucide-react';
 import { ElegantPeriodType } from './ElegantPeriodButton';
 import ElegantPeriodButton from './ElegantPeriodButton';
 import DashboardBreadcrumb from './DashboardBreadcrumb';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface DashboardHeaderProps {
   periodFilter: ElegantPeriodType;
@@ -25,35 +23,16 @@ const DashboardHeader = ({
   onCustomDateChange,
   onRefetch
 }: DashboardHeaderProps) => {
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000); // Atualiza a cada segundo
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <div className="flex items-center justify-between gap-3">
       {/* Left: Logo + Title compacto */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
         <div className="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-[#9C1E1E] to-[#180A0A] rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
           <Crown className="h-4 w-4 md:h-5 md:w-5 text-white" />
         </div>
         <div className="min-w-0">
           <h1 className="text-base md:text-lg font-semibold text-gray-900 truncate">Dashboard</h1>
           <DashboardBreadcrumb periodFilter={periodFilter} />
-        </div>
-        
-        {/* Data e hora com segundos em tempo real */}
-        <div className="hidden lg:flex flex-col items-start text-left ml-4 border-l border-border/50 pl-4">
-          <span className="text-sm font-medium text-foreground leading-tight">
-            {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-          </span>
-          <span className="text-xs text-muted-foreground leading-tight font-mono">
-            {format(currentTime, 'HH:mm:ss')}
-          </span>
         </div>
       </div>
       
