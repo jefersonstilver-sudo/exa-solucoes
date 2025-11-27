@@ -202,49 +202,6 @@ const HeroSection = () => {
               </div>}
             </div>
           </div>
-          
-          {/* Botões - sempre visíveis */}
-          {!loading && (
-            <div className="absolute bottom-4 right-4 flex gap-2 z-50">
-              {/* Botão Som com Tooltip */}
-              <div className="relative">
-                {showSoundTooltip && (
-                  <div className="absolute -top-16 right-0 animate-fade-in">
-                    <div className="bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg text-xs font-medium text-exa-black whitespace-nowrap">
-                      Ative o som
-                      <div className="absolute -bottom-1 right-4 w-2 h-2 bg-white/95 rotate-45"></div>
-                    </div>
-                    <div className="absolute -bottom-6 right-5 animate-bounce">
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-white">
-                        <path d="M10 4L10 16M10 16L6 12M10 16L14 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  </div>
-                )}
-                
-                <button
-                  onClick={toggleMute}
-                  className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center group"
-                  aria-label={isMuted ? "Ativar som" : "Desativar som"}
-                >
-                  {isMuted ? (
-                    <VolumeX className="w-5 h-5 text-white" />
-                  ) : (
-                    <Volume2 className="w-5 h-5 text-white" />
-                  )}
-                </button>
-              </div>
-
-              {/* Botão Reiniciar */}
-              <button
-                onClick={restartVideo}
-                className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center group"
-                aria-label="Reiniciar vídeo"
-              >
-                <RotateCcw className="w-5 h-5 text-white" />
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Texto + CTA - Lado Direito */}
@@ -268,6 +225,49 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
+      
+      {/* Botões fixos - logo acima do ticker (nunca se movem com zoom) */}
+      {!loading && (
+        <div className="absolute bottom-[130px] lg:bottom-[170px] left-1/2 -translate-x-1/2 lg:left-auto lg:right-[10%] lg:translate-x-0 flex gap-2 z-40">
+          {/* Botão Som com Tooltip */}
+          <div className="relative">
+            {showSoundTooltip && (
+              <div className="absolute -top-16 right-0 animate-fade-in">
+                <div className="bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg text-xs font-medium text-exa-black whitespace-nowrap">
+                  Ative o som
+                  <div className="absolute -bottom-1 right-4 w-2 h-2 bg-white/95 rotate-45"></div>
+                </div>
+                <div className="absolute -bottom-6 right-5 animate-bounce">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-white">
+                    <path d="M10 4L10 16M10 16L6 12M10 16L14 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+            )}
+            
+            <button
+              onClick={toggleMute}
+              className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center group"
+              aria-label={isMuted ? "Ativar som" : "Desativar som"}
+            >
+              {isMuted ? (
+                <VolumeX className="w-5 h-5 text-white" />
+              ) : (
+                <Volume2 className="w-5 h-5 text-white" />
+              )}
+            </button>
+          </div>
+
+          {/* Botão Reiniciar */}
+          <button
+            onClick={restartVideo}
+            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center group"
+            aria-label="Reiniciar vídeo"
+          >
+            <RotateCcw className="w-5 h-5 text-white" />
+          </button>
+        </div>
+      )}
       
       {/* Camada de cobertura BASE - cobre borda inferior do vídeo */}
       <div 
