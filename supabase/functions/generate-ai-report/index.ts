@@ -18,12 +18,12 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { startDate, endDate } = await req.json();
+    const { startDate, endDate, agentKey, contactType } = await req.json();
 
-    console.log('[generate-ai-report] Generating report for period:', startDate, 'to', endDate);
+    console.log('[generate-ai-report] Generating report for period:', startDate, 'to', endDate, 'agent:', agentKey, 'type:', contactType);
 
-    // Buscar conversas do período
-    const { data: conversations, error: convError } = await supabase
+    // Buscar conversas do período com filtros opcionais
+    let query = supabase
       .from('conversations')
       .select(`
         id,
@@ -31,18 +31,36 @@ serve(async (req) => {
         agent_key,
         contact_name,
         awaiting_response,
+        sentiment,
+        lead_score,
+        is_critical,
+        is_hot_lead,
+        contact_type,
         last_message_at,
         created_at,
         messages (
           id,
           body,
           direction,
-          created_at
+          created_at,
+          sentiment
         )
       `)
       .gte('created_at', startDate)
       .lte('created_at', endDate)
       .order('created_at', { ascending: false });
+    
+    // Aplicar filtro de agente se fornecido
+    if (agentKey) {
+      query = query.eq('agent_key', agentKey);
+    }
+    
+    // Aplicar filtro de tipo de contato se fornecido
+    if (contactType) {
+      query = query.eq('contact_type', contactType);
+    }
+    
+    const { data: conversations, error: convError } = await query;
 
     if (convError) {
       console.error('[generate-ai-report] Error fetching conversations:', convError);
@@ -59,6 +77,11 @@ serve(async (req) => {
       contact: conv.contact_name,
       messageCount: conv.messages?.length || 0,
       awaitingResponse: conv.awaiting_response,
+      sentiment: conv.sentiment,
+      leadScore: conv.lead_score,
+      isCritical: conv.is_critical,
+      isHotLead: conv.is_hot_lead,
+      contactType: conv.contact_type,
       lastMessage: conv.last_message_at,
       createdAt: conv.created_at,
     })) || [];
@@ -171,6 +194,8 @@ Seja específico, quantitativo e focado em insights acionáveis. Use português 
       totalMessages,
       averageMessagesPerConv: totalMessages / (conversations?.length || 1),
       awaitingResponse: conversations?.filter(c => c.awaiting_response).length || 0,
+      criticalConversations: conversations?.filter(c => c.is_critical).length || 0,
+      hotLeads: conversations?.filter(c => c.is_hot_lead).length || 0,
       agentBreakdown: conversations?.reduce((acc: any, conv) => {
         const agent = conv.agent_key || 'unknown';
         acc[agent] = (acc[agent] || 0) + 1;

@@ -21,8 +21,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
       className={cn(
         'w-full p-4 text-left transition-all border border-module-border relative',
         'rounded-lg mb-2 bg-module-card',
-        'hover:bg-[#25D366]/10 hover:border-l-4 hover:border-l-[#25D366] hover:shadow-md',
-        isSelected && 'bg-[#25D366]/15 border-l-4 border-l-[#25D366] shadow-lg',
+        'hover:bg-gradient-to-r hover:from-[#25D366]/15 hover:to-[#25D366]/5 hover:border-l-4 hover:border-l-[#25D366] hover:shadow-md',
+        isSelected && 'bg-gradient-to-r from-[#25D366]/25 to-[#25D366]/10 border-l-4 border-l-[#25D366] shadow-xl ring-2 ring-[#25D366]/20',
         hasUnread && 'border-l-4 border-l-[#25D366] bg-[#25D366]/8'
       )}
     >

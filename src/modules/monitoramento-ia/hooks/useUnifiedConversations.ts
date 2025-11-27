@@ -165,15 +165,19 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
 
       setConversations(enrichedConversations);
 
-      // Buscar mensagens dos agentes hoje
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Buscar mensagens dos agentes hoje (timezone Brazil)
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      
+      // Ajustar para timezone correto (America/Sao_Paulo = UTC-3)
+      const offset = 3 * 60 * 60 * 1000; // 3 horas em ms
+      const todayUTC = new Date(today.getTime() + offset);
       
       const { data: messagesData } = await supabase
         .from('messages')
         .select('agent_key')
         .eq('direction', 'outbound')
-        .gte('created_at', today.toISOString());
+        .gte('created_at', todayUTC.toISOString());
       
       const sofiaMsgToday = messagesData?.filter(m => m.agent_key === 'sofia').length || 0;
       const eduardoMsgToday = messagesData?.filter(m => m.agent_key === 'eduardo').length || 0;
