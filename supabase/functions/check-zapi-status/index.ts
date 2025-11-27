@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { instanceId, instanceToken } = await req.json();
+    const { instanceId, instanceToken, clientToken } = await req.json();
     
     if (!instanceId || !instanceToken) {
       throw new Error('instanceId and instanceToken are required');
@@ -19,18 +19,24 @@ serve(async (req) => {
 
     console.log(`[CHECK-STATUS] Verificando status da instância: ${instanceId}`);
 
-    // 1. Verificar status de conexão da instância
-    const statusUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/status`;
+    // 1. Verificar status de conexão da instância usando /me endpoint
+    const statusUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/me`;
     console.log(`[CHECK-STATUS] Chamando: ${statusUrl}`);
     
-    const statusResponse = await fetch(statusUrl);
+    const headers: Record<string, string> = {};
+    if (clientToken) {
+      headers['Client-Token'] = clientToken;
+      console.log(`[CHECK-STATUS] Client-Token presente`);
+    }
+    
+    const statusResponse = await fetch(statusUrl, { headers });
     const statusData = await statusResponse.json();
     
     console.log(`[CHECK-STATUS] Status response:`, statusData);
 
     // 2. Verificar webhook configurado
     const webhookUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/webhook`;
-    const webhookResponse = await fetch(webhookUrl);
+    const webhookResponse = await fetch(webhookUrl, { headers });
     const webhookData = await webhookResponse.json();
     
     console.log(`[CHECK-STATUS] Webhook config:`, webhookData);
@@ -39,7 +45,7 @@ serve(async (req) => {
     let qrCode = null;
     if (!statusData.connected) {
       const qrUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/qr-code/image`;
-      const qrResponse = await fetch(qrUrl);
+      const qrResponse = await fetch(qrUrl, { headers });
       if (qrResponse.ok) {
         const qrData = await qrResponse.json();
         qrCode = qrData.value;

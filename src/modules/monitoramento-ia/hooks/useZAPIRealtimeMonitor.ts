@@ -38,7 +38,8 @@ export const useZAPIRealtimeMonitor = () => {
             const { data: statusData, error } = await supabase.functions.invoke('check-zapi-status', {
               body: { 
                 instanceId: zapiConfig.instance_id,
-                instanceToken: zapiConfig.token
+                instanceToken: zapiConfig.token,
+                clientToken: zapiConfig.client_token
               }
             });
 
