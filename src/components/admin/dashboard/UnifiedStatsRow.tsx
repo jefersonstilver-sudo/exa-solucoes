@@ -33,8 +33,8 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
   const vendasTrend = calculateTrend(stats.vendas, stats.vendasAnterior);
 
   return (
-    <div className="w-full overflow-x-auto scrollbar-hide -mx-2 px-2">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 min-w-max lg:min-w-0">
+    <div className="w-full">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {/* 1. Cadastros */}
         <DashboardMetricCardWithHover
           title="Cadastros"
