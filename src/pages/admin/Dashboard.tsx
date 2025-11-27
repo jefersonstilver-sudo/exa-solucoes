@@ -64,33 +64,35 @@ const Dashboard = () => {
   console.log('✅ [DASHBOARD] Renderizando dashboard completo');
   
   return (
-    <div className="space-y-6 md:space-y-8 p-3 md:p-6 bg-gray-50 min-h-screen">
-      <DashboardHeader 
-        periodFilter={periodFilter}
-        onPeriodChange={handlePeriodChange}
-        customStartDate={customStartDate}
-        customEndDate={customEndDate}
-        onCustomDateChange={handleCustomDateChange}
-        onRefetch={refetch}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--apple-gray-50))] via-white to-[hsl(var(--apple-gray-50))] p-3 md:p-6 safe-area-top">
+      <div className="max-w-[1600px] mx-auto space-y-6 md:space-y-8">
+        <DashboardHeader 
+          periodFilter={periodFilter}
+          onPeriodChange={handlePeriodChange}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomDateChange={handleCustomDateChange}
+          onRefetch={refetch}
+        />
 
-      <DashboardStatsCards 
-        stats={stats}
-        growthData={growthData}
-      />
+        <DashboardStatsCards 
+          stats={stats}
+          growthData={growthData}
+        />
 
-      <DashboardCharts data={chartData} />
+        <DashboardCharts data={chartData} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        <DashboardActivities stats={stats} />
-        <DashboardQuickActions stats={stats} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+          <DashboardActivities stats={stats} />
+          <DashboardQuickActions stats={stats} />
+        </div>
+
+        <DashboardFinancialSummary 
+          stats={stats}
+          periodFilter={periodFilter}
+          growthData={growthData}
+        />
       </div>
-
-      <DashboardFinancialSummary 
-        stats={stats}
-        periodFilter={periodFilter}
-        growthData={growthData}
-      />
     </div>
   );
 };

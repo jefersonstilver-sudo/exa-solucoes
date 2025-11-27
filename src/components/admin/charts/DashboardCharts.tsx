@@ -23,7 +23,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6 md:mt-8">
       {/* Receita Mensal - Dados Reais */}
-      <Card className="bg-white border border-purple-200 shadow-sm">
+      <Card className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[var(--shadow-glass)] hover:shadow-[var(--shadow-xl)] transition-all duration-normal ease-apple rounded-2xl">
         <CardHeader className="pb-3 md:pb-6">
           <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
             <TrendingUp className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
@@ -82,7 +82,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
       </Card>
 
       {/* Status dos Pedidos - Dados Reais */}
-      <Card className="bg-white border border-purple-200 shadow-sm">
+      <Card className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[var(--shadow-glass)] hover:shadow-[var(--shadow-xl)] transition-all duration-normal ease-apple rounded-2xl">
         <CardHeader className="pb-3 md:pb-6">
           <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
             <PieChartIcon className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
@@ -129,7 +129,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
       </Card>
 
       {/* Status dos Painéis - Dados Reais */}
-      <Card className="bg-white border border-purple-200 shadow-sm">
+      <Card className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[var(--shadow-glass)] hover:shadow-[var(--shadow-xl)] transition-all duration-normal ease-apple rounded-2xl">
         <CardHeader className="pb-3 md:pb-6">
           <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
             <BarChart3 className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />
@@ -180,7 +180,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
       </Card>
 
       {/* Crescimento de Usuários - Dados Reais */}
-      <Card className="bg-white border border-purple-200 shadow-sm">
+      <Card className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[var(--shadow-glass)] hover:shadow-[var(--shadow-xl)] transition-all duration-normal ease-apple rounded-2xl">
         <CardHeader className="pb-3 md:pb-6">
           <CardTitle className="text-base md:text-lg text-gray-900 flex items-center">
             <Users className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indexa-purple" />

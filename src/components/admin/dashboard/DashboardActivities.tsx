@@ -42,10 +42,10 @@ const DashboardActivities = ({
   }];
   
   return (
-    <Card className="col-span-2">
+    <Card className="col-span-2 bg-white/90 backdrop-blur-xl border border-white/40 shadow-[var(--shadow-glass)] hover:shadow-[var(--shadow-xl)] transition-all duration-normal ease-apple rounded-2xl">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-          <Activity className="h-4 w-4 md:h-5 md:w-5" />
+        <CardTitle className="flex items-center gap-2 text-base md:text-lg text-[hsl(var(--apple-gray-900))]">
+          <Activity className="h-4 w-4 md:h-5 md:w-5 text-[hsl(var(--exa-red))]" />
           Atividades Recentes
         </CardTitle>
       </CardHeader>
@@ -54,13 +54,13 @@ const DashboardActivities = ({
           {recentActivities.map((activity) => {
             const IconComponent = activity.icon;
             return (
-              <div key={activity.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 rounded-lg border">
-                <div className={`p-2 rounded-full w-fit ${
-                  activity.type === 'success' ? 'bg-green-100 text-green-600' :
-                  activity.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
-                  'bg-blue-100 text-blue-600'
+              <div key={activity.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 rounded-xl border border-[hsl(var(--apple-gray-200))] bg-gradient-to-br from-white to-[hsl(var(--apple-gray-50))] hover:shadow-md transition-all duration-200">
+                <div className={`p-3 rounded-xl w-fit ${
+                  activity.type === 'success' ? 'bg-green-50 text-green-600 border border-green-100' :
+                  activity.type === 'warning' ? 'bg-yellow-50 text-yellow-600 border border-yellow-100' :
+                  'bg-blue-50 text-blue-600 border border-blue-100'
                 }`}>
-                  <IconComponent className="h-4 w-4" />
+                  <IconComponent className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-gray-900">

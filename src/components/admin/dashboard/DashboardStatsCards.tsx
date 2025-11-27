@@ -1,10 +1,12 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, ShoppingCart, MonitorPlay, DollarSign } from 'lucide-react';
 import GrowthIndicator from './GrowthIndicator';
 import { MonthlyDashboardStats } from '@/hooks/useMonthlyDashboardData';
 import DataIntegrityBadge from '../DataIntegrityBadge';
+import { AppleMetricCard } from '@/design-system';
+import { motion } from 'framer-motion';
+import { useCounterAnimation } from '@/hooks/useCounterAnimation';
 
 interface DashboardStatsCardsProps {
   stats: MonthlyDashboardStats;
@@ -17,7 +19,22 @@ interface DashboardStatsCardsProps {
 }
 
 const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) => {
+  const [isVisible, setIsVisible] = React.useState(false);
+  
+  React.useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  const animatedUsers = useCounterAnimation(stats.total_users, 2000, isVisible);
+  const animatedBuildings = useCounterAnimation(stats.total_buildings, 2000, isVisible);
+  const animatedPanels = useCounterAnimation(stats.online_panels, 2000, isVisible);
+
   const formatCurrency = (value: number) => {
+    if (value >= 1000000) {
+      return `R$ ${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `R$ ${(value / 1000).toFixed(1)}k`;
+    }
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
@@ -29,30 +46,27 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
   const statsCards = [
     {
       title: 'Usuários do Mês',
-      value: stats.total_users.toString(),
+      value: animatedUsers,
       accumulated: stats.total_users_accumulated,
       growth: growthData?.users || 0,
       icon: Users,
-      iconBg: 'bg-blue-100',
-      iconColor: 'text-blue-600'
+      iconColor: 'text-[hsl(var(--exa-red))]',
     },
     {
       title: 'Vendas Realizadas',
-      value: stats.total_buildings.toString(),
+      value: animatedBuildings,
       accumulated: stats.total_buildings_accumulated,
       growth: growthData?.buildings || 0,
       icon: ShoppingCart,
-      iconBg: 'bg-green-100',
-      iconColor: 'text-green-600'
+      iconColor: 'text-green-600',
     },
     {
       title: 'Painéis Online',
-      value: `${stats.online_panels}/${stats.total_panels_accumulated}`,
+      value: `${animatedPanels}/${stats.total_panels_accumulated}`,
       accumulated: stats.total_panels_accumulated,
       growth: 0,
       icon: MonitorPlay,
-      iconBg: 'bg-purple-100',
-      iconColor: 'text-purple-600'
+      iconColor: 'text-purple-600',
     },
     {
       title: 'Receita do Mês',
@@ -60,15 +74,37 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
       accumulated: null,
       growth: growthData?.revenue || 0,
       icon: DollarSign,
-      iconBg: 'bg-amber-100',
-      iconColor: 'text-amber-600'
+      iconColor: 'text-amber-600',
     }
   ];
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring" as const,
+        stiffness: 100,
+        damping: 15,
+      },
+    },
+  };
 
   return (
     <div className="space-y-3 md:space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <h2 className="text-base md:text-lg font-semibold text-gray-900">Estatísticas Gerais</h2>
+        <h2 className="text-base md:text-lg font-semibold text-[hsl(var(--apple-gray-900))]">Estatísticas Gerais</h2>
         <DataIntegrityBadge 
           isRealData={hasRealData}
           dataSource="Supabase - Dados Reais"
@@ -76,34 +112,32 @@ const DashboardStatsCards = ({ stats, growthData }: DashboardStatsCardsProps) =>
         />
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-      {statsCards.map((stat, index) => (
-        <Card key={index} className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3">
-            <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">
-              {stat.title}
-            </CardTitle>
-            <div className={`w-10 h-10 md:w-12 md:h-12 ${stat.iconBg} rounded-xl flex items-center justify-center`}>
-              <stat.icon className={`h-5 w-5 md:h-6 md:w-6 ${stat.iconColor}`} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 break-words">{stat.value}</div>
-            <div className="space-y-1">
-              <GrowthIndicator 
-                value={stat.growth} 
-                label="vs mês anterior" 
-              />
-              {stat.accumulated !== null && (
-                <div className="text-xs text-gray-500">
-                  Total acumulado: {stat.accumulated.toLocaleString()}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <motion.div
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {statsCards.map((card, index) => (
+          <motion.div key={index} variants={cardVariants}>
+            <AppleMetricCard
+              title={card.title}
+              value={card.value}
+              icon={card.icon}
+              iconColor={card.iconColor}
+              trend={card.growth !== 0 ? {
+                value: `${card.growth > 0 ? '+' : ''}${card.growth.toFixed(1)}%`,
+                isPositive: card.growth >= 0,
+              } : undefined}
+            />
+            {card.accumulated !== null && (
+              <div className="mt-2 text-xs text-[hsl(var(--apple-gray-500))] px-4">
+                Total: <span className="font-semibold text-[hsl(var(--apple-gray-700))]">{card.accumulated.toLocaleString()}</span>
+              </div>
+            )}
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 };
