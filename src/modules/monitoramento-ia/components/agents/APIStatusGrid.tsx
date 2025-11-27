@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Bug, Settings, Bot, Sparkles, Building2, Bell, UserCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, RefreshCw, Bug, Settings, Bot, Sparkles, Building2, Bell, UserCircle, AlertTriangle, ChevronDown, ChevronUp, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AgentStatus } from '../../hooks/useAgentStatus';
 import { AgentDebugPanel } from './AgentDebugPanel';
 import { ZAPICredentialsModal } from './ZAPICredentialsModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ConnectionStatusIndicator } from './ConnectionStatusIndicator';
+import { ZAPIConnectionTimeline } from './ZAPIConnectionTimeline';
+import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
 
 interface APIStatusGridProps {
   agents: Array<{
@@ -138,57 +141,41 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
     <div className="bg-module-card rounded-[14px] border border-module p-6">
       <h2 className="text-xl font-bold text-module-primary mb-4">Status dos Agentes</h2>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {activeAgents.map((agent) => {
           const status = statuses[agent.key];
           const isLoading = testing[agent.key];
+          const isZAPI = agent.whatsapp_provider === 'zapi';
 
-          return (
-            <div 
-              key={agent.key}
-              className="bg-module-input rounded-lg border border-module p-4 hover:border-module-muted transition-colors"
-            >
-              <div className="flex items-start justify-between mb-3">
+          const previewContent = (
+            <>
+              <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">{getAgentIcon(agent.key)}</span>
+                  <span className="text-xl">{getAgentIcon(agent.key)}</span>
                   <div>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(status?.status)}
-                      <span className="text-module-primary font-medium">{agent.display_name}</span>
-                    </div>
-                    <p className="text-xs text-module-tertiary mt-0.5">
+                    <span className="text-sm font-semibold text-module-primary">
+                      {agent.display_name}
+                    </span>
+                    <p className="text-xs text-module-tertiary">
                       {getProviderName(agent.whatsapp_provider)}
+                      {status?.latency && ` • ${status.latency}ms`}
                     </p>
                   </div>
                 </div>
-                <span className={`text-xs font-medium ${getStatusColor(status?.status)}`}>
-                  {getStatusText(status?.status)}
-                </span>
               </div>
 
-              <p className="text-sm text-module-secondary mb-3 line-clamp-3">{agent.description}</p>
-
-              {status?.lastCheck && (
-                <p className="text-xs text-module-tertiary mb-2">
-                  Última verificação: {new Date(status.lastCheck).toLocaleTimeString('pt-BR')}
-                </p>
-              )}
-
-
-              {status?.latency && (
-                <p className="text-xs text-module-tertiary mb-2">
-                  Latência: {status.latency}ms
-                </p>
-              )}
-
-              {status?.instanceId && (
-                <p className="text-xs text-module-tertiary mb-2">
-                  Instância: {status.instanceId.substring(0, 8)}...
-                </p>
+              {/* Status Indicator Premium */}
+              {isZAPI && status && (
+                <ConnectionStatusIndicator
+                  status={status.status as any}
+                  lastCheck={status.lastCheck}
+                  latency={status.latency}
+                  phone={status.phone}
+                />
               )}
 
               {status?.credentialsPresent === false && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-2 mb-3">
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-2">
                   <p className="text-xs text-yellow-500 flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3" />
                     Credenciais não configuradas
@@ -197,7 +184,7 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
               )}
 
               {status?.errorMessage && (
-                <div className={`rounded p-2 mb-3 ${
+                <div className={`rounded p-2 ${
                   status.status === 'pending' 
                     ? 'bg-yellow-500/10 border border-yellow-500/20' 
                     : 'bg-red-500/10 border border-red-500/20'
@@ -214,36 +201,76 @@ export const APIStatusGrid = ({ agents, statuses, testing, onTest }: APIStatusGr
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => onTest(agent.key, agent.display_name)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTest(agent.key, agent.display_name);
+                  }}
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <>
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                    </>
+                    <RefreshCw className="w-3 h-3 animate-spin" />
                   ) : (
-                    <>
-                      <RefreshCw className="w-3 h-3" />
-                    </>
+                    <RefreshCw className="w-3 h-3" />
                   )}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setDebugAgent({ key: agent.key, name: agent.display_name })}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDebugAgent({ key: agent.key, name: agent.display_name });
+                  }}
                 >
                   <Bug className="w-3 h-3" />
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleConfigureAgent(agent.key, agent.whatsapp_provider || 'zapi')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleConfigureAgent(agent.key, agent.whatsapp_provider || 'zapi');
+                  }}
                   disabled={loadingConfig}
                 >
                   <Settings className="w-3 h-3" />
                 </Button>
               </div>
-            </div>
+            </>
+          );
+
+          const expandedContent = (
+            <>
+              <div className="space-y-3">
+                <p className="text-sm text-module-secondary">{agent.description}</p>
+                
+                {isZAPI && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-module-primary">
+                      <Activity className="w-4 h-4" />
+                      Histórico de Conexão (Últimas 24h)
+                    </div>
+                    <ZAPIConnectionTimeline agentKey={agent.key} limit={10} />
+                  </div>
+                )}
+
+                {status?.instanceId && (
+                  <div className="text-xs text-module-tertiary">
+                    <span className="font-medium">Instância:</span> {status.instanceId.substring(0, 12)}...
+                  </div>
+                )}
+              </div>
+            </>
+          );
+
+          return (
+            <CollapsibleCard
+              key={agent.key}
+              preview={previewContent}
+              className="bg-module-input border-module hover:border-module-muted"
+              borderColor="border-[#9C1E1E]"
+            >
+              {expandedContent}
+            </CollapsibleCard>
           );
         })}
       </div>
