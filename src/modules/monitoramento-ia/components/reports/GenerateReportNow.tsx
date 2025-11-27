@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DateRangePicker } from '../crm/DateRangePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { generateConversationReportPDF } from '../crm/ConversationReportPDF';
 
 type PeriodType = 'today' | 'yesterday' | '7days' | '30days' | 'custom';
 
@@ -120,16 +119,21 @@ export const GenerateReportNow = () => {
         
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Usar o novo gerador de PDF visual
-        generateConversationReportPDF(
-          data.data,
-          data.data.aiInsights,
-          new Date().toLocaleString('pt-BR')
-        );
+        // Gerar JSON com os dados do relatório
+        const reportJson = JSON.stringify(data.data, null, 2);
+        const blob = new Blob([reportJson], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `relatorio-exa-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
         
         toast({
           title: "✨ Relatório gerado com IA!",
-          description: "PDF criado e baixado com insights avançados.",
+          description: "Arquivo JSON baixado com análise completa e detalhada.",
         });
       } else {
         throw new Error(data.error || 'Erro ao gerar relatório');

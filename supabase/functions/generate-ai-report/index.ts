@@ -89,54 +89,228 @@ serve(async (req) => {
     const totalMessages = conversations?.reduce((sum, conv) => 
       sum + (conv.messages?.length || 0), 0) || 0;
 
-    // Usar IA para gerar insights profundos
-    const aiPrompt = `Você é um analista especialista em CRM e atendimento ao cliente. Analise os seguintes dados de conversas e gere um relatório executivo completo e profissional.
+    // Calcular métricas detalhadas para mensagens por hora e período
+    const messagesByHour: Record<number, number> = {};
+    const messagesByPeriod = {
+      manha: { sent: 0, received: 0, contacts: new Set(), avgResponse: [] },
+      tarde: { sent: 0, received: 0, contacts: new Set(), avgResponse: [] },
+      noite: { sent: 0, received: 0, contacts: new Set(), avgResponse: [] }
+    };
 
-DADOS DO PERÍODO:
+    conversations?.forEach(conv => {
+      conv.messages?.forEach((msg: any) => {
+        const msgDate = new Date(msg.created_at);
+        const hour = msgDate.getHours();
+        messagesByHour[hour] = (messagesByHour[hour] || 0) + 1;
+
+        // Classificar por período
+        let period: 'manha' | 'tarde' | 'noite';
+        if (hour >= 6 && hour < 12) period = 'manha';
+        else if (hour >= 12 && hour < 18) period = 'tarde';
+        else period = 'noite';
+
+        if (msg.direction === 'sent') {
+          messagesByPeriod[period].sent++;
+        } else {
+          messagesByPeriod[period].received++;
+        }
+        messagesByPeriod[period].contacts.add(conv.contact_phone);
+      });
+    });
+
+    // Usar IA para gerar insights profundos e detalhados
+    const aiPrompt = `Você é um analista sênior especializado em CRM, vendas e atendimento ao cliente da EXA Mídia. Analise profundamente os dados de conversas do WhatsApp e gere um relatório EXECUTIVO COMPLETO E DETALHADO.
+
+🎯 CONTEXTO DA EXA MÍDIA:
+- Empresa de mídia indoor em elevadores de prédios
+- Tipos de contato: Síndicos (donos de prédios), Anunciantes (clientes que compram mídia), Prestadores (técnicos de elevador), Leads (potenciais clientes)
+- Agentes: Eduardo e Sofia fazem prospecção e atendimento
+
+📊 DADOS DO PERÍODO:
 - Total de conversas: ${conversations?.length || 0}
 - Total de mensagens: ${totalMessages}
-- Período: ${startDate} até ${endDate}
+- Período: ${new Date(startDate).toLocaleDateString('pt-BR')} até ${new Date(endDate).toLocaleDateString('pt-BR')}
+- Mensagens por hora: ${JSON.stringify(messagesByHour)}
+- Distribuição por período: ${JSON.stringify({
+  manha: { sent: messagesByPeriod.manha.sent, received: messagesByPeriod.manha.received, contacts: messagesByPeriod.manha.contacts.size },
+  tarde: { sent: messagesByPeriod.tarde.sent, received: messagesByPeriod.tarde.received, contacts: messagesByPeriod.tarde.contacts.size },
+  noite: { sent: messagesByPeriod.noite.sent, received: messagesByPeriod.noite.received, contacts: messagesByPeriod.noite.contacts.size }
+})}
 
-CONVERSAS:
+💬 CONVERSAS DETALHADAS:
 ${JSON.stringify(conversationSummaries, null, 2)}
 
-TAREFA:
-Gere um relatório executivo detalhado em formato JSON com a seguinte estrutura:
+🎯 TAREFA - GERAR RELATÓRIO COMPLETO:
+Analise PROFUNDAMENTE os dados e retorne um JSON com a estrutura EXATA abaixo. Seja ESPECÍFICO, use números reais, identifique padrões comportamentais, oportunidades e riscos.
+
 {
-  "executiveSummary": "Resumo executivo em 2-3 parágrafos destacando os principais insights",
-  "keyMetrics": {
-    "totalConversations": número,
-    "totalMessages": número,
-    "averageMessagesPerConversation": número,
-    "responseRate": porcentagem,
-    "pendingConversations": número
+  "executiveSummary": "Resumo executivo em 3-4 parágrafos com os PRINCIPAIS insights do período, destacando números, tendências e ações críticas necessárias",
+  
+  "journey": {
+    "firstMessage": "HH:MM da primeira mensagem",
+    "lastMessage": "HH:MM da última mensagem",
+    "activeTime": "XXh XXmin de tempo ativo estimado",
+    "breaks": "XXh XXmin de intervalos estimados"
   },
-  "insights": [
+
+  "keyMetrics": {
+    "totalContacts": ${conversations?.length || 0},
+    "newConversations": 0,
+    "resumedConversations": 0,
+    "finishedConversations": 0,
+    "totalSent": 0,
+    "totalReceived": 0,
+    "avgPerConversation": 0,
+    "proportion": "X:X.XX",
+    "avgResponseTime": "Xmin XXs",
+    "fastestResponse": "XXs",
+    "slowestResponse": "XXmin"
+  },
+
+  "messagesByType": [
     {
-      "title": "Título do insight",
-      "description": "Descrição detalhada",
-      "impact": "high|medium|low",
-      "recommendation": "Recomendação acionável"
+      "rank": 1,
+      "icon": "emoji apropriado",
+      "type": "Nome do tipo (ex: Anunciantes, Síndicos, Leads)",
+      "contacts": 0,
+      "sent": 0,
+      "received": 0,
+      "percentage": 0.0
     }
   ],
-  "topAgents": [
+
+  "periodDistribution": {
+    "morning": {
+      "sent": ${messagesByPeriod.manha.sent},
+      "received": ${messagesByPeriod.manha.received},
+      "contacts": ${messagesByPeriod.manha.contacts.size},
+      "avgResponse": "Xmin XXs",
+      "newConversations": 0,
+      "topTypes": ["Tipo 1 com porcentagem", "Tipo 2 com porcentagem"]
+    },
+    "afternoon": {
+      "sent": ${messagesByPeriod.tarde.sent},
+      "received": ${messagesByPeriod.tarde.received},
+      "contacts": ${messagesByPeriod.tarde.contacts.size},
+      "avgResponse": "Xmin XXs",
+      "newConversations": 0,
+      "topTypes": ["Tipo 1 com porcentagem", "Tipo 2 com porcentagem"]
+    },
+    "evening": {
+      "sent": ${messagesByPeriod.noite.sent},
+      "received": ${messagesByPeriod.noite.received},
+      "contacts": ${messagesByPeriod.noite.contacts.size},
+      "avgResponse": "Xmin XXs",
+      "newConversations": 0,
+      "topTypes": ["Tipo 1 com porcentagem", "Tipo 2 com porcentagem"]
+    }
+  },
+
+  "hourlyDistribution": ${JSON.stringify(messagesByHour)},
+
+  "hotLeads": [
     {
-      "agent": "nome do agente",
-      "conversations": número,
-      "performance": "descrição da performance"
+      "name": "Nome completo do contato",
+      "type": "Anunciante|Síndico|Lead",
+      "score": 0,
+      "phone": "número com formatação",
+      "messages": 0,
+      "highlight": "Principal interesse ou ação importante",
+      "nextStep": "Próximo passo específico e acionável"
     }
   ],
+
+  "behavioralAnalysis": {
+    "normalPatterns": [
+      "Padrão positivo observado 1",
+      "Padrão positivo observado 2"
+    ],
+    "deviations": [
+      {
+        "time": "HH:MM",
+        "description": "Descrição do desvio com contexto",
+        "severity": "low|medium|high"
+      }
+    ],
+    "approachErrors": [
+      "Erro ou oportunidade perdida com contexto"
+    ]
+  },
+
+  "dissatisfactions": {
+    "prestadores": [
+      {
+        "name": "Nome do prestador",
+        "complaint": "Descrição da reclamação",
+        "severity": "high|medium|low",
+        "status": "pending|in_progress|resolved",
+        "recommendation": "Ação recomendada"
+      }
+    ],
+    "anunciantes": [],
+    "sindicos": []
+  },
+
+  "opportunities": {
+    "seized": [
+      "Oportunidade aproveitada 1 com contexto",
+      "Oportunidade aproveitada 2 com contexto"
+    ],
+    "inProgress": [
+      {
+        "description": "Descrição da oportunidade",
+        "nextAction": "Próxima ação específica"
+      }
+    ],
+    "lost": [
+      {
+        "description": "Oportunidade perdida",
+        "reason": "Razão da perda",
+        "action": "Ação corretiva sugerida"
+      }
+    ]
+  },
+
+  "comparison": {
+    "totalContacts": { "yesterday": 0, "today": 0, "variation": 0.0, "trend": "up|down|stable" },
+    "messagesSent": { "yesterday": 0, "today": 0, "variation": 0.0, "trend": "up|down|stable" },
+    "avgResponse": { "yesterday": "Xmin XXs", "today": "Xmin XXs", "variation": 0.0, "trend": "up|down|stable" },
+    "hotLeads": { "yesterday": 0, "today": 0, "variation": 0.0, "trend": "up|down|stable" },
+    "conversions": { "yesterday": 0, "today": 0, "variation": 0.0, "trend": "up|down|stable" },
+    "overallTrend": "POSITIVA ↑|NEGATIVA ↓|ESTÁVEL →"
+  },
+
+  "scoreOfDay": {
+    "overall": 0,
+    "components": {
+      "volume": { "score": 0, "weight": 20 },
+      "responseTime": { "score": 0, "weight": 20 },
+      "quality": { "score": 0, "weight": 25 },
+      "conversions": { "score": 0, "weight": 20 },
+      "satisfaction": { "score": 0, "weight": 15 }
+    },
+    "classification": "EXCELENTE ⭐⭐⭐⭐|BOM ⭐⭐⭐|REGULAR ⭐⭐|PRECISA MELHORAR ⭐"
+  },
+
   "recommendations": [
-    "Recomendação 1 específica e acionável",
-    "Recomendação 2 específica e acionável"
-  ],
-  "trends": {
-    "positive": ["Tendência positiva 1", "Tendência positiva 2"],
-    "concerns": ["Preocupação 1", "Preocupação 2"]
-  }
+    {
+      "priority": "urgent|important|normal",
+      "emoji": "🔴|🟡|🟢",
+      "action": "Ação específica e acionável"
+    }
+  ]
 }
 
-Seja específico, quantitativo e focado em insights acionáveis. Use português brasileiro.`;
+⚠️ INSTRUÇÕES CRÍTICAS:
+1. Use DADOS REAIS das conversas fornecidas
+2. Seja ESPECÍFICO: use nomes, horários, números exatos
+3. NUNCA invente dados - se não tiver informação, deixe vazio ou 0
+4. Calcule métricas precisamente baseado nos dados
+5. Identifique padrões REAIS de comportamento
+6. Priorize OPORTUNIDADES e RISCOS concretos
+7. Recomendações devem ser ACIONÁVEIS e específicas
+8. Use português brasileiro profissional
+9. Retorne APENAS o JSON, sem markdown ou formatação extra`;
 
     console.log('[generate-ai-report] Calling AI for analysis...');
 

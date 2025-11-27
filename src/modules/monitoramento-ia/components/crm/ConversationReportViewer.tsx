@@ -29,7 +29,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ConversationReport } from '../../types/crmTypes';
-import { generateConversationReportPDF } from './ConversationReportPDF';
 import { Download } from 'lucide-react';
 
 interface ConversationReportViewerProps {
