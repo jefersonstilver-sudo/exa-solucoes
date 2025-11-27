@@ -79,6 +79,24 @@ export class UnifiedEmailService {
   }
 
   // ==========================================
+  // RELATÓRIOS DIÁRIOS
+  // ==========================================
+
+  async sendDailyReportEmail(
+    recipientEmails: string[],
+    reportData: EmailTemplates.DailyReportEmailData
+  ) {
+    const html = EmailTemplates.createDailyReportEmail(reportData);
+    
+    return await this.resend.emails.send({
+      from: this.fromAddress,
+      to: recipientEmails,
+      subject: `📊 Relatório Diário - ${reportData.agentName} - ${reportData.reportDate}`,
+      html
+    });
+  }
+
+  // ==========================================
   // VÍDEOS
   // ==========================================
 

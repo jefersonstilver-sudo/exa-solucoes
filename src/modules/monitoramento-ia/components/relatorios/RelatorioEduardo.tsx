@@ -1,10 +1,22 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, AlertCircle, MessageCircle } from 'lucide-react';
+import { DailyReportConfig } from './DailyReportConfig';
 
 export const RelatorioEduardo = () => {
   return (
     <div className="space-y-6">
+      {/* Header com Botão de Configuração */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Performance do Eduardo</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Métricas e análise de comportamento do agente
+          </p>
+        </div>
+        <DailyReportConfig />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

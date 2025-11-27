@@ -52,3 +52,9 @@ export {
   createBenefitInvitationEmail,
   createBenefitGiftCodeEmail
 } from './benefits.ts';
+
+// Daily Report Templates
+export {
+  createDailyReportEmail
+} from './daily-report.ts';
+export type { DailyReportEmailData } from './daily-report.ts';
