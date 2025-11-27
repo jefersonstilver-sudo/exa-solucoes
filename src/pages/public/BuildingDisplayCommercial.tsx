@@ -480,7 +480,7 @@ const BuildingDisplayCommercial: React.FC<BuildingDisplayCommercialProps> = ({ b
       )}
       
       {/* 📱 Header responsivo e adaptativo */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900/95 via-red-800/95 to-red-900/95 backdrop-blur-md shadow-2xl border-b border-white/10">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-900/95 via-red-800/95 to-red-900/95 backdrop-blur-md shadow-2xl border-b border-white/10 pt-[env(safe-area-inset-top,0px)]">
         <div className="container mx-auto px-2 sm:px-4 md:px-6 h-12 sm:h-14 md:h-16 lg:h-20 flex items-center justify-between">
           {/* Logo EXA - escalável */}
           <div className="flex items-center">
