@@ -17,7 +17,7 @@ export const MobileChatHeader: React.FC<MobileChatHeaderProps> = ({
   onDetailsClick
 }) => {
   return (
-    <header className="whatsapp-header pt-safe sticky top-0 z-50 shadow-lg">
+    <header className="admin-header sticky top-0 z-50 shadow-lg">
       <div className="flex items-center justify-between px-2 py-2">
         {/* Botão Voltar + Info */}
         <div className="flex items-center gap-2 flex-1 min-w-0">

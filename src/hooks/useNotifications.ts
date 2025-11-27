@@ -118,6 +118,22 @@ export const useNotifications = () => {
             toast.warning(newNotification.title, {
               description: newNotification.message
             });
+          } else if (newNotification.type === 'crm_new_message') {
+            toast.info(newNotification.title, {
+              description: newNotification.message
+            });
+          } else if (newNotification.type === 'crm_urgent') {
+            toast.error(newNotification.title, {
+              description: newNotification.message
+            });
+          } else if (newNotification.type === 'panel_offline') {
+            toast.error(newNotification.title, {
+              description: newNotification.message
+            });
+          } else if (newNotification.type === 'panel_restored') {
+            toast.success(newNotification.title, {
+              description: newNotification.message
+            });
           }
         }
       )
