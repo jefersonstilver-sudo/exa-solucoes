@@ -214,27 +214,27 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
               </button>
               
               {/* Detalhes Expandidos - Condicional */}
-              <motion.div
-                initial={false}
-                animate={{ 
-                  height: isExpanded ? 'auto' : 0,
-                  opacity: isExpanded ? 1 : 0 
-                }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-0 border-t border-gray-100">
-                  <div className="flex items-start space-x-1.5 mt-3">
-                    <MapPin className="h-3.5 w-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                      {building.endereco}
-                      {building.bairro && `, ${building.bairro}`}
-                      {building.cidade && ` - ${building.cidade}`}
-                      {building.estado && `/${building.estado}`}
-                    </p>
+              {isExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-0 border-t border-gray-100">
+                    <div className="flex items-start space-x-1.5 mt-3">
+                      <MapPin className="h-3.5 w-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                        {building.endereco}
+                        {building.bairro && `, ${building.bairro}`}
+                        {building.cidade && ` - ${building.cidade}`}
+                        {building.estado && `/${building.estado}`}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              )}
             </motion.div>
           );
         })}
