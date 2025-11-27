@@ -30,7 +30,7 @@ const CheckoutFinish = () => {
 
   return (
     <CheckoutLayout currentStep={4} maxWidth="4xl">
-      <div>
+      <div className="mt-6 sm:mt-8">
         {/* Back Button */}
         <Button
           variant="ghost"

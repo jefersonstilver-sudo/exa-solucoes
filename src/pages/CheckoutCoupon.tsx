@@ -133,7 +133,7 @@ const CheckoutCoupon = () => {
 
   return (
     <CheckoutLayout currentStep={1} maxWidth="4xl">
-      <div className="space-y-6 pb-20">
+      <div className="space-y-6 pb-20 mt-6 sm:mt-8">
         {/* Main Content */}
         <div className="bg-white rounded-2xl shadow-2xl border p-4 sm:p-6">
           <CouponStep
