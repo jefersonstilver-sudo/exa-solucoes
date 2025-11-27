@@ -169,22 +169,23 @@ const HeroSection = () => {
   const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/video%20vertical%20novo%20exa.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvdmlkZW8gdmVydGljYWwgbm92byBleGEubXA0IiwiaWF0IjoxNzY0MjcxMTA2LCJleHAiOjE3OTU4MDcxMDZ9.p7LRGVwfDFMfQZIB-60RiMiqlYSJD6-gDQz4HlnZYLk';
   
   return <section className="bg-gradient-to-b from-[#9C1E1E] via-[#180A0A]/80 to-exa-black min-h-screen flex items-center relative overflow-hidden">
+      {/* Camada de cobertura TOPO - cobre borda superior do vídeo */}
       <div 
+        className="absolute top-0 left-0 right-0 h-[120px] lg:h-[160px] 
+                   bg-gradient-to-b from-[#9C1E1E] via-[#9C1E1E]/80 to-transparent 
+                   z-30 pointer-events-none"
+      />
+      
+      <div
         ref={ref} 
         className={`relative z-10 w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center transition-all duration-1000 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        {/* Vídeo Vertical - Lado Esquerdo enterrado com clip-path */}
-        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] -my-16 lg:-my-20">
-          {/* Sombra de transição no topo */}
-          <div className="absolute -top-16 lg:-top-20 inset-x-0 h-16 lg:h-20 bg-gradient-to-b from-black via-black/50 to-transparent z-10 pointer-events-none" />
-          
-          {/* Container do vídeo com clip-path - corta 8% topo e 8% base */}
-          <div 
-            className="relative bg-black shadow-2xl"
-            style={{ clipPath: 'inset(8% 0 8% 0)' }}
-          >
+        {/* Vídeo Vertical - Lado Esquerdo - SEM cortes */}
+        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px]">
+          {/* Container do vídeo - INTEIRO sem clip-path */}
+          <div className="relative bg-black shadow-2xl rounded-lg overflow-hidden">
             <div className="aspect-[9/16]">
               {!loading && <video 
                 ref={videoRef}
@@ -202,12 +203,9 @@ const HeroSection = () => {
             </div>
           </div>
           
-          {/* Sombra de transição na base */}
-          <div className="absolute -bottom-16 lg:-bottom-20 inset-x-0 h-16 lg:h-20 bg-gradient-to-t from-black via-black/50 to-transparent z-10 pointer-events-none" />
-          
-          {/* Botões FORA do clip-path - sempre visíveis */}
+          {/* Botões - sempre visíveis */}
           {!loading && (
-            <div className="absolute bottom-[16%] right-4 flex gap-2 z-50">
+            <div className="absolute bottom-4 right-4 flex gap-2 z-50">
               {/* Botão Som com Tooltip */}
               <div className="relative">
                 {showSoundTooltip && (
@@ -270,6 +268,13 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
+      
+      {/* Camada de cobertura BASE - cobre borda inferior do vídeo */}
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-[120px] lg:h-[160px] 
+                   bg-gradient-to-t from-[#180A0A] via-[#180A0A]/80 to-transparent 
+                   z-30 pointer-events-none"
+      />
     </section>;
 };
 export default HeroSection;
