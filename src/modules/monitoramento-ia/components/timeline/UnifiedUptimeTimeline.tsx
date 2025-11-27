@@ -230,7 +230,7 @@ export const UnifiedUptimeTimeline = ({
         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Calendar className="w-4 h-4" />
           <span>
-            {format(currentTime, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: require('date-fns/locale/pt-BR').ptBR })}
+            {format(currentTime, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </span>
         </div>
       </div>
