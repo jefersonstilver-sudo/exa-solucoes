@@ -11,22 +11,73 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { PeriodType } from '@/components/admin/common/AdminPeriodSelector';
+export type ElegantPeriodType = 'today' | 'yesterday' | '3days' | '7days' | '30days' | 'custom';
+
+export const getElegantPeriodDates = (
+  period: ElegantPeriodType,
+  customStart?: Date,
+  customEnd?: Date
+): { start: Date; end: Date } => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfToday = new Date(today);
+  endOfToday.setHours(23, 59, 59, 999);
+
+  switch (period) {
+    case 'today': {
+      return { start: today, end: endOfToday };
+    }
+    case 'yesterday': {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const endYesterday = new Date(yesterday);
+      endYesterday.setHours(23, 59, 59, 999);
+      return { start: yesterday, end: endYesterday };
+    }
+    case '3days': {
+      const threeDaysAgo = new Date(today);
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      return { start: threeDaysAgo, end: endOfToday };
+    }
+    case '7days': {
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return { start: sevenDaysAgo, end: endOfToday };
+    }
+    case '30days': {
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return { start: thirtyDaysAgo, end: endOfToday };
+    }
+    case 'custom': {
+      if (customStart && customEnd) {
+        const start = new Date(customStart);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(customEnd);
+        end.setHours(23, 59, 59, 999);
+        return { start, end };
+      }
+      return { start: today, end: endOfToday };
+    }
+    default:
+      return { start: today, end: endOfToday };
+  }
+};
 
 interface ElegantPeriodButtonProps {
-  value: PeriodType;
-  onChange: (period: PeriodType) => void;
+  value: ElegantPeriodType;
+  onChange: (period: ElegantPeriodType) => void;
   customStartDate?: Date;
   customEndDate?: Date;
   onCustomDateChange: (start: Date | undefined, end: Date | undefined) => void;
 }
 
-const periodLabels: Record<PeriodType, string> = {
-  current_month: 'Hoje',
-  last_month: 'Ontem',
-  '30': 'Últimos 3 dias',
-  '90': 'Últimos 7 dias',
-  all: 'Últimos 30 dias',
+const periodLabels: Record<ElegantPeriodType, string> = {
+  today: 'Hoje',
+  yesterday: 'Ontem',
+  '3days': 'Últimos 3 dias',
+  '7days': 'Últimos 7 dias',
+  '30days': 'Últimos 30 dias',
   custom: 'Período Personalizado'
 };
 
@@ -41,9 +92,7 @@ const ElegantPeriodButton = ({
   const [showEndCalendar, setShowEndCalendar] = useState(false);
 
   const today = new Date();
-  const isToday = value === 'current_month' && 
-    today.getMonth() === new Date().getMonth() && 
-    today.getFullYear() === new Date().getFullYear();
+  const isToday = value === 'today';
 
   const displayDate = value === 'custom' && customStartDate && customEndDate
     ? `${format(customStartDate, 'dd MMM', { locale: ptBR })} - ${format(customEndDate, 'dd MMM', { locale: ptBR })}`
@@ -121,19 +170,19 @@ const ElegantPeriodButton = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={() => onChange('current_month')}>
+          <DropdownMenuItem onClick={() => onChange('today')}>
             Hoje
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange('last_month')}>
+          <DropdownMenuItem onClick={() => onChange('yesterday')}>
             Ontem
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange('30')}>
+          <DropdownMenuItem onClick={() => onChange('3days')}>
             Últimos 3 dias
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange('90')}>
+          <DropdownMenuItem onClick={() => onChange('7days')}>
             Últimos 7 dias
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange('all')}>
+          <DropdownMenuItem onClick={() => onChange('30days')}>
             Últimos 30 dias
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('custom')}>

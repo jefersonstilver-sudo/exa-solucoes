@@ -10,17 +10,17 @@ import UnifiedStatsRow from '@/components/admin/dashboard/UnifiedStatsRow';
 import CRMInboxPreview from '@/components/admin/dashboard/CRMInboxPreview';
 import PanelsStatusCard from '@/components/admin/dashboard/PanelsStatusCard';
 import RecentSalesCard from '@/components/admin/dashboard/RecentSalesCard';
-import { PeriodType, getPeriodDates } from '@/components/admin/common/AdminPeriodSelector';
+import { ElegantPeriodType, getElegantPeriodDates } from '@/components/admin/dashboard/ElegantPeriodButton';
 
 const Dashboard = () => {
   console.log('🎯 [DASHBOARD] Componente renderizado');
   
-  const [periodFilter, setPeriodFilter] = useState<PeriodType>('current_month');
+  const [periodFilter, setPeriodFilter] = useState<ElegantPeriodType>('today');
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
 
   const { start, end } = useMemo(() => {
-    return getPeriodDates(periodFilter, customStartDate, customEndDate);
+    return getElegantPeriodDates(periodFilter, customStartDate, customEndDate);
   }, [periodFilter, customStartDate, customEndDate]);
 
   const { 
@@ -34,7 +34,7 @@ const Dashboard = () => {
 
   const { stats: unifiedStats, refetch: refetchUnified } = useDashboardUnifiedStats(start, end);
 
-  const handlePeriodChange = (period: PeriodType) => {
+  const handlePeriodChange = (period: ElegantPeriodType) => {
     setPeriodFilter(period);
   };
 
