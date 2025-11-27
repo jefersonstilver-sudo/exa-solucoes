@@ -22,7 +22,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Receita Mensal */}
-      <Card className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
+      <Card className="bg-gradient-to-br from-background via-background to-accent/5 rounded-2xl border border-border/40 shadow-lg hover:shadow-xl hover:border-primary/20 transition-all">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm md:text-base text-gray-900 flex items-center">
             <TrendingUp className="h-4 w-4 mr-2 text-[hsl(var(--exa-red))]" />
@@ -79,7 +79,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
       </Card>
 
       {/* Status dos Pedidos */}
-      <Card className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
+      <Card className="bg-gradient-to-br from-background via-background to-accent/5 rounded-2xl border border-border/40 shadow-lg hover:shadow-xl hover:border-primary/20 transition-all">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm md:text-base text-gray-900 flex items-center">
             <PieChartIcon className="h-4 w-4 mr-2 text-[hsl(var(--exa-red))]" />
@@ -125,7 +125,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ data }) => {
       </Card>
 
       {/* Crescimento de Usuários */}
-      <Card className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow lg:col-span-2">
+      <Card className="bg-gradient-to-br from-background via-background to-accent/5 rounded-2xl border border-border/40 shadow-lg hover:shadow-xl hover:border-primary/20 transition-all lg:col-span-2">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm md:text-base text-gray-900 flex items-center">
             <Users className="h-4 w-4 mr-2 text-[hsl(var(--exa-red))]" />

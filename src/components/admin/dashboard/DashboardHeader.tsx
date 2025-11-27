@@ -22,11 +22,8 @@ const DashboardHeader = ({
   onRefetch
 }: DashboardHeaderProps) => {
   return <div className="flex items-center justify-between gap-3">
-      {/* Left: Logo + Title compacto */}
-      
-      
       {/* Right: Actions minimalistas */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
         <ElegantPeriodButton value={periodFilter} onChange={onPeriodChange} customStartDate={customStartDate} customEndDate={customEndDate} onCustomDateChange={onCustomDateChange} />
         
         <NotificationCenter />

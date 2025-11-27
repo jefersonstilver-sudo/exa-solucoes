@@ -25,7 +25,7 @@ const DashboardFinancialSummary = ({
     }).format(value);
   };
   return (
-    <Card className="bg-white rounded-2xl border shadow-sm">
+    <Card className="bg-gradient-to-br from-background via-background to-accent/5 rounded-2xl border border-border/40 shadow-lg hover:shadow-xl hover:border-primary/20 transition-all">
       <CardContent className="pt-4 md:pt-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex-1 space-y-1">

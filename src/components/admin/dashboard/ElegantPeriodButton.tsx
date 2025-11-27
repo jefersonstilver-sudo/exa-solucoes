@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, ChevronDown } from 'lucide-react';
+import { CalendarDays, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -107,7 +107,7 @@ const ElegantPeriodButton = ({
           <Popover open={showStartCalendar} onOpenChange={setShowStartCalendar}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-9">
-                <Calendar className="h-4 w-4 mr-2" />
+                <CalendarDays className="h-4 w-4 mr-2" />
                 {customStartDate ? format(customStartDate, 'dd/MM/yyyy') : 'Data inicial'}
               </Button>
             </PopoverTrigger>
@@ -127,7 +127,7 @@ const ElegantPeriodButton = ({
           <Popover open={showEndCalendar} onOpenChange={setShowEndCalendar}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-9">
-                <Calendar className="h-4 w-4 mr-2" />
+                <CalendarDays className="h-4 w-4 mr-2" />
                 {customEndDate ? format(customEndDate, 'dd/MM/yyyy') : 'Data final'}
               </Button>
             </PopoverTrigger>
@@ -150,11 +150,11 @@ const ElegantPeriodButton = ({
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="h-10 px-4 bg-background/95 backdrop-blur-sm border-border/50 hover:border-border hover:bg-accent/50 transition-all shadow-sm"
+            className="h-10 px-4 bg-gradient-to-br from-background via-background to-accent/10 backdrop-blur-sm border-border/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 transition-all shadow-sm group"
           >
-            <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+            <CalendarDays className="h-4 w-4 mr-2 text-primary group-hover:scale-110 transition-transform" />
             <span className="font-medium">{displayLabel}</span>
-            <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground group-hover:rotate-180 transition-transform" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">

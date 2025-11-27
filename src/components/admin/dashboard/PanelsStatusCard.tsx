@@ -17,7 +17,7 @@ const PanelsStatusCard = ({ metrics }: PanelsStatusCardProps) => {
     : 0;
 
   return (
-    <Card className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
+    <Card className="bg-gradient-to-br from-background via-background to-accent/5 rounded-2xl border border-border/40 shadow-lg hover:shadow-xl hover:border-primary/20 transition-all">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm md:text-base flex items-center gap-2">
           <MonitorPlay className="h-4 w-4 text-blue-500" />
