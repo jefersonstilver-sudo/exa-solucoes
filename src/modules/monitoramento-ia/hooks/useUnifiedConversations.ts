@@ -51,7 +51,7 @@ interface CRMFilters {
   hotLeadsOnly?: boolean;
   awaitingOnly?: boolean;
   sentiment?: string;
-  contactType?: string;
+  contactTypes?: string[]; // Mudou de contactType para contactTypes (array)
 }
 
 interface CRMMetrics {
@@ -109,8 +109,8 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
       if (filters.sentiment) {
         query = query.eq('sentiment', filters.sentiment);
       }
-      if (filters.contactType) {
-        query = query.eq('contact_type', filters.contactType);
+      if (filters.contactTypes && filters.contactTypes.length > 0) {
+        query = query.in('contact_type', filters.contactTypes);
       }
 
       const { data, error } = await query;

@@ -22,7 +22,7 @@ export const CRMUnificado = () => {
     hotLeadsOnly: false,
     awaitingOnly: false,
     sentiment: undefined,
-    contactType: undefined
+    contactTypes: [] as string[] // Array de tipos de contato
   });
 
   const leftPanelRef = useRef<ImperativePanelHandle>(null);
@@ -59,28 +59,21 @@ export const CRMUnificado = () => {
   // Renderizar versão desktop
   return (
     <div className="h-full flex flex-col bg-[var(--exa-bg-primary)] overflow-hidden">
-      {/* Header com métricas e filtros - Esconde em fullscreen */}
+      {/* Filtros flutuantes */}
+      <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
+
+      {/* Header com métricas - Esconde em fullscreen */}
       {!isFullscreen && (
-        <div className="p-4 space-y-3">
+        <div className="p-4">
           {/* Toggle minimalista para métricas */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-end mb-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowMetrics(!showMetrics)}
-              className="text-muted-foreground hover:text-foreground h-8 px-2"
+              className="text-muted-foreground hover:text-foreground h-8 px-2 text-xs"
             >
-              {showMetrics ? (
-                <>
-                  <ChevronUp className="w-4 h-4 mr-2" />
-                  <span className="text-xs">Ocultar Métricas</span>
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4 mr-2" />
-                  <span className="text-xs">Mostrar Métricas</span>
-                </>
-              )}
+              {showMetrics ? 'Ocultar Métricas' : 'Mostrar Métricas'}
             </Button>
           </div>
 
@@ -90,9 +83,6 @@ export const CRMUnificado = () => {
               <CRMMetrics metrics={metrics} />
             </div>
           )}
-          
-          {/* Filtros sempre visíveis mas minimalistas */}
-          <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
         </div>
       )}
 
