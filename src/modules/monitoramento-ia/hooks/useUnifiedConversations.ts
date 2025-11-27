@@ -12,6 +12,7 @@ interface Conversation {
   contact_type_source: 'ai' | 'manual' | 'unknown';
   contact_type_updated_by: string | null;
   last_message_at: string;
+  last_message_preview?: string;
   sentiment: string;
   urgency_level: number;
   mood_score: number;
@@ -125,13 +126,13 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
         return;
       }
 
-      // Enriquecer conversas com dados do ZAPI (chatName salvo)
+      // Enriquecer conversas com dados do ZAPI (chatName salvo) e última mensagem
       const enrichedConversations = await Promise.all(
         (data || []).map(async (conv) => {
-          // Buscar última mensagem com chatName do ZAPI
+          // Buscar última mensagem com chatName do ZAPI e preview
           const { data: lastMsg } = await supabase
             .from('messages')
-            .select('raw_payload')
+            .select('raw_payload, body, direction')
             .eq('conversation_id', conv.id)
             .not('raw_payload', 'is', null)
             .order('created_at', { ascending: false })
@@ -142,9 +143,18 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
           const zapiChatName = rawPayload?.chatName;
           const currentMetadata = conv.metadata as any;
           
+          // Gerar preview da última mensagem
+          let lastMessagePreview = '';
+          if (lastMsg) {
+            const prefix = lastMsg.direction === 'outbound' ? '📤 ' : '';
+            const body = lastMsg.body || '';
+            lastMessagePreview = prefix + (body.length > 60 ? body.substring(0, 60) + '...' : body);
+          }
+          
           return {
             ...conv,
             contact_type_source: (conv.contact_type_source || 'unknown') as 'ai' | 'manual' | 'unknown',
+            last_message_preview: lastMessagePreview,
             metadata: {
               ...(currentMetadata || {}),
               agent_saved_name: zapiChatName || currentMetadata?.building_name || currentMetadata?.agent_saved_name,

@@ -104,7 +104,16 @@ export const MobileConversationItem: React.FC<MobileConversationItemProps> = ({
             </div>
           </div>
 
-          {/* Telefone e Provider */}
+          {/* Última Mensagem */}
+          {conversation.last_message_preview && (
+            <div className="flex items-center gap-2 mb-1.5">
+              <p className="text-sm text-muted-foreground truncate">
+                {conversation.last_message_preview}
+              </p>
+            </div>
+          )}
+          
+          {/* Telefone */}
           <div className="flex items-center gap-2 mb-1.5">
             <Phone className="w-3 h-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground truncate">

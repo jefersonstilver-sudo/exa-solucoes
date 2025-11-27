@@ -74,8 +74,8 @@ export const MobileCRMFilters: React.FC<MobileCRMFiltersProps> = ({
               className={cn(
                 "h-14 w-14 rounded-full shadow-lg backdrop-blur-sm transition-all",
                 activeFilterCount > 0
-                  ? "bg-gradient-to-r from-[#9C1E1E] to-[#D72638]"
-                  : "bg-background/80 border-2"
+                  ? "bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white hover:opacity-90"
+                  : "bg-gradient-to-r from-[#9C1E1E]/80 to-[#D72638]/80 text-white border-2 border-white/20 hover:opacity-90"
               )}
             >
               <Filter className="h-5 w-5" />
