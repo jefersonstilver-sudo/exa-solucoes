@@ -35,7 +35,7 @@ const DashboardMetricCardWithHover = ({
                 <p className="text-sm font-medium text-muted-foreground mb-2 line-clamp-2">
                   {title}
                 </p>
-                <p className="text-2xl font-bold text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+                <p className="text-2xl font-bold text-foreground whitespace-nowrap">
                   {value}
                 </p>
               </div>

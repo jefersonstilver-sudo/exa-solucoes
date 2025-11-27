@@ -131,43 +131,84 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           icon={MessageCircle}
           hoverContent={
             <div className="space-y-3">
-              <div className="flex justify-between items-center pb-2 border-b">
+              <div className="flex justify-between items-center pb-2 border-b border-border">
                 <span className="font-semibold text-foreground">Conversas do Período</span>
                 <span className="text-2xl font-bold text-primary">{stats.conversas}</span>
               </div>
               
-              {Object.keys(stats.conversasPorTipo).length > 0 ? (
+              {/* Novos Contatos */}
+              <div className="flex items-center justify-between py-2 px-3 bg-primary/10 rounded-lg">
+                <span className="text-sm font-medium text-foreground">Novos contatos no período</span>
+                <span className="text-lg font-bold text-primary">{stats.novosContatos}</span>
+              </div>
+
+              {/* Tabela por Agente */}
+              {Object.keys(stats.conversasPorAgente).length > 0 && (
                 <div className="space-y-2">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Por Agente
+                  </div>
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b text-xs text-muted-foreground">
-                        <th className="text-left py-2 font-medium">Tipo</th>
+                      <tr className="border-b border-border text-xs text-muted-foreground">
+                        <th className="text-left py-2 font-medium">Agente</th>
                         <th className="text-center py-2 font-medium">Conv.</th>
-                        <th className="text-center py-2 font-medium">Enviadas</th>
-                        <th className="text-center py-2 font-medium">Recebidas</th>
+                        <th className="text-center py-2 font-medium">Env.</th>
+                        <th className="text-center py-2 font-medium">Rec.</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(stats.conversasPorTipo).map(([tipo, statsData]) => (
-                        <tr key={tipo} className="border-b last:border-0">
-                          <td className="py-2 text-foreground truncate max-w-[120px]">{tipo}</td>
-                          <td className="py-2 text-center font-medium">{statsData.conversas}</td>
+                      {Object.entries(stats.conversasPorAgente).map(([agente, statsData]) => (
+                        <tr key={agente} className="border-b border-border/50">
+                          <td className="py-2 text-foreground font-medium">{agente}</td>
+                          <td className="py-2 text-center font-medium text-primary">{statsData.conversas}</td>
                           <td className="py-2 text-center text-blue-600">{statsData.enviadas}</td>
                           <td className="py-2 text-center text-green-600">{statsData.recebidas}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="border-t-2 font-semibold">
+                      <tr className="border-t-2 border-border font-semibold">
                         <td className="py-2 text-foreground">Total</td>
-                        <td className="py-2 text-center">--</td>
+                        <td className="py-2 text-center text-primary">{stats.conversas}</td>
                         <td className="py-2 text-center text-blue-600">{stats.mensagensEnviadas}</td>
                         <td className="py-2 text-center text-green-600">{stats.mensagensRecebidas}</td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
-              ) : (
+              )}
+
+              {/* Tabela por Tipo de Contato */}
+              {Object.keys(stats.conversasPorTipo).length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Por Tipo de Contato
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-xs text-muted-foreground">
+                        <th className="text-left py-2 font-medium">Tipo</th>
+                        <th className="text-center py-2 font-medium">Conv.</th>
+                        <th className="text-center py-2 font-medium">Env.</th>
+                        <th className="text-center py-2 font-medium">Rec.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(stats.conversasPorTipo).map(([tipo, statsData]) => (
+                        <tr key={tipo} className="border-b border-border/50 last:border-0">
+                          <td className="py-2 text-foreground">{tipo}</td>
+                          <td className="py-2 text-center font-medium text-primary">{statsData.conversas}</td>
+                          <td className="py-2 text-center text-blue-600">{statsData.enviadas}</td>
+                          <td className="py-2 text-center text-green-600">{statsData.recebidas}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {Object.keys(stats.conversasPorTipo).length === 0 && Object.keys(stats.conversasPorAgente).length === 0 && (
                 <p className="text-muted-foreground text-center py-2">Nenhuma conversa no período</p>
               )}
             </div>
@@ -181,7 +222,7 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           icon={Building2}
           hoverContent={
             <div className="space-y-3">
-              <div className="flex justify-between items-center pb-2 border-b">
+              <div className="flex justify-between items-center pb-2 border-b border-border">
                 <span className="font-semibold text-foreground">Status dos Prédios</span>
                 <span className="text-2xl font-bold text-primary">{stats.prediosPercentual.toFixed(0)}%</span>
               </div>
@@ -194,9 +235,13 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
                   <span className="text-muted-foreground">Prédios inativos:</span>
                   <span className="font-medium text-red-500">{stats.prediosTotal - stats.prediosAtivos}</span>
                 </div>
-                <div className="flex justify-between pt-2 border-t">
+                <div className="flex justify-between">
                   <span className="text-muted-foreground">Total de prédios:</span>
                   <span className="font-medium">{stats.prediosTotal}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 px-3 bg-red-50 rounded-lg mt-2">
+                  <span className="font-medium text-foreground">Quedas no período:</span>
+                  <span className="text-lg font-bold text-red-600">{stats.quedasPeriodo}</span>
                 </div>
               </div>
             </div>

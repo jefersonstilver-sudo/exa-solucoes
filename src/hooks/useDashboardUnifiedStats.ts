@@ -7,6 +7,12 @@ export interface ConversationTypeStats {
   recebidas: number;
 }
 
+export interface AgentConversationStats {
+  conversas: number;
+  enviadas: number;
+  recebidas: number;
+}
+
 export interface UnifiedDashboardStats {
   cadastros: number;
   cadastrosAnterior: number;
@@ -20,11 +26,14 @@ export interface UnifiedDashboardStats {
   vendasAnterior: number;
   conversas: number;
   conversasPorTipo: Record<string, ConversationTypeStats>;
+  conversasPorAgente: Record<string, AgentConversationStats>;
   mensagensEnviadas: number;
   mensagensRecebidas: number;
+  novosContatos: number;
   prediosAtivos: number;
   prediosTotal: number;
   prediosPercentual: number;
+  quedasPeriodo: number;
   vouchersPendentes: number;
   vouchersList: Array<{
     provider_name: string;
@@ -44,11 +53,14 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
     vendasAnterior: 0,
     conversas: 0,
     conversasPorTipo: {},
+    conversasPorAgente: {},
     mensagensEnviadas: 0,
     mensagensRecebidas: 0,
+    novosContatos: 0,
     prediosAtivos: 0,
     prediosTotal: 0,
     prediosPercentual: 0,
+    quedasPeriodo: 0,
     vouchersPendentes: 0,
     vouchersList: [],
     loading: true
@@ -121,6 +133,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         .select(`
           conversation_id,
           direction,
+          agent_key,
           conversations!inner(contact_type)
         `)
         .gte('created_at', start)
@@ -130,19 +143,29 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       const conversasUnicas = new Set(mensagensData?.map(m => m.conversation_id) || []);
       const conversas = conversasUnicas.size;
 
-      // Agrupar por tipo de contato
+      // Agrupar por tipo de contato E por agente
       const conversasPorTipo: Record<string, ConversationTypeStats> = {};
+      const conversasPorAgente: Record<string, AgentConversationStats> = {};
       const conversasPorId: Record<string, string> = {};
+      const conversasPorIdAgente: Record<string, string> = {};
 
       mensagensData?.forEach(msg => {
         const contactType = (msg.conversations as any)?.contact_type || 'Sem tipo';
+        const agentKey = msg.agent_key;
+        const agentName = agentKey === 'eduardo' ? 'Eduardo' : 
+                          agentKey === 'sofia' ? 'Sofia' : 'Outro';
         
         // Registrar tipo de conversa
         if (!conversasPorId[msg.conversation_id]) {
           conversasPorId[msg.conversation_id] = contactType;
         }
 
-        // Inicializar stats se não existir
+        // Registrar agente da conversa
+        if (!conversasPorIdAgente[msg.conversation_id]) {
+          conversasPorIdAgente[msg.conversation_id] = agentName;
+        }
+
+        // Inicializar stats por tipo se não existir
         if (!conversasPorTipo[contactType]) {
           conversasPorTipo[contactType] = {
             conversas: 0,
@@ -151,11 +174,22 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
           };
         }
 
-        // Contar mensagens
-        if (msg.direction === 'outgoing') {
+        // Inicializar stats por agente se não existir
+        if (!conversasPorAgente[agentName]) {
+          conversasPorAgente[agentName] = {
+            conversas: 0,
+            enviadas: 0,
+            recebidas: 0
+          };
+        }
+
+        // Contar mensagens (corrigido para inbound/outbound)
+        if (msg.direction === 'outbound') {
           conversasPorTipo[contactType].enviadas++;
-        } else if (msg.direction === 'incoming') {
+          conversasPorAgente[agentName].enviadas++;
+        } else if (msg.direction === 'inbound') {
           conversasPorTipo[contactType].recebidas++;
+          conversasPorAgente[agentName].recebidas++;
         }
       });
 
@@ -166,9 +200,23 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         }
       });
 
+      // Contar conversas únicas por agente
+      Object.values(conversasPorIdAgente).forEach(agente => {
+        if (conversasPorAgente[agente]) {
+          conversasPorAgente[agente].conversas++;
+        }
+      });
+
       // Totais gerais
       const mensagensEnviadas = Object.values(conversasPorTipo).reduce((sum, stats) => sum + stats.enviadas, 0);
       const mensagensRecebidas = Object.values(conversasPorTipo).reduce((sum, stats) => sum + stats.recebidas, 0);
+
+      // 4.1. Novos Contatos - Conversas criadas no período
+      const { count: novosContatos } = await supabase
+        .from('conversations')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', start)
+        .lte('created_at', end);
 
       // 5. Prédios Ativos
       const { data: predios } = await supabase
@@ -178,6 +226,16 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       const prediosTotal = predios?.length || 0;
       const prediosAtivos = predios?.filter(p => p.status === 'ativo').length || 0;
       const prediosPercentual = prediosTotal > 0 ? (prediosAtivos / prediosTotal) * 100 : 0;
+
+      // 5.1. Quedas no Período
+      const { data: quedas } = await supabase
+        .from('connection_history')
+        .select('id')
+        .eq('event_type', 'offline')
+        .gte('started_at', start)
+        .lte('started_at', end);
+      
+      const quedasPeriodo = quedas?.length || 0;
 
       // 6. Vouchers Pendentes
       const { data: vouchers } = await supabase
@@ -196,11 +254,14 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         vendasAnterior,
         conversas,
         conversasPorTipo,
+        conversasPorAgente,
         mensagensEnviadas,
         mensagensRecebidas,
+        novosContatos: novosContatos || 0,
         prediosAtivos,
         prediosTotal,
         prediosPercentual,
+        quedasPeriodo,
         vouchersPendentes: vouchers?.length || 0,
         vouchersList: vouchers || [],
         loading: false
