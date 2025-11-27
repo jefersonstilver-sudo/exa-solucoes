@@ -138,14 +138,25 @@ export const suggestContactType = (conversation: {
   const buildingName = (conversation.metadata?.agent_saved_name || conversation.metadata?.building_name || '').toLowerCase();
   const combinedText = `${name} ${buildingName}`;
   
-  if (/tke|schindler|thyssen|elevador/i.test(combinedText)) return 'Prestador';
-  if (/vivo|claro|oi|tim|provedor|internet|ligga/i.test(combinedText)) return 'Prestador';
-  if (/síndico|sindico|condomínio|residencial|edif[íi]cio/i.test(combinedText)) return 'Síndico';
-  if (/financeiro|cobrança|pagamento/i.test(combinedText)) return 'Administrativo';
-  if (/anunciante|campanha|publicidade|mídia/i.test(combinedText)) return 'Anunciante';
-  if (/exa|equipe/i.test(combinedText)) return 'Equipe Exa';
+  // Empresas de elevadores - ordem específica primeiro
+  if (/tke/i.test(combinedText)) return 'tke_tecnico';
+  if (/oriente/i.test(combinedText)) return 'oriente_tecnico';
+  if (/atlas/i.test(combinedText)) return 'atlas_tecnico';
   
-  return 'Contato';
+  // Provedores específicos
+  if (/vivo/i.test(combinedText)) return 'vivo_provedor';
+  if (/ligga/i.test(combinedText)) return 'ligga_provedor';
+  
+  // Outros prestadores
+  if (/elevador|schindler|thyssen|claro|oi|tim|provedor|internet|eletricista/i.test(combinedText)) return 'outros_prestadores';
+  
+  // Síndico
+  if (/síndico|sindico|condomínio|residencial|edif[íi]cio/i.test(combinedText)) return 'sindico';
+  
+  // Equipe EXA
+  if (/exa|equipe/i.test(combinedText)) return 'equipe_exa';
+  
+  return 'lead';
 };
 
 /**

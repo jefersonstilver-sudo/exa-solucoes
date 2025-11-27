@@ -159,11 +159,9 @@ async function analyzeMessage(supabase: any, messageId: string, conversationId: 
   const isOpportunity = opportunityKeywords.some(kw => text.toLowerCase().includes(kw));
 
   // Classify contact type (basic heuristic)
-  let contactType = 'unknown';
+  let contactType = 'lead'; // Default para lead
   if (text.toLowerCase().includes('síndico') || text.toLowerCase().includes('condominio')) {
     contactType = 'sindico';
-  } else if (text.toLowerCase().includes('cliente')) {
-    contactType = 'cliente';
   } else if (isOpportunity) {
     contactType = 'lead';
   }

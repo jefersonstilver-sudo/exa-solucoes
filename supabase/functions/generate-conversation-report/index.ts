@@ -69,12 +69,22 @@ serve(async (req) => {
             role: 'system',
             content: `Você é um analista de leads especializado em mídia OOH (out-of-home) em painéis digitais de elevadores de prédios.
 
-TIPOS DE CONTATOS:
-- ANUNCIANTE: Empresário/negócio que quer anunciar nos prédios
-- SÍNDICO: Síndico/administradora interessado em instalar telas no prédio
-- MORADOR: Morador com dúvidas ou suporte
-- SUPORTE_TECNICO: Questões técnicas/defeitos
-- CLIENTE_ATIVO: Cliente já existente
+TIPOS DE CONTATOS (usar exatamente snake_case abaixo):
+- lead: Contato novo ou não classificado
+- sindico: Síndico ou gestor de condomínio
+- sindico_lead: Síndico interessado em instalar painéis
+- cliente_ativo: Cliente com pedidos realizados
+- eletricista: Eletricista prestador de serviço
+- outros_prestadores: Prestadores diversos (não elevadores/provedores)
+- equipe_exa: Membro da equipe EXA
+- tke_tecnico: Técnico TKE
+- tke_supervisor: Supervisor TKE
+- oriente_tecnico: Técnico ORIENTE
+- oriente_supervisor: Supervisor ORIENTE
+- atlas_tecnico: Técnico ATLAS
+- atlas_supervisor: Supervisor ATLAS
+- vivo_provedor: Provedor VIVO
+- ligga_provedor: Provedor LIGGA
 
 REGRAS DE HOT LEAD (ANUNCIANTE):
 +30 pts: Pediu orçamento
@@ -104,7 +114,7 @@ Analise a conversa e retorne um relatório em JSON:
 
 {
   "summary": "Resumo executivo em 2-3 frases",
-  "detectedType": "anunciante | sindico | morador | suporte_tecnico | cliente_ativo",
+  "detectedType": "lead | sindico | sindico_lead | eletricista | outros_prestadores | equipe_exa | cliente_ativo | tke_tecnico | tke_supervisor | oriente_tecnico | oriente_supervisor | atlas_tecnico | atlas_supervisor | vivo_provedor | ligga_provedor",
   "leadProfile": {
     "empresaNome": "string ou null (para anunciantes)",
     "segmento": "saúde | restaurante | imobiliária | etc (para anunciantes)",
