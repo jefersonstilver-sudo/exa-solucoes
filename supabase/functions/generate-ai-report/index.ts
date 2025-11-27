@@ -27,7 +27,7 @@ serve(async (req) => {
       .from('conversations')
       .select(`
         id,
-        phone,
+        contact_phone,
         agent_key,
         contact_name,
         awaiting_response,
@@ -54,7 +54,7 @@ serve(async (req) => {
     // Preparar dados para análise da IA
     const conversationSummaries = conversations?.map(conv => ({
       id: conv.id,
-      phone: conv.phone,
+      phone: conv.contact_phone,
       agent: conv.agent_key,
       contact: conv.contact_name,
       messageCount: conv.messages?.length || 0,
