@@ -36,7 +36,7 @@ serve(async (req) => {
         messages (
           id,
           body,
-          sender,
+          direction,
           created_at
         )
       `)
