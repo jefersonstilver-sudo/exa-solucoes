@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileDown, Loader2, FileBarChart, Sparkles, Zap, Brain, TrendingUp, User, Filter } from 'lucide-react';
+import { FileDown, Loader2, FileBarChart, Sparkles, Zap, Brain, TrendingUp, User, Filter, Download, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,10 +7,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DateRangePicker } from '../crm/DateRangePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { generateReportPDF } from '../../utils/generateReportPDF';
+import { FixEduardoMessagesButton } from './FixEduardoMessagesButton';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type PeriodType = 'today' | 'yesterday' | '7days' | '30days' | 'custom';
 
 export const GenerateReportNow = () => {
+  const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
@@ -428,18 +434,21 @@ export const GenerateReportNow = () => {
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Histórico de Relatórios</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchReportHistory}
-              disabled={isLoadingHistory}
-            >
-              {isLoadingHistory ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Atualizar"
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <FixEduardoMessagesButton />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchReportHistory}
+                disabled={isLoadingHistory}
+              >
+                {isLoadingHistory ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Atualizar"
+                )}
+              </Button>
+            </div>
           </div>
 
           {isLoadingHistory ? (
@@ -451,54 +460,86 @@ export const GenerateReportNow = () => {
               Nenhum relatório gerado ainda
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Data</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Período</th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Conversas</th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Mensagens</th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportHistory.map((report) => (
-                    <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-sm text-gray-900">
-                        {new Date(report.created_at).toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {new Date(report.period_start).toLocaleDateString('pt-BR')} - {new Date(report.period_end).toLocaleDateString('pt-BR')}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-center text-gray-900 font-medium">
-                        {report.total_conversations}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-center text-gray-900 font-medium">
-                        {report.total_messages}
-                      </td>
-                      <td className="py-3 px-4 text-center">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Período</TableHead>
+                  <TableHead>Agente</TableHead>
+                  <TableHead className="text-center">Conversas</TableHead>
+                  <TableHead className="text-center">Mensagens</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reportHistory.map((report) => {
+                  const messagesByType = report.metrics?.messagesByType || [];
+                  const tooltipContent = `Agente: ${report.generated_by || 'Sistema'}\n` +
+                    `Mensagens por tipo:\n${messagesByType.map((t: any) => 
+                      `  ${t.type}: ${t.sent + t.received} msgs`
+                    ).join('\n')}\n` +
+                    `Conversas por tipo:\n${messagesByType.map((t: any) => 
+                      `  ${t.type}: ${t.contacts} conversas`
+                    ).join('\n')}`;
+
+                  return (
+                    <TableRow 
+                      key={report.id}
+                      className="hover:bg-muted/50 cursor-help"
+                      title={tooltipContent}
+                    >
+                      <TableCell>
+                        {format(new Date(report.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(report.period_start), 'dd/MM/yyyy')} - {format(new Date(report.period_end), 'dd/MM/yyyy')}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold">{report.generated_by || 'Sistema'}</span>
+                      </TableCell>
+                      <TableCell className="text-center">{report.total_conversations}</TableCell>
+                      <TableCell className="text-center">{report.total_messages}</TableCell>
+                      <TableCell className="text-right space-x-2">
                         <Button
-                          size="sm"
                           variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            navigate('/admin/monitoramento-ia/relatorio-viewer', {
+                              state: { 
+                                reportData: {
+                                  data: {
+                                    aiInsights: report.ai_insights,
+                                    metrics: report.metrics,
+                                    period: {
+                                      start: report.period_start,
+                                      end: report.period_end,
+                                    },
+                                    agentKey: report.generated_by,
+                                  }
+                                }
+                              }
+                            });
+                          }}
+                          className="gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleDownloadPDF(report)}
                           className="gap-2"
                         >
-                          <FileDown className="w-4 h-4" />
-                          Baixar PDF
+                          <Download className="w-4 h-4" />
+                          PDF
                         </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>
