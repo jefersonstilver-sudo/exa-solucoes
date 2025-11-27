@@ -48,8 +48,8 @@ const Exa = () => {
       <div className="relative overflow-x-hidden w-full -mt-16">
         <HeroSection />
         
-        {/* Logo Ticker - Full Width - Mobile: posicionado para ficar visível na primeira tela */}
-        <div className="w-full relative z-50 -mt-4 md:-mt-12">
+        {/* Logo Ticker - Full Width - sobreposição maior para efeito imersivo */}
+        <div className="w-full relative z-50 -mt-8 md:-mt-16 lg:-mt-20">
           <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
         </div>
         

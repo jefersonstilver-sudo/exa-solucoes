@@ -138,43 +138,51 @@ const HeroSection = () => {
     return <HeroMobileLayout />;
   }
 
-  // Desktop: mantém layout atual
+  // Desktop: layout imersivo full-screen
   const defaultVideoUrl = 'https://indexa.net.br/wp-content/uploads/2025/01/indexa_exa.mp4';
   const displayVideoUrl = videoUrl || defaultVideoUrl;
-  return <ExaSection background="dark" className="min-h-screen md:min-h-[75vh] lg:min-h-[80vh] flex items-center relative overflow-hidden pt-24 md:pt-28 lg:pt-24 pb-8 md:pb-12">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#9C1E1E] via-[#180A0A]/80 to-exa-black opacity-90" />
-      
-      {/* Animated circles */}
-      <div className="absolute top-20 right-20 w-96 h-96 bg-exa-blue/20 rounded-full blur-3xl animate-pulse-soft" />
-      <div className="absolute bottom-20 left-20 w-96 h-96 bg-exa-yellow/10 rounded-full blur-3xl animate-pulse-soft" />
+  
+  return <ExaSection background="dark" className="min-h-screen flex items-center justify-end relative overflow-hidden">
+      {/* Vídeo como background full-screen */}
+      <div className="absolute inset-0 z-0">
+        {!loading && <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          className="w-full h-full object-cover"
+          key={displayVideoUrl}
+        >
+          <source src={displayVideoUrl} type="video/mp4" />
+        </video>}
+        {loading && <div className="w-full h-full flex items-center justify-center bg-exa-black">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-exa-yellow"></div>
+        </div>}
+      </div>
 
-      <div ref={ref} className={`relative z-10 w-full flex flex-col lg:grid lg:grid-cols-2 gap-8 md:gap-10 lg:gap-12 items-center transition-all duration-1000 pb-12 md:pb-8 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        {/* Left side - Player de vídeo posicionado levemente à direita */}
-        <div className="relative group order-2 lg:order-1 w-full max-w-[240px] md:max-w-[260px] lg:max-w-[280px] mx-auto lg:ml-8 lg:mr-auto mb-8 md:mb-0 lg:mt-8">
-          <div className="bg-gradient-to-b from-zinc-300 via-zinc-200 to-zinc-100 p-2 md:p-2.5 lg:p-3 rounded-3xl shadow-2xl border border-white/90 hover:scale-105 transition-transform duration-300">
-            <div className="bg-black rounded-2xl overflow-hidden shadow-inner aspect-[9/16]">
-              {!loading && <video autoPlay loop muted playsInline controls className="w-full h-full object-cover" key={displayVideoUrl}>
-                  <source src={displayVideoUrl} type="video/mp4" />
-                </video>}
-              {loading && <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-exa-yellow"></div>
-                </div>}
-            </div>
-          </div>
-        </div>
+      {/* Gradiente superior - sombreamento sob header */}
+      <div className="absolute top-0 inset-x-0 h-32 md:h-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent z-10 pointer-events-none" />
 
-        {/* Right side - Conteúdo de texto */}
-        <div className="space-y-5 md:space-y-6 order-1 lg:order-2 w-full">
-          <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
+      {/* Gradiente inferior - sombreamento sobre ticker */}
+      <div className="absolute bottom-0 inset-x-0 h-40 md:h-48 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10 pointer-events-none" />
+
+      {/* Conteúdo - texto + CTA flutuando sobre o vídeo */}
+      <div 
+        ref={ref} 
+        className={`relative z-20 w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12 flex items-center justify-end transition-all duration-1000 ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`}
+      >
+        <div className="space-y-5 md:space-y-6 w-full lg:w-1/2 text-left lg:text-left">
+          <h1 className="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-6xl text-white leading-tight drop-shadow-2xl">
             Publicidade que <span className="text-exa-yellow">convive</span>.
           </h1>
           
-          <p className="font-poppins text-base md:text-lg lg:text-xl text-gray-200 leading-relaxed max-w-xl">
+          <p className="font-poppins text-base md:text-lg lg:text-xl text-gray-100 leading-relaxed max-w-xl drop-shadow-xl">
             A EXA conecta marcas aos instantes reais da vida urbana — atenção genuína, presença diária e resultados duradouros.
           </p>
 
-          <div className="flex gap-4 pt-4 justify-center sm:justify-start">
+          <div className="flex gap-4 pt-4 justify-center lg:justify-start">
             <ExaCTA 
               variant="primary" 
               size="lg" 
