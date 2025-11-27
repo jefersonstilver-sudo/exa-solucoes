@@ -123,8 +123,17 @@ serve(async (req) => {
 
 🎯 CONTEXTO DA EXA MÍDIA:
 - Empresa de mídia indoor em elevadores de prédios
-- Tipos de contato: Síndicos (donos de prédios), Anunciantes (clientes que compram mídia), Prestadores (técnicos de elevador), Leads (potenciais clientes)
+- Tipos de contato: Síndicos (donos de prédios), Anunciantes (clientes que compram mídia), Prestadores (técnicos de elevador), Leads (potenciais clientes), Provedores de Internet, Equipe Interna, Moradores
 - Agentes: Eduardo e Sofia fazem prospecção e atendimento
+
+⚠️ IMPORTANTE - SUGESTÃO DE TIPOS DE CONTATO:
+Para contatos classificados como 'unknown' ou sem classificação, analise o contexto das mensagens e sugira um tipo apropriado:
+- Se menciona elevador, manutenção, técnico → "Prestador de Serviço - Elevador"
+- Se menciona internet, fibra, velocidade → "Provedor de Internet"
+- Se é contato de prédio, síndico, administração → "Síndico" ou "Lead Síndico"
+- Se demonstra interesse em anunciar → "Lead Anunciante"
+- Se é morador comum → "Morador"
+- Se é equipe interna → "Equipe Exa"
 
 📊 DADOS DO PERÍODO:
 - Total de conversas: ${conversations?.length || 0}
@@ -172,10 +181,12 @@ Analise PROFUNDAMENTE os dados e retorne um JSON com a estrutura EXATA abaixo. S
       "rank": 1,
       "icon": "emoji apropriado",
       "type": "Nome do tipo (ex: Anunciantes, Síndicos, Leads)",
+      "suggestedType": "Se era 'unknown', sugerir tipo baseado no contexto (ex: Prestador de Serviço - Elevador, Provedor de Internet, Síndico, Lead Anunciante)",
       "contacts": 0,
       "sent": 0,
       "received": 0,
-      "percentage": 0.0
+      "percentage": 0.0,
+      "reasoning": "Breve explicação se foi sugerido novo tipo (ex: 'Mencionou manutenção de elevador')"
     }
   ],
 
@@ -387,8 +398,12 @@ Analise PROFUNDAMENTE os dados e retorne um JSON com a estrutura EXATA abaixo. S
         total_conversations: conversations?.length || 0,
         total_messages: totalMessages,
         ai_insights: aiInsights,
-        metrics: metrics,
-        generated_by: 'system',
+        metrics: {
+          ...metrics,
+          agentKey: agentKey || 'unknown',
+          messagesByType: aiInsights.messagesByType || [],
+        },
+        generated_by: agentKey || 'system',
       });
 
     if (logError) {
@@ -405,6 +420,7 @@ Analise PROFUNDAMENTE os dados e retorne um JSON com a estrutura EXATA abaixo. S
           metrics,
           aiInsights,
           period: { start: startDate, end: endDate },
+          agentKey: agentKey || 'unknown',
         },
       }),
       { 
