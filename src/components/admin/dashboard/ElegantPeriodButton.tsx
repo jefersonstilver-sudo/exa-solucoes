@@ -22,12 +22,12 @@ interface ElegantPeriodButtonProps {
 }
 
 const periodLabels: Record<PeriodType, string> = {
-  current_month: 'Mês Atual',
-  last_month: 'Mês Anterior',
-  '30': 'Últimos 30 dias',
-  '90': 'Últimos 90 dias',
-  all: 'Todo Período',
-  custom: 'Personalizado'
+  current_month: 'Hoje',
+  last_month: 'Ontem',
+  '30': 'Últimos 3 dias',
+  '90': 'Últimos 7 dias',
+  all: 'Últimos 30 dias',
+  custom: 'Período Personalizado'
 };
 
 const ElegantPeriodButton = ({
@@ -120,24 +120,24 @@ const ElegantPeriodButton = ({
             <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem onClick={() => onChange('current_month')}>
-            Mês Atual
+            Hoje
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('last_month')}>
-            Mês Anterior
+            Ontem
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('30')}>
-            Últimos 30 dias
+            Últimos 3 dias
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('90')}>
-            Últimos 90 dias
+            Últimos 7 dias
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('all')}>
-            Todo Período
+            Últimos 30 dias
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange('custom')}>
-            Personalizado
+            Período Personalizado
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
