@@ -16,7 +16,7 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
   selectedPlan
 }) => {
   // Todos os prédios começam recolhidos (collapsed)
-  const [expandedBuildings, setExpandedBuildings] = useState<Record<string, boolean>>({});
+  const [isListOpen, setIsListOpen] = useState(false);
   
   console.log('[OrderSummaryCard] Debug:', {
     cartItemsCount: cartItems?.length || 0,
@@ -155,89 +155,75 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Painéis por Prédio - Accordion (Inicia Recolhido) */}
-      <div className="space-y-2 sm:space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h3 className="text-xs sm:text-base font-semibold text-gray-900">
-            Locais Selecionados ({Object.keys(paineisPorPredio).length})
-          </h3>
-          <p className="text-[10px] sm:text-xs text-gray-500">
-            Clique para ver detalhes
-          </p>
-        </div>
+      {/* Accordion Principal - Lista de Prédios */}
+      <div className="space-y-2">
+        <button
+          onClick={() => setIsListOpen(!isListOpen)}
+          className="w-full bg-gradient-to-r from-orange-50 to-orange-100/50 hover:from-orange-100 hover:to-orange-100 transition-colors rounded-lg p-3 sm:p-4 border border-orange-200"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="flex-shrink-0 bg-orange-600 rounded-full p-1.5 sm:p-2">
+                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-900">
+                  Locais Selecionados ({Object.keys(paineisPorPredio).length})
+                </h3>
+                <p className="text-[10px] sm:text-xs text-gray-600">
+                  {isListOpen ? 'Ocultar detalhes' : 'Ver detalhes dos prédios'}
+                </p>
+              </div>
+            </div>
+            <ChevronDown 
+              className={`h-4 w-4 sm:h-5 sm:w-5 text-orange-600 transition-transform flex-shrink-0 ${
+                isListOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </div>
+        </button>
         
-        {Object.entries(paineisPorPredio).map(([buildingId, building]: [string, any]) => {
-          const isExpanded = expandedBuildings[buildingId] || false;
-          
-          return (
-            <motion.div 
-              key={buildingId} 
-              className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden"
-            >
-              {/* Header - Sempre Visível (Clicável) */}
-              <button
-                onClick={() => setExpandedBuildings(prev => ({ ...prev, [buildingId]: !prev[buildingId] }))}
-                className="w-full p-3 sm:p-4 text-left hover:bg-gray-50 transition-colors"
+        {isListOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden space-y-2"
+          >
+            {Object.entries(paineisPorPredio).map(([buildingId, building]: [string, any]) => (
+              <div
+                key={buildingId}
+                className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white hover:shadow-sm transition-shadow"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2 flex-1 min-w-0">
-                    <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-[#9C1E1E] flex-shrink-0" />
-                    <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="flex-shrink-0">
+                    <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                       {building.nome}
                     </h4>
-                  </div>
-                  <motion.div
-                    animate={{ rotate: isExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex-shrink-0"
-                  >
-                    <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-                  </motion.div>
-                </div>
-                
-                {/* Info Compacta - Sempre Visível */}
-                <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
-                  <div className="flex items-center gap-1.5 text-blue-600">
-                    <Monitor className="h-3.5 w-3.5" />
-                    <span className="font-semibold">{building.quantidadeTelas}</span>
-                    <span className="text-gray-600">{building.quantidadeTelas === 1 ? 'tela' : 'telas'}</span>
-                  </div>
-                  
-                  {building.publico_estimado > 0 && (
-                    <div className="flex items-center gap-1.5 text-orange-600">
-                      <Users className="h-3.5 w-3.5" />
-                      <span className="font-semibold">{building.publico_estimado.toLocaleString('pt-BR')}</span>
-                      <span className="text-gray-600">pessoas/mês</span>
-                    </div>
-                  )}
-                </div>
-              </button>
-              
-              {/* Detalhes Expandidos - Condicional */}
-              {isExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-0 border-t border-gray-100">
-                    <div className="flex items-start space-x-1.5 mt-3">
-                      <MapPin className="h-3.5 w-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                        {building.endereco}
-                        {building.bairro && `, ${building.bairro}`}
-                        {building.cidade && ` - ${building.cidade}`}
-                        {building.estado && `/${building.estado}`}
-                      </p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                      <div className="flex items-center space-x-1">
+                        <Monitor className="h-3 w-3 text-gray-400" />
+                        <span className="text-[10px] sm:text-xs text-gray-600">
+                          {building.quantidadeTelas} {building.quantidadeTelas === 1 ? 'tela' : 'telas'}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Users className="h-3 w-3 text-gray-400" />
+                        <span className="text-[10px] sm:text-xs text-gray-600">
+                          {building.publico_estimado.toLocaleString()} pessoas/mês
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </motion.div>
-              )}
-            </motion.div>
-          );
-        })}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
       </div>
     </div>
   );
