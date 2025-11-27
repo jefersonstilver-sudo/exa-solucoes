@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useContactTypes } from '../../../hooks/useContactTypes';
 import { useLeadProfile } from '../../../hooks/useLeadProfile';
 import { IconMapper } from './IconMapper';
+import { BuildingSelector } from './BuildingSelector';
 
 interface MobileChatDetailsProps {
   conversation: any;
@@ -204,6 +205,11 @@ export const MobileChatDetails: React.FC<MobileChatDetailsProps> = ({
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Seção de Prédios (somente para Síndicos) */}
+                  {conversation.contact_type === 'sindico' && (
+                    <BuildingSelector conversationId={conversation.id} />
+                  )}
 
                   {/* Opção de Silenciar */}
                   <div className="bg-card rounded-lg p-4 border">

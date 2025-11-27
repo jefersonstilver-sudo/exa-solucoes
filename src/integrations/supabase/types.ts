@@ -2006,6 +2006,48 @@ export type Database = {
           },
         ]
       }
+      conversation_buildings: {
+        Row: {
+          building_id: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          building_id: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          building_id?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_buildings_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_buildings_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_events: {
         Row: {
           conversation_id: string

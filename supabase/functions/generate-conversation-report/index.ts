@@ -98,6 +98,8 @@ CRITÉRIOS DE ESCALAÇÃO para Eduardo:
 - Risco de cancelamento
 - Cliente irritado/reclamação grave
 
+IMPORTANTE: Identifique também OCORRÊNCIAS e INSATISFAÇÕES específicas para construir um histórico completo do cliente.
+
 Analise a conversa e retorne um relatório em JSON:
 
 {
@@ -132,6 +134,20 @@ Analise a conversa e retorne um relatório em JSON:
       "priority": "alta | media | baixa",
       "action": "Ação específica",
       "reasoning": "Por quê"
+    }
+  ],
+  "ocorrencias": [
+    {
+      "data": "YYYY-MM-DD",
+      "tipo": "reclamacao | elogio | duvida | negociacao | outro",
+      "descricao": "Descrição breve da ocorrência"
+    }
+  ],
+  "insatisfacoes": [
+    {
+      "motivo": "Descrição da insatisfação",
+      "gravidade": "baixa | media | alta",
+      "resolvido": boolean
     }
   ]
 }`
