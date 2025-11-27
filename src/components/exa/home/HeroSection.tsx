@@ -141,19 +141,19 @@ const HeroSection = () => {
   // Desktop: layout de duas colunas com vídeo vertical à esquerda
   const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/video%20vertical%20novo%20exa.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvdmlkZW8gdmVydGljYWwgbm92byBleGEubXA0IiwiaWF0IjoxNzY0MjcxMTA2LCJleHAiOjE3OTU4MDcxMDZ9.p7LRGVwfDFMfQZIB-60RiMiqlYSJD6-gDQz4HlnZYLk';
   
-  return <ExaSection background="dark" className="min-h-screen flex items-center relative overflow-hidden">
+  return <section className="bg-gradient-to-b from-[#9C1E1E] via-[#180A0A]/80 to-exa-black min-h-screen flex items-center relative overflow-hidden">
       <div 
         ref={ref} 
         className={`relative z-10 w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center transition-all duration-1000 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        {/* Vídeo Vertical - Lado Esquerdo com sombras sutis nas pontas */}
-        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] -my-6 lg:-my-8">
-          {/* Sombra sutil no topo - "pontinha" sob o header */}
-          <div className="absolute -top-6 lg:-top-8 inset-x-0 h-12 lg:h-16 bg-gradient-to-b from-black/70 via-black/40 to-transparent z-10 rounded-t-2xl pointer-events-none" />
+        {/* Vídeo Vertical - Lado Esquerdo enterrado sob header/ticker */}
+        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] -my-16 lg:-my-20">
+          {/* Sombra escura no topo - pontinha sob o header */}
+          <div className="absolute -top-16 lg:-top-20 inset-x-0 h-20 lg:h-24 bg-gradient-to-b from-black/80 via-black/50 to-transparent z-10 pointer-events-none" />
           
-          {/* Container do vídeo - sem moldura branca */}
+          {/* Container do vídeo */}
           <div className="relative bg-black rounded-2xl overflow-hidden shadow-2xl">
             <div className="aspect-[9/16]">
               {!loading && <video 
@@ -171,8 +171,8 @@ const HeroSection = () => {
             </div>
           </div>
           
-          {/* Sombra sutil na base - "pontinha" sob o ticker */}
-          <div className="absolute -bottom-6 lg:-bottom-8 inset-x-0 h-12 lg:h-16 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-10 rounded-b-2xl pointer-events-none" />
+          {/* Sombra escura na base - pontinha sob o ticker */}
+          <div className="absolute -bottom-16 lg:-bottom-20 inset-x-0 h-20 lg:h-24 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-10 pointer-events-none" />
         </div>
 
         {/* Texto + CTA - Lado Direito */}
@@ -196,6 +196,6 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
-    </ExaSection>;
+    </section>;
 };
 export default HeroSection;
