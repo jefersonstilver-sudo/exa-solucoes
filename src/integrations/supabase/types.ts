@@ -2682,6 +2682,66 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_report_config: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          recipient_emails: string[] | null
+          schedule_time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          recipient_emails?: string[] | null
+          schedule_time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          recipient_emails?: string[] | null
+          schedule_time?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      daily_reports: {
+        Row: {
+          agent_key: string
+          ai_analysis: Json
+          created_at: string | null
+          id: string
+          metrics: Json
+          pdf_url: string | null
+          report_date: string
+          sent_to: string[] | null
+        }
+        Insert: {
+          agent_key?: string
+          ai_analysis: Json
+          created_at?: string | null
+          id?: string
+          metrics: Json
+          pdf_url?: string | null
+          report_date: string
+          sent_to?: string[] | null
+        }
+        Update: {
+          agent_key?: string
+          ai_analysis?: Json
+          created_at?: string | null
+          id?: string
+          metrics?: Json
+          pdf_url?: string | null
+          report_date?: string
+          sent_to?: string[] | null
+        }
+        Relationships: []
+      }
       developer_auth_tokens: {
         Row: {
           created_at: string
