@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, AlertTriangle, Clock, ChevronDown, Calendar as CalendarIcon, Maximize2, Monitor, Wifi, WifiOff, HelpCircle } from 'lucide-react';
+import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, Maximize2 } from 'lucide-react';
 import {
   Device,
   calculateDeviceStats,
@@ -10,24 +10,16 @@ import { FiltersBar } from '../components/FiltersBar';
 import { PanelsListView } from '../components/PanelsListView';
 import { FullscreenMonitor } from '../components/FullscreenMonitor';
 import { ViewToggle } from '../components/ViewToggle';
-import { QuedaDiariaList } from '../components/QuedaDiariaList';
-import { UnifiedUptimeTimeline } from '../components/timeline/UnifiedUptimeTimeline';
-import { GroupedTimelineView } from '../components/timeline/GroupedTimelineView';
 import { OfflineAlert } from '../components/OfflineAlert';
 import { useOfflineAlerts } from '../hooks/useOfflineAlerts';
 import { AnimatePresence } from 'framer-motion';
 import { useDevices } from '../hooks/useDevices';
 import { useModuleTheme } from '../hooks/useModuleTheme';
-import { format, startOfDay, endOfDay, subDays, startOfWeek, startOfYesterday, endOfYesterday } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Badge } from '@/components/ui/badge';
-import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
 import { MobileHeader } from '../components/MobileHeader';
 import { Sidebar } from '../components/Sidebar';
 
@@ -69,7 +61,6 @@ const SimpleStatCard = ({ label, value, color }: { label: string; value: number;
 };
 
 export const PaineisPage = () => {
-  const navigate = useNavigate();
   const {
     devices,
     loading,
@@ -88,19 +79,13 @@ export const PaineisPage = () => {
 
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
-  const [todasQuedas, setTodasQuedas] = useState<any[]>([]);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [quedaPeriod, setQuedaPeriod] = useState<PeriodType>('hoje');
-  const [customStartDate, setCustomStartDate] = useState<Date>();
-  const [customEndDate, setCustomEndDate] = useState<Date>();
-  const [isQuedasOpen, setIsQuedasOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
-  const [timelineView, setTimelineView] = useState<'unified' | 'grouped' | 'list'>('unified');
   
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
@@ -181,112 +166,6 @@ export const PaineisPage = () => {
     return () => clearInterval(syncInterval);
   }, []);
 
-  // Buscar TODAS as quedas do período com detalhes de connection_history
-  useEffect(() => {
-    const fetchAllDrops = async () => {
-      try {
-        let startDate: Date;
-        const endDate = endOfDay(new Date());
-        
-        switch (quedaPeriod) {
-          case 'hoje':
-            startDate = startOfDay(new Date());
-            break;
-          case 'ontem':
-            startDate = startOfYesterday();
-            break;
-          case 'esta-semana':
-            startDate = startOfWeek(new Date(), { locale: ptBR });
-            break;
-          case '7dias':
-            startDate = startOfDay(subDays(new Date(), 7));
-            break;
-          case '30dias':
-            startDate = startOfDay(subDays(new Date(), 30));
-            break;
-          case 'personalizado':
-            if (customStartDate && customEndDate) {
-              startDate = startOfDay(customStartDate);
-            } else {
-              startDate = startOfDay(new Date());
-            }
-            break;
-          default:
-            startDate = startOfDay(new Date());
-        }
-
-        // Buscar todas as desconexões do período
-        const { data: connectionHistory, error } = await supabase
-          .from('connection_history')
-          .select(`
-            *,
-            devices!inner(id, name, comments, condominio_name)
-          `)
-          .eq('event_type', 'offline')
-          .gte('started_at', startDate.toISOString())
-          .lte('started_at', endDate.toISOString())
-          .order('started_at', { ascending: false });
-
-        if (error) {
-          console.error('Erro ao buscar connection_history:', error);
-          return;
-        }
-
-        if (!connectionHistory || connectionHistory.length === 0) {
-          setTodasQuedas([]);
-          return;
-        }
-
-        // Agrupar por painel
-        const quedaPorPainel = new Map();
-
-        connectionHistory.forEach((conn: any) => {
-          const painelId = conn.computer_id;
-          const painelData = conn.devices;
-          
-          if (!painelData) return;
-
-          if (!quedaPorPainel.has(painelId)) {
-            // Limpar nome do painel para evitar duplicação
-            const rawName = painelData.comments || painelData.name || '';
-            const cleanName = rawName.includes(' - ') 
-              ? rawName.split(' - ')[0].trim() 
-              : rawName.trim();
-            
-            quedaPorPainel.set(painelId, {
-              painel_id: painelId,
-              painel_nome: cleanName,
-              condominio_nome: painelData.condominio_name || 'Sem condomínio',
-              total_ocorrencias: 0,
-              tempo_total_offline_segundos: 0,
-              ocorrencias: []
-            });
-          }
-
-          const painelInfo = quedaPorPainel.get(painelId);
-          painelInfo.total_ocorrencias++;
-          painelInfo.tempo_total_offline_segundos += (conn.duration_seconds || 0);
-          painelInfo.ocorrencias.push({
-            inicio: conn.started_at,
-            fim: conn.ended_at,
-            duracao_segundos: conn.duration_seconds || 0
-          });
-        });
-
-        // Converter para array e ordenar por tempo total offline
-        const quedasArray = Array.from(quedaPorPainel.values())
-          .sort((a, b) => b.tempo_total_offline_segundos - a.tempo_total_offline_segundos);
-
-        setTodasQuedas(quedasArray);
-      } catch (error) {
-        console.error('Erro ao buscar dados de quedas:', error);
-        setTodasQuedas([]);
-      }
-    };
-
-    fetchAllDrops();
-  }, [devices, quedaPeriod, customStartDate, customEndDate]);
-
   return (
     <div className="min-h-screen bg-background">
       {/* Overlay para sidebar */}
@@ -346,17 +225,6 @@ export const PaineisPage = () => {
             </div>
             
             <div className="flex items-center gap-2 lg:gap-3">
-              <PeriodSelector
-                value={quedaPeriod}
-                onChange={(value, customStart, customEnd) => {
-                  setQuedaPeriod(value);
-                  if (customStart) setCustomStartDate(customStart);
-                  if (customEnd) setCustomEndDate(customEnd);
-                }}
-                customStartDate={customStartDate}
-                customEndDate={customEndDate}
-              />
-
               <button
                 onClick={handleSyncAnyDesk}
                 disabled={syncing}
@@ -431,124 +299,6 @@ export const PaineisPage = () => {
           </CollapsibleContent>
         </div>
       </Collapsible>
-
-      {/* Timeline Premium Section */}
-      <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
-        {/* View Toggle */}
-        <div className="flex items-center justify-between p-3 lg:p-4 border-b border-border/20">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <AlertTriangle className="w-4 h-4 lg:w-5 lg:h-5 text-red-600 shrink-0" />
-            <h3 className="text-sm lg:text-base font-bold text-foreground truncate">
-              {quedaPeriod === 'hoje' ? 'Quedas de Hoje' : 
-               quedaPeriod === 'ontem' ? 'Quedas de Ontem' :
-               quedaPeriod === 'esta-semana' ? 'Quedas desta Semana' :
-               quedaPeriod === '7dias' ? 'Últimos 7 Dias' : 
-               quedaPeriod === '30dias' ? 'Últimos 30 Dias' :
-               'Período Selecionado'}
-            </h3>
-            <Badge variant="destructive" className="animate-pulse bg-red-600 text-white text-xs lg:text-sm shrink-0">
-              {todasQuedas.reduce((sum, painel) => sum + painel.total_ocorrencias, 0)}
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-            <Button
-              variant={timelineView === 'unified' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setTimelineView('unified')}
-              className="h-7 text-xs px-2"
-              title="Timeline Unificada"
-            >
-              📊
-            </Button>
-            <Button
-              variant={timelineView === 'grouped' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setTimelineView('grouped')}
-              className="h-7 text-xs px-2"
-              title="Agrupado por Local"
-            >
-              📁
-            </Button>
-            <Button
-              variant={timelineView === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setTimelineView('list')}
-              className="h-7 text-xs px-2"
-              title="Lista Detalhada"
-            >
-              📋
-            </Button>
-          </div>
-        </div>
-
-        {/* Timeline Content */}
-        <div className="min-h-[400px]">
-          {timelineView === 'unified' && (
-            <UnifiedUptimeTimeline
-              panels={todasQuedas.map(queda => ({
-                id: queda.painel_id,
-                code: queda.painel_nome,
-                condominiumName: queda.condominio_nome,
-                segments: queda.ocorrencias.map((occ: any, idx: number) => ({
-                  id: `${queda.painel_id}-${idx}`,
-                  startTime: new Date(occ.inicio),
-                  endTime: occ.fim ? new Date(occ.fim) : undefined,
-                  status: 'offline' as const,
-                  duration: occ.duracao_segundos
-                }))
-              }))}
-            />
-          )}
-
-          {timelineView === 'grouped' && (
-            <div className="p-3 lg:p-4">
-              <GroupedTimelineView
-                panels={todasQuedas.map(queda => ({
-                  id: queda.painel_id,
-                  code: queda.painel_nome,
-                  condominiumName: queda.condominio_nome,
-                  segments: queda.ocorrencias.map((occ: any, idx: number) => ({
-                    id: `${queda.painel_id}-${idx}`,
-                    startTime: new Date(occ.inicio),
-                    endTime: occ.fim ? new Date(occ.fim) : undefined,
-                    status: 'offline' as const,
-                    duration: occ.duracao_segundos
-                  }))
-                }))}
-                pixelsPerHour={100}
-                startHour={0}
-              />
-            </div>
-          )}
-
-          {timelineView === 'list' && (
-            <div className="p-3 lg:p-4">
-              <div className="flex justify-end mb-2 lg:hidden">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/admin/monitoramento-ia/historico-quedas')}
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  Histórico
-                </Button>
-              </div>
-              <div className="hidden lg:flex justify-end mb-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/admin/monitoramento-ia/historico-quedas')}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Ver Histórico Completo
-                </Button>
-              </div>
-              <QuedaDiariaList paineis={todasQuedas} />
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Barra de ações - Mobile otimizado */}
       <div className="flex flex-col gap-3 lg:gap-4">
