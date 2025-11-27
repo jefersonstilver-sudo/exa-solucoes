@@ -15,14 +15,18 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
   cartItems,
   selectedPlan
 }) => {
+  // Todos os prédios começam recolhidos (collapsed)
   const [expandedBuildings, setExpandedBuildings] = useState<Record<string, boolean>>({});
+  
   console.log('[OrderSummaryCard] Debug:', {
     cartItemsCount: cartItems?.length || 0,
     selectedPlan,
     cartItems: cartItems?.map(item => ({
       panelId: item.panel.id,
       buildingName: item.panel.buildings?.nome,
-      endereco: item.panel.buildings?.endereco
+      endereco: item.panel.buildings?.endereco,
+      quantidadeTelas: item.panel.buildings?.quantidade_telas,
+      numeroElevadores: item.panel.buildings?.numero_elevadores
     }))
   });
 
@@ -51,12 +55,23 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     }).format(date);
   };
 
-  // Agrupar painéis por prédio - pega dados reais do banco
+  // Agrupar painéis por prédio - GARANTIR que número de telas vem do banco
   const paineisPorPredio = cartItems.reduce((acc, item) => {
     const buildingId = item.panel.buildings?.id || 'unknown';
     const buildingName = item.panel.buildings?.nome || 'Prédio não identificado';
     
     if (!acc[buildingId]) {
+      // CRÍTICO: Usar quantidade_telas do banco, se 0 usar numero_elevadores como fallback
+      const quantidadeTelasDB = item.panel.buildings?.quantidade_telas || 0;
+      const numeroElevadores = item.panel.buildings?.numero_elevadores || 0;
+      const quantidadeTelasReal = quantidadeTelasDB > 0 ? quantidadeTelasDB : numeroElevadores;
+      
+      console.log(`[OrderSummaryCard] Prédio ${buildingName}:`, {
+        quantidade_telas_banco: quantidadeTelasDB,
+        numero_elevadores: numeroElevadores,
+        quantidadeTelasUsada: quantidadeTelasReal
+      });
+      
       acc[buildingId] = {
         nome: buildingName,
         endereco: item.panel.buildings?.endereco || '',
@@ -64,8 +79,8 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         cidade: item.panel.buildings?.cidade || '',
         estado: item.panel.buildings?.estado || '',
         publico_estimado: item.panel.buildings?.publico_estimado || 0,
-        // Pega o número real de telas do prédio do banco de dados
-        quantidadeTelas: item.panel.buildings?.quantidade_telas || item.panel.buildings?.numero_elevadores || 0
+        // USAR quantidade_telas se preenchido, senão usar numero_elevadores
+        quantidadeTelas: quantidadeTelasReal
       };
     }
     
@@ -140,23 +155,30 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Painéis por Prédio - Compacto com Expand */}
+      {/* Painéis por Prédio - Accordion (Inicia Recolhido) */}
       <div className="space-y-2 sm:space-y-3">
-        <h3 className="text-xs sm:text-base font-semibold text-gray-900 px-1">
-          Locais Selecionados
-        </h3>
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-xs sm:text-base font-semibold text-gray-900">
+            Locais Selecionados ({Object.keys(paineisPorPredio).length})
+          </h3>
+          <p className="text-[10px] sm:text-xs text-gray-500">
+            Clique para ver detalhes
+          </p>
+        </div>
         
         {Object.entries(paineisPorPredio).map(([buildingId, building]: [string, any]) => {
-          const isExpanded = expandedBuildings[buildingId];
+          const isExpanded = expandedBuildings[buildingId] || false;
           
           return (
             <motion.div 
               key={buildingId} 
-              className="bg-white border rounded-2xl shadow-lg hover:shadow-2xl transition-all overflow-hidden cursor-pointer"
-              onClick={() => setExpandedBuildings(prev => ({ ...prev, [buildingId]: !prev[buildingId] }))}
+              className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden"
             >
-              {/* Header - Sempre Visível */}
-              <div className="p-3 sm:p-4">
+              {/* Header - Sempre Visível (Clicável) */}
+              <button
+                onClick={() => setExpandedBuildings(prev => ({ ...prev, [buildingId]: !prev[buildingId] }))}
+                className="w-full p-3 sm:p-4 text-left hover:bg-gray-50 transition-colors"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2 flex-1 min-w-0">
                     <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-[#9C1E1E] flex-shrink-0" />
@@ -189,7 +211,7 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
                     </div>
                   )}
                 </div>
-              </div>
+              </button>
               
               {/* Detalhes Expandidos - Condicional */}
               <motion.div
