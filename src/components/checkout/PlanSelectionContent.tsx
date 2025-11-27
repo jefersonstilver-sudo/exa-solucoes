@@ -60,12 +60,12 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
   }, [selectedPlan, cartItems, totalPrice]);
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6 sm:space-y-8 mt-6 sm:mt-8">
       {/* Cart Summary - Elegant Card */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 sm:p-8 shadow-lg"
+        className="bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-lg"
       >
         <div className="grid grid-cols-3 gap-4 sm:gap-6">
           {/* Buildings */}
