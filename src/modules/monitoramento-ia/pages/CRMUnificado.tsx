@@ -61,23 +61,27 @@ export const CRMUnificado = () => {
   // Renderizar versão desktop
   return (
     <div className="h-full flex flex-col bg-[var(--exa-bg-primary)] overflow-hidden">
-      {/* Filtros flutuantes */}
-      <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
-
-      {/* Header com métricas - Esconde em fullscreen */}
+      {/* Header unificado - Esconde em fullscreen */}
       {!isFullscreen && (
-        <div className="p-4">
-          {/* Toggle minimalista para métricas e botão de IA */}
-          <div className="flex items-center justify-between mb-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/admin/monitoramento-ia/relatorios-ia')}
-              className="h-9 px-4 text-sm font-medium bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white border-0 hover:from-[#8B1A1A] hover:to-[#C12131] shadow-md hover:shadow-lg transition-all"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Relatórios IA
-            </Button>
+        <div className="p-4 border-b border-border/30 bg-gradient-to-r from-background/95 to-background/80 backdrop-blur-sm">
+          {/* Barra horizontal com Filtros | Relatórios | Métricas */}
+          <div className="flex items-center justify-between gap-3 mb-3">
+            {/* Esquerda: Filtros + Relatórios */}
+            <div className="flex items-center gap-2">
+              <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/admin/monitoramento-ia/relatorios-ia')}
+                className="h-9 px-4 text-sm font-medium bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white border-0 hover:from-[#8B1A1A] hover:to-[#C12131] shadow-md hover:shadow-lg transition-all"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Relatórios IA
+              </Button>
+            </div>
+
+            {/* Direita: Toggle métricas */}
             <Button
               variant="ghost"
               size="sm"

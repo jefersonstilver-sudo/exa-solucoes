@@ -11,7 +11,6 @@ import { format, isToday, isYesterday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import exaChatLogo from '@/assets/exa-chat-logo.png';
 
 interface WhatsAppCRMChatProps {
   conversationId: string | null;
@@ -119,15 +118,43 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
 
   if (!conversationId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-[#f0f2f5]">
-        <img 
-          src={exaChatLogo} 
-          alt="EXA Chat" 
-          className="w-64 h-64 opacity-20"
-        />
-        <p className="text-sm text-muted-foreground mt-4">
-          Selecione uma conversa
-        </p>
+      <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-background via-background/95 to-muted/20 relative overflow-hidden">
+        {/* Radar animado com ondas */}
+        <div className="relative w-80 h-80">
+          {/* Círculos do radar */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-64 h-64 rounded-full border-2 border-primary/10 animate-pulse" style={{ animationDuration: '3s' }} />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-48 h-48 rounded-full border-2 border-primary/20 animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-32 h-32 rounded-full border-2 border-primary/30 animate-pulse" style={{ animationDuration: '2s', animationDelay: '1s' }} />
+          </div>
+          
+          {/* Ícone central com gradiente */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center backdrop-blur-sm border-2 border-primary/30 shadow-2xl">
+              <MessageSquare className="w-10 h-10 text-primary animate-pulse" style={{ animationDuration: '2s' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Texto elegante com gradiente */}
+        <div className="mt-8 text-center space-y-2">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-shimmer">
+            Exa Mídia
+          </h2>
+          <p className="text-lg text-muted-foreground font-medium">
+            Chat Radar
+          </p>
+          <p className="text-sm text-muted-foreground/70 mt-4">
+            Selecione uma conversa para começar
+          </p>
+        </div>
+
+        {/* Efeito de brilho sutil no fundo */}
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/5 via-transparent to-transparent pointer-events-none" />
       </div>
     );
   }
