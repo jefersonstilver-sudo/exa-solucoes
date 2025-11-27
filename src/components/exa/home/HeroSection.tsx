@@ -176,9 +176,9 @@ const HeroSection = () => {
         }`}
       >
         {/* Vídeo Vertical - Lado Esquerdo enterrado sob header/ticker */}
-        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] -my-32 lg:-my-40">
+        <div className="relative mx-auto max-w-[320px] lg:max-w-[380px] -my-16 lg:-my-20">
           {/* Sombra escura no topo - pontinha sob o header */}
-          <div className="absolute -top-32 lg:-top-40 inset-x-0 h-32 lg:h-40 bg-gradient-to-b from-black via-black/70 to-transparent z-10 pointer-events-none" />
+          <div className="absolute -top-16 lg:-top-20 inset-x-0 h-8 lg:h-12 bg-gradient-to-b from-black via-black/70 to-transparent z-10 pointer-events-none" />
           
           {/* Container do vídeo - sem bordas arredondadas nas pontas escondidas */}
           <div className="relative bg-black overflow-hidden shadow-2xl">
@@ -200,7 +200,7 @@ const HeroSection = () => {
 
             {/* Botões Glassmorphism - Som e Reiniciar */}
             {!loading && (
-              <div className="absolute bottom-4 right-4 flex gap-2 z-20">
+              <div className="absolute bottom-4 right-4 flex gap-2 z-40">
                 {/* Botão Som com Tooltip */}
                 <div className="relative">
                   {showSoundTooltip && (
@@ -243,7 +243,7 @@ const HeroSection = () => {
           </div>
           
           {/* Sombra escura na base - pontinha sob o ticker */}
-          <div className="absolute -bottom-32 lg:-bottom-40 inset-x-0 h-32 lg:h-40 bg-gradient-to-t from-black via-black/70 to-transparent z-10 pointer-events-none" />
+          <div className="absolute -bottom-16 lg:-bottom-20 inset-x-0 h-8 lg:h-12 bg-gradient-to-t from-black via-black/70 to-transparent z-10 pointer-events-none" />
         </div>
 
         {/* Texto + CTA - Lado Direito */}
