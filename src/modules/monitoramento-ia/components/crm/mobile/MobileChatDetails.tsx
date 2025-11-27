@@ -1,13 +1,25 @@
-import React from 'react';
-import { X, Bell, BellOff, User, Tag, Clock, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  X, Bell, BellOff, User, Tag, Clock, TrendingUp, 
+  FileText, Sparkles, Plus, StickyNote, Tags as TagsIcon 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatContactName, formatPhoneSecondary } from '@/modules/monitoramento-ia/utils/contactFormatters';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useLeadDetails } from '../../../hooks/useLeadDetails';
+import { ConversationTags } from '../ConversationTags';
+import { ConversationNotes } from '../ConversationNotes';
+import { LeadAnalysisSection } from '../LeadAnalysisSection';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useContactTypes } from '../../../hooks/useContactTypes';
+import { useLeadProfile } from '../../../hooks/useLeadProfile';
 
 interface MobileChatDetailsProps {
   conversation: any;
@@ -23,8 +35,13 @@ export const MobileChatDetails: React.FC<MobileChatDetailsProps> = ({
   onUpdate
 }) => {
   const { toast } = useToast();
-  const [isMuted, setIsMuted] = React.useState(conversation.is_muted || false);
-  const [isUpdating, setIsUpdating] = React.useState(false);
+  const [isMuted, setIsMuted] = useState(conversation.is_muted || false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [activeTab, setActiveTab] = useState('info');
+  
+  const { lead, metrics, loading: leadLoading, updateLeadType, toggleHotLead, generateReport } = useLeadDetails(conversation.id);
+  const { contactTypes } = useContactTypes();
+  const { profile } = useLeadProfile(conversation.id);
 
   const handleToggleMute = async () => {
     setIsUpdating(true);
@@ -59,6 +76,36 @@ export const MobileChatDetails: React.FC<MobileChatDetailsProps> = ({
     }
   };
 
+  const handleUpdateContactType = async (typeName: string) => {
+    await updateLeadType(typeName);
+    onUpdate();
+  };
+
+  const handleToggleHotLead = async () => {
+    await toggleHotLead();
+    onUpdate();
+  };
+
+  const handleGenerateReport = async () => {
+    setIsUpdating(true);
+    try {
+      await generateReport();
+      toast({
+        title: 'Relatório gerado',
+        description: 'O relatório de análise foi gerado com sucesso'
+      });
+      onUpdate();
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível gerar o relatório',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -78,10 +125,10 @@ export const MobileChatDetails: React.FC<MobileChatDetailsProps> = ({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-background z-[70] shadow-2xl overflow-y-auto"
+            className="fixed right-0 top-0 bottom-0 w-full bg-background z-[70] shadow-2xl flex flex-col"
           >
             {/* Header */}
-            <div className="sticky top-0 bg-[#25D366] text-white p-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white p-4 flex items-center justify-between z-10">
               <h2 className="text-lg font-semibold">Detalhes do Contato</h2>
               <Button
                 variant="ghost"
@@ -93,158 +140,271 @@ export const MobileChatDetails: React.FC<MobileChatDetailsProps> = ({
               </Button>
             </div>
 
-            {/* Conteúdo */}
-            <div className="p-4 space-y-6">
-              {/* Avatar e Nome */}
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className="w-24 h-24 rounded-full bg-[#25D366]/20 flex items-center justify-center border-4 border-[#25D366]/30">
-                  <User className="w-12 h-12 text-[#25D366]" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-module-primary">
-                    {formatContactName(conversation.contact_name, conversation.contact_phone)}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {formatPhoneSecondary(conversation.contact_phone)}
-                  </p>
-                </div>
-              </div>
+            {/* Tabs de Navegação */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <TabsList className="grid w-full grid-cols-4 rounded-none bg-muted/50">
+                <TabsTrigger value="info" className="text-xs">
+                  <User className="w-4 h-4 mr-1" />
+                  Info
+                </TabsTrigger>
+                <TabsTrigger value="tags" className="text-xs">
+                  <TagsIcon className="w-4 h-4 mr-1" />
+                  Tags
+                </TabsTrigger>
+                <TabsTrigger value="notes" className="text-xs">
+                  <StickyNote className="w-4 h-4 mr-1" />
+                  Notas
+                </TabsTrigger>
+                <TabsTrigger value="ai" className="text-xs">
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  IA
+                </TabsTrigger>
+              </TabsList>
 
-              {/* Opção de Silenciar */}
-              <div className="bg-card rounded-lg p-4 border border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {isMuted ? (
-                      <BellOff className="w-5 h-5 text-muted-foreground" />
-                    ) : (
-                      <Bell className="w-5 h-5 text-muted-foreground" />
-                    )}
+              <ScrollArea className="flex-1">
+                {/* Tab: Informações */}
+                <TabsContent value="info" className="p-4 space-y-6 m-0">
+                  {/* Avatar e Nome */}
+                  <div className="flex flex-col items-center text-center space-y-3">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#9C1E1E] to-[#D72638] flex items-center justify-center border-4 border-primary/30">
+                      <User className="w-12 h-12 text-white" />
+                    </div>
                     <div>
-                      <p className="font-medium text-module-primary">
-                        {isMuted ? 'Conversa silenciada' : 'Notificações ativas'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {isMuted 
-                          ? 'Não aparecerá como nova na lista' 
-                          : 'Você receberá notificações'}
+                      <h3 className="text-xl font-bold text-foreground">
+                        {formatContactName(conversation.contact_name, conversation.contact_phone)}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {formatPhoneSecondary(conversation.contact_phone)}
                       </p>
                     </div>
                   </div>
-                  <Switch
-                    checked={isMuted}
-                    onCheckedChange={handleToggleMute}
-                    disabled={isUpdating}
+
+                  {/* Tipo de Contato */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-foreground">Tipo de Contato</label>
+                    <Select 
+                      value={conversation.contact_type || ''} 
+                      onValueChange={handleUpdateContactType}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contactTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.name}>
+                            <div className="flex items-center gap-2">
+                              <span>{type.icon}</span>
+                              <span>{type.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Opção de Silenciar */}
+                  <div className="bg-card rounded-lg p-4 border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {isMuted ? (
+                          <BellOff className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <Bell className="w-5 h-5 text-muted-foreground" />
+                        )}
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {isMuted ? 'Conversa silenciada' : 'Notificações ativas'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {isMuted 
+                              ? 'Não aparecerá como nova na lista' 
+                              : 'Você receberá notificações'}
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={isMuted}
+                        onCheckedChange={handleToggleMute}
+                        disabled={isUpdating}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Ações Rápidas */}
+                  <div className="space-y-2">
+                    <Button
+                      variant={conversation.is_hot_lead ? 'default' : 'outline'}
+                      className={cn(
+                        'w-full',
+                        conversation.is_hot_lead && 'bg-orange-500 hover:bg-orange-600'
+                      )}
+                      onClick={handleToggleHotLead}
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      {conversation.is_hot_lead ? 'Hot Lead Ativo' : 'Marcar como Hot Lead'}
+                    </Button>
+                  </div>
+
+                  {/* Informações do Agente */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-sm text-muted-foreground uppercase">
+                      Informações
+                    </h4>
+                    
+                    {/* Agente */}
+                    <div className="flex items-center gap-3 p-3 bg-card rounded-lg border">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">Agente</p>
+                        <p className="font-medium text-sm capitalize">
+                          {conversation.agent_key === 'sofia' && '🤖 Sofia'}
+                          {conversation.agent_key === 'eduardo' && '🤖 Eduardo'}
+                          {conversation.agent_key === 'exa_alert' && '🤖 Exa Alert'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="space-y-2">
+                    {conversation.is_critical && (
+                      <Badge variant="destructive" className="w-full justify-center py-2">
+                        🚨 Conversa Crítica
+                      </Badge>
+                    )}
+                    {conversation.is_hot_lead && (
+                      <Badge className="w-full justify-center py-2 bg-orange-500 hover:bg-orange-600">
+                        🔥 Hot Lead
+                      </Badge>
+                    )}
+                    {conversation.is_sindico && (
+                      <Badge variant="outline" className="w-full justify-center py-2">
+                        👔 Síndico
+                      </Badge>
+                    )}
+                    {conversation.awaiting_response && (
+                      <Badge variant="secondary" className="w-full justify-center py-2">
+                        <Clock className="w-3 h-3 mr-1" />
+                        Aguardando Resposta
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Sentimento */}
+                  {conversation.sentiment && (
+                    <div className="flex items-center gap-3 p-3 bg-card rounded-lg border">
+                      <div className={cn(
+                        'w-8 h-8 rounded-full flex items-center justify-center text-lg',
+                        conversation.sentiment === 'positive' && 'bg-green-500/20',
+                        conversation.sentiment === 'neutral' && 'bg-gray-500/20',
+                        conversation.sentiment === 'negative' && 'bg-orange-500/20',
+                        conversation.sentiment === 'angry' && 'bg-red-500/20'
+                      )}>
+                        {conversation.sentiment === 'positive' && '😊'}
+                        {conversation.sentiment === 'neutral' && '😐'}
+                        {conversation.sentiment === 'negative' && '😟'}
+                        {conversation.sentiment === 'angry' && '😡'}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">Sentimento</p>
+                        <p className="font-medium text-sm capitalize">
+                          {conversation.sentiment === 'positive' && 'Positivo'}
+                          {conversation.sentiment === 'neutral' && 'Neutro'}
+                          {conversation.sentiment === 'negative' && 'Negativo'}
+                          {conversation.sentiment === 'angry' && 'Irritado'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Scores */}
+                  {(conversation.lead_score > 0 || conversation.mood_score > 0) && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {conversation.lead_score > 0 && (
+                        <div className="p-3 bg-card rounded-lg border text-center">
+                          <TrendingUp className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Lead Score</p>
+                          <p className="text-lg font-bold text-foreground">{conversation.lead_score}</p>
+                        </div>
+                      )}
+                      {conversation.mood_score > 0 && (
+                        <div className="p-3 bg-card rounded-lg border text-center">
+                          <span className="text-2xl">😊</span>
+                          <p className="text-xs text-muted-foreground">Humor</p>
+                          <p className="text-lg font-bold text-foreground">{conversation.mood_score}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Métricas do Lead */}
+                  {metrics && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-card rounded-lg border text-center">
+                        <p className="text-xs text-muted-foreground mb-1">Mensagens</p>
+                        <p className="text-2xl font-bold text-foreground">{metrics.totalMessages}</p>
+                      </div>
+                      <div className="p-3 bg-card rounded-lg border text-center">
+                        <p className="text-xs text-muted-foreground mb-1">Tempo Resp.</p>
+                        <p className="text-xl font-bold text-foreground">
+                          {metrics.avgResponseTimeFormatted || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Tab: Tags */}
+                <TabsContent value="tags" className="p-4 m-0">
+                  <ConversationTags
+                    phoneNumber={conversation.contact_phone}
+                    agentKey={conversation.agent_key}
                   />
-                </div>
-              </div>
+                </TabsContent>
 
-              {/* Informações */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-sm text-muted-foreground uppercase">
-                  Informações
-                </h4>
-                
-                {/* Agente */}
-                <div className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Agente</p>
-                    <p className="font-medium text-sm capitalize">
-                      {conversation.agent_key === 'sofia' && '🤖 Sofia'}
-                      {conversation.agent_key === 'eduardo' && '🤖 Eduardo'}
-                      {conversation.agent_key === 'exa_alert' && '🤖 Exa Alert'}
-                    </p>
-                  </div>
-                </div>
+                {/* Tab: Notas */}
+                <TabsContent value="notes" className="p-4 m-0">
+                  <ConversationNotes
+                    phoneNumber={conversation.contact_phone}
+                    agentKey={conversation.agent_key}
+                  />
+                </TabsContent>
 
-                {/* Tipo de Contato */}
-                {conversation.contact_type && (
-                  <div className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border">
-                    <Tag className="w-4 h-4 text-muted-foreground" />
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">Tipo</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {conversation.contact_type_source === 'manual' ? '👤' : '🤖'} {conversation.contact_type}
-                        </Badge>
-                      </div>
+                {/* Tab: Análise de IA */}
+                <TabsContent value="ai" className="p-4 space-y-4 m-0">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-purple-500" />
+                        Análise de IA
+                      </h4>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleGenerateReport}
+                        disabled={isUpdating}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Gerar
+                      </Button>
                     </div>
-                  </div>
-                )}
-
-                {/* Status */}
-                <div className="space-y-2">
-                  {conversation.is_critical && (
-                    <Badge variant="destructive" className="w-full justify-center py-2">
-                      🚨 Conversa Crítica
-                    </Badge>
-                  )}
-                  {conversation.is_hot_lead && (
-                    <Badge className="w-full justify-center py-2 bg-orange-500 hover:bg-orange-600">
-                      🔥 Hot Lead
-                    </Badge>
-                  )}
-                  {conversation.is_sindico && (
-                    <Badge variant="outline" className="w-full justify-center py-2">
-                      👔 Síndico
-                    </Badge>
-                  )}
-                  {conversation.awaiting_response && (
-                    <Badge variant="secondary" className="w-full justify-center py-2">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Aguardando Resposta
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Sentimento */}
-                {conversation.sentiment && (
-                  <div className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border">
-                    <div className={cn(
-                      'w-8 h-8 rounded-full flex items-center justify-center text-lg',
-                      conversation.sentiment === 'positive' && 'bg-green-500/20',
-                      conversation.sentiment === 'neutral' && 'bg-gray-500/20',
-                      conversation.sentiment === 'negative' && 'bg-orange-500/20',
-                      conversation.sentiment === 'angry' && 'bg-red-500/20'
-                    )}>
-                      {conversation.sentiment === 'positive' && '😊'}
-                      {conversation.sentiment === 'neutral' && '😐'}
-                      {conversation.sentiment === 'negative' && '😟'}
-                      {conversation.sentiment === 'angry' && '😡'}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">Sentimento</p>
-                      <p className="font-medium text-sm capitalize">
-                        {conversation.sentiment === 'positive' && 'Positivo'}
-                        {conversation.sentiment === 'neutral' && 'Neutro'}
-                        {conversation.sentiment === 'negative' && 'Negativo'}
-                        {conversation.sentiment === 'angry' && 'Irritado'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Scores */}
-                {(conversation.lead_score > 0 || conversation.mood_score > 0) && (
-                  <div className="grid grid-cols-2 gap-3">
-                    {conversation.lead_score > 0 && (
-                      <div className="p-3 bg-card rounded-lg border border-border text-center">
-                        <TrendingUp className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Lead Score</p>
-                        <p className="text-lg font-bold text-module-primary">{conversation.lead_score}</p>
+                    
+                    {leadLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">Carregando análise...</p>
                       </div>
-                    )}
-                    {conversation.mood_score > 0 && (
-                      <div className="p-3 bg-card rounded-lg border border-border text-center">
-                        <span className="text-2xl">😊</span>
-                        <p className="text-xs text-muted-foreground">Humor</p>
-                        <p className="text-lg font-bold text-module-primary">{conversation.mood_score}</p>
-                      </div>
+                    ) : (
+                      <LeadAnalysisSection 
+                        profile={profile} 
+                        detectedType={lead?.contact_type || null}
+                        loading={leadLoading}
+                      />
                     )}
                   </div>
-                )}
-              </div>
-            </div>
+                </TabsContent>
+              </ScrollArea>
+            </Tabs>
           </motion.div>
         </>
       )}
