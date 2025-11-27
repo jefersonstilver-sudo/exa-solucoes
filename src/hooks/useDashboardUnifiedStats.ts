@@ -11,6 +11,7 @@ export interface AgentConversationStats {
   conversas: number;
   enviadas: number;
   recebidas: number;
+  enviadasPorTipo: Record<string, number>;
 }
 
 export interface UnifiedDashboardStats {
@@ -179,7 +180,8 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
           conversasPorAgente[agentName] = {
             conversas: 0,
             enviadas: 0,
-            recebidas: 0
+            recebidas: 0,
+            enviadasPorTipo: {}
           };
         }
 
@@ -187,6 +189,12 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         if (msg.direction === 'outbound') {
           conversasPorTipo[contactType].enviadas++;
           conversasPorAgente[agentName].enviadas++;
+          
+          // Contar enviadas por tipo para este agente
+          if (!conversasPorAgente[agentName].enviadasPorTipo[contactType]) {
+            conversasPorAgente[agentName].enviadasPorTipo[contactType] = 0;
+          }
+          conversasPorAgente[agentName].enviadasPorTipo[contactType]++;
         } else if (msg.direction === 'inbound') {
           conversasPorTipo[contactType].recebidas++;
           conversasPorAgente[agentName].recebidas++;
