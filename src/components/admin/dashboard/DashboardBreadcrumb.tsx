@@ -1,12 +1,11 @@
 import React from 'react';
-import { Calendar } from 'lucide-react';
 import { ElegantPeriodType } from './ElegantPeriodButton';
-
 interface DashboardBreadcrumbProps {
   periodFilter: ElegantPeriodType;
 }
-
-const DashboardBreadcrumb = ({ periodFilter }: DashboardBreadcrumbProps) => {
+const DashboardBreadcrumb = ({
+  periodFilter
+}: DashboardBreadcrumbProps) => {
   const getPeriodLabel = () => {
     switch (periodFilter) {
       case 'today':
@@ -25,13 +24,9 @@ const DashboardBreadcrumb = ({ periodFilter }: DashboardBreadcrumbProps) => {
         return 'Hoje';
     }
   };
-
-  return (
-    <div className="flex items-center gap-1.5 text-xs text-gray-500">
-      <Calendar className="h-3 w-3" />
-      <span>{getPeriodLabel()}</span>
-    </div>
-  );
+  return <div className="flex items-center gap-1.5 text-xs text-gray-500">
+      
+      
+    </div>;
 };
-
 export default DashboardBreadcrumb;

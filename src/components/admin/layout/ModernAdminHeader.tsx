@@ -11,21 +11,25 @@ import exaLogo from '@/assets/exa-logo.png';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
 const ModernAdminHeader = () => {
-  const { userProfile, logout } = useAuth();
-  const { userInfo } = useUserPermissions();
+  const {
+    userProfile,
+    logout
+  } = useAuth();
+  const {
+    userInfo
+  } = useUserPermissions();
   const navigate = useNavigate();
-  const { isMobile } = useAdvancedResponsive();
+  const {
+    isMobile
+  } = useAdvancedResponsive();
   const [currentTime, setCurrentTime] = useState(new Date());
-
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000); // Atualiza a cada segundo
     return () => clearInterval(interval);
   }, []);
-
   const handleSignOut = async () => {
     try {
       await logout();
@@ -34,7 +38,6 @@ const ModernAdminHeader = () => {
       console.error('Erro ao fazer logout:', error);
     }
   };
-
   const getAdminTitle = () => {
     switch (userInfo.role) {
       case 'super_admin':
@@ -47,7 +50,6 @@ const ModernAdminHeader = () => {
         return 'Admin Panel';
     }
   };
-
   const getRoleLabel = () => {
     switch (userInfo.role) {
       case 'super_admin':
@@ -60,39 +62,29 @@ const ModernAdminHeader = () => {
         return 'Admin';
     }
   };
-
-  return (
-    <div className="flex items-center justify-between flex-1">
+  return <div className="flex items-center justify-between flex-1">
       {/* EXA Logo - Only on Mobile */}
-      {isMobile && (
-        <div className="flex items-center gap-3">
+      {isMobile && <div className="flex items-center gap-3">
           <div className="flex flex-col items-center">
-            <img 
-              src={exaLogo} 
-              alt="EXA" 
-              className="h-10 md:h-12 w-auto brightness-0 invert"
-            />
+            <img src={exaLogo} alt="EXA" className="h-10 md:h-12 w-auto brightness-0 invert" />
             <span className="text-[10px] md:text-xs text-white/80 font-medium -mt-1">
               {getRoleLabel()}
             </span>
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* Desktop: Dynamic Title */}
-      {!isMobile && (
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
-            {getAdminTitle()}
-          </h1>
-        </div>
-      )}
+      {!isMobile && <div>
+          
+        </div>}
 
       <div className="flex items-center space-x-2 md:space-x-4">
         {/* Data e hora com segundos em tempo real */}
         <div className="hidden md:flex flex-col items-end text-right border-r border-border/30 pr-3 mr-1">
           <span className="text-sm font-medium text-foreground leading-tight">
-            {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+            {format(currentTime, "EEEE, dd 'de' MMMM", {
+            locale: ptBR
+          })}
           </span>
           <span className="text-xs text-muted-foreground leading-tight font-mono">
             {format(currentTime, 'HH:mm:ss')}
@@ -103,16 +95,9 @@ const ModernAdminHeader = () => {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              className={`relative h-8 w-8 rounded-full touch-target ${
-                isMobile ? 'hover:bg-white/20' : 'hover:bg-accent'
-              }`}
-            >
+            <Button variant="ghost" className={`relative h-8 w-8 rounded-full touch-target ${isMobile ? 'hover:bg-white/20' : 'hover:bg-accent'}`}>
               <Avatar className="h-8 w-8">
-                <AvatarFallback className={`font-semibold text-xs backdrop-blur-sm ${
-                  isMobile ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                }`}>
+                <AvatarFallback className={`font-semibold text-xs backdrop-blur-sm ${isMobile ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'}`}>
                   {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
                 </AvatarFallback>
               </Avatar>
@@ -135,7 +120,6 @@ const ModernAdminHeader = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>
-  );
+    </div>;
 };
 export default ModernAdminHeader;
