@@ -1,13 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useMonthlyDashboardData } from '@/hooks/useMonthlyDashboardData';
-import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useDashboardUnifiedStats } from '@/hooks/useDashboardUnifiedStats';
 import DashboardCharts from '@/components/admin/charts/DashboardCharts';
 import DashboardHeader from '@/components/admin/dashboard/DashboardHeader';
-import DashboardStatsCards from '@/components/admin/dashboard/DashboardStatsCards';
 import DashboardFinancialSummary from '@/components/admin/dashboard/DashboardFinancialSummary';
 import DashboardErrorState from '@/components/admin/dashboard/DashboardErrorState';
 import DashboardLoadingState from '@/components/admin/dashboard/DashboardLoadingState';
-import QuickStatsRow from '@/components/admin/dashboard/QuickStatsRow';
+import UnifiedStatsRow from '@/components/admin/dashboard/UnifiedStatsRow';
 import CRMInboxPreview from '@/components/admin/dashboard/CRMInboxPreview';
 import PanelsStatusCard from '@/components/admin/dashboard/PanelsStatusCard';
 import RecentSalesCard from '@/components/admin/dashboard/RecentSalesCard';
@@ -33,7 +32,7 @@ const Dashboard = () => {
     growthData
   } = useMonthlyDashboardData(start, end);
 
-  const metrics = useDashboardMetrics();
+  const { stats: unifiedStats, refetch: refetchUnified } = useDashboardUnifiedStats(start, end);
 
   const handlePeriodChange = (period: PeriodType) => {
     setPeriodFilter(period);
@@ -81,19 +80,23 @@ const Dashboard = () => {
           onRefetch={refetch}
         />
 
-        {/* Quick Stats Row - Scroll Horizontal */}
-        <QuickStatsRow metrics={metrics} />
-
-        {/* Stats Cards - Grid Original */}
-        <DashboardStatsCards 
-          stats={stats}
-          growthData={growthData}
-        />
+        {/* Unified Stats Row - Nova linha única com 6 cards elegantes */}
+        <UnifiedStatsRow stats={unifiedStats} />
 
         {/* Priority Cards Grid - Mobile: Stack, Desktop: 3 cols */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <CRMInboxPreview />
-          <PanelsStatusCard metrics={metrics} />
+          <PanelsStatusCard 
+            metrics={{
+              unreadConversations: 0,
+              panelsOnline: unifiedStats.prediosAtivos,
+              panelsTotal: unifiedStats.prediosTotal,
+              todayRevenue: 0,
+              pendingOrders: 0,
+              panelsOffline: unifiedStats.prediosTotal - unifiedStats.prediosAtivos,
+              loading: unifiedStats.loading
+            }} 
+          />
           <RecentSalesCard />
         </div>
 
