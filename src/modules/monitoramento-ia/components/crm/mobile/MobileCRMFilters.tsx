@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Filter, ChevronDown } from 'lucide-react';
+import { Filter, ChevronDown, User, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { motion } from 'framer-motion';
 
 interface MobileCRMFiltersProps {
   filters: any;
@@ -26,7 +27,8 @@ export const MobileCRMFilters: React.FC<MobileCRMFiltersProps> = ({
     filters.hotLeadsOnly,
     filters.awaitingOnly,
     filters.agentKey,
-    filters.sentiment
+    filters.sentiment,
+    filters.clientType
   ].filter(Boolean).length;
 
   const quickFilters = [
@@ -41,21 +43,82 @@ export const MobileCRMFilters: React.FC<MobileCRMFiltersProps> = ({
   };
 
   return (
-    <div className="bg-module-secondary/30 border-b border-module-border">
-      {/* Chips Horizontais */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar">
+    <div className="bg-white border-b border-border shadow-sm">
+      {/* Filtros Principais - Estilo iOS */}
+      <div className="px-4 py-3 space-y-2">
+        {/* Agente Filter - Chips estilo iOS */}
+        <div className="flex items-center gap-2">
+          <User className="w-4 h-4 text-muted-foreground" />
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {['all', ...agents.map(a => a.key)].map((agentKey) => {
+              const agent = agents.find(a => a.key === agentKey);
+              const label = agentKey === 'all' ? 'Todos' : agent?.display_name || agentKey;
+              const isActive = filters.agentKey === agentKey || (!filters.agentKey && agentKey === 'all');
+              
+              return (
+                <motion.button
+                  key={agentKey}
+                  onClick={() => onFilterChange({ ...filters, agentKey: agentKey === 'all' ? undefined : agentKey })}
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
+                    isActive 
+                      ? 'bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white shadow-md' 
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {label}
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Cliente Type Filter */}
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-muted-foreground" />
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {[
+              { value: undefined, label: 'Todos' },
+              { value: 'sindico', label: 'Síndico' },
+              { value: 'prestador', label: 'Prestador' },
+              { value: 'anunciante', label: 'Anunciante' }
+            ].map((type) => {
+              const isActive = filters.clientType === type.value || (!filters.clientType && !type.value);
+              
+              return (
+                <motion.button
+                  key={type.label}
+                  onClick={() => onFilterChange({ ...filters, clientType: type.value })}
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
+                    isActive 
+                      ? 'bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white shadow-md' 
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {type.label}
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Filters - Chips secundários */}
+      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar bg-muted/30">
         {quickFilters.map((filter) => (
-          <Button
+          <motion.button
             key={filter.key}
-            variant={filter.active ? 'default' : 'outline'}
-            size="sm"
             onClick={() => toggleQuickFilter(filter.key)}
-            className={`shrink-0 touch-manipulation h-8 text-xs ${
-              filter.active ? 'bg-[#25D366] hover:bg-[#20bd5a]' : ''
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
+              filter.active 
+                ? 'bg-[#25D366] text-white shadow-md' 
+                : 'bg-white border text-muted-foreground hover:bg-muted/50'
             }`}
+            whileTap={{ scale: 0.95 }}
           >
             {filter.label}
-          </Button>
+          </motion.button>
         ))}
 
         {/* Filtros Avançados */}
@@ -178,6 +241,7 @@ export const MobileCRMFilters: React.FC<MobileCRMFiltersProps> = ({
                 onClick={() => {
                   onFilterChange({
                     agentKey: undefined,
+                    clientType: undefined,
                     unreadOnly: false,
                     criticalOnly: false,
                     hotLeadsOnly: false,

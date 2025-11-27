@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, ShoppingCart, Building2, Gift, MoreHorizontal, FileBarChart, CheckSquare, Megaphone } from 'lucide-react';
+import { Home, ShoppingCart, Activity, MessageSquare, Building2, Gift, MoreHorizontal, FileBarChart, CheckSquare, Megaphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
@@ -38,14 +38,14 @@ const MobileBottomNav = () => {
           path: buildPath('pedidos'),
         },
         {
-          icon: Building2,
-          label: 'Prédios',
-          path: buildPath('predios'),
+          icon: Activity,
+          label: 'Monitoramento',
+          path: buildPath('monitoramento-ia'),
         },
         {
-          icon: Gift,
-          label: 'Benefícios',
-          path: buildPath('beneficio-prestadores'),
+          icon: MessageSquare,
+          label: 'CRM',
+          path: buildPath('monitoramento-ia/conversas'),
         }
       );
     } else if (userInfo.isFinancialAdmin) {

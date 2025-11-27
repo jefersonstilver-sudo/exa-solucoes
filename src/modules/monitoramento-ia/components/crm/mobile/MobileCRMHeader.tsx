@@ -17,7 +17,7 @@ export const MobileCRMHeader: React.FC<MobileCRMHeaderProps> = ({
   onRefreshClick
 }) => {
   return (
-    <header className="whatsapp-header pt-safe sticky top-0 z-50 shadow-lg">
+    <header className="admin-header sticky top-0 z-50 shadow-lg">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3 flex-1">
           <Button

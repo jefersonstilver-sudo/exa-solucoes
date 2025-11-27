@@ -94,6 +94,12 @@
   background: linear-gradient(180deg, #25D366 0%, #20bd5a 100%);
 }
 
+/* Admin header - vermelho com safe area */
+.admin-header {
+  background: linear-gradient(90deg, #9C1E1E 0%, #D72638 50%, #9C1E1E 100%);
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0));
+}
+
 /* Message bubble entrance animation */
 @keyframes message-enter {
   from {
