@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ExaSection from '../base/ExaSection';
 import ExaCTA from '../base/ExaCTA';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
@@ -124,6 +124,10 @@ const HeroMobileLayout = () => {
 
 const HeroSection = () => {
   const isMobile = useIsMobile();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [showSoundTooltip, setShowSoundTooltip] = useState(true);
+  
   const {
     ref,
     isVisible
@@ -132,6 +136,29 @@ const HeroSection = () => {
     videoUrl,
     loading
   } = useHomepageVideo();
+
+  // Esconder tooltip após 5 segundos
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSoundTooltip(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+      setShowSoundTooltip(false);
+    }
+  };
+
+  const restartVideo = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play();
+    }
+  };
 
   // Se for mobile, renderiza o novo layout imersivo
   if (isMobile) {
@@ -157,6 +184,7 @@ const HeroSection = () => {
           <div className="relative bg-black overflow-hidden shadow-2xl">
             <div className="aspect-[9/16]">
               {!loading && <video 
+                ref={videoRef}
                 autoPlay 
                 loop 
                 muted 
@@ -169,6 +197,49 @@ const HeroSection = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-exa-yellow"></div>
               </div>}
             </div>
+
+            {/* Botões Glassmorphism - Som e Reiniciar */}
+            {!loading && (
+              <div className="absolute bottom-4 right-4 flex gap-2 z-20">
+                {/* Botão Som com Tooltip */}
+                <div className="relative">
+                  {showSoundTooltip && (
+                    <div className="absolute -top-16 right-0 animate-fade-in">
+                      <div className="bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg text-xs font-medium text-exa-black whitespace-nowrap">
+                        Ative o som
+                        <div className="absolute -bottom-1 right-4 w-2 h-2 bg-white/95 rotate-45"></div>
+                      </div>
+                      <div className="absolute -bottom-6 right-5 animate-bounce">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-white">
+                          <path d="M10 4L10 16M10 16L6 12M10 16L14 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={toggleMute}
+                    className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center group"
+                    aria-label={isMuted ? "Ativar som" : "Desativar som"}
+                  >
+                    {isMuted ? (
+                      <VolumeX className="w-5 h-5 text-white" />
+                    ) : (
+                      <Volume2 className="w-5 h-5 text-white" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Botão Reiniciar */}
+                <button
+                  onClick={restartVideo}
+                  className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center group"
+                  aria-label="Reiniciar vídeo"
+                >
+                  <RotateCcw className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            )}
           </div>
           
           {/* Sombra escura na base - pontinha sob o ticker */}
