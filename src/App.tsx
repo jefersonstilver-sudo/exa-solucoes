@@ -48,6 +48,7 @@ import PainelKiosk from './pages/PainelKiosk';
 import PaineisPublicitarios from './pages/PaineisPublicitarios';
 import Exa from './pages/Exa';
 import TestLinks from './pages/TestLinks';
+import AIReportsPage from './pages/admin/monitoramento-ia/AIReportsPage';
 import ProfileSettings from './pages/ProfileSettings';
 
 // Video Editor Pages
@@ -470,6 +471,9 @@ const AppContent = () => {
                 {React.createElement(lazy(() => import('./modules/monitoramento-ia/pages/RelatoriosCorporativos')))}
               </Suspense>
             } />
+            
+            {/* Relatórios IA */}
+            <Route path="relatorios-ia" element={<AIReportsPage />} />
           </Route>
 
           {/* Rotas administrativas */}
