@@ -53,6 +53,9 @@ const Exa = () => {
           <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
         </div>
         
+        {/* Camada de transição para eliminar tarja preta */}
+        <div className="w-full h-2 bg-white" />
+        
         <OQueESection />
         <SolucoesSection />
         <PorQueFuncionaSection />
