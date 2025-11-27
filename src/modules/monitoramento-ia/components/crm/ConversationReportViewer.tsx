@@ -164,14 +164,14 @@ export const ConversationReportViewer: React.FC<ConversationReportViewerProps> =
     })) || [];
 
     const conversationData = {
-      phone_number: conversation.contact_phone,
-      contact_name: conversation.contact_name,
-      contact_type: conversation.contact_type,
-      buildings: buildings,
-      first_message_at: conversation.first_message_at,
-      last_message_at: conversation.last_message_at,
-      message_count: conversation.message_count,
-      avg_response_time: conversation.avg_response_time
+      metrics: {
+        totalConversations: 1,
+        totalMessages: conversation.message_count || 0,
+        averageMessagesPerConv: conversation.message_count || 0,
+        awaitingResponse: 0,
+        criticalConversations: 0,
+        hotLeads: 0,
+      }
     };
 
     await generateConversationReportPDF(

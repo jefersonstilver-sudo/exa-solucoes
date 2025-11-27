@@ -1,144 +1,65 @@
-import React, { useState } from 'react';
-import { FileDown, Loader2, FileBarChart, Sparkles, Zap, Brain, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileDown, Loader2, FileBarChart, Sparkles, Zap, Brain, TrendingUp, User, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import jsPDF from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DateRangePicker } from '../crm/DateRangePicker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { generateConversationReportPDF } from '../crm/ConversationReportPDF';
+
+type PeriodType = 'today' | 'yesterday' | '7days' | '30days' | 'custom';
 
 export const GenerateReportNow = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
   const { toast } = useToast();
+  
+  // Filtros
+  const [period, setPeriod] = useState<PeriodType>('today');
+  const [customStart, setCustomStart] = useState<Date>();
+  const [customEnd, setCustomEnd] = useState<Date>();
+  const [selectedAgent, setSelectedAgent] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('all');
 
-  const generatePDF = (reportData: any) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-    let yPos = 20;
+  const getDateRange = () => {
+    const now = new Date();
+    let start: Date;
+    let end: Date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-    // Header com gradiente EXA
-    doc.setFillColor(156, 30, 30);
-    doc.rect(0, 0, pageWidth, 40, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.text('Relatório de Conversas IA', margin, 25);
-    
-    doc.setFontSize(10);
-    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, margin, 35);
-
-    yPos = 55;
-    doc.setTextColor(0, 0, 0);
-
-    // Resumo Executivo
-    if (reportData.aiInsights?.executiveSummary) {
-      doc.setFontSize(16);
-      doc.setTextColor(156, 30, 30);
-      doc.text('Resumo Executivo', margin, yPos);
-      yPos += 10;
-
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      const summaryLines = doc.splitTextToSize(
-        reportData.aiInsights.executiveSummary,
-        pageWidth - 2 * margin
-      );
-      doc.text(summaryLines, margin, yPos);
-      yPos += summaryLines.length * 5 + 10;
-    }
-
-    // Métricas Principais
-    doc.setFontSize(16);
-    doc.setTextColor(156, 30, 30);
-    doc.text('Métricas Principais', margin, yPos);
-    yPos += 10;
-
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Total de Conversas: ${reportData.metrics?.totalConversations || 0}`, margin, yPos);
-    yPos += 7;
-    doc.text(`Total de Mensagens: ${reportData.metrics?.totalMessages || 0}`, margin, yPos);
-    yPos += 7;
-    doc.text(
-      `Média por Conversa: ${(reportData.metrics?.averageMessagesPerConv || 0).toFixed(1)}`,
-      margin,
-      yPos
-    );
-    yPos += 7;
-    doc.text(`Aguardando Resposta: ${reportData.metrics?.awaitingResponse || 0}`, margin, yPos);
-    yPos += 15;
-
-    // Insights da IA
-    if (reportData.aiInsights?.insights?.length > 0) {
-      doc.setFontSize(16);
-      doc.setTextColor(156, 30, 30);
-      doc.text('Insights Principais', margin, yPos);
-      yPos += 10;
-
-      reportData.aiInsights.insights.forEach((insight: any, index: number) => {
-        if (yPos > 270) {
-          doc.addPage();
-          yPos = 20;
+    switch (period) {
+      case 'today':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        break;
+      case 'yesterday':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+        break;
+      case '7days':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
+        break;
+      case '30days':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29, 0, 0, 0, 0);
+        break;
+      case 'custom':
+        if (!customStart || !customEnd) {
+          start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        } else {
+          start = new Date(customStart.getFullYear(), customStart.getMonth(), customStart.getDate(), 0, 0, 0, 0);
+          end = new Date(customEnd.getFullYear(), customEnd.getMonth(), customEnd.getDate(), 23, 59, 59, 999);
         }
-
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        doc.text(`${index + 1}. ${insight.title}`, margin, yPos);
-        yPos += 7;
-
-        doc.setFontSize(9);
-        doc.setTextColor(60, 60, 60);
-        const descLines = doc.splitTextToSize(insight.description, pageWidth - 2 * margin);
-        doc.text(descLines, margin + 5, yPos);
-        yPos += descLines.length * 4 + 8;
-      });
+        break;
+      default:
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     }
 
-    // Recomendações
-    if (reportData.aiInsights?.recommendations?.length > 0) {
-      if (yPos > 240) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      doc.setFontSize(16);
-      doc.setTextColor(156, 30, 30);
-      doc.text('Recomendações', margin, yPos);
-      yPos += 10;
-
-      reportData.aiInsights.recommendations.forEach((rec: string, index: number) => {
-        if (yPos > 270) {
-          doc.addPage();
-          yPos = 20;
-        }
-
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        const recLines = doc.splitTextToSize(`• ${rec}`, pageWidth - 2 * margin);
-        doc.text(recLines, margin, yPos);
-        yPos += recLines.length * 5 + 5;
-      });
-    }
-
-    // Footer
-    const totalPages = doc.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(
-        `Página ${i} de ${totalPages} - EXA Soluções`,
-        pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 10,
-        { align: 'center' }
-      );
-    }
-
-    // Download
-    const fileName = `relatorio-conversas-${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(fileName);
+    // Ajustar para UTC-3 (America/Sao_Paulo)
+    const offset = 3 * 60 * 60 * 1000;
+    return {
+      startDate: new Date(start.getTime() + offset).toISOString(),
+      endDate: new Date(end.getTime() + offset).toISOString(),
+    };
   };
 
   const simulateProgress = async () => {
@@ -164,19 +85,23 @@ export const GenerateReportNow = () => {
     setCurrentStep('Iniciando...');
     
     try {
-      // Simular progresso
       const progressPromise = simulateProgress();
+      const { startDate, endDate } = getDateRange();
 
-      const today = new Date();
-      const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-      const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
-
-      console.log('[GenerateReportNow] Calling edge function...');
+      console.log('[GenerateReportNow] Generating report with filters:', {
+        period,
+        startDate,
+        endDate,
+        agent: selectedAgent,
+        type: selectedType,
+      });
 
       const { data, error } = await supabase.functions.invoke('generate-ai-report', {
         body: {
-          startDate: startOfDay,
-          endDate: endOfDay,
+          startDate,
+          endDate,
+          agentKey: selectedAgent !== 'all' ? selectedAgent : undefined,
+          contactType: selectedType !== 'all' ? selectedType : undefined,
         },
       });
 
@@ -195,7 +120,12 @@ export const GenerateReportNow = () => {
         
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        generatePDF(data.data);
+        // Usar o novo gerador de PDF visual
+        generateConversationReportPDF(
+          data.data,
+          data.data.aiInsights,
+          new Date().toLocaleString('pt-BR')
+        );
         
         toast({
           title: "✨ Relatório gerado com IA!",
@@ -221,6 +151,21 @@ export const GenerateReportNow = () => {
     }
   };
 
+  const getPeriodLabel = () => {
+    switch (period) {
+      case 'today': return 'Hoje';
+      case 'yesterday': return 'Ontem';
+      case '7days': return 'Últimos 7 dias';
+      case '30days': return 'Últimos 30 dias';
+      case 'custom': 
+        if (customStart && customEnd) {
+          return `${customStart.toLocaleDateString('pt-BR')} - ${customEnd.toLocaleDateString('pt-BR')}`;
+        }
+        return 'Período customizado';
+      default: return 'Hoje';
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200 shadow-lg overflow-hidden hover:shadow-xl transition-all">
       <div className="p-6 space-y-4">
@@ -233,22 +178,86 @@ export const GenerateReportNow = () => {
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900">Gerar Relatório Agora</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Relatório completo com análise de IA avançada das conversas de hoje
+              Relatório completo com análise de IA avançada e filtros customizados
             </p>
           </div>
         </div>
 
+        {/* Filtros */}
+        <div className="space-y-3 bg-gray-50/50 rounded-xl p-4 border border-gray-200">
+          <div className="flex items-center gap-2 mb-2">
+            <Filter className="w-4 h-4 text-[#9C1E1E]" />
+            <span className="text-sm font-medium text-gray-700">Filtros do Relatório</span>
+          </div>
+
+          {/* Período */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-600">Período</label>
+            <DateRangePicker
+              period={period}
+              onPeriodChange={setPeriod}
+              customStart={customStart}
+              customEnd={customEnd}
+              onCustomDatesChange={(start, end) => {
+                setCustomStart(start);
+                setCustomEnd(end);
+              }}
+            />
+          </div>
+
+          {/* Atendente */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-600">Atendente</label>
+            <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="eduardo">Eduardo</SelectItem>
+                <SelectItem value="sofia">Sofia</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Tipo de Contato */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-600">Tipo de Contato</label>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="Síndico">Síndicos</SelectItem>
+                <SelectItem value="Prestador">Prestadores</SelectItem>
+                <SelectItem value="Anunciante">Anunciantes</SelectItem>
+                <SelectItem value="Administrativo">Administrativos</SelectItem>
+                <SelectItem value="Equipe Exa">Equipe Exa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* Info Cards */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="bg-gradient-to-br from-[#9C1E1E]/10 to-[#D72638]/10 rounded-xl p-3 border border-[#9C1E1E]/20">
             <p className="text-xs text-[#9C1E1E] font-medium">Período</p>
-            <p className="text-sm font-semibold text-gray-900 mt-0.5">Hoje</p>
+            <p className="text-xs font-semibold text-gray-900 mt-0.5">{getPeriodLabel()}</p>
           </div>
           <div className="bg-gradient-to-br from-[#9C1E1E]/10 to-[#D72638]/10 rounded-xl p-3 border border-[#9C1E1E]/20">
-            <p className="text-xs text-[#9C1E1E] font-medium">Powered by</p>
-            <p className="text-sm font-semibold text-gray-900 mt-0.5 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-[#D72638]" />
-              IA Avançada
+            <p className="text-xs text-[#9C1E1E] font-medium flex items-center gap-1">
+              <User className="w-3 h-3" />
+              Atendente
+            </p>
+            <p className="text-xs font-semibold text-gray-900 mt-0.5 capitalize">
+              {selectedAgent === 'all' ? 'Todos' : selectedAgent}
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-[#9C1E1E]/10 to-[#D72638]/10 rounded-xl p-3 border border-[#9C1E1E]/20">
+            <p className="text-xs text-[#9C1E1E] font-medium">Tipo</p>
+            <p className="text-xs font-semibold text-gray-900 mt-0.5">
+              {selectedType === 'all' ? 'Todos' : selectedType}
             </p>
           </div>
         </div>

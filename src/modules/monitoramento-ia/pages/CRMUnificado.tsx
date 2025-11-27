@@ -8,11 +8,13 @@ import { CRMUnificadoMobile } from '../components/crm/mobile/CRMUnificadoMobile'
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { ImperativePanelHandle } from 'react-resizable-panels';
-import { PanelLeftOpen, PanelRightOpen, ChevronUp, ChevronDown } from 'lucide-react';
+import { PanelLeftOpen, PanelRightOpen, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 export const CRMUnificado = () => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showMetrics, setShowMetrics] = useState(true);
   const [filters, setFilters] = useState({
@@ -65,8 +67,17 @@ export const CRMUnificado = () => {
       {/* Header com métricas - Esconde em fullscreen */}
       {!isFullscreen && (
         <div className="p-4">
-          {/* Toggle minimalista para métricas */}
-          <div className="flex items-center justify-end mb-3">
+          {/* Toggle minimalista para métricas e botão de IA */}
+          <div className="flex items-center justify-between mb-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/admin/monitoramento-ia/relatorios-ia')}
+              className="h-9 px-4 text-sm font-medium bg-gradient-to-r from-[#9C1E1E] to-[#D72638] text-white border-0 hover:from-[#8B1A1A] hover:to-[#C12131] shadow-md hover:shadow-lg transition-all"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Relatórios IA
+            </Button>
             <Button
               variant="ghost"
               size="sm"
