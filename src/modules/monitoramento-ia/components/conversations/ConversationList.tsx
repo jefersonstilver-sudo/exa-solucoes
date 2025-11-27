@@ -1,9 +1,10 @@
-import { Loader2, MessageCircle, Phone } from 'lucide-react';
+import { Loader2, MessageCircle, Phone, WifiOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { ConversationGroup } from '../../hooks/useConversations';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useZAPIRealtimeMonitor } from '../../hooks/useZAPIRealtimeMonitor';
 
 interface ConversationListProps {
   conversations: ConversationGroup[];
@@ -18,6 +19,8 @@ export const ConversationList = ({
   onSelect,
   loading 
 }: ConversationListProps) => {
+  const { agentStatuses } = useZAPIRealtimeMonitor();
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full p-8">
@@ -51,6 +54,8 @@ export const ConversationList = ({
           {conversations.map((conv) => {
             const isSelected = selectedConversation === `${conv.phone_number}_${conv.agent_key}`;
             const hasUnread = conv.unread_count > 0;
+            const agentStatus = agentStatuses[conv.agent_key];
+            const isDisconnected = agentStatus?.status === 'disconnected';
 
             return (
               <button
@@ -121,6 +126,12 @@ export const ConversationList = ({
                       >
                         {conv.agent_name}
                       </Badge>
+                      {isDisconnected && (
+                        <Badge variant="destructive" className="text-[10px] md:text-xs px-1.5 py-0 h-5 gap-1 animate-pulse">
+                          <WifiOff className="w-3 h-3" />
+                          Desconectado
+                        </Badge>
+                      )}
                       {hasUnread && (
                         <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white text-[10px] md:text-xs px-1.5 py-0 h-5">
                           {conv.unread_count} nova{conv.unread_count > 1 ? 's' : ''}

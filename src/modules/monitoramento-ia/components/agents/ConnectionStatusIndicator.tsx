@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { Lightbulb } from 'lucide-react';
 
 interface ConnectionStatusIndicatorProps {
   status: 'connected' | 'disconnected' | 'pending';
@@ -19,27 +20,30 @@ export const ConnectionStatusIndicator: React.FC<ConnectionStatusIndicatorProps>
     switch (status) {
       case 'connected':
         return {
-          color: 'bg-green-500',
-          glow: 'shadow-[0_0_12px_rgba(34,197,94,0.6)]',
-          animation: 'animate-pulse',
           text: 'Conectado',
-          icon: '●',
+          lampColor: 'text-green-500',
+          glowColor: 'shadow-[0_0_20px_rgba(34,197,94,0.8),0_0_40px_rgba(34,197,94,0.4)]',
+          bgGradient: 'from-green-400/20 to-green-600/20',
+          animation: 'animate-pulse',
+          bulbGlow: 'drop-shadow-[0_0_8px_rgba(34,197,94,0.9)]',
         };
       case 'disconnected':
         return {
-          color: 'bg-red-500',
-          glow: 'shadow-[0_0_12px_rgba(239,68,68,0.6)]',
-          animation: 'animate-ping',
           text: 'Desconectado',
-          icon: '●',
+          lampColor: 'text-red-500',
+          glowColor: 'shadow-[0_0_20px_rgba(239,68,68,0.8),0_0_40px_rgba(239,68,68,0.4)]',
+          bgGradient: 'from-red-400/20 to-red-600/20',
+          animation: 'animate-[ping_1s_ease-in-out_infinite]',
+          bulbGlow: 'drop-shadow-[0_0_8px_rgba(239,68,68,0.9)]',
         };
       default:
         return {
-          color: 'bg-yellow-500',
-          glow: 'shadow-[0_0_8px_rgba(234,179,8,0.4)]',
-          animation: '',
           text: 'Verificando...',
-          icon: '●',
+          lampColor: 'text-yellow-500',
+          glowColor: 'shadow-[0_0_12px_rgba(234,179,8,0.6)]',
+          bgGradient: 'from-yellow-400/20 to-yellow-600/20',
+          animation: '',
+          bulbGlow: 'drop-shadow-[0_0_6px_rgba(234,179,8,0.7)]',
         };
     }
   };
@@ -48,20 +52,41 @@ export const ConnectionStatusIndicator: React.FC<ConnectionStatusIndicatorProps>
 
   return (
     <TooltipProvider>
-      <Tooltip>
+      <Tooltip delayDuration={200}>
         <TooltipTrigger asChild>
-          <div className="flex items-center gap-2 cursor-help">
-            <div className="relative w-3 h-3">
-              <div
+          <div className="flex items-center gap-3 cursor-help group">
+            {/* Lampadinha 3D Premium */}
+            <div className="relative">
+              {/* Glow effect base */}
+              <div 
                 className={cn(
-                  'absolute inset-0 rounded-full',
-                  config.color,
-                  config.glow,
+                  'absolute inset-0 rounded-full blur-xl transition-all duration-300',
+                  config.glowColor,
                   config.animation
                 )}
               />
+              
+              {/* Lamp container */}
+              <div className={cn(
+                'relative w-8 h-8 rounded-full flex items-center justify-center',
+                'bg-gradient-to-br backdrop-blur-sm',
+                config.bgGradient,
+                'border border-white/20',
+                'transition-transform duration-300 group-hover:scale-110'
+              )}>
+                <Lightbulb 
+                  className={cn(
+                    'w-5 h-5 transition-all duration-300',
+                    config.lampColor,
+                    config.bulbGlow,
+                    config.animation
+                  )}
+                  fill="currentColor"
+                />
+              </div>
             </div>
-            <span className="text-xs font-medium text-muted-foreground">
+            
+            <span className="text-xs font-medium text-foreground">
               {config.text}
             </span>
           </div>

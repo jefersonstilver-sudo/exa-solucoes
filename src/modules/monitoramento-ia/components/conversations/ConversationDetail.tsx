@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useZAPIRealtimeMonitor } from '../../hooks/useZAPIRealtimeMonitor';
+import { ConnectionLostBanner } from '@/components/notifications/ConnectionLostBanner';
 
 interface ConversationDetailProps {
   messages: ZAPILog[];
@@ -25,6 +27,11 @@ export const ConversationDetail = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [manualControl, setManualControl] = useState(false);
   const [aiAutoResponse, setAiAutoResponse] = useState<boolean | null>(null);
+  const [agentDisplayName, setAgentDisplayName] = useState('');
+  const { agentStatuses } = useZAPIRealtimeMonitor();
+
+  const agentStatus = agentKey ? agentStatuses[agentKey] : null;
+  const isDisconnected = agentStatus?.status === 'disconnected';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,19 +41,20 @@ export const ConversationDetail = ({
     scrollToBottom();
   }, [messages]);
 
-  // Buscar status de AI auto response do agente
+  // Buscar status de AI auto response e display name do agente
   useEffect(() => {
     const fetchAgentStatus = async () => {
       if (!agentKey) return;
       
       const { data, error } = await supabase
         .from('agents')
-        .select('ai_auto_response')
+        .select('ai_auto_response, display_name')
         .eq('key', agentKey)
         .single();
 
       if (data && !error) {
         setAiAutoResponse(data.ai_auto_response);
+        setAgentDisplayName(data.display_name);
       }
     };
 
@@ -154,6 +162,14 @@ export const ConversationDetail = ({
       {/* Messages com scroll otimizado para mobile */}
       <ScrollArea className="flex-1 bg-whatsapp-bg-chat dark:bg-whatsapp-bg-main">
         <div className="p-3 md:p-4 space-y-2 md:space-y-3 pb-safe">
+          {/* Banner de conexão perdida */}
+          {isDisconnected && (
+            <ConnectionLostBanner 
+              agentName={agentDisplayName}
+              disconnectedSince={agentStatus?.last_check}
+            />
+          )}
+
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center">
               <MessageCircle className="w-12 h-12 md:w-16 md:h-16 text-gray-400 mb-3" />
