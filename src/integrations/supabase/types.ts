@@ -485,6 +485,51 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_reports_log: {
+        Row: {
+          ai_insights: Json | null
+          created_at: string
+          file_size_kb: number | null
+          generated_by: string | null
+          generation_time_ms: number | null
+          id: string
+          metrics: Json | null
+          period_end: string
+          period_start: string
+          report_type: string
+          total_conversations: number
+          total_messages: number
+        }
+        Insert: {
+          ai_insights?: Json | null
+          created_at?: string
+          file_size_kb?: number | null
+          generated_by?: string | null
+          generation_time_ms?: number | null
+          id?: string
+          metrics?: Json | null
+          period_end: string
+          period_start: string
+          report_type?: string
+          total_conversations?: number
+          total_messages?: number
+        }
+        Update: {
+          ai_insights?: Json | null
+          created_at?: string
+          file_size_kb?: number | null
+          generated_by?: string | null
+          generation_time_ms?: number | null
+          id?: string
+          metrics?: Json | null
+          period_end?: string
+          period_start?: string
+          report_type?: string
+          total_conversations?: number
+          total_messages?: number
+        }
+        Relationships: []
+      }
       analyses: {
         Row: {
           analysis_at: string | null

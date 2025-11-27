@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Clock, Mail, Plus, X, Save } from 'lucide-react';
+import { Bell, Clock, Mail, Plus, X, Save, Sparkles } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,31 +51,34 @@ export const AIReportsConfig = () => {
   });
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200 shadow-lg overflow-hidden hover:shadow-xl transition-all">
       <div className="p-6 space-y-6">
         {/* Header with Toggle */}
         <div className="flex items-center justify-between">
           <div className="flex items-start gap-4 flex-1">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md">
-              <Bell className="w-6 h-6 text-white" />
+            <div className="p-3 bg-gradient-to-br from-[#9C1E1E] to-[#D72638] rounded-xl shadow-md relative">
+              <Bell className="w-6 h-6 text-white relative z-10" />
+              {isEnabled && (
+                <Sparkles className="w-3 h-3 text-yellow-300 absolute top-1 right-1 animate-pulse" />
+              )}
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Envio Diário Automático</h2>
               <p className="text-sm text-gray-600 mt-1">
-                Receba relatórios automaticamente todos os dias
+                Receba relatórios com IA automaticamente todos os dias
               </p>
             </div>
           </div>
           
           {/* Apple-style Toggle */}
           <div className="flex items-center gap-3">
-            <span className={`text-sm font-medium ${isEnabled ? 'text-purple-600' : 'text-gray-400'}`}>
+            <span className={`text-sm font-medium ${isEnabled ? 'text-[#9C1E1E]' : 'text-gray-400'}`}>
               {isEnabled ? 'Ativo' : 'Inativo'}
             </span>
             <Switch
               checked={isEnabled}
               onCheckedChange={setIsEnabled}
-              className="data-[state=checked]:bg-purple-600"
+              className="data-[state=checked]:bg-[#9C1E1E]"
             />
           </div>
         </div>
@@ -93,13 +96,13 @@ export const AIReportsConfig = () => {
               {/* Time Selector */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <Clock className="w-4 h-4 text-purple-600" />
+                  <Clock className="w-4 h-4 text-[#9C1E1E]" />
                   Horário de Envio
                 </div>
                 <select
                   value={selectedHour}
                   onChange={(e) => setSelectedHour(e.target.value)}
-                  className="w-full h-11 px-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  className="w-full h-11 px-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#9C1E1E] focus:border-transparent transition-all"
                 >
                   {hours.map((hour) => (
                     <option key={hour} value={hour}>
@@ -112,7 +115,7 @@ export const AIReportsConfig = () => {
               {/* Email List */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <Mail className="w-4 h-4 text-purple-600" />
+                  <Mail className="w-4 h-4 text-[#9C1E1E]" />
                   Destinatários ({emails.length})
                 </div>
                 
@@ -124,7 +127,7 @@ export const AIReportsConfig = () => {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ delay: index * 0.05 }}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 group hover:border-purple-300 transition-colors"
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 group hover:border-[#9C1E1E]/30 transition-colors"
                     >
                       <span className="text-sm font-medium text-gray-700">{email}</span>
                       <button
@@ -145,12 +148,12 @@ export const AIReportsConfig = () => {
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleAddEmail()}
-                    className="flex-1 h-11 bg-gray-50 border-gray-200 focus:ring-purple-500"
+                    className="flex-1 h-11 bg-gray-50 border-gray-200 focus:ring-[#9C1E1E]"
                   />
                   <Button
                     onClick={handleAddEmail}
                     variant="outline"
-                    className="h-11 px-4 border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300"
+                    className="h-11 px-4 border-[#9C1E1E]/20 text-[#9C1E1E] hover:bg-[#9C1E1E]/10 hover:border-[#9C1E1E]/30"
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -160,7 +163,7 @@ export const AIReportsConfig = () => {
               {/* Save Button */}
               <Button
                 onClick={handleSave}
-                className="w-full h-11 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all"
+                className="w-full h-11 bg-gradient-to-r from-[#9C1E1E] to-[#D72638] hover:from-[#8B1A1A] hover:to-[#C12131] text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all"
               >
                 <Save className="w-4 h-4 mr-2" />
                 Salvar Configurações
