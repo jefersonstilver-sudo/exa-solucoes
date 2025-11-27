@@ -20,6 +20,7 @@ import { GlobalActivityTracker } from '@/components/tracking/GlobalActivityTrack
 import { FloatingDebugButton } from '@/components/debug/FloatingDebugButton';
 import { useActiveSession } from '@/hooks/useActiveSession';
 import { GlobalNotificationProvider } from '@/providers/GlobalNotificationProvider';
+import { ZAPIDisconnectAlert } from '@/components/notifications/ZAPIDisconnectAlert';
 
 // Importações diretas para páginas críticas
 import BuildingStore from './pages/BuildingStore';
@@ -193,6 +194,9 @@ const AppContent = () => {
         
         {/* Floating Debug Button - appears on all pages when Debug AI is enabled */}
         <FloatingDebugButton />
+        
+        {/* Z-API Disconnect Alert - global alert for agent disconnections */}
+        <ZAPIDisconnectAlert />
         
         <Routes>
           {/* Rotas principais */}

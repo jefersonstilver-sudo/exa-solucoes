@@ -6170,6 +6170,39 @@ export type Database = {
         }
         Relationships: []
       }
+      zapi_connection_logs: {
+        Row: {
+          agent_key: string
+          created_at: string | null
+          details: Json | null
+          event_type: string
+          id: string
+          instance_id: string | null
+          phone: string | null
+          triggered_by: string | null
+        }
+        Insert: {
+          agent_key: string
+          created_at?: string | null
+          details?: Json | null
+          event_type: string
+          id?: string
+          instance_id?: string | null
+          phone?: string | null
+          triggered_by?: string | null
+        }
+        Update: {
+          agent_key?: string
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string
+          id?: string
+          instance_id?: string | null
+          phone?: string | null
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       zapi_logs: {
         Row: {
           agent_key: string

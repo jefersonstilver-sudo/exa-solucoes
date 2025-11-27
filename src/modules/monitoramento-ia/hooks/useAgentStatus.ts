@@ -13,6 +13,7 @@ export interface AgentStatus {
   credentialsPresent?: boolean;
   instanceStatus?: string;
   instanceId?: string;
+  phone?: string;
 }
 
 export const useAgentStatus = () => {
@@ -55,7 +56,8 @@ export const useAgentStatus = () => {
           errorMessage: data?.message,
           credentialsPresent: data?.credentialsPresent,
           instanceStatus: data?.instanceStatus,
-          instanceId: data?.instanceId
+          instanceId: data?.instanceId,
+          phone: data?.phone
         }
       }));
 

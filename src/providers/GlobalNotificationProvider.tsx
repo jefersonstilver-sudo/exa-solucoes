@@ -136,8 +136,8 @@ export const GlobalNotificationProvider: React.FC<{ children: React.ReactNode }>
           const metadata = alert.metadata as any;
           const deviceName = metadata?.device_name || metadata?.anydesk_id || 'Painel';
 
+          // Alertas de painéis offline/online
           if (alert.alert_type === 'offline') {
-            // Painel ficou offline
             toast.error(`🔴 Painel OFFLINE: ${deviceName}`, {
               description: alert.message,
               duration: 15000,
@@ -150,7 +150,6 @@ export const GlobalNotificationProvider: React.FC<{ children: React.ReactNode }>
               },
             });
 
-            // Tocar som de alerta se habilitado
             if (preferences.panel_alerts_sound && audioRef.current) {
               audioRef.current.volume = preferences.panel_alerts_volume;
               audioRef.current.play().catch(() => {
@@ -158,12 +157,34 @@ export const GlobalNotificationProvider: React.FC<{ children: React.ReactNode }>
               });
             }
           } else if (alert.alert_type === 'online') {
-            // Painel voltou online
             toast.success(`🟢 Painel voltou online: ${deviceName}`, {
               description: 'Sistema recuperado com sucesso',
               duration: 5000,
               icon: <CheckCircle className="h-5 w-5" />,
             });
+          }
+          
+          // Alertas de desconexão Z-API
+          else if (alert.alert_type === 'zapi_disconnected') {
+            const agentName = alert.message.replace('Z-API desconectado: ', '');
+            toast.error(`⚠️ Z-API: ${agentName} desconectou`, {
+              description: `Desconectado às ${new Date(metadata?.timestamp || alert.created_at).toLocaleTimeString('pt-BR')}`,
+              duration: 15000,
+              icon: <AlertTriangle className="h-5 w-5" />,
+              action: {
+                label: 'Ver Logs',
+                onClick: () => {
+                  window.location.href = '/admin/monitoramento-ia/agentes';
+                },
+              },
+            });
+
+            if (preferences.panel_alerts_sound && audioRef.current) {
+              audioRef.current.volume = preferences.panel_alerts_volume;
+              audioRef.current.play().catch(() => {
+                console.log('🔇 [GlobalNotifications] Não foi possível tocar som');
+              });
+            }
           }
 
           // Marcar como notificado

@@ -69,6 +69,11 @@ serve(async (req) => {
           phone: phone,
         });
 
+        // Verificar mudança de estado (para logs)
+        const previousStatus = zapiConfig?.status;
+        const newStatus = isConnected ? 'connected' : 'disconnected';
+        const statusChanged = previousStatus !== newStatus;
+
         // Se desconectado, adicionar à lista de alertas
         if (!isConnected) {
           disconnectedAgents.push({
@@ -92,10 +97,32 @@ serve(async (req) => {
           });
         }
 
+        // Registrar mudança de status no log (apenas se mudou)
+        if (statusChanged) {
+          const eventType = !previousStatus
+            ? (isConnected ? 'connected' : 'disconnected')
+            : (isConnected ? 'reconnected' : 'disconnected');
+
+          await supabase.from('zapi_connection_logs').insert({
+            agent_key: agent.key,
+            event_type: eventType,
+            instance_id: instanceId,
+            phone: phone,
+            triggered_by: 'system_check',
+            details: {
+              status_from: previousStatus || 'unknown',
+              status_to: newStatus,
+              check_timestamp: new Date().toISOString(),
+            },
+          });
+
+          console.log(`[MONITOR-ZAPI] 📝 Log registrado: ${agent.display_name} ${eventType}`);
+        }
+
         // Atualizar status no agente
         const newZapiConfig = {
           ...zapiConfig,
-          status: isConnected ? 'connected' : 'disconnected',
+          status: newStatus,
           last_check: new Date().toISOString(),
           phone: phone,
         };
