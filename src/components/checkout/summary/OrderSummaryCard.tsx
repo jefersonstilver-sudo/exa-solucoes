@@ -159,24 +159,20 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
       <div className="space-y-2">
         <button
           onClick={() => setIsListOpen(!isListOpen)}
-          className="w-full bg-gradient-to-r from-orange-50 to-orange-100/50 hover:from-orange-100 hover:to-orange-100 transition-colors rounded-lg p-3 sm:p-4 border border-orange-200"
+          className="w-full bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg p-3 sm:p-4 border border-gray-200"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="flex-shrink-0 bg-orange-600 rounded-full p-1.5 sm:p-2">
-                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-              </div>
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 flex-shrink-0" />
               <div className="text-left">
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900">
-                  Locais Selecionados ({Object.keys(paineisPorPredio).length})
-                </h3>
-                <p className="text-[10px] sm:text-xs text-gray-600">
-                  {isListOpen ? 'Ocultar detalhes' : 'Ver detalhes dos prédios'}
+                <p className="text-[10px] sm:text-xs text-gray-600">Locais Selecionados</p>
+                <p className="text-sm sm:text-base font-bold text-gray-900">
+                  {Object.keys(paineisPorPredio).length} {Object.keys(paineisPorPredio).length === 1 ? 'local' : 'locais'}
                 </p>
               </div>
             </div>
             <ChevronDown 
-              className={`h-4 w-4 sm:h-5 sm:w-5 text-orange-600 transition-transform flex-shrink-0 ${
+              className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-400 transition-transform flex-shrink-0 ${
                 isListOpen ? 'rotate-180' : ''
               }`}
             />
