@@ -5,6 +5,7 @@ import { FileText, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ConversationReportViewer } from './ConversationReportViewer';
 
 interface ConversationReportsProps {
   conversationId: string | null;
@@ -14,11 +15,14 @@ interface Report {
   id: string;
   created_at: string;
   summary: string;
+  report_data: any;
 }
 
 export const ConversationReports: React.FC<ConversationReportsProps> = ({ conversationId }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const fetchReports = async () => {
     if (!conversationId) return;
@@ -27,7 +31,7 @@ export const ConversationReports: React.FC<ConversationReportsProps> = ({ conver
     try {
       const { data, error } = await supabase
         .from('conversation_reports')
-        .select('id, created_at, summary')
+        .select('id, created_at, summary, report_data')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -58,9 +62,9 @@ export const ConversationReports: React.FC<ConversationReportsProps> = ({ conver
     }
   };
 
-  const viewReport = (reportId: string) => {
-    // TODO: Abrir drawer com relatório completo
-    console.log('View report:', reportId);
+  const viewReport = async (reportId: string) => {
+    setSelectedReportId(reportId);
+    setViewerOpen(true);
   };
 
   useEffect(() => {
@@ -79,47 +83,66 @@ export const ConversationReports: React.FC<ConversationReportsProps> = ({ conver
     );
   }
 
+  const selectedReportData = reports.find(r => r.id === selectedReportId);
+
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-muted-foreground font-semibold">HISTÓRICO</p>
+    <>
       <div className="space-y-2">
-        {reports.map((report) => (
-          <div
-            key={report.id}
-            className="flex items-center justify-between p-2 rounded border border-module-border hover:bg-accent/50 transition-colors"
-          >
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <FileText className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                <span className="text-xs text-muted-foreground">
-                  {format(new Date(report.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                </span>
+        <p className="text-xs text-muted-foreground font-semibold">HISTÓRICO</p>
+        <div className="space-y-2">
+          {reports.map((report) => (
+            <div
+              key={report.id}
+              className="flex items-center justify-between p-2 rounded border border-module-border hover:bg-accent/50 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground">
+                    {format(new Date(report.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </span>
+                </div>
+                {report.summary && (
+                  <p className="text-xs mt-1 truncate">{report.summary}</p>
+                )}
               </div>
-              {report.summary && (
-                <p className="text-xs mt-1 truncate">{report.summary}</p>
-              )}
+              <div className="flex items-center gap-1 ml-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => viewReport(report.id)}
+                >
+                  <FileText className="w-3 h-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive hover:text-destructive"
+                  onClick={() => deleteReport(report.id)}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-1 ml-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => viewReport(report.id)}
-              >
-                <FileText className="w-3 h-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive hover:text-destructive"
-                onClick={() => deleteReport(report.id)}
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
+
+      {selectedReportData && (
+        <ConversationReportViewer
+          conversationId={conversationId}
+          open={viewerOpen}
+          onClose={() => {
+            setViewerOpen(false);
+            setSelectedReportId(null);
+          }}
+          reportData={selectedReportData.report_data ? {
+            reportId: selectedReportData.id,
+            report: selectedReportData.report_data
+          } : undefined}
+        />
+      )}
+    </>
   );
 };

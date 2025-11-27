@@ -73,3 +73,51 @@ export function truncateText(text: string, maxLength: number = 50): string {
 export function formatNumber(num: number): string {
   return new Intl.NumberFormat('pt-BR').format(num);
 }
+
+/**
+ * Formata tempo de resposta para exibição legível
+ * Aceita diversos formatos: "HH:MM:SS", "HH:MM:SS.ffffff", segundos, etc
+ * @param timeValue - Valor do tempo em diversos formatos
+ * @returns String formatada (ex: "15s", "2m 30s", "1h 5m")
+ */
+export function formatResponseTime(timeValue: string | number | null | undefined): string {
+  if (!timeValue) return 'N/A';
+
+  let seconds: number;
+
+  // Se for número, já está em segundos
+  if (typeof timeValue === 'number') {
+    seconds = timeValue;
+  } 
+  // Se for string, pode ser vários formatos
+  else if (typeof timeValue === 'string') {
+    // Formato "HH:MM:SS.ffffff" ou "HH:MM:SS"
+    if (timeValue.includes(':')) {
+      const parts = timeValue.split(':');
+      const hours = parseInt(parts[0]) || 0;
+      const minutes = parseInt(parts[1]) || 0;
+      const secondsPart = parseFloat(parts[2]) || 0;
+      
+      seconds = hours * 3600 + minutes * 60 + secondsPart;
+    } 
+    // Já é número em string
+    else {
+      seconds = parseFloat(timeValue);
+    }
+  } else {
+    return 'N/A';
+  }
+
+  // Formatar de forma legível
+  if (seconds < 60) {
+    return `${Math.round(seconds)}s`;
+  } else if (seconds < 3600) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+  } else {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  }
+}
