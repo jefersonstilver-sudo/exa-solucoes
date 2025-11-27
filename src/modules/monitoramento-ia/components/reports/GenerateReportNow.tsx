@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DateRangePicker } from '../crm/DateRangePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { generateReportPDF } from '../../utils/generateReportPDF';
 
 type PeriodType = 'today' | 'yesterday' | '7days' | '30days' | 'custom';
 
@@ -13,6 +14,8 @@ export const GenerateReportNow = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
+  const [reportHistory, setReportHistory] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const { toast } = useToast();
   
   // Filtros
@@ -119,21 +122,12 @@ export const GenerateReportNow = () => {
         
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Gerar JSON com os dados do relatório
-        const reportJson = JSON.stringify(data.data, null, 2);
-        const blob = new Blob([reportJson], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `relatorio-exa-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // Atualizar histórico
+        fetchReportHistory();
         
         toast({
           title: "✨ Relatório gerado com IA!",
-          description: "Arquivo JSON baixado com análise completa e detalhada.",
+          description: "Relatório salvo no histórico. Clique em 'Baixar PDF' para download.",
         });
       } else {
         throw new Error(data.error || 'Erro ao gerar relatório');
@@ -155,6 +149,28 @@ export const GenerateReportNow = () => {
     }
   };
 
+  const fetchReportHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('ai_reports_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      setReportHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching report history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReportHistory();
+  }, []);
+
   const getPeriodLabel = () => {
     switch (period) {
       case 'today': return 'Hoje';
@@ -170,9 +186,37 @@ export const GenerateReportNow = () => {
     }
   };
 
+  const handleDownloadPDF = async (report: any) => {
+    try {
+      const pdfBlob = generateReportPDF(report);
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio-exa-${new Date(report.created_at).toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "PDF baixado com sucesso!",
+        description: "Relatório completo pronto para análise.",
+      });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: "Erro ao baixar PDF",
+        description: "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200 shadow-lg overflow-hidden hover:shadow-xl transition-all">
-      <div className="p-6 space-y-4">
+    <div className="space-y-6">
+      {/* Card de Geração */}
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200 shadow-lg overflow-hidden hover:shadow-xl transition-all">
+        <div className="p-6 space-y-4">
         {/* Header */}
         <div className="flex items-start gap-4">
           <div className="p-3 bg-gradient-to-br from-[#9C1E1E] to-[#D72638] rounded-xl shadow-md relative">
@@ -376,6 +420,87 @@ export const GenerateReportNow = () => {
             </>
           )}
         </Button>
+        </div>
+      </div>
+
+      {/* Histórico de Relatórios */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Histórico de Relatórios</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchReportHistory}
+              disabled={isLoadingHistory}
+            >
+              {isLoadingHistory ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Atualizar"
+              )}
+            </Button>
+          </div>
+
+          {isLoadingHistory ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-[#9C1E1E]" />
+            </div>
+          ) : reportHistory.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Nenhum relatório gerado ainda
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Data</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Período</th>
+                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Conversas</th>
+                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Mensagens</th>
+                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportHistory.map((report) => (
+                    <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4 text-sm text-gray-900">
+                        {new Date(report.created_at).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-600">
+                        {new Date(report.period_start).toLocaleDateString('pt-BR')} - {new Date(report.period_end).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-center text-gray-900 font-medium">
+                        {report.total_conversations}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-center text-gray-900 font-medium">
+                        {report.total_messages}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadPDF(report)}
+                          className="gap-2"
+                        >
+                          <FileDown className="w-4 h-4" />
+                          Baixar PDF
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
