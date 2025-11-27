@@ -285,9 +285,9 @@ export const useConversationContextDetailed = (
 
           const scores = [
             { type: 'sindico', score: sindicoScore, label: 'Síndico' },
-            { type: 'anunciante', score: clienteScore, label: 'Anunciante' },
-            { type: 'morador', score: moradorScore, label: 'Morador' },
-            { type: 'suporte_tecnico', score: suporteScore, label: 'Suporte Técnico' },
+            { type: 'lead', score: clienteScore, label: 'Lead' },
+            { type: 'lead', score: moradorScore, label: 'Lead' },
+            { type: 'outros_prestadores', score: suporteScore, label: 'Outros Prestadores' },
           ];
 
           const maxScore = Math.max(...scores.map(s => s.score));

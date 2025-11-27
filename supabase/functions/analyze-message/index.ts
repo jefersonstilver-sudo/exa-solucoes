@@ -65,7 +65,7 @@ serve(async (req) => {
 - is_critical: boolean (se requer atenção imediata)
 - key_points: array de strings (pontos principais da mensagem)
 - suggested_response: string (sugestão de resposta)
-- contact_type_suggestion: 'sindico' | 'cliente_potencial' | 'cliente_ativo' | 'prestador_servico' | 'parceiro' | 'administrativo' | 'outro' | 'unknown'
+- contact_type_suggestion: 'lead' | 'sindico' | 'sindico_lead' | 'eletricista' | 'outros_prestadores' | 'equipe_exa' | 'cliente_ativo' | 'tke_tecnico' | 'tke_supervisor' | 'oriente_tecnico' | 'oriente_supervisor' | 'atlas_tecnico' | 'atlas_supervisor' | 'vivo_provedor' | 'ligga_provedor'
 - contact_type_confidence: 0-100 (confiança na classificação)
 - contact_type_reasoning: string (explicação breve do porquê desta classificação)`
           },
