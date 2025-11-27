@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { FileDown, Loader2, FileBarChart, Sparkles } from 'lucide-react';
+import { FileDown, Loader2, FileBarChart, Sparkles, Zap, Brain, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const GenerateReportNow = () => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
   const { toast } = useToast();
 
   const generatePDF = (reportData: any) => {
@@ -138,10 +141,32 @@ export const GenerateReportNow = () => {
     doc.save(fileName);
   };
 
+  const simulateProgress = async () => {
+    const steps = [
+      { progress: 15, text: 'Conectando com IA...', duration: 500 },
+      { progress: 30, text: 'Buscando conversas...', duration: 800 },
+      { progress: 50, text: 'Analisando dados...', duration: 1000 },
+      { progress: 70, text: 'Gerando insights com IA...', duration: 1500 },
+      { progress: 85, text: 'Criando visualizações...', duration: 700 },
+      { progress: 95, text: 'Finalizando relatório...', duration: 500 },
+    ];
+
+    for (const step of steps) {
+      setProgress(step.progress);
+      setCurrentStep(step.text);
+      await new Promise(resolve => setTimeout(resolve, step.duration));
+    }
+  };
+
   const handleGenerateReport = async () => {
     setIsGenerating(true);
+    setProgress(0);
+    setCurrentStep('Iniciando...');
     
     try {
+      // Simular progresso
+      const progressPromise = simulateProgress();
+
       const today = new Date();
       const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
       const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
@@ -155,6 +180,8 @@ export const GenerateReportNow = () => {
         },
       });
 
+      await progressPromise;
+
       if (error) {
         console.error('[GenerateReportNow] Error:', error);
         throw error;
@@ -163,6 +190,11 @@ export const GenerateReportNow = () => {
       console.log('[GenerateReportNow] Report data received:', data);
 
       if (data.success) {
+        setProgress(100);
+        setCurrentStep('Concluído!');
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
         generatePDF(data.data);
         
         toast({
@@ -181,7 +213,11 @@ export const GenerateReportNow = () => {
         variant: "destructive",
       });
     } finally {
-      setIsGenerating(false);
+      setTimeout(() => {
+        setIsGenerating(false);
+        setProgress(0);
+        setCurrentStep('');
+      }, 1000);
     }
   };
 
@@ -217,11 +253,103 @@ export const GenerateReportNow = () => {
           </div>
         </div>
 
+        {/* Progress Animation */}
+        <AnimatePresence>
+          {isGenerating && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-3 py-2"
+            >
+              {/* Animated Icons */}
+              <div className="flex justify-center gap-3 mb-4">
+                <motion.div
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 360],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <Brain className="w-6 h-6 text-[#9C1E1E]" />
+                </motion.div>
+                <motion.div
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    y: [0, -5, 0],
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.3,
+                  }}
+                >
+                  <Zap className="w-6 h-6 text-[#D72638]" />
+                </motion.div>
+                <motion.div
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    rotate: [0, -360],
+                  }}
+                  transition={{
+                    duration: 2.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.6,
+                  }}
+                >
+                  <TrendingUp className="w-6 h-6 text-[#9C1E1E]" />
+                </motion.div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-700 font-medium">{currentStep}</span>
+                  <span className="text-[#9C1E1E] font-bold">{progress}%</span>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-[#9C1E1E] to-[#D72638]"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+
+              {/* Pulsing Dots */}
+              <div className="flex justify-center gap-2 pt-2">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-2 h-2 bg-[#9C1E1E] rounded-full"
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      delay: i * 0.2,
+                    }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Generate Button */}
         <Button
           onClick={handleGenerateReport}
           disabled={isGenerating}
-          className="w-full h-12 bg-gradient-to-r from-[#9C1E1E] to-[#D72638] hover:from-[#8B1A1A] hover:to-[#C12131] text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all"
+          className="w-full h-12 bg-gradient-to-r from-[#9C1E1E] to-[#D72638] hover:from-[#8B1A1A] hover:to-[#C12131] text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-70"
         >
           {isGenerating ? (
             <>
