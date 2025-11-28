@@ -78,17 +78,59 @@ Deno.serve(async (req) => {
     let message = '';
 
     if (send_type === 'link') {
-      // MENSAGEM CURTA COM LINK - SIMPLIFICADA
+      // MENSAGEM CURTA COM LINK - COM BREAKDOWN POR TIPO
+      const tiposList = report_data.mensagens_por_tipo 
+        ? Object.entries(report_data.mensagens_por_tipo)
+            .filter(([_, data]: [string, any]) => data.conversas > 0)
+            .sort(([_, a]: [string, any], [__, b]: [string, any]) => b.conversas - a.conversas)
+            .slice(0, 5)
+            .map(([tipo, data]: [string, any]) => {
+              const tipoNome: Record<string, string> = {
+                'lead': 'Síndico Lead',
+                'sindico': 'Síndico',
+                'cliente': 'Cliente',
+                'prestador': 'Prestador',
+                'equipe_hexa': 'Equipe Hexa',
+                'outro': 'Outros'
+              };
+              return `• ${tipoNome[tipo] || tipo}: ${data.conversas} conversas`;
+            })
+            .join('\n')
+        : '';
+
+      const tiposInativos = report_data.mensagens_por_tipo
+        ? Object.entries(report_data.mensagens_por_tipo)
+            .filter(([_, data]: [string, any]) => data.conversas === 0)
+            .map(([tipo]: [string, any]) => {
+              const tipoNome: Record<string, string> = {
+                'lead': 'Síndico Lead',
+                'sindico': 'Síndico',
+                'cliente': 'Cliente',
+                'prestador': 'Prestador',
+                'equipe_hexa': 'Equipe Hexa',
+                'outro': 'Outros'
+              };
+              return tipoNome[tipo] || tipo;
+            })
+        : [];
+
+      const inativosMsg = tiposInativos.length > 0 
+        ? `\n\n_As demais classificações (${tiposInativos.join(', ')}) não tiveram atividades no período._`
+        : '';
+
       message = `📊 *Relatório VAR Disponível*
 
 Olá {nome_diretor}!
 
-Período: {data_inicio} - {data_fim}
+📅 Período: {data_inicio} - {data_fim}
 
-*Resumo Rápido:*
-• ${report_data.total_conversas} conversas
-• ${report_data.taxa_resolucao.toFixed(1)}% resolução
-• ${report_data.tma_formatado} TMA
+*📈 Conversas por Tipo:*
+${tiposList}${inativosMsg}
+
+*📊 Resumo Geral:*
+• Total: ${report_data.total_conversas} conversas
+• Resolução: ${report_data.taxa_resolucao.toFixed(1)}%
+• TMA: ${report_data.tma_formatado}
 
 🔗 Ver relatório completo:
 ${reportLink}
