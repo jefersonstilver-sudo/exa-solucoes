@@ -226,9 +226,9 @@ const HeroSection = () => {
         </div>
       </div>
       
-      {/* Botões fixos - meio do vídeo, canto esquerdo (nunca se movem com zoom) */}
+      {/* Botões fixos - centralizados e próximos ao ticker de logos */}
       {!loading && (
-        <div className="absolute bottom-[180px] lg:bottom-[200px] left-[10%] lg:left-[15%] flex gap-2 z-40">
+        <div className="absolute bottom-[60px] lg:bottom-[80px] left-1/2 -translate-x-1/2 flex gap-2 z-40">
           {/* Botão Som com Tooltip */}
           <div className="relative">
             {showSoundTooltip && (
