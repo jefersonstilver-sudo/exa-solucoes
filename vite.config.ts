@@ -41,15 +41,20 @@ export default defineConfig(({ mode }) => ({
             }
           },
           {
-            // API REST - sempre da rede primeiro (dados dinâmicos)
+            // Pedidos e pagamentos - NUNCA usar cache (sempre da rede)
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*\/(pedidos|log_pagamento|notifications).*/i,
+            handler: 'NetworkOnly'
+          },
+          {
+            // API REST - sempre da rede primeiro (dados dinâmicos) - cache reduzido para mobile
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-api-cache',
-              networkTimeoutSeconds: 10,
+              networkTimeoutSeconds: 3,
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 5 * 60 // 5 minutos
+                maxAgeSeconds: 30 // 30 segundos apenas
               }
             }
           },
