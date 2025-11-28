@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, AlertTriangle, ChevronRight, X, Maximize2, FileDown } from 'lucide-react';
+import { Download, AlertTriangle, ChevronRight, X, Maximize2, FileDown, Lock, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -70,26 +70,84 @@ export const RelatorioPublicoPage = () => {
   const [convosModalOpen, setConvosModalOpen] = useState(false);
   const [excludeWeekend, setExcludeWeekend] = useState(true);
   const [chartType, setChartType] = useState<'line' | 'area' | 'bar'>('area');
+  
+  // Estados para autenticação
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [expired, setExpired] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
+  // Verificar validade do relatório ao carregar
   useEffect(() => {
-    loadReport();
+    checkReportValidity();
   }, [reportId]);
 
-  const loadReport = async () => {
+  const checkReportValidity = async () => {
+    if (!reportId) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('generated_reports')
+      .select('id, expires_at')
+      .eq('id', reportId)
+      .single();
+
+    if (error || !data) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    if (new Date(data.expires_at) < new Date()) {
+      setExpired(true);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+  };
+
+  const handleVerifyPassword = async () => {
+    if (!password.trim()) {
+      toast.error('Digite a senha');
+      return;
+    }
+
+    setVerifying(true);
     try {
-      const { data, error } = await supabase
-        .from('generated_reports')
-        .select('report_data, period_start, period_end, contact_types')
-        .eq('id', reportId)
-        .single();
+      const { data, error } = await supabase.functions.invoke('verify-report-access', {
+        body: {
+          report_id: reportId,
+          password: password
+        }
+      });
 
       if (error) throw error;
-      setReportData(data.report_data as unknown as ReportData);
-    } catch (error) {
-      console.error('Erro ao carregar relatório:', error);
-      toast.error('Relatório não encontrado ou expirado');
+
+      if (data.success) {
+        setIsAuthenticated(true);
+        setReportData(data.report_data);
+        toast.success('✅ Acesso liberado');
+      } else {
+        toast.error('Senha incorreta');
+      }
+    } catch (error: any) {
+      console.error('Erro ao verificar senha:', error);
+      
+      if (error.message?.includes('expired')) {
+        setExpired(true);
+        toast.error('Link expirado');
+      } else {
+        toast.error('Senha incorreta', {
+          description: 'Verifique sua senha de admin'
+        });
+      }
     } finally {
-      setLoading(false);
+      setVerifying(false);
     }
   };
 
@@ -193,6 +251,103 @@ export const RelatorioPublicoPage = () => {
       }));
   };
 
+  // Tela de Link Expirado
+  if (expired) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl text-center"
+        >
+          <Clock className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-semibold text-white mb-2">Link Expirado</h1>
+          <p className="text-white/60 text-sm">
+            Este relatório expirou. Links são válidos por 30 dias.
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Tela de Não Encontrado
+  if (notFound) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl text-center"
+        >
+          <AlertTriangle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-semibold text-white mb-2">Relatório Não Encontrado</h1>
+          <p className="text-white/60 text-sm">
+            Verifique se o link está correto.
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Tela de Login (Glassmorphism estilo Apple)
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl"
+        >
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img src={EXA_LOGO} alt="EXA" className="h-12" />
+          </div>
+          
+          {/* Título */}
+          <h1 className="text-2xl font-semibold text-white text-center mb-2">
+            Relatório Seguro
+          </h1>
+          <p className="text-white/60 text-center text-sm mb-8">
+            Digite sua senha de admin para acessar
+          </p>
+          
+          {/* Input Senha estilo Apple */}
+          <div className="relative mb-6">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleVerifyPassword()}
+              placeholder="Senha"
+              className="w-full bg-white/5 border border-white/10 rounded-xl 
+                       pl-12 pr-4 py-4 text-white placeholder-white/30
+                       focus:outline-none focus:ring-2 focus:ring-white/30
+                       transition-all"
+            />
+          </div>
+          
+          {/* Botão Acessar */}
+          <Button
+            onClick={handleVerifyPassword}
+            disabled={verifying || !password}
+            className="w-full bg-gradient-to-r from-[#7D1818] to-[#a33a3a] 
+                     text-white font-semibold py-4 rounded-xl
+                     hover:shadow-lg hover:shadow-red-900/30
+                     disabled:opacity-50 transition-all"
+          >
+            {verifying ? 'Verificando...' : 'Acessar Relatório'}
+          </Button>
+          
+          {/* Info de expiração */}
+          <p className="text-white/30 text-xs text-center mt-6">
+            Link válido por 30 dias • Acesso restrito a administradores
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center p-4">
@@ -208,8 +363,7 @@ export const RelatorioPublicoPage = () => {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <h2 className="text-xl font-semibold text-foreground mb-2">Relatório não encontrado</h2>
-          <p className="text-muted-foreground">Este relatório pode ter expirado ou não existe.</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Carregando...</h2>
         </div>
       </div>
     );

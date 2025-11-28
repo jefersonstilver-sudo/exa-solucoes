@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
 
     if (send_type === 'link') {
       // MENSAGEM CURTA COM LINK (Padrão recomendado)
+      // Adicionar quebras de linha extras para evitar truncamento no WhatsApp
       message = `━━━━━━━━━━━━━━━━━━━━
 
 📊 *Relatório de Atendimento*
@@ -75,10 +76,15 @@ O relatório do período {data_inicio} - {data_fim} está disponível.
 • ${report_data.taxa_resolucao.toFixed(1)}% resolução
 • ${report_data.tma_formatado} tempo médio
 
+
 🔗 *Ver relatório completo:*
+
 ${reportLink}
 
-━━━━━━━━━━━━━━━━━━━━`;
+
+━━━━━━━━━━━━━━━━━━━━
+
+_Link válido por 30 dias • Acesso protegido_`;
 
     } else {
       // MENSAGEM COMPLETA (send_type === 'complete')

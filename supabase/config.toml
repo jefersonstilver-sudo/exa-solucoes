@@ -282,6 +282,9 @@ verify_jwt = true
 [functions.relatorio-var-scheduled]
 verify_jwt = false
 
+[functions.verify-report-access]
+verify_jwt = false
+
 [[cron]]
 function_name = "conversation-follow-up"
 schedule = "*/2 * * * *"  # A cada 2 minutos

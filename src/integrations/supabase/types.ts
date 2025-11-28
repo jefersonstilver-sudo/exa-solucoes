@@ -5358,6 +5358,44 @@ export type Database = {
         }
         Relationships: []
       }
+      report_access_tokens: {
+        Row: {
+          access_granted_at: string | null
+          admin_id: string | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          report_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          access_granted_at?: string | null
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          report_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          access_granted_at?: string | null
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          report_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_access_tokens_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "generated_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_change_audit: {
         Row: {
           change_reason: string | null
