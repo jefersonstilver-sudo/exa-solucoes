@@ -274,6 +274,21 @@ O relatório do período está disponível.
   const handleSendTest = async () => {
     setSendingTest(true);
     try {
+      // Buscar diretores ativos
+      const { data: diretores, error: fetchError } = await supabase
+        .from('exa_alerts_directors')
+        .select('nome, telefone')
+        .eq('ativo', true);
+
+      if (fetchError) throw fetchError;
+
+      if (!diretores || diretores.length === 0) {
+        toast.error('❌ Nenhum diretor ativo cadastrado', {
+          description: 'Cadastre diretores primeiro'
+        });
+        return;
+      }
+
       const testMessage = `━━━━━━━━━━━━━━━━━━━━
 🧪 *TESTE - EXA NOTIFICAÇÕES*
 ━━━━━━━━━━━━━━━━━━━━
@@ -292,18 +307,27 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
 
 *EXA Digital* - Inteligência em Comunicação`;
 
-      const { error } = await supabase.functions.invoke('zapi-send-message', {
-        body: {
-          agentKey: 'exa_alert',
-          phone: '+5545999429820',
-          message: testMessage
+      // Enviar para cada diretor ativo
+      for (const diretor of diretores) {
+        const phoneFormatted = diretor.telefone.startsWith('55') 
+          ? `+${diretor.telefone}` 
+          : `+55${diretor.telefone}`;
+
+        const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+          body: {
+            agentKey: 'exa_alert',
+            phone: phoneFormatted,
+            message: testMessage
+          }
+        });
+
+        if (sendError) {
+          console.error(`Erro ao enviar para ${diretor.nome}:`, sendError);
         }
-      });
+      }
 
-      if (error) throw error;
-
-      toast.success('✅ Mensagem de teste enviada!', {
-        description: 'Verifique o WhatsApp EXA Alert'
+      toast.success(`✅ Teste enviado para ${diretores.length} diretor(es)!`, {
+        description: diretores.map(d => d.nome).join(', ')
       });
     } catch (error) {
       console.error('Erro ao enviar teste:', error);
