@@ -13,6 +13,7 @@ import { CouponBadge } from '@/components/admin/orders/CouponBadge';
 import { toast } from 'sonner';
 import { formatPhoneBR, cleanPhone, getWhatsAppLink, copyToClipboard } from '@/utils/whatsapp';
 import { ClientTrackingModal } from '@/components/admin/crm/ClientTrackingModal';
+import OrderExpirationIndicator from '@/components/admin/orders/OrderExpirationIndicator';
 interface EnhancedOrderCardProps {
   item: OrderOrAttempt;
   isSelected: boolean;
@@ -164,27 +165,34 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
     whatsappNumber,
     nationality
   });
-  return <Card className={`mb-4 transition-all duration-200 hover:shadow-md ${daysDiff > 7 ? 'border-red-200 bg-red-50' : ''}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <Checkbox checked={isSelected} onCheckedChange={checked => onSelectionChange(item.id, checked as boolean)} />
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <CardTitle className="text-sm">
+  return <Card className={`mb-3 transition-all duration-200 hover:shadow-md border-border/50`}>
+      <CardHeader className="pb-2 pt-3 px-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2.5 flex-1 min-w-0">
+            <Checkbox 
+              checked={isSelected} 
+              onCheckedChange={checked => onSelectionChange(item.id, checked as boolean)}
+              className="mt-0.5" 
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <CardTitle className="text-sm font-semibold">
                   {item.type === 'order' ? `Pedido #${item.id.substring(0, 8)}` : `Cotação #${item.id.substring(0, 8)}`}
                 </CardTitle>
-                {item.coupon_code && <CouponBadge couponCode={item.coupon_code} size="md" />}
-                <Badge className={getStatusColor(item.status, item.correct_status)}>
+                {item.coupon_code && <CouponBadge couponCode={item.coupon_code} size="sm" />}
+                <Badge className={`${getStatusColor(item.status, item.correct_status)} text-xs px-1.5 py-0`}>
                   {getStatusText(item.status, item.correct_status, item.video_status)}
                 </Badge>
                 <div className={`flex items-center gap-1 text-xs ${urgencyClass}`}>
                   <Clock className="w-3 h-3" />
                   <span className="font-medium">{timeText}</span>
                 </div>
-                {daysDiff > 7}
+                {/* Indicador de Expiração */}
+                {item.data_fim && item.type === 'order' && (
+                  <OrderExpirationIndicator endDate={item.data_fim} compact />
+                )}
               </div>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-muted-foreground">
                 Criado em {format(new Date(item.created_at), 'dd/MM/yyyy HH:mm', {
                 locale: ptBR
               })}
@@ -193,16 +201,16 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Botão de Rastreabilidade - Apenas para aguardando pagamento */}
+            {/* Botão de Rastreabilidade */}
             {showTrackingButton && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowTrackingModal(true)}
-                className="text-purple-600 hover:text-purple-700 border-purple-300 hover:border-purple-400"
-                title="Ver rastreabilidade e insights do cliente"
+                className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 border-purple-300 hover:border-purple-400"
+                title="Ver rastreabilidade"
               >
-                <Info className="w-4 h-4" />
+                <Info className="w-3.5 h-3.5" />
               </Button>
             )}
             
@@ -216,9 +224,9 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                       variant="outline" 
                       size="sm" 
                       disabled={!whatsappNumber}
-                      className="text-green-600 hover:text-green-700 border-green-300 hover:border-green-400 disabled:opacity-30"
+                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700 border-green-300 hover:border-green-400 disabled:opacity-30"
                     >
-                      <MessageCircle className="w-4 h-4" />
+                      <MessageCircle className="w-3.5 h-3.5" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80" align="end">
@@ -345,9 +353,9 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                   size="sm" 
                   onClick={() => item.client_email && window.open(`mailto:${item.client_email}?subject=Seu pedido Indexa&body=Olá! Gostaria de conversar sobre seu pedido...`, '_blank')} 
                   disabled={!item.client_email}
-                  className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400 disabled:opacity-30"
+                  className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400 disabled:opacity-30"
                 >
-                  <Mail className="w-4 h-4" />
+                  <Mail className="w-3.5 h-3.5" />
                 </Button>
 
                 {/* Botão Ver Detalhes */}
@@ -355,9 +363,9 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                   variant="outline" 
                   size="sm" 
                   onClick={() => onViewOrderDetails?.(item.id)}
-                  className="hover:bg-muted"
+                  className="h-8 w-8 p-0 hover:bg-muted"
                 >
-                  <Eye className="w-4 h-4" />
+                  <Eye className="w-3.5 h-3.5" />
                 </Button>
                 
                 {/* Botão Bloqueio/Desbloqueio */}
@@ -367,9 +375,9 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                     size="sm" 
                     onClick={() => onUnblockOrder?.(item.id)} 
                     disabled={isUnblocking} 
-                    className="text-green-600 hover:text-green-700"
+                    className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
                   >
-                    <ShieldOff className="w-4 h-4" />
+                    <ShieldOff className="w-3.5 h-3.5" />
                   </Button>
                 ) : (
                   <Button 
@@ -377,9 +385,9 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                     size="sm" 
                     onClick={() => onBlockOrder?.(item.id)} 
                     disabled={isBlocking || !['pago', 'ativo', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(item.status)}
-                    className="text-red-600 hover:text-red-700 disabled:opacity-30"
+                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 disabled:opacity-30"
                   >
-                    <Shield className="w-4 h-4" />
+                    <Shield className="w-3.5 h-3.5" />
                   </Button>
                 )}
               </>
