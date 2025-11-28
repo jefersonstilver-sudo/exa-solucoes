@@ -177,6 +177,27 @@ O relatório do período está disponível.
           break;
       }
 
+      // VALIDAR SE HÁ CONVERSAS NO PERÍODO ANTES DE GERAR
+      const { count, error: countError } = await supabase
+        .from('conversations')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      if (countError) {
+        throw new Error('Erro ao verificar conversas no período');
+      }
+
+      if (!count || count === 0) {
+        toast.warning('⚠️ Nenhuma conversa encontrada', {
+          description: `Não há conversas registradas entre ${format(startDate, 'dd/MM/yyyy')} e ${format(endDate, 'dd/MM/yyyy')}`
+        });
+        setGeneratingReport(false);
+        return;
+      }
+
+      console.log(`✅ ${count} conversas encontradas no período`);
+
       // Gerar relatório (passar tipos apenas se não for "all")
       const contactTypesFilter = demandContactTypes.includes('all') 
         ? undefined 
