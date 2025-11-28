@@ -125,6 +125,7 @@ const capitalize = (str: string): string => {
 
 /**
  * Heurística para sugerir tipo de contato baseado em keywords
+ * Retorna 'outros' para contatos não identificados
  */
 export const suggestContactType = (conversation: {
   contact_name?: string | null;
@@ -138,25 +139,34 @@ export const suggestContactType = (conversation: {
   const buildingName = (conversation.metadata?.agent_saved_name || conversation.metadata?.building_name || '').toLowerCase();
   const combinedText = `${name} ${buildingName}`;
   
-  // Empresas de elevadores - ordem específica primeiro
-  if (/tke/i.test(combinedText)) return 'tke_tecnico';
-  if (/oriente/i.test(combinedText)) return 'oriente_tecnico';
-  if (/atlas/i.test(combinedText)) return 'atlas_tecnico';
+  // Síndico - detectar por keyword
+  if (/síndico|sindico/i.test(combinedText)) {
+    // Verificar se é lead (ex: "JOAO - SINDICO LAS BRISAS")
+    if (!conversation.metadata?.building_name && /lead|novo|potencial/i.test(combinedText)) {
+      return 'sindico_lead';
+    }
+    return 'sindico';
+  }
+  
+  // Supervisores - empresas de elevadores específicas
+  if (/tke.*supervisor|supervisor.*tke/i.test(combinedText)) return 'tke_supervisor';
+  if (/oriente.*supervisor|supervisor.*oriente/i.test(combinedText)) return 'oriente_supervisor';
   
   // Provedores específicos
   if (/vivo/i.test(combinedText)) return 'vivo_provedor';
   if (/ligga/i.test(combinedText)) return 'ligga_provedor';
   
-  // Outros prestadores
-  if (/elevador|schindler|thyssen|claro|oi|tim|provedor|internet|eletricista/i.test(combinedText)) return 'outros_prestadores';
-  
-  // Síndico
-  if (/síndico|sindico|condomínio|residencial|edif[íi]cio/i.test(combinedText)) return 'sindico';
-  
   // Equipe EXA
-  if (/exa|equipe/i.test(combinedText)) return 'equipe_exa';
+  if (/exa|equipe|time|staff/i.test(combinedText)) return 'equipe_exa';
   
-  return 'lead';
+  // Lead genérico
+  if (/lead|interessado|potencial|cliente.*novo/i.test(combinedText)) return 'lead';
+  
+  // Outros prestadores de serviço
+  if (/elevador|técnico|eletricista|provedor|internet|manutenção/i.test(combinedText)) return 'outros';
+  
+  // Fallback: se não identificar nada, é "outros"
+  return 'outros';
 };
 
 /**

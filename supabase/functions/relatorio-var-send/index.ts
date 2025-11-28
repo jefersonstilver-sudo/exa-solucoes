@@ -138,10 +138,17 @@ ${reportLink}
             .replace('{data_inicio}', new Date(report_data.period_start).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }))
             .replace('{data_fim}', new Date(report_data.period_end).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }));
 
+          // Formatar telefone com DDI brasileiro
+          const formatPhone = (phone: string): string => {
+            const clean = phone.replace(/\D/g, '');
+            return clean.startsWith('55') ? clean : `55${clean}`;
+          };
+
           // Enviar via WhatsApp usando ZAPI
           const { error: zapiError } = await supabase.functions.invoke('zapi-send-message', {
             body: {
-              phone: director.telefone,
+              agentKey: 'eduardo',
+              phone: formatPhone(director.telefone),
               message: personalizedMessage
             }
           });
