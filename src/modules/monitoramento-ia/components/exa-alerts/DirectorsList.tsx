@@ -121,14 +121,23 @@ export const DirectorsList = () => {
         <h3 className="text-lg font-semibold">Diretores Cadastrados</h3>
         <div className="flex gap-2">
           <Button
-            onClick={loadDirectors}
+            onClick={(e) => {
+              e.stopPropagation();
+              loadDirectors();
+            }}
             variant="outline"
             size="sm"
             disabled={loading}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
-          <Button onClick={handleAddNew} size="sm">
+          <Button 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddNew();
+            }} 
+            size="sm"
+          >
             <UserPlus className="w-4 h-4 mr-2" />
             Adicionar Diretor
           </Button>
@@ -138,7 +147,14 @@ export const DirectorsList = () => {
       {directors.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <p>Nenhum diretor cadastrado ainda.</p>
-          <Button onClick={handleAddNew} variant="outline" className="mt-4">
+          <Button 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddNew();
+            }} 
+            variant="outline" 
+            className="mt-4"
+          >
             <UserPlus className="w-4 h-4 mr-2" />
             Adicionar Primeiro Diretor
           </Button>

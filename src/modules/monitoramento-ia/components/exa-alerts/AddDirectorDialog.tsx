@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Users } from 'lucide-react';
+import { PhoneVerificationOTP } from './PhoneVerificationOTP';
 
 interface Director {
   id: string;
@@ -39,6 +41,7 @@ export const AddDirectorDialog = ({ open, onOpenChange, director, onClose }: Add
   const [loadingSuperAdmins, setLoadingSuperAdmins] = useState(false);
   const [superAdmins, setSuperAdmins] = useState<SuperAdmin[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
@@ -55,10 +58,16 @@ export const AddDirectorDialog = ({ open, onOpenChange, director, onClose }: Add
     }
   }, [open, director]);
 
+  // Resetar verificação quando telefone mudar
+  useEffect(() => {
+    setIsPhoneVerified(false);
+  }, [formData.telefone]);
+
   // Preencher dados ao editar
   useEffect(() => {
     if (director) {
       setSelectedUserId(director.user_id || '');
+      setIsPhoneVerified(true); // Diretores existentes já estão verificados
       setFormData({
         nome: director.nome,
         telefone: director.telefone,
@@ -69,6 +78,7 @@ export const AddDirectorDialog = ({ open, onOpenChange, director, onClose }: Add
       });
     } else {
       setSelectedUserId('');
+      setIsPhoneVerified(false);
       setFormData({
         nome: '',
         telefone: '',
@@ -276,6 +286,39 @@ export const AddDirectorDialog = ({ open, onOpenChange, director, onClose }: Add
             )}
           </div>
 
+          {/* Verificação OTP (apenas para novos diretores) */}
+          {!director && formData.telefone && (
+            <>
+              <Separator className="my-4" />
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Verificação de Segurança</Label>
+                  {isPhoneVerified && (
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                      ✓ Verificado
+                    </span>
+                  )}
+                </div>
+                
+                {!isPhoneVerified && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      ⚠️ É necessário verificar o número WhatsApp antes de adicionar o diretor.
+                    </p>
+                  </div>
+                )}
+                
+                <PhoneVerificationOTP
+                  telefone={formData.telefone}
+                  onVerified={() => setIsPhoneVerified(true)}
+                />
+              </div>
+              
+              <Separator className="my-4" />
+            </>
+          )}
+
           {/* Departamento */}
           <div className="space-y-2">
             <Label htmlFor="departamento">Departamento</Label>
@@ -339,7 +382,7 @@ export const AddDirectorDialog = ({ open, onOpenChange, director, onClose }: Add
             </Button>
             <Button 
               type="submit" 
-              disabled={loading}
+              disabled={loading || (!director && !isPhoneVerified)}
               className="bg-gradient-to-r from-[#9C1E1E] to-[#D72638] hover:from-[#7A1717] hover:to-[#B01F2E]"
             >
               {loading ? 'Salvando...' : director ? 'Salvar Alterações' : 'Adicionar Diretor'}
