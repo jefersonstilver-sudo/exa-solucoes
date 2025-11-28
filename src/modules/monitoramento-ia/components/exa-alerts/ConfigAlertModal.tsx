@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { motion } from 'framer-motion';
-import { Clock, MessageSquare, Users, ChevronDown, ChevronUp, Loader2, Zap, CalendarIcon, Filter } from 'lucide-react';
+import { Clock, MessageSquare, Users, ChevronDown, ChevronUp, Loader2, Zap, CalendarIcon, Filter, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -100,6 +100,7 @@ O relatório do período está disponível.
   const [demandSelectedDirectors, setDemandSelectedDirectors] = useState<string[]>([]);
   const [demandContactTypes, setDemandContactTypes] = useState<string[]>(['all']); // Todos por padrão
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
 
   // Buscar diretores reais do banco
   useEffect(() => {
@@ -269,6 +270,51 @@ O relatório do período está disponível.
       setLoading(false);
     }
   };
+
+  const handleSendTest = async () => {
+    setSendingTest(true);
+    try {
+      const testMessage = `━━━━━━━━━━━━━━━━━━━━
+🧪 *TESTE - EXA NOTIFICAÇÕES*
+━━━━━━━━━━━━━━━━━━━━
+
+✅ Sistema de alertas funcionando corretamente!
+
+Este é um teste automático do sistema de notificações EXA Alert.
+
+🔔 *Status:* Operacional
+⏰ *Horário:* ${format(new Date(), 'dd/MM/yyyy HH:mm')}
+🤖 *Sistema:* EXA Alert v2.0
+
+━━━━━━━━━━━━━━━━━━━━
+
+Se você recebeu esta mensagem, significa que o sistema de notificações está configurado e funcionando perfeitamente.
+
+*EXA Digital* - Inteligência em Comunicação`;
+
+      const { error } = await supabase.functions.invoke('zapi-send-message', {
+        body: {
+          agentKey: 'exa_alert',
+          phone: '+5545999429820',
+          message: testMessage
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('✅ Mensagem de teste enviada!', {
+        description: 'Verifique o WhatsApp EXA Alert'
+      });
+    } catch (error) {
+      console.error('Erro ao enviar teste:', error);
+      toast.error('❌ Erro ao enviar teste', {
+        description: error instanceof Error ? error.message : 'Tente novamente'
+      });
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[950px] w-[95vw] max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl border border-gray-200/50 dark:border-gray-800/50">
         <DialogHeader>
@@ -692,10 +738,30 @@ O relatório do período está disponível.
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading} className="rounded-lg">
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={loading || selectedDirectors.length === 0} className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg shadow-sm hover:shadow-md transition-all">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading || sendingTest} className="rounded-lg">
+              Cancelar
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleSendTest} 
+              disabled={sendingTest || loading}
+              className="rounded-lg border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
+            >
+              {sendingTest ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Teste
+                </>
+              )}
+            </Button>
+          </div>
+          <Button onClick={handleSave} disabled={loading || selectedDirectors.length === 0 || sendingTest} className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg shadow-sm hover:shadow-md transition-all">
             {loading ? 'Salvando...' : 'Salvar Configuração'}
           </Button>
         </DialogFooter>
