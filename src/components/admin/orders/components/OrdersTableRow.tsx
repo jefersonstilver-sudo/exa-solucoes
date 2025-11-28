@@ -35,6 +35,8 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
   showCheckbox = false
 }) => {
   const { isSuperAdmin } = useAuth();
+  const isCourtesy = item.coupon_category === 'cortesia';
+  
   const handleViewDetails = () => {
     if (item.type === 'order' && onViewDetails) {
       onViewDetails(item.id);
@@ -42,7 +44,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
   };
 
   return (
-    <TableRow className="border-gray-200 hover:bg-gray-50">
+    <TableRow className={`border-gray-200 hover:bg-gray-50 ${isCourtesy ? 'bg-purple-50/30 dark:bg-purple-950/20' : ''}`}>
       {isSuperAdmin && showCheckbox && (
         <TableCell className="w-12">
           <Checkbox

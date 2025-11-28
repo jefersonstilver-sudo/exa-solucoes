@@ -60,7 +60,7 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">#{order.id.substring(0, 8)}</span>
-          <CouponBadge couponCode={order.coupon_code} size="sm" />
+          <CouponBadge couponCode={order.coupon_code} couponCategory={order.coupon_category} size="sm" />
         </div>
         <Badge className={`${getStatusColor(order.status)} text-white border-0`}>
           {getStatusText(order.status)}

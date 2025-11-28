@@ -24,6 +24,7 @@ export interface OrderOrAttempt {
   }>;
   cupom_id?: string;
   coupon_code?: string;
+  coupon_category?: string;
 }
 
 export interface OrdersStats {
