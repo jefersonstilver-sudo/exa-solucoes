@@ -426,6 +426,10 @@ export const RelatorioPublicoPage = () => {
   const filteredEvolution = filterWeekendData(reportData.evolucao_30_dias);
   const criticalDay = getCriticalDay();
 
+  // Detectar se é período de 1 dia (24 horas)
+  const isOneDayPeriod = reportData.periodo_inicio && reportData.periodo_fim && 
+    new Date(reportData.periodo_fim).getTime() - new Date(reportData.periodo_inicio).getTime() <= 86400000;
+
   // Chart Options
   const volumeChartOptions: ApexOptions = {
     chart: {
@@ -446,16 +450,27 @@ export const RelatorioPublicoPage = () => {
     stroke: { curve: 'smooth', width: 3 },
     markers: { size: 5, colors: ['#fff'], strokeColors: ['#7D1818'], strokeWidth: 3 },
     xaxis: {
-      categories: filteredEvolution.map(d => formatDate(d.data)),
-      labels: { rotate: -30, style: { fontSize: '11px' } }
+      categories: isOneDayPeriod 
+        ? filteredEvolution.map(d => new Date(d.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
+        : filteredEvolution.map(d => formatDate(d.data)),
+      labels: { 
+        rotate: isOneDayPeriod ? 0 : -30, 
+        style: { fontSize: '11px' } 
+      },
+      title: { text: isOneDayPeriod ? 'Hora do Dia' : undefined }
     },
     yaxis: { title: { text: 'Contatos' } },
     tooltip: {
       custom: ({ dataPointIndex }) => {
         const data = filteredEvolution[dataPointIndex];
+        const displayTime = isOneDayPeriod 
+          ? new Date(data.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          : formatDate(data.data);
+        const displayDay = isOneDayPeriod ? '' : `<div class="text-sm text-muted-foreground">${shortDay(data.data)}</div>`;
+        
         return `<div class="px-3 py-2 bg-card border border-border rounded-lg shadow-lg">
-          <div class="font-semibold">${formatDate(data.data)}</div>
-          <div class="text-sm text-muted-foreground">${shortDay(data.data)}</div>
+          <div class="font-semibold">${displayTime}</div>
+          ${displayDay}
           <div class="text-lg font-bold text-primary mt-1">${data.total} contatos</div>
         </div>`;
       }
