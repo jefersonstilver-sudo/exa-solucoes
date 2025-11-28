@@ -52,7 +52,7 @@ serve(async (req) => {
     const { data: agentData, error: agentError } = await supabase
       .from('agents')
       .select('zapi_config')
-      .eq('key', 'exa-alerts')
+      .eq('key', 'exa_alert')
       .single();
 
     if (agentError || !agentData?.zapi_config) {

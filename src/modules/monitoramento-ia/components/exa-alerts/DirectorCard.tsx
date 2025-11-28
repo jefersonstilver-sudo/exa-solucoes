@@ -22,9 +22,10 @@ interface DirectorCardProps {
   onEdit: (director: Director) => void;
   onDelete: (id: string) => void;
   onToggleStatus: (id: string, ativo: boolean) => void;
+  canDelete?: boolean;
 }
 
-export const DirectorCard = ({ director, onEdit, onDelete, onToggleStatus }: DirectorCardProps) => {
+export const DirectorCard = ({ director, onEdit, onDelete, onToggleStatus, canDelete = false }: DirectorCardProps) => {
   const nivelColors: Record<string, string> = {
     basico: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
     gerente: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
@@ -117,14 +118,16 @@ export const DirectorCard = ({ director, onEdit, onDelete, onToggleStatus }: Dir
           >
             <Edit className="w-4 h-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDelete(director.id)}
-            className="text-red-600 hover:bg-red-50"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDelete(director.id)}
+              className="text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </Card>
     </motion.div>
