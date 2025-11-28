@@ -40,16 +40,35 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { start_date, end_date } = await req.json();
+    const { start_date, end_date, contact_types } = await req.json();
 
-    console.log('📊 [VAR GENERATE] Gerando relatório:', { start_date, end_date });
+    console.log('📊 [VAR GENERATE] Gerando relatório:', { start_date, end_date, contact_types });
 
     // ===== BUSCAR CONVERSAS NO PERÍODO =====
-    const { data: conversations, error: convError } = await supabase
+    let conversationsQuery = supabase
       .from('conversations')
       .select('*')
       .gte('created_at', start_date)
       .lte('created_at', end_date);
+
+    // Filtrar por tipos de contato se especificado
+    if (contact_types && contact_types.length > 0) {
+      // Se incluir "outros", buscar NULL ou 'outros'
+      if (contact_types.includes('outros')) {
+        const otherTypes = contact_types.filter((t: string) => t !== 'outros');
+        if (otherTypes.length > 0) {
+          conversationsQuery = conversationsQuery.or(
+            `contact_type.is.null,contact_type.eq.outros,contact_type.in.(${otherTypes.join(',')})`
+          );
+        } else {
+          conversationsQuery = conversationsQuery.or('contact_type.is.null,contact_type.eq.outros');
+        }
+      } else {
+        conversationsQuery = conversationsQuery.in('contact_type', contact_types);
+      }
+    }
+
+    const { data: conversations, error: convError } = await conversationsQuery;
 
     if (convError) throw convError;
 

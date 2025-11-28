@@ -25,6 +25,7 @@ const CONTACT_TYPES = [
   { value: 'ligga_provedor', label: 'Ligga (Provedor)' },
   { value: 'vivo_provedor', label: 'Vivo (Provedor)' },
   { value: 'equipe_exa', label: 'Equipe EXA' },
+  { value: 'outros', label: 'Outros' },
 ];
 interface ConfigAlertModalProps {
   open: boolean;
@@ -68,7 +69,23 @@ export const ConfigAlertModal = ({
   const [time, setTime] = useState('08:00');
   const [selectedDays, setSelectedDays] = useState<string[]>(['seg', 'ter', 'qua', 'qui', 'sex']);
   const [templateType, setTemplateType] = useState<'texto' | 'html'>('texto');
-  const [templateContent, setTemplateContent] = useState(`📊 *Relatório de Conversas*\n\nTotal: {total_conversas}\nResolvidas: {resolvidas}\nPendentes: {pendentes}\n\n⏱ Tempo médio: {tempo_medio}`);
+  const [templateContent, setTemplateContent] = useState(`━━━━━━━━━━━━━━━━━━━━
+
+📊 *Relatório de Atendimento*
+
+Olá!
+
+O relatório do período está disponível.
+
+*Resumo:*
+• {total_conversas} conversas
+• {taxa_resolucao}% resolução
+• {tempo_medio} tempo médio
+
+🔗 *Ver relatório completo:*
+{link_relatorio}
+
+━━━━━━━━━━━━━━━━━━━━`);
   const [selectedDirectors, setSelectedDirectors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [directors, setDirectors] = useState<Director[]>([]);
@@ -81,7 +98,7 @@ export const ConfigAlertModal = ({
   const [demandFormat, setDemandFormat] = useState<'whatsapp' | 'email'>('whatsapp');
   const [demandSendType, setDemandSendType] = useState<'link' | 'complete'>('link');
   const [demandSelectedDirectors, setDemandSelectedDirectors] = useState<string[]>([]);
-  const [demandContactTypes, setDemandContactTypes] = useState<string[]>([]);
+  const [demandContactTypes, setDemandContactTypes] = useState<string[]>(['all']); // Todos por padrão
   const [generatingReport, setGeneratingReport] = useState(false);
 
   // Buscar diretores reais do banco
@@ -114,9 +131,18 @@ export const ConfigAlertModal = ({
   };
 
   const handleContactTypeToggle = (type: string) => {
-    setDemandContactTypes(prev =>
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-    );
+    if (type === 'all') {
+      // Selecionar "Todos" desmarca todos os outros
+      setDemandContactTypes(['all']);
+    } else {
+      // Selecionar específico desmarca "Todos"
+      setDemandContactTypes(prev => {
+        const filtered = prev.filter(t => t !== 'all');
+        return filtered.includes(type) 
+          ? filtered.filter(t => t !== type)
+          : [...filtered, type];
+      });
+    }
   };
 
   const handleGenerateReport = async () => {
@@ -158,14 +184,18 @@ export const ConfigAlertModal = ({
           break;
       }
 
-      // Gerar relatório
+      // Gerar relatório (passar tipos apenas se não for "all")
+      const contactTypesFilter = demandContactTypes.includes('all') 
+        ? undefined 
+        : demandContactTypes;
+
       const { data: reportData, error: generateError } = await supabase.functions.invoke(
         'relatorio-var-generate',
         {
           body: {
             start_date: startDate.toISOString(),
             end_date: endDate.toISOString(),
-            contact_types: demandContactTypes.length > 0 ? demandContactTypes : undefined,
+            contact_types: contactTypesFilter,
             agent_key: 'eduardo'
           }
         }
@@ -455,11 +485,28 @@ export const ConfigAlertModal = ({
             </div>
 
             {/* Filtrar por Tipo de Contato */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
                 <Filter className="w-4 h-4" />
                 Filtrar por Tipo de Contato
               </Label>
+              
+              {/* Botão "Todos" destacado */}
+              <div className="flex gap-2">
+                <Badge
+                  variant={demandContactTypes.includes('all') ? 'default' : 'outline'}
+                  className={`cursor-pointer px-4 py-2.5 transition-all duration-300 font-medium ${
+                    demandContactTypes.includes('all')
+                      ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900 shadow-sm'
+                      : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
+                  }`}
+                  onClick={() => handleContactTypeToggle('all')}
+                >
+                  Todos
+                </Badge>
+              </div>
+
+              {/* Tipos específicos */}
               <div className="flex flex-wrap gap-2">
                 {CONTACT_TYPES.map(type => (
                   <Badge
@@ -467,7 +514,7 @@ export const ConfigAlertModal = ({
                     variant={demandContactTypes.includes(type.value) ? 'default' : 'outline'}
                     className={`cursor-pointer px-3 py-2 transition-all duration-300 ${
                       demandContactTypes.includes(type.value)
-                        ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
+                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
                         : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
                     }`}
                     onClick={() => handleContactTypeToggle(type.value)}
@@ -476,8 +523,9 @@ export const ConfigAlertModal = ({
                   </Badge>
                 ))}
               </div>
-              {demandContactTypes.length === 0 && (
-                <p className="text-xs text-gray-500 mt-1">Nenhum filtro = Todos os tipos de contato</p>
+              
+              {!demandContactTypes.includes('all') && demandContactTypes.length === 0 && (
+                <p className="text-xs text-gray-500 mt-1">Selecione tipos específicos ou use "Todos"</p>
               )}
             </div>
 
