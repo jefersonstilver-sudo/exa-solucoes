@@ -60,49 +60,54 @@ export const AlertCard = ({ alert, onClick }: AlertCardProps) => {
     <div
       onClick={onClick}
       className={`
-        relative bg-module-card rounded-[14px] p-4 cursor-pointer
+        group relative bg-white/60 dark:bg-neutral-900/40 backdrop-blur-md
+        rounded-xl lg:rounded-2xl p-4 cursor-pointer
         border-l-4 ${getSeverityColor(alert.severity)}
-        hover-module-bg transition-all duration-300
+        border border-white/20 dark:border-white/10
+        shadow-lg hover:shadow-xl
+        hover:bg-white/70 dark:hover:bg-neutral-900/50
+        hover:scale-[1.02] hover:-translate-y-1
+        transition-all duration-300
         ${isCritical ? 'animate-pulse' : ''}
       `}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <h3 className="text-lg font-bold text-module-primary mb-1">
+          <h3 className="text-base lg:text-lg font-bold text-foreground mb-1 group-hover:text-[#9C1E1E] transition-colors">
             {alert.devices?.name || 'Painel desconhecido'}
           </h3>
-          <p className="text-sm text-module-secondary">
+          <p className="text-sm text-muted-foreground">
             {alert.devices?.condominio_name || 'Condomínio não especificado'}
           </p>
         </div>
-        <AlertCircle className={`w-5 h-5 ${isCritical ? 'text-[#9C1E1E]' : 'text-module-muted'}`} />
+        <AlertCircle className={`w-5 h-5 ${isCritical ? 'text-[#9C1E1E]' : 'text-muted-foreground'}`} />
       </div>
 
       {/* Badges */}
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         {getSeverityBadge(alert.severity)}
         {getStatusBadge(alert.status)}
       </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2 text-module-tertiary">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <Clock className="w-4 h-4" />
-          <span>{timeOpen}</span>
+          <span className="text-xs lg:text-sm">{timeOpen}</span>
         </div>
-        <button className="text-[#9C1E1E] hover:text-[#9C1E1E]/80 font-medium">
+        <button className="text-[#9C1E1E] hover:text-[#9C1E1E]/80 font-medium text-xs lg:text-sm transition-colors">
           Ver detalhes →
         </button>
       </div>
 
       {/* Time and Type */}
-      <div className="mt-2 text-xs space-y-1">
-        <div className="text-module-muted">
-          Tipo: {alert.alert_type}
+      <div className="mt-3 pt-3 border-t border-border/50 text-xs space-y-1">
+        <div className="text-muted-foreground font-medium">
+          Tipo: <span className="text-foreground">{alert.alert_type}</span>
         </div>
         {alert.opened_at && (
-          <div className="text-module-tertiary">
+          <div className="text-muted-foreground">
             Aberto: {new Date(alert.opened_at).toLocaleString('pt-BR', { 
               day: '2-digit', 
               month: '2-digit', 

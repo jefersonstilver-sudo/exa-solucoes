@@ -19,17 +19,17 @@ export const AlertaCEOCard = () => {
       transition={{ duration: 0.3 }}
     >
       <Card 
-        className="border-2 border-[#9C1E1E]/30 hover:border-[#9C1E1E]/50 transition-all cursor-pointer hover:shadow-lg"
+        className="group bg-white/60 dark:bg-neutral-900/40 backdrop-blur-md border-2 border-[#9C1E1E]/30 dark:border-[#9C1E1E]/30 hover:border-[#9C1E1E]/50 dark:hover:border-[#9C1E1E]/50 rounded-xl lg:rounded-2xl transition-all cursor-pointer hover:shadow-xl shadow-lg"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <CardHeader className="p-4">
-          <div className="flex items-center justify-between">
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#9C1E1E] to-[#D72638] flex items-center justify-center shadow-md">
-                <span className="text-xl">👔</span>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-[#9C1E1E] to-[#D72638] flex items-center justify-center shadow-lg">
+                <span className="text-xl md:text-2xl">👔</span>
               </div>
               <div>
-                <h3 className="font-bold text-base bg-gradient-to-r from-[#9C1E1E] to-[#D72638] bg-clip-text text-transparent">
+                <h3 className="font-bold text-sm md:text-base bg-gradient-to-r from-[#9C1E1E] to-[#D72638] bg-clip-text text-transparent">
                   Alerta CEO
                 </h3>
                 <p className="text-xs text-muted-foreground">
@@ -40,7 +40,7 @@ export const AlertaCEOCard = () => {
             <div className="flex items-center gap-2">
               <Badge 
                 variant="outline" 
-                className="text-xs bg-gradient-to-r from-[#9C1E1E]/10 to-[#D72638]/10 border-[#9C1E1E]/30"
+                className="text-xs bg-gradient-to-r from-[#9C1E1E]/10 to-[#D72638]/10 border-[#9C1E1E]/30 dark:border-[#9C1E1E]/30 hidden sm:inline-flex"
               >
                 🎯 Máxima
               </Badge>

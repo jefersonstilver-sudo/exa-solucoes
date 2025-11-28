@@ -70,52 +70,52 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
   };
 
   return (
-    <div className="bg-module-card rounded-xl overflow-hidden border border-module">
+    <div className="bg-white/60 dark:bg-neutral-900/40 backdrop-blur-md rounded-xl lg:rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 shadow-lg">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-module-input hover:bg-module-input border-b border-module">
-              <TableHead className="text-module-primary font-semibold">Painel</TableHead>
-              <TableHead className="text-module-primary font-semibold">Condomínio</TableHead>
-              <TableHead className="text-module-primary font-semibold">Torre</TableHead>
-              <TableHead className="text-module-primary font-semibold">Tipo</TableHead>
-              <TableHead className="text-module-primary font-semibold">Provedor</TableHead>
-              <TableHead className="text-module-primary font-semibold">Severidade</TableHead>
-              <TableHead className="text-module-primary font-semibold">Status</TableHead>
-              <TableHead className="text-module-primary font-semibold">Aberto em</TableHead>
-              <TableHead className="text-module-primary font-semibold">Fechado em</TableHead>
-              <TableHead className="text-module-primary font-semibold">Tempo</TableHead>
-              <TableHead className="text-module-primary font-semibold text-right">Ações</TableHead>
+            <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm">Painel</TableHead>
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm hidden lg:table-cell">Condomínio</TableHead>
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm hidden xl:table-cell">Torre</TableHead>
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm">Tipo</TableHead>
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm hidden md:table-cell">Provedor</TableHead>
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm">Severidade</TableHead>
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm">Status</TableHead>
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm hidden lg:table-cell">Aberto em</TableHead>
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm hidden xl:table-cell">Fechado em</TableHead>
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm hidden md:table-cell">Tempo</TableHead>
+              <TableHead className="text-foreground font-semibold text-xs md:text-sm text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {alerts.map((alert) => (
               <TableRow
                 key={alert.id}
-                className="border-module border-b hover:bg-module-hover transition-colors cursor-pointer"
+                className="border-border border-b hover:bg-accent/50 transition-all cursor-pointer group"
                 onClick={() => onViewDetails(alert)}
               >
-                <TableCell className="font-medium text-module-primary">
-                  <div className="flex flex-col">
-                    <span>{alert.devices?.name || 'Desconhecido'}</span>
+                <TableCell className="font-medium text-foreground text-xs md:text-sm">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold">{alert.devices?.name || 'Desconhecido'}</span>
                     {alert.devices?.comments && (
-                      <span className="text-xs text-module-tertiary">{alert.devices.comments.split(' - ')[0]}</span>
+                      <span className="text-xs text-muted-foreground lg:hidden">{alert.devices.comments.split(' - ')[0]}</span>
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-module-secondary text-sm">
+                <TableCell className="text-muted-foreground text-xs md:text-sm hidden lg:table-cell">
                   {alert.devices?.condominio_name || 'N/A'}
                 </TableCell>
-                <TableCell className="text-module-secondary text-sm">
+                <TableCell className="text-muted-foreground text-xs md:text-sm hidden xl:table-cell">
                   {alert.devices?.comments?.split('-')[1]?.trim() || '-'}
                 </TableCell>
-                <TableCell className="text-module-secondary text-sm">
+                <TableCell className="text-muted-foreground text-xs md:text-sm">
                   {getAlertTypeLabel(alert.alert_type)}
                 </TableCell>
-                <TableCell>{getProviderBadge(alert.provider)}</TableCell>
+                <TableCell className="hidden md:table-cell">{getProviderBadge(alert.provider)}</TableCell>
                 <TableCell>{getSeverityBadge(alert.severity)}</TableCell>
                 <TableCell>{getStatusBadge(alert.status)}</TableCell>
-                <TableCell className="text-module-secondary text-xs">
+                <TableCell className="text-muted-foreground text-xs hidden lg:table-cell">
                   {new Date(alert.opened_at).toLocaleString('pt-BR', {
                     day: '2-digit',
                     month: '2-digit',
@@ -123,7 +123,7 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
                     minute: '2-digit'
                   })}
                 </TableCell>
-                <TableCell className="text-module-secondary text-xs">
+                <TableCell className="text-muted-foreground text-xs hidden xl:table-cell">
                   {alert.closed_at ? (
                     new Date(alert.closed_at).toLocaleString('pt-BR', {
                       day: '2-digit',
@@ -132,10 +132,10 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
                       minute: '2-digit'
                     })
                   ) : (
-                    <span className="text-module-muted">Em andamento</span>
+                    <span className="text-muted-foreground">Em andamento</span>
                   )}
                 </TableCell>
-                <TableCell className="text-module-secondary text-xs">
+                <TableCell className="text-muted-foreground text-xs hidden md:table-cell">
                   {formatDistanceToNow(new Date(alert.opened_at), {
                     addSuffix: false,
                     locale: ptBR,
@@ -149,9 +149,9 @@ export const AlertsTable = ({ alerts, onViewDetails }: AlertsTableProps) => {
                       e.stopPropagation();
                       onViewDetails(alert);
                     }}
-                    className="hover:bg-module-hover"
+                    className="hover:bg-accent h-8 w-8 p-0 md:h-9 md:w-9"
                   >
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-3 h-3 md:w-4 md:h-4" />
                   </Button>
                 </TableCell>
               </TableRow>
