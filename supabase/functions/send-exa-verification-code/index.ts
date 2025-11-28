@@ -62,34 +62,47 @@ serve(async (req) => {
 
     const zapiConfig = agentData.zapi_config as {
       instance_id?: string;
-      instance_token?: string;
+      token?: string;
       client_token?: string;
     };
 
     const instanceId = zapiConfig.instance_id;
+    const instanceToken = zapiConfig.token;
     const clientToken = zapiConfig.client_token;
 
-    if (!instanceId || !clientToken) {
+    if (!instanceId || !instanceToken || !clientToken) {
+      console.error('Missing Z-API credentials:', {
+        hasInstanceId: !!instanceId,
+        hasInstanceToken: !!instanceToken,
+        hasClientToken: !!clientToken
+      });
       throw new Error('Z-API credentials missing');
     }
+
+    console.log('Z-API config loaded successfully:', {
+      instanceId,
+      hasToken: !!instanceToken,
+      hasClientToken: !!clientToken
+    });
 
     // Format phone number (remove non-digits)
     const cleanPhone = telefone.replace(/\D/g, '');
 
     // Send WhatsApp message via Z-API
-    const zapiResponse = await fetch(
-      `https://api.z-api.io/instances/${instanceId}/token/${clientToken}/send-text`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: cleanPhone,
-          message: `🔐 *Código de Verificação EXA Alerts*\n\nSeu código de verificação é:\n\n*${codigo}*\n\nEste código expira em 5 minutos.\n\n⚠️ Não compartilhe este código com ninguém.`,
-        }),
-      }
-    );
+    const zapiUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/send-text`;
+    console.log('Sending to Z-API:', { url: zapiUrl, phone: cleanPhone });
+
+    const zapiResponse = await fetch(zapiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Client-Token': clientToken,
+      },
+      body: JSON.stringify({
+        phone: cleanPhone,
+        message: `🔐 *Código de Verificação EXA Alerts*\n\nSeu código de verificação é:\n\n*${codigo}*\n\nEste código expira em 5 minutos.\n\n⚠️ Não compartilhe este código com ninguém.`,
+      }),
+    });
 
     if (!zapiResponse.ok) {
       const errorData = await zapiResponse.text();
