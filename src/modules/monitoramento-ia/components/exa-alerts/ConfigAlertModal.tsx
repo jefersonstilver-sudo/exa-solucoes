@@ -8,10 +8,13 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { motion } from 'framer-motion';
-import { Clock, MessageSquare, Users, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Clock, MessageSquare, Users, ChevronDown, ChevronUp, Loader2, Zap, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 interface ConfigAlertModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -60,6 +63,14 @@ export const ConfigAlertModal = ({
   const [directors, setDirectors] = useState<Director[]>([]);
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
 
+  // Estados para Relatório Sob Demanda
+  const [demandPeriod, setDemandPeriod] = useState('hoje');
+  const [demandStartDate, setDemandStartDate] = useState<Date | undefined>(new Date());
+  const [demandEndDate, setDemandEndDate] = useState<Date | undefined>(new Date());
+  const [demandFormat, setDemandFormat] = useState<'whatsapp' | 'email'>('whatsapp');
+  const [demandSelectedDirectors, setDemandSelectedDirectors] = useState<string[]>([]);
+  const [generatingReport, setGeneratingReport] = useState(false);
+
   // Buscar diretores reais do banco
   useEffect(() => {
     const loadDirectors = async () => {
@@ -81,16 +92,126 @@ export const ConfigAlertModal = ({
   const handleDirectorToggle = (directorId: string) => {
     setSelectedDirectors(prev => prev.includes(directorId) ? prev.filter(id => id !== directorId) : [...prev, directorId]);
   };
+  const handleDemandDirectorToggle = (directorId: string) => {
+    setDemandSelectedDirectors(prev => 
+      prev.includes(directorId) 
+        ? prev.filter(id => id !== directorId) 
+        : [...prev, directorId]
+    );
+  };
+
+  const handleGenerateReport = async () => {
+    if (demandSelectedDirectors.length === 0) {
+      toast.error('Selecione pelo menos um diretor');
+      return;
+    }
+
+    setGeneratingReport(true);
+    try {
+      let startDate = new Date();
+      let endDate = new Date();
+
+      // Calcular período
+      switch (demandPeriod) {
+        case 'hoje':
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'ontem':
+          startDate.setDate(startDate.getDate() - 1);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(startDate);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case '7dias':
+          startDate.setDate(startDate.getDate() - 7);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case '30dias':
+          startDate.setDate(startDate.getDate() - 30);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'custom':
+          if (demandStartDate && demandEndDate) {
+            startDate = demandStartDate;
+            endDate = demandEndDate;
+          }
+          break;
+      }
+
+      // Gerar relatório
+      const { data: reportData, error: generateError } = await supabase.functions.invoke(
+        'relatorio-var-generate',
+        {
+          body: {
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString()
+          }
+        }
+      );
+
+      if (generateError) throw generateError;
+
+      // Enviar relatório
+      const { error: sendError } = await supabase.functions.invoke(
+        'relatorio-var-send',
+        {
+          body: {
+            report_data: reportData,
+            format: demandFormat,
+            director_ids: demandSelectedDirectors
+          }
+        }
+      );
+
+      if (sendError) throw sendError;
+
+      toast.success('✅ Relatório gerado e enviado!', {
+        description: `Enviado via ${demandFormat === 'whatsapp' ? 'WhatsApp' : 'Email'} para ${demandSelectedDirectors.length} diretor(es)`
+      });
+
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+      toast.error('Erro ao gerar relatório', {
+        description: error instanceof Error ? error.message : 'Tente novamente'
+      });
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Simular save
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Configuração salva com sucesso!', {
-        description: 'O alerta foi configurado e será enviado conforme definido.'
+      // Salvar configuração real no banco
+      const configData = {
+        frequency,
+        time,
+        selectedDays,
+        templateType,
+        templateContent,
+        selectedDirectors,
+        updatedAt: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('exa_alerts_config')
+        .upsert({
+          config_key: 'relatorio_conversas',
+          config_value: configData,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'config_key'
+        });
+
+      if (error) throw error;
+
+      toast.success('✅ Configuração salva!', {
+        description: 'O relatório será enviado conforme programado.'
       });
       onOpenChange(false);
     } catch (error) {
+      console.error('Erro ao salvar:', error);
       toast.error('Erro ao salvar configuração');
     } finally {
       setLoading(false);
@@ -260,6 +381,172 @@ export const ConfigAlertModal = ({
             {directors.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">
                 Nenhum diretor ativo encontrado
               </p>}
+          </motion.div>
+
+          <Separator />
+
+          {/* ============= SOLICITAR RELATÓRIO AGORA (SOB DEMANDA) ============= */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-4 p-5 bg-gradient-to-br from-orange-50/50 to-yellow-50/50 dark:from-orange-950/20 dark:to-yellow-950/20 rounded-2xl border-2 border-orange-200 dark:border-orange-900"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+              <h3 className="font-bold text-base">⚡ Solicitar Relatório Agora (Sob Demanda)</h3>
+            </div>
+
+            {/* Período */}
+            <div className="space-y-2">
+              <Label>Período do Relatório</Label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 'hoje', label: '📅 Hoje' },
+                  { value: 'ontem', label: '📆 Ontem' },
+                  { value: '7dias', label: '📊 Últimos 7 dias' },
+                  { value: '30dias', label: '📈 Últimos 30 dias' },
+                  { value: 'custom', label: '🗓️ Personalizado' }
+                ].map(period => (
+                  <Badge
+                    key={period.value}
+                    variant={demandPeriod === period.value ? 'default' : 'outline'}
+                    className={`cursor-pointer px-3 py-2 transition-all ${
+                      demandPeriod === period.value
+                        ? 'bg-orange-600 text-white hover:bg-orange-700'
+                        : 'hover:bg-orange-100 dark:hover:bg-orange-950'
+                    }`}
+                    onClick={() => setDemandPeriod(period.value)}
+                  >
+                    {period.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Date Pickers para período custom */}
+            {demandPeriod === 'custom' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Data Início</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {demandStartDate ? format(demandStartDate, 'dd/MM/yyyy') : 'Selecione'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={demandStartDate}
+                        onSelect={setDemandStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Data Fim</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {demandEndDate ? format(demandEndDate, 'dd/MM/yyyy') : 'Selecione'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={demandEndDate}
+                        onSelect={setDemandEndDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            )}
+
+            {/* Formato de Envio */}
+            <div className="space-y-2">
+              <Label>Formato de Envio</Label>
+              <div className="flex gap-3">
+                <Badge
+                  variant={demandFormat === 'whatsapp' ? 'default' : 'outline'}
+                  className={`cursor-pointer px-4 py-2 transition-all ${
+                    demandFormat === 'whatsapp'
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'hover:bg-green-100 dark:hover:bg-green-950'
+                  }`}
+                  onClick={() => setDemandFormat('whatsapp')}
+                >
+                  📱 WhatsApp
+                </Badge>
+                <Badge
+                  variant={demandFormat === 'email' ? 'default' : 'outline'}
+                  className={`cursor-pointer px-4 py-2 transition-all ${
+                    demandFormat === 'email'
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'hover:bg-blue-100 dark:hover:bg-blue-950'
+                  }`}
+                  onClick={() => setDemandFormat('email')}
+                >
+                  📧 Email
+                </Badge>
+              </div>
+            </div>
+
+            {/* Diretores que receberão */}
+            <div className="space-y-2">
+              <Label>Diretores que Receberão</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {directors.map(director => (
+                  <div
+                    key={director.id}
+                    className="flex items-center gap-2 p-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
+                  >
+                    <Checkbox
+                      id={`demand-director-${director.id}`}
+                      checked={demandSelectedDirectors.includes(director.id)}
+                      onCheckedChange={() => handleDemandDirectorToggle(director.id)}
+                    />
+                    <Label
+                      htmlFor={`demand-director-${director.id}`}
+                      className="flex-1 cursor-pointer font-medium text-sm"
+                    >
+                      {director.nome}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Botão de Gerar */}
+            <Button
+              onClick={handleGenerateReport}
+              disabled={generatingReport || demandSelectedDirectors.length === 0}
+              className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 text-white rounded-lg h-12"
+            >
+              {generatingReport ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Gerando Relatório...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  🚀 Gerar e Enviar Relatório Agora
+                </>
+              )}
+            </Button>
           </motion.div>
         </div>
 
