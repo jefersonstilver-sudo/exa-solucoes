@@ -22,7 +22,7 @@ serve(async (req) => {
 
     console.log('[generate-ai-report] Generating report for period:', startDate, 'to', endDate, 'agent:', agentKey, 'type:', contactType);
 
-    // Buscar conversas do período com filtros opcionais
+    // Buscar conversas que tiveram ATIVIDADE no período (não necessariamente criadas no período)
     let query = supabase
       .from('conversations')
       .select(`
@@ -46,9 +46,9 @@ serve(async (req) => {
           sentiment
         )
       `)
-      .gte('created_at', startDate)
-      .lte('created_at', endDate)
-      .order('created_at', { ascending: false });
+      .gte('last_message_at', startDate)
+      .lte('last_message_at', endDate)
+      .order('last_message_at', { ascending: false });
     
     // Aplicar filtro de agente se fornecido
     if (agentKey) {
@@ -67,15 +67,30 @@ serve(async (req) => {
       throw convError;
     }
 
-    console.log(`[generate-ai-report] Found ${conversations?.length || 0} conversations`);
+    console.log(`[generate-ai-report] Found ${conversations?.length || 0} conversations with activity in period`);
 
-    // Preparar dados para análise da IA
-    const conversationSummaries = conversations?.map(conv => ({
+    // FILTRAR MENSAGENS PELO PERÍODO (não todas as mensagens da conversa)
+    const filteredConversations = conversations?.map(conv => {
+      const filteredMessages = conv.messages?.filter((msg: any) => {
+        const msgDate = new Date(msg.created_at);
+        return msgDate >= new Date(startDate) && msgDate <= new Date(endDate);
+      }) || [];
+      
+      return {
+        ...conv,
+        messages: filteredMessages
+      };
+    }).filter(conv => conv.messages.length > 0) || []; // Remover conversas sem mensagens no período
+
+    console.log(`[generate-ai-report] After filtering messages: ${filteredConversations.length} conversations with messages in period`);
+
+    // Preparar dados para análise da IA (COM MENSAGENS FILTRADAS)
+    const conversationSummaries = filteredConversations.map(conv => ({
       id: conv.id,
       phone: conv.contact_phone,
       agent: conv.agent_key,
       contact: conv.contact_name,
-      messageCount: conv.messages?.length || 0,
+      messageCount: conv.messages.length,
       awaitingResponse: conv.awaiting_response,
       sentiment: conv.sentiment,
       leadScore: conv.lead_score,
@@ -84,12 +99,20 @@ serve(async (req) => {
       contactType: conv.contact_type,
       lastMessage: conv.last_message_at,
       createdAt: conv.created_at,
-    })) || [];
+    }));
 
-    const totalMessages = conversations?.reduce((sum, conv) => 
-      sum + (conv.messages?.length || 0), 0) || 0;
+    const totalMessages = filteredConversations.reduce((sum, conv) => 
+      sum + conv.messages.length, 0);
+    
+    const sentMessages = filteredConversations.reduce((sum, conv) => 
+      sum + conv.messages.filter((m: any) => m.direction === 'outbound' || m.direction === 'sent').length, 0);
+    
+    const receivedMessages = filteredConversations.reduce((sum, conv) => 
+      sum + conv.messages.filter((m: any) => m.direction === 'inbound' || m.direction === 'received').length, 0);
 
-    // Calcular métricas detalhadas para mensagens por hora e período
+    console.log(`[generate-ai-report] Stats: ${filteredConversations.length} conversations, ${totalMessages} messages (${sentMessages} sent, ${receivedMessages} received)`);
+
+    // Calcular métricas detalhadas para mensagens por hora e período (COM MENSAGENS FILTRADAS)
     const messagesByHour: Record<number, number> = {};
     const messagesByPeriod = {
       manha: { sent: 0, received: 0, contacts: new Set(), avgResponse: [] },
@@ -97,8 +120,8 @@ serve(async (req) => {
       noite: { sent: 0, received: 0, contacts: new Set(), avgResponse: [] }
     };
 
-    conversations?.forEach(conv => {
-      conv.messages?.forEach((msg: any) => {
+    filteredConversations.forEach(conv => {
+      conv.messages.forEach((msg: any) => {
         const msgDate = new Date(msg.created_at);
         const hour = msgDate.getHours();
         messagesByHour[hour] = (messagesByHour[hour] || 0) + 1;
@@ -109,9 +132,9 @@ serve(async (req) => {
         else if (hour >= 12 && hour < 18) period = 'tarde';
         else period = 'noite';
 
-        if (msg.direction === 'sent') {
+        if (msg.direction === 'outbound' || msg.direction === 'sent') {
           messagesByPeriod[period].sent++;
-        } else {
+        } else if (msg.direction === 'inbound' || msg.direction === 'received') {
           messagesByPeriod[period].received++;
         }
         messagesByPeriod[period].contacts.add(conv.contact_phone);
@@ -135,10 +158,14 @@ Para contatos classificados como 'unknown' ou sem classificação, analise o con
 - Se é morador comum → "Morador"
 - Se é equipe interna → "Equipe Exa"
 
-📊 DADOS DO PERÍODO:
-- Total de conversas: ${conversations?.length || 0}
-- Total de mensagens: ${totalMessages}
+📊 DADOS DO PERÍODO (FILTRADOS CORRETAMENTE):
+- Total de conversas com atividade no período: ${filteredConversations.length}
+- Total de mensagens DO PERÍODO: ${totalMessages}
+- Mensagens enviadas: ${sentMessages}
+- Mensagens recebidas: ${receivedMessages}
 - Período: ${new Date(startDate).toLocaleDateString('pt-BR')} até ${new Date(endDate).toLocaleDateString('pt-BR')}
+- Agente filtrado: ${agentKey || 'Todos'}
+- Tipo de contato filtrado: ${contactType || 'Todos'}
 - Mensagens por hora: ${JSON.stringify(messagesByHour)}
 - Distribuição por período: ${JSON.stringify({
   manha: { sent: messagesByPeriod.manha.sent, received: messagesByPeriod.manha.received, contacts: messagesByPeriod.manha.contacts.size },
@@ -163,13 +190,13 @@ Analise PROFUNDAMENTE os dados e retorne um JSON com a estrutura EXATA abaixo. S
   },
 
   "keyMetrics": {
-    "totalContacts": ${conversations?.length || 0},
+    "totalContacts": ${filteredConversations.length},
     "newConversations": 0,
     "resumedConversations": 0,
     "finishedConversations": 0,
-    "totalSent": 0,
-    "totalReceived": 0,
-    "avgPerConversation": 0,
+    "totalSent": ${sentMessages},
+    "totalReceived": ${receivedMessages},
+    "avgPerConversation": ${filteredConversations.length > 0 ? (totalMessages / filteredConversations.length).toFixed(1) : 0},
     "proportion": "X:X.XX",
     "avgResponseTime": "Xmin XXs",
     "fastestResponse": "XXs",
