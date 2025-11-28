@@ -363,20 +363,23 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
               </div>
 
               <div className="space-y-2">
-                <Label>Horário</Label>
+                <Label>Horário (com minutos)</Label>
                 <Select value={time} onValueChange={setTime}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({
-                    length: 24
-                  }, (_, i) => {
-                    const hour = i.toString().padStart(2, '0');
-                    return <SelectItem key={hour} value={`${hour}:00`}>
-                          {hour}:00
-                        </SelectItem>;
-                  })}
+                  <SelectContent className="max-h-[300px]">
+                    {Array.from({ length: 24 * 4 }, (_, i) => {
+                      const totalMinutes = i * 15;
+                      const hour = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
+                      const minute = (totalMinutes % 60).toString().padStart(2, '0');
+                      const timeValue = `${hour}:${minute}`;
+                      return (
+                        <SelectItem key={timeValue} value={timeValue}>
+                          {timeValue}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
