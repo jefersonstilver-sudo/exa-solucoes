@@ -12,7 +12,8 @@ const corsHeaders = {
 
 interface ConversationRecord {
   id: string;
-  phone_number: string;
+  contact_phone: string;
+  contact_name: string;
   agent_key: string;
   status: string;
   created_at: string;
@@ -252,7 +253,8 @@ Deno.serve(async (req) => {
       .map(([convId, count]) => {
         const conv = conversations?.find(c => c.id === convId);
         return {
-          phone: conv?.contact_phone || conv?.phone_number || 'Desconhecido',
+          name: conv?.contact_name || 'Sem nome',
+          phone: conv?.contact_phone || 'Desconhecido',
           total_msgs: count,
           agent: conv?.agent_key || 'N/A',
           last_activity: conv?.last_message_at || ''
@@ -340,7 +342,8 @@ FORNEÇA RESPOSTA EM JSON EXATAMENTE NESTE FORMATO:
     // ===== LISTA COMPLETA DE CONVERSAS =====
     const conversas_lista = conversations?.map((c: ConversationRecord) => ({
       id: c.id,
-      phone_number: c.phone_number,
+      contact_name: c.contact_name,
+      phone_number: c.contact_phone,
       agent_key: c.agent_key,
       status: c.status,
       created_at: c.created_at,
