@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   User, Mail, Phone, FileText, MapPin, ShoppingCart, 
   Calendar, Clock, CreditCard, Building, Target, TrendingUp, 
-  Search, MousePointer, Activity
+  Search, MousePointer, Activity, MessageCircle, Sparkles, UserCircle as UserCircleIcon, Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -13,6 +13,8 @@ import { formatCurrency } from '@/utils/formatters';
 import { PhoneWithActions } from './PhoneWithActions';
 import { useEffect, useState } from 'react';
 import { getUserBehaviorSummary, formatTimeSpent, UserBehaviorSummary } from '@/services/behaviorTrackingService';
+import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 interface ClientTrackingModalProps {
   isOpen: boolean;
@@ -40,6 +42,10 @@ interface ClientTrackingModalProps {
 export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTrackingModalProps) {
   const [behaviorData, setBehaviorData] = useState<UserBehaviorSummary | null>(null);
   const [isLoadingBehavior, setIsLoadingBehavior] = useState(false);
+  const [agentConversations, setAgentConversations] = useState<any[]>([]);
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [previousOrders, setPreviousOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
   
   const createdDate = new Date(orderData.created_at);
   const timeElapsed = Math.floor((Date.now() - createdDate.getTime()) / (1000 * 60 * 60));
@@ -59,6 +65,92 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
         });
     }
   }, [isOpen, orderData.client_id]);
+
+  // Buscar conversas com agentes quando o modal abrir
+  useEffect(() => {
+    if (isOpen && orderData.client_phone) {
+      fetchClientConversations(orderData.client_phone);
+    }
+  }, [isOpen, orderData.client_phone]);
+
+  // Buscar pedidos anteriores quando o modal abrir
+  useEffect(() => {
+    if (isOpen && orderData.client_id) {
+      fetchPreviousOrders(orderData.client_id);
+    }
+  }, [isOpen, orderData.client_id]);
+
+  const fetchClientConversations = async (phone: string) => {
+    setLoadingConversations(true);
+    try {
+      // Normalizar telefone para busca (últimos 9 dígitos)
+      const cleanPhone = phone.replace(/\D/g, '');
+      const phoneSuffix = cleanPhone.slice(-9);
+      
+      // Buscar conversas onde contact_phone contém o número
+      const { data: conversations, error } = await supabase
+        .from('conversations')
+        .select(`
+          id,
+          agent_key,
+          contact_name,
+          contact_phone,
+          first_message_at,
+          last_message_at,
+          status,
+          lead_score,
+          sentiment,
+          is_hot_lead,
+          escalated_to_eduardo
+        `)
+        .ilike('contact_phone', `%${phoneSuffix}%`)
+        .order('last_message_at', { ascending: false })
+        .limit(10);
+      
+      if (!error && conversations) {
+        // Para cada conversa, buscar últimas 5 mensagens
+        const conversationsWithMessages = await Promise.all(
+          conversations.map(async (conv) => {
+            const { data: messages } = await supabase
+              .from('messages')
+              .select('body, from_role, created_at, agent_key')
+              .eq('conversation_id', conv.id)
+              .order('created_at', { ascending: false })
+              .limit(5);
+            
+            return { ...conv, recent_messages: messages || [] };
+          })
+        );
+        
+        setAgentConversations(conversationsWithMessages);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar conversas:', error);
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
+
+  const fetchPreviousOrders = async (clientId: string) => {
+    setLoadingOrders(true);
+    try {
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select('id, valor_total, status, created_at, plano_meses')
+        .eq('client_id', clientId)
+        .neq('id', orderData.id) // Excluir pedido atual
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (!error && data) {
+        setPreviousOrders(data);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar pedidos anteriores:', error);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -132,6 +224,126 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
             </section>
 
             <Separator />
+
+            {/* Conversas com Agentes Sofia/Eduardo */}
+            <section>
+              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-pink-600" />
+                Conversas com Agentes
+                {agentConversations.length > 0 && (
+                  <Badge variant="secondary">{agentConversations.length}</Badge>
+                )}
+              </h3>
+              
+              {loadingConversations ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : agentConversations.length === 0 ? (
+                <div className="p-4 bg-muted/50 rounded-lg text-center text-muted-foreground text-sm">
+                  Nenhuma conversa encontrada com os agentes
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {agentConversations.map((conv) => (
+                    <div key={conv.id} className={cn(
+                      "p-4 rounded-lg border",
+                      conv.agent_key === 'sofia' ? 'bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-900' : 
+                      'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900'
+                    )}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {conv.agent_key === 'sofia' ? (
+                            <Sparkles className="h-4 w-4 text-pink-600" />
+                          ) : (
+                            <UserCircleIcon className="h-4 w-4 text-green-600" />
+                          )}
+                          <span className="font-medium">
+                            {conv.agent_key === 'sofia' ? 'Sofia (IA)' : 'Eduardo (Humano)'}
+                          </span>
+                          {conv.is_hot_lead && (
+                            <Badge variant="destructive" className="text-xs">🔥 Hot Lead</Badge>
+                          )}
+                          {conv.escalated_to_eduardo && (
+                            <Badge variant="outline" className="text-xs">↗️ Escalado</Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {conv.last_message_at && format(new Date(conv.last_message_at), 'dd/MM HH:mm', { locale: ptBR })}
+                        </span>
+                      </div>
+                      
+                      {conv.lead_score !== null && (
+                        <div className="mb-2">
+                          <Badge variant="outline" className="text-xs">
+                            Score: {conv.lead_score}/100
+                          </Badge>
+                          {conv.sentiment && (
+                            <Badge variant="outline" className="text-xs ml-1">
+                              {conv.sentiment === 'positive' ? '😊' : conv.sentiment === 'negative' ? '😔' : '😐'} {conv.sentiment}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Últimas mensagens */}
+                      {conv.recent_messages?.slice(0, 3).map((msg: any, idx: number) => (
+                        <div key={idx} className={cn(
+                          "text-xs p-2 rounded mt-1",
+                          msg.from_role === 'user' ? 'bg-white/50 dark:bg-background/30' : 'bg-muted/30'
+                        )}>
+                          <span className="font-medium">
+                            {msg.from_role === 'user' ? '👤 Cliente: ' : '🤖 Agente: '}
+                          </span>
+                          <span className="line-clamp-2">{msg.body}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <Separator />
+
+            {/* Pedidos Anteriores */}
+            {(loadingOrders || previousOrders.length > 0) && (
+              <>
+                <section>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5 text-emerald-600" />
+                    Pedidos Anteriores
+                    {previousOrders.length > 0 && (
+                      <Badge variant="secondary">{previousOrders.length}</Badge>
+                    )}
+                  </h3>
+                  {loadingOrders ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {previousOrders.map((order) => (
+                        <div key={order.id} className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded border border-emerald-200 dark:border-emerald-900">
+                          <div>
+                            <p className="font-medium text-sm">Pedido #{order.id.slice(0, 8)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                              {order.plano_meses && ` • ${order.plano_meses} meses`}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-emerald-600">{formatCurrency(order.valor_total)}</p>
+                            <Badge variant="outline" className="text-xs mt-1">{order.status}</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+                <Separator />
+              </>
+            )}
 
             {/* Informações do Pedido/Tentativa */}
             <section>
