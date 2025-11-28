@@ -366,9 +366,9 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
                 <Label>Horário (com minutos)</Label>
                 <Select value={time} onValueChange={setTime}>
                   <SelectTrigger className="bg-white dark:bg-gray-900">
-                    <SelectValue />
+                    <SelectValue placeholder="Selecione o horário" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
+                  <SelectContent className="max-h-[300px] z-[100] bg-white dark:bg-gray-950 pointer-events-auto">
                     {Array.from({ length: 24 * 4 }, (_, i) => {
                       const totalMinutes = i * 15;
                       const hour = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
