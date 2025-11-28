@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Director {
   id: string;
+  user_id: string | null;
   nome: string;
   telefone: string;
   departamento: string | null;
