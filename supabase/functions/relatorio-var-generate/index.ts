@@ -29,7 +29,9 @@ interface MessageRecord {
   direction: string;
   response_time: string | null;
   created_at: string;
-  content: string | null;
+  body: string | null;
+  has_audio: boolean | null;
+  has_image: boolean | null;
 }
 
 // Função para normalizar tipos de contato
@@ -108,7 +110,7 @@ Deno.serve(async (req) => {
     if (conversationIds.length > 0) {
       const { data: messagesData, error: msgError } = await supabase
         .from('messages')
-        .select('id, conversation_id, direction, response_time, created_at, content')
+        .select('id, conversation_id, direction, response_time, created_at, body, has_audio, has_image')
         .in('conversation_id', conversationIds)
         .gte('created_at', start_date)
         .lte('created_at', end_date);
@@ -317,7 +319,12 @@ Deno.serve(async (req) => {
         const mensagensConteudo = messages
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 50)
-          .map(m => `[${m.direction === 'outbound' ? 'ENV' : 'REC'}] ${m.content?.substring(0, 100) || '(mídia)'}`)
+          .map(m => {
+            let texto = m.body?.substring(0, 100) || '';
+            if (m.has_audio) texto = '🎤 ' + texto;
+            if (m.has_image) texto = '📷 ' + texto;
+            return `[${m.direction === 'outbound' ? 'ENV' : 'REC'}] ${texto || '(mídia)'}`;
+          })
           .join('\n');
 
         const aiPrompt = `
