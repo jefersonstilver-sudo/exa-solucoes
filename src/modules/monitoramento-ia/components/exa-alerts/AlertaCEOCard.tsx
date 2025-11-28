@@ -69,7 +69,7 @@ export const AlertaCEOCard = () => {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <CardContent className="space-y-4 pt-0">
+            <CardContent className="space-y-4 pt-0" onClick={(e) => e.stopPropagation()}>
               {/* Template Preview */}
               <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl p-4 border-2 border-dashed border-[#9C1E1E]/20">
                 <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
