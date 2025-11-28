@@ -176,80 +176,110 @@ export default function CRMClients() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">CRM Clientes</h1>
-          <p className="text-muted-foreground">
-            Gestão completa de clientes com análise comportamental por IA
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      {/* Sticky Header Compacto */}
+      <div className="sticky top-0 z-20 backdrop-blur-xl bg-background/90 border-b border-border/30 shadow-sm">
+        <div className="max-w-[1600px] mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Title */}
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-1 bg-gradient-to-b from-[#9C1E1E] to-[#DC2626] rounded-full" />
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] bg-clip-text text-transparent">
+                  CRM Clientes
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  Gestão com análise comportamental por IA
+                </p>
+              </div>
+            </div>
+            
+            {/* Actions */}
+            <Button 
+              onClick={fetchClients} 
+              variant="ghost"
+              size="sm"
+              className="h-9 hover:bg-[#9C1E1E]/10 hover:text-[#9C1E1E] transition-all duration-200"
+            >
+              <Loader2 className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
         </div>
-        <Button onClick={fetchClients} variant="outline">
-          Atualizar
-        </Button>
       </div>
 
-      {/* Estatísticas Gerais */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <Users className="h-8 w-8 text-primary" />
-            <div>
-              <p className="text-sm text-muted-foreground">Total Clientes</p>
-              <p className="text-2xl font-bold">{stats.total}</p>
+      {/* Content Container */}
+      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
+        {/* Estatísticas Compactas com Sombras Apple */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-background/60 backdrop-blur-sm border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.08)] transition-all duration-300">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-10 h-10 rounded-full bg-[#9C1E1E] flex items-center justify-center">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-foreground mb-1">{stats.total}</p>
+              <p className="text-xs text-muted-foreground font-medium">Total Clientes</p>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="h-8 w-8 text-green-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Compradores</p>
-              <p className="text-2xl font-bold">{stats.buyers}</p>
+          <Card className="bg-background/60 backdrop-blur-sm border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.08)] transition-all duration-300">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-10 h-10 rounded-full bg-[#9C1E1E] flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-foreground mb-1">{stats.buyers}</p>
+              <p className="text-xs text-muted-foreground font-medium">Compradores</p>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="h-8 w-8 text-orange-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Tentativas</p>
-              <p className="text-2xl font-bold">{stats.attempts}</p>
+          <Card className="bg-background/60 backdrop-blur-sm border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.08)] transition-all duration-300">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-10 h-10 rounded-full bg-[#9C1E1E] flex items-center justify-center">
+                  <AlertCircle className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-foreground mb-1">{stats.attempts}</p>
+              <p className="text-xs text-muted-foreground font-medium">Tentativas</p>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <DollarSign className="h-8 w-8 text-blue-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Receita Total</p>
-              <p className="text-2xl font-bold">
+          <Card className="bg-background/60 backdrop-blur-sm border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.08)] transition-all duration-300">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-10 h-10 rounded-full bg-[#9C1E1E] flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-foreground mb-1">
                 {new Intl.NumberFormat('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',
+                  notation: 'compact',
+                  compactDisplay: 'short'
                 }).format(stats.totalRevenue)}
               </p>
+              <p className="text-xs text-muted-foreground font-medium">Receita Total</p>
             </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+        </div>
 
-      {/* Filtros */}
-      <Card className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome, email, CPF ou telefone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+        {/* Filtros */}
+        <Card className="bg-background/60 backdrop-blur-sm border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] p-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome, email, CPF ou telefone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-10 bg-background border-border/50 focus:border-[#9C1E1E]/50 focus:ring-[#9C1E1E]/20"
+              />
+            </div>
 
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger>
@@ -297,19 +327,19 @@ export default function CRMClients() {
         </div>
       </Card>
 
-      {/* Lista de Clientes */}
-      <div className="space-y-3">
-        {filteredClients.length === 0 ? (
-          <Card className="p-12 text-center">
-            <p className="text-muted-foreground">Nenhum cliente encontrado</p>
-          </Card>
-        ) : (
-          filteredClients.map((client) => (
-            <Card
-              key={client.id}
-              className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => setSelectedClient(client.id)}
-            >
+        {/* Lista de Clientes */}
+        <div className="space-y-3">
+          {filteredClients.length === 0 ? (
+            <Card className="bg-background/60 backdrop-blur-sm border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] p-12 text-center">
+              <p className="text-muted-foreground">Nenhum cliente encontrado</p>
+            </Card>
+          ) : (
+            filteredClients.map((client) => (
+              <Card
+                key={client.id}
+                className="bg-background/60 backdrop-blur-sm border-border/50 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.08)] p-6 transition-all duration-300 cursor-pointer"
+                onClick={() => setSelectedClient(client.id)}
+              >
               <div className="flex items-start justify-between gap-6">
                 {/* Informações Principais - Esquerda */}
                 <div className="flex items-start gap-4 flex-1">
@@ -425,6 +455,7 @@ export default function CRMClients() {
           onClose={() => setSelectedClient(null)}
         />
       )}
+      </div>
     </div>
   );
 }
