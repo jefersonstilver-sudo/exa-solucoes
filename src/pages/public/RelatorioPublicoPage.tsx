@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, AlertTriangle, ChevronRight, X, Maximize2, FileDown, Lock, Clock } from 'lucide-react';
+import { Download, AlertTriangle, ChevronRight, X, Maximize2, FileDown, Lock, Clock, TrendingUp, Users, MessageSquare, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,6 +57,23 @@ interface ReportData {
   total_mensagens: number;
   gerado_em: string;
   versao_relatorio: string;
+  
+  // Novos campos
+  distribuicao_periodo?: { manha: number; tarde: number; noite: number };
+  mensagens_enviadas?: number;
+  mensagens_recebidas?: number;
+  comparativo_anterior?: {
+    contatos: { anterior: number; atual: number };
+    mensagens: { anterior: number; atual: number };
+    tma: { anterior: number; atual: number };
+    hot_leads: { anterior: number; atual: number };
+  };
+  conversas_mais_ativas?: Array<{
+    phone: string;
+    total_msgs: number;
+    agent: string;
+    last_activity: string;
+  }>;
 }
 
 const EXA_LOGO = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/Logo%20Branca%20-%20Exa.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvTG9nbyBCcmFuY2EgLSBFeGEucG5nIiwiaWF0IjoxNzY0MjcxNTgwLCJleHAiOjMxNTUzMzI3MzU1ODB9.Re62vBPxmFdoOTCd6maWctMCukPMPv0AEVqKdZubahU";
@@ -66,8 +83,11 @@ export const RelatorioPublicoPage = () => {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [advancedModalOpen, setAdvancedModalOpen] = useState(false);
+  const [criticalDayModalOpen, setCriticalDayModalOpen] = useState(false);
   const [iaModalOpen, setIaModalOpen] = useState(false);
   const [convosModalOpen, setConvosModalOpen] = useState(false);
+  const [firstInteractionsModalOpen, setFirstInteractionsModalOpen] = useState(false);
+  const [lastInteractionsModalOpen, setLastInteractionsModalOpen] = useState(false);
   const [excludeWeekend, setExcludeWeekend] = useState(true);
   const [chartType, setChartType] = useState<'line' | 'area' | 'bar'>('area');
   
@@ -221,9 +241,12 @@ export const RelatorioPublicoPage = () => {
   };
 
   const getDistributionByPeriod = () => {
-    // Simular distribuição manhã/tarde/noite baseado nos dados
-    const manha = Math.round(reportData?.total_conversas * 0.28 || 0);
-    const tarde = Math.round(reportData?.total_conversas * 0.52 || 0);
+    if (reportData?.distribuicao_periodo) {
+      return reportData.distribuicao_periodo;
+    }
+    // Fallback para dados antigos
+    const manha = Math.round((reportData?.total_conversas || 0) * 0.28);
+    const tarde = Math.round((reportData?.total_conversas || 0) * 0.52);
     const noite = (reportData?.total_conversas || 0) - manha - tarde;
     return { manha, tarde, noite };
   };
@@ -249,6 +272,27 @@ export const RelatorioPublicoPage = () => {
         msgs: 8, // Simulado
         nota: 'Follow-up agendado'
       }));
+  };
+
+  const getCriticalDay = () => {
+    if (!reportData) return null;
+    const filtered = filterWeekendData(reportData.evolucao_30_dias);
+    const sorted = [...filtered].sort((a, b) => b.total - a.total);
+    return sorted[0];
+  };
+
+  const getFirstInteractions = () => {
+    if (!reportData?.conversas_lista) return [];
+    return [...reportData.conversas_lista]
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      .slice(0, 10);
+  };
+
+  const getLastInteractions = () => {
+    if (!reportData?.conversas_lista) return [];
+    return [...reportData.conversas_lista]
+      .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
+      .slice(0, 10);
   };
 
   // Tela de Link Expirado
@@ -374,6 +418,7 @@ export const RelatorioPublicoPage = () => {
   const scoreOp = getScoreOperacional();
   const hotLeads = getHotLeadsData();
   const filteredEvolution = filterWeekendData(reportData.evolucao_30_dias);
+  const criticalDay = getCriticalDay();
 
   // Chart Options
   const volumeChartOptions: ApexOptions = {
@@ -449,6 +494,80 @@ export const RelatorioPublicoPage = () => {
     }
   };
 
+  // Gráfico Comparativo com Período Anterior
+  const comparativoChartOptions: ApexOptions = {
+    chart: { type: 'bar', height: 300, toolbar: { show: false } },
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: '55%',
+        dataLabels: { position: 'top' }
+      }
+    },
+    colors: ['#94a3b8', '#7D1818'],
+    dataLabels: {
+      enabled: true,
+      offsetY: -20,
+      style: { fontSize: '10px', colors: ['#334155'] }
+    },
+    xaxis: {
+      categories: ['Contatos', 'Mensagens', 'Hot Leads'],
+    },
+    legend: { position: 'bottom' },
+    grid: { borderColor: 'hsl(var(--border))' }
+  };
+
+  const comparativoSeries = reportData.comparativo_anterior ? [
+    {
+      name: 'Período Anterior',
+      data: [
+        reportData.comparativo_anterior.contatos.anterior,
+        reportData.comparativo_anterior.mensagens.anterior,
+        reportData.comparativo_anterior.hot_leads.anterior
+      ]
+    },
+    {
+      name: 'Período Atual',
+      data: [
+        reportData.comparativo_anterior.contatos.atual,
+        reportData.comparativo_anterior.mensagens.atual,
+        reportData.comparativo_anterior.hot_leads.atual
+      ]
+    }
+  ] : [];
+
+  // Gráfico Mensagens Enviadas x Recebidas
+  const mensagensChartOptions: ApexOptions = {
+    chart: { type: 'bar', height: 250, toolbar: { show: false } },
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        dataLabels: { position: 'top' }
+      }
+    },
+    colors: ['#22c55e', '#3b82f6'],
+    dataLabels: {
+      enabled: true,
+      style: { fontSize: '12px', colors: ['#fff'] }
+    },
+    xaxis: {
+      categories: ['Mensagens'],
+    },
+    legend: { position: 'bottom' },
+    grid: { borderColor: 'hsl(var(--border))' }
+  };
+
+  const mensagensSeries = [
+    {
+      name: 'Enviadas',
+      data: [reportData.mensagens_enviadas || 0]
+    },
+    {
+      name: 'Recebidas',
+      data: [reportData.mensagens_recebidas || 0]
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-[var(--bg)]">
       <div className="max-w-[1400px] mx-auto p-4" id="report-content">
@@ -477,6 +596,20 @@ export const RelatorioPublicoPage = () => {
           </div>
 
           <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={() => setCriticalDayModalOpen(true)}
+              className="bg-yellow-500 text-black hover:bg-yellow-400 font-semibold"
+            >
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              DIA CRÍTICO (Conselho)
+            </Button>
+            <Button
+              onClick={() => setAdvancedModalOpen(true)}
+              className="bg-white text-[#7D1818] hover:bg-white/90"
+            >
+              <Maximize2 className="w-4 h-4 mr-2" />
+              Visual Avançado
+            </Button>
             <Button
               onClick={() => exportHybridPDF('resumido')}
               className="bg-white text-[#7D1818] hover:bg-white/90"
@@ -528,6 +661,27 @@ export const RelatorioPublicoPage = () => {
 
               <div className="mt-4 p-3 bg-muted/30 rounded-lg">
                 <p className="text-sm text-foreground">{reportData.ia_resumo_executivo}</p>
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <Button
+                  onClick={() => setFirstInteractionsModalOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  <Eye className="w-3 h-3 mr-1" />
+                  Primeiras interações
+                </Button>
+                <Button
+                  onClick={() => setLastInteractionsModalOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  <Eye className="w-3 h-3 mr-1" />
+                  Últimas interações
+                </Button>
               </div>
             </motion.div>
 
@@ -605,6 +759,70 @@ export const RelatorioPublicoPage = () => {
                 Passe o mouse para ver dia da semana. Clique para abrir modal avançado.
               </p>
             </motion.div>
+
+            {/* Comparativo com Período Anterior */}
+            {reportData.comparativo_anterior && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+                className="bg-card rounded-xl p-4 border border-border shadow-sm"
+              >
+                <h3 className="font-semibold text-foreground mb-1">Comparativo com período anterior</h3>
+                <small className="text-muted-foreground text-xs">— evolução das métricas</small>
+                
+                <ClientOnly>
+                  <ReactApexChart
+                    options={comparativoChartOptions}
+                    series={comparativoSeries}
+                    type="bar"
+                    height={300}
+                  />
+                </ClientOnly>
+              </motion.div>
+            )}
+
+            {/* Conversas Mais Ativas */}
+            {reportData.conversas_mais_ativas && reportData.conversas_mais_ativas.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.38 }}
+                className="bg-card rounded-xl p-4 border border-border shadow-sm"
+              >
+                <h3 className="font-semibold text-foreground mb-1">Conversas mais ativas</h3>
+                <small className="text-muted-foreground text-xs">— top 10 por volume de mensagens</small>
+                
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 px-2 font-semibold text-muted-foreground">#</th>
+                        <th className="text-left py-2 px-2 font-semibold text-muted-foreground">Contato</th>
+                        <th className="text-center py-2 px-2 font-semibold text-muted-foreground">Msgs</th>
+                        <th className="text-left py-2 px-2 font-semibold text-muted-foreground">Agente</th>
+                        <th className="text-left py-2 px-2 font-semibold text-muted-foreground">Última atividade</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reportData.conversas_mais_ativas.slice(0, 10).map((conv, i) => (
+                        <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                          <td className="py-2 px-2 text-muted-foreground">{i + 1}</td>
+                          <td className="py-2 px-2 font-medium text-foreground">{conv.phone}</td>
+                          <td className="py-2 px-2 text-center">
+                            <span className="inline-flex items-center justify-center w-8 h-8 bg-[#7D1818]/10 text-[#7D1818] rounded-full font-bold text-xs">
+                              {conv.total_msgs}
+                            </span>
+                          </td>
+                          <td className="py-2 px-2 text-muted-foreground">{conv.agent}</td>
+                          <td className="py-2 px-2 text-xs text-muted-foreground">{formatDate(conv.last_activity)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
 
             {/* IA Insights */}
             <motion.div
@@ -684,6 +902,28 @@ export const RelatorioPublicoPage = () => {
                 Score: <strong className="text-[#7D1818]">{scoreOp} / 100</strong>
               </p>
             </motion.div>
+
+            {/* Mensagens Enviadas x Recebidas */}
+            {reportData.mensagens_enviadas !== undefined && reportData.mensagens_recebidas !== undefined && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.65 }}
+                className="bg-card rounded-xl p-4 border border-border shadow-sm"
+              >
+                <h3 className="font-semibold text-foreground mb-1">Mensagens</h3>
+                <small className="text-muted-foreground text-xs">— enviadas x recebidas</small>
+                
+                <ClientOnly>
+                  <ReactApexChart
+                    options={mensagensChartOptions}
+                    series={mensagensSeries}
+                    type="bar"
+                    height={250}
+                  />
+                </ClientOnly>
+              </motion.div>
+            )}
 
             {/* Hot Leads */}
             {hotLeads.length > 0 && (
@@ -768,6 +1008,202 @@ export const RelatorioPublicoPage = () => {
                 ))}
               </ol>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Visual Avançado */}
+      <Dialog open={advancedModalOpen} onOpenChange={setAdvancedModalOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Visual Avançado — Análises Detalhadas</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Gráfico Volume */}
+              <div className="bg-muted/30 p-4 rounded-lg">
+                <h4 className="font-semibold text-sm mb-4">Volume de Contatos</h4>
+                <ClientOnly>
+                  <ReactApexChart
+                    options={volumeChartOptions}
+                    series={[{ name: 'Contatos', data: filteredEvolution.map(d => d.total) }]}
+                    type="area"
+                    height={300}
+                  />
+                </ClientOnly>
+              </div>
+
+              {/* Distribuição por Período */}
+              <div className="bg-muted/30 p-4 rounded-lg">
+                <h4 className="font-semibold text-sm mb-4">Distribuição por Período</h4>
+                <ClientOnly>
+                  <ReactApexChart
+                    options={donutChartOptions}
+                    series={donutChartOptions.series}
+                    type="donut"
+                    height={300}
+                  />
+                </ClientOnly>
+              </div>
+
+              {/* Comparativo */}
+              {reportData.comparativo_anterior && (
+                <div className="bg-muted/30 p-4 rounded-lg md:col-span-2">
+                  <h4 className="font-semibold text-sm mb-4">Comparativo com Período Anterior</h4>
+                  <ClientOnly>
+                    <ReactApexChart
+                      options={comparativoChartOptions}
+                      series={comparativoSeries}
+                      type="bar"
+                      height={300}
+                    />
+                  </ClientOnly>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg">
+              <input
+                type="checkbox"
+                checked={excludeWeekend}
+                onChange={(e) => setExcludeWeekend(e.target.checked)}
+                className="w-4 h-4"
+                id="exclude-weekend-advanced"
+              />
+              <label htmlFor="exclude-weekend-advanced" className="text-sm font-medium">
+                Excluir sábados e domingos dos gráficos
+              </label>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal DIA CRÍTICO */}
+      <Dialog open={criticalDayModalOpen} onOpenChange={setCriticalDayModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              DIA CRÍTICO — Análise Especial para Conselho
+            </DialogTitle>
+          </DialogHeader>
+          
+          {criticalDay && (
+            <div className="space-y-6 mt-4">
+              <div className="bg-yellow-50 dark:bg-yellow-950/20 border-2 border-yellow-500 p-4 rounded-lg">
+                <h3 className="text-lg font-bold text-foreground mb-2">
+                  {formatDate(criticalDay.data)} — {shortDay(criticalDay.data)}
+                </h3>
+                <p className="text-3xl font-extrabold text-yellow-600 dark:text-yellow-400">
+                  {criticalDay.total} contatos
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Dia com maior volume de atividade no período
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">% do Total</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {((criticalDay.total / (reportData.total_conversas || 1)) * 100).toFixed(1)}%
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Acima da Média</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    +{(criticalDay.total - kpis.avgPerDay).toFixed(0)} contatos
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">Recomendações do Conselho:</h4>
+                <ul className="space-y-2">
+                  <li className="flex gap-2 text-sm">
+                    <ChevronRight className="w-4 h-4 text-[#7D1818] flex-shrink-0 mt-0.5" />
+                    <span>Revisar alocação de recursos para dias com volume similar</span>
+                  </li>
+                  <li className="flex gap-2 text-sm">
+                    <ChevronRight className="w-4 h-4 text-[#7D1818] flex-shrink-0 mt-0.5" />
+                    <span>Analisar padrões de demanda que levaram ao pico</span>
+                  </li>
+                  <li className="flex gap-2 text-sm">
+                    <ChevronRight className="w-4 h-4 text-[#7D1818] flex-shrink-0 mt-0.5" />
+                    <span>Preparar equipe para eventos similares no futuro</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Primeiras Interações */}
+      <Dialog open={firstInteractionsModalOpen} onOpenChange={setFirstInteractionsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Primeiras Interações do Período</DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-2 font-semibold">Contato</th>
+                  <th className="text-left py-2 px-2 font-semibold">Agente</th>
+                  <th className="text-left py-2 px-2 font-semibold">Status</th>
+                  <th className="text-left py-2 px-2 font-semibold">Criado em</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getFirstInteractions().map((conv, i) => (
+                  <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                    <td className="py-2 px-2 font-medium">{conv.phone_number}</td>
+                    <td className="py-2 px-2 text-muted-foreground">{conv.agent_key}</td>
+                    <td className="py-2 px-2">
+                      <span className="px-2 py-1 bg-muted/50 rounded text-xs">{conv.status}</span>
+                    </td>
+                    <td className="py-2 px-2 text-xs text-muted-foreground">{formatDate(conv.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Últimas Interações */}
+      <Dialog open={lastInteractionsModalOpen} onOpenChange={setLastInteractionsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Últimas Interações do Período</DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-2 font-semibold">Contato</th>
+                  <th className="text-left py-2 px-2 font-semibold">Agente</th>
+                  <th className="text-left py-2 px-2 font-semibold">Status</th>
+                  <th className="text-left py-2 px-2 font-semibold">Última atividade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getLastInteractions().map((conv, i) => (
+                  <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                    <td className="py-2 px-2 font-medium">{conv.phone_number}</td>
+                    <td className="py-2 px-2 text-muted-foreground">{conv.agent_key}</td>
+                    <td className="py-2 px-2">
+                      <span className="px-2 py-1 bg-muted/50 rounded text-xs">{conv.status}</span>
+                    </td>
+                    <td className="py-2 px-2 text-xs text-muted-foreground">{formatDate(conv.last_message_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </DialogContent>
       </Dialog>
