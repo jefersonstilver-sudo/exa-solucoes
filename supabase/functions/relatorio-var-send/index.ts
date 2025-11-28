@@ -1,6 +1,7 @@
 // ============================================
 // EDGE FUNCTION: relatorio-var-send
 // Salva relatório VAR e envia via WhatsApp com link curto
+// Last updated: 2025-11-28T04:35:00Z - Force redeploy with skipSplit
 // ============================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';

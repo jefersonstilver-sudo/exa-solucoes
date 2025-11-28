@@ -1,3 +1,4 @@
+// Last updated: 2025-11-28T04:35:00Z - Force redeploy with skipSplit debug
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -17,6 +18,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { agentKey, phone, message, mediaUrl, skipSplit } = await req.json();
+
+    // 🔍 DEBUG: Log explícito do parâmetro skipSplit
+    console.log('[ZAPI-SEND] 🔍 DEBUG - skipSplit received:', skipSplit, 'typeof:', typeof skipSplit);
+    console.log('[ZAPI-SEND] 🔍 DEBUG - Full request body keys:', Object.keys(await req.clone().json()));
 
     if (!agentKey || !phone || !message) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
