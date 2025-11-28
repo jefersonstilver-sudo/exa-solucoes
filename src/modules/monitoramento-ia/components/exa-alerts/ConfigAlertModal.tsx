@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion } from 'framer-motion';
-import { Clock, MessageSquare, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, MessageSquare, Users, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 interface ConfigAlertModalProps {
@@ -155,8 +155,27 @@ export const ConfigAlertModal = ({
             </div>
 
             {/* Dias da Semana */}
-            
+            <div className="space-y-2">
+              <Label>Dias da Semana</Label>
+              <div className="flex flex-wrap gap-2">
+                {DAYS_OF_WEEK.map(day => (
+                  <Badge
+                    key={day.value}
+                    variant={selectedDays.includes(day.value) ? 'default' : 'outline'}
+                    className={`cursor-pointer px-4 py-2 transition-all ${
+                      selectedDays.includes(day.value)
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'hover:bg-blue-100 dark:hover:bg-blue-950'
+                    }`}
+                    onClick={() => handleDayToggle(day.value)}
+                  >
+                    {day.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
           </motion.div>
+
 
           <Separator />
 
