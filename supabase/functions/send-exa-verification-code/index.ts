@@ -1,0 +1,125 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { telefone, directorId } = await req.json();
+
+    if (!telefone) {
+      throw new Error('Telefone é obrigatório');
+    }
+
+    console.log('Generating verification code for:', telefone);
+
+    // Generate 6-digit code
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Save code to database with 5-minute expiration
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+    const { error: insertError } = await supabase
+      .from('exa_alerts_verification_codes')
+      .insert({
+        director_id: directorId || null,
+        telefone,
+        codigo,
+        expires_at: expiresAt.toISOString(),
+      });
+
+    if (insertError) {
+      console.error('Error saving verification code:', insertError);
+      throw insertError;
+    }
+
+    console.log('Verification code saved, now sending via Z-API...');
+
+    // Get Z-API config from agents table (assuming there's an EXA agent configured)
+    const { data: agentData, error: agentError } = await supabase
+      .from('agents')
+      .select('zapi_config')
+      .eq('key', 'exa-alerts')
+      .single();
+
+    if (agentError || !agentData?.zapi_config) {
+      console.error('Z-API configuration not found for EXA Alerts');
+      throw new Error('Configuração Z-API não encontrada');
+    }
+
+    const zapiConfig = agentData.zapi_config as {
+      instance_id?: string;
+      instance_token?: string;
+      client_token?: string;
+    };
+
+    const instanceId = zapiConfig.instance_id;
+    const clientToken = zapiConfig.client_token;
+
+    if (!instanceId || !clientToken) {
+      throw new Error('Z-API credentials missing');
+    }
+
+    // Format phone number (remove non-digits)
+    const cleanPhone = telefone.replace(/\D/g, '');
+
+    // Send WhatsApp message via Z-API
+    const zapiResponse = await fetch(
+      `https://api.z-api.io/instances/${instanceId}/token/${clientToken}/send-text`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: cleanPhone,
+          message: `🔐 *Código de Verificação EXA Alerts*\n\nSeu código de verificação é:\n\n*${codigo}*\n\nEste código expira em 5 minutos.\n\n⚠️ Não compartilhe este código com ninguém.`,
+        }),
+      }
+    );
+
+    if (!zapiResponse.ok) {
+      const errorData = await zapiResponse.text();
+      console.error('Z-API error:', errorData);
+      throw new Error('Erro ao enviar mensagem via WhatsApp');
+    }
+
+    console.log('Verification code sent successfully');
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'Código enviado com sucesso' 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
+    );
+
+  } catch (error) {
+    console.error('Error in send-exa-verification-code:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'Erro ao enviar código de verificação' 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400 
+      }
+    );
+  }
+});

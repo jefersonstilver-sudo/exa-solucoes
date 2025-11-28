@@ -3292,8 +3292,10 @@ export type Database = {
           nome: string
           pode_usar_ia: boolean | null
           telefone: string
+          telefone_verificado: boolean | null
           updated_at: string | null
           user_id: string | null
+          verificado_em: string | null
         }
         Insert: {
           ativo?: boolean | null
@@ -3304,8 +3306,10 @@ export type Database = {
           nome: string
           pode_usar_ia?: boolean | null
           telefone: string
+          telefone_verificado?: boolean | null
           updated_at?: string | null
           user_id?: string | null
+          verificado_em?: string | null
         }
         Update: {
           ativo?: boolean | null
@@ -3316,8 +3320,10 @@ export type Database = {
           nome?: string
           pode_usar_ia?: boolean | null
           telefone?: string
+          telefone_verificado?: boolean | null
           updated_at?: string | null
           user_id?: string | null
+          verificado_em?: string | null
         }
         Relationships: []
       }
@@ -3418,6 +3424,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      exa_alerts_verification_codes: {
+        Row: {
+          codigo: string
+          created_at: string | null
+          director_id: string | null
+          expires_at: string
+          id: string
+          telefone: string
+          verificado: boolean | null
+        }
+        Insert: {
+          codigo: string
+          created_at?: string | null
+          director_id?: string | null
+          expires_at: string
+          id?: string
+          telefone: string
+          verificado?: boolean | null
+        }
+        Update: {
+          codigo?: string
+          created_at?: string | null
+          director_id?: string | null
+          expires_at?: string
+          id?: string
+          telefone?: string
+          verificado?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exa_alerts_verification_codes_director_id_fkey"
+            columns: ["director_id"]
+            isOneToOne: false
+            referencedRelation: "exa_alerts_directors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       financial_access_logs: {
         Row: {

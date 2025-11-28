@@ -28,13 +28,13 @@ interface SuperAdmin {
 }
 
 interface AddDirectorDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   director?: Director | null;
+  onClose: () => void;
 }
 
-export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddDirectorDialogProps) => {
+export const AddDirectorDialog = ({ open, onOpenChange, director, onClose }: AddDirectorDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [loadingSuperAdmins, setLoadingSuperAdmins] = useState(false);
   const [superAdmins, setSuperAdmins] = useState<SuperAdmin[]>([]);
@@ -50,10 +50,10 @@ export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddD
 
   // Carregar super admins disponíveis
   useEffect(() => {
-    if (isOpen && !director) {
+    if (open && !director) {
       loadAvailableSuperAdmins();
     }
-  }, [isOpen, director]);
+  }, [open, director]);
 
   // Preencher dados ao editar
   useEffect(() => {
@@ -78,7 +78,7 @@ export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddD
         pode_usar_ia: false
       });
     }
-  }, [director, isOpen]);
+  }, [director, open]);
 
   const loadAvailableSuperAdmins = async () => {
     try {
@@ -193,7 +193,6 @@ export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddD
         toast.success('Diretor adicionado com sucesso!');
       }
 
-      onSuccess();
       onClose();
     } catch (error: any) {
       console.error('Error saving director:', error);
@@ -204,7 +203,7 @@ export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddD
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>

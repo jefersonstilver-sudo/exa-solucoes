@@ -8,10 +8,13 @@ interface Director {
   id: string;
   nome: string;
   telefone: string;
-  departamento: string | null;
+  departamento?: string | null;
   nivel_acesso: 'basico' | 'gerente' | 'admin';
   ativo: boolean;
   pode_usar_ia: boolean;
+  user_id: string | null;
+  telefone_verificado?: boolean;
+  verificado_em?: string | null;
 }
 
 interface DirectorCardProps {
@@ -22,13 +25,13 @@ interface DirectorCardProps {
 }
 
 export const DirectorCard = ({ director, onEdit, onDelete, onToggleStatus }: DirectorCardProps) => {
-  const nivelColors = {
-    basico: 'bg-gray-100 text-gray-700',
-    gerente: 'bg-blue-100 text-blue-700',
-    admin: 'bg-purple-100 text-purple-700'
+  const nivelColors: Record<string, string> = {
+    basico: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    gerente: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+    admin: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
   };
 
-  const nivelLabels = {
+  const nivelLabels: Record<string, string> = {
     basico: 'Básico',
     gerente: 'Gerente',
     admin: 'Admin'
@@ -78,15 +81,20 @@ export const DirectorCard = ({ director, onEdit, onDelete, onToggleStatus }: Dir
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <Phone className="w-4 h-4" />
             <span>{director.telefone}</span>
+            {director.telefone_verificado && (
+              <Badge variant="outline" className="ml-2 text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300">
+                ✓ Verificado
+              </Badge>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-gray-400" />
-            <Badge className={nivelColors[director.nivel_acesso]}>
-              {nivelLabels[director.nivel_acesso]}
+            <Badge className={nivelColors[director.nivel_acesso] || 'bg-gray-100 text-gray-700'}>
+              {nivelLabels[director.nivel_acesso] || director.nivel_acesso}
             </Badge>
           </div>
         </div>
