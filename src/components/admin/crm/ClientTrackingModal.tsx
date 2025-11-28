@@ -78,10 +78,10 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
 
   // Buscar conversas com agentes quando o modal abrir
   useEffect(() => {
-    if (isOpen && orderData.client_phone) {
-      fetchClientConversations(orderData.client_phone);
+    if (isOpen) {
+      fetchClientConversations(orderData.client_phone, orderData.client_name);
     }
-  }, [isOpen, orderData.client_phone]);
+  }, [isOpen, orderData.client_phone, orderData.client_name]);
 
   // Buscar pedidos anteriores quando o modal abrir
   useEffect(() => {
@@ -104,35 +104,73 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
     }
   }, [isOpen, orderData.client_id]);
 
-  const fetchClientConversations = async (phone: string) => {
+  const fetchClientConversations = async (phone?: string, clientName?: string) => {
     setLoadingConversations(true);
     try {
-      // Normalizar telefone para busca (últimos 9 dígitos)
-      const cleanPhone = phone.replace(/\D/g, '');
-      const phoneSuffix = cleanPhone.slice(-9);
+      let conversations: any[] = [];
       
-      // Buscar conversas onde contact_phone contém o número
-      const { data: conversations, error } = await supabase
-        .from('conversations')
-        .select(`
-          id,
-          agent_key,
-          contact_name,
-          contact_phone,
-          first_message_at,
-          last_message_at,
-          status,
-          lead_score,
-          sentiment,
-          is_hot_lead,
-          escalated_to_eduardo
-        `)
-        .ilike('contact_phone', `%${phoneSuffix}%`)
-        .order('last_message_at', { ascending: false })
-        .limit(10);
+      // 1. Buscar por telefone (se disponível)
+      if (phone) {
+        const cleanPhone = phone.replace(/\D/g, '');
+        const phoneSuffix = cleanPhone.slice(-9);
+        
+        const { data: phoneConvs, error: phoneError } = await supabase
+          .from('conversations')
+          .select(`
+            id,
+            agent_key,
+            contact_name,
+            contact_phone,
+            first_message_at,
+            last_message_at,
+            status,
+            lead_score,
+            sentiment,
+            is_hot_lead,
+            escalated_to_eduardo
+          `)
+          .ilike('contact_phone', `%${phoneSuffix}%`)
+          .order('last_message_at', { ascending: false })
+          .limit(10);
+        
+        if (!phoneError && phoneConvs) {
+          conversations = phoneConvs;
+        }
+      }
       
-      if (!error && conversations) {
-        // Para cada conversa, buscar últimas 5 mensagens
+      // 2. Se não encontrou por telefone, buscar por nome similar
+      if (conversations.length === 0 && clientName) {
+        // Buscar por nome similar (usando ILIKE para match parcial)
+        const nameParts = clientName.trim().split(' ');
+        const firstName = nameParts[0];
+        const lastName = nameParts[nameParts.length - 1];
+        
+        const { data: nameConvs, error: nameError } = await supabase
+          .from('conversations')
+          .select(`
+            id,
+            agent_key,
+            contact_name,
+            contact_phone,
+            first_message_at,
+            last_message_at,
+            status,
+            lead_score,
+            sentiment,
+            is_hot_lead,
+            escalated_to_eduardo
+          `)
+          .or(`contact_name.ilike.%${firstName}%,contact_name.ilike.%${lastName}%`)
+          .order('last_message_at', { ascending: false })
+          .limit(10);
+        
+        if (!nameError && nameConvs) {
+          conversations = nameConvs;
+        }
+      }
+      
+      // 3. Para cada conversa encontrada, buscar últimas mensagens
+      if (conversations.length > 0) {
         const conversationsWithMessages = await Promise.all(
           conversations.map(async (conv) => {
             const { data: messages } = await supabase
@@ -140,16 +178,19 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
               .select('body, from_role, created_at, agent_key')
               .eq('conversation_id', conv.id)
               .order('created_at', { ascending: false })
-              .limit(5);
+              .limit(10); // Buscar mais mensagens para ter um log maior
             
             return { ...conv, recent_messages: messages || [] };
           })
         );
         
         setAgentConversations(conversationsWithMessages);
+      } else {
+        setAgentConversations([]);
       }
     } catch (error) {
       console.error('Erro ao buscar conversas:', error);
+      setAgentConversations([]);
     } finally {
       setLoadingConversations(false);
     }
@@ -292,15 +333,22 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                   </div>
                 )}
                 
-                {orderData.client_phone && (
-                  <div className="flex items-start gap-3">
-                    <Phone className="h-4 w-4 text-muted-foreground mt-1" />
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Telefone / WhatsApp</p>
+                <div className="flex items-start gap-3">
+                  <Phone className="h-4 w-4 text-muted-foreground mt-1" />
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground mb-1">Telefone / WhatsApp</p>
+                    {orderData.client_phone ? (
                       <PhoneWithActions phone={orderData.client_phone} />
-                    </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Não informado</p>
+                    )}
+                    {agentConversations.length > 0 && (
+                      <Badge variant="outline" className="mt-2 text-xs bg-green-50 dark:bg-green-950/20 border-green-200">
+                        ✓ Cliente já conversou com nossos agentes
+                      </Badge>
+                    )}
                   </div>
-                )}
+                </div>
                 
                 {orderData.client_cpf && (
                   <div className="flex items-start gap-3">
@@ -330,7 +378,7 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
             <section>
               <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
                 <MessageCircle className="h-5 w-5 text-pink-600" />
-                Conversas com Agentes
+                Histórico de Conversas com Agentes
                 {agentConversations.length > 0 && (
                   <Badge variant="secondary">{agentConversations.length}</Badge>
                 )}
@@ -342,7 +390,8 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                 </div>
               ) : agentConversations.length === 0 ? (
                 <div className="p-4 bg-muted/50 rounded-lg text-center text-muted-foreground text-sm">
-                  Nenhuma conversa encontrada com os agentes
+                  ⚠️ Nenhuma conversa encontrada com os agentes
+                  <p className="text-xs mt-1">Cliente ainda não conversou via WhatsApp</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -352,7 +401,7 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                       conv.agent_key === 'sofia' ? 'bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-900' : 
                       'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900'
                     )}>
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2 flex-1">
                           {conv.agent_key === 'sofia' ? (
                             <Sparkles className="h-4 w-4 text-pink-600" />
@@ -386,8 +435,14 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                         </span>
                       </div>
                       
+                      {/* Contato Info */}
+                      <div className="mb-2 text-xs text-muted-foreground">
+                        <span className="font-medium">Contato:</span> {conv.contact_name || 'Não identificado'}
+                        {conv.contact_phone && ` • ${conv.contact_phone}`}
+                      </div>
+                      
                       {conv.lead_score !== null && (
-                        <div className="mb-2">
+                        <div className="mb-3">
                           <Badge variant="outline" className="text-xs">
                             Score: {conv.lead_score}/100
                           </Badge>
@@ -399,18 +454,28 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                         </div>
                       )}
                       
-                      {/* Últimas mensagens */}
-                      {conv.recent_messages?.slice(0, 3).map((msg: any, idx: number) => (
-                        <div key={idx} className={cn(
-                          "text-xs p-2 rounded mt-1",
-                          msg.from_role === 'user' ? 'bg-white/50 dark:bg-background/30' : 'bg-muted/30'
-                        )}>
-                          <span className="font-medium">
-                            {msg.from_role === 'user' ? '👤 Cliente: ' : '🤖 Agente: '}
-                          </span>
-                          <span className="line-clamp-2">{msg.body}</span>
-                        </div>
-                      ))}
+                      {/* Log das Mensagens (Últimas 10) */}
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-muted-foreground mb-2">📝 Log da Conversa:</p>
+                        {conv.recent_messages?.slice(0, 10).map((msg: any, idx: number) => (
+                          <div key={idx} className={cn(
+                            "text-xs p-2 rounded",
+                            msg.from_role === 'user' ? 'bg-white/50 dark:bg-background/30 ml-0' : 'bg-muted/40 mr-0'
+                          )}>
+                            <div className="flex items-start gap-2">
+                              <span className="font-semibold shrink-0">
+                                {msg.from_role === 'user' ? '👤' : msg.agent_key === 'sofia' ? '🤖' : '👨‍💼'}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[10px] text-muted-foreground mb-0.5">
+                                  {format(new Date(msg.created_at), 'dd/MM HH:mm:ss', { locale: ptBR })}
+                                </p>
+                                <p className="break-words">{msg.body}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
