@@ -43,6 +43,7 @@ const OrdersCompactStats: React.FC<OrdersCompactStatsProps> = ({
         label="Valor Abandonado"
         value={formatCurrency(stats.abandoned_value)}
         icon={Clock}
+        variant="danger"
       />
       
       <AppleLikeMetricCard

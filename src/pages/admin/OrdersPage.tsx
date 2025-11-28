@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { RefreshCw, Gift, Download, Search, Filter, Loader2 } from 'lucide-react';
 import { useNavigate, Navigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
@@ -79,17 +80,25 @@ const OrdersPage = () => {
     return calculateStats(orders, attempts);
   }, [filteredItems]);
 
-  // Calcular pedidos ativos (sempre considerar todos)
-  const activeOrdersCount = ordersAndAttempts.filter(item => {
-    if (item.type !== 'order') return false;
-    if (item.status !== 'video_aprovado') return false;
-    if (!item.data_inicio || !item.data_fim) return false;
+  // Calcular pedidos com vídeos ativos (campanhas ativas)
+  const [activeOrdersCount, setActiveOrdersCount] = React.useState(0);
+  
+  React.useEffect(() => {
+    const fetchActiveOrdersCount = async () => {
+      const { data, error } = await supabase
+        .from('pedido_videos')
+        .select('pedido_id', { count: 'exact', head: false })
+        .eq('is_active', true);
+      
+      if (!error && data) {
+        // Contar pedidos únicos com vídeos ativos
+        const uniquePedidos = new Set(data.map(pv => pv.pedido_id));
+        setActiveOrdersCount(uniquePedidos.size);
+      }
+    };
     
-    const today = new Date();
-    const startDate = new Date(item.data_inicio);
-    const endDate = new Date(item.data_fim);
-    return today >= startDate && today <= endDate;
-  }).length;
+    fetchActiveOrdersCount();
+  }, [ordersAndAttempts]);
 
   // Contadores para filtros
   const countByStatus = (status: string) => 
