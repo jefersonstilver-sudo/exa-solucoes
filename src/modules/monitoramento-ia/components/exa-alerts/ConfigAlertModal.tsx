@@ -55,8 +55,10 @@ export const ConfigAlertModal = ({
   alertTitle
 }: ConfigAlertModalProps) => {
   // Hook para tipos de contato dinâmicos do banco
-  const { contactTypes, loading: loadingContactTypes } = useContactTypes();
-  
+  const {
+    contactTypes,
+    loading: loadingContactTypes
+  } = useContactTypes();
   const [frequency, setFrequency] = useState('diario');
   const [time, setTime] = useState('08:00');
   const [selectedDays, setSelectedDays] = useState<string[]>(['seg', 'ter', 'qua', 'qui', 'sex']);
@@ -116,13 +118,8 @@ O relatório do período está disponível.
     setSelectedDirectors(prev => prev.includes(directorId) ? prev.filter(id => id !== directorId) : [...prev, directorId]);
   };
   const handleDemandDirectorToggle = (directorId: string) => {
-    setDemandSelectedDirectors(prev => 
-      prev.includes(directorId) 
-        ? prev.filter(id => id !== directorId) 
-        : [...prev, directorId]
-    );
+    setDemandSelectedDirectors(prev => prev.includes(directorId) ? prev.filter(id => id !== directorId) : [...prev, directorId]);
   };
-
   const handleContactTypeToggle = (type: string) => {
     if (type === 'all') {
       // Selecionar "Todos" desmarca todos os outros
@@ -131,19 +128,15 @@ O relatório do período está disponível.
       // Selecionar específico desmarca "Todos"
       setDemandContactTypes(prev => {
         const filtered = prev.filter(t => t !== 'all');
-        return filtered.includes(type) 
-          ? filtered.filter(t => t !== type)
-          : [...filtered, type];
+        return filtered.includes(type) ? filtered.filter(t => t !== type) : [...filtered, type];
       });
     }
   };
-
   const handleGenerateReport = async () => {
     if (demandSelectedDirectors.length === 0) {
       toast.error('Selecione pelo menos um diretor');
       return;
     }
-
     setGeneratingReport(true);
     try {
       let startDate = new Date();
@@ -178,16 +171,16 @@ O relatório do período está disponível.
       }
 
       // VALIDAR SE HÁ CONVERSAS NO PERÍODO ANTES DE GERAR
-      const { count, error: countError } = await supabase
-        .from('conversations')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
-
+      const {
+        count,
+        error: countError
+      } = await supabase.from('conversations').select('*', {
+        count: 'exact',
+        head: true
+      }).gte('created_at', startDate.toISOString()).lte('created_at', endDate.toISOString());
       if (countError) {
         throw new Error('Erro ao verificar conversas no período');
       }
-
       if (!count || count === 0) {
         toast.warning('⚠️ Nenhuma conversa encontrada', {
           description: `Não há conversas registradas entre ${format(startDate, 'dd/MM/yyyy')} e ${format(endDate, 'dd/MM/yyyy')}`
@@ -195,47 +188,38 @@ O relatório do período está disponível.
         setGeneratingReport(false);
         return;
       }
-
       console.log(`✅ ${count} conversas encontradas no período`);
 
       // Gerar relatório (passar tipos apenas se não for "all")
-      const contactTypesFilter = demandContactTypes.includes('all') 
-        ? undefined 
-        : demandContactTypes;
-
-      const { data: reportData, error: generateError } = await supabase.functions.invoke(
-        'relatorio-var-generate',
-        {
-          body: {
-            start_date: startDate.toISOString(),
-            end_date: endDate.toISOString(),
-            contact_types: contactTypesFilter,
-            agent_key: 'eduardo'
-          }
+      const contactTypesFilter = demandContactTypes.includes('all') ? undefined : demandContactTypes;
+      const {
+        data: reportData,
+        error: generateError
+      } = await supabase.functions.invoke('relatorio-var-generate', {
+        body: {
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString(),
+          contact_types: contactTypesFilter,
+          agent_key: 'eduardo'
         }
-      );
-
+      });
       if (generateError) throw generateError;
 
       // Enviar relatório
-      const { error: sendError } = await supabase.functions.invoke(
-        'relatorio-var-send',
-        {
-          body: {
-            report_data: reportData,
-            format: demandFormat,
-            send_type: demandSendType,
-            director_ids: demandSelectedDirectors
-          }
+      const {
+        error: sendError
+      } = await supabase.functions.invoke('relatorio-var-send', {
+        body: {
+          report_data: reportData,
+          format: demandFormat,
+          send_type: demandSendType,
+          director_ids: demandSelectedDirectors
         }
-      );
-
+      });
       if (sendError) throw sendError;
-
       toast.success('✅ Relatório gerado e enviado!', {
         description: `Enviado via ${demandFormat === 'whatsapp' ? 'WhatsApp' : 'Email'} para ${demandSelectedDirectors.length} diretor(es)`
       });
-
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);
       toast.error('Erro ao gerar relatório', {
@@ -245,7 +229,6 @@ O relatório do período está disponível.
       setGeneratingReport(false);
     }
   };
-
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -259,19 +242,16 @@ O relatório do período está disponível.
         selectedDirectors,
         updatedAt: new Date().toISOString()
       };
-
-      const { error } = await supabase
-        .from('exa_alerts_config')
-        .upsert({
-          config_key: 'relatorio_conversas',
-          config_value: configData,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'config_key'
-        });
-
+      const {
+        error
+      } = await supabase.from('exa_alerts_config').upsert({
+        config_key: 'relatorio_conversas',
+        config_value: configData,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'config_key'
+      });
       if (error) throw error;
-
       toast.success('✅ Configuração salva!', {
         description: 'O relatório será enviado conforme programado.'
       });
@@ -283,25 +263,21 @@ O relatório do período está disponível.
       setLoading(false);
     }
   };
-
   const handleSendTest = async () => {
     setSendingTest(true);
     try {
       // Buscar diretores ativos
-      const { data: diretores, error: fetchError } = await supabase
-        .from('exa_alerts_directors')
-        .select('nome, telefone')
-        .eq('ativo', true);
-
+      const {
+        data: diretores,
+        error: fetchError
+      } = await supabase.from('exa_alerts_directors').select('nome, telefone').eq('ativo', true);
       if (fetchError) throw fetchError;
-
       if (!diretores || diretores.length === 0) {
         toast.error('❌ Nenhum diretor ativo cadastrado', {
           description: 'Cadastre diretores primeiro'
         });
         return;
       }
-
       const testMessage = `━━━━━━━━━━━━━━━━━━━━
 🧪 *TESTE - EXA NOTIFICAÇÕES*
 ━━━━━━━━━━━━━━━━━━━━
@@ -322,23 +298,20 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
 
       // Enviar para cada diretor ativo
       for (const diretor of diretores) {
-        const phoneFormatted = diretor.telefone.startsWith('55') 
-          ? `+${diretor.telefone}` 
-          : `+55${diretor.telefone}`;
-
-        const { error: sendError } = await supabase.functions.invoke('zapi-send-message', {
+        const phoneFormatted = diretor.telefone.startsWith('55') ? `+${diretor.telefone}` : `+55${diretor.telefone}`;
+        const {
+          error: sendError
+        } = await supabase.functions.invoke('zapi-send-message', {
           body: {
             agentKey: 'exa_alert',
             phone: phoneFormatted,
             message: testMessage
           }
         });
-
         if (sendError) {
           console.error(`Erro ao enviar para ${diretor.nome}:`, sendError);
         }
       }
-
       toast.success(`✅ Teste enviado para ${diretores.length} diretor(es)!`, {
         description: diretores.map(d => d.nome).join(', ')
       });
@@ -351,7 +324,6 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
       setSendingTest(false);
     }
   };
-
   return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[950px] w-[95vw] max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl border border-gray-200/50 dark:border-gray-800/50">
         <DialogHeader>
@@ -362,11 +334,13 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
 
         <div className="space-y-6 py-4">
           {/* ============= CONFIGURAÇÕES GERAIS ============= */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
-          >
+          <motion.div initial={{
+          opacity: 0,
+          y: 10
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]">
             <div className="flex items-center gap-2 mb-3">
               <Clock className="w-5 h-5 text-gray-400" />
               <h3 className="font-semibold text-base text-gray-700 dark:text-gray-300">Configurações Gerais</h3>
@@ -412,20 +386,9 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
             <div className="space-y-2">
               <Label className="text-gray-600 dark:text-gray-400">Dias da Semana</Label>
               <div className="flex flex-wrap gap-2">
-                {DAYS_OF_WEEK.map(day => (
-                  <Badge
-                    key={day.value}
-                    variant={selectedDays.includes(day.value) ? 'default' : 'outline'}
-                    className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
-                      selectedDays.includes(day.value)
-                        ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
-                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}
-                    onClick={() => handleDayToggle(day.value)}
-                  >
+                {DAYS_OF_WEEK.map(day => <Badge key={day.value} variant={selectedDays.includes(day.value) ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all duration-300 ${selectedDays.includes(day.value) ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`} onClick={() => handleDayToggle(day.value)}>
                     {day.label}
-                  </Badge>
-                ))}
+                  </Badge>)}
               </div>
             </div>
           </motion.div>
@@ -435,12 +398,15 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
 
           {/* ============= TEMPLATE DA MENSAGEM (COLAPSÁVEL) ============= */}
           <Collapsible open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              transition={{ delay: 0.1 }}
-              className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
-            >
+            <motion.div initial={{
+            opacity: 0,
+            y: 10
+          }} animate={{
+            opacity: 1,
+            y: 0
+          }} transition={{
+            delay: 0.1
+          }} className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]">
               <CollapsibleTrigger className="w-full">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
@@ -461,26 +427,10 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
                 <div className="space-y-3">
                   <Label className="text-gray-600 dark:text-gray-400">Tipo de Template</Label>
                   <div className="flex gap-3">
-                    <Badge 
-                      variant={templateType === 'texto' ? 'default' : 'outline'} 
-                      className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
-                        templateType === 'texto' 
-                          ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' 
-                          : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
-                      }`} 
-                      onClick={() => setTemplateType('texto')}
-                    >
+                    <Badge variant={templateType === 'texto' ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all duration-300 ${templateType === 'texto' ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => setTemplateType('texto')}>
                       TEXTO (WhatsApp)
                     </Badge>
-                    <Badge 
-                      variant={templateType === 'html' ? 'default' : 'outline'} 
-                      className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
-                        templateType === 'html' 
-                          ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' 
-                          : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
-                      }`} 
-                      onClick={() => setTemplateType('html')}
-                    >
+                    <Badge variant={templateType === 'html' ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all duration-300 ${templateType === 'html' ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => setTemplateType('html')}>
                       HTML (Email/Web)
                     </Badge>
                   </div>
@@ -501,40 +451,20 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
           <Separator />
 
           {/* ============= DIRETORES ============= */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ delay: 0.2 }}
-            className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="w-5 h-5 text-gray-400" />
-              <h3 className="font-semibold text-base text-gray-700 dark:text-gray-300">Diretores que Recebem</h3>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {directors.map(director => <div key={director.id} className="flex items-center gap-2 p-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
-                  <Checkbox id={`director-${director.id}`} checked={selectedDirectors.includes(director.id)} onCheckedChange={() => handleDirectorToggle(director.id)} />
-                  <Label htmlFor={`director-${director.id}`} className="flex-1 cursor-pointer font-medium text-sm">
-                    {director.nome}
-                  </Label>
-                </div>)}
-            </div>
-
-            {directors.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum diretor ativo encontrado
-              </p>}
-          </motion.div>
+          
 
           <Separator />
 
           {/* ============= SOLICITAR RELATÓRIO AGORA (SOB DEMANDA) ============= */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
-          >
+          <motion.div initial={{
+          opacity: 0,
+          y: 10
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} transition={{
+          delay: 0.3
+        }} className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]">
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-5 h-5 text-gray-400" />
               <h3 className="font-semibold text-base text-gray-700 dark:text-gray-300">Solicitar Relatório Agora (Sob Demanda)</h3>
@@ -544,26 +474,24 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
             <div className="space-y-2">
               <Label className="text-gray-600 dark:text-gray-400">Período do Relatório</Label>
               <div className="flex flex-wrap gap-2">
-                {[
-                  { value: 'hoje', label: 'Hoje' },
-                  { value: 'ontem', label: 'Ontem' },
-                  { value: '7dias', label: 'Últimos 7 dias' },
-                  { value: '30dias', label: 'Últimos 30 dias' },
-                  { value: 'custom', label: 'Personalizado' }
-                ].map(period => (
-                  <Badge
-                    key={period.value}
-                    variant={demandPeriod === period.value ? 'default' : 'outline'}
-                    className={`cursor-pointer px-3 py-2 transition-all duration-300 ${
-                      demandPeriod === period.value
-                        ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
-                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
-                    }`}
-                    onClick={() => setDemandPeriod(period.value)}
-                  >
+                {[{
+                value: 'hoje',
+                label: 'Hoje'
+              }, {
+                value: 'ontem',
+                label: 'Ontem'
+              }, {
+                value: '7dias',
+                label: 'Últimos 7 dias'
+              }, {
+                value: '30dias',
+                label: 'Últimos 30 dias'
+              }, {
+                value: 'custom',
+                label: 'Personalizado'
+              }].map(period => <Badge key={period.value} variant={demandPeriod === period.value ? 'default' : 'outline'} className={`cursor-pointer px-3 py-2 transition-all duration-300 ${demandPeriod === period.value ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => setDemandPeriod(period.value)}>
                     {period.label}
-                  </Badge>
-                ))}
+                  </Badge>)}
               </div>
             </div>
 
@@ -576,68 +504,34 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
               
               {/* Botão "Todos" destacado */}
               <div className="flex gap-2">
-                <Badge
-                  variant={demandContactTypes.includes('all') ? 'default' : 'outline'}
-                  className={`cursor-pointer px-4 py-2.5 transition-all duration-300 font-medium ${
-                    demandContactTypes.includes('all')
-                      ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900 shadow-sm'
-                      : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
-                  }`}
-                  onClick={() => handleContactTypeToggle('all')}
-                >
+                <Badge variant={demandContactTypes.includes('all') ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2.5 transition-all duration-300 font-medium ${demandContactTypes.includes('all') ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900 shadow-sm' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => handleContactTypeToggle('all')}>
                   Todos
                 </Badge>
               </div>
 
               {/* Tipos específicos */}
               <div className="flex flex-wrap gap-2">
-                {loadingContactTypes ? (
-                  <span className="text-sm text-gray-500">Carregando tipos...</span>
-                ) : (
-                  contactTypes.map(type => (
-                    <Badge
-                      key={type.id}
-                      variant={demandContactTypes.includes(type.name) ? 'default' : 'outline'}
-                      className={`cursor-pointer px-3 py-2 transition-all duration-300 ${
-                        demandContactTypes.includes(type.name)
-                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
-                          : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
-                      }`}
-                      onClick={() => handleContactTypeToggle(type.name)}
-                    >
+                {loadingContactTypes ? <span className="text-sm text-gray-500">Carregando tipos...</span> : contactTypes.map(type => <Badge key={type.id} variant={demandContactTypes.includes(type.name) ? 'default' : 'outline'} className={`cursor-pointer px-3 py-2 transition-all duration-300 ${demandContactTypes.includes(type.name) ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => handleContactTypeToggle(type.name)}>
                       {type.label}
-                    </Badge>
-                  ))
-                )}
+                    </Badge>)}
               </div>
               
-              {!demandContactTypes.includes('all') && demandContactTypes.length === 0 && (
-                <p className="text-xs text-gray-500 mt-1">Selecione tipos específicos ou use "Todos"</p>
-              )}
+              {!demandContactTypes.includes('all') && demandContactTypes.length === 0 && <p className="text-xs text-gray-500 mt-1">Selecione tipos específicos ou use "Todos"</p>}
             </div>
 
             {/* Date Pickers para período custom */}
-            {demandPeriod === 'custom' && (
-              <div className="grid grid-cols-2 gap-4">
+            {demandPeriod === 'custom' && <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Data Início</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {demandStartDate ? format(demandStartDate, 'dd/MM/yyyy') : 'Selecione'}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={demandStartDate}
-                        onSelect={setDemandStartDate}
-                        initialFocus
-                      />
+                      <Calendar mode="single" selected={demandStartDate} onSelect={setDemandStartDate} initialFocus />
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -646,134 +540,69 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
                   <Label>Data Fim</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {demandEndDate ? format(demandEndDate, 'dd/MM/yyyy') : 'Selecione'}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={demandEndDate}
-                        onSelect={setDemandEndDate}
-                        initialFocus
-                      />
+                      <Calendar mode="single" selected={demandEndDate} onSelect={setDemandEndDate} initialFocus />
                     </PopoverContent>
                   </Popover>
                 </div>
-              </div>
-            )}
+              </div>}
 
             {/* Formato de Envio */}
             <div className="space-y-2">
               <Label className="text-gray-600 dark:text-gray-400">Formato de Envio</Label>
               <div className="flex gap-3 flex-wrap">
-                <Badge
-                  variant={demandFormat === 'whatsapp' ? 'default' : 'outline'}
-                  className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
-                    demandFormat === 'whatsapp'
-                      ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
-                      : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
-                  }`}
-                  onClick={() => setDemandFormat('whatsapp')}
-                >
+                <Badge variant={demandFormat === 'whatsapp' ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all duration-300 ${demandFormat === 'whatsapp' ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => setDemandFormat('whatsapp')}>
                   WhatsApp
                 </Badge>
-                <Badge
-                  variant={demandFormat === 'email' ? 'default' : 'outline'}
-                  className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
-                    demandFormat === 'email'
-                      ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
-                      : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
-                  }`}
-                  onClick={() => setDemandFormat('email')}
-                >
+                <Badge variant={demandFormat === 'email' ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all duration-300 ${demandFormat === 'email' ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => setDemandFormat('email')}>
                   Email
                 </Badge>
               </div>
             </div>
 
             {/* Tipo de Envio (Link ou Completo) */}
-            {demandFormat === 'whatsapp' && (
-              <div className="space-y-2">
+            {demandFormat === 'whatsapp' && <div className="space-y-2">
                 <Label className="text-gray-600 dark:text-gray-400">Tipo de Mensagem</Label>
                 <div className="flex gap-3">
-                  <Badge
-                    variant={demandSendType === 'link' ? 'default' : 'outline'}
-                    className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
-                      demandSendType === 'link'
-                        ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
-                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
-                    }`}
-                    onClick={() => setDemandSendType('link')}
-                  >
+                  <Badge variant={demandSendType === 'link' ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all duration-300 ${demandSendType === 'link' ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => setDemandSendType('link')}>
                     Notificação com Link
                   </Badge>
-                  <Badge
-                    variant={demandSendType === 'complete' ? 'default' : 'outline'}
-                    className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
-                      demandSendType === 'complete'
-                        ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
-                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
-                    }`}
-                    onClick={() => setDemandSendType('complete')}
-                  >
+                  <Badge variant={demandSendType === 'complete' ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all duration-300 ${demandSendType === 'complete' ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => setDemandSendType('complete')}>
                     Relatório Completo
                   </Badge>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {demandSendType === 'link' 
-                    ? 'Envia mensagem elegante com resumo e link para visualização completa' 
-                    : 'Envia relatório completo diretamente no WhatsApp'}
+                  {demandSendType === 'link' ? 'Envia mensagem elegante com resumo e link para visualização completa' : 'Envia relatório completo diretamente no WhatsApp'}
                 </p>
-              </div>
-            )}
+              </div>}
 
             {/* Diretores que receberão */}
             <div className="space-y-2">
               <Label>Diretores que Receberão</Label>
               <div className="grid grid-cols-2 gap-3">
-                {directors.map(director => (
-                  <div
-                    key={director.id}
-                    className="flex items-center gap-2 p-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
-                  >
-                    <Checkbox
-                      id={`demand-director-${director.id}`}
-                      checked={demandSelectedDirectors.includes(director.id)}
-                      onCheckedChange={() => handleDemandDirectorToggle(director.id)}
-                    />
-                    <Label
-                      htmlFor={`demand-director-${director.id}`}
-                      className="flex-1 cursor-pointer font-medium text-sm"
-                    >
+                {directors.map(director => <div key={director.id} className="flex items-center gap-2 p-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors">
+                    <Checkbox id={`demand-director-${director.id}`} checked={demandSelectedDirectors.includes(director.id)} onCheckedChange={() => handleDemandDirectorToggle(director.id)} />
+                    <Label htmlFor={`demand-director-${director.id}`} className="flex-1 cursor-pointer font-medium text-sm">
                       {director.nome}
                     </Label>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
 
             {/* Botão de Gerar */}
-            <Button
-              onClick={handleGenerateReport}
-              disabled={generatingReport || demandSelectedDirectors.length === 0}
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-12 shadow-sm hover:shadow-md transition-all"
-            >
-              {generatingReport ? (
-                <>
+            <Button onClick={handleGenerateReport} disabled={generatingReport || demandSelectedDirectors.length === 0} className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-12 shadow-sm hover:shadow-md transition-all">
+              {generatingReport ? <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Gerando Relatório...
-                </>
-              ) : (
-                <>
+                </> : <>
                   <Zap className="w-4 h-4 mr-2" />
                   Gerar e Enviar Relatório Agora
-                </>
-              )}
+                </>}
             </Button>
           </motion.div>
         </div>
@@ -783,23 +612,14 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading || sendingTest} className="rounded-lg">
               Cancelar
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleSendTest} 
-              disabled={sendingTest || loading}
-              className="rounded-lg border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
-            >
-              {sendingTest ? (
-                <>
+            <Button variant="outline" onClick={handleSendTest} disabled={sendingTest || loading} className="rounded-lg border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-950">
+              {sendingTest ? <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Enviando...
-                </>
-              ) : (
-                <>
+                </> : <>
                   <Send className="w-4 h-4 mr-2" />
                   Teste
-                </>
-              )}
+                </>}
             </Button>
           </div>
           <Button onClick={handleSave} disabled={loading || selectedDirectors.length === 0 || sendingTest} className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg shadow-sm hover:shadow-md transition-all">
