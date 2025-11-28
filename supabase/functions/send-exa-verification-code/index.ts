@@ -70,27 +70,35 @@ serve(async (req) => {
     const instanceToken = zapiConfig.token;
     const clientToken = zapiConfig.client_token;
 
+    console.log('Z-API config loaded:', {
+      instanceId,
+      token: instanceToken,
+      clientToken,
+      fullConfig: zapiConfig
+    });
+
     if (!instanceId || !instanceToken || !clientToken) {
       console.error('Missing Z-API credentials:', {
         hasInstanceId: !!instanceId,
         hasInstanceToken: !!instanceToken,
-        hasClientToken: !!clientToken
+        hasClientToken: !!clientToken,
+        config: zapiConfig
       });
       throw new Error('Z-API credentials missing');
     }
-
-    console.log('Z-API config loaded successfully:', {
-      instanceId,
-      hasToken: !!instanceToken,
-      hasClientToken: !!clientToken
-    });
 
     // Format phone number (remove non-digits)
     const cleanPhone = telefone.replace(/\D/g, '');
 
     // Send WhatsApp message via Z-API
     const zapiUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/send-text`;
-    console.log('Sending to Z-API:', { url: zapiUrl, phone: cleanPhone });
+    console.log('🚀 Sending to Z-API:', { 
+      url: zapiUrl, 
+      phone: cleanPhone,
+      instanceId,
+      token: instanceToken?.substring(0, 10) + '...',
+      clientToken: clientToken?.substring(0, 10) + '...'
+    });
 
     const zapiResponse = await fetch(zapiUrl, {
       method: 'POST',
@@ -104,13 +112,19 @@ serve(async (req) => {
       }),
     });
 
+    console.log('Z-API response status:', zapiResponse.status);
+    const responseText = await zapiResponse.text();
+    console.log('Z-API response body:', responseText);
+
     if (!zapiResponse.ok) {
-      const errorData = await zapiResponse.text();
-      console.error('Z-API error:', errorData);
+      console.error('Z-API error response:', {
+        status: zapiResponse.status,
+        body: responseText
+      });
       throw new Error('Erro ao enviar mensagem via WhatsApp');
     }
 
-    console.log('Verification code sent successfully');
+    console.log('✅ Verification code sent successfully via WhatsApp');
 
     return new Response(
       JSON.stringify({ 
