@@ -165,6 +165,34 @@ Deno.serve(async (req) => {
     const mensagens_enviadas = messages.filter((m: MessageRecord) => m.direction === 'outbound').length;
     const mensagens_recebidas = messages.filter((m: MessageRecord) => m.direction === 'inbound').length;
 
+    // ===== BREAKDOWN POR TIPO DE CONTATO =====
+    const mensagens_por_tipo: Record<string, { enviadas: number; recebidas: number; conversas: number }> = {};
+    
+    conversations?.forEach((conv: ConversationRecord) => {
+      const tipo = conv.contact_type || 'outro';
+      if (!mensagens_por_tipo[tipo]) {
+        mensagens_por_tipo[tipo] = { enviadas: 0, recebidas: 0, conversas: 0 };
+      }
+      mensagens_por_tipo[tipo].conversas++;
+    });
+
+    messages.forEach((msg: MessageRecord) => {
+      const conv = conversations?.find(c => c.id === msg.conversation_id);
+      const tipo = conv?.contact_type || 'outro';
+      
+      if (!mensagens_por_tipo[tipo]) {
+        mensagens_por_tipo[tipo] = { enviadas: 0, recebidas: 0, conversas: 0 };
+      }
+      
+      if (msg.direction === 'outbound') {
+        mensagens_por_tipo[tipo].enviadas++;
+      } else {
+        mensagens_por_tipo[tipo].recebidas++;
+      }
+    });
+
+    console.log('📊 [VAR GENERATE] Breakdown por tipo:', mensagens_por_tipo);
+
     // ===== COMPARATIVO COM PERÍODO ANTERIOR =====
     const periodDuration = new Date(end_date).getTime() - new Date(start_date).getTime();
     const previousStart = new Date(new Date(start_date).getTime() - periodDuration).toISOString();
@@ -368,12 +396,13 @@ FORNEÇA RESPOSTA EM JSON EXATAMENTE NESTE FORMATO:
       gerado_em: new Date().toISOString(),
       versao_relatorio: '1.0',
       
-      // NOVOS CAMPOS (28-32)
+      // NOVOS CAMPOS (28-33)
       distribuicao_periodo,
       mensagens_enviadas,
       mensagens_recebidas,
       comparativo_anterior,
-      conversas_mais_ativas
+      conversas_mais_ativas,
+      mensagens_por_tipo // NOVO: breakdown por tipo de contato
     };
 
     console.log('✅ [VAR GENERATE] Relatório gerado com sucesso');
