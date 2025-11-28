@@ -72,12 +72,14 @@ export const GenerateReportNow = () => {
 
   const simulateProgress = async () => {
     const steps = [
-      { progress: 15, text: 'Conectando com IA...', duration: 500 },
-      { progress: 30, text: 'Buscando conversas...', duration: 800 },
-      { progress: 50, text: 'Analisando dados...', duration: 1000 },
-      { progress: 70, text: 'Gerando insights com IA...', duration: 1500 },
-      { progress: 85, text: 'Criando visualizações...', duration: 700 },
-      { progress: 95, text: 'Finalizando relatório...', duration: 500 },
+      { progress: 10, text: '🤖 Inicializando IA...', duration: 800 },
+      { progress: 20, text: '🔍 Buscando conversas do período...', duration: 1200 },
+      { progress: 35, text: '📊 Encontradas X conversas', duration: 900 },
+      { progress: 50, text: '📈 Calculando métricas de desempenho...', duration: 1500 },
+      { progress: 65, text: '🤖 Analisando sentimentos com IA...', duration: 1800 },
+      { progress: 75, text: '💡 Gerando insights inteligentes...', duration: 1600 },
+      { progress: 85, text: '📝 Criando resumo executivo...', duration: 1200 },
+      { progress: 95, text: '✨ Finalizando relatório...', duration: 700 },
     ];
 
     for (const step of steps) {
@@ -325,12 +327,12 @@ export const GenerateReportNow = () => {
               exit={{ opacity: 0, height: 0 }}
               className="space-y-3 py-2"
             >
-              {/* Animated Icons */}
-              <div className="flex justify-center gap-3 mb-4">
+              {/* Animated Robot Icon */}
+              <div className="flex justify-center mb-4">
                 <motion.div
+                  className="relative"
                   animate={{
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 360],
+                    y: [0, -10, 0],
                   }}
                   transition={{
                     duration: 2,
@@ -338,35 +340,69 @@ export const GenerateReportNow = () => {
                     ease: "easeInOut",
                   }}
                 >
-                  <Brain className="w-6 h-6 text-[#9C1E1E]" />
-                </motion.div>
-                <motion.div
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    y: [0, -5, 0],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: 0.3,
-                  }}
-                >
-                  <Zap className="w-6 h-6 text-[#D72638]" />
-                </motion.div>
-                <motion.div
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    rotate: [0, -360],
-                  }}
-                  transition={{
-                    duration: 2.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: 0.6,
-                  }}
-                >
-                  <TrendingUp className="w-6 h-6 text-[#9C1E1E]" />
+                  {/* Robot Body */}
+                  <div className="relative w-16 h-16 bg-gradient-to-br from-[#9C1E1E] to-[#D72638] rounded-xl shadow-lg flex items-center justify-center">
+                    <Brain className="w-8 h-8 text-white" />
+                    
+                    {/* Robot Eyes */}
+                    <div className="absolute top-2 left-3 right-3 flex justify-between">
+                      <motion.div
+                        className="w-1.5 h-1.5 bg-yellow-300 rounded-full"
+                        animate={{
+                          opacity: [1, 0, 1],
+                        }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                        }}
+                      />
+                      <motion.div
+                        className="w-1.5 h-1.5 bg-yellow-300 rounded-full"
+                        animate={{
+                          opacity: [1, 0, 1],
+                        }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          delay: 0.5,
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Sparkles */}
+                    <motion.div
+                      className="absolute -top-1 -right-1"
+                      animate={{
+                        scale: [1, 1.3, 1],
+                        rotate: [0, 180, 360],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                      }}
+                    >
+                      <Sparkles className="w-4 h-4 text-yellow-300" />
+                    </motion.div>
+                  </div>
+                  
+                  {/* Work Indicators */}
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        className="w-1 h-1 bg-[#9C1E1E] rounded-full"
+                        animate={{
+                          scale: [1, 1.5, 1],
+                          opacity: [0.3, 1, 0.3],
+                        }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          delay: i * 0.2,
+                        }}
+                      />
+                    ))}
+                  </div>
                 </motion.div>
               </div>
 

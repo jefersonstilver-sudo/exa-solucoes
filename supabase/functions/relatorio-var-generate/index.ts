@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
     const { start_date, end_date, contact_types } = await req.json();
 
     console.log('📊 [VAR GENERATE] Gerando relatório:', { start_date, end_date, contact_types });
+    console.log('🔍 [VAR GENERATE] Buscando conversas e mensagens APENAS do período selecionado');
 
     // ===== BUSCAR CONVERSAS NO PERÍODO (POR ÚLTIMA ATIVIDADE) =====
     let conversationsQuery = supabase
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
 
     if (convError) throw convError;
 
-    // ===== BUSCAR MENSAGENS NO PERÍODO =====
+    // ===== BUSCAR MENSAGENS NO PERÍODO (FILTRADAS POR DATA) =====
     const conversationIds = conversations?.map((c: ConversationRecord) => c.id) || [];
     let messages: MessageRecord[] = [];
     
@@ -80,10 +81,15 @@ Deno.serve(async (req) => {
       const { data: messagesData, error: msgError } = await supabase
         .from('messages')
         .select('*')
-        .in('conversation_id', conversationIds);
+        .in('conversation_id', conversationIds)
+        .gte('created_at', start_date)
+        .lte('created_at', end_date);
 
       if (msgError) throw msgError;
       messages = messagesData || [];
+      
+      console.log(`📨 [VAR GENERATE] ${messages.length} mensagens encontradas no período`);
+      console.log(`📅 [VAR GENERATE] Período: ${start_date} até ${end_date}`);
     }
 
     // ===== CALCULAR KPIs PRINCIPAIS =====
