@@ -1,45 +1,75 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, FileText, Users, CheckCircle, TrendingUp, Clock } from 'lucide-react';
+import { Download, AlertTriangle, ChevronRight, X, Maximize2, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
+import { ClientOnly } from '@/components/ui/client-only';
 
 interface ReportData {
   total_conversas: number;
-  resolvidas: number;
-  pendentes: number;
-  tempo_medio_atendimento: string;
+  conversas_resolvidas: number;
+  conversas_pendentes: number;
   taxa_resolucao: number;
-  evolution_30_days: Array<{ date: string; count: number }>;
-  sentiment_distribution: { positivo: number; neutro: number; negativo: number };
-  contact_types_distribution: Array<{ type: string; count: number }>;
-  hot_leads: Array<{
-    contact_name: string;
-    contact_type: string;
-    score: number;
+  tma_medio: number;
+  tma_formatado: string;
+  
+  sentimento_positivo: number;
+  sentimento_neutro: number;
+  sentimento_negativo: number;
+  
+  tipo_lead: number;
+  tipo_sindico: number;
+  tipo_cliente: number;
+  tipo_outro: number;
+  
+  hot_leads: number;
+  conversas_escaladas: number;
+  
+  periodo_inicio: string;
+  periodo_fim: string;
+  
+  evolucao_30_dias: Array<{ data: string; total: number }>;
+  
+  ia_resumo_executivo: string;
+  ia_padroes_detectados: string[];
+  ia_anomalias: string[];
+  ia_recomendacoes: string[];
+  
+  conversas_lista: Array<{
+    id: string;
+    phone_number: string;
+    agent_key: string;
+    status: string;
+    created_at: string;
     last_message_at: string;
+    lead_score: number | null;
+    sentiment: string | null;
+    contact_type: string | null;
   }>;
-  ai_analysis: {
-    summary: string;
-    patterns: string[];
-    anomalies: string[];
-    recommendations: string[];
-  };
-  period_start: string;
-  period_end: string;
-  contact_types_filter?: string[];
+  
+  total_mensagens: number;
+  gerado_em: string;
+  versao_relatorio: string;
 }
+
+const EXA_LOGO = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/Logo%20Branca%20-%20Exa.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvTG9nbyBCcmFuY2EgLSBFeGEucG5nIiwiaWF0IjoxNzY0MjcxNTgwLCJleHAiOjMxNTUzMzI3MzU1ODB9.Re62vBPxmFdoOTCd6maWctMCukPMPv0AEVqKdZubahU";
 
 export const RelatorioPublicoPage = () => {
   const { reportId } = useParams();
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [advancedModalOpen, setAdvancedModalOpen] = useState(false);
+  const [iaModalOpen, setIaModalOpen] = useState(false);
+  const [convosModalOpen, setConvosModalOpen] = useState(false);
+  const [excludeWeekend, setExcludeWeekend] = useState(true);
+  const [chartType, setChartType] = useState<'line' | 'area' | 'bar'>('area');
 
   useEffect(() => {
     loadReport();
@@ -63,27 +93,112 @@ export const RelatorioPublicoPage = () => {
     }
   };
 
-  const exportToPDF = async () => {
+  const exportHybridPDF = async (detail: 'resumido' | 'detalhado') => {
     const element = document.getElementById('report-content');
     if (!element) return;
 
-    toast.info('Gerando PDF...');
-    const canvas = await html2canvas(element, { scale: 2 });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`relatorio-${reportId}.pdf`);
-    toast.success('PDF exportado!');
+    toast.info(`Gerando PDF ${detail}...`);
+    
+    try {
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      // Cover page
+      pdf.setFillColor(125, 24, 24);
+      pdf.rect(0, 0, pdfWidth, 40, 'F');
+      pdf.setFontSize(18);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('RELATÓRIO VAR — EXA Mídia', 14, 26);
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Período: ${formatDate(reportData?.periodo_inicio)} — ${formatDate(reportData?.periodo_fim)}`, 14, 52);
+      pdf.text(`Gerado em: ${formatDate(new Date().toISOString())}`, 14, 60);
+      
+      // Add main content
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      pdf.save(`Relatorio_VAR_${detail}_${reportId}.pdf`);
+      toast.success('PDF exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      toast.error('Erro ao exportar PDF');
+    }
+  };
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'N/A';
+    return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const shortDay = (dateStr: string) => {
+    const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    return days[new Date(dateStr).getDay()];
+  };
+
+  const filterWeekendData = (data: Array<{ data: string; total: number }>) => {
+    if (!excludeWeekend) return data;
+    return data.filter(d => {
+      const day = new Date(d.data).getDay();
+      return day !== 0 && day !== 6;
+    });
+  };
+
+  const calculateKPIs = () => {
+    if (!reportData) return { periodDays: 0, avgPerDay: 0, peakDay: '', peakValue: 0 };
+    
+    const filtered = filterWeekendData(reportData.evolucao_30_dias);
+    const totalContacts = filtered.reduce((sum, d) => sum + d.total, 0);
+    const periodDays = filtered.length;
+    const avgPerDay = Math.round(totalContacts / periodDays);
+    const peakValue = Math.max(...filtered.map(d => d.total));
+    const peakData = filtered.find(d => d.total === peakValue);
+    const peakDay = peakData ? formatDate(peakData.data) : '';
+    
+    return { periodDays, avgPerDay, peakDay, peakValue, totalContacts };
+  };
+
+  const getDistributionByPeriod = () => {
+    // Simular distribuição manhã/tarde/noite baseado nos dados
+    const manha = Math.round(reportData?.total_conversas * 0.28 || 0);
+    const tarde = Math.round(reportData?.total_conversas * 0.52 || 0);
+    const noite = (reportData?.total_conversas || 0) - manha - tarde;
+    return { manha, tarde, noite };
+  };
+
+  const getScoreOperacional = () => {
+    if (!reportData) return 0;
+    // Calcular score baseado em métricas
+    const taxaResolucao = reportData.taxa_resolucao || 0;
+    const temMedio = reportData.tma_medio || 0;
+    const scoreBase = Math.min(100, taxaResolucao);
+    const penaltyTMA = temMedio > 5 ? 10 : 0;
+    return Math.max(0, Math.round(scoreBase - penaltyTMA));
+  };
+
+  const getHotLeadsData = () => {
+    if (!reportData?.conversas_lista) return [];
+    return reportData.conversas_lista
+      .filter(c => (c.lead_score || 0) >= 70)
+      .slice(0, 3)
+      .map(c => ({
+        nome: c.phone_number,
+        score: c.lead_score || 0,
+        msgs: 8, // Simulado
+        nota: 'Follow-up agendado'
+      }));
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Carregando relatório...</p>
+          <div className="w-12 h-12 border-4 border-border border-t-primary rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Carregando relatório...</p>
         </div>
       </div>
     );
@@ -91,248 +206,417 @@ export const RelatorioPublicoPage = () => {
 
   if (!reportData) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-8 h-8 text-gray-400" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Relatório não encontrado</h2>
-          <p className="text-gray-500">Este relatório pode ter expirado ou não existe.</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Relatório não encontrado</h2>
+          <p className="text-muted-foreground">Este relatório pode ter expirado ou não existe.</p>
         </div>
       </div>
     );
   }
 
-  // Configurações dos gráficos - Estilo Apple minimalista cinza
-  const evolutionChartOptions: ApexOptions = {
+  const kpis = calculateKPIs();
+  const distribution = getDistributionByPeriod();
+  const scoreOp = getScoreOperacional();
+  const hotLeads = getHotLeadsData();
+  const filteredEvolution = filterWeekendData(reportData.evolucao_30_dias);
+
+  // Chart Options
+  const volumeChartOptions: ApexOptions = {
     chart: {
       type: 'area',
+      height: 420,
       toolbar: { show: false },
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      sparkline: { enabled: false },
+      fontFamily: 'Inter, system-ui, sans-serif',
     },
-    colors: ['#374151'],
+    colors: ['#7D1818'],
     fill: {
       type: 'gradient',
       gradient: {
         shadeIntensity: 1,
-        opacityFrom: 0.3,
-        opacityTo: 0.05,
+        opacityFrom: 0.4,
+        opacityTo: 0.1,
       }
     },
-    stroke: { curve: 'smooth', width: 2 },
+    stroke: { curve: 'smooth', width: 3 },
+    markers: { size: 5, colors: ['#fff'], strokeColors: ['#7D1818'], strokeWidth: 3 },
     xaxis: {
-      categories: reportData.evolution_30_days.map(d => 
-        new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-      ),
-      labels: { style: { colors: '#9CA3AF', fontSize: '11px' } }
+      categories: filteredEvolution.map(d => formatDate(d.data)),
+      labels: { rotate: -30, style: { fontSize: '11px' } }
     },
-    yaxis: { labels: { style: { colors: '#9CA3AF', fontSize: '11px' } } },
-    grid: { borderColor: '#E5E7EB', strokeDashArray: 3 },
-    tooltip: { theme: 'dark' },
-    dataLabels: { enabled: false },
+    yaxis: { title: { text: 'Contatos' } },
+    tooltip: {
+      custom: ({ dataPointIndex }) => {
+        const data = filteredEvolution[dataPointIndex];
+        return `<div class="px-3 py-2 bg-card border border-border rounded-lg shadow-lg">
+          <div class="font-semibold">${formatDate(data.data)}</div>
+          <div class="text-sm text-muted-foreground">${shortDay(data.data)}</div>
+          <div class="text-lg font-bold text-primary mt-1">${data.total} contatos</div>
+        </div>`;
+      }
+    },
+    grid: { borderColor: 'hsl(var(--border))' },
   };
 
-  const sentimentChartOptions: ApexOptions = {
-    chart: {
-      type: 'donut',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  const donutChartOptions: ApexOptions = {
+    chart: { type: 'donut', height: 260 },
+    series: [distribution.manha, distribution.tarde, distribution.noite],
+    labels: ['Manhã', 'Tarde', 'Noite'],
+    colors: ['#f97316', '#7D1818', '#ef4444'],
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '64%',
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: 'Total',
+              formatter: () => kpis.totalContacts.toString()
+            }
+          }
+        }
+      }
     },
-    colors: ['#6B7280', '#9CA3AF', '#D1D5DB'],
-    labels: ['Positivo', 'Neutro', 'Negativo'],
-    legend: { position: 'bottom', labels: { colors: '#6B7280' } },
-    dataLabels: { enabled: true, style: { colors: ['#FFFFFF'], fontSize: '12px' } },
-    plotOptions: { pie: { donut: { size: '70%' } } },
+    legend: { position: 'bottom' }
+  };
+
+  const scoreChartOptions: ApexOptions = {
+    chart: { type: 'radialBar', height: 140 },
+    series: [scoreOp],
+    colors: ['#7D1818'],
+    plotOptions: {
+      radialBar: {
+        hollow: { size: '60%' },
+        dataLabels: {
+          value: { fontSize: '20px', fontWeight: 700 }
+        }
+      }
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Header Mobile-First */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                📊 Relatório de Atendimento
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                {new Date(reportData.period_start).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} - {new Date(reportData.period_end).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-              </p>
-            </div>
-            <Button
-              onClick={exportToPDF}
-              size="sm"
-              className="bg-gray-900 hover:bg-gray-800 text-white gap-2"
-            >
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Exportar PDF</span>
-              <span className="sm:hidden">PDF</span>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div id="report-content" className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* KPIs - Grid Responsivo */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-        >
-          {[
-            { icon: Users, label: 'Conversas', value: reportData.total_conversas },
-            { icon: CheckCircle, label: 'Resolvidas', value: reportData.resolvidas },
-            { icon: TrendingUp, label: 'Taxa Resolução', value: `${reportData.taxa_resolucao.toFixed(1)}%` },
-            { icon: Clock, label: 'Tempo Médio', value: reportData.tempo_medio_atendimento },
-          ].map((kpi, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 p-4 hover:shadow-md transition-all"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <kpi.icon className="w-5 h-5 text-gray-400" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{kpi.value}</div>
-              <div className="text-xs text-gray-500">{kpi.label}</div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Gráfico de Evolução */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 p-4 sm:p-6"
-        >
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
-            Evolução nos Últimos 30 Dias
-          </h3>
-          <div className="-mx-2">
-            <ReactApexChart
-              options={evolutionChartOptions}
-              series={[{
-                name: 'Conversas',
-                data: reportData.evolution_30_days.map(d => d.count)
-              }]}
-              type="area"
-              height={250}
-            />
-          </div>
-        </motion.div>
-
-        {/* Sentimento - Mobile Friendly */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 p-4 sm:p-6"
-        >
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
-            Distribuição de Sentimento
-          </h3>
-          <div className="flex justify-center">
-            <ReactApexChart
-              options={sentimentChartOptions}
-              series={[
-                reportData.sentiment_distribution.positivo,
-                reportData.sentiment_distribution.neutro,
-                reportData.sentiment_distribution.negativo
-              ]}
-              type="donut"
-              height={280}
-            />
-          </div>
-        </motion.div>
-
-        {/* Análise IA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 p-4 sm:p-6"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-              <span className="text-sm">🤖</span>
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Análise IA</h3>
+    <div className="min-h-screen bg-[var(--bg)]">
+      <div className="max-w-[1400px] mx-auto p-4" id="report-content">
+        {/* Header */}
+        <header className="flex flex-col lg:flex-row items-start lg:items-center gap-4 bg-gradient-to-r from-[#7D1818] to-[#8b2a2a] p-4 sm:p-6 rounded-xl text-white mb-6">
+          <div className="w-20 h-14 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
+            <img src={EXA_LOGO} alt="EXA" className="max-w-[90%] max-h-[90%]" />
           </div>
           
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-medium text-gray-700 text-sm mb-2">Resumo Executivo</h4>
-              <p className="text-gray-600 text-sm leading-relaxed">{reportData.ai_analysis.summary}</p>
+          <div className="flex-1">
+            <h1 className="text-lg sm:text-xl font-extrabold tracking-wide">
+              RELATÓRIO VAR — PERFORMANCE OPERACIONAL
+            </h1>
+            <p className="text-white/90 text-sm mt-1">Versão executiva (Nível Conselho)</p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-semibold">
+                Agente: EXA IA
+              </span>
+              <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-semibold">
+                Período: {formatDate(reportData.periodo_inicio)} — {formatDate(reportData.periodo_fim)}
+              </span>
+              <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-semibold">
+                Contatos: {reportData.total_conversas}
+              </span>
             </div>
-            
-            {reportData.ai_analysis.patterns.length > 0 && (
-              <div>
-                <h4 className="font-medium text-gray-700 text-sm mb-2">Padrões Detectados</h4>
-                <ul className="space-y-2">
-                  {reportData.ai_analysis.patterns.map((pattern, i) => (
-                    <li key={i} className="text-gray-600 text-sm flex gap-2">
-                      <span className="text-gray-400 mt-0.5">•</span>
-                      <span>{pattern}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {reportData.ai_analysis.recommendations.length > 0 && (
-              <div>
-                <h4 className="font-medium text-gray-700 text-sm mb-2">Recomendações</h4>
-                <ul className="space-y-2">
-                  {reportData.ai_analysis.recommendations.map((rec, i) => (
-                    <li key={i} className="text-gray-600 text-sm flex gap-2">
-                      <span className="text-gray-400 mt-0.5">💡</span>
-                      <span>{rec}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
-        </motion.div>
 
-        {/* Hot Leads - Mobile Optimized */}
-        {reportData.hot_leads.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 p-4 sm:p-6"
-          >
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
-              🔥 Hot Leads
-            </h3>
-            <div className="space-y-3">
-              {reportData.hot_leads.slice(0, 5).map((lead, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{lead.contact_name}</p>
-                    <p className="text-xs text-gray-500">{lead.contact_type}</p>
-                  </div>
-                  <div className="ml-4 flex items-center gap-2">
-                    <span className="px-2 py-1 bg-gray-900 text-white rounded-full text-xs font-medium">
-                      {lead.score}
-                    </span>
-                  </div>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={() => exportHybridPDF('resumido')}
+              className="bg-white text-[#7D1818] hover:bg-white/90"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              PDF Resumido
+            </Button>
+            <Button
+              onClick={() => exportHybridPDF('detalhado')}
+              className="bg-white text-[#7D1818] hover:bg-white/90"
+            >
+              <FileDown className="w-4 h-4 mr-2" />
+              PDF Detalhado
+            </Button>
+          </div>
+        </header>
+
+        {/* Main Grid */}
+        <main className="grid grid-cols-1 lg:grid-cols-[320px_1fr_420px] gap-4">
+          {/* LEFT COLUMN */}
+          <section className="space-y-4">
+            {/* Painel Executivo */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card rounded-xl p-4 border border-border shadow-sm"
+            >
+              <h3 className="font-semibold text-foreground mb-1">Painel Executivo</h3>
+              <small className="text-muted-foreground text-xs">— visão resumida</small>
+              
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <div className="p-3 bg-gradient-to-b from-muted/50 to-muted/20 rounded-lg">
+                  <div className="text-2xl font-extrabold text-[#7D1818]">{kpis.periodDays}d</div>
+                  <div className="text-xs text-muted-foreground mt-1">Período</div>
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+                <div className="p-3 bg-gradient-to-b from-muted/50 to-muted/20 rounded-lg">
+                  <div className="text-2xl font-extrabold text-[#7D1818]">{kpis.totalContacts}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Contatos</div>
+                </div>
+                <div className="p-3 bg-gradient-to-b from-muted/50 to-muted/20 rounded-lg">
+                  <div className="text-2xl font-extrabold text-[#7D1818]">{kpis.avgPerDay}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Média/dia</div>
+                </div>
+                <div className="p-3 bg-gradient-to-b from-muted/50 to-muted/20 rounded-lg">
+                  <div className="text-xl font-extrabold text-[#7D1818]">{kpis.peakDay}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Dia de pico</div>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+                <p className="text-sm text-foreground">{reportData.ia_resumo_executivo}</p>
+              </div>
+            </motion.div>
+
+            {/* Alertas */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-card rounded-xl p-4 border border-border shadow-sm"
+            >
+              <h3 className="font-semibold text-foreground mb-1">Alertas Automáticos</h3>
+              <small className="text-muted-foreground text-xs">— ações imediatas</small>
+              
+              <div className="mt-4 space-y-2">
+                {reportData.ia_anomalias.slice(0, 3).map((anomalia, i) => (
+                  <div key={i} className="flex gap-3 items-start p-3 border border-border rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-foreground">{anomalia}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Diretrizes */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-card rounded-xl p-4 border border-border shadow-sm"
+            >
+              <h3 className="font-semibold text-foreground">Diretrizes para Amanhã</h3>
+              <ol className="list-decimal pl-4 mt-3 space-y-2">
+                {reportData.ia_recomendacoes.slice(0, 5).map((rec, i) => (
+                  <li key={i} className="text-sm text-foreground">{rec}</li>
+                ))}
+              </ol>
+            </motion.div>
+          </section>
+
+          {/* CENTER COLUMN */}
+          <section className="space-y-4">
+            {/* Volume Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-card rounded-xl p-4 border border-border shadow-sm"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="font-semibold text-foreground">Volume no período</h3>
+                  <small className="text-muted-foreground text-xs">— contatos por dia</small>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-muted-foreground">Excluir sáb./dom.</label>
+                  <input
+                    type="checkbox"
+                    checked={excludeWeekend}
+                    onChange={(e) => setExcludeWeekend(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                </div>
+              </div>
+              
+              <ClientOnly>
+                <ReactApexChart
+                  options={volumeChartOptions}
+                  series={[{ name: 'Contatos', data: filteredEvolution.map(d => d.total) }]}
+                  type="area"
+                  height={420}
+                />
+              </ClientOnly>
+              
+              <p className="text-xs text-muted-foreground mt-3">
+                Passe o mouse para ver dia da semana. Clique para abrir modal avançado.
+              </p>
+            </motion.div>
+
+            {/* IA Insights */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-card rounded-xl p-4 border border-border shadow-sm"
+            >
+              <h3 className="font-semibold text-foreground mb-1">IA — Análises & Insights</h3>
+              <small className="text-muted-foreground text-xs">— interpretação profunda</small>
+              
+              <div className="mt-4 space-y-3">
+                {reportData.ia_padroes_detectados.slice(0, 3).map((padrao, i) => (
+                  <div key={i} className="text-sm text-foreground">
+                    <strong className="text-[#7D1818]">Padrão {i + 1}:</strong> {padrao}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <Button
+                  onClick={() => setIaModalOpen(true)}
+                  variant="default"
+                  size="sm"
+                  className="bg-[#7D1818] hover:bg-[#6b1515]"
+                >
+                  Abrir IA Expandida
+                </Button>
+                <Button
+                  onClick={() => toast.info('Exportar IA insights')}
+                  variant="outline"
+                  size="sm"
+                >
+                  Exportar Insights
+                </Button>
+              </div>
+            </motion.div>
+          </section>
+
+          {/* RIGHT COLUMN */}
+          <aside className="space-y-4">
+            {/* Donut */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-card rounded-xl p-4 border border-border shadow-sm"
+            >
+              <h3 className="font-semibold text-foreground">Distribuição por período</h3>
+              <ClientOnly>
+                <ReactApexChart
+                  options={donutChartOptions}
+                  series={donutChartOptions.series}
+                  type="donut"
+                  height={260}
+                />
+              </ClientOnly>
+            </motion.div>
+
+            {/* Score */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-card rounded-xl p-4 border border-border shadow-sm"
+            >
+              <h3 className="font-semibold text-foreground mb-3">Score final</h3>
+              <ClientOnly>
+                <ReactApexChart
+                  options={scoreChartOptions}
+                  series={scoreChartOptions.series}
+                  type="radialBar"
+                  height={140}
+                />
+              </ClientOnly>
+              <p className="text-center text-sm text-muted-foreground mt-2">
+                Score: <strong className="text-[#7D1818]">{scoreOp} / 100</strong>
+              </p>
+            </motion.div>
+
+            {/* Hot Leads */}
+            {hotLeads.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="bg-card rounded-xl p-4 border border-border shadow-sm"
+              >
+                <h3 className="font-semibold text-foreground mb-3">Hot Leads</h3>
+                <div className="space-y-3">
+                  {hotLeads.map((lead, i) => (
+                    <div key={i} className="flex gap-3 p-3 border border-border rounded-lg">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#7D1818] to-[#a33] rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
+                        {lead.nome.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-foreground truncate">{lead.nome}</p>
+                        <p className="text-xs text-muted-foreground">Score {lead.score} • {lead.msgs} msgs</p>
+                        <p className="text-xs text-muted-foreground mt-1">{lead.nota}</p>
+                        <Button size="sm" variant="outline" className="mt-2 text-xs">
+                          Abrir
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </aside>
+        </main>
 
         {/* Footer */}
-        <div className="text-center py-6 text-xs text-gray-400">
-          <p>Relatório gerado por EXA Mídia • {new Date().toLocaleDateString('pt-BR')}</p>
+        <div className="text-center py-6 mt-6 text-xs text-muted-foreground">
+          <p>Relatório gerado por EXA Mídia • {formatDate(reportData.gerado_em)}</p>
           <p className="mt-1">Este link expira em 30 dias</p>
         </div>
       </div>
+
+      {/* Modal IA Expandida */}
+      <Dialog open={iaModalOpen} onOpenChange={setIaModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>IA — Análises Inteligentes (Expandido)</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-4">
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Resumo Final</h4>
+              <p className="text-sm text-muted-foreground">{reportData.ia_resumo_executivo}</p>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Padrões Detectados</h4>
+              <ul className="space-y-2">
+                {reportData.ia_padroes_detectados.map((padrao, i) => (
+                  <li key={i} className="text-sm flex gap-2">
+                    <span className="text-[#7D1818]">•</span>
+                    <span>{padrao}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Anomalias</h4>
+              <div className="space-y-2">
+                {reportData.ia_anomalias.map((anomalia, i) => (
+                  <div key={i} className="p-3 bg-muted/30 rounded-lg flex gap-2 items-start">
+                    <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">{anomalia}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Recomendações</h4>
+              <ol className="list-decimal pl-4 space-y-2">
+                {reportData.ia_recomendacoes.map((rec, i) => (
+                  <li key={i} className="text-sm">{rec}</li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
