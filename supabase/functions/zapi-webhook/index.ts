@@ -25,6 +25,25 @@ serve(async (req) => {
     const payload = await req.json();
     console.log('[ZAPI-WEBHOOK] 📥 Received:', JSON.stringify(payload, null, 2));
     
+    // 🧹 LIMPEZA DE LOCKS ANTIGOS (>10 minutos)
+    try {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: oldLocks } = await supabase
+        .from('agent_context')
+        .select('key, updated_at')
+        .like('key', 'ai_processing_%')
+        .lt('updated_at', tenMinutesAgo);
+      
+      if (oldLocks && oldLocks.length > 0) {
+        console.log(`🧹 [CLEANUP] Removendo ${oldLocks.length} locks antigos`);
+        for (const lock of oldLocks) {
+          await supabase.from('agent_context').delete().eq('key', lock.key);
+        }
+      }
+    } catch (cleanupError) {
+      console.error('❌ [CLEANUP] Erro ao limpar locks:', cleanupError);
+    }
+    
     // 🔍 LOG ESPECIAL PARA EDUARDO - Detectar suas mensagens
     if (payload.instanceId === '3EA943191043E27F5BEB7EDE6B443D3D') {
       console.log('🔵 [EDUARDO] Mensagem recebida na instância do Eduardo:', {
@@ -333,6 +352,20 @@ serve(async (req) => {
     }
 
     console.log('[ZAPI-WEBHOOK] ✅ Agent found:', agent.key, '- Instance:', instanceId);
+    
+    // 🔍 LOG ESPECIAL PARA SOFIA - Rastrear todas as mensagens
+    if (agent.key === 'sofia') {
+      console.log('🟣 [SOFIA] Mensagem recebida:', {
+        phone,
+        messageId,
+        messageText: messageText.substring(0, 100),
+        mediaType,
+        instanceId: payload.instanceId,
+        timestamp: new Date().toISOString(),
+        isGroup,
+        fromMe
+      });
+    }
     
     // 🔍 LOG ADICIONAL PARA EDUARDO
     if (agent.key === 'eduardo') {
@@ -699,6 +732,7 @@ Obrigado pela compreensão!`;
         // 🤖 FASE 4: Verificar se Sofia está pausada antes de chamar IA
         let sofiaPaused = false;
         if (agent.key === 'sofia') {
+          console.log('🟣 [SOFIA] Verificando se está pausada...');
           const { data: conv } = await supabase
             .from('conversations')
             .select('sofia_paused')
@@ -706,6 +740,7 @@ Obrigado pela compreensão!`;
             .single();
           
           sofiaPaused = conv?.sofia_paused === true;
+          console.log('🟣 [SOFIA] Pausada?', sofiaPaused);
           
           if (sofiaPaused) {
             console.log('[ZAPI-WEBHOOK] 🛑 Sofia pausada - Eduardo assumiu. Não responder.');
@@ -716,6 +751,15 @@ Obrigado pela compreensão!`;
         // Verificar se precisa chamar IA automaticamente
         if (agent.ai_auto_response && routeResult?.routed_to) {
           console.log('[ZAPI-WEBHOOK] 🤖 AI auto-response enabled, calling generate-ai-response...');
+          
+          // 🟣 LOG SOFIA: Confirmação de que vai processar IA
+          if (agent.key === 'sofia') {
+            console.log('🟣 [SOFIA] Iniciando processamento IA para:', {
+              conversationId: conversation.id,
+              messageId,
+              phone
+            });
+          }
           
           // ====== LOCK NO WEBHOOK ANTES DE CHAMAR IA (FASE 1) ======
           const aiLockKey = `ai_processing_${conversation.id}_${messageId}`;
@@ -770,8 +814,17 @@ Obrigado pela compreensão!`;
 
               if (aiError) {
                 console.error('[ZAPI-WEBHOOK] ❌ AI generation error:', aiError);
+                // 🟣 LOG SOFIA: Erro na IA
+                if (agent.key === 'sofia') {
+                  console.log('🟣 [SOFIA] ❌ ERRO ao gerar resposta IA:', aiError);
+                }
               } else if (aiResult?.response) {
                 console.log('[ZAPI-WEBHOOK] ✅ AI response generated, sending to WhatsApp...');
+                
+                // 🟣 LOG SOFIA: Resposta IA gerada com sucesso
+                if (agent.key === 'sofia') {
+                  console.log('🟣 [SOFIA] ✅ Resposta IA gerada:', aiResult.response.substring(0, 100));
+                }
                 
                 // ENVIAR RESPOSTA DA IA PARA O WHATSAPP
                 await supabase.functions.invoke('zapi-send-message', {
