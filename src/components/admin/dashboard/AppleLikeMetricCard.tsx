@@ -61,15 +61,6 @@ const AppleLikeMetricCard = ({
           {label}
         </p>
       </div>
-
-      {/* Optional Description */}
-      {description && (
-        <div className="mt-2 pt-2 border-t border-border/30">
-          <p className="text-xs text-muted-foreground/80">
-            {description}
-          </p>
-        </div>
-      )}
     </motion.div>
   );
 
