@@ -7,15 +7,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Users } from 'lucide-react';
 
 interface Director {
   id: string;
+  user_id: string | null;
   nome: string;
   telefone: string;
   departamento: string | null;
   nivel_acesso: 'basico' | 'gerente' | 'admin';
   ativo: boolean;
   pode_usar_ia: boolean;
+}
+
+interface SuperAdmin {
+  user_id: string;
+  nome: string;
+  email: string;
+  telefone: string | null;
 }
 
 interface AddDirectorDialogProps {
@@ -27,6 +36,9 @@ interface AddDirectorDialogProps {
 
 export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddDirectorDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [loadingSuperAdmins, setLoadingSuperAdmins] = useState(false);
+  const [superAdmins, setSuperAdmins] = useState<SuperAdmin[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
@@ -36,8 +48,17 @@ export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddD
     pode_usar_ia: false
   });
 
+  // Carregar super admins disponíveis
+  useEffect(() => {
+    if (isOpen && !director) {
+      loadAvailableSuperAdmins();
+    }
+  }, [isOpen, director]);
+
+  // Preencher dados ao editar
   useEffect(() => {
     if (director) {
+      setSelectedUserId(director.user_id || '');
       setFormData({
         nome: director.nome,
         telefone: director.telefone,
@@ -47,6 +68,7 @@ export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddD
         pode_usar_ia: director.pode_usar_ia
       });
     } else {
+      setSelectedUserId('');
       setFormData({
         nome: '',
         telefone: '',
@@ -57,6 +79,74 @@ export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddD
       });
     }
   }, [director, isOpen]);
+
+  const loadAvailableSuperAdmins = async () => {
+    try {
+      setLoadingSuperAdmins(true);
+      
+      // Buscar todos os super_admins
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'super_admin');
+
+      if (rolesError) throw rolesError;
+
+      const superAdminIds = rolesData?.map(r => r.user_id) || [];
+
+      if (superAdminIds.length === 0) {
+        setSuperAdmins([]);
+        return;
+      }
+
+      // Buscar dados dos usuários super_admin
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, nome, email, telefone')
+        .in('id', superAdminIds);
+
+      if (usersError) throw usersError;
+
+      // Buscar super_admins já cadastrados como diretores
+      const { data: directorsData, error: directorsError } = await supabase
+        .from('exa_alerts_directors')
+        .select('user_id')
+        .not('user_id', 'is', null);
+
+      if (directorsError) throw directorsError;
+
+      const usedUserIds = directorsData?.map(d => d.user_id) || [];
+
+      // Filtrar apenas os que NÃO estão cadastrados
+      const available = (usersData || [])
+        .filter(user => !usedUserIds.includes(user.id))
+        .map(user => ({
+          user_id: user.id,
+          nome: user.nome,
+          email: user.email,
+          telefone: user.telefone
+        }));
+
+      setSuperAdmins(available);
+    } catch (error: any) {
+      console.error('Error loading super admins:', error);
+      toast.error('Erro ao carregar super admins');
+    } finally {
+      setLoadingSuperAdmins(false);
+    }
+  };
+
+  const handleSuperAdminSelect = (userId: string) => {
+    const selected = superAdmins.find(sa => sa.user_id === userId);
+    if (selected) {
+      setSelectedUserId(userId);
+      setFormData({
+        ...formData,
+        nome: selected.nome,
+        telefone: selected.telefone || ''
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,10 +170,17 @@ export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddD
         if (error) throw error;
         toast.success('Diretor atualizado com sucesso!');
       } else {
-        // Create
+        // Create - Validar se user_id foi selecionado
+        if (!selectedUserId) {
+          toast.error('Selecione um super admin');
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase
           .from('exa_alerts_directors')
           .insert([{
+            user_id: selectedUserId,
             nome: formData.nome,
             telefone: formData.telefone,
             departamento: formData.departamento || null,
@@ -116,15 +213,50 @@ export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddD
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nome */}
+          {/* Selecionar Super Admin (apenas ao criar) */}
+          {!director && (
+            <div className="space-y-2">
+              <Label htmlFor="superadmin">Selecionar Super Admin *</Label>
+              <Select
+                value={selectedUserId}
+                onValueChange={handleSuperAdminSelect}
+                disabled={loadingSuperAdmins}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingSuperAdmins ? "Carregando..." : "Selecione um super admin"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {superAdmins.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-gray-500">
+                      <Users className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      Todos os super admins já estão cadastrados
+                    </div>
+                  ) : (
+                    superAdmins.map((admin) => (
+                      <SelectItem key={admin.user_id} value={admin.user_id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{admin.nome}</span>
+                          <span className="text-xs text-gray-500">{admin.email}</span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Nome (preenchido automaticamente) */}
           <div className="space-y-2">
-            <Label htmlFor="nome">Nome *</Label>
+            <Label htmlFor="nome">Nome {director ? '*' : '(preenchido automaticamente)'}</Label>
             <Input
               id="nome"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              placeholder="João Silva"
+              placeholder="Será preenchido ao selecionar super admin"
               required
+              readOnly={!director}
+              className={!director ? 'bg-gray-50' : ''}
             />
           </div>
 
@@ -138,6 +270,11 @@ export const AddDirectorDialog = ({ isOpen, onClose, onSuccess, director }: AddD
               placeholder="11987654321"
               required
             />
+            {!director && (
+              <p className="text-xs text-gray-500">
+                ℹ️ Edite se necessário para formato WhatsApp
+              </p>
+            )}
           </div>
 
           {/* Departamento */}
