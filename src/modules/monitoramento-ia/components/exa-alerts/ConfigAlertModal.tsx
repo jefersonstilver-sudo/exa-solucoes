@@ -363,25 +363,13 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
               </div>
 
               <div className="space-y-2">
-                <Label>Horário (com minutos)</Label>
-                <Select value={time} onValueChange={setTime}>
-                  <SelectTrigger className="bg-white dark:bg-gray-900">
-                    <SelectValue placeholder="Selecione o horário" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px] z-[100] bg-white dark:bg-gray-950 pointer-events-auto">
-                    {Array.from({ length: 24 * 4 }, (_, i) => {
-                      const totalMinutes = i * 15;
-                      const hour = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
-                      const minute = (totalMinutes % 60).toString().padStart(2, '0');
-                      const timeValue = `${hour}:${minute}`;
-                      return (
-                        <SelectItem key={timeValue} value={timeValue}>
-                          {timeValue}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+                <Label>Horário (escolha qualquer minuto)</Label>
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-white dark:bg-gray-900 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
               </div>
             </div>
 
