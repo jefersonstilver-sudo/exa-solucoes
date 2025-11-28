@@ -15,7 +15,6 @@ import { MobileActionMenu } from '@/components/admin/shared/MobileActionMenu';
 import { MobileFilterSheet } from '@/components/admin/shared/MobileFilterSheet';
 import { FilterChips } from '@/components/admin/shared/FilterChips';
 import { OrderPeriodFilter, filterByPeriod, PeriodFilter } from '@/components/admin/orders/OrderPeriodFilter';
-import { RealtimeOrderNotification } from '@/components/admin/orders/RealtimeOrderNotification';
 import { calculateStats } from '@/services/ordersAndAttemptsProcessor';
 import { FixPedidoListaPaineisButton } from '@/components/admin/FixPedidoListaPaineisButton';
 
@@ -338,11 +337,6 @@ const OrdersPage = () => {
 
       {/* Content Container */}
       <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
-        {/* Realtime Notification - Floating */}
-        <div className="fixed top-24 right-8 z-30">
-          <RealtimeOrderNotification />
-        </div>
-
         {/* Alerts */}
         {filteredItems.length > 0 && <OrdersPageAlerts ordersAndAttempts={filteredItems} />}
 

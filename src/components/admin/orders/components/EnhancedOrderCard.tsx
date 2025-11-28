@@ -552,7 +552,12 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
           
           {item.client_name && <div className="flex items-center gap-2">
               <User className="w-4 h-4 text-purple-600" />
-              <span className="text-sm font-medium">{item.client_name}</span>
+              <span 
+                className="text-sm font-medium cursor-pointer hover:text-primary hover:underline transition-colors"
+                onClick={() => setShowTrackingModal(true)}
+              >
+                {item.client_name}
+              </span>
             </div>}
           
           {item.client_email && <div className="flex items-center gap-2">
