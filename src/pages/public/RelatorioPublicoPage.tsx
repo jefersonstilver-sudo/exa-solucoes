@@ -41,6 +41,9 @@ interface ReportData {
   ia_padroes_detectados: string[];
   ia_anomalias: string[];
   ia_recomendacoes: string[];
+  ia_primeira_conversa_por_tipo?: Array<{tipo: string; contato: string; hora: string; assunto: string}>;
+  ia_analise_por_tipo?: Record<string, string>;
+  ia_trechos_importantes?: Array<{contato: string; trecho: string; motivo: string}>;
   
   conversas_lista: Array<{
     id: string;
@@ -1162,19 +1165,93 @@ export const RelatorioPublicoPage = () => {
 
       {/* Modal IA Expandida */}
       <Dialog open={iaModalOpen} onOpenChange={setIaModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>IA — Análises Inteligentes (Expandido)</DialogTitle>
+            <DialogTitle>IA — Análise Profunda das Conversas</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-6 mt-4">
+            {/* Resumo Executivo */}
             <div>
-              <h4 className="font-semibold text-sm mb-2">Resumo Final</h4>
-              <p className="text-sm text-muted-foreground">{reportData.ia_resumo_executivo}</p>
+              <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-[#7D1818]" />
+                Resumo Executivo
+              </h4>
+              <p className="text-sm bg-muted/30 p-4 rounded-lg">{reportData.ia_resumo_executivo}</p>
             </div>
 
+            {/* Primeira Conversa por Tipo */}
+            {reportData.ia_primeira_conversa_por_tipo && reportData.ia_primeira_conversa_por_tipo.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#7D1818]" />
+                  Primeira Conversa de Cada Tipo
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {reportData.ia_primeira_conversa_por_tipo.map((conv, i) => (
+                    <div key={i} className="bg-muted/30 p-3 rounded-lg">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-xs font-semibold text-[#7D1818]">{conv.tipo}</span>
+                        <span className="text-xs text-muted-foreground">{conv.hora}</span>
+                      </div>
+                      <p className="text-sm font-medium">{conv.contato}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{conv.assunto}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Análise por Tipo de Contato */}
+            {reportData.ia_analise_por_tipo && Object.keys(reportData.ia_analise_por_tipo).length > 0 && (
+              <div>
+                <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#7D1818]" />
+                  Análise por Tipo de Contato
+                </h4>
+                <div className="space-y-3">
+                  {Object.entries(reportData.ia_analise_por_tipo).map(([tipo, analise]) => (
+                    <div key={tipo} className="bg-muted/30 p-4 rounded-lg">
+                      <h5 className="font-semibold text-sm text-[#7D1818] mb-2 capitalize">{tipo}</h5>
+                      <p className="text-sm text-foreground">{analise}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Trechos Importantes */}
+            {reportData.ia_trechos_importantes && reportData.ia_trechos_importantes.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-[#7D1818]" />
+                  Trechos Importantes das Conversas
+                </h4>
+                <div className="space-y-3">
+                  {reportData.ia_trechos_importantes.map((trecho, i) => (
+                    <div key={i} className="bg-yellow-50 dark:bg-yellow-950/20 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-xs font-semibold text-[#7D1818]">{trecho.contato}</span>
+                        <span className="text-xs text-yellow-600 dark:text-yellow-400">#{i + 1}</span>
+                      </div>
+                      <blockquote className="text-sm italic text-foreground/90 mb-2 pl-3 border-l-2 border-yellow-300">
+                        "{trecho.trecho}"
+                      </blockquote>
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Por que é importante:</strong> {trecho.motivo}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Padrões Detectados */}
             <div>
-              <h4 className="font-semibold text-sm mb-2">Padrões Detectados</h4>
+              <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[#7D1818]" />
+                Padrões Detectados
+              </h4>
               <ul className="space-y-2">
                 {reportData.ia_padroes_detectados.map((padrao, i) => (
                   <li key={i} className="text-sm flex gap-2">
@@ -1185,6 +1262,7 @@ export const RelatorioPublicoPage = () => {
               </ul>
             </div>
 
+            {/* Anomalias */}
             <div>
               <h4 className="font-semibold text-sm mb-2">Anomalias</h4>
               <div className="space-y-2">
@@ -1197,8 +1275,9 @@ export const RelatorioPublicoPage = () => {
               </div>
             </div>
 
+            {/* Recomendações */}
             <div>
-              <h4 className="font-semibold text-sm mb-2">Recomendações</h4>
+              <h4 className="font-semibold text-sm mb-2">💡 Sugestões de Melhoria</h4>
               <ol className="list-decimal pl-4 space-y-2">
                 {reportData.ia_recomendacoes.map((rec, i) => (
                   <li key={i} className="text-sm">{rec}</li>

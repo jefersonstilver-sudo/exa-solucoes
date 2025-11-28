@@ -306,57 +306,140 @@ Deno.serve(async (req) => {
       evolucao_por_hora.push({ hora: horaStr, enviadas, recebidas, total: enviadas + recebidas });
     }
 
-    // ===== ANÁLISE IA (LOVABLE AI) =====
+    // ===== ANÁLISE IA PROFUNDA (LOVABLE AI) =====
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
     let ia_resumo_executivo = '';
     let ia_padroes_detectados: string[] = [];
     let ia_anomalias: string[] = [];
     let ia_recomendacoes: string[] = [];
+    let ia_primeira_conversa_por_tipo: Array<{tipo: string; contato: string; hora: string; assunto: string}> = [];
+    let ia_analise_por_tipo: Record<string, string> = {};
+    let ia_trechos_importantes: Array<{contato: string; trecho: string; motivo: string}> = [];
 
     if (openAiKey) {
       try {
-        // Buscar conteúdo das últimas 50 mensagens para contexto
-        const mensagensConteudo = messages
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 50)
-          .map(m => {
-            let texto = m.body?.substring(0, 100) || '';
-            if (m.has_audio) texto = '🎤 ' + texto;
-            if (m.has_image) texto = '📷 ' + texto;
-            return `[${m.direction === 'outbound' ? 'ENV' : 'REC'}] ${texto || '(mídia)'}`;
+        // ===== AGRUPAR CONVERSAS POR TIPO =====
+        const conversasPorTipo: Record<string, Array<{
+          contato: string;
+          telefone: string;
+          hora_inicio: string;
+          mensagens: Array<{dir: string; texto: string; hora: string}>;
+        }>> = {};
+
+        // Ordenar conversas por created_at (primeira conversa)
+        const sortedConversations = [...(conversations || [])]
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+        // Agrupar por tipo normalizado
+        sortedConversations.forEach((conv: ConversationRecord) => {
+          const tipo = normalizeContactType(conv.contact_type);
+          if (!conversasPorTipo[tipo]) conversasPorTipo[tipo] = [];
+
+          // Buscar mensagens desta conversa (limitadas e ordenadas)
+          const mensagensConv = messages
+            .filter(m => m.conversation_id === conv.id)
+            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+            .slice(0, 15) // Até 15 mensagens por conversa
+            .map(m => ({
+              dir: m.direction === 'outbound' ? 'ENV' : 'REC',
+              texto: m.body?.substring(0, 200) || (m.has_audio ? '🎤 áudio' : m.has_image ? '📷 imagem' : '(mídia)'),
+              hora: new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            }));
+
+          conversasPorTipo[tipo].push({
+            contato: conv.contact_name || conv.contact_phone,
+            telefone: conv.contact_phone,
+            hora_inicio: new Date(conv.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            mensagens: mensagensConv
+          });
+        });
+
+        // Limitar conversas por tipo (primeiras 10 de cada)
+        Object.keys(conversasPorTipo).forEach(tipo => {
+          conversasPorTipo[tipo] = conversasPorTipo[tipo].slice(0, 10);
+        });
+
+        // ===== FORMATAR PARA A IA =====
+        const conversasFormatadas = Object.entries(conversasPorTipo)
+          .map(([tipo, convs]) => {
+            const formatTipo: Record<string, string> = {
+              'prestador': 'Provedores de Internet',
+              'sindico': 'Síndicos',
+              'sindico_lead': 'Síndicos Lead',
+              'cliente': 'Clientes',
+              'equipe_hexa': 'Equipe Interna',
+              'outro': 'Outros'
+            };
+            
+            const tipoLabel = formatTipo[tipo] || tipo;
+            const convsText = convs.map(c => 
+              `\n  📞 ${c.contato} (${c.telefone}) - Início: ${c.hora_inicio}\n` +
+              c.mensagens.map(m => `    [${m.hora}] [${m.dir}] ${m.texto}`).join('\n')
+            ).join('\n');
+
+            return `\n${tipoLabel} (${convs.length} conversas):\n${convsText}`;
           })
           .join('\n');
 
         const aiPrompt = `
-ANÁLISE RIGOROSA DE DADOS DE CONVERSAS - MODO ANTI-ALUCINAÇÃO ATIVADO
+ANÁLISE DETALHADA DE CONVERSAS DO PERÍODO
 
-REGRAS CRÍTICAS:
-1. NUNCA invente informações
-2. ANALISE APENAS os dados fornecidos
-3. Se não houver dados suficientes, declare explicitamente
-4. Use APENAS números e fatos presentes nos dados
-
-DADOS REAIS DO SISTEMA:
+DADOS DO SISTEMA:
 - Total de conversas: ${total_conversas}
-- Resolvidas: ${conversas_resolvidas}
+- Resolvidas: ${conversas_resolvidas} (${taxa_resolucao.toFixed(1)}%)
 - Pendentes: ${conversas_pendentes}
-- Taxa de resolução: ${taxa_resolucao.toFixed(2)}%
 - TMA médio: ${tma_formatado}
-- Sentimento positivo: ${sentimento_positivo.toFixed(2)}%
-- Sentimento neutro: ${sentimento_neutro.toFixed(2)}%
-- Sentimento negativo: ${sentimento_negativo.toFixed(2)}%
-- Hot Leads: ${hot_leads}
-- Tipos: Lead=${tipo_lead}, Síndico=${tipo_sindico}, Cliente=${tipo_cliente}, Outro=${tipo_outro}
+- Sentimentos: ${sentimento_positivo.toFixed(1)}% positivo, ${sentimento_neutro.toFixed(1)}% neutro, ${sentimento_negativo.toFixed(1)}% negativo
 
-ÚLTIMAS MENSAGENS (contexto):
-${mensagensConteudo}
+CONVERSAS POR TIPO DE CONTATO:
+${conversasFormatadas}
 
-FORNEÇA RESPOSTA EM JSON EXATAMENTE NESTE FORMATO:
+ANALISE E FORNEÇA EM JSON:
+
+1. **PRIMEIRA CONVERSA DE CADA TIPO** (com horário):
+   - Qual foi a primeira conversa de cada tipo?
+   - Que horas começou?
+   - Qual o assunto principal?
+
+2. **ANÁLISE POR TIPO DE CONTATO**:
+   - Provedores: O que estão solicitando? Há cobranças? Instalações?
+   - Síndicos: Há reclamações de painéis? Problemas técnicos?
+   - Equipe Interna: Há tensões? Cobranças internas?
+   - Clientes: Quais demandas principais?
+
+3. **TRECHOS IMPORTANTES** (cite 3-5 trechos reais das conversas):
+   - Mensagens que indicam problemas urgentes
+   - Reclamações que precisam atenção
+   - Solicitações pendentes
+   - Cite o texto EXATO da mensagem
+
+4. **PADRÕES DETECTADOS**:
+   - O que mais se repete nas conversas?
+   - Quais assuntos dominam?
+
+5. **SUGESTÕES DE MELHORIA**:
+   - Baseado no conteúdo real, o que pode melhorar?
+   - Há conversas que precisam follow-up?
+
+RESPONDA EM JSON VÁLIDO:
 {
-  "resumo_executivo": "string (2-3 frases sobre desempenho geral)",
-  "padroes_detectados": ["padrão 1", "padrão 2", "padrão 3"],
-  "anomalias": ["anomalia 1 ou 'Nenhuma anomalia detectada'"],
-  "recomendacoes": ["recomendação 1", "recomendação 2", "recomendação 3"]
+  "primeira_conversa_por_tipo": [
+    {"tipo": "Provedores de Internet", "contato": "Nome", "hora": "HH:MM", "assunto": "Breve descrição"},
+    {"tipo": "Síndicos", "contato": "Nome", "hora": "HH:MM", "assunto": "Breve descrição"}
+  ],
+  "analise_por_tipo": {
+    "provedores": "Análise das conversas com provedores...",
+    "sindicos": "Análise das conversas com síndicos...",
+    "equipe_interna": "Análise das conversas internas...",
+    "clientes": "Análise das conversas com clientes..."
+  },
+  "trechos_importantes": [
+    {"contato": "Nome do contato", "trecho": "Texto EXATO da mensagem", "motivo": "Por que é importante"}
+  ],
+  "padroes_detectados": ["padrão 1", "padrão 2"],
+  "sugestoes_melhoria": ["sugestão 1", "sugestão 2"],
+  "resumo_executivo": "Resumo geral...",
+  "anomalias": ["anomalia 1 ou 'Nenhuma detectada'"]
 }`;
 
         const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -370,14 +453,14 @@ FORNEÇA RESPOSTA EM JSON EXATAMENTE NESTE FORMATO:
             messages: [
               {
                 role: 'system',
-                content: 'Você é um analista de dados rigoroso. NUNCA invente informações. Analise APENAS os dados fornecidos. Responda em JSON válido.'
+                content: 'Você é um analista de conversas experiente. Analise APENAS os dados fornecidos. Cite trechos REAIS das mensagens. Responda em JSON válido.'
               },
               {
                 role: 'user',
                 content: aiPrompt
               }
             ],
-            temperature: 0.2,
+            temperature: 0.3,
             response_format: { type: "json_object" }
           }),
         });
@@ -385,10 +468,13 @@ FORNEÇA RESPOSTA EM JSON EXATAMENTE NESTE FORMATO:
         const aiData = await aiResponse.json();
         const aiContent = JSON.parse(aiData.choices[0].message.content);
         
-        ia_resumo_executivo = aiContent.resumo_executivo;
-        ia_padroes_detectados = aiContent.padroes_detectados;
-        ia_anomalias = aiContent.anomalias;
-        ia_recomendacoes = aiContent.recomendacoes;
+        ia_resumo_executivo = aiContent.resumo_executivo || '';
+        ia_padroes_detectados = aiContent.padroes_detectados || [];
+        ia_anomalias = aiContent.anomalias || [];
+        ia_recomendacoes = aiContent.sugestoes_melhoria || aiContent.recomendacoes || [];
+        ia_primeira_conversa_por_tipo = aiContent.primeira_conversa_por_tipo || [];
+        ia_analise_por_tipo = aiContent.analise_por_tipo || {};
+        ia_trechos_importantes = aiContent.trechos_importantes || [];
 
       } catch (aiError) {
         console.error('❌ Erro na análise IA:', aiError);
@@ -396,6 +482,9 @@ FORNEÇA RESPOSTA EM JSON EXATAMENTE NESTE FORMATO:
         ia_padroes_detectados = ['Análise não disponível'];
         ia_anomalias = ['Análise não disponível'];
         ia_recomendacoes = ['Análise não disponível'];
+        ia_primeira_conversa_por_tipo = [];
+        ia_analise_por_tipo = {};
+        ia_trechos_importantes = [];
       }
     }
 
@@ -445,11 +534,14 @@ FORNEÇA RESPOSTA EM JSON EXATAMENTE NESTE FORMATO:
       // Evolução Temporal (19)
       evolucao_30_dias,
       
-      // Análise IA (20-23)
+      // Análise IA (20-27)
       ia_resumo_executivo,
       ia_padroes_detectados,
       ia_anomalias,
       ia_recomendacoes,
+      ia_primeira_conversa_por_tipo,
+      ia_analise_por_tipo,
+      ia_trechos_importantes,
       
       // Lista Completa (24)
       conversas_lista,
