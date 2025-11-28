@@ -1,4 +1,4 @@
-// Last updated: 2025-11-28T04:35:00Z - Force redeploy with skipSplit debug
+// CRITICAL FIX: 2025-11-28T04:38:00Z - Body read fix + skipSplit implementation
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -8,6 +8,9 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // 🔍 INICIO DA FUNÇÃO
+  console.log('[ZAPI-SEND] 🚀 Function started - Version: 2025-11-28T04:38:00Z');
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -17,7 +20,10 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // ✅ LER BODY UMA ÚNICA VEZ
     const requestBody = await req.json();
+    console.log('[ZAPI-SEND] 📥 Request received:', Object.keys(requestBody));
+    
     const { agentKey, phone, message, mediaUrl, skipSplit } = requestBody;
 
     // 🔍 DEBUG: Log explícito do parâmetro skipSplit
