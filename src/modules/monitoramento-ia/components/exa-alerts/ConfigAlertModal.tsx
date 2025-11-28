@@ -17,12 +17,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
 const CONTACT_TYPES = [
+  { value: 'lead', label: 'Leads' },
   { value: 'sindico', label: 'Síndicos' },
   { value: 'sindico_lead', label: 'Síndicos Lead' },
-  { value: 'lead', label: 'Leads' },
-  { value: 'supervisor_tke', label: 'Supervisores TKE' },
-  { value: 'supervisor_oriente', label: 'Supervisores Oriente' },
-  { value: 'provedor', label: 'Provedores' },
+  { value: 'tke_supervisor', label: 'Supervisores TKE' },
+  { value: 'oriente_supervisor', label: 'Supervisores Oriente' },
+  { value: 'ligga_provedor', label: 'Ligga (Provedor)' },
+  { value: 'vivo_provedor', label: 'Vivo (Provedor)' },
   { value: 'equipe_exa', label: 'Equipe EXA' },
 ];
 interface ConfigAlertModalProps {
@@ -625,7 +626,7 @@ export const ConfigAlertModal = ({
             <Button
               onClick={handleGenerateReport}
               disabled={generatingReport || demandSelectedDirectors.length === 0}
-              className="w-full bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 text-white rounded-lg h-12"
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-12 shadow-sm hover:shadow-md transition-all"
             >
               {generatingReport ? (
                 <>
@@ -635,7 +636,7 @@ export const ConfigAlertModal = ({
               ) : (
                 <>
                   <Zap className="w-4 h-4 mr-2" />
-                  🚀 Gerar e Enviar Relatório Agora
+                  Gerar e Enviar Relatório Agora
                 </>
               )}
             </Button>
@@ -646,8 +647,8 @@ export const ConfigAlertModal = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading} className="rounded-lg">
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={loading || selectedDirectors.length === 0} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg">
-            {loading ? 'Salvando...' : '💾 Salvar Configuração'}
+          <Button onClick={handleSave} disabled={loading || selectedDirectors.length === 0} className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg shadow-sm hover:shadow-md transition-all">
+            {loading ? 'Salvando...' : 'Salvar Configuração'}
           </Button>
         </DialogFooter>
       </DialogContent>

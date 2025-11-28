@@ -205,6 +205,13 @@ const AppContent = () => {
           
           {/* ROTAS PÚBLICAS DE EXIBIÇÃO - Novo padrão com nome+código */}
           
+          {/* Relatório Público VAR - Sem autenticação */}
+          <Route path="/r/:reportId" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando relatório..." />}>
+              {React.createElement(lazy(() => import('./pages/public/RelatorioPublicoPage')))}
+            </Suspense>
+          } />
+          
           {/* Embed livre (para iframes) - /embed/[nome-predio]/[codigo] */}
           <Route path="/embed/:buildingSlug/:buildingCode" element={
             <Suspense fallback={<div className="w-full h-full bg-black" />}>
