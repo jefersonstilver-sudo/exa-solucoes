@@ -179,7 +179,7 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                 <CardTitle className="text-sm font-semibold">
                   {item.type === 'order' ? `Pedido #${item.id.substring(0, 8)}` : `Cotação #${item.id.substring(0, 8)}`}
                 </CardTitle>
-                {item.coupon_code && <CouponBadge couponCode={item.coupon_code} size="sm" />}
+                {item.coupon_code && <CouponBadge couponCode={item.coupon_code} couponCategory={item.coupon_category} size="sm" />}
                 <Badge className={`${getStatusColor(item.status, item.correct_status)} text-xs px-1.5 py-0`}>
                   {getStatusText(item.status, item.correct_status, item.video_status)}
                 </Badge>

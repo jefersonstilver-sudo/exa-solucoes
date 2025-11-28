@@ -15,7 +15,9 @@ export const formatOrdersData = (pedidosComEmails: any[]): OrderOrAttempt[] => {
     client_id: pedido.client_id,
     client_email: pedido.client_email,
     client_name: pedido.client_name,
-    video_status: pedido.video_status
+    video_status: pedido.video_status,
+    coupon_code: pedido.coupon_code,
+    coupon_category: pedido.coupon_category
   }));
 };
 
@@ -33,9 +35,12 @@ export const formatAttemptsData = (tentativasComEmails: any[]): OrderOrAttempt[]
 };
 
 export const filterOrphanedAttempts = (tentativas: OrderOrAttempt[], pedidos: OrderOrAttempt[]): OrderOrAttempt[] => {
+  // Status que indicam pagamento confirmado
+  const PAID_STATUSES = ['ativo', 'pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'];
+  
   // Criar mapa mais robusto de pedidos pagos com múltiplos critérios
   const paidOrdersData = pedidos
-    .filter(p => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'].includes(p.status))
+    .filter(p => PAID_STATUSES.includes(p.status))
     .map(pedido => ({
       client_id: pedido.client_id,
       valor_total: pedido.valor_total,
@@ -98,11 +103,14 @@ export const combineAndSortData = (pedidos: OrderOrAttempt[], tentativas: OrderO
 };
 
 export const calculateStats = (pedidos: OrderOrAttempt[], tentativas: OrderOrAttempt[]): OrdersStats => {
-  // Pedidos pagos (apenas status "pago")
-  const paidOrders = pedidos.filter(p => p.status === 'pago');
+  // Status que indicam pagamento confirmado
+  const PAID_STATUSES = ['ativo', 'pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado'];
   
-  // Pedidos não pagos (todos os outros status)
-  const unpaidOrders = pedidos.filter(p => p.status !== 'pago');
+  // Pedidos pagos = status "ativo" ou equivalentes
+  const paidOrders = pedidos.filter(p => PAID_STATUSES.includes(p.status));
+  
+  // Pedidos não pagos = "pendente", "cancelado", etc.
+  const unpaidOrders = pedidos.filter(p => !PAID_STATUSES.includes(p.status));
   
   const totalOrders = pedidos.length;
   const totalPaidOrders = paidOrders.length;

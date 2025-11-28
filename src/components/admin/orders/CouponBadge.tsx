@@ -10,14 +10,18 @@ import {
 
 interface CouponBadgeProps {
   couponCode?: string;
+  couponCategory?: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
 export const CouponBadge: React.FC<CouponBadgeProps> = ({ 
-  couponCode, 
+  couponCode,
+  couponCategory,
   size = 'md' 
 }) => {
   if (!couponCode) return null;
+  
+  const isCourtesy = couponCategory === 'cortesia';
 
   const sizeClasses = {
     sm: 'h-5 w-5 text-[10px]',
@@ -40,7 +44,10 @@ export const CouponBadge: React.FC<CouponBadgeProps> = ({
               className={`
                 ${sizeClasses[size]}
                 rounded-full 
-                bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600
+                ${isCourtesy 
+                  ? 'bg-gradient-to-br from-purple-400 via-violet-500 to-purple-600' 
+                  : 'bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600'
+                }
                 border-2 border-white
                 flex items-center justify-center
                 shadow-lg
@@ -52,19 +59,29 @@ export const CouponBadge: React.FC<CouponBadgeProps> = ({
               <Sparkles className={`${iconSizes[size]} text-white`} />
             </Badge>
             <span className="absolute -top-1 -right-1 flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${
+                isCourtesy ? 'bg-purple-400' : 'bg-amber-400'
+              } opacity-75`}></span>
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${
+                isCourtesy ? 'bg-purple-500' : 'bg-amber-500'
+              }`}></span>
             </span>
           </div>
         </TooltipTrigger>
         <TooltipContent 
           side="top" 
-          className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-amber-300"
+          className={`text-white border-amber-300 ${
+            isCourtesy 
+              ? 'bg-gradient-to-r from-purple-500 to-violet-600' 
+              : 'bg-gradient-to-r from-amber-500 to-yellow-600'
+          }`}
         >
           <div className="flex items-center gap-2">
             <Tag className="h-4 w-4" />
             <div>
-              <p className="font-semibold text-sm">Pedido com Cupom</p>
+              <p className="font-semibold text-sm">
+                {isCourtesy ? 'Cupom Cortesia' : 'Pedido com Cupom'}
+              </p>
               <p className="text-xs opacity-90">Código: {couponCode}</p>
             </div>
           </div>
