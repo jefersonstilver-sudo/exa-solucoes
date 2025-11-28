@@ -17,11 +17,16 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { agentKey, phone, message, mediaUrl, skipSplit } = await req.json();
+    const requestBody = await req.json();
+    const { agentKey, phone, message, mediaUrl, skipSplit } = requestBody;
 
     // 🔍 DEBUG: Log explícito do parâmetro skipSplit
-    console.log('[ZAPI-SEND] 🔍 DEBUG - skipSplit received:', skipSplit, 'typeof:', typeof skipSplit);
-    console.log('[ZAPI-SEND] 🔍 DEBUG - Full request body keys:', Object.keys(await req.clone().json()));
+    console.log('[ZAPI-SEND] 🔍 DEBUG - Request body:', { 
+      skipSplit, 
+      skipSplitType: typeof skipSplit,
+      hasSkipSplit: 'skipSplit' in requestBody,
+      bodyKeys: Object.keys(requestBody)
+    });
 
     if (!agentKey || !phone || !message) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
