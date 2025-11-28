@@ -15,6 +15,8 @@ export const formatOrdersData = (pedidosComEmails: any[]): OrderOrAttempt[] => {
     client_id: pedido.client_id,
     client_email: pedido.client_email,
     client_name: pedido.client_name,
+    client_phone: pedido.client_phone,
+    client_cpf: pedido.client_cpf,
     video_status: pedido.video_status,
     coupon_code: pedido.coupon_code,
     coupon_category: pedido.coupon_category

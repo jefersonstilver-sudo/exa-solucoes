@@ -53,6 +53,8 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
   const [loadingPanels, setLoadingPanels] = useState(false);
   const [lastActivity, setLastActivity] = useState<any>(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [clientPhone, setClientPhone] = useState<string | null>(null);
+  const [clientCpf, setClientCpf] = useState<string | null>(null);
   
   const { isSuperAdmin } = useAuth();
   const navigate = useNavigate();
@@ -76,12 +78,35 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
     }
   }, [isOpen, orderData.client_id]);
 
+  // Buscar telefone e CPF do cliente quando o modal abrir
+  useEffect(() => {
+    const fetchClientData = async () => {
+      if (orderData.client_id) {
+        const { data } = await supabase
+          .from('users')
+          .select('telefone, cpf')
+          .eq('id', orderData.client_id)
+          .single();
+        
+        if (data) {
+          setClientPhone(data.telefone || orderData.client_phone || null);
+          setClientCpf(data.cpf || orderData.client_cpf || null);
+        } else {
+          setClientPhone(orderData.client_phone || null);
+          setClientCpf(orderData.client_cpf || null);
+        }
+      }
+    };
+    
+    if (isOpen) fetchClientData();
+  }, [isOpen, orderData.client_id, orderData.client_phone, orderData.client_cpf]);
+
   // Buscar conversas com agentes quando o modal abrir
   useEffect(() => {
-    if (isOpen) {
-      fetchClientConversations(orderData.client_phone, orderData.client_name);
+    if (isOpen && (clientPhone || orderData.client_name)) {
+      fetchClientConversations(clientPhone, orderData.client_name);
     }
-  }, [isOpen, orderData.client_phone, orderData.client_name]);
+  }, [isOpen, clientPhone, orderData.client_name]);
 
   // Buscar pedidos anteriores quando o modal abrir
   useEffect(() => {
@@ -104,15 +129,15 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
     }
   }, [isOpen, orderData.client_id]);
 
-  const fetchClientConversations = async (phone?: string, clientName?: string) => {
+  const fetchClientConversations = async (phone?: string | null, clientName?: string | null) => {
     setLoadingConversations(true);
     try {
       let conversations: any[] = [];
       
-      // 1. Buscar por telefone (se disponível)
+      // 1. Buscar por telefone usando últimos 8 dígitos (mais flexível)
       if (phone) {
         const cleanPhone = phone.replace(/\D/g, '');
-        const phoneSuffix = cleanPhone.slice(-9);
+        const last8Digits = cleanPhone.slice(-8);
         
         const { data: phoneConvs, error: phoneError } = await supabase
           .from('conversations')
@@ -129,7 +154,7 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
             is_hot_lead,
             escalated_to_eduardo
           `)
-          .ilike('contact_phone', `%${phoneSuffix}%`)
+          .ilike('contact_phone', `%${last8Digits}%`)
           .order('last_message_at', { ascending: false })
           .limit(10);
         
@@ -140,32 +165,31 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
       
       // 2. Se não encontrou por telefone, buscar por nome similar
       if (conversations.length === 0 && clientName) {
-        // Buscar por nome similar (usando ILIKE para match parcial)
-        const nameParts = clientName.trim().split(' ');
-        const firstName = nameParts[0];
-        const lastName = nameParts[nameParts.length - 1];
+        const nameParts = clientName.trim().split(' ').filter(p => p.length > 2);
         
-        const { data: nameConvs, error: nameError } = await supabase
-          .from('conversations')
-          .select(`
-            id,
-            agent_key,
-            contact_name,
-            contact_phone,
-            first_message_at,
-            last_message_at,
-            status,
-            lead_score,
-            sentiment,
-            is_hot_lead,
-            escalated_to_eduardo
-          `)
-          .or(`contact_name.ilike.%${firstName}%,contact_name.ilike.%${lastName}%`)
-          .order('last_message_at', { ascending: false })
-          .limit(10);
-        
-        if (!nameError && nameConvs) {
-          conversations = nameConvs;
+        if (nameParts.length > 0) {
+          const { data: nameConvs, error: nameError } = await supabase
+            .from('conversations')
+            .select(`
+              id,
+              agent_key,
+              contact_name,
+              contact_phone,
+              first_message_at,
+              last_message_at,
+              status,
+              lead_score,
+              sentiment,
+              is_hot_lead,
+              escalated_to_eduardo
+            `)
+            .or(nameParts.map(part => `contact_name.ilike.%${part}%`).join(','))
+            .order('last_message_at', { ascending: false })
+            .limit(10);
+          
+          if (!nameError && nameConvs) {
+            conversations = nameConvs;
+          }
         }
       }
       
@@ -337,8 +361,8 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                   <Phone className="h-4 w-4 text-muted-foreground mt-1" />
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground mb-1">Telefone / WhatsApp</p>
-                    {orderData.client_phone ? (
-                      <PhoneWithActions phone={orderData.client_phone} />
+                    {clientPhone ? (
+                      <PhoneWithActions phone={clientPhone} />
                     ) : (
                       <p className="text-sm text-muted-foreground italic">Não informado</p>
                     )}
@@ -350,12 +374,12 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                   </div>
                 </div>
                 
-                {orderData.client_cpf && (
+                {clientCpf && (
                   <div className="flex items-start gap-3">
                     <FileText className="h-4 w-4 text-muted-foreground mt-1" />
                     <div>
                       <p className="text-xs text-muted-foreground">CPF</p>
-                      <p className="font-medium">{orderData.client_cpf}</p>
+                      <p className="font-medium">{clientCpf}</p>
                     </div>
                   </div>
                 )}

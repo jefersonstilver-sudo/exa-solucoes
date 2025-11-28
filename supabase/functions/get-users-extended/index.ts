@@ -89,12 +89,19 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // Buscar dados da tabela users (telefone, cpf, nome)
+        const { data: userDbData } = await supabaseClient
+          .from('users')
+          .select('telefone, cpf, nome')
+          .eq('id', userId)
+          .single();
+
         usersData.push({
           id: userId,
           email: authUser.user.email || '',
-          name: authUser.user.user_metadata?.name || authUser.user.user_metadata?.full_name || null,
-          phone: authUser.user.user_metadata?.telefone || authUser.user.user_metadata?.phone || null,
-          cpf: authUser.user.user_metadata?.cpf || null,
+          name: userDbData?.nome || authUser.user.user_metadata?.name || authUser.user.user_metadata?.full_name || null,
+          phone: userDbData?.telefone || authUser.user.user_metadata?.telefone || authUser.user.user_metadata?.phone || null,
+          cpf: userDbData?.cpf || authUser.user.user_metadata?.cpf || null,
           email_confirmed_at: authUser.user.email_confirmed_at || null,
         });
       } catch (error) {
