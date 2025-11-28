@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
       : 0;
 
-    const tma_formatado = `${Math.floor(tma_medio / 60).toString().padStart(2, '0')}:${(tma_medio % 60).toString().padStart(2, '0')}`;
+    const tma_formatado = `${Math.floor(tma_medio / 60).toString().padStart(2, '0')}:${Math.floor(tma_medio % 60).toString().padStart(2, '0')}`;
 
     // ===== DISTRIBUIÇÃO POR SENTIMENTO =====
     const sentimentos = conversations?.map((c: ConversationRecord) => c.sentiment || 'neutro') || [];
@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
       .map(([convId, count]) => {
         const conv = conversations?.find(c => c.id === convId);
         return {
-          phone: conv?.phone_number || 'Desconhecido',
+          phone: conv?.contact_phone || conv?.phone_number || 'Desconhecido',
           total_msgs: count,
           agent: conv?.agent_key || 'N/A',
           last_activity: conv?.last_message_at || ''
