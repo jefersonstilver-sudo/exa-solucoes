@@ -312,38 +312,53 @@ const OrdersPage = () => {
     );
   }
 
-  // Desktop Layout - Modernized
+  // Desktop Layout - Apple-like Minimalista
   return (
-    <div className="space-y-4">
-      {/* Compact Header */}
-      <div className="flex items-center justify-between">
-        <OrdersCompactHeader 
-          onRefresh={refetch} 
-          loading={loading}
-          periodFilter={periodFilter}
-          onPeriodChange={setPeriodFilter}
-        />
-        <RealtimeOrderNotification />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-20 backdrop-blur-xl bg-background/90 border-b border-border/30 shadow-sm">
+        <div className="max-w-[1600px] mx-auto px-6">
+          <OrdersCompactHeader 
+            onRefresh={refetch} 
+            loading={loading}
+            periodFilter={periodFilter}
+            onPeriodChange={setPeriodFilter}
+          />
+        </div>
       </div>
 
-      {/* Alerts */}
-      <OrdersPageAlerts ordersAndAttempts={filteredItems} />
+      {/* Content Container */}
+      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
+        {/* Realtime Notification - Floating */}
+        <div className="fixed top-24 right-8 z-30">
+          <RealtimeOrderNotification />
+        </div>
 
-      {/* Compact Stats Row */}
-      <OrdersCompactStats stats={filteredStats} activeOrdersCount={activeOrdersCount} />
+        {/* Alerts */}
+        {filteredItems.length > 0 && <OrdersPageAlerts ordersAndAttempts={filteredItems} />}
 
-      {/* Filters and Search */}
-      <OrdersPageFilters
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        typeFilter={typeFilter}
-        setTypeFilter={setTypeFilter}
-      />
+        {/* Compact Stats Row */}
+        <div className="animate-fade-in">
+          <OrdersCompactStats stats={filteredStats} activeOrdersCount={activeOrdersCount} />
+        </div>
 
-      {/* Sistema de Abas */}
-      <OrdersTabs onViewOrderDetails={handleViewOrderDetails} />
+        {/* Filters and Search */}
+        <div className="bg-background/60 backdrop-blur-sm rounded-2xl border border-border/50 p-4 shadow-sm">
+          <OrdersPageFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            typeFilter={typeFilter}
+            setTypeFilter={setTypeFilter}
+          />
+        </div>
+
+        {/* Orders Tabs */}
+        <div className="animate-fade-in">
+          <OrdersTabs onViewOrderDetails={handleViewOrderDetails} />
+        </div>
+      </div>
     </div>
   );
 };

@@ -17,19 +17,19 @@ interface OrderPeriodFilterProps {
 export const OrderPeriodFilter: React.FC<OrderPeriodFilterProps> = ({ value, onChange }) => {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-[160px] h-9 border-border/50 hover:border-[#9C1E1E]/30 transition-colors bg-background/50">
         <SelectValue placeholder="Período" />
       </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="today">Hoje</SelectItem>
-        <SelectItem value="last_3_days">Últimos 3 dias</SelectItem>
-        <SelectItem value="last_7_days">Últimos 7 dias</SelectItem>
-        <SelectItem value="current_month">Mês atual</SelectItem>
-        <SelectItem value="last_month">Último mês</SelectItem>
-        <SelectItem value="last_3_months">Últimos 3 meses</SelectItem>
-        <SelectItem value="last_6_months">Últimos 6 meses</SelectItem>
-        <SelectItem value="current_year">Ano atual</SelectItem>
-        <SelectItem value="all">Todos</SelectItem>
+      <SelectContent align="end" className="bg-background/95 backdrop-blur-md border-border/50">
+        <SelectItem value="today" className="cursor-pointer hover:bg-[#9C1E1E]/10">Hoje</SelectItem>
+        <SelectItem value="last_3_days" className="cursor-pointer hover:bg-[#9C1E1E]/10">3 dias</SelectItem>
+        <SelectItem value="last_7_days" className="cursor-pointer hover:bg-[#9C1E1E]/10">7 dias</SelectItem>
+        <SelectItem value="current_month" className="cursor-pointer hover:bg-[#9C1E1E]/10">Mês atual</SelectItem>
+        <SelectItem value="last_month" className="cursor-pointer hover:bg-[#9C1E1E]/10">Último mês</SelectItem>
+        <SelectItem value="last_3_months" className="cursor-pointer hover:bg-[#9C1E1E]/10">3 meses</SelectItem>
+        <SelectItem value="last_6_months" className="cursor-pointer hover:bg-[#9C1E1E]/10">6 meses</SelectItem>
+        <SelectItem value="current_year" className="cursor-pointer hover:bg-[#9C1E1E]/10">Ano atual</SelectItem>
+        <SelectItem value="all" className="cursor-pointer hover:bg-[#9C1E1E]/10">Todos</SelectItem>
       </SelectContent>
     </Select>
   );
