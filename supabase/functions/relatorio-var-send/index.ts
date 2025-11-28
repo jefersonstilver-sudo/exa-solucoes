@@ -34,9 +34,9 @@ Deno.serve(async (req) => {
       .insert({
         report_type: 'var',
         report_data: report_data,
-        period_start: report_data.period_start,
-        period_end: report_data.period_end,
-        contact_types: report_data.contact_types_filter || [],
+        period_start: report_data.periodo_inicio,
+        period_end: report_data.periodo_fim,
+        contact_types: [],
         created_at: new Date().toISOString()
       })
       .select('id')
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     console.log('💾 [VAR SEND] Relatório salvo:', savedReport.id);
 
     // 2. GERAR LINK CURTO
-    const reportLink = `https://preview--exa-screen-flow.lovable.app/r/${savedReport.id}`;
+    const reportLink = `https://examidia.com.br/r/${savedReport.id}`;
 
     // 3. BUSCAR DADOS DOS DIRETORES
     const { data: directors, error: dirError } = await supabase
@@ -73,8 +73,7 @@ O relatório do período {data_inicio} - {data_fim} está disponível.
 *Resumo:*
 • ${report_data.total_conversas} conversas
 • ${report_data.taxa_resolucao.toFixed(1)}% resolução
-• ${report_data.tempo_medio_atendimento} tempo médio
-${report_data.contact_types_filter?.length > 0 ? `\n*Filtro:* ${report_data.contact_types_filter.join(', ')}` : ''}
+• ${report_data.tma_formatado} tempo médio
 
 🔗 *Ver relatório completo:*
 ${reportLink}
@@ -88,35 +87,35 @@ ${reportLink}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📅 *Período:*
-${new Date(report_data.period_start).toLocaleDateString('pt-BR')} até ${new Date(report_data.period_end).toLocaleDateString('pt-BR')}
+${new Date(report_data.periodo_inicio).toLocaleDateString('pt-BR')} até ${new Date(report_data.periodo_fim).toLocaleDateString('pt-BR')}
 
 🎯 *KPIs PRINCIPAIS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ Total de Conversas: *${report_data.total_conversas}*
-✔️ Resolvidas: *${report_data.resolvidas}*
-⏳ Pendentes: *${report_data.pendentes}*
+✔️ Resolvidas: *${report_data.conversas_resolvidas}*
+⏳ Pendentes: *${report_data.conversas_pendentes}*
 📈 Taxa de Resolução: *${report_data.taxa_resolucao.toFixed(1)}%*
-⏱️ TMA Médio: *${report_data.tempo_medio_atendimento}*
+⏱️ TMA Médio: *${report_data.tma_formatado}*
 
 😊 *SENTIMENTO*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-😀 Positivo: ${report_data.sentiment_distribution.positivo}%
-😐 Neutro: ${report_data.sentiment_distribution.neutro}%
-😔 Negativo: ${report_data.sentiment_distribution.negativo}%
+😀 Positivo: ${report_data.sentimento_positivo.toFixed(1)}%
+😐 Neutro: ${report_data.sentimento_neutro.toFixed(1)}%
+😔 Negativo: ${report_data.sentimento_negativo.toFixed(1)}%
 
 🔥 *HOT LEADS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎯 Hot Leads (score ≥ 70): *${report_data.hot_leads.length}*
+🎯 Hot Leads (score ≥ 70): *${report_data.hot_leads}*
 
 🤖 *ANÁLISE IA*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-${report_data.ai_analysis.summary}
+${report_data.ia_resumo_executivo}
 
 💡 *PADRÕES DETECTADOS:*
-${report_data.ai_analysis.patterns.map((p: string, i: number) => `${i + 1}. ${p}`).join('\n')}
+${report_data.ia_padroes_detectados.map((p: string, i: number) => `${i + 1}. ${p}`).join('\n')}
 
 🎯 *RECOMENDAÇÕES:*
-${report_data.ai_analysis.recommendations.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')}
+${report_data.ia_recomendacoes.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')}
 
 🔗 *Ver relatório completo com gráficos:*
 ${reportLink}
@@ -135,8 +134,8 @@ ${reportLink}
           // Personalizar mensagem com nome do diretor
           const personalizedMessage = message
             .replace('{nome_diretor}', director.nome)
-            .replace('{data_inicio}', new Date(report_data.period_start).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }))
-            .replace('{data_fim}', new Date(report_data.period_end).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }));
+            .replace('{data_inicio}', new Date(report_data.periodo_inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }))
+            .replace('{data_fim}', new Date(report_data.periodo_fim).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }));
 
           // Formatar telefone com DDI brasileiro
           const formatPhone = (phone: string): string => {
