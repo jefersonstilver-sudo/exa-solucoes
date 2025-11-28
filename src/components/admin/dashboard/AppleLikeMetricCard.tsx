@@ -14,6 +14,7 @@ interface AppleLikeMetricCardProps {
   description?: string;
   hoverContent?: React.ReactNode;
   onClick?: () => void;
+  variant?: 'default' | 'danger';
 }
 
 const AppleLikeMetricCard = ({
@@ -22,7 +23,8 @@ const AppleLikeMetricCard = ({
   icon: Icon,
   description,
   hoverContent,
-  onClick
+  onClick,
+  variant = 'default'
 }: AppleLikeMetricCardProps) => {
   const cardContent = (
     <motion.div
@@ -50,7 +52,9 @@ const AppleLikeMetricCard = ({
 
       {/* Value - Large and Bold */}
       <div className="mb-1">
-        <p className="text-2xl font-bold text-foreground tracking-tight">
+        <p className={`text-2xl font-bold tracking-tight ${
+          variant === 'danger' ? 'text-red-600 dark:text-red-500' : 'text-foreground'
+        }`}>
           {value}
         </p>
       </div>
