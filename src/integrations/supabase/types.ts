@@ -5396,6 +5396,42 @@ export type Database = {
           },
         ]
       }
+      report_director_links: {
+        Row: {
+          created_at: string | null
+          director_id: string
+          id: string
+          report_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          director_id: string
+          id?: string
+          report_id: string
+        }
+        Update: {
+          created_at?: string | null
+          director_id?: string
+          id?: string
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_director_links_director_id_fkey"
+            columns: ["director_id"]
+            isOneToOne: false
+            referencedRelation: "exa_alerts_directors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_director_links_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "generated_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_change_audit: {
         Row: {
           change_reason: string | null
