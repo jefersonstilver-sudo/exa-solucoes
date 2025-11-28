@@ -186,7 +186,7 @@ export default function CRMClients() {
               <div className="h-8 w-1 bg-gradient-to-b from-[#9C1E1E] to-[#DC2626] rounded-full" />
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] bg-clip-text text-transparent">
-                  CRM Clientes
+                  CRM Site
                 </h1>
                 <p className="text-xs text-muted-foreground">
                   Gestão com análise comportamental por IA
