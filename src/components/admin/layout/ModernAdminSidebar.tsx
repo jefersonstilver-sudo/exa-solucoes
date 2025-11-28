@@ -24,7 +24,8 @@ import {
   FileBarChart,
   Tv,
   Clapperboard,
-  Brain
+  Brain,
+  MessageSquare
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -102,10 +103,16 @@ export function ModernAdminSidebar() {
           permission: 'canViewOrders'
         },
         {
-          title: 'CRM Clientes',
+          title: 'CRM Site',
           href: buildPath('crm'),
           icon: UsersRound,
-          permission: 'canViewCRM' // ✅ CORRIGIDO: Permissão específica
+          permission: 'canViewCRM'
+        },
+        {
+          title: 'CRM Agentes',
+          href: buildPath('monitoramento-ia/conversas'),
+          icon: MessageSquare,
+          permission: 'canViewCRM'
         },
         {
           title: 'Aprovações',
