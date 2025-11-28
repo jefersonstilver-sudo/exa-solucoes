@@ -16,7 +16,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { agentKey, phone, message, mediaUrl } = await req.json();
+    const { agentKey, phone, message, mediaUrl, skipSplit } = await req.json();
 
     if (!agentKey || !phone || !message) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -206,8 +206,9 @@ serve(async (req) => {
       }
     };
 
-    const messageChunks = splitMessage(message);
-    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'message chunks with retry protection');
+    // Se skipSplit = true, não quebrar a mensagem (útil para relatórios com links)
+    const messageChunks = skipSplit ? [message] : splitMessage(message);
+    console.log('[ZAPI-SEND] 📤 Sending', messageChunks.length, 'message chunks with retry protection', skipSplit ? '(skipSplit enabled)' : '');
 
     // Enviar cada chunk com delay (simular digitação humana)
     const sendUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;

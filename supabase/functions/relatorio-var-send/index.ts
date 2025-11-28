@@ -142,13 +142,14 @@ ${reportLink}
           };
 
           // Enviar via WhatsApp usando ZAPI
-          const { error: zapiError } = await supabase.functions.invoke('zapi-send-message', {
-            body: {
-              agentKey: 'exa_alert',
-              phone: formatPhone(director.telefone),
-              message: personalizedMessage
-            }
-          });
+      const { error: zapiError } = await supabase.functions.invoke('zapi-send-message', {
+        body: {
+          agentKey: 'exa_alert',
+          phone: formatPhone(director.telefone),
+          message: personalizedMessage,
+          skipSplit: true // Não quebrar mensagem de relatório - preservar link completo
+        }
+      });
 
           if (zapiError) throw zapiError;
 
