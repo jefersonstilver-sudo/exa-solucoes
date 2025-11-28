@@ -147,7 +147,7 @@ ${reportLink}
           // Enviar via WhatsApp usando ZAPI
           const { error: zapiError } = await supabase.functions.invoke('zapi-send-message', {
             body: {
-              agentKey: 'eduardo',
+              agentKey: 'exa_alert',
               phone: formatPhone(director.telefone),
               message: personalizedMessage
             }
