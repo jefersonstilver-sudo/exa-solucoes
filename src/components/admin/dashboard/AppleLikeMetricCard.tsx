@@ -30,30 +30,34 @@ const AppleLikeMetricCard = ({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-      whileHover={{ scale: 1.05 }}
+      transition={{ duration: 0.2 }}
+      whileHover={{ scale: 1.02 }}
       className={`
         relative group
         bg-background/60 backdrop-blur-sm
         border border-border/40
-        rounded-2xl p-3
-        transition-all duration-300
-        hover:shadow-xl hover:border-[#9C1E1E]/50
+        rounded-xl p-2.5
+        transition-all duration-200
+        hover:shadow-lg hover:border-[#9C1E1E]/30
         ${onClick ? 'cursor-pointer' : ''}
       `}
       onClick={onClick}
     >
       {/* Icon Circle - Red Solid Background */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 rounded-full bg-[#9C1E1E] flex items-center justify-center shrink-0">
-          <Icon className="w-5 h-5 text-white" />
+      <div className="flex items-start justify-between mb-2">
+        <div className="w-8 h-8 rounded-full bg-[#9C1E1E] flex items-center justify-center shrink-0">
+          <Icon className="w-4 h-4 text-white" />
         </div>
       </div>
 
-      {/* Value - Large and Bold */}
-      <div className="mb-1">
-        <p className={`text-2xl font-bold tracking-tight ${
+      {/* Value - Responsive Text */}
+      <div className="mb-1 overflow-hidden">
+        <p className={`font-bold tracking-tight truncate ${
           variant === 'danger' ? 'text-red-600 dark:text-red-500' : 'text-foreground'
+        } ${
+          String(value).length > 15 ? 'text-sm' : 
+          String(value).length > 10 ? 'text-base' : 
+          String(value).length > 6 ? 'text-lg' : 'text-xl'
         }`}>
           {value}
         </p>
@@ -61,7 +65,7 @@ const AppleLikeMetricCard = ({
 
       {/* Label - Small */}
       <div>
-        <p className="text-xs text-muted-foreground font-medium">
+        <p className="text-[10px] text-muted-foreground font-medium leading-tight">
           {label}
         </p>
       </div>
