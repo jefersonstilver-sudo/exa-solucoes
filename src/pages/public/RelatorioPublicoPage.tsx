@@ -74,12 +74,14 @@ interface ReportData {
     total_msgs: number;
     agent: string;
     last_activity: string;
+    contact_type?: string;
   }>;
   mensagens_por_tipo?: Record<string, { 
     enviadas: number; 
     recebidas: number; 
     conversas: number 
   }>;
+  evolucao_por_hora?: Array<{ hora: string; total: number }>;
 }
 
 const EXA_LOGO = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/Logo%20Branca%20-%20Exa.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvTG9nbyBCcmFuY2EgLSBFeGEucG5nIiwiaWF0IjoxNzY0MjcxNTgwLCJleHAiOjMxNTUzMzI3MzU1ODB9.Re62vBPxmFdoOTCd6maWctMCukPMPv0AEVqKdZubahU";
@@ -96,6 +98,7 @@ export const RelatorioPublicoPage = () => {
   const [lastInteractionsModalOpen, setLastInteractionsModalOpen] = useState(false);
   const [excludeWeekend, setExcludeWeekend] = useState(true);
   const [chartType, setChartType] = useState<'line' | 'area' | 'bar'>('area');
+  const [showBusinessHours, setShowBusinessHours] = useState(false);
   
   // Estados para autenticação
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -430,7 +433,35 @@ export const RelatorioPublicoPage = () => {
   const isOneDayPeriod = reportData.periodo_inicio && reportData.periodo_fim && 
     new Date(reportData.periodo_fim).getTime() - new Date(reportData.periodo_inicio).getTime() <= 86400000;
 
-  // Chart Options
+  // Usar dados por hora se disponível para períodos de 1 dia
+  const chartData = isOneDayPeriod && reportData.evolucao_por_hora && reportData.evolucao_por_hora.length > 0
+    ? reportData.evolucao_por_hora.map(d => ({ data: d.hora, total: d.total }))
+    : filteredEvolution;
+
+  // Filtrar por período comercial se ativado (6h-21h)
+  const filteredChartData = isOneDayPeriod && showBusinessHours && reportData.evolucao_por_hora
+    ? reportData.evolucao_por_hora
+        .filter(d => {
+          const hour = parseInt(d.hora.split(':')[0]);
+          return hour >= 6 && hour <= 21;
+        })
+        .map(d => ({ data: d.hora, total: d.total }))
+    : chartData;
+
+  // Função para formatar tipo de contato
+  const formatContactType = (type: string): string => {
+    const types: Record<string, string> = {
+      'lead': 'Síndico Lead',
+      'sindico': 'Síndico',
+      'cliente': 'Cliente',
+      'prestador': 'Prestador',
+      'equipe_hexa': 'Equipe Hexa',
+      'outro': 'Outros'
+    };
+    return types[type] || 'Outros';
+  };
+
+  // Chart Options (atualizado para usar dados por hora)
   const volumeChartOptions: ApexOptions = {
     chart: {
       type: 'area',
@@ -451,27 +482,28 @@ export const RelatorioPublicoPage = () => {
     markers: { size: 5, colors: ['#fff'], strokeColors: ['#7D1818'], strokeWidth: 3 },
     xaxis: {
       categories: isOneDayPeriod 
-        ? filteredEvolution.map(d => new Date(d.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
-        : filteredEvolution.map(d => formatDate(d.data)),
+        ? filteredChartData.map(d => d.data)
+        : filteredChartData.map(d => formatDate(d.data)),
       labels: { 
-        rotate: isOneDayPeriod ? 0 : -30, 
+        rotate: isOneDayPeriod ? -45 : -30, 
         style: { fontSize: '11px' } 
       },
       title: { text: isOneDayPeriod ? 'Hora do Dia' : undefined }
     },
-    yaxis: { title: { text: 'Contatos' } },
+    yaxis: { title: { text: isOneDayPeriod ? 'Mensagens' : 'Contatos' } },
     tooltip: {
       custom: ({ dataPointIndex }) => {
-        const data = filteredEvolution[dataPointIndex];
+        const data = filteredChartData[dataPointIndex];
         const displayTime = isOneDayPeriod 
-          ? new Date(data.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          ? data.data
           : formatDate(data.data);
         const displayDay = isOneDayPeriod ? '' : `<div class="text-sm text-muted-foreground">${shortDay(data.data)}</div>`;
+        const label = isOneDayPeriod ? 'mensagens' : 'contatos';
         
         return `<div class="px-3 py-2 bg-card border border-border rounded-lg shadow-lg">
           <div class="font-semibold">${displayTime}</div>
           ${displayDay}
-          <div class="text-lg font-bold text-primary mt-1">${data.total} contatos</div>
+          <div class="text-lg font-bold text-primary mt-1">${data.total} ${label}</div>
         </div>`;
       }
     },
@@ -787,30 +819,50 @@ export const RelatorioPublicoPage = () => {
               <div className="flex justify-between items-center mb-4">
                 <div>
                   <h3 className="font-semibold text-foreground">Volume no período</h3>
-                  <small className="text-muted-foreground text-xs">— contatos por dia</small>
+                  <small className="text-muted-foreground text-xs">
+                    {isOneDayPeriod ? '— mensagens por hora' : '— contatos por dia'}
+                  </small>
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-muted-foreground">Excluir sáb./dom.</label>
-                  <input
-                    type="checkbox"
-                    checked={excludeWeekend}
-                    onChange={(e) => setExcludeWeekend(e.target.checked)}
-                    className="w-4 h-4"
-                  />
+                <div className="flex items-center gap-3">
+                  {isOneDayPeriod && (
+                    <>
+                      <label className="text-xs text-muted-foreground">Período comercial (6h-21h)</label>
+                      <input
+                        type="checkbox"
+                        checked={showBusinessHours}
+                        onChange={(e) => setShowBusinessHours(e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                    </>
+                  )}
+                  {!isOneDayPeriod && (
+                    <>
+                      <label className="text-xs text-muted-foreground">Excluir sáb./dom.</label>
+                      <input
+                        type="checkbox"
+                        checked={excludeWeekend}
+                        onChange={(e) => setExcludeWeekend(e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                    </>
+                  )}
                 </div>
               </div>
               
               <ClientOnly>
                 <ReactApexChart
                   options={volumeChartOptions}
-                  series={[{ name: 'Contatos', data: filteredEvolution.map(d => d.total) }]}
+                  series={[{ 
+                    name: isOneDayPeriod ? 'Mensagens' : 'Contatos', 
+                    data: filteredChartData.map(d => d.total) 
+                  }]}
                   type="area"
                   height={420}
                 />
               </ClientOnly>
               
               <p className="text-xs text-muted-foreground mt-3">
-                Passe o mouse para ver dia da semana. Clique para abrir modal avançado.
+                Passe o mouse para ver detalhes. Clique para abrir modal avançado.
               </p>
             </motion.div>
 
@@ -849,10 +901,11 @@ export const RelatorioPublicoPage = () => {
                 
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead>
+                     <thead>
                       <tr className="border-b border-border">
                         <th className="text-left py-2 px-2 font-semibold text-muted-foreground">#</th>
                         <th className="text-left py-2 px-2 font-semibold text-muted-foreground">Contato</th>
+                        <th className="text-left py-2 px-2 font-semibold text-muted-foreground">Tipo</th>
                         <th className="text-center py-2 px-2 font-semibold text-muted-foreground">Msgs</th>
                         <th className="text-left py-2 px-2 font-semibold text-muted-foreground">Agente</th>
                         <th className="text-left py-2 px-2 font-semibold text-muted-foreground">Última atividade</th>
@@ -866,6 +919,11 @@ export const RelatorioPublicoPage = () => {
                             <div className="font-medium text-foreground">{conv.name || 'Sem nome'}</div>
                             <div className="text-xs text-muted-foreground">{conv.phone}</div>
                           </td>
+                          <td className="py-2 px-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                              {formatContactType(conv.contact_type || 'outro')}
+                            </span>
+                          </td>
                           <td className="py-2 px-2 text-center">
                             <span className="inline-flex items-center justify-center w-8 h-8 bg-[#7D1818]/10 text-[#7D1818] rounded-full font-bold text-xs">
                               {conv.total_msgs}
@@ -878,6 +936,62 @@ export const RelatorioPublicoPage = () => {
                     </tbody>
                   </table>
                 </div>
+              </motion.div>
+            )}
+
+            {/* Breakdown por Tipo de Contato */}
+            {reportData.mensagens_por_tipo && Object.keys(reportData.mensagens_por_tipo).length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.39 }}
+                className="bg-card rounded-xl p-4 border border-border shadow-sm"
+              >
+                <h3 className="font-semibold text-foreground mb-1">Conversas por Tipo de Contato</h3>
+                <small className="text-muted-foreground text-xs">— breakdown detalhado por classificação</small>
+                
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 px-2 font-semibold text-muted-foreground">Tipo</th>
+                        <th className="text-center py-2 px-2 font-semibold text-muted-foreground">Conversas</th>
+                        <th className="text-center py-2 px-2 font-semibold text-muted-foreground">Enviadas</th>
+                        <th className="text-center py-2 px-2 font-semibold text-muted-foreground">Recebidas</th>
+                        <th className="text-center py-2 px-2 font-semibold text-muted-foreground">Total Msgs</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(reportData.mensagens_por_tipo)
+                        .filter(([_, data]) => data.conversas > 0)
+                        .sort(([_, a], [__, b]) => b.conversas - a.conversas)
+                        .map(([tipo, data]) => (
+                          <tr key={tipo} className="border-b border-border/50 hover:bg-muted/30">
+                            <td className="py-2 px-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                {formatContactType(tipo)}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-center font-semibold text-foreground">{data.conversas}</td>
+                            <td className="py-2 px-2 text-center text-muted-foreground">{data.enviadas}</td>
+                            <td className="py-2 px-2 text-center text-muted-foreground">{data.recebidas}</td>
+                            <td className="py-2 px-2 text-center font-semibold text-[#7D1818]">
+                              {data.enviadas + data.recebidas}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {Object.entries(reportData.mensagens_por_tipo).filter(([_, data]) => data.conversas === 0).length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-3 italic">
+                    * As demais classificações ({Object.entries(reportData.mensagens_por_tipo)
+                      .filter(([_, data]) => data.conversas === 0)
+                      .map(([tipo]) => formatContactType(tipo))
+                      .join(', ')}) não tiveram atividades no período.
+                  </p>
+                )}
               </motion.div>
             )}
 

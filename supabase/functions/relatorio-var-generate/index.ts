@@ -257,9 +257,21 @@ Deno.serve(async (req) => {
           phone: conv?.contact_phone || 'Desconhecido',
           total_msgs: count,
           agent: conv?.agent_key || 'N/A',
-          last_activity: conv?.last_message_at || ''
+          last_activity: conv?.last_message_at || '',
+          contact_type: conv?.contact_type || 'outro'
         };
       });
+
+    // ===== EVOLUÇÃO POR HORA (para relatórios de 1 dia) =====
+    const evolucao_por_hora: Array<{ hora: string; total: number }> = [];
+    for (let h = 0; h < 24; h++) {
+      const horaStr = h.toString().padStart(2, '0') + ':00';
+      const count = messages.filter((m: MessageRecord) => {
+        const msgHour = new Date(m.created_at).getHours();
+        return msgHour === h;
+      }).length;
+      evolucao_por_hora.push({ hora: horaStr, total: count });
+    }
 
     // ===== ANÁLISE IA (LOVABLE AI) =====
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
@@ -399,13 +411,14 @@ FORNEÇA RESPOSTA EM JSON EXATAMENTE NESTE FORMATO:
       gerado_em: new Date().toISOString(),
       versao_relatorio: '1.0',
       
-      // NOVOS CAMPOS (28-33)
+      // NOVOS CAMPOS (28-35)
       distribuicao_periodo,
       mensagens_enviadas,
       mensagens_recebidas,
       comparativo_anterior,
       conversas_mais_ativas,
-      mensagens_por_tipo // NOVO: breakdown por tipo de contato
+      mensagens_por_tipo, // NOVO: breakdown por tipo de contato
+      evolucao_por_hora // NOVO: evolução por hora para períodos de 1 dia
     };
 
     console.log('✅ [VAR GENERATE] Relatório gerado com sucesso');
