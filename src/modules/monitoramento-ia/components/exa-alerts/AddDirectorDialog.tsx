@@ -266,31 +266,10 @@ export const AddDirectorDialog = ({
             </>}
 
           {/* Departamento */}
-          <div className="space-y-2">
-            <Label htmlFor="departamento">Departamento</Label>
-            <Input id="departamento" value={formData.departamento} onChange={e => setFormData({
-            ...formData,
-            departamento: e.target.value
-          })} placeholder="Operações" />
-          </div>
+          
 
           {/* Nível de Acesso */}
-          <div className="space-y-2">
-            <Label htmlFor="nivel">Nível de Acesso *</Label>
-            <Select value={formData.nivel_acesso} onValueChange={(value: 'basico' | 'gerente' | 'admin') => setFormData({
-            ...formData,
-            nivel_acesso: value
-          })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="basico">Básico</SelectItem>
-                <SelectItem value="gerente">Gerente</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          
 
           {/* Switches */}
           <div className="space-y-3 pt-2">
