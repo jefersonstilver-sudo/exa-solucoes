@@ -1,222 +1,121 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, Clock, Download } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { AlertStatsCards } from '../components/AlertStatsCards';
-import { AlertsFilters } from '../components/AlertsFilters';
-import { AlertCard } from '../components/AlertCard';
-import { AlertsTable } from '../components/AlertsTable';
-import { AlertDetailModal } from '../components/AlertDetailModal';
-import { startOfDay, endOfDay } from 'date-fns';
-import {
-  fetchAlerts,
-  calculateAlertStats,
-  getUniqueCondominios,
-  type DeviceAlert,
-  type AlertStats,
-  type AlertFilters,
-} from '../utils/alerts';
+import { motion } from 'framer-motion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EXAAlertsHeader } from '../components/exa-alerts/EXAAlertsHeader';
+import { DirectorsSection } from '../components/exa-alerts/DirectorsSection';
+import { PeriodsSection } from '../components/exa-alerts/PeriodsSection';
+import { TemplatesSection } from '../components/exa-alerts/TemplatesSection';
+import { HistorySection } from '../components/exa-alerts/HistorySection';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AlertasPage = () => {
-  const [alerts, setAlerts] = useState<DeviceAlert[]>([]);
-  const [stats, setStats] = useState<AlertStats>({
-    open: 0,
-    scheduled: 0,
-    resolved: 0,
-    ignored: 0,
-    critical: 0,
+  const [stats, setStats] = useState({
+    totalDirectors: 0,
+    alertsToday: 0,
+    successRate: 0
   });
-  const [condominios, setCondominios] = useState<string[]>([]);
-  const [filters, setFilters] = useState<AlertFilters>({
-    startDate: startOfDay(new Date()),
-    endDate: endOfDay(new Date())
-  });
-  const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [selectedAlert, setSelectedAlert] = useState<DeviceAlert | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [alertsData, statsData, condominiosData] = await Promise.all([
-        fetchAlerts(filters),
-        calculateAlertStats(),
-        getUniqueCondominios(),
-      ]);
-      setAlerts(alertsData);
-      setStats(statsData);
-      setCondominios(condominiosData);
-      setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Error loading alerts:', error);
-      toast.error('Erro ao carregar alertas');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    loadData();
-  }, [filters]);
+    loadStats();
+  }, []);
 
-  const handleRefresh = () => {
-    toast.info('Atualizando alertas...');
-    loadData();
-  };
-
-  const handleClearFilters = () => {
-    setFilters({
-      startDate: startOfDay(new Date()),
-      endDate: endOfDay(new Date())
-    });
-  };
-
-  const handleExportCSV = () => {
+  const loadStats = async () => {
     try {
-      const headers = ['Painel', 'Condomínio', 'Torre', 'Tipo', 'Provedor', 'Severidade', 'Status', 'Aberto em', 'Fechado em'];
-      const rows = alerts.map(alert => [
-        alert.devices?.name || 'Desconhecido',
-        alert.devices?.condominio_name || 'N/A',
-        alert.devices?.comments?.split('-')[1]?.trim() || '-',
-        alert.alert_type,
-        alert.provider || 'AnyDesk',
-        alert.severity,
-        alert.status,
-        new Date(alert.opened_at).toLocaleString('pt-BR'),
-        alert.closed_at ? new Date(alert.closed_at).toLocaleString('pt-BR') : '-'
-      ]);
+      // Get directors count
+      const { count: directorsCount } = await supabase
+        .from('exa_alerts_directors')
+        .select('*', { count: 'exact', head: true })
+        .eq('ativo', true);
 
-      const csvContent = [
-        headers.join(','),
-        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-      ].join('\n');
+      // Get today's alerts
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { count: alertsCount } = await supabase
+        .from('exa_alerts_history')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', today.toISOString());
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `alertas_${new Date().toISOString().split('T')[0]}.csv`;
-      link.click();
-      toast.success('Relatório exportado com sucesso!');
+      // Calculate success rate
+      const { data: todayAlerts } = await supabase
+        .from('exa_alerts_history')
+        .select('status')
+        .gte('created_at', today.toISOString());
+
+      const successCount = todayAlerts?.filter(a => 
+        ['entregue', 'lido', 'respondido'].includes(a.status)
+      ).length || 0;
+      
+      const successRate = todayAlerts?.length 
+        ? Math.round((successCount / todayAlerts.length) * 100) 
+        : 100;
+
+      setStats({
+        totalDirectors: directorsCount || 0,
+        alertsToday: alertsCount || 0,
+        successRate
+      });
     } catch (error) {
-      console.error('Erro ao exportar:', error);
-      toast.error('Erro ao exportar relatório');
+      console.error('Error loading stats:', error);
     }
-  };
-
-  const handleViewDetails = (alert: DeviceAlert) => {
-    setSelectedAlert(alert);
-    setIsModalOpen(true);
-  };
-
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedAlert(null);
-  };
-
-  const handleAlertUpdate = () => {
-    loadData();
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
-              Alertas de Painéis
-            </h1>
-            <p className="text-muted-foreground">
-              Monitoramento técnico em tempo real da rede EXA.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              <span>
-                Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
-              </span>
-            </div>
-            <Button
-              onClick={handleExportCSV}
-              variant="outline"
-              size="sm"
-              disabled={alerts.length === 0}
+    <div className="space-y-6 pb-8">
+      {/* Header with Stats */}
+      <EXAAlertsHeader stats={stats} />
+
+      {/* Tabs Navigation */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <Tabs defaultValue="directors" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-2 bg-white/50 backdrop-blur-sm p-1 rounded-2xl border border-gray-200">
+            <TabsTrigger 
+              value="directors" 
+              className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#D72638] data-[state=active]:text-white py-3"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Exportar
-            </Button>
-            <Button
-              onClick={handleRefresh}
-              disabled={loading}
-              size="sm"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              📞 Diretores
+            </TabsTrigger>
+            <TabsTrigger 
+              value="periods"
+              className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#D72638] data-[state=active]:text-white py-3"
             >
-              <RefreshCw
-                className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`}
-              />
-              Atualizar
-            </Button>
-          </div>
-        </div>
-      </div>
+              ⏰ Períodos
+            </TabsTrigger>
+            <TabsTrigger 
+              value="templates"
+              className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#D72638] data-[state=active]:text-white py-3"
+            >
+              📝 Templates
+            </TabsTrigger>
+            <TabsTrigger 
+              value="history"
+              className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#D72638] data-[state=active]:text-white py-3"
+            >
+              📊 Histórico
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Stats Cards */}
-      <AlertStatsCards stats={stats} />
+          <TabsContent value="directors" className="space-y-6">
+            <DirectorsSection />
+          </TabsContent>
 
-      {/* Filters */}
-      <AlertsFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        onClearFilters={handleClearFilters}
-        condominios={condominios}
-      />
+          <TabsContent value="periods" className="space-y-6">
+            <PeriodsSection />
+          </TabsContent>
 
-      {/* Loading State */}
-      {loading && alerts.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-xl border border-border shadow-sm">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="mt-4 text-muted-foreground">Carregando alertas...</p>
-        </div>
-      ) : alerts.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-xl border border-border shadow-sm">
-          <p className="text-muted-foreground">Nenhum alerta encontrado</p>
-        </div>
-      ) : (
-        <>
-          {/* Total Count */}
-          <div className="text-sm text-muted-foreground mb-4">
-            Mostrando <span className="font-semibold text-foreground">{alerts.length}</span> alertas
-          </div>
+          <TabsContent value="templates" className="space-y-6">
+            <TemplatesSection />
+          </TabsContent>
 
-          {/* Mobile: Cards */}
-          <div className="block lg:hidden space-y-4">
-            {alerts.map((alert) => (
-              <AlertCard
-                key={alert.id}
-                alert={alert}
-                onClick={() => handleViewDetails(alert)}
-              />
-            ))}
-          </div>
-
-          {/* Desktop: Table */}
-          <div className="hidden lg:block">
-            <AlertsTable alerts={alerts} onViewDetails={handleViewDetails} />
-          </div>
-        </>
-      )}
-
-      {/* Detail Modal */}
-      {isModalOpen && selectedAlert && (
-        <AlertDetailModal
-          isOpen={isModalOpen}
-          alert={selectedAlert}
-          onClose={handleModalClose}
-          onUpdate={handleAlertUpdate}
-        />
-      )}
+          <TabsContent value="history" className="space-y-6">
+            <HistorySection />
+          </TabsContent>
+        </Tabs>
+      </motion.div>
     </div>
   );
 };

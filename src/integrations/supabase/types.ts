@@ -3258,6 +3258,164 @@ export type Database = {
           },
         ]
       }
+      exa_alerts_config: {
+        Row: {
+          config_key: string
+          config_value: Json
+          descricao: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value: Json
+          descricao?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          descricao?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      exa_alerts_directors: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          departamento: string | null
+          id: string
+          nivel_acesso: string | null
+          nome: string
+          pode_usar_ia: boolean | null
+          telefone: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          departamento?: string | null
+          id?: string
+          nivel_acesso?: string | null
+          nome: string
+          pode_usar_ia?: boolean | null
+          telefone: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          departamento?: string | null
+          id?: string
+          nivel_acesso?: string | null
+          nome?: string
+          pode_usar_ia?: boolean | null
+          telefone?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      exa_alerts_history: {
+        Row: {
+          created_at: string | null
+          delivered_at: string | null
+          destinatario_nome: string | null
+          destinatario_telefone: string
+          id: string
+          mensagem_enviada: string
+          metadata: Json | null
+          read_at: string | null
+          response: string | null
+          rule_id: string | null
+          status: string | null
+          tipo_alerta: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivered_at?: string | null
+          destinatario_nome?: string | null
+          destinatario_telefone: string
+          id?: string
+          mensagem_enviada: string
+          metadata?: Json | null
+          read_at?: string | null
+          response?: string | null
+          rule_id?: string | null
+          status?: string | null
+          tipo_alerta: string
+        }
+        Update: {
+          created_at?: string | null
+          delivered_at?: string | null
+          destinatario_nome?: string | null
+          destinatario_telefone?: string
+          id?: string
+          mensagem_enviada?: string
+          metadata?: Json | null
+          read_at?: string | null
+          response?: string | null
+          rule_id?: string | null
+          status?: string | null
+          tipo_alerta?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exa_alerts_history_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "exa_alerts_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exa_alerts_rules: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          destinatarios: Json
+          escalonamento: Json | null
+          gatilho: Json
+          horario_silencio_fim: string | null
+          horario_silencio_inicio: string | null
+          id: string
+          nome: string
+          template_mensagem: string
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          destinatarios: Json
+          escalonamento?: Json | null
+          gatilho: Json
+          horario_silencio_fim?: string | null
+          horario_silencio_inicio?: string | null
+          id?: string
+          nome: string
+          template_mensagem: string
+          tipo: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          destinatarios?: Json
+          escalonamento?: Json | null
+          gatilho?: Json
+          horario_silencio_fim?: string | null
+          horario_silencio_inicio?: string | null
+          id?: string
+          nome?: string
+          template_mensagem?: string
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       financial_access_logs: {
         Row: {
           action: string
