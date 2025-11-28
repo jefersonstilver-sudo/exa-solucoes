@@ -81,7 +81,12 @@ interface ReportData {
     recebidas: number; 
     conversas: number 
   }>;
-  evolucao_por_hora?: Array<{ hora: string; total: number }>;
+  evolucao_por_hora?: Array<{ 
+    hora: string; 
+    enviadas: number; 
+    recebidas: number; 
+    total: number 
+  }>;
 }
 
 const EXA_LOGO = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/Logo%20Branca%20-%20Exa.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvTG9nbyBCcmFuY2EgLSBFeGEucG5nIiwiaWF0IjoxNzY0MjcxNTgwLCJleHAiOjMxNTUzMzI3MzU1ODB9.Re62vBPxmFdoOTCd6maWctMCukPMPv0AEVqKdZubahU";
@@ -435,41 +440,45 @@ export const RelatorioPublicoPage = () => {
 
   // Usar dados por hora se disponível para períodos de 1 dia
   const chartData = isOneDayPeriod && reportData.evolucao_por_hora && reportData.evolucao_por_hora.length > 0
-    ? reportData.evolucao_por_hora.map(d => ({ data: d.hora, total: d.total }))
-    : filteredEvolution;
+    ? reportData.evolucao_por_hora
+    : filteredEvolution.map(d => ({ data: d.data, enviadas: 0, recebidas: 0, total: d.total }));
 
   // Filtrar por período comercial se ativado (6h-21h)
   const filteredChartData = isOneDayPeriod && showBusinessHours && reportData.evolucao_por_hora
-    ? reportData.evolucao_por_hora
-        .filter(d => {
-          const hour = parseInt(d.hora.split(':')[0]);
-          return hour >= 6 && hour <= 21;
-        })
-        .map(d => ({ data: d.hora, total: d.total }))
+    ? reportData.evolucao_por_hora.filter(d => {
+        const hour = parseInt(d.hora.split(':')[0]);
+        return hour >= 6 && hour <= 21;
+      })
     : chartData;
 
-  // Função para formatar tipo de contato
+  // Função para formatar tipo de contato (normalizado)
   const formatContactType = (type: string): string => {
     const types: Record<string, string> = {
+      'sindico_lead': 'Síndico Lead',
       'lead': 'Síndico Lead',
       'sindico': 'Síndico',
       'cliente': 'Cliente',
+      'cliente_ativo': 'Cliente',
       'prestador': 'Prestador',
+      'ligga_provedor': 'Prestador',
       'equipe_hexa': 'Equipe Hexa',
-      'outro': 'Outros'
+      'equipe_exa': 'Equipe Hexa',
+      'oriente_supervisor': 'Equipe Hexa',
+      'outro': 'Outros',
+      'unknown': 'Outros'
     };
-    return types[type] || 'Outros';
+    return types[type?.toLowerCase()] || 'Outros';
   };
 
-  // Chart Options (atualizado para usar dados por hora)
+  // Chart Options (duas linhas: vermelho enviadas, azul recebidas)
   const volumeChartOptions: ApexOptions = {
     chart: {
-      type: 'area',
+      type: isOneDayPeriod ? 'line' : 'area',
       height: 420,
       toolbar: { show: false },
       fontFamily: 'Inter, system-ui, sans-serif',
     },
-    colors: ['#7D1818'],
+    colors: isOneDayPeriod ? ['#ef4444', '#3b82f6'] : ['#7D1818'],
     fill: {
       type: 'gradient',
       gradient: {
@@ -479,36 +488,56 @@ export const RelatorioPublicoPage = () => {
       }
     },
     stroke: { curve: 'smooth', width: 3 },
-    markers: { size: 5, colors: ['#fff'], strokeColors: ['#7D1818'], strokeWidth: 3 },
+    markers: { 
+      size: isOneDayPeriod ? 4 : 5, 
+      colors: ['#fff'], 
+      strokeColors: isOneDayPeriod ? ['#ef4444', '#3b82f6'] : ['#7D1818'], 
+      strokeWidth: 2 
+    },
+    legend: {
+      show: isOneDayPeriod,
+      position: 'top',
+      horizontalAlign: 'right'
+    },
     xaxis: {
       categories: isOneDayPeriod 
-        ? filteredChartData.map(d => d.data)
-        : filteredChartData.map(d => formatDate(d.data)),
+        ? filteredChartData.map(d => (d as any).hora || (d as any).data)
+        : filteredChartData.map(d => formatDate((d as any).data)),
       labels: { 
         rotate: isOneDayPeriod ? -45 : -30, 
         style: { fontSize: '11px' } 
       },
       title: { text: isOneDayPeriod ? 'Hora do Dia' : undefined }
     },
-    yaxis: { title: { text: isOneDayPeriod ? 'Mensagens' : 'Contatos' } },
+    yaxis: { title: { text: isOneDayPeriod ? 'Mensagens' : 'Conversas' } },
     tooltip: {
-      custom: ({ dataPointIndex }) => {
-        const data = filteredChartData[dataPointIndex];
-        const displayTime = isOneDayPeriod 
-          ? data.data
-          : formatDate(data.data);
-        const displayDay = isOneDayPeriod ? '' : `<div class="text-sm text-muted-foreground">${shortDay(data.data)}</div>`;
-        const label = isOneDayPeriod ? 'mensagens' : 'contatos';
+      custom: ({ seriesIndex, dataPointIndex }) => {
+        const data = filteredChartData[dataPointIndex] as any;
+        const label = isOneDayPeriod ? (data.hora || data.data) : formatDate(data.data);
+        const seriesName = seriesIndex === 0 ? 'Enviadas' : 'Recebidas';
+        const value = seriesIndex === 0 
+          ? (data.enviadas || data.total)
+          : (data.recebidas || 0);
+        const color = seriesIndex === 0 ? '#ef4444' : '#3b82f6';
         
-        return `<div class="px-3 py-2 bg-card border border-border rounded-lg shadow-lg">
-          <div class="font-semibold">${displayTime}</div>
-          ${displayDay}
-          <div class="text-lg font-bold text-primary mt-1">${data.total} ${label}</div>
-        </div>`;
+        return `
+          <div class="p-3 bg-white shadow-lg rounded-lg border border-gray-200">
+            <div class="text-xs text-gray-500 mb-1">${label}</div>
+            <div class="text-lg font-bold" style="color: ${color}">${value} ${seriesName.toLowerCase()}</div>
+            ${isOneDayPeriod ? '' : `<div class="text-xs text-gray-400 mt-1">${shortDay(data.data)}</div>`}
+          </div>
+        `;
       }
     },
     grid: { borderColor: 'hsl(var(--border))' },
   };
+
+  const volumeSeries = isOneDayPeriod && reportData.evolucao_por_hora
+    ? [
+        { name: 'Enviadas', data: filteredChartData.map(d => (d as any).enviadas || 0) },
+        { name: 'Recebidas', data: filteredChartData.map(d => (d as any).recebidas || 0) }
+      ]
+    : [{ name: 'Conversas', data: filteredChartData.map(d => d.total) }];
 
   const donutChartOptions: ApexOptions = {
     chart: { type: 'donut', height: 260 },
@@ -643,7 +672,7 @@ export const RelatorioPublicoPage = () => {
                 Período: {formatDate(reportData.periodo_inicio)} — {formatDate(reportData.periodo_fim)}
               </span>
               <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-semibold">
-                Contatos: {reportData.total_conversas}
+                Conversas: {reportData.total_conversas}
               </span>
             </div>
           </div>
@@ -695,12 +724,12 @@ export const RelatorioPublicoPage = () => {
               
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="p-3 bg-gradient-to-b from-muted/50 to-muted/20 rounded-lg">
-                  <div className="text-2xl font-extrabold text-[#7D1818]">{kpis.periodDays}d</div>
+                  <div className="text-2xl font-extrabold text-[#7D1818]">{isOneDayPeriod ? '24h' : `${kpis.periodDays}d`}</div>
                   <div className="text-xs text-muted-foreground mt-1">Período</div>
                 </div>
                 <div className="p-3 bg-gradient-to-b from-muted/50 to-muted/20 rounded-lg">
                   <div className="text-2xl font-extrabold text-[#7D1818]">{kpis.totalContacts}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Contatos</div>
+                  <div className="text-xs text-muted-foreground mt-1">Conversas Ativas</div>
                 </div>
                 <div className="p-3 bg-gradient-to-b from-muted/50 to-muted/20 rounded-lg">
                   <div className="text-2xl font-extrabold text-[#7D1818]">{kpis.avgPerDay}</div>
@@ -852,11 +881,8 @@ export const RelatorioPublicoPage = () => {
               <ClientOnly>
                 <ReactApexChart
                   options={volumeChartOptions}
-                  series={[{ 
-                    name: isOneDayPeriod ? 'Mensagens' : 'Contatos', 
-                    data: filteredChartData.map(d => d.total) 
-                  }]}
-                  type="area"
+                  series={volumeSeries}
+                  type={isOneDayPeriod ? "line" : "area"}
                   height={420}
                 />
               </ClientOnly>

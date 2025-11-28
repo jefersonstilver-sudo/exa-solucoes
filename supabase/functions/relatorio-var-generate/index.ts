@@ -29,7 +29,28 @@ interface MessageRecord {
   direction: string;
   response_time: string | null;
   created_at: string;
+  content: string | null;
 }
+
+// Função para normalizar tipos de contato
+const normalizeContactType = (type: string | null): string => {
+  if (!type || type === 'unknown' || type === '' || type === 'null') return 'outro';
+  
+  const mapping: Record<string, string> = {
+    'lead': 'sindico_lead',
+    'sindico_lead': 'sindico_lead',
+    'sindico': 'sindico',
+    'cliente': 'cliente',
+    'cliente_ativo': 'cliente',
+    'prestador': 'prestador',
+    'ligga_provedor': 'prestador',
+    'equipe_hexa': 'equipe_hexa',
+    'equipe_exa': 'equipe_hexa',
+    'oriente_supervisor': 'equipe_hexa'
+  };
+  
+  return mapping[type.toLowerCase()] || 'outro';
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -41,9 +62,9 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { start_date, end_date, contact_types } = await req.json();
+    const { start_date, end_date, contact_types, agent_key } = await req.json();
 
-    console.log('📊 [VAR GENERATE] Gerando relatório:', { start_date, end_date, contact_types });
+    console.log('📊 [VAR GENERATE] Gerando relatório:', { start_date, end_date, contact_types, agent_key });
     console.log('🔍 [VAR GENERATE] Buscando conversas e mensagens APENAS do período selecionado');
 
     // ===== BUSCAR CONVERSAS NO PERÍODO (POR ÚLTIMA ATIVIDADE) =====
@@ -52,6 +73,12 @@ Deno.serve(async (req) => {
       .select('*')
       .gte('last_message_at', start_date)
       .lte('last_message_at', end_date);
+
+    // Filtrar por agent_key se especificado
+    if (agent_key) {
+      conversationsQuery = conversationsQuery.eq('agent_key', agent_key);
+      console.log('🔍 [VAR GENERATE] Filtrando por agent_key:', agent_key);
+    }
 
     // Filtrar por tipos de contato se especificado
     if (contact_types && contact_types.length > 0) {
@@ -81,7 +108,7 @@ Deno.serve(async (req) => {
     if (conversationIds.length > 0) {
       const { data: messagesData, error: msgError } = await supabase
         .from('messages')
-        .select('*')
+        .select('id, conversation_id, direction, response_time, created_at, content')
         .in('conversation_id', conversationIds)
         .gte('created_at', start_date)
         .lte('created_at', end_date);
@@ -126,9 +153,9 @@ Deno.serve(async (req) => {
     const sentimento_neutro = (sentimentos.filter(s => s === 'neutro').length / total_conversas) * 100 || 0;
     const sentimento_negativo = (sentimentos.filter(s => s === 'negativo').length / total_conversas) * 100 || 0;
 
-    // ===== TIPOS DE CONTATO =====
-    const tipos = conversations?.map((c: ConversationRecord) => c.contact_type || 'outro') || [];
-    const tipo_lead = tipos.filter(t => t === 'lead').length;
+    // ===== TIPOS DE CONTATO (NORMALIZADOS) =====
+    const tipos = conversations?.map((c: ConversationRecord) => normalizeContactType(c.contact_type)) || [];
+    const tipo_lead = tipos.filter(t => t === 'sindico_lead').length;
     const tipo_sindico = tipos.filter(t => t === 'sindico').length;
     const tipo_cliente = tipos.filter(t => t === 'cliente').length;
     const tipo_outro = tipos.filter(t => t === 'outro').length;
@@ -166,11 +193,11 @@ Deno.serve(async (req) => {
     const mensagens_enviadas = messages.filter((m: MessageRecord) => m.direction === 'outbound').length;
     const mensagens_recebidas = messages.filter((m: MessageRecord) => m.direction === 'inbound').length;
 
-    // ===== BREAKDOWN POR TIPO DE CONTATO =====
+    // ===== BREAKDOWN POR TIPO DE CONTATO (NORMALIZADO) =====
     const mensagens_por_tipo: Record<string, { enviadas: number; recebidas: number; conversas: number }> = {};
     
     conversations?.forEach((conv: ConversationRecord) => {
-      const tipo = conv.contact_type || 'outro';
+      const tipo = normalizeContactType(conv.contact_type);
       if (!mensagens_por_tipo[tipo]) {
         mensagens_por_tipo[tipo] = { enviadas: 0, recebidas: 0, conversas: 0 };
       }
@@ -179,7 +206,7 @@ Deno.serve(async (req) => {
 
     messages.forEach((msg: MessageRecord) => {
       const conv = conversations?.find(c => c.id === msg.conversation_id);
-      const tipo = conv?.contact_type || 'outro';
+      const tipo = normalizeContactType(conv?.contact_type);
       
       if (!mensagens_por_tipo[tipo]) {
         mensagens_por_tipo[tipo] = { enviadas: 0, recebidas: 0, conversas: 0 };
@@ -192,7 +219,7 @@ Deno.serve(async (req) => {
       }
     });
 
-    console.log('📊 [VAR GENERATE] Breakdown por tipo:', mensagens_por_tipo);
+    console.log('📊 [VAR GENERATE] Breakdown por tipo (normalizado):', mensagens_por_tipo);
 
     // ===== COMPARATIVO COM PERÍODO ANTERIOR =====
     const periodDuration = new Date(end_date).getTime() - new Date(start_date).getTime();
@@ -258,19 +285,23 @@ Deno.serve(async (req) => {
           total_msgs: count,
           agent: conv?.agent_key || 'N/A',
           last_activity: conv?.last_message_at || '',
-          contact_type: conv?.contact_type || 'outro'
+          contact_type: normalizeContactType(conv?.contact_type)
         };
       });
 
-    // ===== EVOLUÇÃO POR HORA (para relatórios de 1 dia) =====
-    const evolucao_por_hora: Array<{ hora: string; total: number }> = [];
+    // ===== EVOLUÇÃO POR HORA (para relatórios de 1 dia) - SEPARADO ENVIADAS/RECEBIDAS =====
+    const evolucao_por_hora: Array<{ hora: string; enviadas: number; recebidas: number; total: number }> = [];
     for (let h = 0; h < 24; h++) {
       const horaStr = h.toString().padStart(2, '0') + ':00';
-      const count = messages.filter((m: MessageRecord) => {
+      const enviadas = messages.filter((m: MessageRecord) => {
         const msgHour = new Date(m.created_at).getHours();
-        return msgHour === h;
+        return msgHour === h && m.direction === 'outbound';
       }).length;
-      evolucao_por_hora.push({ hora: horaStr, total: count });
+      const recebidas = messages.filter((m: MessageRecord) => {
+        const msgHour = new Date(m.created_at).getHours();
+        return msgHour === h && m.direction === 'inbound';
+      }).length;
+      evolucao_por_hora.push({ hora: horaStr, enviadas, recebidas, total: enviadas + recebidas });
     }
 
     // ===== ANÁLISE IA (LOVABLE AI) =====
@@ -282,6 +313,13 @@ Deno.serve(async (req) => {
 
     if (openAiKey) {
       try {
+        // Buscar conteúdo das últimas 50 mensagens para contexto
+        const mensagensConteudo = messages
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 50)
+          .map(m => `[${m.direction === 'outbound' ? 'ENV' : 'REC'}] ${m.content?.substring(0, 100) || '(mídia)'}`)
+          .join('\n');
+
         const aiPrompt = `
 ANÁLISE RIGOROSA DE DADOS DE CONVERSAS - MODO ANTI-ALUCINAÇÃO ATIVADO
 
@@ -302,6 +340,9 @@ DADOS REAIS DO SISTEMA:
 - Sentimento negativo: ${sentimento_negativo.toFixed(2)}%
 - Hot Leads: ${hot_leads}
 - Tipos: Lead=${tipo_lead}, Síndico=${tipo_sindico}, Cliente=${tipo_cliente}, Outro=${tipo_outro}
+
+ÚLTIMAS MENSAGENS (contexto):
+${mensagensConteudo}
 
 FORNEÇA RESPOSTA EM JSON EXATAMENTE NESTE FORMATO:
 {
