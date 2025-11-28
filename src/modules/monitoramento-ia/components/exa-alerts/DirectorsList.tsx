@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DirectorCard } from './DirectorCard';
 import { AddDirectorDialog } from './AddDirectorDialog';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,21 @@ export const DirectorsList = () => {
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDirector, setSelectedDirector] = useState<Director | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+
+  // Load current user
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserEmail(user?.email || null);
+    };
+    loadUser();
+  }, []);
+
+  // Auto-load directors on mount
+  useEffect(() => {
+    loadDirectors();
+  }, []);
 
   const loadDirectors = async () => {
     setLoading(true);
@@ -168,6 +183,7 @@ export const DirectorsList = () => {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onToggleStatus={handleToggleStatus}
+              canDelete={currentUserEmail === 'jefersonstilver@gmail.com'}
             />
           ))}
         </div>
