@@ -78,41 +78,48 @@ Deno.serve(async (req) => {
     let message = '';
 
     if (send_type === 'link') {
-      // MENSAGEM CURTA COM LINK - COM BREAKDOWN POR TIPO
-      const tiposList = report_data.mensagens_por_tipo 
-        ? Object.entries(report_data.mensagens_por_tipo)
-            .filter(([_, data]: [string, any]) => data.conversas > 0)
-            .sort(([_, a]: [string, any], [__, b]: [string, any]) => b.conversas - a.conversas)
-            .slice(0, 5)
-            .map(([tipo, data]: [string, any]) => {
-              const tipoNome: Record<string, string> = {
-                'lead': 'Síndico Lead',
-                'sindico': 'Síndico',
-                'cliente': 'Cliente',
-                'prestador': 'Prestador',
-                'equipe_hexa': 'Equipe Hexa',
-                'outro': 'Outros'
-              };
-              return `• ${tipoNome[tipo] || tipo}: ${data.conversas} conversas`;
-            })
-            .join('\n')
-        : '';
+      // MENSAGEM CURTA COM LINK - COM BREAKDOWN POR TIPO NORMALIZADO
+      const formatTipoContato = (tipo: string): string => {
+        const mapping: Record<string, string> = {
+          'sindico_lead': 'Síndico Lead',
+          'lead': 'Síndico Lead',
+          'sindico': 'Síndico',
+          'cliente': 'Cliente',
+          'cliente_ativo': 'Cliente',
+          'prestador': 'Prestador',
+          'ligga_provedor': 'Prestador',
+          'equipe_hexa': 'Equipe Hexa',
+          'equipe_exa': 'Equipe Hexa',
+          'oriente_supervisor': 'Equipe Hexa',
+          'outro': 'Outros',
+          'unknown': 'Outros'
+        };
+        return mapping[tipo?.toLowerCase()] || 'Outros';
+      };
 
-      const tiposInativos = report_data.mensagens_por_tipo
-        ? Object.entries(report_data.mensagens_por_tipo)
-            .filter(([_, data]: [string, any]) => data.conversas === 0)
-            .map(([tipo]: [string, any]) => {
-              const tipoNome: Record<string, string> = {
-                'lead': 'Síndico Lead',
-                'sindico': 'Síndico',
-                'cliente': 'Cliente',
-                'prestador': 'Prestador',
-                'equipe_hexa': 'Equipe Hexa',
-                'outro': 'Outros'
-              };
-              return tipoNome[tipo] || tipo;
-            })
-        : [];
+      // Agrupar por tipo normalizado
+      const tiposAgrupados: Record<string, number> = {};
+      if (report_data.mensagens_por_tipo) {
+        Object.entries(report_data.mensagens_por_tipo).forEach(([tipo, data]: [string, any]) => {
+          const tipoNormalizado = formatTipoContato(tipo);
+          if (!tiposAgrupados[tipoNormalizado]) {
+            tiposAgrupados[tipoNormalizado] = 0;
+          }
+          tiposAgrupados[tipoNormalizado] += data.conversas;
+        });
+      }
+
+      // Gerar lista formatada
+      const tiposList = Object.entries(tiposAgrupados)
+        .filter(([_, count]) => count > 0)
+        .sort(([_, a], [__, b]) => b - a)
+        .slice(0, 5)
+        .map(([tipo, count]) => `• ${tipo}: ${count} ${count === 1 ? 'conversa' : 'conversas'}`)
+        .join('\n');
+
+      const tiposInativos = Object.entries(tiposAgrupados)
+        .filter(([_, count]) => count === 0)
+        .map(([tipo]) => tipo);
 
       const inativosMsg = tiposInativos.length > 0 
         ? `\n\n_As demais classificações (${tiposInativos.join(', ')}) não tiveram atividades no período._`
@@ -129,6 +136,8 @@ ${tiposList}${inativosMsg}
 
 *📊 Resumo Geral:*
 • Total: ${report_data.total_conversas} conversas
+• Msgs Enviadas: ${report_data.mensagens_enviadas || 0}
+• Msgs Recebidas: ${report_data.mensagens_recebidas || 0}
 • Resolução: ${report_data.taxa_resolucao.toFixed(1)}%
 • TMA: ${report_data.tma_formatado}
 
