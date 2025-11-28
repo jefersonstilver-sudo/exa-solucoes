@@ -61,43 +61,22 @@ Deno.serve(async (req) => {
     let message = '';
 
     if (send_type === 'link') {
-      // MENSAGEM CURTA COM LINK (Padrão recomendado)
-      // Adicionar quebras de linha extras para evitar truncamento no WhatsApp
-      
-      // Calcular distribuição de mensagens por tipo de contato
-      const msgLeads = report_data.conversas_lista?.filter((c: any) => c.contact_type === 'lead').length || 0;
-      const msgSindicos = report_data.conversas_lista?.filter((c: any) => c.contact_type === 'sindico').length || 0;
-      const msgClientes = report_data.conversas_lista?.filter((c: any) => c.contact_type === 'cliente').length || 0;
-      const msgOutros = report_data.conversas_lista?.filter((c: any) => !c.contact_type || c.contact_type === 'outro').length || 0;
-      
-      message = `━━━━━━━━━━━━━━━━━━━━
-
-📊 *Relatório de Atendimento*
+      // MENSAGEM CURTA COM LINK - SIMPLIFICADA
+      message = `📊 *Relatório VAR Disponível*
 
 Olá {nome_diretor}!
 
-O relatório do período {data_inicio} - {data_fim} está disponível.
+Período: {data_inicio} - {data_fim}
 
-*Resumo:*
+*Resumo Rápido:*
 • ${report_data.total_conversas} conversas
 • ${report_data.taxa_resolucao.toFixed(1)}% resolução
-• ${report_data.tma_formatado} tempo médio
+• ${report_data.tma_formatado} TMA
 
-*Mensagens por tipo:*
-• ${msgLeads} leads
-• ${msgSindicos} síndicos
-• ${msgClientes} clientes
-• ${msgOutros} outros
-
-
-🔗 *Ver relatório completo:*
-
+🔗 Ver relatório completo:
 ${reportLink}
 
-
-━━━━━━━━━━━━━━━━━━━━
-
-_Link válido por 30 dias • Acesso protegido_`;
+_Válido 30 dias • Protegido_`;
 
     } else {
       // MENSAGEM COMPLETA (send_type === 'complete')
