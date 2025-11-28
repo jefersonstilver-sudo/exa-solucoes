@@ -561,10 +561,10 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
                 <Label className="text-gray-600 dark:text-gray-400">Tipo de Mensagem</Label>
                 <div className="flex gap-3">
                   <Badge variant={demandSendType === 'link' ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all duration-300 ${demandSendType === 'link' ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => setDemandSendType('link')}>
-                    Notificação com Link
+                    Resumido com Link
                   </Badge>
                   <Badge variant={demandSendType === 'complete' ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all duration-300 ${demandSendType === 'complete' ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'}`} onClick={() => setDemandSendType('complete')}>
-                    Relatório Completo
+                    Completo com Link
                   </Badge>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">

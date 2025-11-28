@@ -47,6 +47,22 @@ Deno.serve(async (req) => {
 
     console.log('💾 [VAR SEND] Relatório salvo:', savedReport.id);
 
+    // 1.5. VINCULAR RELATÓRIO AOS DIRETORES
+    for (const directorId of director_ids) {
+      const { error: linkError } = await supabase
+        .from('report_director_links')
+        .insert({
+          report_id: savedReport.id,
+          director_id: directorId
+        });
+      
+      if (linkError) {
+        console.error('⚠️ Erro ao vincular diretor:', linkError);
+      } else {
+        console.log(`🔗 Diretor ${directorId} vinculado ao relatório`);
+      }
+    }
+
     // 2. GERAR LINK CURTO
     const reportLink = `https://examidia.com.br/r/${savedReport.id}`;
 
