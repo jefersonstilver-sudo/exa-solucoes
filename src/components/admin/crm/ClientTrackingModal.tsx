@@ -244,47 +244,53 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
   const fetchPanelNames = async (panelIds: string[]) => {
     setLoadingPanels(true);
     try {
-      // Buscar painéis com os nomes dos prédios
-      const { data: panels, error } = await supabase
+      const namesMap: Record<string, string> = {};
+      
+      // Primeiro tentar buscar como painéis
+      const { data: panels } = await supabase
         .from('painels')
         .select('id, building_id')
         .in('id', panelIds);
       
-      if (error) {
-        console.error('Erro ao buscar painéis:', error);
-        setLoadingPanels(false);
-        return;
-      }
-
+      const foundPanelIds = new Set(panels?.map(p => p.id) || []);
+      const notFoundIds = panelIds.filter(id => !foundPanelIds.has(id));
+      
+      // Para IDs encontrados como painéis, buscar os nomes dos prédios
       if (panels && panels.length > 0) {
-        // Buscar nomes dos prédios
         const buildingIds = panels.map(p => p.building_id).filter(Boolean);
         
         if (buildingIds.length > 0) {
-          const { data: buildings, error: buildingsError } = await supabase
+          const { data: buildings } = await supabase
             .from('buildings')
             .select('id, nome')
             .in('id', buildingIds);
           
-          if (!buildingsError && buildings) {
-            const namesMap: Record<string, string> = {};
-            
-            // Mapear building_id para nome
+          if (buildings) {
             const buildingNameMap = new Map(buildings.map(b => [b.id, b.nome]));
-            
-            // Criar mapa de painel_id para nome do prédio
             panels.forEach(panel => {
               if (panel.building_id) {
                 namesMap[panel.id] = buildingNameMap.get(panel.building_id) || 'Prédio não identificado';
-              } else {
-                namesMap[panel.id] = 'Prédio não identificado';
               }
             });
-            
-            setPanelNames(namesMap);
           }
         }
       }
+      
+      // Para IDs não encontrados, buscar diretamente como building IDs
+      if (notFoundIds.length > 0) {
+        const { data: buildings } = await supabase
+          .from('buildings')
+          .select('id, nome')
+          .in('id', notFoundIds);
+        
+        if (buildings) {
+          buildings.forEach(building => {
+            namesMap[building.id] = building.nome;
+          });
+        }
+      }
+      
+      setPanelNames(namesMap);
     } catch (error) {
       console.error('Erro ao buscar nomes dos painéis:', error);
     } finally {
