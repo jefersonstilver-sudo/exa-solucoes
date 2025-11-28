@@ -51,6 +51,8 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [panelNames, setPanelNames] = useState<Record<string, string>>({});
   const [loadingPanels, setLoadingPanels] = useState(false);
+  const [lastActivity, setLastActivity] = useState<any>(null);
+  const [loadingActivity, setLoadingActivity] = useState(false);
   
   const { isSuperAdmin } = useAuth();
   const navigate = useNavigate();
@@ -94,6 +96,13 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
       fetchPanelNames(orderData.lista_paineis);
     }
   }, [isOpen, orderData.lista_paineis]);
+
+  // Buscar última atividade do cliente quando o modal abrir
+  useEffect(() => {
+    if (isOpen && orderData.client_id) {
+      fetchLastActivity(orderData.client_id);
+    }
+  }, [isOpen, orderData.client_id]);
 
   const fetchClientConversations = async (phone: string) => {
     setLoadingConversations(true);
@@ -170,23 +179,46 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
   const fetchPanelNames = async (panelIds: string[]) => {
     setLoadingPanels(true);
     try {
-      const { data, error } = await supabase
+      // Buscar painéis com os nomes dos prédios
+      const { data: panels, error } = await supabase
         .from('painels')
-        .select(`
-          id,
-          buildings:building_id (
-            nome
-          )
-        `)
+        .select('id, building_id')
         .in('id', panelIds);
       
-      if (!error && data) {
-        const namesMap: Record<string, string> = {};
-        data.forEach(panel => {
-          const buildingName = (panel.buildings as any)?.nome || 'Prédio não identificado';
-          namesMap[panel.id] = buildingName;
-        });
-        setPanelNames(namesMap);
+      if (error) {
+        console.error('Erro ao buscar painéis:', error);
+        setLoadingPanels(false);
+        return;
+      }
+
+      if (panels && panels.length > 0) {
+        // Buscar nomes dos prédios
+        const buildingIds = panels.map(p => p.building_id).filter(Boolean);
+        
+        if (buildingIds.length > 0) {
+          const { data: buildings, error: buildingsError } = await supabase
+            .from('buildings')
+            .select('id, nome')
+            .in('id', buildingIds);
+          
+          if (!buildingsError && buildings) {
+            const namesMap: Record<string, string> = {};
+            
+            // Mapear building_id para nome
+            const buildingNameMap = new Map(buildings.map(b => [b.id, b.nome]));
+            
+            // Criar mapa de painel_id para nome do prédio
+            panels.forEach(panel => {
+              if (panel.building_id) {
+                namesMap[panel.id] = buildingNameMap.get(panel.building_id) || 'Prédio não identificado';
+              } else {
+                namesMap[panel.id] = 'Prédio não identificado';
+              }
+            });
+            
+            setPanelNames(namesMap);
+          }
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar nomes dos painéis:', error);
@@ -199,6 +231,25 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
     // Navegar para o CRM com a conversa selecionada
     navigate(`/admin/crm?conversation=${conversationId}`);
     onClose();
+  };
+
+  const fetchLastActivity = async (clientId: string) => {
+    setLoadingActivity(true);
+    try {
+      const { data, error } = await supabase
+        .from('client_behavior_analytics')
+        .select('last_visit, device_type, lifecycle_stage, last_platform_activity')
+        .eq('user_id', clientId)
+        .maybeSingle();
+      
+      if (!error && data) {
+        setLastActivity(data);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar última atividade:', error);
+    } finally {
+      setLoadingActivity(false);
+    }
   };
   
   return (
@@ -469,6 +520,91 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
             </section>
 
             <Separator />
+
+            {/* Última Atividade no Site */}
+            {(loadingActivity || lastActivity) && (
+              <>
+                <section>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-blue-600" />
+                    Última Atividade no Site
+                  </h3>
+                  {loadingActivity ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : lastActivity ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
+                      {lastActivity.last_visit && (
+                        <div className="flex items-start gap-3">
+                          <Clock className="h-4 w-4 text-blue-600 mt-1" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Última Visita ao Site</p>
+                            <p className="font-medium">
+                              {format(new Date(lastActivity.last_visit), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {(() => {
+                                const hoursAgo = Math.floor((Date.now() - new Date(lastActivity.last_visit).getTime()) / (1000 * 60 * 60));
+                                if (hoursAgo < 1) return 'Há menos de 1 hora';
+                                if (hoursAgo < 24) return `Há ${hoursAgo} horas`;
+                                const daysAgo = Math.floor(hoursAgo / 24);
+                                return `Há ${daysAgo} dia${daysAgo > 1 ? 's' : ''}`;
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {lastActivity.last_platform_activity && (
+                        <div className="flex items-start gap-3">
+                          <Activity className="h-4 w-4 text-blue-600 mt-1" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Última Atividade na Plataforma</p>
+                            <p className="font-medium">
+                              {format(new Date(lastActivity.last_platform_activity), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {lastActivity.device_type && (
+                        <div className="flex items-start gap-3">
+                          <MousePointer className="h-4 w-4 text-blue-600 mt-1" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Dispositivo</p>
+                            <p className="font-medium text-sm capitalize">{lastActivity.device_type}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {lastActivity.lifecycle_stage && (
+                        <div className="flex items-start gap-3">
+                          <TrendingUp className="h-4 w-4 text-blue-600 mt-1" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Status do Cliente</p>
+                            <Badge 
+                              variant={lastActivity.lifecycle_stage === 'active_client' ? 'default' : 'secondary'}
+                              className="mt-1"
+                            >
+                              {lastActivity.lifecycle_stage === 'active_client' ? '✅ Cliente Ativo' : 
+                               lastActivity.lifecycle_stage === 'at_risk' ? '⚠️ Em Risco' : 
+                               lastActivity.lifecycle_stage === 'hot_lead' ? '🔥 Lead Quente' : 
+                               '👤 Prospect'}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-muted/50 rounded-lg text-center text-muted-foreground text-sm">
+                      Nenhuma atividade registrada
+                    </div>
+                  )}
+                </section>
+                <Separator />
+              </>
+            )}
 
             {/* Navegação e Comportamento no Site */}
             {behaviorData && (
