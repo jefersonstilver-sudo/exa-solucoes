@@ -1,12 +1,21 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import { EXAAlertsHeader } from '../components/exa-alerts/EXAAlertsHeader';
-import { DirectorsSection } from '../components/exa-alerts/DirectorsSection';
-import { PeriodsSection } from '../components/exa-alerts/PeriodsSection';
-import { TemplatesSection } from '../components/exa-alerts/TemplatesSection';
-import { HistorySection } from '../components/exa-alerts/HistorySection';
+import { AlertaCEOCard } from '../components/exa-alerts/AlertaCEOCard';
+import { AlertCard } from '../components/exa-alerts/AlertCard';
+import { AddAlertDialog } from '../components/exa-alerts/AddAlertDialog';
 import { supabase } from '@/integrations/supabase/client';
+
+interface AlertRule {
+  id: string;
+  nome: string;
+  tipo: string;
+  descricao?: string;
+  template_mensagem?: string;
+  ativo: boolean;
+}
 
 export const AlertasPage = () => {
   const [stats, setStats] = useState({
@@ -14,9 +23,12 @@ export const AlertasPage = () => {
     alertsToday: 0,
     successRate: 0
   });
+  const [alerts, setAlerts] = useState<AlertRule[]>([]);
+  const [addAlertOpen, setAddAlertOpen] = useState(false);
 
   useEffect(() => {
     loadStats();
+    loadAlerts();
   }, []);
 
   const loadStats = async () => {
@@ -60,62 +72,99 @@ export const AlertasPage = () => {
     }
   };
 
+  const loadAlerts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('exa_alerts_rules')
+        .select('*')
+        .neq('tipo', 'ceo')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAlerts(data || []);
+    } catch (error) {
+      console.error('Error loading alerts:', error);
+    }
+  };
+
+  const handleToggleAlert = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('exa_alerts_rules')
+        .update({ ativo: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+      loadAlerts();
+    } catch (error) {
+      console.error('Error toggling alert:', error);
+    }
+  };
+
+  const handleDeleteAlert = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este alerta?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('exa_alerts_rules')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      loadAlerts();
+    } catch (error) {
+      console.error('Error deleting alert:', error);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-8">
       {/* Header with Stats */}
-      <EXAAlertsHeader stats={stats} />
+      <div className="flex items-center justify-between">
+        <EXAAlertsHeader stats={stats} />
+        <Button 
+          onClick={() => setAddAlertOpen(true)}
+          size="lg"
+          className="bg-gradient-to-r from-[#9C1E1E] to-[#D72638] hover:opacity-90 shadow-lg"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Adicionar Alerta
+        </Button>
+      </div>
 
-      {/* Tabs Navigation */}
+      {/* Alerts Grid */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
+        className="space-y-6"
       >
-        <Tabs defaultValue="directors" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-2 bg-white/50 backdrop-blur-sm p-1 rounded-2xl border border-gray-200">
-            <TabsTrigger 
-              value="directors" 
-              className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#D72638] data-[state=active]:text-white py-3"
-            >
-              📞 Diretores
-            </TabsTrigger>
-            <TabsTrigger 
-              value="periods"
-              className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#D72638] data-[state=active]:text-white py-3"
-            >
-              ⏰ Períodos
-            </TabsTrigger>
-            <TabsTrigger 
-              value="templates"
-              className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#D72638] data-[state=active]:text-white py-3"
-            >
-              📝 Templates
-            </TabsTrigger>
-            <TabsTrigger 
-              value="history"
-              className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9C1E1E] data-[state=active]:to-[#D72638] data-[state=active]:text-white py-3"
-            >
-              📊 Histórico
-            </TabsTrigger>
-          </TabsList>
+        {/* CEO Alert Card (Special) */}
+        <AlertaCEOCard />
 
-          <TabsContent value="directors" className="space-y-6">
-            <DirectorsSection />
-          </TabsContent>
-
-          <TabsContent value="periods" className="space-y-6">
-            <PeriodsSection />
-          </TabsContent>
-
-          <TabsContent value="templates" className="space-y-6">
-            <TemplatesSection />
-          </TabsContent>
-
-          <TabsContent value="history" className="space-y-6">
-            <HistorySection />
-          </TabsContent>
-        </Tabs>
+        {/* Other Alerts Grid */}
+        {alerts.length > 0 && (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {alerts.map((alert) => (
+              <AlertCard
+                key={alert.id}
+                nome={alert.nome}
+                tipo={alert.tipo}
+                descricao={alert.descricao}
+                template={alert.template_mensagem}
+                ativo={alert.ativo}
+                onToggle={() => handleToggleAlert(alert.id, alert.ativo)}
+                onEdit={() => {}}
+                onDelete={() => handleDeleteAlert(alert.id)}
+                onPreview={() => {}}
+              />
+            ))}
+          </div>
+        )}
       </motion.div>
+
+      {/* Add Alert Dialog */}
+      <AddAlertDialog open={addAlertOpen} onOpenChange={setAddAlertOpen} />
     </div>
   );
 };

@@ -164,10 +164,13 @@ export const DirectorsSection = () => {
 
       {/* Dialog */}
       <AddDirectorDialog
-        isOpen={dialogOpen}
-        onClose={handleDialogClose}
-        onSuccess={loadDirectors}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
         director={selectedDirector}
+        onClose={() => {
+          setDialogOpen(false);
+          loadDirectors();
+        }}
       />
     </div>
   );
