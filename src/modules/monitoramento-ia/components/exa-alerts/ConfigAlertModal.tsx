@@ -15,18 +15,7 @@ import { Clock, MessageSquare, Users, ChevronDown, ChevronUp, Loader2, Zap, Cale
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-
-const CONTACT_TYPES = [
-  { value: 'lead', label: 'Leads' },
-  { value: 'sindico', label: 'Síndicos' },
-  { value: 'sindico_lead', label: 'Síndicos Lead' },
-  { value: 'tke_supervisor', label: 'Supervisores TKE' },
-  { value: 'oriente_supervisor', label: 'Supervisores Oriente' },
-  { value: 'ligga_provedor', label: 'Ligga (Provedor)' },
-  { value: 'vivo_provedor', label: 'Vivo (Provedor)' },
-  { value: 'equipe_exa', label: 'Equipe EXA' },
-  { value: 'outros', label: 'Outros' },
-];
+import { useContactTypes } from '../../hooks/useContactTypes';
 interface ConfigAlertModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -65,6 +54,9 @@ export const ConfigAlertModal = ({
   onOpenChange,
   alertTitle
 }: ConfigAlertModalProps) => {
+  // Hook para tipos de contato dinâmicos do banco
+  const { contactTypes, loading: loadingContactTypes } = useContactTypes();
+  
   const [frequency, setFrequency] = useState('diario');
   const [time, setTime] = useState('08:00');
   const [selectedDays, setSelectedDays] = useState<string[]>(['seg', 'ter', 'qua', 'qui', 'sex']);
@@ -578,20 +570,24 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
 
               {/* Tipos específicos */}
               <div className="flex flex-wrap gap-2">
-                {CONTACT_TYPES.map(type => (
-                  <Badge
-                    key={type.value}
-                    variant={demandContactTypes.includes(type.value) ? 'default' : 'outline'}
-                    className={`cursor-pointer px-3 py-2 transition-all duration-300 ${
-                      demandContactTypes.includes(type.value)
-                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
-                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
-                    }`}
-                    onClick={() => handleContactTypeToggle(type.value)}
-                  >
-                    {type.label}
-                  </Badge>
-                ))}
+                {loadingContactTypes ? (
+                  <span className="text-sm text-gray-500">Carregando tipos...</span>
+                ) : (
+                  contactTypes.map(type => (
+                    <Badge
+                      key={type.id}
+                      variant={demandContactTypes.includes(type.name) ? 'default' : 'outline'}
+                      className={`cursor-pointer px-3 py-2 transition-all duration-300 ${
+                        demandContactTypes.includes(type.name)
+                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
+                          : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => handleContactTypeToggle(type.name)}
+                    >
+                      {type.label}
+                    </Badge>
+                  ))
+                )}
               </div>
               
               {!demandContactTypes.includes('all') && demandContactTypes.length === 0 && (
