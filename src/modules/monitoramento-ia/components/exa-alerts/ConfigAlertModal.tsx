@@ -480,8 +480,48 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
 
           <Separator />
 
-          {/* ============= DIRETORES ============= */}
-          
+          {/* ============= DIRETORES QUE RECEBERÃO RELATÓRIOS AGENDADOS ============= */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ delay: 0.15 }}
+            className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="w-5 h-5 text-gray-400" />
+              <h3 className="font-semibold text-base text-gray-700 dark:text-gray-300">
+                Diretores que Receberão (Agendado)
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {directors.map(director => (
+                <div 
+                  key={director.id} 
+                  className="flex items-center gap-2 p-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-[#7D1818]/30 transition-colors"
+                >
+                  <Checkbox 
+                    id={`general-director-${director.id}`}
+                    checked={selectedDirectors.includes(director.id)}
+                    onCheckedChange={() => handleDirectorToggle(director.id)}
+                  />
+                  <Label 
+                    htmlFor={`general-director-${director.id}`} 
+                    className="flex-1 cursor-pointer font-medium text-sm"
+                  >
+                    {director.nome}
+                  </Label>
+                </div>
+              ))}
+            </div>
+
+            {selectedDirectors.length === 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                ⚠️ Selecione pelo menos um diretor para salvar as configurações
+              </p>
+            )}
+          </motion.div>
+
 
           <Separator />
 
