@@ -44,12 +44,12 @@ Deno.serve(async (req) => {
 
     console.log('📊 [VAR GENERATE] Gerando relatório:', { start_date, end_date, contact_types });
 
-    // ===== BUSCAR CONVERSAS NO PERÍODO =====
+    // ===== BUSCAR CONVERSAS NO PERÍODO (POR ÚLTIMA ATIVIDADE) =====
     let conversationsQuery = supabase
       .from('conversations')
       .select('*')
-      .gte('created_at', start_date)
-      .lte('created_at', end_date);
+      .gte('last_message_at', start_date)
+      .lte('last_message_at', end_date);
 
     // Filtrar por tipos de contato se especificado
     if (contact_types && contact_types.length > 0) {
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
     // ===== CONVERSAS ESCALADAS =====
     const conversas_escaladas = conversations?.filter((c: ConversationRecord) => c.status === 'escalated').length || 0;
 
-    // ===== EVOLUÇÃO 30 DIAS =====
+    // ===== EVOLUÇÃO 30 DIAS (POR ÚLTIMA ATIVIDADE) =====
     const evolucao_30_dias: Array<{ data: string; total: number }> = [];
     const startDate = new Date(start_date);
     const endDate = new Date(end_date);
@@ -140,11 +140,90 @@ Deno.serve(async (req) => {
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       const count = conversations?.filter((c: ConversationRecord) => 
-        c.created_at.startsWith(dateStr)
+        c.last_message_at && c.last_message_at.startsWith(dateStr)
       ).length || 0;
       
       evolucao_30_dias.push({ data: dateStr, total: count });
     }
+
+    // ===== DISTRIBUIÇÃO POR PERÍODO (MANHÃ/TARDE/NOITE) =====
+    const distribuicao_periodo = { manha: 0, tarde: 0, noite: 0 };
+    messages.forEach((m: MessageRecord) => {
+      const hour = new Date(m.created_at).getHours();
+      if (hour >= 6 && hour < 12) distribuicao_periodo.manha++;
+      else if (hour >= 12 && hour < 18) distribuicao_periodo.tarde++;
+      else distribuicao_periodo.noite++;
+    });
+
+    // ===== MENSAGENS ENVIADAS VS RECEBIDAS =====
+    const mensagens_enviadas = messages.filter((m: MessageRecord) => m.direction === 'outbound').length;
+    const mensagens_recebidas = messages.filter((m: MessageRecord) => m.direction === 'inbound').length;
+
+    // ===== COMPARATIVO COM PERÍODO ANTERIOR =====
+    const periodDuration = new Date(end_date).getTime() - new Date(start_date).getTime();
+    const previousStart = new Date(new Date(start_date).getTime() - periodDuration).toISOString();
+    const previousEnd = start_date;
+
+    // Buscar dados do período anterior
+    const { data: previousConversations } = await supabase
+      .from('conversations')
+      .select('*')
+      .gte('last_message_at', previousStart)
+      .lte('last_message_at', previousEnd);
+
+    const previousConvIds = previousConversations?.map(c => c.id) || [];
+    let previousMessages: MessageRecord[] = [];
+    if (previousConvIds.length > 0) {
+      const { data: prevMsgs } = await supabase
+        .from('messages')
+        .select('*')
+        .in('conversation_id', previousConvIds);
+      previousMessages = prevMsgs || [];
+    }
+
+    const previousResponseTimes = previousMessages
+      .filter(m => m.response_time && m.direction === 'outbound')
+      .map(m => {
+        const interval = m.response_time;
+        if (!interval) return 0;
+        const parts = interval.split(':');
+        if (parts.length === 3) {
+          return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+        }
+        return 0;
+      });
+
+    const previousTma = previousResponseTimes.length > 0
+      ? previousResponseTimes.reduce((a, b) => a + b, 0) / previousResponseTimes.length
+      : 0;
+
+    const previousHotLeads = previousConversations?.filter(c => (c.lead_score || 0) >= 70).length || 0;
+
+    const comparativo_anterior = {
+      contatos: { anterior: previousConversations?.length || 0, atual: total_conversas },
+      mensagens: { anterior: previousMessages.length, atual: messages.length },
+      tma: { anterior: Math.round(previousTma), atual: Math.round(tma_medio) },
+      hot_leads: { anterior: previousHotLeads, atual: hot_leads }
+    };
+
+    // ===== CONVERSAS MAIS ATIVAS =====
+    const messageCountByConversation = messages.reduce((acc, m) => {
+      acc[m.conversation_id] = (acc[m.conversation_id] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const conversas_mais_ativas = Object.entries(messageCountByConversation)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([convId, count]) => {
+        const conv = conversations?.find(c => c.id === convId);
+        return {
+          phone: conv?.phone_number || 'Desconhecido',
+          total_msgs: count,
+          agent: conv?.agent_key || 'N/A',
+          last_activity: conv?.last_message_at || ''
+        };
+      });
 
     // ===== ANÁLISE IA (LOVABLE AI) =====
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
@@ -281,7 +360,14 @@ FORNEÇA RESPOSTA EM JSON EXATAMENTE NESTE FORMATO:
       // Metadados (25-27)
       total_mensagens: messages.length,
       gerado_em: new Date().toISOString(),
-      versao_relatorio: '1.0'
+      versao_relatorio: '1.0',
+      
+      // NOVOS CAMPOS (28-32)
+      distribuicao_periodo,
+      mensagens_enviadas,
+      mensagens_recebidas,
+      comparativo_anterior,
+      conversas_mais_ativas
     };
 
     console.log('✅ [VAR GENERATE] Relatório gerado com sucesso');

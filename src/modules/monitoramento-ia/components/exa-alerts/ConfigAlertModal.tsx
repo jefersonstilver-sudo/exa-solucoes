@@ -177,7 +177,7 @@ O relatório do período está disponível.
       } = await supabase.from('conversations').select('*', {
         count: 'exact',
         head: true
-      }).gte('created_at', startDate.toISOString()).lte('created_at', endDate.toISOString());
+      }).gte('last_message_at', startDate.toISOString()).lte('last_message_at', endDate.toISOString());
       if (countError) {
         throw new Error('Erro ao verificar conversas no período');
       }
