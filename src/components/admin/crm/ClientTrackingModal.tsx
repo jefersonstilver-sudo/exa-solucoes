@@ -2,10 +2,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import { 
   User, Mail, Phone, FileText, MapPin, ShoppingCart, 
   Calendar, Clock, CreditCard, Building, Target, TrendingUp, 
-  Search, MousePointer, Activity, MessageCircle, Sparkles, UserCircle as UserCircleIcon, Loader2
+  Search, MousePointer, Activity, MessageCircle, Sparkles, UserCircle as UserCircleIcon, Loader2, ExternalLink
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -15,6 +16,8 @@ import { useEffect, useState } from 'react';
 import { getUserBehaviorSummary, formatTimeSpent, UserBehaviorSummary } from '@/services/behaviorTrackingService';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface ClientTrackingModalProps {
   isOpen: boolean;
@@ -46,6 +49,11 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [previousOrders, setPreviousOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [panelNames, setPanelNames] = useState<Record<string, string>>({});
+  const [loadingPanels, setLoadingPanels] = useState(false);
+  
+  const { isSuperAdmin } = useAuth();
+  const navigate = useNavigate();
   
   const createdDate = new Date(orderData.created_at);
   const timeElapsed = Math.floor((Date.now() - createdDate.getTime()) / (1000 * 60 * 60));
@@ -79,6 +87,13 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
       fetchPreviousOrders(orderData.client_id);
     }
   }, [isOpen, orderData.client_id]);
+
+  // Buscar nomes dos painéis quando o modal abrir
+  useEffect(() => {
+    if (isOpen && orderData.lista_paineis && orderData.lista_paineis.length > 0) {
+      fetchPanelNames(orderData.lista_paineis);
+    }
+  }, [isOpen, orderData.lista_paineis]);
 
   const fetchClientConversations = async (phone: string) => {
     setLoadingConversations(true);
@@ -151,6 +166,40 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
       setLoadingOrders(false);
     }
   };
+
+  const fetchPanelNames = async (panelIds: string[]) => {
+    setLoadingPanels(true);
+    try {
+      const { data, error } = await supabase
+        .from('painels')
+        .select(`
+          id,
+          buildings:building_id (
+            nome
+          )
+        `)
+        .in('id', panelIds);
+      
+      if (!error && data) {
+        const namesMap: Record<string, string> = {};
+        data.forEach(panel => {
+          const buildingName = (panel.buildings as any)?.nome || 'Prédio não identificado';
+          namesMap[panel.id] = buildingName;
+        });
+        setPanelNames(namesMap);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar nomes dos painéis:', error);
+    } finally {
+      setLoadingPanels(false);
+    }
+  };
+
+  const openConversationAsSofia = (conversationId: string) => {
+    // Navegar para o CRM com a conversa selecionada
+    navigate(`/admin/crm?conversation=${conversationId}`);
+    onClose();
+  };
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -194,6 +243,7 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                 
                 {orderData.client_phone && (
                   <div className="flex items-start gap-3">
+                    <Phone className="h-4 w-4 text-muted-foreground mt-1" />
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Telefone / WhatsApp</p>
                       <PhoneWithActions phone={orderData.client_phone} />
@@ -252,7 +302,7 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                       'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900'
                     )}>
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1">
                           {conv.agent_key === 'sofia' ? (
                             <Sparkles className="h-4 w-4 text-pink-600" />
                           ) : (
@@ -267,8 +317,20 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                           {conv.escalated_to_eduardo && (
                             <Badge variant="outline" className="text-xs">↗️ Escalado</Badge>
                           )}
+                          {isSuperAdmin && conv.agent_key === 'sofia' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="ml-auto h-7 text-xs gap-1"
+                              onClick={() => openConversationAsSofia(conv.id)}
+                            >
+                              <MessageCircle className="h-3 w-3" />
+                              Conversar como Sofia
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground ml-2">
                           {conv.last_message_at && format(new Date(conv.last_message_at), 'dd/MM HH:mm', { locale: ptBR })}
                         </span>
                       </div>
@@ -593,19 +655,29 @@ export function ClientTrackingModal({ isOpen, onClose, orderData }: ClientTracki
                     Painéis no Carrinho
                     <Badge variant="secondary">{orderData.lista_paineis.length}</Badge>
                   </h3>
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <div className="grid grid-cols-1 gap-2">
-                      {orderData.lista_paineis.map((painel, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-background rounded">
-                          <Building className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Painel {index + 1}</span>
-                          <span className="text-xs text-muted-foreground ml-auto font-mono">
-                            {painel}
-                          </span>
-                        </div>
-                      ))}
+                  {loadingPanels ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
-                  </div>
+                  ) : (
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <div className="grid grid-cols-1 gap-2">
+                        {orderData.lista_paineis.map((painelId, index) => (
+                          <div key={index} className="flex items-center gap-2 p-3 bg-background rounded border">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex-1">
+                              <span className="text-sm font-medium block">
+                                {panelNames[painelId] || `Painel ${index + 1}`}
+                              </span>
+                              <span className="text-xs text-muted-foreground font-mono">
+                                ID: {painelId.slice(0, 8)}...
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </section>
                 <Separator />
               </>
