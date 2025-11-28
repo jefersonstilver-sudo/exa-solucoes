@@ -4,13 +4,17 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 import { DirectorsList } from './DirectorsList';
+import { AlertConfigCard } from './AlertConfigCard';
+import { ConfigAlertModal } from './ConfigAlertModal';
 
 export const AlertaCEOCard = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const [ativo, setAtivo] = useState(true);
+  const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState('');
 
   return (
     <motion.div
@@ -70,29 +74,21 @@ export const AlertaCEOCard = () => {
             transition={{ duration: 0.3 }}
           >
             <CardContent className="space-y-4 pt-0" onClick={(e) => e.stopPropagation()}>
-              {/* Template Preview */}
-              <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl p-4 border-2 border-dashed border-[#9C1E1E]/20">
-                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
-                  📝 Template da Mensagem
+              {/* Alert Config Cards */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  📊 Alertas Configuráveis
                 </p>
-                <div className="bg-white dark:bg-gray-950 rounded-lg p-3 border border-border">
-                  <p className="text-sm leading-relaxed whitespace-pre-line">
-                    🔴 <span className="font-bold">Alerta de Alta Prioridade</span>
-                    {'\n\n'}
-                    <span className="text-muted-foreground">Painel:</span> {'{painel_nome}'}
-                    {'\n'}
-                    <span className="text-muted-foreground">Local:</span> {'{predio}'}
-                    {'\n'}
-                    <span className="text-muted-foreground">Status:</span> {'{status}'}
-                    {'\n'}
-                    <span className="text-muted-foreground">Tempo:</span> {'{tempo}'}
-                    {'\n\n'}
-                    ⚡ <span className="font-semibold">Ação imediata necessária.</span>
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  <span className="font-medium">Variáveis disponíveis:</span> {'{painel_nome}'}, {'{predio}'}, {'{status}'}, {'{tempo}'}
-                </p>
+                <AlertConfigCard
+                  icon={BarChart3}
+                  title="Relatório de Conversas"
+                  description="Relatório periódico com estatísticas de conversas e tempo médio de resposta"
+                  status="ativo"
+                  onClick={() => {
+                    setSelectedAlert('Relatório de Conversas');
+                    setConfigModalOpen(true);
+                  }}
+                />
               </div>
 
               {/* Directors Section */}
@@ -117,16 +113,17 @@ export const AlertaCEOCard = () => {
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* Future: Advanced Settings Section */}
-              <div className="bg-muted/30 rounded-lg p-4 border border-dashed border-muted-foreground/20">
-                <p className="text-sm text-muted-foreground text-center">
-                  🚀 Configurações avançadas em breve...
-                </p>
-              </div>
             </CardContent>
           </motion.div>
         )}
       </Card>
+
+      {/* Config Modal */}
+      <ConfigAlertModal
+        open={configModalOpen}
+        onOpenChange={setConfigModalOpen}
+        alertTitle={selectedAlert}
+      />
     </motion.div>
   );
 };
