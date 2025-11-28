@@ -125,6 +125,19 @@ Deno.serve(async (req) => {
         ? `\n\n_As demais classificações (${tiposInativos.join(', ')}) não tiveram atividades no período._`
         : '';
 
+      // Resumo das primeiras conversas por tipo (se disponível)
+      const primeiraConvMsg = report_data.ia_primeira_conversa_por_tipo && report_data.ia_primeira_conversa_por_tipo.length > 0
+        ? `\n\n*⏰ Primeiras Conversas:*\n${report_data.ia_primeira_conversa_por_tipo
+            .slice(0, 3)
+            .map((c: any) => `• ${c.tipo}: ${c.hora} - ${c.contato}`)
+            .join('\n')}`
+        : '';
+
+      // Insight principal da IA (se disponível)
+      const iaInsightMsg = report_data.ia_resumo_executivo && report_data.ia_resumo_executivo !== 'Análise IA indisponível no momento'
+        ? `\n\n💡 *Insight IA:*\n_${report_data.ia_resumo_executivo.substring(0, 150)}..._`
+        : '';
+
       message = `📊 *Relatório VAR Disponível*
 
 Olá {nome_diretor}!
@@ -139,7 +152,7 @@ ${tiposList}${inativosMsg}
 • Msgs Enviadas: ${report_data.mensagens_enviadas || 0}
 • Msgs Recebidas: ${report_data.mensagens_recebidas || 0}
 • Resolução: ${report_data.taxa_resolucao.toFixed(1)}%
-• TMA: ${report_data.tma_formatado}
+• TMA: ${report_data.tma_formatado}${primeiraConvMsg}${iaInsightMsg}
 
 🔗 Ver relatório completo:
 ${reportLink}
