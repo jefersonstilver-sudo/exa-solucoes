@@ -363,7 +363,8 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
       setSendingTest(false);
     }
   };
-  return <Dialog open={open} onOpenChange={onOpenChange}>
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[950px] w-[95vw] max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl border border-gray-200/50 dark:border-gray-800/50">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -723,5 +724,6 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>;
+    </Dialog>
+  );
 };
