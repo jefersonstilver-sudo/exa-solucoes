@@ -78,8 +78,8 @@ const HeroMobileLayout = () => {
         </p>
 
         <div className="flex gap-4 pt-2 justify-center">
-          <ExaCTA variant="primary" size="md" href="https://wa.me/5545991415920?text=Oi%2C%20tenho%20interesse%20em%20anunciar%20na%20EXA!">
-            Falar com Vendedor
+          <ExaCTA variant="primary" size="md" href="https://wa.me/5545991415920?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20sobre%20investir%20em%20pain%C3%A9is.">
+            Quero Saber Mais
           </ExaCTA>
         </div>
       </div>
@@ -160,8 +160,8 @@ const HeroSection = () => {
           </p>
 
           <div className="flex gap-4 pt-4 justify-center lg:justify-start">
-            <ExaCTA variant="primary" size="lg" href="https://wa.me/5545991415920?text=Oi%2C%20tenho%20interesse%20em%20anunciar%20na%20EXA!">
-              Falar com Vendedor
+            <ExaCTA variant="primary" size="lg" href="https://wa.me/5545991415920?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20sobre%20investir%20em%20pain%C3%A9is.">
+              Quero Saber Mais
             </ExaCTA>
           </div>
         </div>
