@@ -69,10 +69,16 @@ interface ReportData {
     hot_leads: { anterior: number; atual: number };
   };
   conversas_mais_ativas?: Array<{
+    name: string;
     phone: string;
     total_msgs: number;
     agent: string;
     last_activity: string;
+  }>;
+  mensagens_por_tipo?: Record<string, { 
+    enviadas: number; 
+    recebidas: number; 
+    conversas: number 
   }>;
 }
 
@@ -658,6 +664,39 @@ export const RelatorioPublicoPage = () => {
                   <div className="text-xs text-muted-foreground mt-1">Dia de pico</div>
                 </div>
               </div>
+              
+              {/* NOVAS MÉTRICAS */}
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <div className="p-3 bg-gradient-to-b from-blue-50 to-blue-100/50 dark:from-blue-950 dark:to-blue-900/50 rounded-lg">
+                  <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">
+                    {reportData.mensagens_enviadas || 0}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Msgs Enviadas</div>
+                </div>
+                <div className="p-3 bg-gradient-to-b from-green-50 to-green-100/50 dark:from-green-950 dark:to-green-900/50 rounded-lg">
+                  <div className="text-2xl font-extrabold text-green-600 dark:text-green-400">
+                    {reportData.mensagens_recebidas || 0}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Msgs Recebidas</div>
+                </div>
+                
+                {reportData.mensagens_por_tipo?.lead && (
+                  <>
+                    <div className="p-3 bg-gradient-to-b from-purple-50 to-purple-100/50 dark:from-purple-950 dark:to-purple-900/50 rounded-lg">
+                      <div className="text-xl font-extrabold text-purple-600 dark:text-purple-400">
+                        {reportData.mensagens_por_tipo.lead.enviadas || 0}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Msgs para Leads</div>
+                    </div>
+                    <div className="p-3 bg-gradient-to-b from-orange-50 to-orange-100/50 dark:from-orange-950 dark:to-orange-900/50 rounded-lg">
+                      <div className="text-xl font-extrabold text-orange-600 dark:text-orange-400">
+                        {reportData.mensagens_por_tipo.sindico_lead?.enviadas || 0}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Msgs p/ Síndicos</div>
+                    </div>
+                  </>
+                )}
+              </div>
 
               <div className="mt-4 p-3 bg-muted/30 rounded-lg">
                 <p className="text-sm text-foreground">{reportData.ia_resumo_executivo}</p>
@@ -808,7 +847,10 @@ export const RelatorioPublicoPage = () => {
                       {reportData.conversas_mais_ativas.slice(0, 10).map((conv, i) => (
                         <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
                           <td className="py-2 px-2 text-muted-foreground">{i + 1}</td>
-                          <td className="py-2 px-2 font-medium text-foreground">{conv.phone}</td>
+                          <td className="py-2 px-2">
+                            <div className="font-medium text-foreground">{conv.name || 'Sem nome'}</div>
+                            <div className="text-xs text-muted-foreground">{conv.phone}</div>
+                          </td>
                           <td className="py-2 px-2 text-center">
                             <span className="inline-flex items-center justify-center w-8 h-8 bg-[#7D1818]/10 text-[#7D1818] rounded-full font-bold text-xs">
                               {conv.total_msgs}
