@@ -11,10 +11,20 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { motion } from 'framer-motion';
-import { Clock, MessageSquare, Users, ChevronDown, ChevronUp, Loader2, Zap, CalendarIcon } from 'lucide-react';
+import { Clock, MessageSquare, Users, ChevronDown, ChevronUp, Loader2, Zap, CalendarIcon, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+
+const CONTACT_TYPES = [
+  { value: 'sindico', label: 'Síndicos' },
+  { value: 'sindico_lead', label: 'Síndicos Lead' },
+  { value: 'lead', label: 'Leads' },
+  { value: 'supervisor_tke', label: 'Supervisores TKE' },
+  { value: 'supervisor_oriente', label: 'Supervisores Oriente' },
+  { value: 'provedor', label: 'Provedores' },
+  { value: 'equipe_exa', label: 'Equipe EXA' },
+];
 interface ConfigAlertModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -68,7 +78,9 @@ export const ConfigAlertModal = ({
   const [demandStartDate, setDemandStartDate] = useState<Date | undefined>(new Date());
   const [demandEndDate, setDemandEndDate] = useState<Date | undefined>(new Date());
   const [demandFormat, setDemandFormat] = useState<'whatsapp' | 'email'>('whatsapp');
+  const [demandSendType, setDemandSendType] = useState<'link' | 'complete'>('link');
   const [demandSelectedDirectors, setDemandSelectedDirectors] = useState<string[]>([]);
+  const [demandContactTypes, setDemandContactTypes] = useState<string[]>([]);
   const [generatingReport, setGeneratingReport] = useState(false);
 
   // Buscar diretores reais do banco
@@ -97,6 +109,12 @@ export const ConfigAlertModal = ({
       prev.includes(directorId) 
         ? prev.filter(id => id !== directorId) 
         : [...prev, directorId]
+    );
+  };
+
+  const handleContactTypeToggle = (type: string) => {
+    setDemandContactTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
     );
   };
 
@@ -145,7 +163,9 @@ export const ConfigAlertModal = ({
         {
           body: {
             start_date: startDate.toISOString(),
-            end_date: endDate.toISOString()
+            end_date: endDate.toISOString(),
+            contact_types: demandContactTypes.length > 0 ? demandContactTypes : undefined,
+            agent_key: 'eduardo'
           }
         }
       );
@@ -159,6 +179,7 @@ export const ConfigAlertModal = ({
           body: {
             report_data: reportData,
             format: demandFormat,
+            send_type: demandSendType,
             director_ids: demandSelectedDirectors
           }
         }
@@ -218,25 +239,23 @@ export const ConfigAlertModal = ({
     }
   };
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[950px] w-[95vw] max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl border-2">
+      <DialogContent className="max-w-[950px] w-[95vw] max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl border border-gray-200/50 dark:border-gray-800/50">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            📊 Configurar {alertTitle}
+          <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            Configurar {alertTitle}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* ============= CONFIGURAÇÕES GERAIS ============= */}
-          <motion.div initial={{
-          opacity: 0,
-          y: 10
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} className="space-y-4 p-5 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-2xl border-2 border-blue-200 dark:border-blue-900">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+          >
             <div className="flex items-center gap-2 mb-3">
-              <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h3 className="font-bold text-base">⚙️ Configurações Gerais</h3>
+              <Clock className="w-5 h-5 text-gray-400" />
+              <h3 className="font-semibold text-base text-gray-700 dark:text-gray-300">Configurações Gerais</h3>
             </div>
 
             {/* Frequência e Horário */}
@@ -277,16 +296,16 @@ export const ConfigAlertModal = ({
 
             {/* Dias da Semana */}
             <div className="space-y-2">
-              <Label>Dias da Semana</Label>
+              <Label className="text-gray-600 dark:text-gray-400">Dias da Semana</Label>
               <div className="flex flex-wrap gap-2">
                 {DAYS_OF_WEEK.map(day => (
                   <Badge
                     key={day.value}
                     variant={selectedDays.includes(day.value) ? 'default' : 'outline'}
-                    className={`cursor-pointer px-4 py-2 transition-all ${
+                    className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
                       selectedDays.includes(day.value)
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'hover:bg-blue-100 dark:hover:bg-blue-950'
+                        ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
+                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                     onClick={() => handleDayToggle(day.value)}
                   >
@@ -302,26 +321,23 @@ export const ConfigAlertModal = ({
 
           {/* ============= TEMPLATE DA MENSAGEM (COLAPSÁVEL) ============= */}
           <Collapsible open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
-            <motion.div initial={{
-            opacity: 0,
-            y: 10
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} transition={{
-            delay: 0.1
-          }} className="space-y-4 p-5 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-2xl border-2 border-green-200 dark:border-green-900">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.1 }}
+              className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+            >
               <CollapsibleTrigger className="w-full">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
-                    <h3 className="font-bold text-base">📝 Template da Mensagem</h3>
+                    <MessageSquare className="w-5 h-5 text-gray-400" />
+                    <h3 className="font-semibold text-base text-gray-700 dark:text-gray-300">Template da Mensagem</h3>
                   </div>
                   <div className="flex items-center gap-2">
-                    {!isTemplateOpen && <span className="text-xs text-muted-foreground truncate max-w-[400px]">
-                        Preview: "📊 *Relatório de Conversas* Total: {'{total_conversas}'}..."
+                    {!isTemplateOpen && <span className="text-xs text-gray-500 truncate max-w-[400px]">
+                        Preview: "Relatório de Conversas Total: {'{total_conversas}'}..."
                       </span>}
-                    {isTemplateOpen ? <ChevronUp className="w-5 h-5 text-green-600 dark:text-green-400" /> : <ChevronDown className="w-5 h-5 text-green-600 dark:text-green-400" />}
+                    {isTemplateOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                   </div>
                 </div>
               </CollapsibleTrigger>
@@ -329,13 +345,29 @@ export const ConfigAlertModal = ({
               <CollapsibleContent className="space-y-4 pt-3">
                 {/* Tipo de Template */}
                 <div className="space-y-3">
-                  <Label>Tipo de Template</Label>
+                  <Label className="text-gray-600 dark:text-gray-400">Tipo de Template</Label>
                   <div className="flex gap-3">
-                    <Badge variant={templateType === 'texto' ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all ${templateType === 'texto' ? 'bg-green-600 text-white hover:bg-green-700' : 'hover:bg-green-100 dark:hover:bg-green-950'}`} onClick={() => setTemplateType('texto')}>
-                      📱 TEXTO (WhatsApp)
+                    <Badge 
+                      variant={templateType === 'texto' ? 'default' : 'outline'} 
+                      className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
+                        templateType === 'texto' 
+                          ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' 
+                          : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
+                      }`} 
+                      onClick={() => setTemplateType('texto')}
+                    >
+                      TEXTO (WhatsApp)
                     </Badge>
-                    <Badge variant={templateType === 'html' ? 'default' : 'outline'} className={`cursor-pointer px-4 py-2 transition-all ${templateType === 'html' ? 'bg-green-600 text-white hover:bg-green-700' : 'hover:bg-green-100 dark:hover:bg-green-950'}`} onClick={() => setTemplateType('html')}>
-                      📧 HTML (Email/Web)
+                    <Badge 
+                      variant={templateType === 'html' ? 'default' : 'outline'} 
+                      className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
+                        templateType === 'html' 
+                          ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900' 
+                          : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
+                      }`} 
+                      onClick={() => setTemplateType('html')}
+                    >
+                      HTML (Email/Web)
                     </Badge>
                   </div>
                 </div>
@@ -355,18 +387,15 @@ export const ConfigAlertModal = ({
           <Separator />
 
           {/* ============= DIRETORES ============= */}
-          <motion.div initial={{
-          opacity: 0,
-          y: 10
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          delay: 0.2
-        }} className="space-y-4 p-5 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-2xl border-2 border-purple-200 dark:border-purple-900">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ delay: 0.2 }}
+            className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+          >
             <div className="flex items-center gap-2 mb-3">
-              <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              <h3 className="font-bold text-base">👤 Diretores que Recebem</h3>
+              <Users className="w-5 h-5 text-gray-400" />
+              <h3 className="font-semibold text-base text-gray-700 dark:text-gray-300">Diretores que Recebem</h3>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -390,31 +419,31 @@ export const ConfigAlertModal = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="space-y-4 p-5 bg-gradient-to-br from-orange-50/50 to-yellow-50/50 dark:from-orange-950/20 dark:to-yellow-950/20 rounded-2xl border-2 border-orange-200 dark:border-orange-900"
+            className="space-y-4 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
           >
             <div className="flex items-center gap-2 mb-3">
-              <Zap className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-              <h3 className="font-bold text-base">⚡ Solicitar Relatório Agora (Sob Demanda)</h3>
+              <Zap className="w-5 h-5 text-gray-400" />
+              <h3 className="font-semibold text-base text-gray-700 dark:text-gray-300">Solicitar Relatório Agora (Sob Demanda)</h3>
             </div>
 
             {/* Período */}
             <div className="space-y-2">
-              <Label>Período do Relatório</Label>
+              <Label className="text-gray-600 dark:text-gray-400">Período do Relatório</Label>
               <div className="flex flex-wrap gap-2">
                 {[
-                  { value: 'hoje', label: '📅 Hoje' },
-                  { value: 'ontem', label: '📆 Ontem' },
-                  { value: '7dias', label: '📊 Últimos 7 dias' },
-                  { value: '30dias', label: '📈 Últimos 30 dias' },
-                  { value: 'custom', label: '🗓️ Personalizado' }
+                  { value: 'hoje', label: 'Hoje' },
+                  { value: 'ontem', label: 'Ontem' },
+                  { value: '7dias', label: 'Últimos 7 dias' },
+                  { value: '30dias', label: 'Últimos 30 dias' },
+                  { value: 'custom', label: 'Personalizado' }
                 ].map(period => (
                   <Badge
                     key={period.value}
                     variant={demandPeriod === period.value ? 'default' : 'outline'}
-                    className={`cursor-pointer px-3 py-2 transition-all ${
+                    className={`cursor-pointer px-3 py-2 transition-all duration-300 ${
                       demandPeriod === period.value
-                        ? 'bg-orange-600 text-white hover:bg-orange-700'
-                        : 'hover:bg-orange-100 dark:hover:bg-orange-950'
+                        ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
+                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
                     }`}
                     onClick={() => setDemandPeriod(period.value)}
                   >
@@ -422,6 +451,33 @@ export const ConfigAlertModal = ({
                   </Badge>
                 ))}
               </div>
+            </div>
+
+            {/* Filtrar por Tipo de Contato */}
+            <div className="space-y-2">
+              <Label className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                Filtrar por Tipo de Contato
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                {CONTACT_TYPES.map(type => (
+                  <Badge
+                    key={type.value}
+                    variant={demandContactTypes.includes(type.value) ? 'default' : 'outline'}
+                    className={`cursor-pointer px-3 py-2 transition-all duration-300 ${
+                      demandContactTypes.includes(type.value)
+                        ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
+                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
+                    }`}
+                    onClick={() => handleContactTypeToggle(type.value)}
+                  >
+                    {type.label}
+                  </Badge>
+                ))}
+              </div>
+              {demandContactTypes.length === 0 && (
+                <p className="text-xs text-gray-500 mt-1">Nenhum filtro = Todos os tipos de contato</p>
+              )}
             </div>
 
             {/* Date Pickers para período custom */}
@@ -477,32 +533,68 @@ export const ConfigAlertModal = ({
 
             {/* Formato de Envio */}
             <div className="space-y-2">
-              <Label>Formato de Envio</Label>
-              <div className="flex gap-3">
+              <Label className="text-gray-600 dark:text-gray-400">Formato de Envio</Label>
+              <div className="flex gap-3 flex-wrap">
                 <Badge
                   variant={demandFormat === 'whatsapp' ? 'default' : 'outline'}
-                  className={`cursor-pointer px-4 py-2 transition-all ${
+                  className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
                     demandFormat === 'whatsapp'
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'hover:bg-green-100 dark:hover:bg-green-950'
+                      ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
+                      : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
                   }`}
                   onClick={() => setDemandFormat('whatsapp')}
                 >
-                  📱 WhatsApp
+                  WhatsApp
                 </Badge>
                 <Badge
                   variant={demandFormat === 'email' ? 'default' : 'outline'}
-                  className={`cursor-pointer px-4 py-2 transition-all ${
+                  className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
                     demandFormat === 'email'
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'hover:bg-blue-100 dark:hover:bg-blue-950'
+                      ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
+                      : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
                   }`}
                   onClick={() => setDemandFormat('email')}
                 >
-                  📧 Email
+                  Email
                 </Badge>
               </div>
             </div>
+
+            {/* Tipo de Envio (Link ou Completo) */}
+            {demandFormat === 'whatsapp' && (
+              <div className="space-y-2">
+                <Label className="text-gray-600 dark:text-gray-400">Tipo de Mensagem</Label>
+                <div className="flex gap-3">
+                  <Badge
+                    variant={demandSendType === 'link' ? 'default' : 'outline'}
+                    className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
+                      demandSendType === 'link'
+                        ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
+                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setDemandSendType('link')}
+                  >
+                    Notificação com Link
+                  </Badge>
+                  <Badge
+                    variant={demandSendType === 'complete' ? 'default' : 'outline'}
+                    className={`cursor-pointer px-4 py-2 transition-all duration-300 ${
+                      demandSendType === 'complete'
+                        ? 'bg-gray-900 text-white hover:bg-gray-800 border-gray-900'
+                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setDemandSendType('complete')}
+                  >
+                    Relatório Completo
+                  </Badge>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {demandSendType === 'link' 
+                    ? 'Envia mensagem elegante com resumo e link para visualização completa' 
+                    : 'Envia relatório completo diretamente no WhatsApp'}
+                </p>
+              </div>
+            )}
 
             {/* Diretores que receberão */}
             <div className="space-y-2">

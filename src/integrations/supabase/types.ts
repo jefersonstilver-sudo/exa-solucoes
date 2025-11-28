@@ -3601,6 +3601,45 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_reports: {
+        Row: {
+          agent_key: string | null
+          contact_types: string[] | null
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          period_end: string | null
+          period_start: string | null
+          report_data: Json
+          report_type: string | null
+        }
+        Insert: {
+          agent_key?: string | null
+          contact_types?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          report_data: Json
+          report_type?: string | null
+        }
+        Update: {
+          agent_key?: string | null
+          contact_types?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          report_data?: Json
+          report_type?: string | null
+        }
+        Relationships: []
+      }
       homepage_banners: {
         Row: {
           created_at: string
