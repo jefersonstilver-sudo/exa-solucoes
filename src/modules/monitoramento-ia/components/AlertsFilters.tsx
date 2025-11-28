@@ -70,16 +70,16 @@ export const AlertsFilters = ({
   };
 
   return (
-    <div className="bg-module-card rounded-xl p-4 mb-6 space-y-4 border border-module">
+    <div className="bg-white/60 dark:bg-neutral-900/40 backdrop-blur-md rounded-xl lg:rounded-2xl p-4 md:p-6 mb-4 md:mb-6 space-y-4 border border-white/20 dark:border-white/10 shadow-lg">
       {/* Search and Period */}
-      <div className="flex gap-3">
+      <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-module-muted" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por painel, condomínio ou tipo..."
             value={filters.search || ''}
             onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-            className="pl-10 bg-module-input border-module border text-module-primary placeholder-module-muted"
+            className="pl-10 bg-background/50 border-border text-foreground placeholder:text-muted-foreground h-10 md:h-11"
           />
         </div>
         <PeriodSelector
@@ -91,7 +91,7 @@ export const AlertsFilters = ({
       </div>
 
       {/* Filters Row */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         {/* Status */}
         <Select
           value={filters.status?.[0] || 'all'}
@@ -102,10 +102,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className="bg-module-input border-module border text-module-primary">
+          <SelectTrigger className="bg-background/50 border-border text-foreground h-10 md:h-11">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
-          <SelectContent className="bg-module-card border-module border z-50">
+          <SelectContent className="bg-card border-border z-50">
             <SelectItem value="all">Todos os status</SelectItem>
             <SelectItem value="open">Abertos</SelectItem>
             <SelectItem value="scheduled">Agendados</SelectItem>
@@ -123,10 +123,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className="bg-module-input border-module border text-module-primary">
+          <SelectTrigger className="bg-background/50 border-border text-foreground h-10 md:h-11">
             <SelectValue placeholder="Severidade" />
           </SelectTrigger>
-          <SelectContent className="bg-module-card border-module border z-50">
+          <SelectContent className="bg-card border-border z-50">
             <SelectItem value="all">Todas as severidades</SelectItem>
             <SelectItem value="high">Alta</SelectItem>
             <SelectItem value="medium">Média</SelectItem>
@@ -144,10 +144,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className="bg-module-input border-module border text-module-primary">
+          <SelectTrigger className="bg-background/50 border-border text-foreground h-10 md:h-11">
             <SelectValue placeholder="Condomínio" />
           </SelectTrigger>
-          <SelectContent className="bg-module-card border-module border z-50">
+          <SelectContent className="bg-card border-border z-50">
             <SelectItem value="all">Todos os condomínios</SelectItem>
             {condominios.map((cond) => (
               <SelectItem key={cond} value={cond}>{cond}</SelectItem>
@@ -165,10 +165,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className="bg-module-input border-module border text-module-primary">
+          <SelectTrigger className="bg-background/50 border-border text-foreground h-10 md:h-11">
             <SelectValue placeholder="Provedor" />
           </SelectTrigger>
-          <SelectContent className="bg-module-card border-module border z-50">
+          <SelectContent className="bg-card border-border z-50">
             <SelectItem value="all">Todos os provedores</SelectItem>
             <SelectItem value="AnyDesk">AnyDesk</SelectItem>
             <SelectItem value="String">String</SelectItem>
@@ -186,10 +186,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className="bg-module-input border-module border text-module-primary">
+          <SelectTrigger className="bg-background/50 border-border text-foreground h-10 md:h-11">
             <SelectValue placeholder="Duração" />
           </SelectTrigger>
-          <SelectContent className="bg-module-card border-module border z-50">
+          <SelectContent className="bg-card border-border z-50">
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="300">Acima de 5 minutos</SelectItem>
             <SelectItem value="1800">Acima de 30 minutos</SelectItem>
@@ -207,10 +207,10 @@ export const AlertsFilters = ({
             })
           }
         >
-          <SelectTrigger className="bg-module-input border-module border text-module-primary">
+          <SelectTrigger className="bg-background/50 border-border text-foreground h-10 md:h-11">
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
-          <SelectContent className="bg-module-card border-module border z-50">
+          <SelectContent className="bg-card border-border z-50">
             <SelectItem value="severity">Severidade</SelectItem>
             <SelectItem value="opened_at">Tempo aberto</SelectItem>
             <SelectItem value="status">Status</SelectItem>
@@ -225,7 +225,7 @@ export const AlertsFilters = ({
         variant="outline"
         size="sm"
         onClick={onClearFilters}
-        className="w-full md:w-auto bg-module-input border-module border text-module-primary hover:bg-module-accent-hover"
+        className="w-full md:w-auto bg-background/50 border-border text-foreground hover:bg-accent hover:text-accent-foreground transition-all h-10"
       >
         <X className="w-4 h-4 mr-2" />
         Limpar filtros
