@@ -1,5 +1,4 @@
 import React from 'react';
-import { Calendar } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -8,7 +7,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-export type PeriodFilter = 'all' | 'current_month' | 'last_month' | 'last_3_months' | 'last_6_months' | 'this_year';
+export type PeriodFilter = 'today' | 'last_3_days' | 'last_7_days' | 'current_month' | 'last_month' | 'last_3_months' | 'last_6_months' | 'current_year' | 'all';
 
 interface OrderPeriodFilterProps {
   value: PeriodFilter;
@@ -17,22 +16,22 @@ interface OrderPeriodFilterProps {
 
 export const OrderPeriodFilter: React.FC<OrderPeriodFilterProps> = ({ value, onChange }) => {
   return (
-    <div className="flex items-center gap-2">
-      <Calendar className="h-4 w-4 text-muted-foreground" />
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="Selecione o período" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="current_month">📅 Mês Atual</SelectItem>
-          <SelectItem value="last_month">📆 Último Mês</SelectItem>
-          <SelectItem value="last_3_months">📊 Últimos 3 Meses</SelectItem>
-          <SelectItem value="last_6_months">📈 Últimos 6 Meses</SelectItem>
-          <SelectItem value="this_year">🗓️ Este Ano</SelectItem>
-          <SelectItem value="all">🌐 Todos os Pedidos</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder="Período" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="today">Hoje</SelectItem>
+        <SelectItem value="last_3_days">Últimos 3 dias</SelectItem>
+        <SelectItem value="last_7_days">Últimos 7 dias</SelectItem>
+        <SelectItem value="current_month">Mês atual</SelectItem>
+        <SelectItem value="last_month">Último mês</SelectItem>
+        <SelectItem value="last_3_months">Últimos 3 meses</SelectItem>
+        <SelectItem value="last_6_months">Últimos 6 meses</SelectItem>
+        <SelectItem value="current_year">Ano atual</SelectItem>
+        <SelectItem value="all">Todos</SelectItem>
+      </SelectContent>
+    </Select>
   );
 };
 
@@ -40,36 +39,36 @@ export const filterByPeriod = (items: any[], period: PeriodFilter): any[] => {
   if (period === 'all') return items;
 
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOf3DaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+  const startOf7DaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+  const startOf3MonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+  const startOf6MonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
 
   return items.filter(item => {
-    const itemDate = new Date(item.created_at);
-    const itemYear = itemDate.getFullYear();
-    const itemMonth = itemDate.getMonth();
-
+    const createdAt = new Date(item.created_at);
+    
     switch (period) {
+      case 'today':
+        return createdAt >= startOfToday;
+      case 'last_3_days':
+        return createdAt >= startOf3DaysAgo;
+      case 'last_7_days':
+        return createdAt >= startOf7DaysAgo;
       case 'current_month':
-        return itemYear === currentYear && itemMonth === currentMonth;
-      
+        return createdAt >= startOfCurrentMonth;
       case 'last_month':
-        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-        return itemYear === lastMonthYear && itemMonth === lastMonth;
-      
+        return createdAt >= startOfLastMonth && createdAt <= endOfLastMonth;
       case 'last_3_months':
-        const threeMonthsAgo = new Date(now);
-        threeMonthsAgo.setMonth(currentMonth - 3);
-        return itemDate >= threeMonthsAgo;
-      
+        return createdAt >= startOf3MonthsAgo;
       case 'last_6_months':
-        const sixMonthsAgo = new Date(now);
-        sixMonthsAgo.setMonth(currentMonth - 6);
-        return itemDate >= sixMonthsAgo;
-      
-      case 'this_year':
-        return itemYear === currentYear;
-      
+        return createdAt >= startOf6MonthsAgo;
+      case 'current_year':
+        return createdAt >= startOfYear;
       default:
         return true;
     }

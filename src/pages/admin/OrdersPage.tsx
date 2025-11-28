@@ -4,9 +4,9 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
-import OrdersStatsCards from '@/components/admin/orders/OrdersStatsCards';
+import OrdersCompactStats from '@/components/admin/orders/OrdersCompactStats';
 import OrdersTabs from '@/components/admin/orders/OrdersTabs';
-import OrdersPageHeader from '@/components/admin/orders/OrdersPageHeader';
+import OrdersCompactHeader from '@/components/admin/orders/OrdersCompactHeader';
 import OrdersPageAlerts from '@/components/admin/orders/OrdersPageAlerts';
 import OrdersPageFilters from '@/components/admin/orders/OrdersPageFilters';
 import { OrderMobileList } from '@/components/admin/orders/OrderMobileList';
@@ -312,30 +312,25 @@ const OrdersPage = () => {
     );
   }
 
-  // Desktop Layout (unchanged)
+  // Desktop Layout - Modernized
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center justify-between">
-          <OrdersPageHeader onRefresh={refetch} loading={loading} />
-          <RealtimeOrderNotification />
-        </div>
-        <div className="mt-2">
-          <OrdersPageAlerts ordersAndAttempts={filteredItems} />
-        </div>
+    <div className="space-y-4">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between">
+        <OrdersCompactHeader 
+          onRefresh={refetch} 
+          loading={loading}
+          periodFilter={periodFilter}
+          onPeriodChange={setPeriodFilter}
+        />
+        <RealtimeOrderNotification />
       </div>
 
-      {/* Period Filter */}
-      <div className="flex justify-end">
-        <OrderPeriodFilter value={periodFilter} onChange={setPeriodFilter} />
-      </div>
+      {/* Alerts */}
+      <OrdersPageAlerts ordersAndAttempts={filteredItems} />
 
-      {/* Enhanced Stats Cards */}
-      <OrdersStatsCards stats={filteredStats} activeOrdersCount={activeOrdersCount} />
-
-      {/* Fix Button - Temporary */}
-      <FixPedidoListaPaineisButton />
+      {/* Compact Stats Row */}
+      <OrdersCompactStats stats={filteredStats} activeOrdersCount={activeOrdersCount} />
 
       {/* Filters and Search */}
       <OrdersPageFilters
