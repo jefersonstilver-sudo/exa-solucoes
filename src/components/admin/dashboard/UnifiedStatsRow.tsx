@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserPlus, ShoppingBag, DollarSign, MessageCircle, Building2, Gift } from 'lucide-react';
-import GlowMetricCard from './GlowMetricCard';
+import AppleLikeMetricCard from './AppleLikeMetricCard';
 import { UnifiedDashboardStats } from '@/hooks/useDashboardUnifiedStats';
 
 interface UnifiedStatsRowProps {
@@ -32,16 +32,13 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 min-w-0">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* 1. Cadastros */}
-        <GlowMetricCard
-          title="Cadastros no Período"
+        <AppleLikeMetricCard
+          label="Cadastros no Período"
           value={stats.loading ? '...' : stats.cadastros}
           icon={UserPlus}
-          colorScheme="blue"
-          trend={!stats.loading ? cadastrosTrend.value : undefined}
-          trendPositive={!stats.loading ? cadastrosTrend.positive : undefined}
-          delay={0}
+          description={!stats.loading ? cadastrosTrend.value : undefined}
           hoverContent={
             <div className="space-y-3">
               <div>
@@ -61,14 +58,11 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
         />
 
         {/* 2. Pedidos */}
-        <GlowMetricCard
-          title="Pedidos Recebidos"
+        <AppleLikeMetricCard
+          label="Pedidos Recebidos"
           value={stats.loading ? '...' : stats.pedidos}
           icon={ShoppingBag}
-          colorScheme="amber"
-          trend={stats.loading ? undefined : `${stats.pedidosDetalhes.pagos} pagos`}
-          trendPositive={true}
-          delay={1}
+          description={stats.loading ? undefined : `${stats.pedidosDetalhes.pagos} pagos`}
           hoverContent={
             <div className="space-y-3">
               <div>
@@ -96,14 +90,11 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
         />
 
         {/* 3. Vendas */}
-        <GlowMetricCard
-          title="Receita Total"
+        <AppleLikeMetricCard
+          label="Receita Total"
           value={stats.loading ? '...' : formatCurrency(stats.vendas)}
           icon={DollarSign}
-          colorScheme="emerald"
-          trend={!stats.loading ? vendasTrend.value : undefined}
-          trendPositive={!stats.loading ? vendasTrend.positive : undefined}
-          delay={2}
+          description={!stats.loading ? vendasTrend.value : undefined}
           hoverContent={
             <div className="space-y-3">
               <div>
@@ -123,14 +114,11 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
         />
 
         {/* 4. Conversas */}
-        <GlowMetricCard
-          title="Conversas Ativas"
+        <AppleLikeMetricCard
+          label="Conversas Ativas"
           value={stats.loading ? '...' : stats.conversas}
           icon={MessageCircle}
-          colorScheme="violet"
-          trend={stats.loading ? undefined : `${stats.novosContatos} novos contatos`}
-          trendPositive={true}
-          delay={3}
+          description={stats.loading ? undefined : `${stats.novosContatos} novos contatos`}
           hoverContent={
             <div className="space-y-3">
               <div>
@@ -150,14 +138,11 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
         />
 
         {/* 5. Prédios Ativos */}
-        <GlowMetricCard
-          title="Prédios Online"
+        <AppleLikeMetricCard
+          label="Prédios Online"
           value={stats.loading ? '...' : `${stats.prediosPercentual.toFixed(0)}%`}
           icon={Building2}
-          colorScheme="red"
-          trend={stats.loading ? undefined : `${stats.prediosAtivos} de ${stats.prediosTotal}`}
-          trendPositive={stats.prediosPercentual >= 80}
-          delay={4}
+          description={stats.loading ? undefined : `${stats.prediosAtivos} de ${stats.prediosTotal}`}
           hoverContent={
             <div className="space-y-3">
               <div>
@@ -181,14 +166,11 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
         />
 
         {/* 6. Vouchers Pendentes */}
-        <GlowMetricCard
-          title="Vouchers Aguardando"
+        <AppleLikeMetricCard
+          label="Vouchers Aguardando"
           value={stats.loading ? '...' : stats.vouchersPendentes}
           icon={Gift}
-          colorScheme="pink"
-          trend={stats.loading ? undefined : 'Requer atenção'}
-          trendPositive={stats.vouchersPendentes === 0}
-          delay={5}
+          description={stats.loading ? undefined : 'Requer atenção'}
           hoverContent={
             <div className="space-y-3">
               <div>
