@@ -95,6 +95,8 @@ O relatório do período está disponível.
   const [demandContactTypes, setDemandContactTypes] = useState<string[]>(['all']); // Todos por padrão
   const [generatingReport, setGeneratingReport] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
+  const [progressStep, setProgressStep] = useState(0);
+  const [progressText, setProgressText] = useState('');
 
   // Buscar diretores reais do banco
   useEffect(() => {
@@ -138,7 +140,32 @@ O relatório do período está disponível.
       return;
     }
     setGeneratingReport(true);
+    setProgressStep(0);
+    
+    const progressSteps = [
+      { text: '🔍 Procurando nas conversas...', delay: 400 },
+      { text: '📊 Analisando dados do período...', delay: 600 },
+      { text: '👥 Identificando tipos de contatos...', delay: 500 },
+      { text: '💬 Contando mensagens enviadas...', delay: 400 },
+      { text: '📈 Calculando métricas de desempenho...', delay: 500 },
+      { text: '🤖 Gerando insights com IA...', delay: 700 },
+      { text: '📋 Compilando relatório final...', delay: 500 },
+      { text: '📤 Preparando envio...', delay: 300 }
+    ];
+
+    // Simular progresso
+    const runProgress = async () => {
+      for (let i = 0; i < progressSteps.length; i++) {
+        setProgressStep(i);
+        setProgressText(progressSteps[i].text);
+        await new Promise(resolve => setTimeout(resolve, progressSteps[i].delay));
+      }
+    };
+
     try {
+      // Iniciar animação de progresso
+      const progressPromise = runProgress();
+
       let startDate = new Date();
       let endDate = new Date();
 
@@ -186,6 +213,8 @@ O relatório do período está disponível.
           description: `Não há conversas registradas entre ${format(startDate, 'dd/MM/yyyy')} e ${format(endDate, 'dd/MM/yyyy')}`
         });
         setGeneratingReport(false);
+        setProgressStep(0);
+        setProgressText('');
         return;
       }
       console.log(`✅ ${count} conversas encontradas no período`);
@@ -205,7 +234,11 @@ O relatório do período está disponível.
       });
       if (generateError) throw generateError;
 
+      // Aguardar progresso completar
+      await progressPromise;
+
       // Enviar relatório
+      setProgressText('✉️ Enviando relatório...');
       const {
         error: sendError
       } = await supabase.functions.invoke('relatorio-var-send', {
@@ -217,6 +250,10 @@ O relatório do período está disponível.
         }
       });
       if (sendError) throw sendError;
+      
+      setProgressText('✅ Concluído!');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       toast.success('✅ Relatório gerado e enviado!', {
         description: `Enviado via ${demandFormat === 'whatsapp' ? 'WhatsApp' : 'Email'} para ${demandSelectedDirectors.length} diretor(es)`
       });
@@ -227,6 +264,8 @@ O relatório do período está disponível.
       });
     } finally {
       setGeneratingReport(false);
+      setProgressStep(0);
+      setProgressText('');
     }
   };
   const handleSave = async () => {
@@ -584,6 +623,32 @@ Se você recebeu esta mensagem, significa que o sistema de notificações está 
                   </div>)}
               </div>
             </div>
+
+            {/* Animação de Progresso */}
+            {generatingReport && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="space-y-3 mb-4"
+              >
+                <div className="relative h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                  <motion.div
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#7D1818] to-[#a33a3a]"
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${((progressStep + 1) / 8) * 100}%` }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                  />
+                </div>
+                <motion.div
+                  key={progressText}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-sm text-center text-muted-foreground font-medium"
+                >
+                  {progressText}
+                </motion.div>
+              </motion.div>
+            )}
 
             {/* Botão de Gerar */}
             <Button onClick={handleGenerateReport} disabled={generatingReport || demandSelectedDirectors.length === 0} className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-12 shadow-sm hover:shadow-md transition-all">
