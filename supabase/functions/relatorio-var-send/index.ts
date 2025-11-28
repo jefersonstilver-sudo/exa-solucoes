@@ -63,6 +63,13 @@ Deno.serve(async (req) => {
     if (send_type === 'link') {
       // MENSAGEM CURTA COM LINK (Padrão recomendado)
       // Adicionar quebras de linha extras para evitar truncamento no WhatsApp
+      
+      // Calcular distribuição de mensagens por tipo de contato
+      const msgLeads = report_data.conversas_lista?.filter((c: any) => c.contact_type === 'lead').length || 0;
+      const msgSindicos = report_data.conversas_lista?.filter((c: any) => c.contact_type === 'sindico').length || 0;
+      const msgClientes = report_data.conversas_lista?.filter((c: any) => c.contact_type === 'cliente').length || 0;
+      const msgOutros = report_data.conversas_lista?.filter((c: any) => !c.contact_type || c.contact_type === 'outro').length || 0;
+      
       message = `━━━━━━━━━━━━━━━━━━━━
 
 📊 *Relatório de Atendimento*
@@ -75,6 +82,12 @@ O relatório do período {data_inicio} - {data_fim} está disponível.
 • ${report_data.total_conversas} conversas
 • ${report_data.taxa_resolucao.toFixed(1)}% resolução
 • ${report_data.tma_formatado} tempo médio
+
+*Mensagens por tipo:*
+• ${msgLeads} leads
+• ${msgSindicos} síndicos
+• ${msgClientes} clientes
+• ${msgOutros} outros
 
 
 🔗 *Ver relatório completo:*
