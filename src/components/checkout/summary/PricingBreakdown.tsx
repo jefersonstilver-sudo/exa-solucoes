@@ -37,6 +37,14 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   // Detectar cupom cortesia
   const isCortesia = couponCategoria === 'cortesia' || couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN';
   
+  // Calcular total de PAINÉIS (somando numero_elevadores de cada prédio)
+  const totalPaineis = cartItems.reduce((total, item) => {
+    const numeroElevadores = item.panel.buildings?.numero_elevadores || 0;
+    const quantidadeTelas = item.panel.buildings?.quantidade_telas || 0;
+    const telas = numeroElevadores > 0 ? numeroElevadores : (quantidadeTelas || 1);
+    return total + telas;
+  }, 0);
+  
   // Calcular exibições totais
   const exibicoesPorMes = cartItems.reduce((total, item) => {
     const visualizacoes = item.panel.buildings?.visualizacoes_mes || 0;
@@ -87,7 +95,7 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
         <div className="flex justify-between items-center py-1.5 sm:py-2 border-b">
           <div className="flex flex-col">
             <span className="text-xs sm:text-sm text-gray-600">
-              Valor base ({cartItems.length} × {selectedPlan}m)
+              Valor base ({totalPaineis} painéis × {selectedPlan}m)
             </span>
             {exibicoesPorMes > 0 && (
               <span className="text-[10px] sm:text-xs text-purple-600 font-medium">
