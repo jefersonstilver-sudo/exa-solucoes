@@ -271,7 +271,7 @@ O relatório do período está disponível.
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Salvar configuração real no banco
+      // Salvar configuração real no banco (com campo ativo: true por padrão)
       const configData = {
         frequency,
         time,
@@ -279,6 +279,7 @@ O relatório do período está disponível.
         templateType,
         templateContent,
         selectedDirectors,
+        ativo: true, // Sempre ativo ao salvar novas configurações
         updatedAt: new Date().toISOString()
       };
       const {
