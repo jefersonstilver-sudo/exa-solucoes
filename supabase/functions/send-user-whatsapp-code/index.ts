@@ -2,8 +2,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const ZAPI_INSTANCE_ID = Deno.env.get('ZAPI_INSTANCE_ID') || '';
-const ZAPI_TOKEN = Deno.env.get('ZAPI_TOKEN') || '';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,6 +34,37 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Buscar configuração Z-API do banco de dados
+    console.log('🔍 [SEND-USER-CODE] Buscando configuração Z-API do agente exa_alert...');
+    const { data: agentData, error: agentError } = await supabase
+      .from('agents')
+      .select('zapi_config')
+      .eq('key', 'exa_alert')
+      .single();
+
+    if (agentError || !agentData) {
+      console.error('❌ [SEND-USER-CODE] Erro ao buscar configuração do agente:', agentError);
+      return new Response(
+        JSON.stringify({ error: 'Configuração Z-API não encontrada' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const zapiConfig = agentData.zapi_config as any;
+    const instanceId = zapiConfig?.instance_id;
+    const instanceToken = zapiConfig?.token;
+    const clientToken = zapiConfig?.client_token;
+
+    if (!instanceId || !instanceToken || !clientToken) {
+      console.error('❌ [SEND-USER-CODE] Configuração Z-API incompleta:', { instanceId: !!instanceId, instanceToken: !!instanceToken, clientToken: !!clientToken });
+      return new Response(
+        JSON.stringify({ error: 'Configuração Z-API incompleta' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ [SEND-USER-CODE] Configuração Z-API carregada com sucesso');
 
     // Rate limiting: verificar tentativas recentes (últimos 5 minutos)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -97,13 +126,16 @@ Deno.serve(async (req) => {
 
     // Enviar via Z-API
     const phoneFormatted = telefone.replace(/\D/g, '');
-    const zapiUrl = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
+    const zapiUrl = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/send-text`;
 
     console.log('📤 [SEND-USER-CODE] Enviando código via Z-API para:', phoneFormatted.substring(0, 8) + '****');
 
     const zapiResponse = await fetch(zapiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Client-Token': clientToken
+      },
       body: JSON.stringify({
         phone: phoneFormatted,
         message: mensagem,
