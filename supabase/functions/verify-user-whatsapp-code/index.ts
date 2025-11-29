@@ -9,11 +9,12 @@ const corsHeaders = {
 };
 
 interface RequestBody {
-  userId: string;
+  userId?: string;
   telefone: string;
   codigo: string;
   tipo: 'phone_change' | '2fa_login' | 'new_phone' | 'signup';
   novoTelefone?: string; // Para tipo 'new_phone'
+  sessionId?: string; // Para signup sem userId
 }
 
 Deno.serve(async (req) => {
@@ -25,35 +26,58 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const body: RequestBody = await req.json();
-    const { userId, telefone, codigo, tipo, novoTelefone } = body;
+    const { userId, telefone, codigo, tipo, novoTelefone, sessionId } = body;
 
     console.log('🔍 [VERIFY-USER-CODE] Verificando código:', { 
-      userId, 
+      userId: userId || 'sem userId (signup)',
       telefone: telefone?.substring(0, 8) + '****', 
       tipo,
-      codigo: codigo?.substring(0, 3) + '***'
+      codigo: codigo?.substring(0, 3) + '***',
+      sessionId: sessionId || 'sem session'
     });
 
-    if (!userId || !telefone || !codigo || !tipo) {
+    if (!telefone || !codigo || !tipo) {
       return new Response(
-        JSON.stringify({ error: 'Parâmetros obrigatórios faltando' }),
+        JSON.stringify({ error: 'Parâmetros obrigatórios faltando (telefone, codigo, tipo)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Para signup, pode usar sessionId; para outros, userId é obrigatório
+    if (tipo !== 'signup' && !userId) {
+      return new Response(
+        JSON.stringify({ error: 'userId é obrigatório para este tipo de verificação' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (tipo === 'signup' && !userId && !sessionId) {
+      return new Response(
+        JSON.stringify({ error: 'userId ou sessionId é obrigatório para signup' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Buscar código válido no banco
-    const { data: codigoData, error: codigoError } = await supabase
+    let codigoQuery = supabase
       .from('exa_alerts_verification_codes')
       .select('*')
-      .eq('user_id', userId)
       .eq('telefone', telefone)
       .eq('codigo', codigo)
       .eq('tipo_verificacao', tipo)
       .eq('verificado', false)
       .gte('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
+
+    // Filtrar por userId ou sessionId
+    if (userId) {
+      codigoQuery = codigoQuery.eq('user_id', userId);
+    } else if (sessionId) {
+      codigoQuery = codigoQuery.eq('session_id', sessionId);
+    }
+
+    const { data: codigoData, error: codigoError } = await codigoQuery.maybeSingle();
 
     if (codigoError) {
       console.error('❌ [VERIFY-USER-CODE] Erro ao buscar código:', codigoError);
@@ -117,7 +141,8 @@ Deno.serve(async (req) => {
     }
 
     // Se for verificação de cadastro ou primeiro número, marcar como verificado
-    if (tipo === 'signup') {
+    // Mas só se já tivermos userId (conta já criada)
+    if (tipo === 'signup' && userId) {
       const { error: markVerifiedError } = await supabase
         .from('users')
         .update({ 
@@ -128,6 +153,8 @@ Deno.serve(async (req) => {
 
       if (markVerifiedError) {
         console.error('⚠️ [VERIFY-USER-CODE] Erro ao marcar telefone como verificado:', markVerifiedError);
+      } else {
+        console.log('✅ [VERIFY-USER-CODE] Telefone marcado como verificado');
       }
     }
 

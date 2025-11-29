@@ -21,7 +21,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { PasswordRequirements, validatePassword } from '@/components/auth/PasswordRequirements';
-import { PhoneVerificationStep } from '@/components/auth/PhoneVerificationStep';
+import { PhoneVerificationInline } from '@/components/auth/PhoneVerificationInline';
 
 const Cadastro: React.FC = () => {
   // Estados do formulário
@@ -47,7 +47,7 @@ const Cadastro: React.FC = () => {
   const [emailExistsMessage, setEmailExistsMessage] = useState<string>('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
-  const [tempUserId, setTempUserId] = useState<string>('');
+  const [verificationSessionId, setVerificationSessionId] = useState<string>('');
 
   // Hooks
   const navigate = useNavigate();
@@ -176,6 +176,17 @@ const Cadastro: React.FC = () => {
         return;
       }
 
+      // CRÍTICO: Verificar WhatsApp ANTES de criar conta
+      if (!phoneVerified) {
+        setError('Você precisa verificar seu WhatsApp antes de continuar');
+        toast({
+          variant: "destructive",
+          title: "Verificação necessária",
+          description: "Por favor, verifique seu WhatsApp antes de criar a conta"
+        });
+        return;
+      }
+
       // Criar conta primeiro para obter userId
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -198,18 +209,32 @@ const Cadastro: React.FC = () => {
 
       if (signUpError) throw signUpError;
       
-      // Salvar userId temporário para verificação de WhatsApp
-      if (data.user?.id) {
-        setTempUserId(data.user.id);
+      // Associar verificação de WhatsApp ao userId recém-criado
+      if (data.user?.id && verificationSessionId) {
+        console.log('🔗 [CADASTRO] Associando verificação WhatsApp ao userId:', data.user.id);
         
-        // Se o telefone ainda não foi verificado, parar aqui
-        if (!phoneVerified) {
-          toast({
-            variant: "destructive",
-            title: "Verificação necessária",
-            description: "Por favor, verifique seu WhatsApp antes de continuar"
-          });
-          return;
+        // Atualizar o código de verificação para incluir o userId
+        const { error: updateError } = await supabase
+          .from('exa_alerts_verification_codes')
+          .update({ user_id: data.user.id })
+          .eq('session_id', verificationSessionId)
+          .eq('telefone', `${phoneCode}${phone.replace(/\D/g, '')}`);
+
+        if (updateError) {
+          console.error('⚠️ [CADASTRO] Erro ao associar verificação:', updateError);
+        }
+
+        // Marcar telefone como verificado
+        const { error: markError } = await supabase
+          .from('users')
+          .update({ 
+            telefone_verificado: true,
+            telefone_verificado_at: new Date().toISOString()
+          })
+          .eq('id', data.user.id);
+
+        if (markError) {
+          console.error('⚠️ [CADASTRO] Erro ao marcar telefone como verificado:', markError);
         }
       }
 
@@ -363,15 +388,18 @@ const Cadastro: React.FC = () => {
                   onChange={handlePhoneChange}
                   onCountryChange={handlePhoneCountryChange}
                   defaultCountry="BR"
-                  required 
+                  required
                 />
 
-                {/* Verificação de WhatsApp após preencher número */}
-                {phone && phone.replace(/\D/g, '').length >= 10 && tempUserId && !phoneVerified && (
-                  <PhoneVerificationStep
-                    userId={tempUserId}
+                {/* Verificação INLINE de WhatsApp - aparece após preencher número válido */}
+                {phone && phone.replace(/\D/g, '').length >= 10 && (
+                  <PhoneVerificationInline
                     phone={`${phoneCode}${phone.replace(/\D/g, '')}`}
-                    onVerified={() => setPhoneVerified(true)}
+                    onVerified={(sessionId) => {
+                      setPhoneVerified(true);
+                      setVerificationSessionId(sessionId);
+                    }}
+                    disabled={phoneVerified}
                   />
                 )}
               </div>
