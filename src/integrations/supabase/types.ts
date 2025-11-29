@@ -6885,6 +6885,7 @@ export type Database = {
         Args: never
         Returns: {
           bairro: string
+          codigo_predio: string
           endereco: string
           id: string
           imagem_principal: string
