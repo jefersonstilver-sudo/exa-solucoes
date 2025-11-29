@@ -275,10 +275,10 @@ const AdvertiserOrders = () => {
                   <p className="font-medium">{painelsList.length} selecionados</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Método de Pagamento</p>
+                  <p className="text-gray-500">Número de Exibições</p>
                   <p className="font-medium flex items-center">
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    {item.type === 'order' ? item.metodo_pagamento === 'credit_card' ? 'Cartão de Crédito' : 'PIX' : 'PIX'}
+                    <Eye className="h-3 w-3 mr-1" />
+                    {((painelsList.length || 0) * (item.plano_meses || 1) * 5000).toLocaleString('pt-BR')}
                   </p>
                 </div>
               </div>
