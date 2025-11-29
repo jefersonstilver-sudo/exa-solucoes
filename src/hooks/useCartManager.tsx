@@ -7,34 +7,36 @@ import { useNavigate } from 'react-router-dom';
 
 export const useCartManager = () => {
   const simpleCart = useSimpleCart();
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey>(1);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const navigate = useNavigate();
-
-  // Load saved plan from localStorage on mount
-  useEffect(() => {
+  
+  // CORREÇÃO: Inicialização SÍNCRONA do plano do localStorage
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>(() => {
     try {
-      const savedPlan = localStorage.getItem('selectedPlan');
-      if (savedPlan) {
-        const parsedPlan = parseInt(savedPlan);
-        if ([1, 3, 6, 12].includes(parsedPlan)) {
-          setSelectedPlan(parsedPlan as PlanKey);
+      const saved = localStorage.getItem('selectedPlan');
+      if (saved) {
+        const parsed = parseInt(saved);
+        if ([1, 3, 6, 12].includes(parsed)) {
+          console.log("🔄 [useCartManager] Plano carregado SINCRONAMENTE:", parsed);
+          return parsed as PlanKey;
         }
       }
-    } catch (error) {
-      console.error('Error loading saved plan:', error);
-    } finally {
-      setInitialLoadDone(true);
+    } catch (e) {
+      console.error("❌ [useCartManager] Erro ao carregar plano:", e);
     }
-  }, []);
+    console.log("🔄 [useCartManager] Usando plano padrão: 1");
+    return 1;
+  });
+  
+  const [initialLoadDone, setInitialLoadDone] = useState(true);
 
   // Save plan to localStorage when it changes
   useEffect(() => {
     if (selectedPlan) {
       try {
         localStorage.setItem('selectedPlan', selectedPlan.toString());
+        console.log("💾 [useCartManager] Plano salvo:", selectedPlan);
       } catch (error) {
-        console.error('Error saving plan:', error);
+        console.error('❌ [useCartManager] Erro ao salvar plano:', error);
       }
     }
   }, [selectedPlan]);
