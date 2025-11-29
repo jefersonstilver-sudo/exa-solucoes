@@ -179,8 +179,8 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
                     <div className="flex items-center gap-4 text-sm">
                       {/* Número de Telas */}
                       <div className="flex items-center gap-1 text-gray-700">
-                        <span className="font-medium">{building.quantidade_telas || 0}</span>
-                        <span className="text-gray-500">{(building.quantidade_telas || 0) === 1 ? 'tela' : 'telas'}</span>
+                        <span className="font-medium">{building.quantidade_telas || building.numero_elevadores || 0}</span>
+                        <span className="text-gray-500">{((building.quantidade_telas || building.numero_elevadores || 0) === 1) ? 'tela' : 'telas'}</span>
                       </div>
                       
                       {/* Pessoas Impactadas */}
