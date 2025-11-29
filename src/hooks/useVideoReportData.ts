@@ -20,16 +20,14 @@ export interface VideoInfo {
   approvalStatus: string;
 }
 
-export interface WeeklyExhibition {
-  semana: string;
-  exibicoes: number;
-  projecao?: number;
-}
-
-export interface BuildingReach {
-  nome: string;
-  alcance: number;
-  telas: number;
+export interface VideoTimelinePoint {
+  data: string; // Data real em formato ISO
+  videosAtivos: {
+    id: string;
+    nome: string;
+    exibicoes: number;
+    color: string;
+  }[];
 }
 
 export interface CampaignReport {
@@ -46,8 +44,7 @@ export interface CampaignReport {
   exibicoesEstimadas: number;
   publicoImpactado: number;
   chartData: {
-    weeklyExhibitions: WeeklyExhibition[];
-    buildingReach: BuildingReach[];
+    videoTimeline: VideoTimelinePoint[];
   };
 }
 
@@ -152,32 +149,7 @@ export const useVideoReportData = (clientId?: string) => {
         const totalDias = Math.floor((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24));
         const progresso = totalDias > 0 ? Math.min(100, (diasAtivos / totalDias) * 100) : 0;
 
-        // Métricas do pedido
-        const totalTelas = buildingInfos.reduce((sum, b) => sum + b.quantidadeTelas, 0);
-        const exibicoesEstimadas = totalTelas * 245 * Math.max(1, diasAtivos);
-        const publicoImpactado = buildingInfos.reduce((sum, b) => sum + b.publicoEstimado, 0) * Math.max(1, diasAtivos);
-
-        // Dados para gráficos
-        const weeklyExhibitions: WeeklyExhibition[] = [];
-        const weeksActive = Math.ceil(diasAtivos / 7);
-        const weeksTotal = Math.ceil(totalDias / 7);
-        
-        for (let i = 0; i < weeksTotal; i++) {
-          const isActive = i < weeksActive;
-          weeklyExhibitions.push({
-            semana: `S${i + 1}`,
-            exibicoes: isActive ? totalTelas * 245 * 7 : 0,
-            projecao: !isActive ? totalTelas * 245 * 7 : undefined,
-          });
-        }
-
-        const buildingReach: BuildingReach[] = buildingInfos.map(b => ({
-          nome: b.nome,
-          alcance: b.publicoEstimado * Math.max(1, diasAtivos),
-          telas: b.quantidadeTelas,
-        }));
-
-        // Mapear vídeos
+        // Mapear vídeos primeiro
         const videoInfos: VideoInfo[] = videosFromPedido.map(pv => ({
           id: pv.videos?.id || pv.video_id,
           nome: pv.videos?.nome || 'Vídeo sem título',
@@ -185,6 +157,39 @@ export const useVideoReportData = (clientId?: string) => {
           duracao: pv.videos?.duracao || 0,
           approvalStatus: pv.approval_status || 'pending',
         }));
+
+        // Métricas do pedido
+        const totalTelas = buildingInfos.reduce((sum, b) => sum + b.quantidadeTelas, 0);
+        const exibicoesEstimadas = totalTelas * 245 * Math.max(1, diasAtivos);
+        const publicoImpactado = buildingInfos.reduce((sum, b) => sum + b.publicoEstimado, 0) * Math.max(1, diasAtivos);
+
+        // Gerar cores distintas para cada vídeo
+        const videoColors = ['#9C1E1E', '#E74C3C', '#C0392B', '#A93226', '#922B21', '#7B241C'];
+        
+        // Criar timeline de vídeos com datas reais
+        const videoTimeline: VideoTimelinePoint[] = [];
+        const currentDate = new Date(dataInicio);
+        const endDate = new Date(dataFim);
+        
+        // Gerar pontos de dados diários
+        while (currentDate <= endDate) {
+          const dateStr = currentDate.toISOString().split('T')[0];
+          const isInPast = currentDate <= hoje;
+          
+          const videosAtivos = videoInfos.map((video, idx) => ({
+            id: video.id,
+            nome: video.nome,
+            exibicoes: isInPast ? Math.floor((totalTelas * 245) / videoInfos.length) : 0,
+            color: videoColors[idx % videoColors.length],
+          }));
+          
+          videoTimeline.push({
+            data: dateStr,
+            videosAtivos,
+          });
+          
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
 
         buildingInfos.forEach(b => uniqueBuildingsSet.add(b.id));
         totalExhibitions += exibicoesEstimadas;
@@ -205,8 +210,7 @@ export const useVideoReportData = (clientId?: string) => {
           exibicoesEstimadas,
           publicoImpactado,
           chartData: {
-            weeklyExhibitions,
-            buildingReach,
+            videoTimeline,
           },
         });
       }
