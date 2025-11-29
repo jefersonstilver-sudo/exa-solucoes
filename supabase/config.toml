@@ -283,6 +283,12 @@ verify_jwt = false
 [functions.generate-pix-for-order]
 verify_jwt = true
 
+[functions.send-user-whatsapp-code]
+verify_jwt = false
+
+[functions.verify-user-whatsapp-code]
+verify_jwt = false
+
 [[cron]]
 function_name = "auto-cancel-expired-orders"
 schedule = "0 */1 * * *"  # A cada 1 hora

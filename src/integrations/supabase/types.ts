@@ -3433,6 +3433,8 @@ export type Database = {
           expires_at: string
           id: string
           telefone: string
+          tipo_verificacao: string | null
+          user_id: string | null
           verificado: boolean | null
         }
         Insert: {
@@ -3442,6 +3444,8 @@ export type Database = {
           expires_at: string
           id?: string
           telefone: string
+          tipo_verificacao?: string | null
+          user_id?: string | null
           verificado?: boolean | null
         }
         Update: {
@@ -3451,6 +3455,8 @@ export type Database = {
           expires_at?: string
           id?: string
           telefone?: string
+          tipo_verificacao?: string | null
+          user_id?: string | null
           verificado?: boolean | null
         }
         Relationships: [
@@ -5959,8 +5965,11 @@ export type Database = {
           privacy_accepted_at: string | null
           role: string
           telefone: string | null
+          telefone_verificado: boolean | null
+          telefone_verificado_at: string | null
           terms_accepted_at: string | null
           tipo_documento: string | null
+          two_factor_enabled: boolean | null
           video_editor_enabled_at: string | null
           video_editor_enabled_by: string | null
         }
@@ -5986,8 +5995,11 @@ export type Database = {
           privacy_accepted_at?: string | null
           role: string
           telefone?: string | null
+          telefone_verificado?: boolean | null
+          telefone_verificado_at?: string | null
           terms_accepted_at?: string | null
           tipo_documento?: string | null
+          two_factor_enabled?: boolean | null
           video_editor_enabled_at?: string | null
           video_editor_enabled_by?: string | null
         }
@@ -6013,8 +6025,11 @@ export type Database = {
           privacy_accepted_at?: string | null
           role?: string
           telefone?: string | null
+          telefone_verificado?: boolean | null
+          telefone_verificado_at?: string | null
           terms_accepted_at?: string | null
           tipo_documento?: string | null
+          two_factor_enabled?: boolean | null
           video_editor_enabled_at?: string | null
           video_editor_enabled_by?: string | null
         }
