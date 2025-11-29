@@ -285,6 +285,13 @@ verify_jwt = false
 [functions.verify-report-access]
 verify_jwt = false
 
+[functions.generate-pix-for-order]
+verify_jwt = true
+
+[[cron]]
+function_name = "auto-cancel-expired-orders"
+schedule = "0 */1 * * *"  # A cada 1 hora
+
 [[cron]]
 function_name = "conversation-follow-up"
 schedule = "*/2 * * * *"  # A cada 2 minutos
