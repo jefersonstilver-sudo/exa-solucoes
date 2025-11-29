@@ -8,13 +8,15 @@ interface OrderVideoThumbnailProps {
   orderStatus: string;
   className?: string;
   compact?: boolean;
+  variant?: 'horizontal' | 'vertical';
 }
 
 export const OrderVideoThumbnail: React.FC<OrderVideoThumbnailProps> = ({
   orderId,
   orderStatus,
   className = '',
-  compact = false
+  compact = false,
+  variant = 'horizontal'
 }) => {
   const { videoData, loading, error } = useOrderCurrentVideoData(orderId);
 
@@ -53,6 +55,7 @@ export const OrderVideoThumbnail: React.FC<OrderVideoThumbnailProps> = ({
       videoName={videoData.videoName}
       className={className}
       compact={compact}
+      variant={variant}
     />
   );
 };
