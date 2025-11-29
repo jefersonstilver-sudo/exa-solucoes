@@ -41,15 +41,15 @@ Deno.serve(async (req) => {
     
     // Verificar se é hora de enviar
     const now = new Date();
-    const currentHour = now.getHours().toString().padStart(2, '0') + ':00';
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
     const currentDay = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][now.getDay()];
 
-    console.log('🕐 Hora atual:', currentHour, '| Dia:', currentDay);
+    console.log('🕐 Hora atual:', currentTime, '| Dia:', currentDay);
     console.log('⚙️ Config:', { time: configData.time, selectedDays: configData.selectedDays });
 
     // Verificar se deve enviar agora
     const shouldSend = 
-      configData.time === currentHour &&
+      configData.time === currentTime &&
       configData.selectedDays.includes(currentDay) &&
       configData.selectedDirectors.length > 0;
 
