@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { min } from 'date-fns';
+
+export interface DateRange {
+  start: Date;
+  end: Date;
+}
 
 export interface BuildingInfo {
   id: string;
@@ -18,31 +24,34 @@ export interface VideoInfo {
   url: string;
   duracao: number;
   approvalStatus: string;
+  horasExibidas: number;
 }
 
 export interface VideoTimelinePoint {
-  data: string; // Data real em formato ISO
+  data: string;
   videosAtivos: {
     id: string;
     nome: string;
-    exibicoes: number;
+    horasExibidas: number;
     color: string;
   }[];
 }
 
 export interface CampaignReport {
   pedidoId: string;
+  clientName: string;
+  clientEmail: string;
   dataInicio: string;
   dataFim: string;
   status: string;
   diasAtivos: number;
   diasRestantes: number;
-  progresso: number;
+  progress: number;
   videos: VideoInfo[];
-  buildings: BuildingInfo[];
+  predios: BuildingInfo[];
   totalTelas: number;
-  exibicoesEstimadas: number;
-  publicoImpactado: number;
+  totalExibicoes: number;
+  totalHoras: number;
   chartData: {
     videoTimeline: VideoTimelinePoint[];
   };
@@ -50,17 +59,17 @@ export interface CampaignReport {
 
 export interface CampaignSummary {
   totalVideosAtivos: number;
+  totalVideosExibidos: number;
   totalExibicoes: number;
-  totalPublicoImpactado: number;
   totalPrediosAtivos: number;
 }
 
-export const useVideoReportData = (clientId?: string) => {
+export const useVideoReportData = (clientId?: string, dateRange?: DateRange) => {
   const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
   const [summary, setSummary] = useState<CampaignSummary>({
     totalVideosAtivos: 0,
+    totalVideosExibidos: 0,
     totalExibicoes: 0,
-    totalPublicoImpactado: 0,
     totalPrediosAtivos: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -110,12 +119,19 @@ export const useVideoReportData = (clientId?: string) => {
 
       if (videosError) throw videosError;
 
+      // Buscar dados do cliente
+      const { data: clientData } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', clientId)
+        .single();
+
       // Processar dados por PEDIDO (campanha)
       const campaignReports: CampaignReport[] = [];
       const uniqueBuildingsSet = new Set<string>();
       let totalExhibitions = 0;
-      let totalAudience = 0;
       let totalVideosAtivos = 0;
+      let totalVideosExibidos = 0;
 
       for (const pedido of pedidos) {
         const videosFromPedido = (pedidoVideos || []).filter(pv => pv.pedido_id === pedido.id);
@@ -144,71 +160,85 @@ export const useVideoReportData = (clientId?: string) => {
         const dataFim = new Date(pedido.data_fim);
         const hoje = new Date();
         
+        // Data máxima do gráfico (hoje ou data_fim)
+        const dataMaxima = min([hoje, dataFim]);
+        
         const diasAtivos = Math.max(0, Math.floor((hoje.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24)));
         const diasRestantes = Math.max(0, Math.floor((dataFim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)));
         const totalDias = Math.floor((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24));
-        const progresso = totalDias > 0 ? Math.min(100, (diasAtivos / totalDias) * 100) : 0;
-
-        // Mapear vídeos primeiro
-        const videoInfos: VideoInfo[] = videosFromPedido.map(pv => ({
-          id: pv.videos?.id || pv.video_id,
-          nome: pv.videos?.nome || 'Vídeo sem título',
-          url: pv.videos?.url || '',
-          duracao: pv.videos?.duracao || 0,
-          approvalStatus: pv.approval_status || 'pending',
-        }));
+        const progress = totalDias > 0 ? Math.min(100, (diasAtivos / totalDias) * 100) : 0;
 
         // Métricas do pedido
         const totalTelas = buildingInfos.reduce((sum, b) => sum + b.quantidadeTelas, 0);
-        const exibicoesEstimadas = totalTelas * 245 * Math.max(1, diasAtivos);
-        const publicoImpactado = buildingInfos.reduce((sum, b) => sum + b.publicoEstimado, 0) * Math.max(1, diasAtivos);
 
-        // Gerar cores distintas para cada vídeo
-        const videoColors = ['#9C1E1E', '#E74C3C', '#C0392B', '#A93226', '#922B21', '#7B241C'];
-        
-        // Criar timeline de vídeos com datas reais
+        // Processar vídeos com cálculo de horas
+        const videoInfos: VideoInfo[] = videosFromPedido.map(pv => {
+          const duracaoSegundos = pv.videos?.duracao || 30;
+          const exibicoesEstimadas = totalTelas * 245; // estimativa por dia
+          const horasExibidas = (exibicoesEstimadas * duracaoSegundos) / 3600;
+
+          return {
+            id: pv.videos?.id || pv.video_id,
+            nome: pv.videos?.nome || 'Vídeo sem título',
+            url: pv.videos?.url || '',
+            duracao: duracaoSegundos,
+            approvalStatus: pv.approval_status || 'pending',
+            horasExibidas: horasExibidas,
+          };
+        });
+
+        // Gerar timeline de vídeos com HORAS (até hoje ou data_fim)
         const videoTimeline: VideoTimelinePoint[] = [];
-        const currentDate = new Date(dataInicio);
-        const endDate = new Date(dataFim);
+        const videoColors = ['#9C1E1E', '#E74C3C', '#C0392B', '#A93226', '#922B21', '#7B241C'];
+        let colorIndex = 0;
+        const videoColorMap = new Map<string, string>();
         
-        // Gerar pontos de dados diários
-        while (currentDate <= endDate) {
-          const dateStr = currentDate.toISOString().split('T')[0];
-          const isInPast = currentDate <= hoje;
+        for (let date = new Date(dataInicio); date <= dataMaxima; date.setDate(date.getDate() + 1)) {
+          const dateStr = date.toISOString().split('T')[0];
           
-          const videosAtivos = videoInfos.map((video, idx) => ({
-            id: video.id,
-            nome: video.nome,
-            exibicoes: isInPast ? Math.floor((totalTelas * 245) / videoInfos.length) : 0,
-            color: videoColors[idx % videoColors.length],
-          }));
+          const videosAtivos = videoInfos.map(video => {
+            if (!videoColorMap.has(video.id)) {
+              videoColorMap.set(video.id, videoColors[colorIndex % videoColors.length]);
+              colorIndex++;
+            }
+            
+            return {
+              id: video.id,
+              nome: video.nome,
+              horasExibidas: video.horasExibidas,
+              color: videoColorMap.get(video.id)!,
+            };
+          });
           
           videoTimeline.push({
             data: dateStr,
             videosAtivos,
           });
-          
-          currentDate.setDate(currentDate.getDate() + 1);
         }
 
+        const totalExibicoesEstimadas = totalTelas * 245 * Math.max(1, diasAtivos);
+        const totalHoras = videoInfos.reduce((sum, v) => sum + v.horasExibidas, 0);
+
         buildingInfos.forEach(b => uniqueBuildingsSet.add(b.id));
-        totalExhibitions += exibicoesEstimadas;
-        totalAudience += publicoImpactado;
+        totalExhibitions += totalExibicoesEstimadas;
         totalVideosAtivos += videoInfos.filter(v => v.approvalStatus === 'approved').length;
+        totalVideosExibidos += videoInfos.length;
 
         campaignReports.push({
           pedidoId: pedido.id,
+          clientName: clientData?.email?.split('@')[0] || 'Cliente',
+          clientEmail: clientData?.email || 'Email não encontrado',
           dataInicio: pedido.data_inicio,
           dataFim: pedido.data_fim,
           status: pedido.status,
           diasAtivos,
           diasRestantes,
-          progresso,
+          progress,
           videos: videoInfos,
-          buildings: buildingInfos,
+          predios: buildingInfos,
           totalTelas,
-          exibicoesEstimadas,
-          publicoImpactado,
+          totalExibicoes: totalExibicoesEstimadas,
+          totalHoras,
           chartData: {
             videoTimeline,
           },
@@ -218,8 +248,8 @@ export const useVideoReportData = (clientId?: string) => {
       setCampaigns(campaignReports);
       setSummary({
         totalVideosAtivos,
+        totalVideosExibidos,
         totalExibicoes: totalExhibitions,
-        totalPublicoImpactado: totalAudience,
         totalPrediosAtivos: uniqueBuildingsSet.size,
       });
 
@@ -257,7 +287,7 @@ export const useVideoReportData = (clientId?: string) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [clientId]);
+  }, [clientId, dateRange]);
 
   return { campaigns, summary, loading, error, refetch: fetchData };
 };
