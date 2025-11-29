@@ -39,6 +39,15 @@ Deno.serve(async (req) => {
 
     const configData = config.config_value as any;
     
+    // ✅ VERIFICAR SE O RELATÓRIO ESTÁ ATIVO
+    if (configData.ativo === false) {
+      console.log('⏸️ [VAR SCHEDULED] Relatório está desativado');
+      return new Response(
+        JSON.stringify({ message: 'Report is disabled' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Verificar se é hora de enviar
     const now = new Date();
     const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');

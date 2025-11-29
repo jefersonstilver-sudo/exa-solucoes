@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 import { DirectorsList } from './DirectorsList';
 import { AlertConfigCard } from './AlertConfigCard';
 import { ConfigAlertModal } from './ConfigAlertModal';
+import { useReportSchedule } from '../../hooks/useReportSchedule';
 
 export const AlertaCEOCard = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -15,7 +16,9 @@ export const AlertaCEOCard = () => {
   const [ativo, setAtivo] = useState(true);
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState('');
-  const [relatorioAtivo, setRelatorioAtivo] = useState(true);
+  
+  // Hook para gerenciar agendamento e countdown
+  const { config, loading, nextTrigger, toggleActive } = useReportSchedule();
 
   return (
     <motion.div
@@ -84,14 +87,16 @@ export const AlertaCEOCard = () => {
                   icon={BarChart3}
                   title="Relatório de Conversas"
                   description="Relatório periódico com estatísticas de conversas e tempo médio de resposta"
-                  status={relatorioAtivo ? 'ativo' : 'inativo'}
+                  status={config?.ativo ? 'ativo' : 'inativo'}
                   onClick={() => {
                     setSelectedAlert('Relatório de Conversas');
                     setConfigModalOpen(true);
                   }}
                   onToggle={(checked) => {
-                    setRelatorioAtivo(checked);
+                    toggleActive(checked);
                   }}
+                  countdown={nextTrigger?.timeLeft}
+                  nextTriggerDate={nextTrigger?.date}
                 />
               </div>
 

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { ChevronRight, LucideIcon } from 'lucide-react';
+import { ChevronRight, LucideIcon, Clock } from 'lucide-react';
 
 interface AlertConfigCardProps {
   icon: LucideIcon;
@@ -10,6 +10,8 @@ interface AlertConfigCardProps {
   status: 'ativo' | 'inativo';
   onClick: () => void;
   onToggle: (checked: boolean) => void;
+  countdown?: string | null;
+  nextTriggerDate?: Date | null;
 }
 
 export const AlertConfigCard = ({
@@ -18,7 +20,9 @@ export const AlertConfigCard = ({
   description,
   status,
   onClick,
-  onToggle
+  onToggle,
+  countdown,
+  nextTriggerDate
 }: AlertConfigCardProps) => {
   return (
     <motion.div
@@ -66,6 +70,31 @@ export const AlertConfigCard = ({
             <p className="text-sm text-muted-foreground line-clamp-2">
               {description}
             </p>
+
+            {/* Countdown Timer */}
+            {status === 'ativo' && countdown && (
+              <div className="mt-3 flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-full border border-blue-200/50 dark:border-blue-800/50">
+                  <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 animate-pulse" />
+                  <span className="font-mono font-semibold text-blue-700 dark:text-blue-300">
+                    {countdown}
+                  </span>
+                </div>
+                {nextTriggerDate && (
+                  <span className="text-muted-foreground">
+                    • {nextTriggerDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} às{' '}
+                    {nextTriggerDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {status === 'inativo' && (
+              <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-600" />
+                <span>Pausado</span>
+              </div>
+            )}
           </div>
 
           {/* Arrow Icon */}
