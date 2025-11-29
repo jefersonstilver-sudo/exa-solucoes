@@ -67,6 +67,8 @@ export const usePaymentFlow = () => {
       const pedido = unwrapData(pedidoResult) as any;
       setCreatedOrderId(pedido.id);
       
+      // Apenas PIX é processado aqui
+      // Cartão de crédito é processado pelo modal via useCheckoutPro
       if (options.paymentMethod === 'pix') {
         const { data, error } = await supabase.functions.invoke('process-payment', {
           body: {
@@ -86,10 +88,6 @@ export const usePaymentFlow = () => {
             pedidoId: pedido.id
           });
         }
-      } else {
-        // For credit card, navigate to payment page with Mercado Pago
-        options.handleClearCart();
-        navigate(`/payment?pedido=${pedido.id}&method=credit_card`);
       }
       
       return { success: true, pedidoId: pedido.id };

@@ -17,7 +17,9 @@ import Layout from '@/components/layout/Layout';
 import { useCartValidation } from '@/hooks/useCartValidation';
 import { getValidPanels } from '@/utils/cleanupInvalidData';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
+import CreditCardCheckoutModal from '@/components/checkout/payment/CreditCardCheckoutModal';
 import { supabase } from '@/integrations/supabase/client';
+import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const {
@@ -34,6 +36,12 @@ const CheckoutSummary = () => {
   // Estados para o popup PIX
   const [isPixDialogOpen, setIsPixDialogOpen] = useState(false);
   const [pixData, setPixData] = useState<{ qrCodeBase64: string; qrCodeText: string; pedidoId: string } | null>(null);
+  
+  // Estados para o modal de cartão
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  
+  // Hook para checkout direto com Mercado Pago
+  const { createCheckoutProSession, isProcessing: isProcessingCheckout } = useCheckoutPro();
 
   const {
     cartItems,
@@ -158,7 +166,7 @@ const CheckoutSummary = () => {
     navigate('/checkout/cupom');
   };
 
-  // Handler unificado para pagamento via Stripe
+  // Handler unificado para pagamento
   const handlePayment = async () => {
     if (!isLoggedIn || !user?.id) {
       toast.error("Você precisa estar logado para continuar");
@@ -175,7 +183,15 @@ const CheckoutSummary = () => {
       return;
     }
 
-    console.log('[CheckoutSummary] Iniciando processamento Stripe:', paymentMethod);
+    // 💳 NOVO: Abrir modal para cartão de crédito
+    if (paymentMethod === 'credit_card') {
+      console.log('[CheckoutSummary] Abrindo modal de cartão');
+      setIsCardModalOpen(true);
+      return;
+    }
+
+    // 🎯 PIX: Continua com o fluxo normal (gera QR code)
+    console.log('[CheckoutSummary] Processando pagamento PIX');
 
     try {
       const startDate = new Date();
@@ -208,6 +224,38 @@ const CheckoutSummary = () => {
       console.error('[CheckoutSummary] Erro no pagamento:', error);
       toast.error(error.message || 'Erro ao processar pagamento');
     }
+  };
+  
+  // 💳 Handler para checkout direto com cartão (via modal)
+  const handleCardCheckout = async () => {
+    if (!isLoggedIn || !user?.id) {
+      toast.error("Você precisa estar logado");
+      return;
+    }
+
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + (selectedPlan || 1));
+
+    console.log('[CheckoutSummary] Iniciando checkout direto com cartão');
+
+    await createCheckoutProSession({
+      sessionUser: user,
+      cartItems,
+      selectedPlan: selectedPlan || 1,
+      totalPrice: finalTotal,
+      couponId: couponValid ? couponId : null,
+      startDate,
+      endDate
+    });
+
+    // Limpar carrinho após iniciar checkout
+    localStorage.removeItem('checkout_cart');
+    localStorage.removeItem('checkout_plan');
+    localStorage.removeItem('checkout_coupon');
+    
+    // Fechar modal
+    setIsCardModalOpen(false);
   };
   
   // 🎁 HANDLER PARA FINALIZAR PEDIDO CORTESIA
@@ -374,6 +422,15 @@ const CheckoutSummary = () => {
         qrCodeText={pixData?.qrCodeText}
         userId={user?.id}
         pedidoId={pixData?.pedidoId}
+      />
+      
+      {/* Modal de Cartão - checkout direto com Mercado Pago */}
+      <CreditCardCheckoutModal
+        isOpen={isCardModalOpen}
+        onClose={() => setIsCardModalOpen(false)}
+        totalAmount={finalTotal}
+        itemCount={cartItems?.length || 0}
+        onProceedToCheckout={handleCardCheckout}
       />
     </CheckoutLayout>
   );
