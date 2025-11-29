@@ -96,8 +96,8 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
 
           {/* Telas */}
           <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Monitor className="w-5 h-5 text-blue-600" />
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#9C1E1E]/10 flex items-center justify-center">
+              <Monitor className="w-5 h-5 text-[#9C1E1E]" />
             </div>
             <div>
               <p className="text-xs text-gray-500">Telas</p>
