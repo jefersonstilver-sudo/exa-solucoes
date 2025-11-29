@@ -5,7 +5,7 @@ import PlanSelector from './PlanSelector';
 import PlanContinueButton from './PlanContinueButton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Calendar, DollarSign } from 'lucide-react';
+import { Building2, Calendar, DollarSign, Monitor } from 'lucide-react';
 import { Plan, PlanKey } from '@/types/checkout';
 import { Panel } from '@/types/panel';
 import { formatCurrency } from '@/utils/priceUtils';
@@ -59,6 +59,16 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
     return result;
   }, [selectedPlan, cartItems, totalPrice]);
 
+  // Calcular número total de telas
+  const totalTelas = React.useMemo(() => {
+    return cartItems.reduce((total, item) => {
+      const numeroElevadores = item.panel.buildings?.numero_elevadores || 0;
+      const quantidadeTelas = item.panel.buildings?.quantidade_telas || 0;
+      const telas = numeroElevadores > 0 ? numeroElevadores : (quantidadeTelas || 1);
+      return total + telas;
+    }, 0);
+  }, [cartItems]);
+
   // Calcular número total de exibições (média de 245 por painel por dia * 30 dias)
   const totalExibicoesMes = React.useMemo(() => {
     return panelCount * 245 * 30;
@@ -72,7 +82,7 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
         animate={{ opacity: 1, y: 0 }}
         className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-sm"
       >
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 sm:gap-6">
           {/* Buildings */}
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#9C1E1E]/10 flex items-center justify-center">
@@ -81,6 +91,17 @@ const PlanSelectionContent: React.FC<PlanSelectionContentProps> = ({
             <div>
               <p className="text-xs text-gray-500">Prédios</p>
               <p className="text-2xl font-bold text-gray-900">{panelCount}</p>
+            </div>
+          </div>
+
+          {/* Telas */}
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+              <Monitor className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Telas</p>
+              <p className="text-2xl font-bold text-gray-900">{totalTelas}</p>
             </div>
           </div>
 
