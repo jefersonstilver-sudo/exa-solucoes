@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, User, Bell, Shield, Save, FileText } from 'lucide-react';
+import { Loader2, User, Bell, Shield, Save, FileText, Pencil, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import AvatarUpload from '@/components/ui/avatar-upload';
 import DocumentUpload from '@/components/ui/document-upload';
 import { CompanyBrandSection } from '@/components/settings/CompanyBrandSection';
+import { WhatsAppVerificationModal } from '@/components/settings/WhatsAppVerificationModal';
 interface UserSettings {
   email: string;
   name: string;
@@ -55,6 +56,9 @@ const AdvertiserSettings = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
   useEffect(() => {
     loadUserSettings();
   }, [userProfile]);
@@ -91,6 +95,10 @@ const AdvertiserSettings = () => {
             push: authUser.user.user_metadata?.notifications?.push ?? true
           }
         });
+        
+        // Carregar estado de 2FA e verificação de telefone
+        setTwoFactorEnabled(userData?.two_factor_enabled || false);
+        setPhoneVerified(userData?.telefone_verificado || false);
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -238,8 +246,32 @@ const AdvertiserSettings = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Telefone</Label>
-            <Input id="phone" value={settings.phone} onChange={e => handleInputChange('phone', e.target.value)} placeholder="(11) 99999-9999" />
+            <Label htmlFor="phone">WhatsApp</Label>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1">
+                <Input 
+                  id="phone" 
+                  value={settings.phone ? settings.phone.replace(/(\d{2})(\d{5})(\d{4})/, '(**) *****-$3') : ''} 
+                  disabled 
+                  className="bg-gray-100 text-gray-500 cursor-not-allowed" 
+                />
+                {phoneVerified && (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    Número verificado
+                  </p>
+                )}
+              </div>
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => setShowWhatsAppModal(true)}
+                className="h-11"
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -315,6 +347,50 @@ const AdvertiserSettings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
+          {/* 2FA Toggle */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+            <div className="flex-1">
+              <Label className="text-base font-medium">Autenticação de dois fatores</Label>
+              <p className="text-sm text-gray-500 mt-1">
+                Receba um código no WhatsApp toda vez que fizer login
+              </p>
+              {!phoneVerified && (
+                <p className="text-xs text-amber-600 mt-2">
+                  ⚠️ Você precisa verificar seu WhatsApp antes de ativar o 2FA
+                </p>
+              )}
+            </div>
+            <Switch 
+              checked={twoFactorEnabled}
+              disabled={!phoneVerified}
+              onCheckedChange={async (checked) => {
+                if (!phoneVerified) {
+                  toast.error('Verifique seu WhatsApp antes de ativar o 2FA');
+                  return;
+                }
+                
+                try {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) throw new Error('Usuário não autenticado');
+
+                  const { error } = await supabase
+                    .from('users')
+                    .update({ two_factor_enabled: checked })
+                    .eq('id', user.id);
+
+                  if (error) throw error;
+
+                  setTwoFactorEnabled(checked);
+                  toast.success(checked ? '2FA ativado com sucesso!' : '2FA desativado');
+                } catch (error) {
+                  console.error('Erro ao atualizar 2FA:', error);
+                  toast.error('Erro ao atualizar configuração de 2FA');
+                }
+              }}
+              className="data-[state=checked]:bg-[#9C1E1E]"
+            />
+          </div>
+
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div className="space-y-0.5">
               <Label className="text-base font-medium">Alterar Senha</Label>
@@ -346,6 +422,19 @@ const AdvertiserSettings = () => {
             </>}
         </Button>
       </div>
+
+      {/* Modal de Verificação WhatsApp */}
+      <WhatsAppVerificationModal
+        open={showWhatsAppModal}
+        onClose={() => setShowWhatsAppModal(false)}
+        currentPhone={settings.phone}
+        userId={userProfile?.id || ''}
+        onSuccess={(newPhone) => {
+          setSettings(prev => ({ ...prev, phone: newPhone }));
+          setPhoneVerified(true);
+          toast.success('WhatsApp atualizado com sucesso!');
+        }}
+      />
     </div>;
 };
 export default AdvertiserSettings;

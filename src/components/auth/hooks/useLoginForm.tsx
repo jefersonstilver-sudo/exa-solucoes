@@ -107,8 +107,37 @@ export const useLoginForm = (redirectPath: string = '/') => {
         emailConfirmed: !!data.user.email_confirmed_at
       });
 
+      // Verificar se usuário tem 2FA ativado
+      const { data: userData } = await supabase
+        .from('users')
+        .select('two_factor_enabled, telefone, role')
+        .eq('id', data.user.id)
+        .single();
+
+      // Se 2FA estiver ativado, enviar código e redirecionar
+      if (userData?.two_factor_enabled && userData?.telefone) {
+        console.log('🔐 [LOGIN] 2FA detectado, enviando código');
+        
+        try {
+          await supabase.functions.invoke('send-user-whatsapp-code', {
+            body: { 
+              userId: data.user.id, 
+              telefone: userData.telefone,
+              tipo: '2fa_login' 
+            }
+          });
+
+          toast.info('Código de verificação enviado para seu WhatsApp');
+          navigate(`/verificacao-2fa?userId=${data.user.id}`);
+          return;
+        } catch (error) {
+          console.error('❌ [LOGIN] Erro ao enviar código 2FA:', error);
+          toast.error('Erro ao enviar código de verificação');
+        }
+      }
+
       // Buscar role do usuário no banco
-      let userRole = null;
+      let userRole = userData?.role || null;
       
       try {
         const { data: roleData } = await supabase

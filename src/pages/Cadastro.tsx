@@ -21,6 +21,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { PasswordRequirements, validatePassword } from '@/components/auth/PasswordRequirements';
+import { PhoneVerificationStep } from '@/components/auth/PhoneVerificationStep';
 
 const Cadastro: React.FC = () => {
   // Estados do formulário
@@ -45,6 +46,8 @@ const Cadastro: React.FC = () => {
   const [emailConfirmed, setEmailConfirmed] = useState<boolean>(false);
   const [emailExistsMessage, setEmailExistsMessage] = useState<string>('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [tempUserId, setTempUserId] = useState<string>('');
 
   // Hooks
   const navigate = useNavigate();
@@ -173,7 +176,7 @@ const Cadastro: React.FC = () => {
         return;
       }
 
-      // Criar conta
+      // Criar conta primeiro para obter userId
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -188,12 +191,27 @@ const Cadastro: React.FC = () => {
             country: documentType === 'documento_estrangeiro' ? country : null,
             documentFrontUrl: documentType === 'documento_estrangeiro' ? documentFrontUrl : null,
             documentBackUrl: documentType === 'documento_estrangeiro' ? documentBackUrl : null,
-            redirectAfterConfirm: redirectTo // Salvar para usar no reenvio de email
+            redirectAfterConfirm: redirectTo
           }
         }
       });
 
       if (signUpError) throw signUpError;
+      
+      // Salvar userId temporário para verificação de WhatsApp
+      if (data.user?.id) {
+        setTempUserId(data.user.id);
+        
+        // Se o telefone ainda não foi verificado, parar aqui
+        if (!phoneVerified) {
+          toast({
+            variant: "destructive",
+            title: "Verificação necessária",
+            description: "Por favor, verifique seu WhatsApp antes de continuar"
+          });
+          return;
+        }
+      }
 
       toast({
         title: "Conta criada com sucesso!",
@@ -347,6 +365,15 @@ const Cadastro: React.FC = () => {
                   defaultCountry="BR"
                   required 
                 />
+
+                {/* Verificação de WhatsApp após preencher número */}
+                {phone && phone.replace(/\D/g, '').length >= 10 && tempUserId && !phoneVerified && (
+                  <PhoneVerificationStep
+                    userId={tempUserId}
+                    phone={`${phoneCode}${phone.replace(/\D/g, '')}`}
+                    onVerified={() => setPhoneVerified(true)}
+                  />
+                )}
               </div>
 
               {/* Seção 2: Senha de Acesso */}
