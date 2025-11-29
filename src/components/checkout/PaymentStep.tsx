@@ -31,21 +31,15 @@ const PaymentStep = ({
   paymentMethod: externalPaymentMethod, 
   setPaymentMethod: externalSetPaymentMethod 
 }: PaymentStepProps) => {
-  // CRITICAL CHANGE: Default to PIX since credit card is temporarily disabled
+  // Allow both PIX and credit card
   const [internalPaymentMethod, setInternalPaymentMethod] = useState<string>("pix");
   
   // Use either external or internal state for payment method
   const selectedMethod = externalPaymentMethod || internalPaymentMethod;
   
-  // CRITICAL FIX: Ensure payment method is properly set to PIX only
+  // Allow users to choose between PIX and credit card
   const setSelectedMethod = (method: string) => {
     console.log("[PaymentStep] Setting payment method to:", method);
-    
-    // Only allow PIX for now
-    if (method !== 'pix') {
-      console.log("[PaymentStep] Credit card temporarily disabled, forcing PIX");
-      method = 'pix';
-    }
     
     if (externalSetPaymentMethod) {
       externalSetPaymentMethod(method);
@@ -61,14 +55,6 @@ const PaymentStep = ({
       { method, totalPrice }
     );
   };
-  
-  // Ensure PIX is always selected when component mounts
-  useEffect(() => {
-    if (selectedMethod !== 'pix') {
-      console.log("[PaymentStep] Forcing PIX as default payment method");
-      setSelectedMethod("pix");
-    }
-  }, []);
 
   return (
     <motion.div 
@@ -82,7 +68,7 @@ const PaymentStep = ({
           Como você deseja pagar sua campanha?
         </h2>
         <p className="text-sm text-muted-foreground">
-          Atualmente disponível apenas pagamento via PIX
+          Escolha entre PIX (com desconto) ou cartão de crédito
         </p>
       </div>
 

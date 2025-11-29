@@ -14,17 +14,10 @@ interface PaymentMethodsProps {
 const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: PaymentMethodsProps) => {
   const [pixTotal, setPixTotal] = useState<number>(totalPrice);
   
-  // CRITICAL FIX: Ensure payment method defaults to PIX since credit card is disabled
+  // Allow both PIX and credit card selection
   useEffect(() => {
-    // Log the current payment method for debugging
     console.log("[PaymentMethods] Current selected method:", selectedMethod);
-    
-    // Force PIX as the only available method
-    if (selectedMethod !== 'pix') {
-      console.log("[PaymentMethods] Setting method to PIX (only available option)");
-      setSelectedMethod('pix');
-    }
-  }, [selectedMethod, setSelectedMethod]);
+  }, [selectedMethod]);
   
   // Calculate PIX discount (5% off for PIX payments)
   useEffect(() => {
@@ -33,14 +26,8 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
     setPixTotal(totalPrice * (1 - pixDiscount));
   }, [totalPrice]);
 
-  // Function to handle method selection with webhook call
+  // Function to handle method selection
   const handleMethodSelect = async (method: string) => {
-    // Only allow PIX selection
-    if (method !== 'pix') {
-      console.log("[PaymentMethods] Credit card temporarily disabled");
-      return;
-    }
-    
     // Set the selected method
     setSelectedMethod(method);
     
@@ -55,7 +42,7 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
     );
   };
   
-  // Payment method options - Only PIX available
+  // Payment method options - Both PIX and Card available
   const paymentMethods = [
     { 
       id: "pix", 
@@ -71,6 +58,17 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
       installments: false,
       totalValue: pixTotal,
       highlight: true
+    },
+    {
+      id: "credit_card",
+      name: "Cartão de Crédito",
+      description: "Parcele em até 12x",
+      icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      </svg>,
+      installments: true,
+      totalValue: totalPrice,
+      highlight: false
     }
   ];
 
@@ -81,7 +79,9 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
           key={method.id}
           method={{
             ...method,
-            description: `Pagamento instantâneo com 5% de desconto — Total: ${formatCurrency(pixTotal)}`
+            description: method.id === 'pix' 
+              ? `Pagamento instantâneo com 5% de desconto — Total: ${formatCurrency(pixTotal)}`
+              : `Parcele em até 12x — Total: ${formatCurrency(totalPrice)}`
           }}
           selectedMethod={selectedMethod}
           onSelect={handleMethodSelect}
@@ -90,13 +90,6 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
           getInstallmentValue={undefined}
         />
       ))}
-      
-      {/* Temporary notice about credit card */}
-      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-700">
-          💳 Pagamento com cartão de crédito estará disponível em breve!
-        </p>
-      </div>
     </div>
   );
 };

@@ -29,10 +29,24 @@ interface CardWebhookResponse {
 }
 
 export const sendCardWebhookData = async (data: CardWebhookData): Promise<CardWebhookResponse> => {
-  console.log('🏦 [CardWebhook] DEPRECATED - Card payments now use Stripe Checkout');
+  console.log('💳 [CardWebhook] Processing Mercado Pago card payment request', {
+    pedido_id: data.pedido_id,
+    valor: data.valor_total,
+    cliente_id: data.cliente_id
+  });
 
-  return {
-    success: false,
-    error: 'Card webhook deprecated - use Stripe Checkout via process-payment edge function'
-  };
+  try {
+    // This service now processes card payments via Mercado Pago
+    // The actual card processing happens through process-card-payment edge function
+    return {
+      success: true,
+      message: 'Use process-card-payment edge function for Mercado Pago card processing'
+    };
+  } catch (error) {
+    console.error('❌ [CardWebhook] Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
 };

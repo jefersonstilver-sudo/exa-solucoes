@@ -24,7 +24,7 @@ const CreditCardPayment = ({
         <div>
           <h3 className="text-lg font-medium text-foreground">Pagamento com Cartão de Crédito</h3>
           <p className="text-sm text-muted-foreground">
-            Você será redirecionado para o checkout seguro do Stripe
+            Você será redirecionado para o checkout seguro do Mercado Pago
           </p>
         </div>
       </div>
@@ -56,9 +56,11 @@ const CreditCardPayment = ({
           )}
         </Button>
         
-        <div className="flex items-center text-xs text-muted-foreground">
-          <Lock className="h-3 w-3 mr-1" />
-          Ambiente 100% seguro via Stripe
+        <div className="space-y-2 text-center">
+          <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
+            <Lock className="h-4 w-4" />
+            <span>Checkout seguro via Mercado Pago</span>
+          </div>
         </div>
       </div>
       

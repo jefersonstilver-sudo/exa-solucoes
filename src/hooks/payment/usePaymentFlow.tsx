@@ -3,7 +3,6 @@ import { useState, useRef } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { Panel } from '@/types/panel';
 import { usePaymentValidator } from './flows/usePaymentValidator';
-import { useStripeCheckout } from './useStripeCheckout';
 import { useOrderCreation } from './useOrderCreation';
 import { unwrapData } from '@/utils/supabaseUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,7 +33,6 @@ export const usePaymentFlow = () => {
   const processingPaymentRef = useRef(false);
   
   const { validateForPayment } = usePaymentValidator();
-  const { createCheckoutSession } = useStripeCheckout();
   const { createPaymentOrder } = useOrderCreation();
 
   const processPayment = async (options: ProcessPaymentOptions) => {
@@ -88,9 +86,9 @@ export const usePaymentFlow = () => {
           });
         }
       } else {
-        const { url } = await createCheckoutSession(pedido.id);
+        // For credit card, redirect to payment page with Mercado Pago
         options.handleClearCart();
-        window.location.href = url;
+        window.location.href = `/payment?pedido=${pedido.id}&method=credit_card`;
       }
       
       return { success: true, pedidoId: pedido.id };

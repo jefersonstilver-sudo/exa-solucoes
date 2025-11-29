@@ -9,7 +9,7 @@ import { LogLevel, CheckoutEvent, logCheckoutEvent } from '@/services/checkoutDe
 import PaymentMethodSelector from './PaymentMethodSelector';
 import CreditCardPayment from './CreditCardPayment';
 import PixPaymentButton from '../navigation/PixPaymentButton';
-import { useStripeCheckout } from '@/hooks/payment/useStripeCheckout';
+import { useCardPayment } from '@/hooks/payment/useCardPayment';
 
 interface PaymentGatewayProps {
   orderId: string;
@@ -37,14 +37,14 @@ const PaymentGateway = ({
   const [paymentMethod, setPaymentMethod] = useState<string>(
     localStorage.getItem('preferred_payment_method') || 'pix'
   );
-  const { createCheckoutSession, isCreating } = useStripeCheckout();
+  const { processCardPayment, isProcessing } = useCardPayment();
   
   // Log de montagem do componente
   useEffect(() => {
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      `PaymentGateway inicializado com Stripe`,
+      `PaymentGateway inicializado com Mercado Pago`,
       { 
         orderId, 
         paymentMethod,
@@ -99,36 +99,34 @@ const PaymentGateway = ({
     navigate(`/pix-payment?pedido=${orderId}`);
   };
   
-  const handleStripePayment = async () => {
-    console.log("💳 PaymentGateway: Iniciando pagamento com cartão via Stripe:", { orderId });
+  const handleCardPayment = async () => {
+    console.log("💳 PaymentGateway: Iniciando pagamento com cartão via Mercado Pago:", { orderId });
     
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      'Iniciando pagamento com cartão via Stripe',
+      'Iniciando pagamento com cartão via Mercado Pago',
       { orderId, paymentMethod: 'credit_card' }
     );
     
     try {
-      const { url } = await createCheckoutSession(orderId);
+      // Navigate to card payment page for Mercado Pago tokenization
+      navigate(`/payment?pedido=${orderId}&method=credit_card`);
       
       logCheckoutEvent(
         CheckoutEvent.NAVIGATION_EVENT,
         LogLevel.INFO,
-        'Redirecionando para Stripe Checkout',
-        { orderId, stripeUrl: url }
+        'Redirecionando para página de cartão Mercado Pago',
+        { orderId }
       );
-      
-      // Redirect to Stripe Checkout
-      window.location.href = url;
     } catch (error) {
-      console.error('❌ Erro ao processar pagamento Stripe:', error);
+      console.error('❌ Erro ao processar pagamento com cartão:', error);
       toast.error("Erro ao processar pagamento com cartão");
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        'Erro ao criar sessão Stripe',
+        'Erro ao iniciar pagamento com cartão',
         { orderId, error: error instanceof Error ? error.message : String(error) }
       );
     }
@@ -154,9 +152,9 @@ const PaymentGateway = ({
           totalAmount={totalAmount}
         />
 
-        {/* ✅ SISTEMA DUAL DE PAGAMENTOS */}
+        {/* ✅ SISTEMA UNIFICADO: Mercado Pago para PIX e Cartão */}
         {/* 💵 PIX → MercadoPago (process-payment) */}
-        {/* 💳 Cartão → Stripe (stripe-create-checkout) */}
+        {/* 💳 Cartão → MercadoPago (process-card-payment) */}
         <div className="space-y-4">
           {paymentMethod === 'pix' ? (
             <PixPaymentButton
@@ -167,8 +165,8 @@ const PaymentGateway = ({
           ) : (
             <CreditCardPayment
               totalAmount={totalAmount}
-              onPaymentInitiate={handleStripePayment}
-              isLoading={isCreating}
+              onPaymentInitiate={handleCardPayment}
+              isLoading={isProcessing}
             />
           )}
         </div>
@@ -177,8 +175,8 @@ const PaymentGateway = ({
         <div className="bg-muted/50 p-4 rounded-lg border border-border">
           <h3 className="font-semibold text-foreground mb-2">Informações do Pagamento</h3>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>• <strong>PIX</strong>: Processado via MercadoPago (desconto de 5%)</p>
-            <p>• <strong>Cartão</strong>: Processado via Stripe (parcelamento disponível)</p>
+            <p>• <strong>PIX</strong>: Processado via Mercado Pago (desconto de 5%)</p>
+            <p>• <strong>Cartão</strong>: Processado via Mercado Pago (parcelamento disponível)</p>
             <p>• Pagamentos 100% seguros e criptografados</p>
             <p>• Você receberá confirmação por email</p>
           </div>
