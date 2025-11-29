@@ -61,10 +61,10 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     const buildingName = item.panel.buildings?.nome || 'Prédio não identificado';
     
     if (!acc[buildingId]) {
-      // CRÍTICO: Usar quantidade_telas do banco, se 0 usar numero_elevadores como fallback
-      const quantidadeTelasDB = item.panel.buildings?.quantidade_telas || 0;
+      // CRÍTICO: Priorizar numero_elevadores que é o campo preenchido no banco
       const numeroElevadores = item.panel.buildings?.numero_elevadores || 0;
-      const quantidadeTelasReal = quantidadeTelasDB > 0 ? quantidadeTelasDB : numeroElevadores;
+      const quantidadeTelasDB = item.panel.buildings?.quantidade_telas || 0;
+      const quantidadeTelasReal = numeroElevadores > 0 ? numeroElevadores : (quantidadeTelasDB || 1);
       
       console.log(`[OrderSummaryCard] Prédio ${buildingName}:`, {
         quantidade_telas_banco: quantidadeTelasDB,
