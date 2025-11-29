@@ -6,7 +6,7 @@ import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
-import { Loader2, ShoppingBag, Calendar, Search, Eye, AlertTriangle, CheckCircle, Upload } from 'lucide-react';
+import { Loader2, ShoppingBag, Calendar, Search, Eye, AlertTriangle, CheckCircle, Upload, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -255,10 +255,10 @@ const AdvertiserOrders = () => {
                   <p className="font-medium">{painelsList.length} selecionados</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Período</p>
+                  <p className="text-gray-500">Método de Pagamento</p>
                   <p className="font-medium flex items-center">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {item.type === 'order' && item.data_inicio ? formatDate(item.data_inicio) : 'A definir'}
+                    <CreditCard className="h-3 w-3 mr-1" />
+                    {item.type === 'order' ? (item.metodo_pagamento === 'credit_card' ? 'Cartão de Crédito' : 'PIX') : 'PIX'}
                   </p>
                 </div>
               </div>
