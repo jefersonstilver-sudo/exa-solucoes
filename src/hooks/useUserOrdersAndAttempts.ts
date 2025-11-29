@@ -26,6 +26,9 @@ export interface UserCompleteOrder {
   client_id: string;
   nome_pedido?: string;
   metodo_pagamento?: string;
+  total_visualizacoes_mes?: number;
+  total_publico_estimado?: number;
+  total_telas?: number;
   type: 'order';
   videos?: {
     id: string;
@@ -110,22 +113,85 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
         }
       }
 
-      // Processar pedidos completos com dados de vídeo
-      const processedOrders: UserCompleteOrder[] = (orders || []).map(order => ({
-        id: order.id,
-        created_at: order.created_at,
-        status: order.status,
-        valor_total: order.valor_total || 0,
-        lista_paineis: order.lista_paineis || [],
-        plano_meses: order.plano_meses,
-        data_inicio: order.data_inicio,
-        data_fim: order.data_fim,
-        client_id: order.client_id,
-        nome_pedido: order.nome_pedido,
-        metodo_pagamento: order.metodo_pagamento,
-        type: 'order' as const,
-        videos: videosData[order.id] || []
-      }));
+      // Buscar dados reais dos buildings (visualizacoes_mes, publico_estimado, quantidade_telas)
+      const allBuildingIds = [...new Set(
+        (orders || []).flatMap(order => order.lista_paineis || [])
+      )];
+
+      let buildingsData: Record<string, { 
+        visualizacoes_mes: number; 
+        publico_estimado: number;
+        quantidade_telas: number;
+      }> = {};
+
+      if (allBuildingIds.length > 0) {
+        try {
+          const { data: buildings, error: buildingsError } = await supabase
+            .from('buildings')
+            .select('id, visualizacoes_mes, publico_estimado, quantidade_telas')
+            .in('id', allBuildingIds);
+
+          if (buildingsError) {
+            console.warn('Erro ao buscar dados dos buildings (não crítico):', buildingsError);
+          } else {
+            console.log('✅ Dados dos buildings encontrados:', buildings?.length || 0);
+            
+            buildingsData = (buildings || []).reduce((acc, b) => {
+              acc[b.id] = {
+                visualizacoes_mes: b.visualizacoes_mes || 0,
+                publico_estimado: b.publico_estimado || 0,
+                quantidade_telas: b.quantidade_telas || 0
+              };
+              return acc;
+            }, {} as Record<string, { visualizacoes_mes: number; publico_estimado: number; quantidade_telas: number }>);
+          }
+        } catch (error) {
+          console.warn('Erro não crítico ao buscar dados dos buildings:', error);
+        }
+      }
+
+      // Processar pedidos completos com dados de vídeo e totais reais
+      const processedOrders: UserCompleteOrder[] = (orders || []).map(order => {
+        // Calcular totais reais somando os dados dos buildings
+        const totals = (order.lista_paineis || []).reduce((acc, buildingId) => {
+          const data = buildingsData[buildingId] || { 
+            visualizacoes_mes: 0, 
+            publico_estimado: 0,
+            quantidade_telas: 0
+          };
+          return {
+            visualizacoes: acc.visualizacoes + data.visualizacoes_mes,
+            publico: acc.publico + data.publico_estimado,
+            telas: acc.telas + data.quantidade_telas
+          };
+        }, { visualizacoes: 0, publico: 0, telas: 0 });
+
+        console.log(`📊 [ORDER ${order.id.substring(0, 8)}] Totais calculados:`, {
+          buildings: order.lista_paineis?.length || 0,
+          visualizacoes_mes: totals.visualizacoes,
+          publico_estimado: totals.publico,
+          quantidade_telas: totals.telas
+        });
+
+        return {
+          id: order.id,
+          created_at: order.created_at,
+          status: order.status,
+          valor_total: order.valor_total || 0,
+          lista_paineis: order.lista_paineis || [],
+          plano_meses: order.plano_meses,
+          data_inicio: order.data_inicio,
+          data_fim: order.data_fim,
+          client_id: order.client_id,
+          nome_pedido: order.nome_pedido,
+          metodo_pagamento: order.metodo_pagamento,
+          total_visualizacoes_mes: totals.visualizacoes,
+          total_publico_estimado: totals.publico,
+          total_telas: totals.telas,
+          type: 'order' as const,
+          videos: videosData[order.id] || []
+        };
+      });
 
       // Buscar tentativas de compra do usuário (sem foreign key problemática)
       let processedAttempts: UserOrderAttempt[] = [];

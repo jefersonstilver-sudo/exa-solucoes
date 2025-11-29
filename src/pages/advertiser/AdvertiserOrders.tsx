@@ -278,7 +278,10 @@ const AdvertiserOrders = () => {
                   <p className="text-gray-500">Número de Exibições</p>
                   <p className="font-medium flex items-center">
                     <Eye className="h-3 w-3 mr-1" />
-                    {((painelsList.length || 0) * (item.plano_meses || 1) * 5000).toLocaleString('pt-BR')}
+                    {item.type === 'order' && item.total_visualizacoes_mes 
+                      ? ((item.total_visualizacoes_mes || 0) * (item.plano_meses || 1)).toLocaleString('pt-BR')
+                      : ((painelsList.length || 0) * 7200).toLocaleString('pt-BR')
+                    }
                   </p>
                 </div>
               </div>
