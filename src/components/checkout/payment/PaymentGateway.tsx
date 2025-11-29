@@ -100,6 +100,11 @@ const PaymentGateway = ({
   };
   
   const handleCardPayment = async () => {
+    if (isProcessing) {
+      console.log("⚠️ Já processando pagamento, ignorando clique duplicado");
+      return;
+    }
+    
     console.log("💳 PaymentGateway: Criando checkout Mercado Pago Checkout Pro:", { orderId });
     
     logCheckoutEvent(
@@ -110,7 +115,8 @@ const PaymentGateway = ({
     );
     
     try {
-      toast.loading("Preparando checkout...");
+      setIsProcessing(true);
+      toast.loading("Preparando checkout seguro...", { id: 'checkout-loading' });
       
       // Chamar edge function para criar preferência Checkout Pro
       const { data, error } = await supabase.functions.invoke('process-payment', {
@@ -122,21 +128,33 @@ const PaymentGateway = ({
         }
       });
       
-      toast.dismiss();
+      toast.dismiss('checkout-loading');
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Edge function error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Resposta da edge function:', data);
       
       // Redirecionar para checkout externo do Mercado Pago
       if (data?.init_point) {
         console.log("✅ Redirecionando para Mercado Pago:", data.init_point);
-        window.location.href = data.init_point;
+        toast.success("Redirecionando para checkout...", { duration: 2000 });
+        
+        // Small delay to show the success message
+        setTimeout(() => {
+          window.location.href = data.init_point;
+        }, 500);
       } else {
+        console.error('❌ Dados recebidos:', data);
         throw new Error('URL de checkout não disponível');
       }
     } catch (error) {
-      console.error('❌ Erro ao processar pagamento com cartão:', error);
-      toast.dismiss();
-      toast.error("Erro ao iniciar checkout");
+      console.error('❌ Erro completo:', error);
+      toast.dismiss('checkout-loading');
+      setIsProcessing(false);
+      toast.error("Erro ao iniciar checkout. Tente novamente.");
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
