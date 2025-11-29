@@ -174,12 +174,16 @@ serve(async (req) => {
       console.log('ℹ️ [AWS_SYNC] Nenhum vídeo anterior para desativar');
     }
 
+    // Inicializar contadores antes do bloco condicional
+    let deactivateSuccess = 0;
+    let deactivateFailed = 0;
+
     if (deactivatePromises.length > 0) {
       console.log(`🔄 [AWS_SYNC] Desativando vídeo anterior em ${deactivatePromises.length} prédios...`);
       deactivateResults = await Promise.allSettled(deactivatePromises);
 
-      const deactivateSuccess = deactivateResults.filter(r => r.status === 'fulfilled' && r.value.ok).length;
-      const deactivateFailed = deactivateResults.length - deactivateSuccess;
+      deactivateSuccess = deactivateResults.filter(r => r.status === 'fulfilled' && r.value.ok).length;
+      deactivateFailed = deactivateResults.length - deactivateSuccess;
 
       console.log(`📊 [AWS_SYNC] Desativar: ${deactivateSuccess} sucesso, ${deactivateFailed} falhas`);
     }

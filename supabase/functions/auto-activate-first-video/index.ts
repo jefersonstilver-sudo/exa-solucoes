@@ -114,59 +114,57 @@ Deno.serve(async (req) => {
 
     console.log(`🏢 [AUTO-ACTIVATE] Ativando vídeo em ${predios.length} prédios:`, predios);
 
-    // 5. Chamar notify-video-toggle para cada prédio
-    const videoTitle = videoData.videos?.nome || 'Video';
-    const results = [];
-
-    for (const predioId of predios) {
-      console.log(`📤 [AUTO-ACTIVATE] Chamando notify-video-toggle para prédio: ${predioId}`);
-      
-      try {
-        const { data: toggleData, error: toggleError } = await supabase.functions.invoke(
-          'notify-video-toggle',
-          {
-            body: {
-              actions: [{
-                titulo: videoTitle,
-                ativo: true,
-                predio_id: predioId,
-                slot: videoData.slot_position
-              }]
-            }
+    // 5. Chamar sync-video-status-to-aws para sincronizar com a API externa
+    console.log(`📤 [AUTO-ACTIVATE] Chamando sync-video-status-to-aws`);
+    
+    try {
+      const { data: syncData, error: syncError } = await supabase.functions.invoke(
+        'sync-video-status-to-aws',
+        {
+          body: {
+            pedidoId: videoData.pedido_id,
+            activeVideoId: videoData.video_id,
+            previousVideoId: null // Primeiro vídeo, sem anterior
           }
-        );
-
-        if (toggleError) {
-          console.error(`❌ [AUTO-ACTIVATE] Erro ao ativar no prédio ${predioId}:`, toggleError);
-          results.push({ predio_id: predioId, success: false, error: toggleError.message });
-        } else {
-          console.log(`✅ [AUTO-ACTIVATE] Vídeo ativado com sucesso no prédio ${predioId}`);
-          results.push({ predio_id: predioId, success: true, data: toggleData });
         }
-      } catch (err: any) {
-        console.error(`❌ [AUTO-ACTIVATE] Exceção ao ativar no prédio ${predioId}:`, err);
-        results.push({ predio_id: predioId, success: false, error: err.message });
+      );
+
+      if (syncError) {
+        console.error(`❌ [AUTO-ACTIVATE] Erro ao sincronizar com AWS:`, syncError);
+        throw new Error(`Falha na sincronização: ${syncError.message}`);
       }
+
+      console.log(`✅ [AUTO-ACTIVATE] Vídeo sincronizado com sucesso na AWS:`, syncData);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Primeiro vídeo ativado e sincronizado com AWS`,
+          sync_result: syncData,
+          video_info: {
+            id: videoData.id,
+            title: videoData.videos?.nome,
+            slot: videoData.slot_position,
+            predios_count: predios.length
+          }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    } catch (err: any) {
+      console.error(`❌ [AUTO-ACTIVATE] Exceção ao sincronizar:`, err);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: err.message
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const failCount = results.filter(r => !r.success).length;
-
-    console.log(`✅ [AUTO-ACTIVATE] Ativação completa: ${successCount} sucesso, ${failCount} falhas`);
-
-    return new Response(
-      JSON.stringify({
-        success: successCount > 0,
-        message: `Vídeo ativado em ${successCount}/${predios.length} prédios`,
-        results,
-        video_info: {
-          id: videoData.id,
-          title: videoTitle,
-          slot: videoData.slot_position
-        }
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
 
   } catch (error: any) {
     console.error('💥 [AUTO-ACTIVATE] Erro geral:', error);
