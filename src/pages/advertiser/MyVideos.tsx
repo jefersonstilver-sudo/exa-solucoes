@@ -1,14 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, FileText } from 'lucide-react';
-import { useVideoReportData } from '@/hooks/useVideoReportData';
+import { useVideoReportData, DateRange } from '@/hooks/useVideoReportData';
 import { CampaignSummaryStats } from '@/components/advertiser/CampaignSummaryStats';
 import { CampaignReportCard } from '@/components/advertiser/CampaignReportCard';
+import { PeriodFilter } from '@/components/advertiser/PeriodFilter';
 import { Card, CardContent } from '@/components/ui/card';
+import { subDays } from 'date-fns';
 
 const MyVideos = () => {
   const { userProfile } = useAuth();
-  const { campaigns, summary, loading } = useVideoReportData(userProfile?.id);
+  const [dateRange, setDateRange] = useState<DateRange>({
+    start: subDays(new Date(), 30),
+    end: new Date(),
+  });
+  const { campaigns, summary, loading } = useVideoReportData(userProfile?.id, dateRange);
 
   if (loading) {
     return (
@@ -21,14 +27,17 @@ const MyVideos = () => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
-          Relatório de Campanhas
-        </h1>
-        <p className="text-gray-600">
-          Acompanhe o desempenho das suas campanhas com métricas e gráficos em tempo real
-        </p>
+      {/* Header com Filtro */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
+            Relatório de Campanhas
+          </h1>
+          <p className="text-gray-600">
+            Acompanhe o desempenho das suas campanhas com métricas e gráficos em tempo real
+          </p>
+        </div>
+        <PeriodFilter onPeriodChange={setDateRange} defaultPeriod="30d" />
       </div>
 
       {/* Métricas Resumidas */}

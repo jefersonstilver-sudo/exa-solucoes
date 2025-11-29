@@ -1,5 +1,5 @@
 import React from 'react';
-import { Video, Tv, Users, Building2 } from 'lucide-react';
+import { Video, Tv, Building2, PlayCircle } from 'lucide-react';
 import { AppleMetricCard } from '@/design-system/components/AppleMetricCard';
 import { CampaignSummary } from '@/hooks/useVideoReportData';
 
@@ -27,15 +27,15 @@ export const CampaignSummaryStats = ({ summary }: CampaignSummaryStatsProps) => 
         iconColor="text-[#9C1E1E]"
       />
       <AppleMetricCard
-        title="Exibições Estimadas"
+        title="Total de Exibições"
         value={formatNumber(summary.totalExibicoes)}
         icon={Tv}
         iconColor="text-[#9C1E1E]"
       />
       <AppleMetricCard
-        title="Público Impactado"
-        value={formatNumber(summary.totalPublicoImpactado)}
-        icon={Users}
+        title="Vídeos Totais Exibidos"
+        value={summary.totalVideosExibidos}
+        icon={PlayCircle}
         iconColor="text-[#9C1E1E]"
       />
       <AppleMetricCard
