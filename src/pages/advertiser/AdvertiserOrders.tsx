@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserOrdersAndAttempts } from '@/hooks/useUserOrdersAndAttempts';
 import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
+import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
 import { Loader2, ShoppingBag, Calendar, Search, Eye, AlertTriangle, CheckCircle, Upload, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ const AdvertiserOrders = () => {
     userOrdersAndAttempts,
     loading
   } = useUserOrdersAndAttempts(userProfile?.id);
+  const { createCheckoutProSession, isProcessing: isProcessingCheckout } = useCheckoutPro();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [videoDisplayPopup, setVideoDisplayPopup] = useState<{
@@ -128,32 +130,57 @@ const AdvertiserOrders = () => {
     }
   };
 
-  // Função para processar pagamento com cartão via Stripe
+  // Função para processar pagamento com cartão via Mercado Pago
   const handleStripePayment = async (orderId: string) => {
-    console.log('[AdvertiserOrders] Processando pagamento Stripe para pedido:', orderId);
-    setIsGeneratingPix(true); // Reutiliza estado de loading
+    console.log('[AdvertiserOrders] Processando pagamento com cartão para pedido:', orderId);
     
     try {
-      const { data, error } = await supabase.functions.invoke('stripe-create-checkout', {
-        body: { pedidoId: orderId }
+      // Buscar dados do pedido
+      const { data: pedido, error: pedidoError } = await supabase
+        .from('pedidos')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+      
+      if (pedidoError || !pedido) {
+        throw new Error('Pedido não encontrado');
+      }
+
+      // Buscar dados dos prédios
+      const { data: buildings, error: buildingsError } = await supabase
+        .from('buildings')
+        .select('*')
+        .in('id', pedido.lista_paineis || []);
+      
+      if (buildingsError) {
+        throw new Error('Erro ao buscar dados dos prédios');
+      }
+
+      // Criar sessão de checkout no Mercado Pago
+      const result = await createCheckoutProSession({
+        sessionUser: userProfile,
+        cartItems: (buildings || []).map(b => ({
+          panel: b as any,
+          duration: pedido.plano_meses
+        })),
+        selectedPlan: pedido.plano_meses,
+        totalPrice: pedido.valor_total,
+        couponId: pedido.cupom_id || null,
+        startDate: pedido.data_inicio ? new Date(pedido.data_inicio) : new Date(),
+        endDate: pedido.data_fim ? new Date(pedido.data_fim) : new Date()
       });
-      
-      if (error) throw error;
-      
-      if (data?.url) {
-        console.log('✅ Stripe checkout criado, redirecionando:', data.url);
-        toast.success('Redirecionando para pagamento...');
-        window.location.href = data.url;
+
+      if (result?.success) {
+        console.log('✅ Checkout criado, redirecionando para Mercado Pago');
+        // O hook já faz o redirecionamento automaticamente
       } else {
-        throw new Error('URL de checkout não retornada');
+        throw new Error(result?.error || 'Erro ao criar checkout');
       }
     } catch (error: any) {
-      console.error('❌ Erro ao criar checkout Stripe:', error);
+      console.error('❌ Erro ao processar pagamento com cartão:', error);
       toast.error('Erro ao processar pagamento', {
         description: error.message || 'Tente novamente em instantes'
       });
-    } finally {
-      setIsGeneratingPix(false);
     }
   };
 

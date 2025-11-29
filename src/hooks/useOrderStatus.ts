@@ -62,7 +62,7 @@ export const useOrderStatus = (
         
         if (paymentMethod === 'pix') {
           return {
-            label: 'Pagar com PIX',
+            label: 'Aguardando Pagamento',
             description: 'Efetue o pagamento PIX para ativar sua campanha',
             color: 'text-white',
             bgColor: 'bg-orange-600 border-orange-700',
@@ -77,7 +77,7 @@ export const useOrderStatus = (
         } else {
           // Cartão - precisa chamar função específica
           return {
-            label: 'Pagar com Cartão',
+            label: 'Aguardando Pagamento',
             description: 'Finalize o pagamento com cartão de crédito',
             color: 'text-white',
             bgColor: 'bg-orange-600 border-orange-700',
