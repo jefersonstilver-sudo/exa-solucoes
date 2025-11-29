@@ -9,7 +9,7 @@ import { LogLevel, CheckoutEvent, logCheckoutEvent } from '@/services/checkoutDe
 import PaymentMethodSelector from './PaymentMethodSelector';
 import CreditCardPayment from './CreditCardPayment';
 import PixPaymentButton from '../navigation/PixPaymentButton';
-import { useCardPayment } from '@/hooks/payment/useCardPayment';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentGatewayProps {
   orderId: string;
@@ -37,7 +37,7 @@ const PaymentGateway = ({
   const [paymentMethod, setPaymentMethod] = useState<string>(
     localStorage.getItem('preferred_payment_method') || 'pix'
   );
-  const { processCardPayment, isProcessing } = useCardPayment();
+  const [isProcessing, setIsProcessing] = React.useState(false);
   
   // Log de montagem do componente
   useEffect(() => {
@@ -100,33 +100,48 @@ const PaymentGateway = ({
   };
   
   const handleCardPayment = async () => {
-    console.log("💳 PaymentGateway: Iniciando pagamento com cartão via Mercado Pago:", { orderId });
+    console.log("💳 PaymentGateway: Criando checkout Mercado Pago Checkout Pro:", { orderId });
     
     logCheckoutEvent(
       CheckoutEvent.DEBUG_EVENT,
       LogLevel.INFO,
-      'Iniciando pagamento com cartão via Mercado Pago',
+      'Criando preferência Mercado Pago Checkout Pro',
       { orderId, paymentMethod: 'credit_card' }
     );
     
     try {
-      // Navigate to card payment page for Mercado Pago tokenization
-      navigate(`/payment?pedido=${orderId}&method=credit_card`);
+      toast.loading("Preparando checkout...");
       
-      logCheckoutEvent(
-        CheckoutEvent.NAVIGATION_EVENT,
-        LogLevel.INFO,
-        'Redirecionando para página de cartão Mercado Pago',
-        { orderId }
-      );
+      // Chamar edge function para criar preferência Checkout Pro
+      const { data, error } = await supabase.functions.invoke('process-payment', {
+        body: {
+          pedido_id: orderId,
+          payment_method: 'credit_card',
+          total_amount: totalAmount,
+          create_preference: true
+        }
+      });
+      
+      toast.dismiss();
+      
+      if (error) throw error;
+      
+      // Redirecionar para checkout externo do Mercado Pago
+      if (data?.init_point) {
+        console.log("✅ Redirecionando para Mercado Pago:", data.init_point);
+        window.location.href = data.init_point;
+      } else {
+        throw new Error('URL de checkout não disponível');
+      }
     } catch (error) {
       console.error('❌ Erro ao processar pagamento com cartão:', error);
-      toast.error("Erro ao processar pagamento com cartão");
+      toast.dismiss();
+      toast.error("Erro ao iniciar checkout");
       
       logCheckoutEvent(
         CheckoutEvent.PAYMENT_ERROR,
         LogLevel.ERROR,
-        'Erro ao iniciar pagamento com cartão',
+        'Erro ao criar checkout Mercado Pago',
         { orderId, error: error instanceof Error ? error.message : String(error) }
       );
     }
