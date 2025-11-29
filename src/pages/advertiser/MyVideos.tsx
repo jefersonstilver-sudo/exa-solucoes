@@ -1,14 +1,14 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Video, FileText } from 'lucide-react';
+import { Loader2, FileText } from 'lucide-react';
 import { useVideoReportData } from '@/hooks/useVideoReportData';
 import { CampaignSummaryStats } from '@/components/advertiser/CampaignSummaryStats';
-import { VideoReportCard } from '@/components/advertiser/VideoReportCard';
+import { CampaignReportCard } from '@/components/advertiser/CampaignReportCard';
 import { Card, CardContent } from '@/components/ui/card';
 
 const MyVideos = () => {
   const { userProfile } = useAuth();
-  const { videos, summary, loading } = useVideoReportData(userProfile?.id);
+  const { campaigns, summary, loading } = useVideoReportData(userProfile?.id);
 
   if (loading) {
     return (
@@ -27,18 +27,18 @@ const MyVideos = () => {
           Relatório de Campanhas
         </h1>
         <p className="text-gray-600">
-          Acompanhe o desempenho dos seus vídeos em tempo real
+          Acompanhe o desempenho das suas campanhas com métricas e gráficos em tempo real
         </p>
       </div>
 
       {/* Métricas Resumidas */}
       <CampaignSummaryStats summary={summary} />
 
-      {/* Cards de Vídeos com Relatório */}
-      {videos.length > 0 ? (
+      {/* Cards de Campanhas com Gráficos */}
+      {campaigns.length > 0 ? (
         <div className="space-y-6">
-          {videos.map((video) => (
-            <VideoReportCard key={video.id} video={video} />
+          {campaigns.map((campaign) => (
+            <CampaignReportCard key={campaign.pedidoId} campaign={campaign} />
           ))}
         </div>
       ) : (

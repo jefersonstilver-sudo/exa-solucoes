@@ -10,8 +10,8 @@ interface BuildingReportRowProps {
 
 export const BuildingReportRow = ({ building }: BuildingReportRowProps) => {
   const handleWatchLive = () => {
-    if (building.codigo_predio) {
-      const commercialPath = generateCommercialPath(building.nome, building.codigo_predio);
+    if (building.codigoPredio) {
+      const commercialPath = generateCommercialPath(building.nome, building.codigoPredio);
       window.open(commercialPath, '_blank', 'noopener,noreferrer');
     }
   };
@@ -34,7 +34,7 @@ export const BuildingReportRow = ({ building }: BuildingReportRowProps) => {
             </span>
             <span className="flex items-center gap-1">
               <Tv className="w-3 h-3" />
-              {building.quantidade_telas || 0} {building.quantidade_telas === 1 ? 'tela' : 'telas'}
+              {building.quantidadeTelas || 0} {building.quantidadeTelas === 1 ? 'tela' : 'telas'}
             </span>
           </div>
         </div>
