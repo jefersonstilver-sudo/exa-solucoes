@@ -101,8 +101,9 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         .gt('valor_total', 0);
 
       const pedidos = pedidosData?.length || 0;
-      const pagos = pedidosData?.filter(p => p.status === 'pago').length || 0;
-      const pendentes = pedidosData?.filter(p => p.status !== 'pago').length || 0;
+      const paidStatuses = ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'];
+      const pagos = pedidosData?.filter(p => paidStatuses.includes(p.status)).length || 0;
+      const pendentes = pedidosData?.filter(p => !paidStatuses.includes(p.status)).length || 0;
       const ticketMedio = pedidosData?.length 
         ? pedidosData.reduce((sum, p) => sum + (p.valor_total || 0), 0) / pedidosData.length 
         : 0;
@@ -111,7 +112,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       const { data: vendasData } = await supabase
         .from('pedidos')
         .select('valor_total')
-        .eq('status', 'pago')
+        .in('status', ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'])
         .gte('created_at', start)
         .lte('created_at', end)
         .gt('valor_total', 0);
@@ -121,7 +122,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       const { data: vendasAnteriores } = await supabase
         .from('pedidos')
         .select('valor_total')
-        .eq('status', 'pago')
+        .in('status', ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'])
         .gte('created_at', previousStart.toISOString())
         .lte('created_at', previousEnd.toISOString())
         .gt('valor_total', 0);
