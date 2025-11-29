@@ -7,13 +7,15 @@ interface VideoThumbnailDisplayProps {
   videoName: string;
   className?: string;
   compact?: boolean;
+  variant?: 'horizontal' | 'vertical';
 }
 
 export const VideoThumbnailDisplay: React.FC<VideoThumbnailDisplayProps> = ({
   videoUrl,
   videoName,
   className = '',
-  compact = false
+  compact = false,
+  variant = 'horizontal'
 }) => {
   const [thumbnailError, setThumbnailError] = useState(false);
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
@@ -30,6 +32,53 @@ export const VideoThumbnailDisplay: React.FC<VideoThumbnailDisplayProps> = ({
 
   const truncatedName = videoName.length > 20 ? `${videoName.substring(0, 20)}...` : videoName;
 
+  // Layout vertical para preview no card de pedidos
+  if (variant === 'vertical') {
+    if (thumbnailError) {
+      return (
+        <div className={`flex items-center justify-center bg-gray-900 h-full ${className}`}>
+          <div className="flex flex-col items-center space-y-2 text-white/60">
+            <AlertCircle className="h-8 w-8" />
+            <span className="text-xs font-medium">Erro na miniatura</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`relative h-full w-full bg-black ${className}`}>
+        {!thumbnailLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="animate-spin text-white/60 h-8 w-8" />
+          </div>
+        )}
+        
+        <video
+          src={videoUrl}
+          className="w-full h-full object-cover"
+          onLoadedData={handleVideoLoad}
+          onError={handleVideoError}
+          muted
+          playsInline
+          preload="metadata"
+        />
+        
+        {thumbnailLoaded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 backdrop-blur-[1px]">
+            <PlayCircle className="text-white/90 h-12 w-12 mb-2" />
+            <span className="text-white text-sm font-medium px-3 text-center line-clamp-2">
+              {videoName}
+            </span>
+            <span className="text-white/80 text-xs mt-1 font-medium">
+              Em exibição
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Layout horizontal (padrão)
   if (thumbnailError) {
     return (
       <div className={`flex items-center justify-center bg-gray-100 rounded ${compact ? 'h-8' : 'h-16'} ${className}`}>

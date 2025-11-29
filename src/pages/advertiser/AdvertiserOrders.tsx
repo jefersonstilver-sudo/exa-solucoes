@@ -7,6 +7,7 @@ import { useOrderStatus } from '@/hooks/useOrderStatus';
 import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
 import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
+import { OrderVideoThumbnail } from '@/components/video-management/OrderVideoThumbnail';
 import { Loader2, ShoppingBag, Calendar, Search, Eye, AlertTriangle, CheckCircle, Upload, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -238,9 +239,28 @@ const AdvertiserOrders = () => {
         await finalizeAttemptToOrder(item.id);
       }
     };
-    return <Card className={cn('hover:shadow-lg transition-all duration-200 border-l-4', item.type === 'attempt' ? 'border-l-orange-500' : 'border-l-exa-red')}>
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+
+    // Verificar se deve mostrar preview (apenas pedidos com vídeo aprovado)
+    const shouldShowVideoPreview = item.type === 'order' && item.status === 'video_aprovado';
+
+    return <Card className={cn('hover:shadow-lg transition-all duration-200 overflow-hidden', item.type === 'attempt' ? 'border-l-4 border-l-orange-500' : 'border-l-0')}>
+        <CardContent className="p-0">
+          <div className="flex">
+            {/* Preview de Vídeo - Lado Esquerdo */}
+            {shouldShowVideoPreview && (
+              <div className="w-56 flex-shrink-0 bg-black relative">
+                <OrderVideoThumbnail 
+                  orderId={item.id}
+                  orderStatus={item.status}
+                  className="h-full"
+                  variant="vertical"
+                />
+              </div>
+            )}
+            
+            {/* Conteúdo - Lado Direito */}
+            <div className="flex-1 p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
             <div className="flex-1 space-y-3">
               <div className="flex items-center space-x-3">
                 <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', item.type === 'attempt' ? 'bg-orange-500/10' : 'bg-exa-red/10')}>
@@ -318,6 +338,8 @@ const AdvertiserOrders = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
         </CardContent>
       </Card>;
   };
