@@ -26,7 +26,11 @@ export interface OrderStatusInfo {
   };
 }
 
-export const useOrderStatus = (order: any, onGeneratePix?: (orderId: string) => void) => {
+export const useOrderStatus = (
+  order: any, 
+  onGeneratePix?: (orderId: string) => void,
+  onStripePayment?: (orderId: string) => void
+) => {
   const statusInfo = useMemo((): OrderStatusInfo => {
     // CORREÇÃO: Verificar se é uma tentativa de compra primeiro
     if (order?.type === 'attempt') {
@@ -53,19 +57,39 @@ export const useOrderStatus = (order: any, onGeneratePix?: (orderId: string) => 
 
     switch (status) {
       case 'pendente':
-        return {
-          label: 'Pagamento não realizado',
-          description: 'Efetue o pagamento para ativar sua campanha',
-          color: 'text-white',
-          bgColor: 'bg-orange-600 border-orange-700',
-          icon: CreditCard,
-          action: {
-            label: 'Pagar Agora',
-            variant: 'default',
-            onClick: onGeneratePix ? () => onGeneratePix(order.id) : undefined,
-            href: !onGeneratePix ? `/payment?pedido=${order.id}` : undefined
-          }
-        };
+        // Verificar método de pagamento original do pedido
+        const paymentMethod = order.metodo_pagamento || 'pix'; // Fallback para PIX em pedidos antigos
+        
+        if (paymentMethod === 'pix') {
+          return {
+            label: 'Pagar com PIX',
+            description: 'Efetue o pagamento PIX para ativar sua campanha',
+            color: 'text-white',
+            bgColor: 'bg-orange-600 border-orange-700',
+            icon: CreditCard,
+            action: {
+              label: 'Pagar com PIX',
+              variant: 'default',
+              onClick: onGeneratePix ? () => onGeneratePix(order.id) : undefined,
+              href: !onGeneratePix ? `/payment?pedido=${order.id}&method=pix` : undefined
+            }
+          };
+        } else {
+          // Cartão - precisa chamar função específica
+          return {
+            label: 'Pagar com Cartão',
+            description: 'Finalize o pagamento com cartão de crédito',
+            color: 'text-white',
+            bgColor: 'bg-orange-600 border-orange-700',
+            icon: CreditCard,
+            action: {
+              label: 'Pagar com Cartão',
+              variant: 'default',
+              onClick: onStripePayment ? () => onStripePayment(order.id) : undefined,
+              href: !onStripePayment ? `/payment?pedido=${order.id}&method=credit_card` : undefined
+            }
+          };
+        }
 
       case 'pago':
       case 'pago_pendente_video':
@@ -203,7 +227,7 @@ export const useOrderStatus = (order: any, onGeneratePix?: (orderId: string) => 
           icon: AlertTriangle
         };
     }
-  }, [order?.status, order?.videos, order?.id, order?.type, onGeneratePix]);
+  }, [order?.status, order?.videos, order?.id, order?.type, order?.metodo_pagamento, onGeneratePix, onStripePayment]);
 
   return statusInfo;
 };

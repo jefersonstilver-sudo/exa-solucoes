@@ -61,7 +61,8 @@ export const usePaymentFlow = () => {
         totalPrice: options.totalPrice,
         couponId: options.couponId,
         startDate: options.startDate,
-        endDate: options.endDate
+        endDate: options.endDate,
+        paymentMethod: options.paymentMethod
       });
       
       const pedido = unwrapData(pedidoResult) as any;

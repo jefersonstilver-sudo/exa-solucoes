@@ -38,7 +38,8 @@ export const useEnhancedPaymentOrderCreator = () => {
       totalPrice,
       couponId,
       startDate,
-      endDate
+      endDate,
+      paymentMethod
     } = params;
 
     try {
@@ -242,6 +243,7 @@ export const useEnhancedPaymentOrderCreator = () => {
         data_inicio: startDate.toISOString().split('T')[0],
         data_fim: endDate.toISOString().split('T')[0],
         status: 'pendente',
+        metodo_pagamento: paymentMethod || 'pix', // ✅ Salvar método de pagamento
         termos_aceitos: true,
         source_tentativa_id: sourceTentativaId,
         transaction_id: transactionId,
