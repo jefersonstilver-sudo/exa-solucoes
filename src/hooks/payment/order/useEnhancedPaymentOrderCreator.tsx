@@ -87,6 +87,8 @@ export const useEnhancedPaymentOrderCreator = () => {
       
       if (!validation.isValid) {
         if (validation.existingOrderId) {
+          console.log('ℹ️ [ENHANCED_ORDER_CREATOR] Pedido existente detectado, redirecionando...');
+          
           logCheckoutEvent(
             CheckoutEvent.PAYMENT_ERROR,
             LogLevel.WARNING,
@@ -105,6 +107,7 @@ export const useEnhancedPaymentOrderCreator = () => {
             .single();
             
           if (!error && existingOrder) {
+            console.log('✅ [ENHANCED_ORDER_CREATOR] Pedido existente encontrado:', existingOrder.id);
             return existingOrder as PedidoType;
           }
         }

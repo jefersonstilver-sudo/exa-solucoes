@@ -1,5 +1,5 @@
-
 import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast as sonnerToast } from 'sonner';
 import { Panel } from '@/types/panel';
 import { usePaymentValidator } from './flows/usePaymentValidator';
@@ -28,6 +28,7 @@ interface ProcessPaymentOptions {
 }
 
 export const usePaymentFlow = () => {
+  const navigate = useNavigate();
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const processingPaymentRef = useRef(false);
@@ -86,9 +87,9 @@ export const usePaymentFlow = () => {
           });
         }
       } else {
-        // For credit card, redirect to payment page with Mercado Pago
+        // For credit card, navigate to payment page with Mercado Pago
         options.handleClearCart();
-        window.location.href = `/payment?pedido=${pedido.id}&method=credit_card`;
+        navigate(`/payment?pedido=${pedido.id}&method=credit_card`);
       }
       
       return { success: true, pedidoId: pedido.id };
