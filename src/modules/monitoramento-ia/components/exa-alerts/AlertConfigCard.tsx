@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { ChevronRight, LucideIcon } from 'lucide-react';
 
 interface AlertConfigCardProps {
@@ -9,6 +9,7 @@ interface AlertConfigCardProps {
   description: string;
   status: 'ativo' | 'inativo';
   onClick: () => void;
+  onToggle: (checked: boolean) => void;
 }
 
 export const AlertConfigCard = ({
@@ -16,7 +17,8 @@ export const AlertConfigCard = ({
   title,
   description,
   status,
-  onClick
+  onClick,
+  onToggle
 }: AlertConfigCardProps) => {
   return (
     <motion.div
@@ -39,20 +41,26 @@ export const AlertConfigCard = ({
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center justify-between gap-3 mb-1">
               <h4 className="font-bold text-base text-foreground truncate">
                 {title}
               </h4>
-              <Badge 
-                variant={status === 'ativo' ? 'default' : 'outline'}
-                className={`text-xs ${
-                  status === 'ativo' 
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-300 dark:border-green-700' 
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                }`}
+              <div 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle(status !== 'ativo');
+                }}
+                className="flex-shrink-0"
               >
-                {status === 'ativo' ? '● Ativo' : '○ Inativo'}
-              </Badge>
+                <Switch 
+                  checked={status === 'ativo'}
+                  className={`transition-all duration-300 ${
+                    status === 'ativo' 
+                      ? 'data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-green-500 data-[state=checked]:to-emerald-500 shadow-lg shadow-green-500/30' 
+                      : ''
+                  }`}
+                />
+              </div>
             </div>
             
             <p className="text-sm text-muted-foreground line-clamp-2">

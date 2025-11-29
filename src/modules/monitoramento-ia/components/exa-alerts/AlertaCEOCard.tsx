@@ -15,6 +15,7 @@ export const AlertaCEOCard = () => {
   const [ativo, setAtivo] = useState(true);
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState('');
+  const [relatorioAtivo, setRelatorioAtivo] = useState(true);
 
   return (
     <motion.div
@@ -83,10 +84,13 @@ export const AlertaCEOCard = () => {
                   icon={BarChart3}
                   title="Relatório de Conversas"
                   description="Relatório periódico com estatísticas de conversas e tempo médio de resposta"
-                  status="ativo"
+                  status={relatorioAtivo ? 'ativo' : 'inativo'}
                   onClick={() => {
                     setSelectedAlert('Relatório de Conversas');
                     setConfigModalOpen(true);
+                  }}
+                  onToggle={(checked) => {
+                    setRelatorioAtivo(checked);
                   }}
                 />
               </div>
