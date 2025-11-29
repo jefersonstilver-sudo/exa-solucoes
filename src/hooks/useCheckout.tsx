@@ -34,23 +34,7 @@ export const useCheckout = () => {
     couponDiscount: validationResult?.discountPercent || 0
   });
 
-  // Carregar plano salvo
-  useEffect(() => {
-    const savedPlan = localStorage.getItem('selectedPlan');
-    if (savedPlan) {
-      const planNumber = parseInt(savedPlan);
-      if ([1, 3, 6, 12].includes(planNumber)) {
-        setSelectedPlan(planNumber as 1 | 3 | 6 | 12);
-      }
-    }
-  }, [setSelectedPlan]);
-
-  // Salvar plano quando mudar
-  useEffect(() => {
-    if (selectedPlan) {
-      localStorage.setItem('selectedPlan', selectedPlan.toString());
-    }
-  }, [selectedPlan]);
+  // CORREÇÃO: Removidos useEffects duplicados - useCartManager já gerencia selectedPlan
 
   // Calcular preço total usando função centralizada
   const calculateTotalPriceWrapper = useCallback(() => {
