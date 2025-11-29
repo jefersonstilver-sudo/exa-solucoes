@@ -7,27 +7,48 @@ export interface BuildingInfo {
   nome: string;
   bairro: string;
   endereco: string;
-  codigo_predio: string;
-  quantidade_telas: number | null;
-  publico_estimado: number | null;
+  quantidadeTelas: number;
+  publicoEstimado: number;
+  codigoPredio: string;
 }
 
-export interface VideoReport {
+export interface VideoInfo {
   id: string;
   nome: string;
   url: string;
-  duracao: number | null;
-  status: string;
+  duracao: number;
+  approvalStatus: string;
+}
+
+export interface WeeklyExhibition {
+  semana: string;
+  exibicoes: number;
+  projecao?: number;
+}
+
+export interface BuildingReach {
+  nome: string;
+  alcance: number;
+  telas: number;
+}
+
+export interface CampaignReport {
   pedidoId: string;
   dataInicio: string;
   dataFim: string;
-  buildings: BuildingInfo[];
+  status: string;
   diasAtivos: number;
   diasRestantes: number;
   progresso: number;
+  videos: VideoInfo[];
+  buildings: BuildingInfo[];
+  totalTelas: number;
   exibicoesEstimadas: number;
   publicoImpactado: number;
-  totalTelas: number;
+  chartData: {
+    weeklyExhibitions: WeeklyExhibition[];
+    buildingReach: BuildingReach[];
+  };
 }
 
 export interface CampaignSummary {
@@ -37,8 +58,8 @@ export interface CampaignSummary {
   totalPrediosAtivos: number;
 }
 
-export const useVideoReportData = (clientId: string | undefined) => {
-  const [videos, setVideos] = useState<VideoReport[]>([]);
+export const useVideoReportData = (clientId?: string) => {
+  const [campaigns, setCampaigns] = useState<CampaignReport[]>([]);
   const [summary, setSummary] = useState<CampaignSummary>({
     totalVideosAtivos: 0,
     totalExibicoes: 0,
@@ -48,16 +69,19 @@ export const useVideoReportData = (clientId: string | undefined) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchVideoReports = async () => {
-    if (!clientId) return;
+  const fetchData = async () => {
+    if (!clientId) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
-      console.log('📊 [VIDEO REPORT] Iniciando busca de dados para cliente:', clientId);
+      console.log('📊 [CAMPAIGN REPORT] Iniciando busca de dados para cliente:', clientId);
 
-      // 1. Buscar pedidos do cliente
+      // Buscar pedidos ativos do cliente
       const { data: pedidos, error: pedidosError } = await supabase
         .from('pedidos')
         .select('*')
@@ -65,23 +89,20 @@ export const useVideoReportData = (clientId: string | undefined) => {
         .in('status', ['ativo', 'pendente', 'pago_pendente_video']);
 
       if (pedidosError) throw pedidosError;
-
       if (!pedidos || pedidos.length === 0) {
-        console.log('📊 [VIDEO REPORT] Nenhum pedido encontrado');
-        setVideos([]);
+        console.log('📊 [CAMPAIGN REPORT] Nenhum pedido encontrado');
+        setLoading(false);
         return;
       }
 
       const pedidoIds = pedidos.map(p => p.id);
 
-      // 2. Buscar pedido_videos com vídeos
-      const { data: pedidoVideos, error: pedidoVideosError } = await supabase
+      // Buscar vídeos dos pedidos
+      const { data: pedidoVideos, error: videosError } = await supabase
         .from('pedido_videos')
         .select(`
-          pedido_id,
-          video_id,
-          approval_status,
-          videos!inner (
+          *,
+          videos (
             id,
             nome,
             url,
@@ -90,94 +111,118 @@ export const useVideoReportData = (clientId: string | undefined) => {
         `)
         .in('pedido_id', pedidoIds);
 
-      if (pedidoVideosError) throw pedidoVideosError;
+      if (videosError) throw videosError;
 
-      if (!pedidoVideos || pedidoVideos.length === 0) {
-        console.log('📊 [VIDEO REPORT] Nenhum vídeo encontrado nos pedidos');
-        setVideos([]);
-        return;
-      }
+      // Processar dados por PEDIDO (campanha)
+      const campaignReports: CampaignReport[] = [];
+      const uniqueBuildingsSet = new Set<string>();
+      let totalExhibitions = 0;
+      let totalAudience = 0;
+      let totalVideosAtivos = 0;
 
-      // 3. Processar dados
-      const hoje = new Date();
-      const videosProcessados: VideoReport[] = [];
-      const buildingsSet = new Set<string>();
+      for (const pedido of pedidos) {
+        const videosFromPedido = (pedidoVideos || []).filter(pv => pv.pedido_id === pedido.id);
+        if (videosFromPedido.length === 0) continue;
 
-      for (const pv of pedidoVideos) {
-        const pedido = pedidos.find(p => p.id === pv.pedido_id);
-        if (!pedido) continue;
-
-        const video = pv.videos as any;
-        if (!video) continue;
-
-        // Buscar buildings
-        const buildingIds = pedido.lista_predios || [];
-        const { data: buildings, error: buildingsError } = await supabase
-          .from('buildings')
-          .select('id, nome, bairro, endereco, codigo_predio, quantidade_telas, publico_estimado')
-          .in('id', buildingIds);
-
-        if (buildingsError) {
-          console.error('Erro ao buscar buildings:', buildingsError);
-          continue;
-        }
-
-        const buildingsInfo = (buildings || []) as BuildingInfo[];
+        const listaPredios = pedido.lista_predios || [];
         
-        // Calcular métricas
+        // Buscar dados dos prédios
+        const { data: buildings } = await supabase
+          .from('buildings')
+          .select('*')
+          .in('id', listaPredios);
+
+        const buildingInfos: BuildingInfo[] = (buildings || []).map(b => ({
+          id: b.id,
+          nome: b.nome,
+          bairro: b.bairro,
+          endereco: b.endereco,
+          quantidadeTelas: b.quantidade_telas || 1,
+          publicoEstimado: b.publico_estimado || 100,
+          codigoPredio: b.codigo_predio || '',
+        }));
+
+        // Cálculos de tempo
         const dataInicio = new Date(pedido.data_inicio);
         const dataFim = new Date(pedido.data_fim);
-        const totalDias = Math.ceil((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24));
-        const diasAtivos = Math.ceil((hoje.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24));
-        const diasRestantes = Math.ceil((dataFim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-        const progresso = Math.min(100, Math.max(0, (diasAtivos / totalDias) * 100));
+        const hoje = new Date();
+        
+        const diasAtivos = Math.max(0, Math.floor((hoje.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24)));
+        const diasRestantes = Math.max(0, Math.floor((dataFim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)));
+        const totalDias = Math.floor((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24));
+        const progresso = totalDias > 0 ? Math.min(100, (diasAtivos / totalDias) * 100) : 0;
 
-        const totalTelas = buildingsInfo.reduce((sum, b) => sum + (b.quantidade_telas || 0), 0);
-        const exibicoesEstimadas = totalTelas * 245 * Math.max(0, diasAtivos);
-        const publicoImpactado = buildingsInfo.reduce((sum, b) => 
-          sum + ((b.publico_estimado || 0) * Math.max(0, diasAtivos)), 0
-        );
+        // Métricas do pedido
+        const totalTelas = buildingInfos.reduce((sum, b) => sum + b.quantidadeTelas, 0);
+        const exibicoesEstimadas = totalTelas * 245 * Math.max(1, diasAtivos);
+        const publicoImpactado = buildingInfos.reduce((sum, b) => sum + b.publicoEstimado, 0) * Math.max(1, diasAtivos);
 
-        // Adicionar buildings ao set
-        buildingsInfo.forEach(b => buildingsSet.add(b.id));
+        // Dados para gráficos
+        const weeklyExhibitions: WeeklyExhibition[] = [];
+        const weeksActive = Math.ceil(diasAtivos / 7);
+        const weeksTotal = Math.ceil(totalDias / 7);
+        
+        for (let i = 0; i < weeksTotal; i++) {
+          const isActive = i < weeksActive;
+          weeklyExhibitions.push({
+            semana: `S${i + 1}`,
+            exibicoes: isActive ? totalTelas * 245 * 7 : 0,
+            projecao: !isActive ? totalTelas * 245 * 7 : undefined,
+          });
+        }
 
-        videosProcessados.push({
-          id: video.id,
-          nome: video.nome,
-          url: video.url,
-          duracao: video.duracao,
-          status: pv.approval_status || 'pending',
+        const buildingReach: BuildingReach[] = buildingInfos.map(b => ({
+          nome: b.nome,
+          alcance: b.publicoEstimado * Math.max(1, diasAtivos),
+          telas: b.quantidadeTelas,
+        }));
+
+        // Mapear vídeos
+        const videoInfos: VideoInfo[] = videosFromPedido.map(pv => ({
+          id: pv.videos?.id || pv.video_id,
+          nome: pv.videos?.nome || 'Vídeo sem título',
+          url: pv.videos?.url || '',
+          duracao: pv.videos?.duracao || 0,
+          approvalStatus: pv.approval_status || 'pending',
+        }));
+
+        buildingInfos.forEach(b => uniqueBuildingsSet.add(b.id));
+        totalExhibitions += exibicoesEstimadas;
+        totalAudience += publicoImpactado;
+        totalVideosAtivos += videoInfos.filter(v => v.approvalStatus === 'approved').length;
+
+        campaignReports.push({
           pedidoId: pedido.id,
           dataInicio: pedido.data_inicio,
           dataFim: pedido.data_fim,
-          buildings: buildingsInfo,
-          diasAtivos: Math.max(0, diasAtivos),
-          diasRestantes: Math.max(0, diasRestantes),
+          status: pedido.status,
+          diasAtivos,
+          diasRestantes,
           progresso,
+          videos: videoInfos,
+          buildings: buildingInfos,
+          totalTelas,
           exibicoesEstimadas,
           publicoImpactado,
-          totalTelas,
+          chartData: {
+            weeklyExhibitions,
+            buildingReach,
+          },
         });
       }
 
-      // 4. Calcular resumo
-      const totalVideosAtivos = videosProcessados.filter(v => v.status === 'approved').length;
-      const totalExibicoes = videosProcessados.reduce((sum, v) => sum + v.exibicoesEstimadas, 0);
-      const totalPublicoImpactado = videosProcessados.reduce((sum, v) => sum + v.publicoImpactado, 0);
-      const totalPrediosAtivos = buildingsSet.size;
-
+      setCampaigns(campaignReports);
       setSummary({
         totalVideosAtivos,
-        totalExibicoes,
-        totalPublicoImpactado,
-        totalPrediosAtivos,
+        totalExibicoes: totalExhibitions,
+        totalPublicoImpactado: totalAudience,
+        totalPrediosAtivos: uniqueBuildingsSet.size,
       });
 
-      setVideos(videosProcessados);
-      console.log('✅ [VIDEO REPORT] Processados', videosProcessados.length, 'vídeos');
+      console.log('✅ [CAMPAIGN REPORT] Processadas', campaignReports.length, 'campanhas');
 
     } catch (error: any) {
-      console.error('💥 [VIDEO REPORT] Erro:', error);
+      console.error('💥 [CAMPAIGN REPORT] Erro:', error);
       setError(error.message || 'Erro ao carregar relatório de campanhas');
       toast.error('Erro ao carregar relatório de campanhas');
     } finally {
@@ -187,21 +232,21 @@ export const useVideoReportData = (clientId: string | undefined) => {
 
   useEffect(() => {
     if (clientId) {
-      fetchVideoReports();
+      fetchData();
     }
 
     // Real-time subscriptions
     const channel = supabase
-      .channel('video-report-changes')
+      .channel('campaign-report-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pedidos' },
-        () => fetchVideoReports()
+        () => fetchData()
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pedido_videos' },
-        () => fetchVideoReports()
+        () => fetchData()
       )
       .subscribe();
 
@@ -210,5 +255,5 @@ export const useVideoReportData = (clientId: string | undefined) => {
     };
   }, [clientId]);
 
-  return { videos, summary, loading, error, refetch: fetchVideoReports };
+  return { campaigns, summary, loading, error, refetch: fetchData };
 };
