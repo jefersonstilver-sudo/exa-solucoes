@@ -14,15 +14,15 @@ export const usePaymentValidation = () => {
         cartItemsCount: cartItems.length
       });
 
-      // CRÍTICO: Verificar se já existe um pedido com valor exato nos últimos 10 minutos
-      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      
+      // CRÍTICO: Verificar se já existe um pedido com valor exato nos últimos 2 minutos
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+
       const { data: recentOrders, error } = await supabase
         .from('pedidos')
         .select('id, created_at, valor_total, status')
         .eq('client_id', userId)
         .eq('valor_total', amount)
-        .gte('created_at', tenMinutesAgo)
+        .gte('created_at', twoMinutesAgo)
         .order('created_at', { ascending: false });
 
       if (error) {
