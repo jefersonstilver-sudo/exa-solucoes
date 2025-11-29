@@ -128,6 +128,35 @@ const AdvertiserOrders = () => {
     }
   };
 
+  // Função para processar pagamento com cartão via Stripe
+  const handleStripePayment = async (orderId: string) => {
+    console.log('[AdvertiserOrders] Processando pagamento Stripe para pedido:', orderId);
+    setIsGeneratingPix(true); // Reutiliza estado de loading
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-create-checkout', {
+        body: { pedidoId: orderId }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.url) {
+        console.log('✅ Stripe checkout criado, redirecionando:', data.url);
+        toast.success('Redirecionando para pagamento...');
+        window.location.href = data.url;
+      } else {
+        throw new Error('URL de checkout não retornada');
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao criar checkout Stripe:', error);
+      toast.error('Erro ao processar pagamento', {
+        description: error.message || 'Tente novamente em instantes'
+      });
+    } finally {
+      setIsGeneratingPix(false);
+    }
+  };
+
   // Return mobile version directly without wrapper layout since it's already handled by ResponsiveAdvertiserLayout
   if (isMobile) {
     return <MobileAdvertiserOrders />;
@@ -174,7 +203,7 @@ const AdvertiserOrders = () => {
   }: {
     item: any;
   }) => {
-    const statusInfo = useOrderStatus(item, handleGeneratePix);
+    const statusInfo = useOrderStatus(item, handleGeneratePix, handleStripePayment);
     const StatusIcon = statusInfo.icon;
     const painelsList = item.type === 'order' ? item.lista_paineis || [] : item.predios_selecionados || [];
 

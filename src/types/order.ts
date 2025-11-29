@@ -14,6 +14,7 @@ export interface CreatePaymentOrderParams {
   couponId: string | null;
   startDate: Date;
   endDate: Date;
+  paymentMethod?: string;
 }
 
 export interface ProcessPaymentParams {
