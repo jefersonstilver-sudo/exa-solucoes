@@ -79,7 +79,7 @@ serve(async (req) => {
     }
 
     // Gerar novo PIX via MercadoPago
-    const mercadoPagoToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
+    const mercadoPagoToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
     if (!mercadoPagoToken) {
       throw new Error('Token do MercadoPago não configurado');
     }
