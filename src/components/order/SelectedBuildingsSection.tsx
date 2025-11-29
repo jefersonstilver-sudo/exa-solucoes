@@ -101,6 +101,10 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
     sum + (building.quantidade_telas || building.numero_elevadores || 0), 0
   );
 
+  const totalVisualizacoes = buildings.reduce((sum, building) => 
+    sum + (building.visualizacoes_mes || 0), 0
+  );
+
   return (
     <Card className={cn("shadow-sm", className)}>
       <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
@@ -116,7 +120,7 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
               <div className="text-sm text-gray-600 font-normal">
                 {buildings.length} {buildings.length === 1 ? 'local' : 'locais'}
                 {totalTelas > 0 && ` • ${totalTelas} ${totalTelas === 1 ? 'tela' : 'telas'}`}
-                {totalPublico > 0 && ` • ${totalPublico.toLocaleString()} pessoas`}
+                {totalVisualizacoes > 0 && ` • ${totalVisualizacoes.toLocaleString()} exibições/mês`}
               </div>
             </div>
           </CollapsibleTrigger>
@@ -172,12 +176,12 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
                         <p className="text-sm text-gray-600">{building.endereco}, {building.bairro}</p>
                       </div>
                     </div>
-                    <div className="text-right text-sm text-gray-600">
-                      {building.publico_estimado && building.publico_estimado > 0 && (
-                        <div>{building.publico_estimado.toLocaleString()} pessoas</div>
+                    <div className="text-right text-sm text-gray-600 space-y-1">
+                      {building.quantidade_telas && building.quantidade_telas > 0 && (
+                        <div className="font-medium">{building.quantidade_telas} {building.quantidade_telas === 1 ? 'tela' : 'telas'}</div>
                       )}
-                      {building.numero_unidades && building.numero_unidades > 0 && (
-                        <div>{building.numero_unidades} unidades</div>
+                      {building.visualizacoes_mes && building.visualizacoes_mes > 0 && (
+                        <div>{building.visualizacoes_mes.toLocaleString()} exibições/mês</div>
                       )}
                     </div>
                   </div>

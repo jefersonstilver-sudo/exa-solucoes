@@ -20,6 +20,7 @@ interface BuildingDetails {
   caracteristicas?: string[];
   latitude?: number;
   longitude?: number;
+  visualizacoes_mes?: number;
 }
 
 export const useSelectedBuildingsDetails = (listaPredios: string[] = []) => {
