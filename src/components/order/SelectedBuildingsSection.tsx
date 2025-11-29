@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Building, MapPin, AlertCircle, ChevronDown, ChevronUp, Grid, List } from 'lucide-react';
+import { Building, MapPin, AlertCircle, ChevronDown, ChevronUp, Grid, List, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSelectedBuildingsDetails } from '@/hooks/useSelectedBuildingsDetails';
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { generateCommercialPath } from '@/utils/buildingSlugUtils';
 
 interface SelectedBuildingsSectionProps {
   listaPredios: string[];
@@ -194,6 +195,21 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
                         <span className="font-medium">{(building.visualizacoes_mes || 0).toLocaleString()}</span>
                         <span className="text-gray-500">exib/mês</span>
                       </div>
+                      
+                      {/* Botão Assistir ao Vivo */}
+                      {building.codigo_predio && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const commercialPath = generateCommercialPath(building.nome, building.codigo_predio);
+                            window.open(commercialPath, '_blank', 'noopener,noreferrer');
+                          }}
+                          className="bg-white hover:bg-gray-100 text-blue-600 border border-blue-600 shadow-sm hover:shadow-md transition-all duration-200"
+                          title="Assistir ao vivo"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
