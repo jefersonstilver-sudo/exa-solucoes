@@ -278,10 +278,7 @@ const AdvertiserOrders = () => {
                   <p className="text-gray-500">Número de Exibições</p>
                   <p className="font-medium flex items-center">
                     <Eye className="h-3 w-3 mr-1" />
-                    {item.type === 'order' && item.total_visualizacoes_mes 
-                      ? ((item.total_visualizacoes_mes || 0) * (item.plano_meses || 1)).toLocaleString('pt-BR')
-                      : ((painelsList.length || 0) * 7200).toLocaleString('pt-BR')
-                    }
+                    {item.type === 'order' && item.total_visualizacoes_mes ? ((item.total_visualizacoes_mes || 0) * (item.plano_meses || 1)).toLocaleString('pt-BR') : ((painelsList.length || 0) * 7200).toLocaleString('pt-BR')}
                   </p>
                 </div>
               </div>
@@ -332,15 +329,7 @@ const AdvertiserOrders = () => {
   }
   return <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'itens'}
-        </p>
-        <Button onClick={() => navigate('/paineis-digitais/loja')} size="sm" className="bg-exa-red hover:bg-exa-red/90">
-          <ShoppingBag className="h-4 w-4 mr-2" />
-          Novo Pedido
-        </Button>
-      </div>
+      
 
       {/* Stats Cards - Compacto */}
       <div className="grid grid-cols-3 gap-3">
