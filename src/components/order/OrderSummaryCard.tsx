@@ -4,7 +4,8 @@ import {
   DollarSign, 
   Calendar,
   Monitor,
-  Users
+  Users,
+  Eye
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -25,12 +26,17 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
   totalScreens = 0,
   totalAudience = 0
 }) => {
+  // Calcular exibições
+  const exibiçõesPorMês = displayPanels.length * 5000;
+  const exibiçõesTotais = exibiçõesPorMês * orderDetails.plano_meses;
 
   console.log('📊 [ORDER_SUMMARY] Dados recebidos:', {
     plano_meses: orderDetails.plano_meses,
     displayPanels: displayPanels.length,
     totalScreens,
     totalAudience,
+    exibiçõesPorMês,
+    exibiçõesTotais,
     isRecovered
   });
 
@@ -84,6 +90,26 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
               </div>
             </div>
           )}
+
+          <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-indigo-50 rounded-lg">
+            <Eye className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-indigo-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-medium text-indigo-600/80">Exibições/mês</p>
+              <p className="text-sm sm:text-base md:text-lg font-bold text-indigo-900 truncate">
+                {exibiçõesPorMês.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-pink-50 rounded-lg">
+            <Eye className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-pink-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-medium text-pink-600/80">Exibições Totais</p>
+              <p className="text-sm sm:text-base md:text-lg font-bold text-pink-900 truncate">
+                {exibiçõesTotais.toLocaleString()}
+              </p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
