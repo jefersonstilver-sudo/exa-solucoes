@@ -81,7 +81,7 @@ export const useCheckoutPro = () => {
 
       const { data, error } = await supabase.functions.invoke('process-payment', {
         body: {
-          pedidoId: pedido.id,
+          pedido_id: pedido.id,
           create_preference: true
         }
       });
