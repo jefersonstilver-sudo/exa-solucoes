@@ -166,23 +166,34 @@ export const SelectedBuildingsSection: React.FC<SelectedBuildingsSectionProps> =
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {buildings.map((building, index) => (
-                  <div key={building.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+                  <div key={building.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center space-x-3 flex-1">
+                      <div className="bg-blue-600 text-white px-2.5 py-1.5 rounded text-sm font-medium min-w-[32px] text-center">
                         {index + 1}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{building.nome}</h4>
                         <p className="text-sm text-gray-600">{building.endereco}, {building.bairro}</p>
                       </div>
                     </div>
-                    <div className="text-right text-sm text-gray-600 space-y-1">
-                      {building.quantidade_telas && building.quantidade_telas > 0 && (
-                        <div className="font-medium">{building.quantidade_telas} {building.quantidade_telas === 1 ? 'tela' : 'telas'}</div>
-                      )}
-                      {building.visualizacoes_mes && building.visualizacoes_mes > 0 && (
-                        <div>{building.visualizacoes_mes.toLocaleString()} exibições/mês</div>
-                      )}
+                    <div className="flex items-center gap-4 text-sm">
+                      {/* Número de Telas */}
+                      <div className="flex items-center gap-1 text-gray-700">
+                        <span className="font-medium">{building.quantidade_telas || 0}</span>
+                        <span className="text-gray-500">{(building.quantidade_telas || 0) === 1 ? 'tela' : 'telas'}</span>
+                      </div>
+                      
+                      {/* Pessoas Impactadas */}
+                      <div className="flex items-center gap-1 text-gray-700">
+                        <span className="font-medium">{(building.publico_estimado || 0).toLocaleString()}</span>
+                        <span className="text-gray-500">pessoas</span>
+                      </div>
+                      
+                      {/* Exibições por Mês */}
+                      <div className="flex items-center gap-1 text-gray-700">
+                        <span className="font-medium">{(building.visualizacoes_mes || 0).toLocaleString()}</span>
+                        <span className="text-gray-500">exib/mês</span>
+                      </div>
                     </div>
                   </div>
                 ))}

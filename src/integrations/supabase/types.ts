@@ -6885,7 +6885,7 @@ export type Database = {
         Args: never
         Returns: {
           bairro: string
-          codigo_predio: string
+          endereco: string
           id: string
           imagem_principal: string
           nome: string
@@ -6895,6 +6895,7 @@ export type Database = {
           quantidade_telas: number
           status: string
           venue_type: string
+          visualizacoes_mes: number
         }[]
       }
       get_buildings_for_public_store: {
