@@ -21,7 +21,6 @@ import { useCortesiaSuccessDetection } from '@/hooks/useCortesiaSuccessDetection
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
 const AdvertiserOrders = () => {
   const {
     userProfile
@@ -32,7 +31,10 @@ const AdvertiserOrders = () => {
     userOrdersAndAttempts,
     loading
   } = useUserOrdersAndAttempts(userProfile?.id);
-  const { createCheckoutProSession, isProcessing: isProcessingCheckout } = useCheckoutPro();
+  const {
+    createCheckoutProSession,
+    isProcessing: isProcessingCheckout
+  } = useCheckoutPro();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [videoDisplayPopup, setVideoDisplayPopup] = useState<{
@@ -42,7 +44,7 @@ const AdvertiserOrders = () => {
     isOpen: false,
     orderId: null
   });
-  
+
   // Estado para o popup PIX
   const [pixDialog, setPixDialog] = useState<{
     isOpen: boolean;
@@ -55,9 +57,7 @@ const AdvertiserOrders = () => {
     isOpen: false,
     pixData: null
   });
-  
   const [isGeneratingPix, setIsGeneratingPix] = useState(false);
-  
   const {
     finalizeAttemptToOrder,
     isProcessing: isProcessingAttempt
@@ -85,8 +85,11 @@ const AdvertiserOrders = () => {
   const attempts = userOrdersAndAttempts.filter(item => item.type === 'attempt');
 
   // Detect cortesia order success - DEVE estar antes do early return
-  const { showModal, orderData, closeModal } = useCortesiaSuccessDetection(orders, loading);
-
+  const {
+    showModal,
+    orderData,
+    closeModal
+  } = useCortesiaSuccessDetection(orders, loading);
   console.log('📋 [ADVERTISER ORDERS] Render state:', {
     loading,
     ordersCount: orders?.length,
@@ -99,14 +102,16 @@ const AdvertiserOrders = () => {
   const handleGeneratePix = async (orderId: string) => {
     console.log('[AdvertiserOrders] Gerando PIX para pedido:', orderId);
     setIsGeneratingPix(true);
-    
     try {
-      const { data, error } = await supabase.functions.invoke('generate-pix-for-order', {
-        body: { pedidoId: orderId }
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('generate-pix-for-order', {
+        body: {
+          pedidoId: orderId
+        }
       });
-      
       if (error) throw error;
-      
       if (data?.success && data?.pixData) {
         console.log('✅ PIX gerado com sucesso:', data.pixData);
         setPixDialog({
@@ -133,25 +138,21 @@ const AdvertiserOrders = () => {
   // Função para processar pagamento com cartão via Mercado Pago
   const handleStripePayment = async (orderId: string) => {
     console.log('[AdvertiserOrders] Processando pagamento com cartão para pedido:', orderId);
-    
     try {
       // Buscar dados do pedido
-      const { data: pedido, error: pedidoError } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('id', orderId)
-        .single();
-      
+      const {
+        data: pedido,
+        error: pedidoError
+      } = await supabase.from('pedidos').select('*').eq('id', orderId).single();
       if (pedidoError || !pedido) {
         throw new Error('Pedido não encontrado');
       }
 
       // Buscar dados dos prédios
-      const { data: buildings, error: buildingsError } = await supabase
-        .from('buildings')
-        .select('*')
-        .in('id', pedido.lista_paineis || []);
-      
+      const {
+        data: buildings,
+        error: buildingsError
+      } = await supabase.from('buildings').select('*').in('id', pedido.lista_paineis || []);
       if (buildingsError) {
         throw new Error('Erro ao buscar dados dos prédios');
       }
@@ -169,7 +170,6 @@ const AdvertiserOrders = () => {
         startDate: pedido.data_inicio ? new Date(pedido.data_inicio) : new Date(),
         endDate: pedido.data_fim ? new Date(pedido.data_fim) : new Date()
       });
-
       if (result?.success) {
         console.log('✅ Checkout criado, redirecionando para Mercado Pago');
         // O hook já faz o redirecionamento automaticamente
@@ -210,9 +210,7 @@ const AdvertiserOrders = () => {
 
   // Filtrar itens
   const filteredItems = userOrdersAndAttempts.filter(item => {
-    const matchesSearch = (item.type === 'order' && item.nome_pedido && item.nome_pedido.toLowerCase().includes(searchTerm.toLowerCase())) || 
-                         item.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         item.valor_total.toString().includes(searchTerm);
+    const matchesSearch = item.type === 'order' && item.nome_pedido && item.nome_pedido.toLowerCase().includes(searchTerm.toLowerCase()) || item.id.toLowerCase().includes(searchTerm.toLowerCase()) || item.valor_total.toString().includes(searchTerm);
     const matchesStatus = statusFilter === 'todos' || item.type === 'order' && item.status === statusFilter || item.type === 'attempt' && statusFilter === 'tentativa';
     return matchesSearch && matchesStatus;
   });
@@ -250,16 +248,11 @@ const AdvertiserOrders = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">
-                    {item.type === 'order' && item.nome_pedido 
-                      ? `${item.nome_pedido} • #${item.id.substring(0, 8)}`
-                      : `${item.type === 'attempt' ? 'Tentativa' : 'Pedido'} #${item.id.substring(0, 8)}`
-                    }
+                    {item.type === 'order' && item.nome_pedido ? `${item.nome_pedido} • #${item.id.substring(0, 8)}` : `${item.type === 'attempt' ? 'Tentativa' : 'Pedido'} #${item.id.substring(0, 8)}`}
                   </h3>
                   <p className="text-sm text-gray-500">
                     Criado em {formatDate(item.created_at)}
-                    {item.type === 'order' && item.nome_pedido && (
-                      <span className="ml-2 text-xs text-exa-red">• Nome personalizado</span>
-                    )}
+                    {item.type === 'order' && item.nome_pedido && <span className="ml-2 text-xs text-exa-red">• Nome personalizado</span>}
                   </p>
                 </div>
               </div>
@@ -278,14 +271,14 @@ const AdvertiserOrders = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Painéis</p>
+                  <p className="text-gray-500">Locais</p>
                   <p className="font-medium">{painelsList.length} selecionados</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Método de Pagamento</p>
                   <p className="font-medium flex items-center">
                     <CreditCard className="h-3 w-3 mr-1" />
-                    {item.type === 'order' ? (item.metodo_pagamento === 'credit_card' ? 'Cartão de Crédito' : 'PIX') : 'PIX'}
+                    {item.type === 'order' ? item.metodo_pagamento === 'credit_card' ? 'Cartão de Crédito' : 'PIX' : 'PIX'}
                   </p>
                 </div>
               </div>
@@ -299,46 +292,29 @@ const AdvertiserOrders = () => {
 
               <div className="flex space-x-2">
                 {/* Botão de ação principal (Pagar com PIX, Enviar Vídeo, etc.) */}
-                {statusInfo.action && (
-                  <Button 
-                    variant={statusInfo.action.variant}
-                    size="sm" 
-                    onClick={() => {
-                      if (item.type === 'attempt') {
-                        handleFinalizarCompra();
-                      } else if (statusInfo.action?.onClick) {
-                        statusInfo.action.onClick();
-                      } else if (statusInfo.action?.href) {
-                        navigate(statusInfo.action.href);
-                      }
-                    }}
-                    disabled={isProcessingAttempt || isGeneratingPix}
-                  >
-                    {isGeneratingPix && item.status === 'pendente' ? (
-                      <>
+                {statusInfo.action && <Button variant={statusInfo.action.variant} size="sm" onClick={() => {
+                if (item.type === 'attempt') {
+                  handleFinalizarCompra();
+                } else if (statusInfo.action?.onClick) {
+                  statusInfo.action.onClick();
+                } else if (statusInfo.action?.href) {
+                  navigate(statusInfo.action.href);
+                }
+              }} disabled={isProcessingAttempt || isGeneratingPix}>
+                    {isGeneratingPix && item.status === 'pendente' ? <>
                         <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                         Gerando...
-                      </>
-                    ) : (
-                      statusInfo.action.label
-                    )}
-                  </Button>
-                )}
+                      </> : statusInfo.action.label}
+                  </Button>}
                 
                 {/* Botão de detalhes sempre visível para pedidos */}
-                {item.type === 'order' && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => {
-                      console.log('📋 Navegando para detalhes do pedido:', item.id);
-                      navigate(`/anunciante/pedido/${item.id}`);
-                    }}
-                  >
+                {item.type === 'order' && <Button variant="outline" size="sm" onClick={() => {
+                console.log('📋 Navegando para detalhes do pedido:', item.id);
+                navigate(`/anunciante/pedido/${item.id}`);
+              }}>
                     <Eye className="h-4 w-4 mr-1" />
                     Detalhes
-                  </Button>
-                )}
+                  </Button>}
               </div>
             </div>
           </div>
@@ -455,24 +431,13 @@ const AdvertiserOrders = () => {
     })} />}
 
       {/* Cortesia Success Modal */}
-      <CortesiaOrderSuccessModal
-        isOpen={showModal}
-        pedidoId={orderData?.id || ''}
-        buildingName={orderData?.selected_buildings?.[0]?.nome || orderData?.nomes_predios?.[0]}
-        buildingAddress={`${orderData?.selected_buildings?.[0]?.endereco || ''}, ${orderData?.selected_buildings?.[0]?.bairro || ''}`}
-        panelCount={orderData?.lista_paineis?.length || orderData?.selected_buildings?.length || 1}
-        onClose={closeModal}
-      />
+      <CortesiaOrderSuccessModal isOpen={showModal} pedidoId={orderData?.id || ''} buildingName={orderData?.selected_buildings?.[0]?.nome || orderData?.nomes_predios?.[0]} buildingAddress={`${orderData?.selected_buildings?.[0]?.endereco || ''}, ${orderData?.selected_buildings?.[0]?.bairro || ''}`} panelCount={orderData?.lista_paineis?.length || orderData?.selected_buildings?.length || 1} onClose={closeModal} />
       
       {/* PIX QR Code Dialog */}
-      <PixQrCodeDialog
-        isOpen={pixDialog.isOpen}
-        onClose={() => setPixDialog({ isOpen: false, pixData: null })}
-        qrCodeBase64={pixDialog.pixData?.qrCodeBase64}
-        qrCodeText={pixDialog.pixData?.qrCodeText}
-        userId={userProfile?.id}
-        pedidoId={pixDialog.pixData?.pedidoId}
-      />
+      <PixQrCodeDialog isOpen={pixDialog.isOpen} onClose={() => setPixDialog({
+      isOpen: false,
+      pixData: null
+    })} qrCodeBase64={pixDialog.pixData?.qrCodeBase64} qrCodeText={pixDialog.pixData?.qrCodeText} userId={userProfile?.id} pedidoId={pixDialog.pixData?.pedidoId} />
     </div>;
 };
 export default AdvertiserOrders;
