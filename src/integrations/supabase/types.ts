@@ -3432,6 +3432,7 @@ export type Database = {
           director_id: string | null
           expires_at: string
           id: string
+          session_id: string | null
           telefone: string
           tipo_verificacao: string | null
           user_id: string | null
@@ -3443,6 +3444,7 @@ export type Database = {
           director_id?: string | null
           expires_at: string
           id?: string
+          session_id?: string | null
           telefone: string
           tipo_verificacao?: string | null
           user_id?: string | null
@@ -3454,6 +3456,7 @@ export type Database = {
           director_id?: string | null
           expires_at?: string
           id?: string
+          session_id?: string | null
           telefone?: string
           tipo_verificacao?: string | null
           user_id?: string | null

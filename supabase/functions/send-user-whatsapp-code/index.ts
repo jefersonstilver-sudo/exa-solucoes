@@ -9,9 +9,11 @@ const corsHeaders = {
 };
 
 interface RequestBody {
-  userId: string;
+  userId?: string;
   telefone: string;
   tipo: 'phone_change' | '2fa_login' | 'new_phone' | 'signup';
+  novoTelefone?: string;
+  sessionId?: string;
 }
 
 Deno.serve(async (req) => {
@@ -22,15 +24,31 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // Parse do body
     const body: RequestBody = await req.json();
-    const { userId, telefone, tipo } = body;
+    const { userId, telefone, tipo, novoTelefone, sessionId } = body;
 
-    console.log('📱 [SEND-USER-CODE] Requisição recebida:', { userId, telefone: telefone?.substring(0, 8) + '****', tipo });
+    console.log('📥 [SEND-USER-CODE] Recebido:', { 
+      userId: userId || 'sem userId (signup)', 
+      telefone: telefone?.substring(0, 8) + '****', 
+      tipo,
+      sessionId: sessionId || 'sem session'
+    });
 
-    if (!userId || !telefone || !tipo) {
-      console.error('❌ [SEND-USER-CODE] Parâmetros faltando');
+    // Para tipo 'signup', userId pode ser opcional (verificação antes de criar conta)
+    // Usa sessionId para rastrear
+    if (!telefone || !tipo) {
       return new Response(
-        JSON.stringify({ error: 'userId, telefone e tipo são obrigatórios' }),
+        JSON.stringify({ error: 'Parâmetros obrigatórios faltando (telefone, tipo)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Se não for signup, userId é obrigatório
+    if (tipo !== 'signup' && !userId) {
+      return new Response(
+        JSON.stringify({ error: 'userId é obrigatório para este tipo de verificação' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -68,17 +86,33 @@ Deno.serve(async (req) => {
 
     // Rate limiting: verificar tentativas recentes (últimos 5 minutos)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    const { data: recentAttempts } = await supabase
+    
+    let rateLimitQuery = supabase
       .from('exa_alerts_verification_codes')
       .select('id')
-      .eq('user_id', userId)
-      .eq('tipo_verificacao', tipo)
+      .eq('telefone', telefone)
       .gte('created_at', fiveMinutesAgo);
 
-    if (recentAttempts && recentAttempts.length >= 3) {
-      console.warn('⚠️ [SEND-USER-CODE] Rate limit excedido:', userId);
+    // Se tiver userId, filtrar por ele; senão, filtrar por sessionId
+    if (userId) {
+      rateLimitQuery = rateLimitQuery.eq('user_id', userId);
+    } else if (sessionId) {
+      rateLimitQuery = rateLimitQuery.eq('session_id', sessionId);
+    }
+
+    const { data: recentCodes, error: rateLimitError } = await rateLimitQuery;
+
+    if (rateLimitError) {
+      console.error('❌ [SEND-USER-CODE] Erro ao verificar rate limit:', rateLimitError);
+    }
+
+    if (recentCodes && recentCodes.length >= 3) {
+      console.warn('⚠️ [SEND-USER-CODE] Rate limit excedido');
       return new Response(
-        JSON.stringify({ error: 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.' }),
+        JSON.stringify({ 
+          error: 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.',
+          success: false 
+        }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -106,18 +140,27 @@ Deno.serve(async (req) => {
         mensagem = `🔐 Código de verificação EXA: *${codigo}*\n\nVálido por 5 minutos.`;
     }
 
-    // Salvar código no banco (expira em 5 minutos)
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    // Inserir código no banco
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutos
+    const insertData: any = {
+      telefone,
+      codigo,
+      tipo_verificacao: tipo,
+      novo_telefone: novoTelefone || null,
+      expires_at: expiresAt.toISOString(),
+      verificado: false
+    };
+
+    // Adicionar userId ou sessionId dependendo do caso
+    if (userId) {
+      insertData.user_id = userId;
+    } else if (sessionId) {
+      insertData.session_id = sessionId;
+    }
+
     const { error: insertError } = await supabase
       .from('exa_alerts_verification_codes')
-      .insert({
-        user_id: userId,
-        telefone: telefone,
-        codigo: codigo,
-        expires_at: expiresAt,
-        verificado: false,
-        tipo_verificacao: tipo,
-      });
+      .insert(insertData);
 
     if (insertError) {
       console.error('❌ [SEND-USER-CODE] Erro ao salvar código:', insertError);
@@ -154,15 +197,15 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: 'Código enviado com sucesso',
-        expiresAt 
+        expiresAt: expiresAt.toISOString()
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [SEND-USER-CODE] Erro geral:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Erro ao enviar código' }),
+      JSON.stringify({ error: error.message || 'Erro ao enviar código', success: false }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
