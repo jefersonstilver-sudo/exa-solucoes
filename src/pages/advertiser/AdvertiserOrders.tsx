@@ -17,6 +17,10 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { CortesiaOrderSuccessModal } from '@/components/orders/CortesiaOrderSuccessModal';
 import { useCortesiaSuccessDetection } from '@/hooks/useCortesiaSuccessDetection';
+import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
 const AdvertiserOrders = () => {
   const {
     userProfile
@@ -36,6 +40,22 @@ const AdvertiserOrders = () => {
     isOpen: false,
     orderId: null
   });
+  
+  // Estado para o popup PIX
+  const [pixDialog, setPixDialog] = useState<{
+    isOpen: boolean;
+    pixData: {
+      qrCodeBase64?: string;
+      qrCodeText?: string;
+      pedidoId?: string;
+    } | null;
+  }>({
+    isOpen: false,
+    pixData: null
+  });
+  
+  const [isGeneratingPix, setIsGeneratingPix] = useState(false);
+  
   const {
     finalizeAttemptToOrder,
     isProcessing: isProcessingAttempt
@@ -73,10 +93,39 @@ const AdvertiserOrders = () => {
     isMobile
   });
 
-  // Função para redirecionar para página de pagamento Stripe
-  const handlePaymentRedirect = (orderId: string) => {
-    console.log('[AdvertiserOrders] Redirecionando para pagamento Stripe:', orderId);
-    navigate(`/payment?pedido=${orderId}`);
+  // Função para gerar PIX e abrir popup
+  const handleGeneratePix = async (orderId: string) => {
+    console.log('[AdvertiserOrders] Gerando PIX para pedido:', orderId);
+    setIsGeneratingPix(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-pix-for-order', {
+        body: { pedidoId: orderId }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success && data?.pixData) {
+        console.log('✅ PIX gerado com sucesso:', data.pixData);
+        setPixDialog({
+          isOpen: true,
+          pixData: {
+            qrCodeBase64: data.pixData.qrCodeBase64,
+            qrCodeText: data.pixData.qrCode,
+            pedidoId: orderId
+          }
+        });
+      } else {
+        throw new Error(data?.error || 'Erro ao gerar PIX');
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao gerar PIX:', error);
+      toast.error('Erro ao gerar QR Code PIX', {
+        description: error.message || 'Tente novamente em instantes'
+      });
+    } finally {
+      setIsGeneratingPix(false);
+    }
   };
 
   // Return mobile version directly without wrapper layout since it's already handled by ResponsiveAdvertiserLayout
@@ -125,7 +174,7 @@ const AdvertiserOrders = () => {
   }: {
     item: any;
   }) => {
-    const statusInfo = useOrderStatus(item);
+    const statusInfo = useOrderStatus(item, handleGeneratePix);
     const StatusIcon = statusInfo.icon;
     const painelsList = item.type === 'order' ? item.lista_paineis || [] : item.predios_selecionados || [];
 
@@ -207,9 +256,16 @@ const AdvertiserOrders = () => {
                         navigate(statusInfo.action.href);
                       }
                     }}
-                    disabled={isProcessingAttempt}
+                    disabled={isProcessingAttempt || isGeneratingPix}
                   >
-                    {statusInfo.action.label}
+                    {isGeneratingPix && item.status === 'pendente' ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        Gerando...
+                      </>
+                    ) : (
+                      statusInfo.action.label
+                    )}
                   </Button>
                 )}
                 
@@ -350,6 +406,16 @@ const AdvertiserOrders = () => {
         buildingAddress={`${orderData?.selected_buildings?.[0]?.endereco || ''}, ${orderData?.selected_buildings?.[0]?.bairro || ''}`}
         panelCount={orderData?.lista_paineis?.length || orderData?.selected_buildings?.length || 1}
         onClose={closeModal}
+      />
+      
+      {/* PIX QR Code Dialog */}
+      <PixQrCodeDialog
+        isOpen={pixDialog.isOpen}
+        onClose={() => setPixDialog({ isOpen: false, pixData: null })}
+        qrCodeBase64={pixDialog.pixData?.qrCodeBase64}
+        qrCodeText={pixDialog.pixData?.qrCodeText}
+        userId={userProfile?.id}
+        pedidoId={pixDialog.pixData?.pedidoId}
       />
     </div>;
 };

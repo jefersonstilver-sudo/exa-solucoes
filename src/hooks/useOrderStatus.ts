@@ -26,7 +26,7 @@ export interface OrderStatusInfo {
   };
 }
 
-export const useOrderStatus = (order: any) => {
+export const useOrderStatus = (order: any, onGeneratePix?: (orderId: string) => void) => {
   const statusInfo = useMemo((): OrderStatusInfo => {
     // CORREÇÃO: Verificar se é uma tentativa de compra primeiro
     if (order?.type === 'attempt') {
@@ -62,7 +62,8 @@ export const useOrderStatus = (order: any) => {
           action: {
             label: 'Pagar Agora',
             variant: 'default',
-            href: `/payment?pedido=${order.id}`
+            onClick: onGeneratePix ? () => onGeneratePix(order.id) : undefined,
+            href: !onGeneratePix ? `/payment?pedido=${order.id}` : undefined
           }
         };
 
@@ -202,7 +203,7 @@ export const useOrderStatus = (order: any) => {
           icon: AlertTriangle
         };
     }
-  }, [order?.status, order?.videos, order?.id, order?.type]);
+  }, [order?.status, order?.videos, order?.id, order?.type, onGeneratePix]);
 
   return statusInfo;
 };
