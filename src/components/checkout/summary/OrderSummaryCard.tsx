@@ -87,6 +87,11 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     return acc;
   }, {} as Record<string, any>);
 
+  // Calcular total de PAINÉIS/TELAS (somando quantidade_telas de cada prédio)
+  const totalPaineis = Object.values(paineisPorPredio).reduce((total, building: any) => {
+    return total + (building.quantidadeTelas || 0);
+  }, 0);
+
   // Calcular público total e exibições
   const publicoTotal = Object.values(paineisPorPredio).reduce((total, building: any) => {
     return total + (building.publico_estimado || 0);
@@ -97,6 +102,13 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
     const visualizacoes = item.panel.buildings?.visualizacoes_mes || 0;
     return total + visualizacoes;
   }, 0);
+  
+  console.log('[OrderSummaryCard] Totais calculados:', {
+    totalPredios: Object.keys(paineisPorPredio).length,
+    totalPaineis,
+    exibicoesPorMes,
+    publicoTotal
+  });
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -116,7 +128,7 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
               <Monitor className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 flex-shrink-0" />
               <div>
                 <p className="text-[10px] sm:text-xs text-blue-600">Painéis</p>
-                <p className="text-base sm:text-lg font-bold text-blue-800">{cartItems.length}</p>
+                <p className="text-base sm:text-lg font-bold text-blue-800">{totalPaineis}</p>
               </div>
             </div>
 
