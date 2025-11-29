@@ -1,8 +1,9 @@
-import React from 'react';
-import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload } from 'lucide-react';
 import exaLogo from '@/assets/exa-logo.png';
 import { Button } from '@/components/ui/button';
 import { useFixAuditData } from '@/hooks/admin/useFixAuditData';
+import { resyncVideoToExternalAPI } from '@/services/videoExternalSyncService';
 interface OrderData {
   id: string;
   created_at: string;
@@ -58,10 +59,22 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   console.log('📋 [PROFESSIONAL REPORT] Panels recebidos:', panels?.length || 0);
   console.log('📋 [PROFESSIONAL REPORT] Panels data:', panels);
   console.log('📋 [PROFESSIONAL REPORT] Videos recebidos:', videos?.length || 0);
+  
+  const [resyncingVideoId, setResyncingVideoId] = useState<string | null>(null);
+  
   const {
     fixOrderAuditData,
     isFixing
   } = useFixAuditData();
+
+  const handleResyncVideo = async (pedidoVideoId: string) => {
+    setResyncingVideoId(pedidoVideoId);
+    try {
+      await resyncVideoToExternalAPI(pedidoVideoId);
+    } finally {
+      setResyncingVideoId(null);
+    }
+  };
 
   // Verificar se os dados de auditoria estão incompletos
   const hasIncompleteAuditData = !order.compliance_data || !order.compliance_data.payer || order.log_pagamento?.pixData?.mpResponse?.status === 'pending';
@@ -550,7 +563,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                             </div>
                           </div>
                           
-                          {/* Status Badges */}
+                          {/* Status Badges e Botão de Resync */}
                           <div className="flex items-center gap-2">
                             {video.approval_status === 'approved' && <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-semibold">
                                 <CheckCircle2 className="h-3 w-3" />
@@ -564,6 +577,29 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                                 <Clock className="h-3 w-3" />
                                 Pendente
                               </span>}
+                            
+                            {/* Botão de Resync para vídeos aprovados */}
+                            {video.approval_status === 'approved' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleResyncVideo(video.id)}
+                                disabled={resyncingVideoId === video.id}
+                                className="h-7 px-2 text-xs border-blue-300 hover:bg-blue-50"
+                              >
+                                {resyncingVideoId === video.id ? (
+                                  <>
+                                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                    Enviando...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="h-3 w-3 mr-1" />
+                                    Reenviar AWS
+                                  </>
+                                )}
+                              </Button>
+                            )}
                           </div>
                         </div>
                         
