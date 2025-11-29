@@ -35,9 +35,12 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentData, setPaymentData] = useState<any | null>(null);
+  const [hasFetched, setHasFetched] = useState<boolean>(false);
   
-  // Fetch order data
+  // Fetch order data - FIXED: Added hasFetched to prevent infinite loops
   useEffect(() => {
+    // Prevent re-fetch if already fetched
+    if (hasFetched) return;
     if (isSessionLoading) return;
     
     if (!isLoggedIn) {
@@ -102,10 +105,12 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
         });
         
         setIsLoading(false);
+        setHasFetched(true);
       } catch (err: any) {
         console.error("Erro ao carregar dados do pagamento:", err);
         setError(err.message || "Erro ao carregar dados do pagamento");
         setIsLoading(false);
+        setHasFetched(true);
         
         logCheckoutEvent(
           CheckoutEvent.PAYMENT_ERROR,
@@ -123,7 +128,7 @@ export const usePaymentData = (pedidoId: string | null): UsePaymentDataResult =>
     };
     
     fetchOrderData();
-  }, [isSessionLoading, isLoggedIn, pedidoId, user, navigate, uiToast]);
+  }, [isSessionLoading, isLoggedIn, pedidoId, user?.id, hasFetched]);
   
   // Update payment status
   const refreshPaymentStatus = async (): Promise<void> => {
