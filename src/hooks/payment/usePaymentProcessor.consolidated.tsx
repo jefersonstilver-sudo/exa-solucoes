@@ -251,35 +251,10 @@ export const usePaymentProcessor = () => {
     }
   };
 
-  /**
-   * Process Stripe Checkout
-   */
-  const processStripeCheckout = async ({ pedidoId }: { pedidoId: string }) => {
-    console.log("[Payment Processor] Creating Stripe Checkout session for order:", pedidoId);
-    
-    const { data, error } = await supabase.functions.invoke('stripe-create-checkout', {
-      body: { pedidoId }
-    });
-    
-    if (error) {
-      console.error("[Payment Processor] Stripe edge function error:", error);
-      throw new Error(`Erro ao criar sessão de pagamento: ${error.message}`);
-    }
-    
-    console.log("[Payment Processor] Stripe checkout session created:", data);
-    
-    if (!data || !data.url) {
-      throw new Error('URL de checkout não retornada pelo servidor');
-    }
-    
-    return data.url;
-  };
-
   return {
     isCreatingPayment,
     createPayment,
     processPaymentWithEdgeFunction,
-    processStripeCheckout,
     paymentMethod,
     setPaymentMethod
   };
