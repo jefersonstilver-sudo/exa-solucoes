@@ -61,8 +61,8 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   };
   return (
     <div className="w-full">
-      {/* Search section - Container sem limitações */}
-      <div className="w-full">
+      {/* Search section - Full width grudado no header */}
+      <div className="w-full -mx-4 md:-mx-6">
         <BuildingStoreSearchSection 
           searchLocation={searchLocation}
           setSearchLocation={setSearchLocation}
@@ -78,8 +78,8 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
         />
       </div>
       
-      {/* Layout with sidebar and building grid - Com container limitado */}
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-6">
+      {/* Layout with sidebar and building grid - Com container limitado e espaçamento pro search fixo */}
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-6">
         <BuildingStoreGridLayout 
           buildings={buildings}
           isLoading={isLoading}

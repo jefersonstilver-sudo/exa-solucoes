@@ -102,7 +102,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
     // Trigger search with the selected coordinates
     handleSearch(place.address);
   }, [setSearchLocation, handleSearch, trackSearch]);
-  return <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 building-search-section">
+  return <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 building-search-section sticky top-0 z-50 shadow-md">
       <motion.div initial={{
       opacity: 0,
       y: -20
@@ -112,8 +112,8 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
     }} transition={{
       duration: 0.6
     }} className="w-full">
-        {/* Container principal com espaçamento adequado */}
-        <div className={`w-full relative z-20 ${isMobile ? 'px-4 py-3 mt-2' : 'px-6 py-4 mt-3'}`}>
+        {/* Container principal com espaçamento adequado - full width sem margens */}
+        <div className={`w-full relative z-20 ${isMobile ? 'px-4 py-3' : 'px-6 py-4'}`}>
           <div className="w-full mx-auto">
             {/* Layout de duas colunas no desktop, uma coluna no mobile */}
             <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-12'}`}>
