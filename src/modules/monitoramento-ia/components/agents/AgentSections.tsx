@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Save, X, Copy } from 'lucide-react';
+import { Edit, Save, X, Copy, Download, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { TextFormattingToolbar } from './TextFormattingToolbar';
 import { SectionSearchBar } from './SectionSearchBar';
+import { exportSection } from '../../utils/exportSection';
+import { SectionHistoryModal } from './SectionHistoryModal';
 
 interface Section {
   id: string;
@@ -26,6 +28,7 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [lineInfo, setLineInfo] = useState<{ current: number; total: number }>({ current: 1, total: 1 });
+  const [historySection, setHistorySection] = useState<Section | null>(null);
   const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
   const lineNumberRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
@@ -58,6 +61,10 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
       const section = sections.find(s => s.id === id);
       if (!section) throw new Error('Section not found');
       
+      // Salvar no histórico antes de atualizar
+      const oldValue = section.content;
+      
+      // Atualizar a seção
       const { error } = await supabase
         .from('agent_sections')
         .update({ 
@@ -67,6 +74,22 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
         .eq('id', id);
 
       if (error) throw error;
+
+      // Salvar no histórico de modificações
+      const { error: logError } = await supabase
+        .from('agent_modification_logs')
+        .insert({
+          agent_key: agentId,
+          section: `section_${section.section_number}`,
+          field_modified: section.section_title,
+          old_value: oldValue,
+          new_value: content,
+          modified_by: 'Sistema',
+        });
+
+      if (logError) {
+        console.error('Erro ao salvar no histórico:', logError);
+      }
 
       toast.success('Seção atualizada com sucesso');
       setEditingId(null);
@@ -196,6 +219,30 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
                     <Button 
                       size="sm" 
                       variant="ghost" 
+                      onClick={() => {
+                        exportSection(
+                          agentId,
+                          section.section_number,
+                          section.section_title,
+                          section.content
+                        );
+                        toast.success('Seção exportada com sucesso!');
+                      }}
+                      title="Download desta seção"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => setHistorySection(section)}
+                      title="Ver histórico de edições"
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
                       onClick={() => setEditingId(section.id)}
                     >
                       <Edit className="h-4 w-4" />
@@ -288,6 +335,16 @@ export const AgentSections = ({ sections, agentId }: AgentSectionsProps) => {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {historySection && (
+        <SectionHistoryModal
+          isOpen={!!historySection}
+          onClose={() => setHistorySection(null)}
+          agentKey={agentId}
+          sectionNumber={historySection.section_number}
+          sectionTitle={historySection.section_title}
+        />
       )}
     </div>
   );

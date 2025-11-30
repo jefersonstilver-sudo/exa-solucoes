@@ -3,8 +3,9 @@ import { Agent } from '../../hooks/useAgentConfig';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Sparkles, Building2, Bell, UserCircle, Bot as BotIcon, Eye } from 'lucide-react';
+import { Sparkles, Building2, Bell, UserCircle, Bot as BotIcon, Eye, Download } from 'lucide-react';
 import { AgentChatPreview } from './AgentChatPreview';
+import { exportKnowledgeBase } from '../../utils/exportKnowledgeBase';
 import { AgentAPIStatus } from './AgentAPIStatus';
 import { AgentAPIToolsSection } from './AgentAPIToolsSection';
 import { AgentLogsSection } from './AgentLogsSection';
@@ -102,6 +103,16 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
 
   const sections = supabaseAgent?.sections || [];
   const knowledgeItems = supabaseAgent?.knowledgeItems || [];
+
+  const handleExportAll = () => {
+    try {
+      exportKnowledgeBase(agent.display_name, sections, knowledgeItems);
+      toast.success('Base de conhecimento exportada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast.error('Erro ao exportar base de conhecimento');
+    }
+  };
 
   return (
     <div className="bg-module-card rounded-[14px] border-0 p-6 max-w-full">
@@ -218,9 +229,15 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
         {/* ABA 4: BASE DE CONHECIMENTO */}
         <TabsContent value="knowledge" className="space-y-6">
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-module-primary mb-1">Base de Conhecimento</h3>
-              <p className="text-sm text-module-secondary">Configure as 4 seções fundamentais e itens dinâmicos</p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-lg font-semibold text-module-primary mb-1">Base de Conhecimento</h3>
+                <p className="text-sm text-module-secondary">Configure as 4 seções fundamentais e itens dinâmicos</p>
+              </div>
+              <Button onClick={handleExportAll} variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Tudo
+              </Button>
             </div>
 
             <Tabs defaultValue="section1" className="w-full">
