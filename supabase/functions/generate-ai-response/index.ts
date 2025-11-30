@@ -152,6 +152,11 @@ serve(async (req) => {
     const isKnowledgeSearch = message.match(/institucional|empresa|quem.*exa|história|missão|proposta|cnpj|endereço.*empresa|media kit|midia kit|apresentação|sobre.*exa|quem são vocês|fale.*empresa|documento|pdf|arquivo|material/i);
     const needsHeavyKnowledge = isKnowledgeSearch || false;
     
+    // 🆕 DETECTAR PERGUNTAS DE PREÇO COM/SEM CUPOM
+    const isPriceWithCoupon = message.match(/com\s*(o\s*)?(cupom|desconto|código)/i);
+    const isPriceWithoutCoupon = message.match(/sem\s*(o\s*)?(cupom|desconto)/i);
+    const isOppositeQuestion = message.match(/^e\s+(com|sem)/i); // "e sem cupom?", "e com desconto?"
+    
     // ====== BUSCAR DADOS EM PARALELO (OTIMIZADO - CARREGAMENTO INTELIGENTE) ======
     // 🚀 Camada 1: SEMPRE carregar seções essenciais (1, 2, 3)
     const [
@@ -162,7 +167,7 @@ serve(async (req) => {
     ] = await Promise.all([
       supabase.from('agents').select('*').eq('key', agentKey).single(),
       supabase.from('agent_sections').select('*').eq('agent_id', agentKey).in('section_number', [1, 2, 3]).order('section_number'),
-      supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true }).limit(10),
+      supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true }).limit(15),
       supabase.from('conversations').select('provider').eq('id', conversationId).single()
     ]);
 
@@ -512,11 +517,35 @@ serve(async (req) => {
 ## PRÉDIOS DISPONÍVEIS (${buildingsData?.length || 0})
 ${buildingsFormatted}
 
+## ⚠️ REGRAS CRÍTICAS PARA PERGUNTAS DE PREÇO
+${isPriceWithCoupon || isPriceWithoutCoupon || isOppositeQuestion ? `
+🚨 ATENÇÃO: Cliente perguntou sobre preço específico!
+
+${isPriceWithCoupon ? '→ Mostrar valor COM desconto aplicado' : ''}
+${isPriceWithoutCoupon ? '→ Mostrar valor ORIGINAL (sem desconto)' : ''}
+${isOppositeQuestion ? '→ Cliente quer o OPOSTO do que você respondeu antes!' : ''}
+
+📌 REGRA OBRIGATÓRIA:
+- Se perguntou "quanto COM cupom?" → mostrar valor descontado
+- Se perguntou "quanto SEM cupom?" → mostrar valor ORIGINAL (maior)
+- Se perguntou "e sem cupom?" após você dar preço COM desconto → mostrar valor SEM desconto
+- SEMPRE mostrar a conta: "Valor original R$ X, com cupom fica R$ Y"
+
+❌ NUNCA dê a mesma resposta se a pergunta é sobre COM vs SEM desconto!
+` : ''}
+
 ## CONTEXTO DA CONVERSA
 ${conversationHistory && conversationHistory.length > 0 ? `
 ⚠️ Conversa em andamento - NÃO se reapresente
 ⚠️ NÃO repita perguntas já respondidas
 ⚠️ Continue naturalmente
+
+📜 SUAS ÚLTIMAS RESPOSTAS (NÃO REPETIR O MESMO CONTEÚDO):
+${conversationHistory.filter((m: any) => m.direction === 'outbound').slice(-2).map((m: any, i: number) => 
+  `[${i+1}] ${m.body.substring(0, 150)}...`
+).join('\n')}
+
+⚠️ Se sua próxima resposta for muito parecida com as anteriores, REFORMULE!
 ` : `
 ✅ Primeira mensagem - Faça saudação inicial
 `}
@@ -856,6 +885,76 @@ ${isFullListRequest ? `
     }
     
     console.log('[FINAL CLEAN MESSAGE]:', sanitizedReply.substring(0, 300));
+
+    // ====== VALIDAÇÃO ANTI-REPETIÇÃO ======
+    const recentAssistantResponses = conversationHistory
+      ?.filter((m: any) => m.direction === 'outbound')
+      .slice(-3) || [];
+
+    for (const lastResponse of recentAssistantResponses) {
+      const similarity = stringSimilarity(
+        normalizeName(sanitizedReply.substring(0, 100)),
+        normalizeName(lastResponse.body.substring(0, 100))
+      );
+      
+      if (similarity > 0.7) {
+        console.warn('[AI-RESPONSE] ⚠️ RESPOSTA REPETITIVA DETECTADA!', { 
+          similarity: `${(similarity * 100).toFixed(1)}%` 
+        });
+        
+        // Log para análise
+        await supabase.from('agent_logs').insert({
+          agent_key: agentKey,
+          conversation_id: conversationId,
+          event_type: 'repetitive_response_detected',
+          metadata: {
+            similarity: similarity,
+            newResponse: sanitizedReply.substring(0, 200),
+            previousResponse: lastResponse.body.substring(0, 200),
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        // RETRY com prompt forçando variação
+        const retryMessages = [
+          { role: 'system', content: systemPrompt },
+          ...historyMessages,
+          { role: 'user', content: message },
+          { 
+            role: 'system', 
+            content: `⚠️ ATENÇÃO: Sua resposta anterior foi "${lastResponse.body.substring(0, 100)}..."
+        
+O cliente NÃO quer a mesma resposta! Ele perguntou algo DIFERENTE.
+Se ele perguntou "sem cupom" depois de você dar preço "com cupom", mostre o valor ORIGINAL!
+REFORMULE completamente sua resposta!` 
+          }
+        ];
+        
+        const retryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: retryMessages,
+            temperature: 0.9, // Mais criatividade no retry
+            max_tokens: maxTokens,
+          }),
+        });
+        
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          const retryReply = retryData.choices[0]?.message?.content?.trim();
+          if (retryReply && retryReply.length > 10) {
+            sanitizedReply = cleanMarkdownFormatting(cleanNumberSeparators(retryReply));
+            console.log('[AI-RESPONSE] ✅ Retry successful - different response generated');
+          }
+        }
+        break;
+      }
+    }
 
     // ====== VALIDAÇÃO DE RESPOSTA (FASE 4) ======
     if (isFullListRequest && buildingsData && buildingsData.length > 0) {
