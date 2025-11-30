@@ -112,9 +112,9 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
     }} transition={{
       duration: 0.6
     }} className="w-full">
-        {/* Container principal com espaçamento adequado - full width sem margens */}
-        <div className={`w-full relative z-20 ${isMobile ? 'px-4 py-3' : 'px-6 py-4'}`}>
-          <div className="w-full mx-auto">
+        {/* Container principal com espaçamento adequado - centralizado */}
+        <div className={`w-full relative z-20 ${isMobile ? 'px-4 py-4' : 'px-6 py-4'}`}>
+          <div className="w-full max-w-7xl mx-auto">
             {/* Layout de duas colunas no desktop, uma coluna no mobile */}
             <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-12'}`}>
               
