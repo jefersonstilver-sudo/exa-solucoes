@@ -64,7 +64,12 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
   };
 
   const handleStartVerification = async () => {
-    if (disabled) return;
+    console.log('🔵 [INLINE-VERIFY] Botão clicado!', { phone, disabled, isSending });
+    
+    if (disabled) {
+      console.log('⚠️ [INLINE-VERIFY] Botão desabilitado - abortando');
+      return;
+    }
     
     setIsSending(true);
     const newSessionId = `signup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -155,6 +160,15 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
     await handleStartVerification();
   };
 
+  // Log para debug
+  console.log('🔍 [INLINE-VERIFY] Estado atual:', {
+    phone,
+    disabled,
+    isSending,
+    verificationStarted,
+    phoneVerified
+  });
+
   // Se ainda não começou a verificação, mostrar botão
   if (!verificationStarted && !phoneVerified) {
     return (
@@ -165,7 +179,11 @@ export const PhoneVerificationInline: React.FC<PhoneVerificationInlineProps> = (
       >
         <Button
           type="button"
-          onClick={handleStartVerification}
+          onClick={(e) => {
+            e.preventDefault();
+            console.log('🟢 [INLINE-VERIFY] onClick disparado diretamente');
+            handleStartVerification();
+          }}
           disabled={isSending || disabled}
           className="w-full sm:w-auto h-10 bg-green-600 hover:bg-green-700 text-white font-medium"
         >
