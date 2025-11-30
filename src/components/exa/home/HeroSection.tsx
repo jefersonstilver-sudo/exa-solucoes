@@ -50,7 +50,7 @@ const HeroMobileLayout = () => {
       {/* Vídeo Hero Imersivo */}
       <div ref={containerRef} className="relative w-full">
         <div className="relative w-full aspect-video bg-black cursor-pointer" onClick={togglePlayPause}>
-          <video ref={videoRef} src={institutionalVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+          <video ref={videoRef} src={institutionalVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-contain" />
         </div>
         
         {/* Botões de Controle - Abaixo do vídeo */}
