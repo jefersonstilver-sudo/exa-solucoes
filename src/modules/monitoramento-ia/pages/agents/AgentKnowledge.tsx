@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSupabaseAgents } from '../../hooks/useSupabaseAgents';
 import { AgentSections } from '../../components/agents/AgentSections';
 import { KnowledgeItems } from '../../components/agents/KnowledgeItems';
+import { exportKnowledgeBase } from '../../utils/exportKnowledgeBase';
+import { toast } from 'sonner';
 
 export const AgentKnowledge = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +45,16 @@ export const AgentKnowledge = () => {
   const sections = agent.sections || [];
   const knowledgeItems = agent.knowledgeItems || [];
 
+  const handleExport = () => {
+    try {
+      exportKnowledgeBase(agent.name, sections, knowledgeItems);
+      toast.success('Base de conhecimento exportada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast.error('Erro ao exportar base de conhecimento');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -57,6 +69,10 @@ export const AgentKnowledge = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="w-4 h-4 mr-2" />
+              Exportar Tudo
+            </Button>
             <Button variant="outline" onClick={() => navigate('/admin/monitoramento-ia/agentes')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar
