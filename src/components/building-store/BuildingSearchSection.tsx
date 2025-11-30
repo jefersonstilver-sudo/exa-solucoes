@@ -102,7 +102,7 @@ const BuildingSearchSection: React.FC<BuildingSearchSectionProps> = React.memo((
     // Trigger search with the selected coordinates
     handleSearch(place.address);
   }, [setSearchLocation, handleSearch, trackSearch]);
-  return <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 building-search-section sticky top-0 z-50 shadow-md">
+  return <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 building-search-section sticky top-[80px] z-40 shadow-md">
       <motion.div initial={{
       opacity: 0,
       y: -20
