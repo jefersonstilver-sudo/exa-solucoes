@@ -12,7 +12,7 @@ const HeroMobileLayout = () => {
   const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos%20exa/Videos%20Site/institucional.mp4';
+  const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/institucional.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvaW5zdGl0dWNpb25hbC5tcDQiLCJpYXQiOjE3NjQyNzIwNTYsImV4cCI6MTc5NTgwODA1Nn0.4a4RG4K_3B9mOBqKPXUJjvDvL1PB7pXqZc8LQw-5ynI';
   const togglePlayPause = () => {
     if (videoRef.current) {
       if (isPlaying) {
