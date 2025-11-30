@@ -61,8 +61,8 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   };
   return (
     <div className="w-full">
-      {/* Search section - Full width grudado no header */}
-      <div className="w-full -mx-4 md:-mx-6">
+      {/* Search section - Full width sem margens negativas */}
+      <div className="w-full">
         <BuildingStoreSearchSection 
           searchLocation={searchLocation}
           setSearchLocation={setSearchLocation}
