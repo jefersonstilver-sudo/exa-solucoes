@@ -878,8 +878,48 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
     }
 
     // Se não houve function call, retornar resposta normalmente
-    const finalMessage = preventNumberBreak(assistantMessage.content);
+    let finalMessage = preventNumberBreak(assistantMessage.content);
     const tokensUsed = data.usage.total_tokens;
+
+    // ====== VALIDAÇÃO DE CUMPRIMENTOS DUPLICADOS ======
+    if (context?.conversationId) {
+      try {
+        // Buscar últimas 5 mensagens outbound da conversa
+        const { data: recentMessages } = await supabase
+          .from('messages')
+          .select('body, created_at')
+          .eq('conversation_id', context.conversationId)
+          .eq('direction', 'outbound')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        
+        if (recentMessages && recentMessages.length > 0) {
+          const hasRecentGreeting = recentMessages.some(msg => {
+            const body = msg.body?.toLowerCase() || '';
+            return body.match(/^(oi|olá|ola|hey|bom dia|boa tarde|boa noite)[!,.\s]/);
+          });
+          
+          if (hasRecentGreeting) {
+            console.log('[IA-CONSOLE] 🧹 Removing duplicate greeting from response');
+            
+            // Remover cumprimentos duplicados
+            finalMessage = finalMessage
+              .replace(/^(oi|olá|ola|hey|bom dia|boa tarde|boa noite)[!,.\s]*/i, '')
+              .replace(/^(tudo bem|como vai|tudo certo)[!,.\s?]*/i, '')
+              .trim();
+            
+            // Se a mensagem ficou vazia após remover cumprimento, manter original
+            if (!finalMessage || finalMessage.length < 10) {
+              finalMessage = preventNumberBreak(assistantMessage.content);
+              console.log('[IA-CONSOLE] ⚠️ Message too short after greeting removal, keeping original');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[IA-CONSOLE] ❌ Error checking duplicate greetings:', error);
+        // Continuar com mensagem original em caso de erro
+      }
+    }
 
     // Registrar métricas de performance (Fase 3.2)
     await supabase.from('agent_performance_metrics').insert({

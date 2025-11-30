@@ -761,8 +761,66 @@ Obrigado pela compreensão!`;
             });
           }
           
-          // ====== LOCK NO WEBHOOK ANTES DE CHAMAR IA (FASE 1) ======
-          const aiLockKey = `ai_processing_${conversation.id}_${messageId}`;
+          // ====== MESSAGE BATCHING: Consolidar mensagens antes de processar ======
+          const bufferKey = `msg_buffer_${conversation.id}`;
+          const BATCH_WINDOW_MS = 4000; // 4 segundos de espera
+          const LOCK_WINDOW_MS = 5000; // 5 segundos de lock
+          
+          // Buscar buffer existente
+          const { data: existingBuffer } = await supabase
+            .from('agent_context')
+            .select('value, updated_at')
+            .eq('key', bufferKey)
+            .maybeSingle();
+          
+          // Adicionar mensagem ao buffer
+          const currentMessages = existingBuffer?.value?.messages || [];
+          currentMessages.push({
+            text: messageText,
+            timestamp: Date.now(),
+            messageId
+          });
+          
+          await supabase
+            .from('agent_context')
+            .upsert({
+              key: bufferKey,
+              value: {
+                messages: currentMessages,
+                last_update: Date.now()
+              }
+            }, { onConflict: 'key' });
+          
+          console.log(`[ZAPI-WEBHOOK] 📦 Message buffered (${currentMessages.length} messages in buffer)`);
+          
+          // Aguardar janela de batching
+          await new Promise(resolve => setTimeout(resolve, BATCH_WINDOW_MS));
+          
+          // Verificar se há novas mensagens após a janela
+          const { data: finalBuffer } = await supabase
+            .from('agent_context')
+            .select('value')
+            .eq('key', bufferKey)
+            .maybeSingle();
+          
+          const timeSinceLastUpdate = Date.now() - (finalBuffer?.value?.last_update || 0);
+          
+          if (timeSinceLastUpdate < BATCH_WINDOW_MS - 500) {
+            console.log('[ZAPI-WEBHOOK] ⏳ Nova mensagem chegou, aguardando...');
+            return; // Outra mensagem chegou, deixar ela processar
+          }
+          
+          // Consolidar todas as mensagens do buffer
+          const allMessages = finalBuffer?.value?.messages || [{ text: messageText }];
+          const consolidatedMessage = allMessages.map(m => m.text).join(' ');
+          
+          console.log(`[ZAPI-WEBHOOK] 📨 Consolidando ${allMessages.length} mensagens em uma: "${consolidatedMessage.substring(0, 100)}..."`);
+          
+          // Limpar buffer após consolidação
+          await supabase.from('agent_context').delete().eq('key', bufferKey);
+          
+          // ====== LOCK POR CONVERSAÇÃO (não por messageId) ======
+          const aiLockKey = `ai_processing_${conversation.id}`;
           
           // Verificar se existe lock e se ele está expirado
           const { data: existingLock } = await supabase
@@ -773,12 +831,11 @@ Obrigado pela compreensão!`;
           
           if (existingLock) {
             const lockAge = Date.now() - new Date(existingLock.updated_at).getTime();
-            if (lockAge > 120000) { // 2 minutos - lock expirado
+            if (lockAge > LOCK_WINDOW_MS) {
               console.log('[ZAPI-WEBHOOK] 🧹 Expired lock detected, removing...');
               await supabase.from('agent_context').delete().eq('key', aiLockKey);
             } else {
-              // Lock ainda válido, mensagem ainda sendo processada
-              console.log('[ZAPI-WEBHOOK] ⚠️ Message still processing (lock age: ${lockAge}ms), skipping');
+              console.log(`[ZAPI-WEBHOOK] ⚠️ Conversation still processing (lock age: ${lockAge}ms), skipping`);
               return; // NÃO processar
             }
           }
@@ -790,7 +847,7 @@ Obrigado pela compreensão!`;
               key: aiLockKey, 
               value: { 
                 acquired_at: new Date().toISOString(),
-                message_id: messageId
+                message_count: allMessages.length
               } 
             });
 
@@ -803,11 +860,12 @@ Obrigado pela compreensão!`;
               const { data: aiResult, error: aiError } = await supabase.functions.invoke('ia-console', {
                 body: {
                   agentKey: agent.key,
-                  message: messageText,
+                  message: consolidatedMessage, // Usar mensagem consolidada
                   context: {
                     conversationId: conversation.id,
                     phoneNumber: phone,
-                    messageId: messageId
+                    messageId: messageId,
+                    batchedMessages: allMessages.length
                   }
                 }
               });
