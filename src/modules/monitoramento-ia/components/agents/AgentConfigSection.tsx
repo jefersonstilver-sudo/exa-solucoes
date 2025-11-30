@@ -270,11 +270,9 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
               </TabsContent>
 
               <TabsContent value="section4" className="mt-6">
-                <KnowledgeItems 
-                  items={knowledgeItems} 
-                  agentId={agent.id}
-                  agentKey={agent.key}
-                  agentName={agent.display_name}
+                <AgentSections 
+                  sections={sections.filter(s => s.section_number === 4)} 
+                  agentId={agent.key}
                 />
               </TabsContent>
             </Tabs>
