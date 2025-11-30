@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { BuildingStore } from '@/services/buildingStoreService';
 import { BuildingFilters } from '@/hooks/useBuildingStore';
@@ -6,14 +5,16 @@ import BuildingStoreSearchSection from './layout/BuildingStoreSearchSection';
 import BuildingStoreGridLayout from './layout/BuildingStoreGrid';
 import MobileBuildingSheet from './MobileBuildingSheet';
 import { AnimatePresence } from 'framer-motion';
-
 interface BuildingStoreLayoutProps {
   buildings: BuildingStore[] | undefined;
   isLoading: boolean;
   isSearching: boolean;
   searchLocation: string;
   setSearchLocation: (location: string) => void;
-  selectedLocation: { lat: number, lng: number } | null;
+  selectedLocation: {
+    lat: number;
+    lng: number;
+  } | null;
   filters: BuildingFilters;
   handleFilterChange: (newFilters: Partial<BuildingFilters>) => void;
   handleSearch: (location: string) => Promise<void>;
@@ -21,7 +22,6 @@ interface BuildingStoreLayoutProps {
   sortOption: string;
   setSortOption: (option: string) => void;
 }
-
 const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
   buildings,
   isLoading,
@@ -38,7 +38,6 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingStore | null>(null);
-
   const handleSidebarToggle = () => {
     setSidebarCollapsed(prev => !prev);
   };
@@ -48,63 +47,29 @@ const BuildingStoreLayout: React.FC<BuildingStoreLayoutProps> = ({
     const handleShowBuildingCard = (event: CustomEvent) => {
       setSelectedBuilding(event.detail.building);
     };
-
     window.addEventListener('showMobileBuildingCard', handleShowBuildingCard as EventListener);
-    
     return () => {
       window.removeEventListener('showMobileBuildingCard', handleShowBuildingCard as EventListener);
     };
   }, []);
-
   const handleCloseBuildingCard = () => {
     setSelectedBuilding(null);
   };
-  return (
-    <div className="w-full">
+  return <div className="w-full">
       {/* Search section - Full width sem margens negativas */}
       <div className="w-full">
-        <BuildingStoreSearchSection 
-          searchLocation={searchLocation}
-          setSearchLocation={setSearchLocation}
-          selectedLocation={selectedLocation}
-          isSearching={isSearching}
-          filters={filters}
-          handleFilterChange={handleFilterChange}
-          handleSearch={handleSearch}
-          handleClearLocation={handleClearLocation}
-          buildings={buildings}
-          sortOption={sortOption}
-          setSortOption={setSortOption}
-        />
+        <BuildingStoreSearchSection searchLocation={searchLocation} setSearchLocation={setSearchLocation} selectedLocation={selectedLocation} isSearching={isSearching} filters={filters} handleFilterChange={handleFilterChange} handleSearch={handleSearch} handleClearLocation={handleClearLocation} buildings={buildings} sortOption={sortOption} setSortOption={setSortOption} />
       </div>
       
       {/* Layout with sidebar and building grid - Com container limitado e espaçamento pro search fixo */}
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-6">
-        <BuildingStoreGridLayout 
-          buildings={buildings}
-          isLoading={isLoading}
-          isSearching={isSearching}
-          selectedLocation={selectedLocation}
-          filters={filters}
-          handleFilterChange={handleFilterChange}
-          sidebarCollapsed={sidebarCollapsed}
-          onSidebarToggle={handleSidebarToggle}
-          sortOption={sortOption}
-          setSortOption={setSortOption}
-        />
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-6 py-0">
+        <BuildingStoreGridLayout buildings={buildings} isLoading={isLoading} isSearching={isSearching} selectedLocation={selectedLocation} filters={filters} handleFilterChange={handleFilterChange} sidebarCollapsed={sidebarCollapsed} onSidebarToggle={handleSidebarToggle} sortOption={sortOption} setSortOption={setSortOption} />
       </div>
 
       {/* Building Sheet for Pin Clicks */}
       <AnimatePresence>
-        {selectedBuilding && (
-          <MobileBuildingSheet 
-            building={selectedBuilding}
-            onClose={handleCloseBuildingCard}
-          />
-        )}
+        {selectedBuilding && <MobileBuildingSheet building={selectedBuilding} onClose={handleCloseBuildingCard} />}
       </AnimatePresence>
-    </div>
-  );
+    </div>;
 };
-
 export default BuildingStoreLayout;
