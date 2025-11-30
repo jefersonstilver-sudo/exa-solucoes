@@ -49,7 +49,7 @@ const Exa = () => {
         <HeroSection />
         
         {/* Logo Ticker - Full Width - sobreposição sutil para efeito fixado */}
-        <div className="w-full relative z-50 -mt-16 md:-mt-20 lg:-mt-24">
+        <div className="w-full relative z-50 -mt-4 md:-mt-20 lg:-mt-24">
           <LogoTicker speed={60} pauseOnHover={true} showPortals={false} />
         </div>
         
