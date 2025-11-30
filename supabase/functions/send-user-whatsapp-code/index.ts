@@ -146,7 +146,6 @@ Deno.serve(async (req) => {
       telefone,
       codigo,
       tipo_verificacao: tipo,
-      novo_telefone: novoTelefone || null,
       expires_at: expiresAt.toISOString(),
       verificado: false
     };
