@@ -1,8 +1,10 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Building2, Camera } from 'lucide-react';
 import { BuildingStore, getBuildingImageUrls, getImageUrl } from '@/services/buildingStoreService';
+import { calculateDistanceToBuilding, formatDistance } from '@/services/distanceCalculation';
+import useBuildingStore from '@/hooks/building-store/useBuildingStore';
 
 interface BuildingCardImageProps {
   building: BuildingStore;
@@ -10,19 +12,16 @@ interface BuildingCardImageProps {
 }
 
 const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 'square' }) => {
-
+  const businessLocation = useBuildingStore(s => s.businessLocation);
   const primaryImage = getImageUrl(building.imagem_principal);
   const imageUrls = getBuildingImageUrls(building);
   const totalImages = imageUrls.length;
   
-  // Verificar se é PRE VENDA (status instalação)
-  const isPreVenda = building.status?.toLowerCase() === 'instalação' || building.status?.toLowerCase() === 'instalacao';
-  
-  // Debug do status
-  console.log(`🏗️ [PRE-VENDA] Prédio: ${building.nome}, Status: "${building.status}", É Pre-Venda: ${isPreVenda}`);
+  // Calcular distância se houver localização do negócio
+  const distance = businessLocation ? calculateDistanceToBuilding(businessLocation, building as any) : null;
 
   return (
-    <div className={mode === 'fill' ? "relative w-full h-full min-h-[280px]" : "relative w-full aspect-square"}>
+    <div className={mode === 'fill' ? "relative w-full h-full" : "relative w-full aspect-[16/10]"}>
       {primaryImage ? (
         <img
           src={primaryImage}
@@ -30,24 +29,38 @@ const BuildingCardImage: React.FC<BuildingCardImageProps> = ({ building, mode = 
           className="w-full h-full object-cover"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indexa-purple/10 to-indexa-purple/5">
-          <Building2 className="h-16 w-16 text-indexa-purple/30" />
+        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+          <Building2 className="h-16 w-16 text-gray-300" />
         </div>
       )}
       
-      {/* Badge apenas para venue_type - removido o badge de padrão público */}
-      <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-        <Badge className="bg-indigo-500/90 text-white border-0 text-xs px-2 py-1">
+      {/* Badges na imagem - esquerda */}
+      <div className="absolute top-3 left-3 flex gap-1.5">
+        {/* Tipo do local */}
+        <span className="bg-white/95 text-gray-900 px-2 py-1 rounded text-xs font-medium shadow-sm">
           {building.venue_type || 'Residencial'}
-        </Badge>
+        </span>
+        
+        {/* Digital badge */}
+        <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium shadow-sm">
+          Digital
+        </span>
       </div>
       
+      {/* Distância - canto superior direito */}
+      {distance && (
+        <div className="absolute top-3 right-3">
+          <span className="bg-white/95 text-gray-900 px-2 py-1 rounded text-xs font-medium shadow-sm">
+            {distance}
+          </span>
+        </div>
+      )}
       
-      {/* Contador de fotos */}
+      {/* Contador de fotos - canto inferior esquerdo */}
       {totalImages > 0 && (
-        <div className="absolute bottom-3 left-3 flex items-center bg-black/60 text-white px-2 py-1 rounded-lg">
+        <div className="absolute bottom-3 left-3 flex items-center bg-black/70 text-white px-2 py-1 rounded">
           <Camera className="h-3 w-3 mr-1" />
-          <span className="text-xs font-medium">{totalImages} fotos</span>
+          <span className="text-xs font-medium">{totalImages}</span>
         </div>
       )}
     </div>

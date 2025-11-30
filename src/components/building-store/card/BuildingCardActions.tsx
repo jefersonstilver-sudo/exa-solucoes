@@ -80,27 +80,40 @@ const BuildingCardActions: React.FC<BuildingCardActionsProps> = ({ building }) =
   };
 
   return (
-    <div className={`flex items-start justify-between pt-4 border-t border-gray-100 ${
-      isMobile ? 'flex-col space-y-3' : 'flex-col lg:flex-row'
-    }`}>
-      <div className={isMobile ? 'w-full' : 'mb-3 lg:mb-0'}>
-        <p className="text-xs text-gray-600 mb-1">A partir de</p>
-        <p className={`font-bold text-[#9C1E1E] ${isMobile ? 'text-xl' : 'text-2xl'}`}>
+    <div className="flex items-center justify-between">
+      {/* Preço */}
+      <div>
+        <p className="text-sm text-gray-500 mb-0.5">A partir de</p>
+        <p className="text-2xl font-bold text-[#9C1E1E]">
           R$ {building.preco_base || 280}
           <span className="text-sm font-normal text-gray-500">/mês</span>
         </p>
       </div>
       
-      <div className={`flex ${isMobile ? 'w-full justify-center' : 'justify-center lg:justify-end'}`}>
-        <Button
-          onClick={handleAddToCart}
-          size={isMobile ? "default" : "sm"}
-          disabled={inCart || isAdding}
-          className={getButtonClass()}
-        >
-          {getButtonContent()}
-        </Button>
-      </div>
+      {/* Botão */}
+      <Button
+        onClick={handleAddToCart}
+        disabled={inCart || isAdding}
+        className={`font-medium px-6 py-2.5 rounded-lg transition-all ${
+          inCart 
+            ? 'bg-green-500 hover:bg-green-500 text-white cursor-default' 
+            : 'bg-[#9C1E1E] hover:bg-[#9C1E1E]/90 text-white'
+        }`}
+      >
+        {isAdding ? (
+          <div className="flex items-center">
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Adicionando...
+          </div>
+        ) : inCart ? (
+          <div className="flex items-center">
+            <Check className="h-4 w-4 mr-2" />
+            No Carrinho
+          </div>
+        ) : (
+          <span>Continuar →</span>
+        )}
+      </Button>
     </div>
   );
 };
