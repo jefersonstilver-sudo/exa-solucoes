@@ -12,7 +12,7 @@ const HeroMobileLayout = () => {
   const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos%20exa/Videos%20Site/video%20vertical%20novo%20exa.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcyBleGEvVmlkZW9zIFNpdGUvdmlkZW8gdmVydGljYWwgbm92byBleGEubXA0IiwiaWF0IjoxNzY0MjcxMTA2LCJleHAiOjE3OTU4MDcxMDZ9.p7LRGVwfDFMfQZIB-60RiMiqlYSJD6-gDQz4HlnZYLk';
+  const institutionalVideoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/arquivos%20exa/Videos%20Site/institucional.mp4';
   const togglePlayPause = () => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -50,7 +50,7 @@ const HeroMobileLayout = () => {
       {/* Vídeo Hero Imersivo */}
       <div ref={containerRef} className="relative w-full">
         <div className="relative w-full aspect-video bg-black cursor-pointer" onClick={togglePlayPause}>
-          <video ref={videoRef} src={institutionalVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-contain" />
+          <video ref={videoRef} src={institutionalVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
         </div>
         
         {/* Botões de Controle - Abaixo do vídeo */}
