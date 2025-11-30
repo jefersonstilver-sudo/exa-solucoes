@@ -141,9 +141,9 @@ const HeroSection = () => {
               </div>}
             </div>
             
-            {/* Botões de controle - centralizados no meio do vídeo */}
+            {/* Botões de controle - na parte inferior do vídeo */}
             {!loading && (
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3 z-40">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 z-40">
                 {/* Botão Som com Tooltip */}
                 <div className="relative">
                   {showSoundTooltip && (
