@@ -115,6 +115,8 @@ export const AgentKnowledge = () => {
           <KnowledgeItems 
             items={knowledgeItems} 
             agentId={agent.id}
+            agentKey={agent.key}
+            agentName={agent.name}
           />
         </TabsContent>
       </Tabs>

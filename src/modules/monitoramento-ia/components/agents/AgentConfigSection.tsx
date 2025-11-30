@@ -273,6 +273,8 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                 <KnowledgeItems 
                   items={knowledgeItems} 
                   agentId={agent.id}
+                  agentKey={agent.key}
+                  agentName={agent.display_name}
                 />
               </TabsContent>
             </Tabs>

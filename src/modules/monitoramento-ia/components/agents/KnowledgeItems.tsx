@@ -5,13 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Edit, Save, X, FileText, Link as LinkIcon, File } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, X, FileText, Link as LinkIcon, File, Download, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import DocumentUpload from '@/components/ui/document-upload';
 import { useModuleTheme, getThemeClass } from '../../hooks/useModuleTheme';
 import { cn } from '@/lib/utils';
+import { exportKnowledgeItem } from '../../utils/exportKnowledgeItem';
+import { KnowledgeItemHistoryModal } from './KnowledgeItemHistoryModal';
 
 interface KnowledgeItem {
   id: string;
@@ -29,14 +31,18 @@ interface KnowledgeItem {
 interface KnowledgeItemsProps {
   items: KnowledgeItem[];
   agentId: string;
+  agentKey?: string;
+  agentName?: string;
 }
 
-export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
+export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: KnowledgeItemsProps) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingItem, setEditingItem] = useState<KnowledgeItem | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [selectedItemForHistory, setSelectedItemForHistory] = useState<KnowledgeItem | null>(null);
   const { theme } = useModuleTheme();
   const [newItem, setNewItem] = useState({
     title: '',
@@ -128,6 +134,23 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
 
     try {
       setSaving(true);
+      
+      // 1. Buscar item original para ter o valor antigo
+      const originalItem = items.find(i => i.id === editingItem.id);
+      
+      // 2. Salvar log de modificação
+      if (originalItem && agentKey) {
+        await supabase.from('agent_modification_logs').insert({
+          agent_key: agentKey,
+          section: 'knowledge_items',
+          field_modified: `knowledge_item_${editingItem.id}`,
+          old_value: originalItem.content,
+          new_value: editingItem.content,
+          modified_by: 'admin'
+        });
+      }
+      
+      // 3. Fazer update normal
       const { error } = await supabase
         .from('agent_knowledge_items')
         .update({
@@ -151,6 +174,24 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleExportItem = (item: KnowledgeItem, index: number) => {
+    exportKnowledgeItem(
+      agentName || 'Agente',
+      item.display_order || index + 1,
+      item.title,
+      item.content,
+      item.keywords,
+      item.description,
+      item.instruction
+    );
+    toast.success('Item exportado com sucesso!');
+  };
+
+  const handleOpenHistory = (item: KnowledgeItem) => {
+    setSelectedItemForHistory(item);
+    setHistoryModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -437,6 +478,24 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
                         <Button
                           size="sm"
                           variant="ghost"
+                          onClick={() => handleExportItem(item, index)}
+                          className="h-7 w-7 p-0 hover:bg-blue-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Exportar item"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenHistory(item)}
+                          className="h-7 w-7 p-0 hover:bg-purple-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Ver histórico"
+                        >
+                          <History className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           onClick={() => handleEdit(item)}
                           className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
@@ -498,6 +557,19 @@ export const KnowledgeItems = ({ items, agentId }: KnowledgeItemsProps) => {
           ))
         )}
       </div>
+
+      {/* Modal de Histórico */}
+      {selectedItemForHistory && (
+        <KnowledgeItemHistoryModal
+          isOpen={historyModalOpen}
+          onClose={() => {
+            setHistoryModalOpen(false);
+            setSelectedItemForHistory(null);
+          }}
+          itemId={selectedItemForHistory.id}
+          itemTitle={selectedItemForHistory.title}
+        />
+      )}
     </div>
   );
 };
