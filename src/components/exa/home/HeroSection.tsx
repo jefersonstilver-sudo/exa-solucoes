@@ -162,7 +162,7 @@ const HeroSection = () => {
       </div>
       
       {/* Botões fixos - centralizados e próximos ao ticker de logos */}
-      {!loading && <div className="absolute bottom-[60px] lg:bottom-[80px] left-1/2 -translate-x-1/2 flex gap-2 z-40">
+      {!loading && <div className="absolute bottom-[60px] lg:bottom-[80px] left-1/2 -translate-x-1/2 flex items-center gap-3 z-40">
           {/* Botão Som com Tooltip */}
           <div className="relative">
             {showSoundTooltip && <div className="absolute -top-14 left-0 animate-fade-in">
@@ -177,14 +177,14 @@ const HeroSection = () => {
                 </div>
               </div>}
             
-            <button onClick={toggleMute} aria-label={isMuted ? "Ativar som" : "Desativar som"} className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center group my-[20px] px-0 mx-[5px] mr-[8px]">
-              {isMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+            <button onClick={toggleMute} aria-label={isMuted ? "Ativar som" : "Desativar som"} className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center group">
+              {isMuted ? <VolumeX className="w-3.5 h-3.5 text-white" /> : <Volume2 className="w-3.5 h-3.5 text-white" />}
             </button>
           </div>
 
           {/* Botão Reiniciar */}
-          <button onClick={restartVideo} aria-label="Reiniciar vídeo" className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center group my-[18px] px-0 mr-[570px]">
-            <RotateCcw className="w-4 h-4 text-white" />
+          <button onClick={restartVideo} aria-label="Reiniciar vídeo" className="w-6 h-6 lg:w-7 lg:h-7 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center group">
+            <RotateCcw className="w-3.5 h-3.5 text-white" />
           </button>
         </div>}
       
