@@ -76,12 +76,6 @@ const HeroMobileLayout = () => {
         <p className="font-poppins text-sm text-gray-200 leading-relaxed max-w-xl mx-auto">
           A EXA conecta marcas aos instantes reais da vida urbana — atenção genuína, presença diária e resultados duradouros.
         </p>
-
-        <div className="flex gap-4 pt-2 justify-center">
-          <ExaCTA variant="primary" size="md" href="https://wa.me/5545991415920?text=Ol%C3%A1%2C%20quero%20mais%20informa%C3%A7%C3%B5es%20sobre%20investir%20em%20pain%C3%A9is.">
-            Quero Saber Mais
-          </ExaCTA>
-        </div>
       </div>
     </section>;
 };
