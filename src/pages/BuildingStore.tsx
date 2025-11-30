@@ -79,8 +79,8 @@ const BuildingStore = () => {
           createFAQSchema(lojaFAQs)
         ]}
       />
-      {/* Container principal - sticky search grudado no header */}
-      <div className="min-h-screen w-full">
+      {/* Container principal - com espaçamento para o header */}
+      <div className="min-h-screen w-full pt-20">
         <div className="w-full">
         <BuildingStoreLayout
           buildings={buildings}
