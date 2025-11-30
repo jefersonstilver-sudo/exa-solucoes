@@ -43,11 +43,19 @@ export const UnifiedUptimeTimeline = ({
   const [tooltipData, setTooltipData] = useState<any>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
-  // Filters
-  const [period, setPeriod] = useState('today');
+  // Filters - with localStorage persistence
+  const [period, setPeriod] = useState(() => {
+    return localStorage.getItem('timeline-period') || 'today';
+  });
   const [condominium, setCondominium] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showOnlyWithIssues, setShowOnlyWithIssues] = useState(false);
+
+  // Save period selection
+  const handlePeriodChange = (newPeriod: string) => {
+    setPeriod(newPeriod);
+    localStorage.setItem('timeline-period', newPeriod);
+  };
 
   // Drag to scroll
   useTimelineDrag({ 
@@ -166,7 +174,7 @@ export const UnifiedUptimeTimeline = ({
       {/* Filters */}
       <TimelineFilters
         period={period}
-        onPeriodChange={setPeriod}
+        onPeriodChange={handlePeriodChange}
         condominium={condominium}
         onCondominiumChange={setCondominium}
         condominiums={condominiums}

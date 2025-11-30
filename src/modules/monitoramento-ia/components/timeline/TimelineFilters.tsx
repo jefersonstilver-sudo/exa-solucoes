@@ -42,6 +42,7 @@ export const TimelineFilters = ({
         <SelectContent>
           <SelectItem value="today">Hoje</SelectItem>
           <SelectItem value="yesterday">Ontem</SelectItem>
+          <SelectItem value="current_month">Este mês</SelectItem>
           <SelectItem value="7d">Últimos 7 dias</SelectItem>
           <SelectItem value="30d">Últimos 30 dias</SelectItem>
         </SelectContent>
