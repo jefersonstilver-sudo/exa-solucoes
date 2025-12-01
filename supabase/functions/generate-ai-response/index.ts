@@ -556,23 +556,41 @@ ${conversationHistory.filter((m: any) => m.direction === 'outbound').slice(-2).m
 ## INFORMAÇÕES DO CLIENTE
 ${customerName ? `✅ Nome do cliente: ${customerName}` : `⚠️ Nome do cliente ainda não identificado - Sofia pode perguntar naturalmente quando apropriado`}
 
-## 🧮 REGRA CRÍTICA DE CÁLCULOS
-⚠️⚠️⚠️ NUNCA FAÇA CÁLCULOS MATEMÁTICOS DE CABEÇA! ⚠️⚠️⚠️
+## 🧮 REGRA CRÍTICA DE CÁLCULOS - OBRIGATÓRIO
+⚠️⚠️⚠️ VOCÊ NÃO SABE CALCULAR - SEMPRE USE A FERRAMENTA! ⚠️⚠️⚠️
 
-Quando o cliente perguntar sobre valores, preços, orçamentos, descontos ou planos:
-✅ SEMPRE use a ferramenta calcular_preco
-❌ NUNCA calcule você mesmo
-❌ NUNCA invente valores
+ATENÇÃO: Qualquer erro de cálculo é GRAVÍSSIMO para o negócio!
 
-Se você calcular manualmente, VAI ERRAR!
-A ferramenta busca valores reais do banco de dados e calcula com precisão matemática.
+OBRIGAÇÕES ABSOLUTAS:
+✅ SEMPRE use a ferramenta calcular_preco para QUALQUER menção de valor monetário
+✅ SEMPRE confie 100% no resultado da ferramenta
+✅ SEMPRE use os valores EXATOS que a ferramenta retornar
 
-USE A FERRAMENTA SEMPRE QUE:
-- Cliente perguntar "quanto custa?"
-- Cliente perguntar sobre descontos/cupons
-- Cliente perguntar sobre planos (trimestral, semestral, anual)
-- Cliente perguntar total de vários prédios
-- Qualquer pergunta envolvendo dinheiro
+PROIBIÇÕES ABSOLUTAS:
+❌ NUNCA calcule valores de cabeça
+❌ NUNCA some, multiplique ou faça qualquer matemática manual
+❌ NUNCA invente ou estime valores
+❌ NUNCA use valores diferentes dos que a ferramenta retornou
+❌ NUNCA arredonde valores por conta própria
+
+POR QUE VOCÊ NÃO PODE CALCULAR:
+- Você NÃO tem acesso aos preços reais do banco de dados
+- Você VAI ERRAR nas multiplicações e descontos
+- O site mostra os valores corretos - sua resposta PRECISA ser idêntica
+- Divergências de valores destroem a confiança do cliente
+
+QUANDO USAR A FERRAMENTA:
+- Toda vez que mencionar "R$" ou valores monetários
+- Perguntas sobre "quanto custa"
+- Menção a descontos, cupons ou promoções
+- Comparação de planos (mensal, trimestral, semestral, anual)
+- Cálculo de múltiplos prédios
+- QUALQUER situação envolvendo dinheiro
+
+FORMATAÇÃO DE NÚMEROS:
+- Valores monetários: "R$ 2.026,00" (com ponto de milhar e vírgula decimal)
+- Números grandes (visualizações): "136800" (sem separadores, sem quebras de linha)
+- NUNCA quebre números em linhas diferentes
 
 ## 🚨🚨🚨 REGRAS CRÍTICAS DE FORMATAÇÃO - LEIA COM ATENÇÃO 🚨🚨🚨
 
@@ -767,6 +785,9 @@ ${isFullListRequest ? `
     const firstMessage = openaiData.choices[0]?.message;
     let tokensUsed = openaiData.usage?.total_tokens || 0;
     
+    // Variável para guardar resultado da função para validação posterior
+    let toolFunctionResult: any = null;
+    
     // ====== PROCESSAR TOOL CALLS ======
     if (firstMessage?.tool_calls && firstMessage.tool_calls.length > 0) {
       console.log('[AI-RESPONSE] 🛠️ Tool call detected:', firstMessage.tool_calls[0].function.name);
@@ -868,7 +889,10 @@ ${isFullListRequest ? `
               observacao: 'Valores já formatados com vírgula para centavos. Use exatamente como está.'
             };
             
-            console.log('[AI-RESPONSE] ✅ Calculation complete:', functionResult);
+            // Guardar para validação posterior
+            toolFunctionResult = functionResult;
+            
+            console.log('[AI-RESPONSE] ✅ Calculation complete:', JSON.stringify(functionResult, null, 2));
           }
         } catch (calcError) {
           console.error('[AI-RESPONSE] ❌ Error in calcular_preco:', calcError);
@@ -928,6 +952,79 @@ ${isFullListRequest ? `
       tokensUsed += secondData.usage?.total_tokens || 0;
       
       console.log('[AI-RESPONSE] ✅ Got formatted response from GPT with function result');
+      
+      // ====== VALIDAÇÃO PÓS-RESPOSTA: Verificar se valores correspondem ======
+      if (toolFunctionResult && toolFunctionResult.planos) {
+        console.log('[AI-RESPONSE] 🔍 Iniciando validação de valores na resposta...');
+        
+        // Extrair todos os valores monetários da resposta (formato R$ X.XXX,XX ou R$ XXX,XX)
+        const valoresNaResposta = aiReply.match(/R\$\s*[\d.]+,\d{2}/g) || [];
+        console.log('[AI-RESPONSE] 💰 Valores encontrados na resposta:', valoresNaResposta);
+        
+        // Valores esperados da função (formato com ponto de milhar e vírgula decimal)
+        const valoresEsperados: string[] = [];
+        Object.values(toolFunctionResult.planos).forEach((plano: any) => {
+          // Formatar com ponto de milhar e vírgula decimal (padrão brasileiro)
+          const valorMensalStr = plano.valor_mensal.replace(',', '.'); // Converter para ponto
+          const valorTotalStr = plano.valor_total.replace(',', '.'); // Converter para ponto
+          const valorMensalNum = parseFloat(valorMensalStr);
+          const valorTotalNum = parseFloat(valorTotalStr);
+          
+          valoresEsperados.push(`R$ ${valorMensalNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+          valoresEsperados.push(`R$ ${valorTotalNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+        });
+        
+        console.log('[AI-RESPONSE] ✅ Valores esperados da função:', valoresEsperados);
+        
+        // Detectar divergências (valores na resposta que não estão nos esperados)
+        const divergencias: string[] = [];
+        valoresNaResposta.forEach(valor => {
+          // Normalizar espaços para comparação
+          const valorNormalizado = valor.replace(/\s+/g, ' ');
+          const encontrado = valoresEsperados.some(esperado => 
+            esperado.replace(/\s+/g, ' ') === valorNormalizado
+          );
+          
+          if (!encontrado) {
+            divergencias.push(valor);
+          }
+        });
+        
+        if (divergencias.length > 0) {
+          console.error('[AI-RESPONSE] ❌ ERRO CRÍTICO: DIVERGÊNCIA DE VALORES DETECTADA!');
+          console.error('[AI-RESPONSE] Valores INCORRETOS na resposta:', divergencias);
+          console.error('[AI-RESPONSE] Valores CORRETOS esperados:', valoresEsperados);
+          console.error('[AI-RESPONSE] Resposta completa:', aiReply);
+          
+          // Logar no banco para análise e alertas
+          await supabase.from('agent_logs').insert({
+            agent_key: agentKey,
+            conversation_id: conversationId,
+            event_type: 'price_validation_error',
+            metadata: {
+              valores_incorretos: divergencias,
+              valores_corretos: valoresEsperados,
+              resposta_completa: aiReply,
+              calculo_funcao: toolFunctionResult,
+              timestamp: new Date().toISOString(),
+              severity: 'CRITICAL'
+            }
+          });
+        } else {
+          console.log('[AI-RESPONSE] ✅ VALIDAÇÃO OK: Todos os valores correspondem ao cálculo da função');
+          
+          // Logar sucesso
+          await supabase.from('agent_logs').insert({
+            agent_key: agentKey,
+            conversation_id: conversationId,
+            event_type: 'price_validation_success',
+            metadata: {
+              valores_validados: valoresNaResposta.length,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+      }
       
     } else {
       // Resposta normal sem tool call
