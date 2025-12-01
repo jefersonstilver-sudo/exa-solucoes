@@ -167,19 +167,27 @@ serve(async (req) => {
     const splitMessage = (text: string, maxLength = 150): string[] => {
       if (text.length <= maxLength) return [text];
       
-      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+      // 🔧 CORREÇÃO: Proteger pontos de separadores de milhares (ex: R$ 4.862,40)
+      // Substituir temporariamente pontos entre números por placeholder
+      const PLACEHOLDER = '§§§';
+      const protectedText = text.replace(/(\d)\.(\d{3})/g, `$1${PLACEHOLDER}$2`);
+      
+      // Agora dividir por sentenças (pontos normais)
+      const sentences = protectedText.match(/[^.!?]+[.!?]+/g) || [protectedText];
       const chunks: string[] = [];
       let currentChunk = '';
       
       for (const sentence of sentences) {
-        if ((currentChunk + sentence).length <= maxLength) {
-          currentChunk += sentence;
+        // Restaurar os pontos de milhares
+        const restored = sentence.replace(new RegExp(PLACEHOLDER, 'g'), '.');
+        if ((currentChunk + restored).length <= maxLength) {
+          currentChunk += restored;
         } else {
           if (currentChunk) chunks.push(currentChunk.trim());
-          currentChunk = sentence;
+          currentChunk = restored;
         }
       }
-      if (currentChunk) chunks.push(currentChunk.trim());
+      if (currentChunk) chunks.push(currentChunk.trim().replace(new RegExp(PLACEHOLDER, 'g'), '.'));
       
       return chunks;
     };
