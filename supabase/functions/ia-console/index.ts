@@ -731,9 +731,12 @@ Faça as duas chamadas JUNTAS na primeira vez.
               }
             }
             
-            // Formatação segura para WhatsApp (espaço como separador de milhar, não ponto)
+            // Formatação com ponto como separador de milhar (formato brasileiro padrão)
             const formatarValor = (valor: number) => {
-              return valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+              const partes = valor.toFixed(2).split('.');
+              const inteiro = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+              const decimal = partes[1];
+              return `${inteiro},${decimal}`;
             };
             
             // Calcular para cada plano com precisão
