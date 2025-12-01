@@ -85,7 +85,7 @@ serve(async (req) => {
       },
       preco: {
         base: b.preco_base,
-        formatado: `R$ ${b.preco_base?.toFixed(2) || '0.00'}`
+        formatado: `R$ ${b.preco_base?.toFixed(2).replace('.', ',') || '0,00'}`
       },
       perfil: b.padrao_publico,
       caracteristicas: b.caracteristicas || [],
