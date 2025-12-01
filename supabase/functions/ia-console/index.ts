@@ -347,6 +347,11 @@ PROIBIDO:
 ❌ Arredondar ou aproximar
 ❌ Usar valores antigos do conhecimento
 
+REGRA CRÍTICA PARA calcular_preco:
+- SEMPRE passe predios="todos" quando o usuário perguntar sobre orçamento total
+- NUNCA invente números como "1,2,3" - IDs reais são UUIDs complexos
+- Se o usuário perguntar "quanto custa TODOS" ou "valor total" → use predios="todos"
+
 `;
 
 
@@ -438,7 +443,8 @@ PROIBIDO:
             properties: {
               predios: {
                 type: "string",
-                description: "Quais prédios calcular: 'todos' para todos os ativos, ou IDs separados por vírgula (ex: 'id1,id2,id3')"
+                enum: ["todos"],
+                description: "SEMPRE use 'todos' para calcular todos os prédios ativos. NÃO invente IDs numéricos como '1,2,3' - isso NÃO funciona!"
               },
               plano: {
                 type: "string",
@@ -663,10 +669,30 @@ PROIBIDO:
         }
         
         if (functionName === 'calcular_preco') {
+          // 🔍 LOG: Validar entrada recebida
+          console.log(`[IA-CONSOLE] 📊 calcular_preco recebeu predios="${functionArgs.predios}"`);
+          
+          // 🛡️ FALLBACK: Detectar se GPT enviou IDs inválidos (números simples ao invés de UUIDs)
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          let usarTodos = functionArgs.predios === 'todos';
+          
+          // Se não é "todos", validar se são UUIDs reais
+          if (!usarTodos && functionArgs.predios) {
+            const predioIds = functionArgs.predios.split(',').map(id => id.trim());
+            const todosValidos = predioIds.every(id => uuidRegex.test(id));
+            
+            if (!todosValidos) {
+              console.warn(`[IA-CONSOLE] ⚠️ IDs inválidos detectados: "${functionArgs.predios}". Usando fallback: TODOS`);
+              usarTodos = true;
+            }
+          }
+          
+          console.log(`[IA-CONSOLE] 📊 Modo selecionado: ${usarTodos ? 'TODOS os prédios' : 'IDs específicos'}`);
+          
           // Buscar prédios do banco
           let query = supabase.from('buildings').select('*').eq('status', 'ativo');
           
-          if (functionArgs.predios !== 'todos') {
+          if (!usarTodos && functionArgs.predios !== 'todos') {
             const predioIds = functionArgs.predios.split(',').map(id => id.trim());
             query = query.in('id', predioIds);
           }
@@ -770,7 +796,8 @@ PROIBIDO:
         finalData = await callOpenAIWithRetry({
           model: 'gpt-4o-mini',
           messages: secondCallMessages,
-          // ⚠️ NÃO usar parallel_tool_calls aqui - esta chamada NÃO tem tools (causa erro 400)
+          tools: tools,  // ← ADICIONAR tools para permitir múltiplos tool calls sequenciais
+          tool_choice: 'auto',
           temperature: agent.openai_config?.temperature || 0.7,
           max_tokens: agent.openai_config?.max_tokens || 2000
         });
