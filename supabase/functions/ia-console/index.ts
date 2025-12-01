@@ -316,7 +316,39 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
 
 ⚠️ ESTAS REGRAS SÃO INEGOCIÁVEIS. SIGA-AS SEMPRE.
 ⚠️ DADOS INVENTADOS = ERRO GRAVE. USE SEMPRE A FERRAMENTA.
+
+🔴 REGRA #6: CÁLCULOS DE PREÇO - FERRAMENTA OBRIGATÓRIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️⚠️⚠️ VOCÊ NÃO SABE CALCULAR - SEMPRE USE A FERRAMENTA! ⚠️⚠️⚠️
+
+ATENÇÃO: Qualquer erro de cálculo é GRAVÍSSIMO para o negócio!
+
+Quando o usuário perguntar sobre VALORES ou PREÇOS:
+- "quanto custa todos os prédios?"
+- "qual o valor total?"
+- "quanto fica com desconto?"
+- "preço de X prédios"
+
+VOCÊ DEVE:
+1️⃣ USAR calcular_preco() IMEDIATAMENTE
+2️⃣ AGUARDAR resultado da ferramenta
+3️⃣ USAR VALORES EXATOS retornados
+4️⃣ NUNCA fazer cálculos manualmente
+
+FORMATAÇÃO OBRIGATÓRIA:
+✅ Valores monetários: "R$ 2.026,00" (com ponto de milhar e vírgula)
+✅ Números grandes: "136800" (sem separadores)
+✅ NUNCA quebre números em linhas diferentes
+
+PROIBIDO:
+❌ Calcular manualmente (você VAI ERRAR!)
+❌ Inventar valores
+❌ Arredondar ou aproximar
+❌ Usar valores antigos do conhecimento
+
 `;
+
 
     // Construir array de mensagens com histórico
     const messagesArray = [
@@ -393,6 +425,32 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
               }
             },
             required: ["tipo_consulta"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "calcular_preco",
+          description: "Calcula preços totais de prédios com precisão matemática JavaScript. SEMPRE use esta ferramenta quando o usuário perguntar valores, orçamentos ou descontos. NUNCA calcule manualmente.",
+          parameters: {
+            type: "object",
+            properties: {
+              predios: {
+                type: "string",
+                description: "Quais prédios calcular: 'todos' para todos os ativos, ou IDs separados por vírgula (ex: 'id1,id2,id3')"
+              },
+              plano: {
+                type: "string",
+                enum: ["mensal", "trimestral", "semestral", "anual"],
+                description: "Plano de contratação. Padrão: mensal"
+              },
+              cupom: {
+                type: "string",
+                description: "Código do cupom se mencionado pelo usuário (opcional)"
+              }
+            },
+            required: ["predios"]
           }
         }
       }
@@ -604,6 +662,75 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
           console.log(`[IA-CONSOLE] ✅ Query result: ${buildings?.length || 0} buildings found`);
         }
         
+        if (functionName === 'calcular_preco') {
+          // Buscar prédios do banco
+          let query = supabase.from('buildings').select('*').eq('status', 'ativo');
+          
+          if (functionArgs.predios !== 'todos') {
+            const predioIds = functionArgs.predios.split(',').map(id => id.trim());
+            query = query.in('id', predioIds);
+          }
+          
+          const { data: predios } = await query;
+          
+          if (!predios || predios.length === 0) {
+            functionResult = { error: 'Nenhum prédio encontrado' };
+          } else {
+            // CALCULAR SOMA REAL (JavaScript = precisão matemática)
+            const subtotal = predios.reduce((sum, p) => sum + (p.preco_base || 0), 0);
+            
+            // Buscar cupom se informado
+            let descontoCupom = 0;
+            let cupomEncontrado = null;
+            if (functionArgs.cupom) {
+              const { data: cupom } = await supabase
+                .from('coupons')
+                .select('*')
+                .ilike('codigo', functionArgs.cupom)
+                .eq('ativo', true)
+                .maybeSingle();
+              
+              if (cupom) {
+                descontoCupom = cupom.desconto_percentual / 100;
+                cupomEncontrado = cupom.codigo;
+              }
+            }
+            
+            // Calcular para cada plano com precisão
+            const planos = {
+              mensal: { meses: 1, desconto: 0 },
+              trimestral: { meses: 3, desconto: 0.20 },
+              semestral: { meses: 6, desconto: 0.30 },
+              anual: { meses: 12, desconto: 0.375 }
+            };
+            
+            const resultados = {};
+            for (const [nome, config] of Object.entries(planos)) {
+              const multiplicador = (1 - config.desconto) * (1 - descontoCupom);
+              const valorMensal = subtotal * multiplicador;
+              const valorTotal = valorMensal * config.meses;
+              
+              resultados[nome] = {
+                meses: config.meses,
+                desconto_plano: `${(config.desconto * 100).toFixed(1)}%`,
+                valor_mensal: `R$ ${valorMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                valor_total: `R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              };
+            }
+            
+            functionResult = {
+              total_predios: predios.length,
+              subtotal_mensal_sem_desconto: `R$ ${subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+              cupom_aplicado: cupomEncontrado,
+              desconto_cupom: descontoCupom > 0 ? `${(descontoCupom * 100).toFixed(1)}%` : null,
+              planos: resultados,
+              instrucao: 'USE ESTES VALORES EXATOS. NÃO CALCULE MANUALMENTE.'
+            };
+            
+            console.log(`[IA-CONSOLE] ✅ Price calculated for ${predios.length} buildings:`, functionResult);
+          }
+        }
+        
         // Adicionar resposta do tool
         toolResponses.push({
           role: 'tool',
@@ -684,23 +811,23 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
               p.nome.toLowerCase().includes(predioCitado.toLowerCase())
             );
             if (predioEncontrado) {
-              // 🔧 Formatar sem separador de milhares
-              const precoFormatado = predioEncontrado.preco_base?.toFixed(2).replace('.', ',') || '0,00';
-              const vizFormatado = predioEncontrado.visualizacoes_mes?.toString() || 'N/A';
-              formattedResponse += `O **${predioEncontrado.nome}** custa **R$ ${precoFormatado}/mês** com **${vizFormatado} visualizações mensais**! 📊\n\n`;
+              // Formatar valores corretamente
+              const precoFormatado = predioEncontrado.preco_base?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00';
+              const vizFormatado = predioEncontrado.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A';
+              formattedResponse += `O ${predioEncontrado.nome} custa R$ ${precoFormatado}/mês com ${vizFormatado} visualizações mensais! 📊\n\n`;
             }
           }
           
           // 3️⃣ QUANTIDADE TOTAL DE PRÉDIOS
           if (hasCount || consolidatedResult.length > 0) {
             const total = totalCount || consolidatedResult.length;
-            formattedResponse += `Temos **${total} prédios ativos** hoje! 🏢\n\n`;
+            formattedResponse += `Temos ${total} prédios ativos hoje! 🏢\n\n`;
           }
           
           // 4️⃣ CONSULTORIA (se detectada na pergunta)
           if (perguntaConsultoria) {
-            formattedResponse += 'Sobre começar com 1 prédio - **faz total sentido!** Você testa o retorno primeiro e depois escala conforme o resultado. ';
-            formattedResponse += 'Para **pizzaria**, prédios residenciais de **classe média** costumam dar **ótimo resultado** (alto volume de pedidos). 🍕\n\n';
+            formattedResponse += 'Sobre começar com 1 prédio - faz total sentido! Você testa o retorno primeiro e depois escala conforme o resultado. ';
+            formattedResponse += 'Para pizzaria, prédios residenciais de classe média costumam dar ótimo resultado (alto volume de pedidos). 🍕\n\n';
           }
           
           // 5️⃣ LISTA DETALHADA (se não mencionou prédio específico e tem lista)
@@ -711,10 +838,9 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
             
             formattedResponse += 'Aqui estão os prédios:\n\n';
             uniqueBuildings.forEach((p) => {
-              // 🔧 Formatar sem separador de milhares
-              const vizFormatado = p.visualizacoes_mes?.toString() || 'N/A';
-              const precoFormatado = p.preco_base?.toFixed(2).replace('.', ',') || 'N/A';
-              formattedResponse += `🏢 **${p.nome}**\n`;
+              const vizFormatado = p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A';
+              const precoFormatado = p.preco_base?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A';
+              formattedResponse += `🏢 ${p.nome}\n`;
               formattedResponse += `   📊 ${vizFormatado} visualizações/mês\n`;
               formattedResponse += `   💰 R$ ${precoFormatado}/mês\n`;
               if (p.bairro) formattedResponse += `   📍 ${p.bairro}\n`;
