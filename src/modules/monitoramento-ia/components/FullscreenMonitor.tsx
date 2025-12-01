@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Wifi, WifiOff, Zap, AlertTriangle } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Device } from '../utils/devices';
 import { cn } from '@/lib/utils';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
-import { useTodayAlerts } from '../hooks/useTodayAlerts';
+import { usePeriodAlerts } from '../hooks/usePeriodAlerts';
+import { PeriodSelector, PeriodType } from './PeriodSelector';
 
 interface FullscreenMonitorProps {
   devices: Device[];
@@ -122,7 +124,20 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isPortrait, setIsPortrait] = useState(false);
   const [showAlertsSidebar, setShowAlertsSidebar] = useState(true);
-  const { alerts } = useTodayAlerts();
+  
+  // Estado do período
+  const [period, setPeriod] = useState<PeriodType>('hoje');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+  
+  // Hook com período dinâmico e realtime
+  const { alerts } = usePeriodAlerts(period, customStartDate, customEndDate);
+
+  const handlePeriodChange = (newPeriod: PeriodType, customStart?: Date, customEnd?: Date) => {
+    setPeriod(newPeriod);
+    if (customStart) setCustomStartDate(customStart);
+    if (customEnd) setCustomEndDate(customEnd);
+  };
 
   // Atualizar relógio
   useEffect(() => {
@@ -211,8 +226,26 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
 
   const isMobile = window.innerWidth < 1024;
 
-  return (
-    <div className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999999] overflow-hidden bg-black">
+  // Obter label do período para exibição
+  const getPeriodLabel = () => {
+    switch (period) {
+      case 'hoje': return 'Hoje';
+      case 'ontem': return 'Ontem';
+      case 'esta-semana': return 'Esta Semana';
+      case '7dias': return 'Últimos 7 dias';
+      case '30dias': return 'Últimos 30 dias';
+      case 'personalizado': 
+        if (customStartDate && customEndDate) {
+          return `${format(customStartDate, 'dd/MM')} - ${format(customEndDate, 'dd/MM')}`;
+        }
+        return 'Personalizado';
+      default: return 'Hoje';
+    }
+  };
+
+  // Usar createPortal para renderizar fora da hierarquia DOM (esconder sidebar)
+  return createPortal(
+    <div className="fixed inset-0 w-screen h-screen z-[9999999] overflow-hidden bg-black">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-black to-gray-900" />
       
@@ -266,7 +299,7 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
                 )}
               </div>
             ) : (
-              /* Desktop: Layout original */
+              /* Desktop: Layout com seletor de período */
               <>
                 <div className="flex-1 flex justify-center">
                   <div className="flex flex-col items-center">
@@ -277,6 +310,16 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
                       {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
                     </p>
                   </div>
+                </div>
+                
+                {/* NOVO: Seletor de Período */}
+                <div className="mx-6">
+                  <PeriodSelector
+                    value={period}
+                    onChange={handlePeriodChange}
+                    customStartDate={customStartDate}
+                    customEndDate={customEndDate}
+                  />
                 </div>
                 
                 <div className="text-right">
@@ -345,7 +388,7 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
                   <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)]" />
                   <div className="absolute inset-0 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping opacity-75" />
                 </div>
-                <h3 className="text-white font-bold text-lg">Alertas de Hoje</h3>
+                <h3 className="text-white font-bold text-lg">Alertas - {getPeriodLabel()}</h3>
               </div>
               <p className="text-xs text-white/50">
                 {alerts.length} {alerts.length === 1 ? 'queda' : 'quedas'}
@@ -358,7 +401,7 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
                     <Wifi className="w-8 h-8 text-green-400" />
                   </div>
-                  <p className="text-white/60 text-sm">Nenhuma queda hoje</p>
+                  <p className="text-white/60 text-sm">Nenhuma queda no período</p>
                 </div>
               ) : (
                 alerts.map((alert, index) => (
@@ -409,7 +452,7 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                    <h3 className="text-white font-bold">Alertas de Hoje</h3>
+                    <h3 className="text-white font-bold">Alertas - {getPeriodLabel()}</h3>
                   </div>
                   <button 
                     onClick={() => setShowAlertsSidebar(false)}
@@ -455,6 +498,7 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
           <kbd className="px-2 py-0.5 bg-white/10 rounded mx-1 font-mono text-white/50">ESPAÇO</kbd> ou <kbd className="px-2 py-0.5 bg-white/10 rounded mx-1 font-mono text-white/50">ESC</kbd> para sair
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
