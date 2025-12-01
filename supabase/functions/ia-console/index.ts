@@ -550,7 +550,7 @@ Faça as duas chamadas JUNTAS na primeira vez.
         model: 'gpt-4o-mini', // Modelo otimizado para melhor performance e limite maior
         messages: messagesArray,
         tools: tools,
-        parallel_tool_calls: false,  // ← Forçar 1 tool_call por vez para simplificar processamento
+        parallel_tool_calls: true,  // ← Permitir múltiplas ferramentas simultaneamente (consultar_predios + calcular_preco)
         temperature: agent.openai_config?.temperature || 0.7,
         max_tokens: agent.openai_config?.max_tokens || 2000
       });
