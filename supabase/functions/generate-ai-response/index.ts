@@ -556,6 +556,24 @@ ${conversationHistory.filter((m: any) => m.direction === 'outbound').slice(-2).m
 ## INFORMAÇÕES DO CLIENTE
 ${customerName ? `✅ Nome do cliente: ${customerName}` : `⚠️ Nome do cliente ainda não identificado - Sofia pode perguntar naturalmente quando apropriado`}
 
+## 🧮 REGRA CRÍTICA DE CÁLCULOS
+⚠️⚠️⚠️ NUNCA FAÇA CÁLCULOS MATEMÁTICOS DE CABEÇA! ⚠️⚠️⚠️
+
+Quando o cliente perguntar sobre valores, preços, orçamentos, descontos ou planos:
+✅ SEMPRE use a ferramenta calcular_preco
+❌ NUNCA calcule você mesmo
+❌ NUNCA invente valores
+
+Se você calcular manualmente, VAI ERRAR!
+A ferramenta busca valores reais do banco de dados e calcula com precisão matemática.
+
+USE A FERRAMENTA SEMPRE QUE:
+- Cliente perguntar "quanto custa?"
+- Cliente perguntar sobre descontos/cupons
+- Cliente perguntar sobre planos (trimestral, semestral, anual)
+- Cliente perguntar total de vários prédios
+- Qualquer pergunta envolvendo dinheiro
+
 ## 🚨🚨🚨 REGRAS CRÍTICAS DE FORMATAÇÃO - LEIA COM ATENÇÃO 🚨🚨🚨
 
 ⚠️ NUNCA USE SEPARADOR DE MILHARES NOS NÚMEROS!
@@ -680,7 +698,41 @@ ${isFullListRequest ? `
 
     const maxTokens = isFullListRequest ? 4096 : (isComplexSearch ? 1024 : 512);
 
-    // ====== FASE 1: CHAMAR OPENAI COM HISTÓRICO ESTRUTURADO ======
+    // ====== DEFINIR TOOL CALCULAR_PRECO ======
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "calcular_preco",
+          description: "Calcula preços de prédios com precisão matemática. SEMPRE use esta ferramenta para qualquer cálculo de valor, orçamento ou desconto. NUNCA calcule manualmente.",
+          parameters: {
+            type: "object",
+            properties: {
+              predios: {
+                type: "string",
+                description: "Quais prédios calcular: 'todos' para todos os prédios disponíveis, ou nomes específicos separados por vírgula"
+              },
+              quantidade: {
+                type: "number",
+                description: "Se o cliente mencionou uma quantidade específica de prédios (opcional)"
+              },
+              plano: {
+                type: "string",
+                enum: ["mensal", "trimestral", "semestral", "anual"],
+                description: "Plano de contratação. Mensal = sem desconto, Trimestral = 20% OFF, Semestral = 30% OFF, Anual = 37.5% OFF"
+              },
+              cupom: {
+                type: "string",
+                description: "Código do cupom promocional se o cliente mencionou algum (opcional)"
+              }
+            },
+            required: ["predios"]
+          }
+        }
+      }
+    ];
+
+    // ====== FASE 1: CHAMAR OPENAI COM HISTÓRICO ESTRUTURADO + TOOLS ======
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -698,6 +750,8 @@ ${isFullListRequest ? `
             content: `⚠️ CRÍTICO: Cliente pediu LISTA COMPLETA! Enviar TODOS os ${buildingsData?.length || 0} prédios em UMA mensagem!`
           }] : [])
         ],
+        tools: tools,
+        tool_choice: "auto",
         temperature: 0.7,
         max_tokens: maxTokens,
       }),
@@ -710,7 +764,175 @@ ${isFullListRequest ? `
     }
 
     const openaiData = await openaiResponse.json();
-    let aiReply = openaiData.choices[0]?.message?.content || '';
+    const firstMessage = openaiData.choices[0]?.message;
+    let tokensUsed = openaiData.usage?.total_tokens || 0;
+    
+    // ====== PROCESSAR TOOL CALLS ======
+    if (firstMessage?.tool_calls && firstMessage.tool_calls.length > 0) {
+      console.log('[AI-RESPONSE] 🛠️ Tool call detected:', firstMessage.tool_calls[0].function.name);
+      
+      const toolCall = firstMessage.tool_calls[0];
+      const functionName = toolCall.function.name;
+      const functionArgs = JSON.parse(toolCall.function.arguments);
+      
+      console.log('[AI-RESPONSE] 📊 Function arguments:', functionArgs);
+      
+      let functionResult = null;
+      
+      // ====== HANDLER: calcular_preco ======
+      if (functionName === 'calcular_preco') {
+        try {
+          // 1. BUSCAR PRÉDIOS DO BANCO
+          let query = supabase
+            .from('buildings')
+            .select('id, nome, preco_base, bairro')
+            .eq('status', 'ativo');
+          
+          if (functionArgs.predios !== 'todos') {
+            const nomesArray = functionArgs.predios.split(',').map((n: string) => n.trim());
+            query = query.in('nome', nomesArray);
+          }
+          
+          const { data: predios, error: prediosError } = await query;
+          
+          if (prediosError) {
+            console.error('[AI-RESPONSE] ❌ Error fetching buildings for calculation:', prediosError);
+            functionResult = { error: 'Erro ao buscar prédios do banco de dados' };
+          } else if (!predios || predios.length === 0) {
+            functionResult = { error: 'Nenhum prédio encontrado com os critérios informados' };
+          } else {
+            // 2. CALCULAR SUBTOTAL
+            const subtotal = predios.reduce((sum, p) => sum + (p.preco_base || 0), 0);
+            
+            console.log('[AI-RESPONSE] 💰 Subtotal calculated:', subtotal);
+            
+            // 3. BUSCAR CUPOM SE INFORMADO
+            let descontoCupom = 0;
+            let cupomInfo = null;
+            
+            if (functionArgs.cupom) {
+              const { data: cupom, error: cupomError } = await supabase
+                .from('coupons')
+                .select('*')
+                .ilike('codigo', functionArgs.cupom)
+                .eq('ativo', true)
+                .maybeSingle();
+              
+              if (!cupomError && cupom) {
+                descontoCupom = cupom.desconto_percentual / 100;
+                cupomInfo = {
+                  codigo: cupom.codigo,
+                  desconto: cupom.desconto_percentual,
+                  tipo: cupom.tipo_desconto
+                };
+                console.log('[AI-RESPONSE] 🎟️ Cupom found:', cupomInfo);
+              } else {
+                console.log('[AI-RESPONSE] ⚠️ Cupom not found or inactive:', functionArgs.cupom);
+              }
+            }
+            
+            // 4. CALCULAR PARA CADA PLANO (com fórmula de multiplicação correta)
+            const planosConfig: Record<string, { meses: number; desconto: number }> = {
+              mensal: { meses: 1, desconto: 0 },
+              trimestral: { meses: 3, desconto: 0.20 },
+              semestral: { meses: 6, desconto: 0.30 },
+              anual: { meses: 12, desconto: 0.375 }
+            };
+            
+            const resultados: Record<string, any> = {};
+            
+            for (const [nomePlano, config] of Object.entries(planosConfig)) {
+              // 🔧 FÓRMULA CORRETA: Multiplicar descontos (1 - d1) * (1 - d2)
+              const multiplicadorDesconto = (1 - config.desconto) * (1 - descontoCupom);
+              const valorMensal = subtotal * multiplicadorDesconto;
+              const valorTotal = valorMensal * config.meses;
+              const economiaTotal = (subtotal * config.meses) - valorTotal;
+              
+              resultados[nomePlano] = {
+                meses: config.meses,
+                desconto_plano_percentual: (config.desconto * 100).toFixed(1),
+                desconto_cupom_percentual: (descontoCupom * 100).toFixed(1),
+                valor_mensal: valorMensal.toFixed(2).replace('.', ','),
+                valor_total: valorTotal.toFixed(2).replace('.', ','),
+                economia_total: economiaTotal.toFixed(2).replace('.', ',')
+              };
+            }
+            
+            // 5. MONTAR RESULTADO
+            functionResult = {
+              total_predios: predios.length,
+              predios_incluidos: predios.map(p => p.nome),
+              subtotal_mensal_sem_desconto: subtotal.toFixed(2).replace('.', ','),
+              cupom_aplicado: cupomInfo || 'nenhum',
+              planos: resultados,
+              observacao: 'Valores já formatados com vírgula para centavos. Use exatamente como está.'
+            };
+            
+            console.log('[AI-RESPONSE] ✅ Calculation complete:', functionResult);
+          }
+        } catch (calcError) {
+          console.error('[AI-RESPONSE] ❌ Error in calcular_preco:', calcError);
+          functionResult = { error: 'Erro ao processar cálculo de preços' };
+        }
+      }
+      
+      // ====== LOG TOOL CALL ======
+      await supabase.from('agent_logs').insert({
+        agent_key: agentKey,
+        conversation_id: conversationId,
+        event_type: 'tool_call_executed',
+        metadata: {
+          tool: functionName,
+          arguments: functionArgs,
+          result: functionResult,
+          timestamp: new Date().toISOString()
+        }
+      });
+      
+      // ====== SEGUNDA CHAMADA AO GPT COM RESULTADO DA FUNÇÃO ======
+      console.log('[AI-RESPONSE] 🔄 Calling GPT again with function result...');
+      
+      const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...historyMessages,
+            { role: 'user', content: message },
+            firstMessage, // Mensagem original com tool_call
+            {
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              name: functionName,
+              content: JSON.stringify(functionResult)
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: maxTokens,
+        }),
+      });
+      
+      if (!secondResponse.ok) {
+        const errorText = await secondResponse.text();
+        console.error('[AI-RESPONSE] ❌ Second OpenAI call error:', secondResponse.status, errorText);
+        throw new Error(`OpenAI second call error: ${secondResponse.status}`);
+      }
+      
+      const secondData = await secondResponse.json();
+      aiReply = secondData.choices[0]?.message?.content || '';
+      tokensUsed += secondData.usage?.total_tokens || 0;
+      
+      console.log('[AI-RESPONSE] ✅ Got formatted response from GPT with function result');
+      
+    } else {
+      // Resposta normal sem tool call
+      aiReply = firstMessage?.content || '';
+    }
 
     if (!aiReply || aiReply.trim().length < 3) {
       console.error('[AI-RESPONSE] ❌ Resposta vazia ou muito curta');
@@ -793,7 +1015,7 @@ ${isFullListRequest ? `
           conversation_id: conversationId,
           event_type: 'reintroduction_removed',
           metadata: {
-            originalLength: openaiData.choices[0]?.message?.content?.length,
+            originalLength: firstMessage?.content?.length || 0,
             cleanedLength: aiReply.length,
             timestamp: new Date().toISOString()
           }
@@ -1122,7 +1344,7 @@ Qual te interessou? 😊`;
       metadata: {
         responsePreview: sanitizedReply.substring(0, 100),
         responseLength: sanitizedReply.length,
-        tokensUsed: openaiData.usage?.total_tokens,
+        tokensUsed: tokensUsed,
         model: 'gpt-4o-mini',
         totalTimeMs: totalTime,
         contextPrepTimeMs: contextPrepTime,
