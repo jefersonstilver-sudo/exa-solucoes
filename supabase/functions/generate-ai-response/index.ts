@@ -150,7 +150,9 @@ serve(async (req) => {
     
     // 🆕 DETECTAR BUSCA EM BASE DE CONHECIMENTO (Seção 4 + Knowledge Items)
     const isKnowledgeSearch = message.match(/institucional|empresa|quem.*exa|história|missão|proposta|cnpj|endereço.*empresa|media kit|midia kit|apresentação|sobre.*exa|quem são vocês|fale.*empresa|documento|pdf|arquivo|material/i);
-    const needsHeavyKnowledge = isKnowledgeSearch || false;
+    // 🆕 DETECTAR PERGUNTAS DE PREÇO/DESCONTO (precisa carregar seção 4)
+    const isPriceRelated = message.match(/preço|valor|desconto|cupom|orçamento|plano|quanto|mensalidade|anual|semestral|trimestral|economizar|economia/i);
+    const needsHeavyKnowledge = isKnowledgeSearch || isPriceRelated || false;
     
     // 🆕 DETECTAR PERGUNTAS DE PREÇO COM/SEM CUPOM
     const isPriceWithCoupon = message.match(/com\s*(o\s*)?(cupom|desconto|código)/i);
@@ -440,7 +442,8 @@ serve(async (req) => {
             return null; // Não incluir prédios sem preço
           }
           
-          const precoBase = b.preco_base.toFixed(2);
+          // 🔧 Formatar valor monetário SEM separador de milhares (vírgula para centavos)
+          const precoBase = b.preco_base.toFixed(2).replace('.', ',');
           // 🔧 Remover separador de milhares para evitar quebra no WhatsApp
           const visualizacoes = b.visualizacoes_mes && b.visualizacoes_mes > 0 
             ? b.visualizacoes_mes.toString()

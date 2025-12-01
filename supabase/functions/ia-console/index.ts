@@ -684,7 +684,10 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
               p.nome.toLowerCase().includes(predioCitado.toLowerCase())
             );
             if (predioEncontrado) {
-              formattedResponse += `O **${predioEncontrado.nome}** custa **R$ ${predioEncontrado.preco_base?.toLocaleString('pt-BR')}/mês** com **${predioEncontrado.visualizacoes_mes?.toLocaleString('pt-BR')} visualizações mensais**! 📊\n\n`;
+              // 🔧 Formatar sem separador de milhares
+              const precoFormatado = predioEncontrado.preco_base?.toFixed(2).replace('.', ',') || '0,00';
+              const vizFormatado = predioEncontrado.visualizacoes_mes?.toString() || 'N/A';
+              formattedResponse += `O **${predioEncontrado.nome}** custa **R$ ${precoFormatado}/mês** com **${vizFormatado} visualizações mensais**! 📊\n\n`;
             }
           }
           
@@ -708,9 +711,12 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
             
             formattedResponse += 'Aqui estão os prédios:\n\n';
             uniqueBuildings.forEach((p) => {
+              // 🔧 Formatar sem separador de milhares
+              const vizFormatado = p.visualizacoes_mes?.toString() || 'N/A';
+              const precoFormatado = p.preco_base?.toFixed(2).replace('.', ',') || 'N/A';
               formattedResponse += `🏢 **${p.nome}**\n`;
-              formattedResponse += `   📊 ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} visualizações/mês\n`;
-              formattedResponse += `   💰 R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/A'}/mês\n`;
+              formattedResponse += `   📊 ${vizFormatado} visualizações/mês\n`;
+              formattedResponse += `   💰 R$ ${precoFormatado}/mês\n`;
               if (p.bairro) formattedResponse += `   📍 ${p.bairro}\n`;
               formattedResponse += `\n`;
             });
@@ -815,7 +821,9 @@ Quer que eu te mostre os melhores prédios para o seu segmento?"
           if (consolidatedResult.length > 0) {
             fallbackMsg = `Encontrei ${consolidatedResult.length} prédios:\n\n`;
             consolidatedResult.slice(0, 5).forEach((p, i) => {
-              fallbackMsg += `${i + 1}. ${p.nome} - ${p.visualizacoes_mes?.toLocaleString('pt-BR') || 'N/A'} vis/mês\n`;
+              // 🔧 Formatar sem separador de milhares
+              const vizFormatado = p.visualizacoes_mes?.toString() || 'N/A';
+              fallbackMsg += `${i + 1}. ${p.nome} - ${vizFormatado} vis/mês\n`;
             });
             if (consolidatedResult.length > 5) {
               fallbackMsg += `\n...e mais ${consolidatedResult.length - 5}.\n`;
