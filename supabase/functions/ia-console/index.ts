@@ -731,6 +731,11 @@ Faça as duas chamadas JUNTAS na primeira vez.
               }
             }
             
+            // Formatação segura para WhatsApp (espaço como separador de milhar, não ponto)
+            const formatarValor = (valor: number) => {
+              return valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            };
+            
             // Calcular para cada plano com precisão
             const planos = {
               mensal: { meses: 1, desconto: 0 },
@@ -748,14 +753,14 @@ Faça as duas chamadas JUNTAS na primeira vez.
               resultados[nome] = {
                 meses: config.meses,
                 desconto_plano: `${(config.desconto * 100).toFixed(1)}%`,
-                valor_mensal: `R$ ${valorMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                valor_total: `R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                valor_mensal: `R$ ${formatarValor(valorMensal)}`,
+                valor_total: `R$ ${formatarValor(valorTotal)}`
               };
             }
             
             functionResult = {
               total_predios: predios.length,
-              subtotal_mensal_sem_desconto: `R$ ${subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+              subtotal_mensal_sem_desconto: `R$ ${formatarValor(subtotal)}`,
               cupom_aplicado: cupomEncontrado,
               desconto_cupom: descontoCupom > 0 ? `${(descontoCupom * 100).toFixed(1)}%` : null,
               planos: resultados,
