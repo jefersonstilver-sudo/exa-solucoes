@@ -352,6 +352,15 @@ REGRA CRÍTICA PARA calcular_preco:
 - NUNCA invente números como "1,2,3" - IDs reais são UUIDs complexos
 - Se o usuário perguntar "quanto custa TODOS" ou "valor total" → use predios="todos"
 
+REGRA CRÍTICA - CHAMADAS DE FERRAMENTAS:
+Quando o usuário perguntar sobre VALORES ou ORÇAMENTO:
+→ Chame AMBAS as ferramentas NA MESMA CHAMADA (parallel_tool_calls):
+  1. consultar_predios (para listar/contar)
+  2. calcular_preco (para valores exatos)
+
+NUNCA espere pela primeira ferramenta para depois chamar a segunda!
+Faça as duas chamadas JUNTAS na primeira vez.
+
 `;
 
 
@@ -796,13 +805,18 @@ REGRA CRÍTICA PARA calcular_preco:
         finalData = await callOpenAIWithRetry({
           model: 'gpt-4o-mini',
           messages: secondCallMessages,
-          tools: tools,  // ← ADICIONAR tools para permitir múltiplos tool calls sequenciais
-          tool_choice: 'auto',
           temperature: agent.openai_config?.temperature || 0.7,
           max_tokens: agent.openai_config?.max_tokens || 2000
         });
 
         finalMessage = finalData.choices[0].message.content;
+        
+        // 🛡️ VALIDAÇÃO DE SEGURANÇA: Verificar se finalMessage não é null/undefined
+        if (!finalMessage || finalMessage === null || finalMessage === undefined) {
+          console.warn('[IA-CONSOLE] ⚠️ finalMessage is null/empty, using fallback');
+          finalMessage = 'Desculpe, não consegui processar sua solicitação adequadamente. Pode reformular sua pergunta?';
+        }
+        
         tokensUsed = finalData.usage.total_tokens;
         console.log('[IA-CONSOLE] ✅ Second OpenAI call succeeded');
 
