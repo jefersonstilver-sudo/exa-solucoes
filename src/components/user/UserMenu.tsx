@@ -455,7 +455,7 @@ const UserMenu = () => {
                             <span>Entrar</span>
                           </Link>
                           
-                          <Link to="/cadastro" className="flex items-center justify-center p-3 bg-indexa-purple hover:bg-indexa-purple-dark text-white font-medium rounded-lg transition-colors w-full" onClick={() => setOpen(false)}>
+                          <Link to="/cadastro" className="flex items-center justify-center p-3 bg-exa-red hover:bg-exa-red/90 text-white font-medium rounded-lg transition-colors w-full" onClick={() => setOpen(false)}>
                             <UserPlus className="mr-2 h-5 w-5" />
                             <span>Criar Conta</span>
                           </Link>
