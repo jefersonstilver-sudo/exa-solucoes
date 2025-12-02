@@ -54,6 +54,23 @@ export const useOrderStatus = (
     const status = order?.status;
     const hasVideos = order?.videos && order.videos.length > 0;
     const hasApprovedVideo = order?.videos?.some((v: any) => v.approval_status === 'approved');
+    const isFidelidade = order?.is_fidelidade === true;
+
+    // NOVO: Tratamento especial para pedidos fidelidade
+    if (isFidelidade && status === 'pendente') {
+      return {
+        label: 'Aguardando 1ª Parcela',
+        description: 'Pague a primeira parcela para ativar sua campanha',
+        color: 'text-white',
+        bgColor: 'bg-purple-600 border-purple-700',
+        icon: CreditCard,
+        action: {
+          label: 'Ver Parcelas',
+          variant: 'default',
+          href: `/anunciante/faturas?pedido=${order.id}`
+        }
+      };
+    }
 
     switch (status) {
       case 'pendente':

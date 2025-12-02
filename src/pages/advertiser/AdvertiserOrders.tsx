@@ -8,7 +8,7 @@ import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
 import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
 import { OrderVideoThumbnail } from '@/components/video-management/OrderVideoThumbnail';
-import { Loader2, ShoppingBag, Calendar, Search, Eye, AlertTriangle, CheckCircle, Upload, CreditCard } from 'lucide-react';
+import { Loader2, ShoppingBag, Calendar, Search, Eye, AlertTriangle, CheckCircle, Upload, CreditCard, Repeat } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -305,10 +305,22 @@ const AdvertiserOrders = () => {
             </div>
 
             <div className="flex flex-col lg:items-end space-y-3">
-              <Badge className={cn('border flex items-center space-x-1', statusInfo.bgColor)}>
-                <StatusIcon className="h-3 w-3" />
-                <span>{statusInfo.label}</span>
-              </Badge>
+              {/* Badges de status */}
+              <div className="flex flex-wrap gap-2">
+                {/* Badge Fidelidade */}
+                {item.type === 'order' && item.is_fidelidade && (
+                  <Badge className="bg-purple-600 border-purple-700 text-white flex items-center space-x-1">
+                    <Repeat className="h-3 w-3" />
+                    <span>Fidelidade</span>
+                  </Badge>
+                )}
+                
+                {/* Badge de Status */}
+                <Badge className={cn('border flex items-center space-x-1', statusInfo.bgColor)}>
+                  <StatusIcon className="h-3 w-3" />
+                  <span>{statusInfo.label}</span>
+                </Badge>
+              </div>
 
               <div className="flex space-x-2">
                 {/* Botão de ação principal (Pagar com PIX, Enviar Vídeo, etc.) */}
