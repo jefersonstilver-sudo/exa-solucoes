@@ -164,6 +164,22 @@ const AdvertiserInvoices = () => {
       
       const userDataAny = userData as any;
       
+      // Validar dados obrigatórios para boleto
+      const documento = userData?.empresa_documento?.replace(/\D/g, '') || userDataAny?.cpf?.replace(/\D/g, '');
+      
+      if (!documento || documento.length < 11) {
+        toast.error('Dados incompletos', {
+          description: 'Para gerar boleto, é necessário ter CPF ou CNPJ cadastrado no seu perfil.'
+        });
+        setGeneratingBoleto(null);
+        return;
+      }
+      
+      // Determinar tipo de documento (CPF ou CNPJ)
+      const tipoDocumento = documento.length === 11 ? 'CPF' : 'CNPJ';
+      const nomeCompleto = userData?.empresa_nome || userDataAny?.nome || userProfile.email?.split('@')[0] || 'Cliente';
+      const nomeParts = nomeCompleto.split(' ');
+      
       const { data, error } = await supabase.functions.invoke('generate-boleto-payment', {
         body: {
           parcela_id: parcela.id,
@@ -171,15 +187,15 @@ const AdvertiserInvoices = () => {
           vencimento: parcela.data_vencimento,
           descricao: `Parcela ${parcela.numero_parcela}/${pedido.total_parcelas} - Plano Fidelidade EXA`,
           payer: {
-            email: userData?.email || userProfile.email,
-            first_name: userData?.empresa_nome?.split(' ')[0] || 'Cliente',
-            last_name: userData?.empresa_nome?.split(' ').slice(1).join(' ') || 'EXA',
+            email: userData?.email || userProfile.email || 'cliente@exapaineis.com.br',
+            first_name: nomeParts[0] || 'Cliente',
+            last_name: nomeParts.slice(1).join(' ') || 'EXA',
             identification: {
-              type: 'CNPJ',
-              number: userData?.empresa_documento?.replace(/\D/g, '') || ''
+              type: tipoDocumento,
+              number: documento
             },
             address: {
-              zip_code: userDataAny?.cep || '01310100',
+              zip_code: (userDataAny?.cep || '01310100').replace(/\D/g, ''),
               street_name: userDataAny?.endereco || 'Av. Paulista',
               street_number: userDataAny?.numero || '1000',
               neighborhood: userDataAny?.bairro || 'Bela Vista',
