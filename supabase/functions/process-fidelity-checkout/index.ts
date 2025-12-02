@@ -98,7 +98,7 @@ serve(async (req) => {
         client_id: user.id,
         lista_paineis: listaPaineis,
         valor_total: totalPrice,
-        status: 'aguardando_pagamento',
+        status: 'pendente',
         tipo_pagamento: paymentMethod,
         is_fidelidade: true,
         dia_vencimento: diaVencimento,
