@@ -33,7 +33,7 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({
   // Detectar tipo de pagamento
   const isPixAvista = paymentMethod === 'pix_avista';
   const isFidelidade = paymentMethod === 'pix_fidelidade' || paymentMethod === 'boleto_fidelidade';
-  const pixAvistaDiscount = 0.05; // 5% desconto PIX à vista
+  const pixAvistaDiscount = 0.10; // 10% desconto PIX à vista
   
   // Calcular total de PAINÉIS
   const totalPaineis = cartItems.reduce((total, item) => {
