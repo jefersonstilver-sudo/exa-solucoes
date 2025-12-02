@@ -8,7 +8,6 @@ import { useUnifiedConversations } from '../../../hooks/useUnifiedConversations'
 import { supabase } from '@/integrations/supabase/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import PullToRefresh from '@/components/mobile/PullToRefresh';
-import { useSidebarContext } from '../../../context/SidebarContext';
 
 interface CRMUnificadoMobileProps {
   initialFilters: any;

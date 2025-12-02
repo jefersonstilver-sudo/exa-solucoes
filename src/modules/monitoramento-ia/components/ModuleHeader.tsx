@@ -5,17 +5,15 @@
 
 import { Sun, Moon, Menu } from 'lucide-react';
 import { NotificationSettings } from '@/components/admin/notifications/NotificationSettings';
-import { useSidebarContext } from '../context/SidebarContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ModuleHeaderProps {
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
-  onToggleSidebar?: () => void; // Deprecated - usando contexto agora
+  onToggleSidebar?: () => void;
 }
 
-export const ModuleHeader = ({ theme, onToggleTheme }: ModuleHeaderProps) => {
-  const { toggleSidebar } = useSidebarContext();
+export const ModuleHeader = ({ theme, onToggleTheme, onToggleSidebar }: ModuleHeaderProps) => {
   const isMobile = useIsMobile();
   return (
     <div className={`sticky top-0 z-20 glass-card backdrop-blur-xl border-b ${
@@ -25,7 +23,7 @@ export const ModuleHeader = ({ theme, onToggleTheme }: ModuleHeaderProps) => {
         {/* Hamburger Menu - Mobile Only */}
         {isMobile && (
           <button
-            onClick={toggleSidebar}
+            onClick={onToggleSidebar}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
               theme === 'dark'
                 ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
