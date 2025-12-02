@@ -75,24 +75,26 @@ export const useOrderStatus = (
     switch (status) {
       case 'pendente':
         // Verificar método de pagamento original do pedido
-        const paymentMethod = order.metodo_pagamento || 'pix'; // Fallback para PIX em pedidos antigos
+        const paymentMethod = order.metodo_pagamento || order.tipo_pagamento || 'pix';
         
-        if (paymentMethod === 'pix') {
+        // Verificar se é boleto
+        if (paymentMethod === 'boleto' || paymentMethod === 'boleto_fidelidade') {
           return {
             label: 'Aguardando Pagamento',
-            description: 'Efetue o pagamento PIX para ativar sua campanha',
+            description: 'Gere o boleto para efetuar o pagamento',
             color: 'text-white',
             bgColor: 'bg-orange-600 border-orange-700',
             icon: CreditCard,
             action: {
-              label: 'Pagar com PIX',
+              label: 'Gerar Boleto',
               variant: 'default',
-              onClick: onGeneratePix ? () => onGeneratePix(order.id) : undefined,
-              href: !onGeneratePix ? `/payment?pedido=${order.id}&method=pix` : undefined
+              href: `/anunciante/faturas?pedido=${order.id}`
             }
           };
-        } else {
-          // Cartão - precisa chamar função específica
+        }
+        
+        // Verificar se é cartão
+        if (paymentMethod === 'cartao' || paymentMethod === 'credit_card') {
           return {
             label: 'Aguardando Pagamento',
             description: 'Finalize o pagamento com cartão de crédito',
@@ -107,6 +109,21 @@ export const useOrderStatus = (
             }
           };
         }
+        
+        // Default: PIX
+        return {
+          label: 'Aguardando Pagamento',
+          description: 'Efetue o pagamento PIX para ativar sua campanha',
+          color: 'text-white',
+          bgColor: 'bg-orange-600 border-orange-700',
+          icon: CreditCard,
+          action: {
+            label: 'Pagar com PIX',
+            variant: 'default',
+            onClick: onGeneratePix ? () => onGeneratePix(order.id) : undefined,
+            href: !onGeneratePix ? `/payment?pedido=${order.id}&method=pix` : undefined
+          }
+        };
 
       case 'pago':
       case 'pago_pendente_video':

@@ -23,9 +23,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const MERCADOPAGO_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
+    const MERCADOPAGO_ACCESS_TOKEN = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
     if (!MERCADOPAGO_ACCESS_TOKEN) {
-      throw new Error('MERCADOPAGO_ACCESS_TOKEN não configurado');
+      throw new Error('MERCADO_PAGO_ACCESS_TOKEN não configurado');
     }
 
     const body: PixParcelaRequest = await req.json();

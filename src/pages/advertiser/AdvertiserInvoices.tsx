@@ -5,26 +5,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, Download, QrCode, CheckCircle, Clock, AlertTriangle, ArrowLeft, Calendar, Building2 } from 'lucide-react';
+import { Loader2, FileText, Download, QrCode, CheckCircle, Clock, AlertTriangle, ArrowLeft, Calendar, Building2, ChevronDown, ChevronUp, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/utils/priceUtils';
 import { cn } from '@/lib/utils';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Parcela {
   id: string;
   numero_parcela: number;
   valor_original: number;
   valor_final: number;
-  valor_multa: number;
-  valor_juros: number;
+  valor_multa: number | null;
+  valor_juros: number | null;
   data_vencimento: string;
   status: string;
   boleto_url: string | null;
   boleto_barcode: string | null;
-  pix_qr_code: string | null;
-  metodo_pagamento: string;
+  pix_qr_code?: string | null;
+  pix_copia_cola?: string | null;
+  metodo_pagamento: string | null;
   data_pagamento: string | null;
+  pedido_id: string;
 }
 
 interface Pedido {
@@ -38,6 +41,11 @@ interface Pedido {
   parcela_atual: number;
   created_at: string;
   lista_paineis: any[];
+  plano_meses: number;
+}
+
+interface PedidoComParcelas extends Pedido {
+  parcelas: Parcela[];
 }
 
 const AdvertiserInvoices = () => {
@@ -47,8 +55,8 @@ const AdvertiserInvoices = () => {
   const pedidoIdFromUrl = searchParams.get('pedido');
 
   const [loading, setLoading] = useState(true);
-  const [pedido, setPedido] = useState<Pedido | null>(null);
-  const [parcelas, setParcelas] = useState<Parcela[]>([]);
+  const [pedidos, setPedidos] = useState<PedidoComParcelas[]>([]);
+  const [expandedPedidos, setExpandedPedidos] = useState<Set<string>>(new Set());
   const [generatingBoleto, setGeneratingBoleto] = useState<string | null>(null);
   const [generatingPix, setGeneratingPix] = useState<string | null>(null);
   
@@ -64,7 +72,7 @@ const AdvertiserInvoices = () => {
     pixData: null
   });
 
-  // Carregar dados do pedido e parcelas
+  // Carregar dados de TODOS os pedidos fidelidade e suas parcelas
   useEffect(() => {
     const loadData = async () => {
       if (!userProfile?.id) return;
@@ -72,42 +80,51 @@ const AdvertiserInvoices = () => {
       try {
         setLoading(true);
         
-        // Se tiver pedido específico na URL, buscar esse pedido
-        let pedidoQuery = supabase
+        // Buscar TODOS os pedidos fidelidade do usuário
+        const { data: pedidosData, error: pedidosError } = await supabase
           .from('pedidos')
           .select('*')
           .eq('client_id', userProfile.id)
-          .eq('is_fidelidade', true);
+          .eq('is_fidelidade', true)
+          .order('created_at', { ascending: false });
         
-        if (pedidoIdFromUrl) {
-          pedidoQuery = pedidoQuery.eq('id', pedidoIdFromUrl);
-        }
-        
-        const { data: pedidoData, error: pedidoError } = await pedidoQuery
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        
-        if (pedidoError) {
-          console.error('Erro ao buscar pedido:', pedidoError);
+        if (pedidosError) {
+          console.error('Erro ao buscar pedidos:', pedidosError);
           return;
         }
         
-        setPedido(pedidoData);
-        
-        // Buscar parcelas do pedido
+        if (!pedidosData || pedidosData.length === 0) {
+          setPedidos([]);
+          return;
+        }
+
+        // Buscar parcelas de todos os pedidos
+        const pedidoIds = pedidosData.map(p => p.id);
         const { data: parcelasData, error: parcelasError } = await supabase
           .from('parcelas')
           .select('*')
-          .eq('pedido_id', pedidoData.id)
+          .in('pedido_id', pedidoIds)
           .order('numero_parcela', { ascending: true });
         
         if (parcelasError) {
           console.error('Erro ao buscar parcelas:', parcelasError);
-          return;
         }
         
-        setParcelas(parcelasData || []);
+        // Agrupar parcelas por pedido
+        const pedidosComParcelas: PedidoComParcelas[] = pedidosData.map(pedido => ({
+          ...pedido,
+          parcelas: (parcelasData || []).filter(p => p.pedido_id === pedido.id)
+        }));
+        
+        setPedidos(pedidosComParcelas);
+        
+        // Se tiver pedido na URL, expandir automaticamente
+        if (pedidoIdFromUrl) {
+          setExpandedPedidos(new Set([pedidoIdFromUrl]));
+        } else if (pedidosComParcelas.length > 0) {
+          // Expandir o primeiro pedido por padrão
+          setExpandedPedidos(new Set([pedidosComParcelas[0].id]));
+        }
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
         toast.error('Erro ao carregar faturas');
@@ -119,9 +136,21 @@ const AdvertiserInvoices = () => {
     loadData();
   }, [userProfile?.id, pedidoIdFromUrl]);
 
+  const togglePedido = (pedidoId: string) => {
+    setExpandedPedidos(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(pedidoId)) {
+        newSet.delete(pedidoId);
+      } else {
+        newSet.add(pedidoId);
+      }
+      return newSet;
+    });
+  };
+
   // Gerar boleto para parcela
-  const handleGenerateBoleto = async (parcela: Parcela) => {
-    if (!pedido || !userProfile) return;
+  const handleGenerateBoleto = async (parcela: Parcela, pedido: PedidoComParcelas) => {
+    if (!userProfile) return;
     
     setGeneratingBoleto(parcela.id);
     
@@ -133,7 +162,6 @@ const AdvertiserInvoices = () => {
         .eq('id', userProfile.id)
         .single();
       
-      // Cast para any para acessar campos que podem não existir no tipo
       const userDataAny = userData as any;
       
       const { data, error } = await supabase.functions.invoke('generate-boleto-payment', {
@@ -168,11 +196,14 @@ const AdvertiserInvoices = () => {
         toast.success('Boleto gerado com sucesso!');
         
         // Atualizar parcela localmente
-        setParcelas(prev => prev.map(p => 
-          p.id === parcela.id 
-            ? { ...p, boleto_url: data.boleto_url, boleto_barcode: data.boleto_barcode }
-            : p
-        ));
+        setPedidos(prev => prev.map(p => ({
+          ...p,
+          parcelas: p.parcelas.map(parc => 
+            parc.id === parcela.id 
+              ? { ...parc, boleto_url: data.boleto_url, boleto_barcode: data.boleto_barcode }
+              : parc
+          )
+        })));
         
         // Abrir boleto em nova aba
         window.open(data.boleto_url, '_blank');
@@ -190,9 +221,7 @@ const AdvertiserInvoices = () => {
   };
 
   // Gerar PIX para parcela
-  const handleGeneratePix = async (parcela: Parcela) => {
-    if (!pedido) return;
-    
+  const handleGeneratePix = async (parcela: Parcela, pedido: PedidoComParcelas) => {
     setGeneratingPix(parcela.id);
     
     try {
@@ -216,12 +245,15 @@ const AdvertiserInvoices = () => {
           }
         });
         
-        // Atualizar parcela
-        setParcelas(prev => prev.map(p => 
-          p.id === parcela.id 
-            ? { ...p, pix_qr_code: data.qrCodeBase64, pix_copia_cola: data.qrCode }
-            : p
-        ));
+        // Atualizar parcela localmente
+        setPedidos(prev => prev.map(p => ({
+          ...p,
+          parcelas: p.parcelas.map(parc => 
+            parc.id === parcela.id 
+              ? { ...parc, pix_qr_code: data.qrCodeBase64, pix_copia_cola: data.qrCode }
+              : parc
+          )
+        })));
       } else {
         throw new Error(data?.error || 'Erro ao gerar PIX');
       }
@@ -276,6 +308,16 @@ const AdvertiserInvoices = () => {
     };
   };
 
+  const getPlanoNome = (meses: number) => {
+    switch (meses) {
+      case 1: return 'Mensal';
+      case 3: return 'Trimestral';
+      case 6: return 'Semestral';
+      case 12: return 'Anual';
+      default: return `${meses} meses`;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -285,11 +327,11 @@ const AdvertiserInvoices = () => {
     );
   }
 
-  if (!pedido) {
+  if (pedidos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <FileText className="h-16 w-16 text-gray-300" />
-        <p className="text-lg text-gray-500">Nenhum plano de fidelidade encontrado</p>
+        <Receipt className="h-16 w-16 text-muted-foreground/50" />
+        <p className="text-lg text-muted-foreground">Nenhum plano de fidelidade encontrado</p>
         <Button onClick={() => navigate('/paineis-digitais/loja')}>
           Ver Planos
         </Button>
@@ -297,12 +339,9 @@ const AdvertiserInvoices = () => {
     );
   }
 
-  const parcelasPagas = parcelas.filter(p => p.status === 'pago').length;
-  const totalParcelas = parcelas.length;
-
   return (
     <div className="space-y-6">
-      {/* Header com voltar */}
+      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => navigate('/anunciante/pedidos')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -311,161 +350,203 @@ const AdvertiserInvoices = () => {
         <div>
           <h1 className="text-2xl font-bold">Minhas Faturas</h1>
           <p className="text-sm text-muted-foreground">
-            Plano Fidelidade #{pedido.id.substring(0, 8)}
+            {pedidos.length} plano{pedidos.length > 1 ? 's' : ''} de fidelidade
           </p>
         </div>
       </div>
 
-      {/* Resumo do Plano */}
-      <Card className="border-l-4 border-l-primary">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Building2 className="h-5 w-5" />
-            Resumo do Plano
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Valor Total</p>
-              <p className="text-xl font-bold">{formatCurrency(pedido.valor_total)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Parcelas</p>
-              <p className="text-xl font-bold">{parcelasPagas}/{totalParcelas}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Dia Vencimento</p>
-              <p className="text-xl font-bold">Dia {pedido.dia_vencimento}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Forma de Pagamento</p>
-              <p className="text-xl font-bold">
-                {pedido.tipo_pagamento === 'boleto_fidelidade' ? 'Boleto' : 'PIX'}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista de Parcelas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Parcelas
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {parcelas.map((parcela) => {
-            const status = getParcelaStatus(parcela);
-            const StatusIcon = status.icon;
-            const isPrimeira = parcela.numero_parcela === 1;
-            const isPago = parcela.status === 'pago';
-            const isPendente = parcela.status === 'aguardando_pagamento' || parcela.status === 'pendente';
-            const isBoleto = pedido.tipo_pagamento === 'boleto_fidelidade';
-            
-            return (
-              <div
-                key={parcela.id}
-                className={cn(
-                  "flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border-2 transition-all",
-                  status.bgColor,
-                  isPrimeira && !isPago && "ring-2 ring-primary ring-offset-2"
-                )}
-              >
-                <div className="flex items-center gap-4 mb-3 md:mb-0">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center font-bold",
-                    isPago ? "bg-green-500 text-white" : "bg-gray-200 text-gray-600"
-                  )}>
-                    {parcela.numero_parcela}
-                  </div>
-                  <div>
-                    <p className="font-semibold">
-                      Parcela {parcela.numero_parcela}/{totalParcelas}
-                      {isPrimeira && !isPago && (
-                        <Badge className="ml-2 bg-primary text-primary-foreground">
-                          Pagar Agora
-                        </Badge>
-                      )}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Vencimento: {new Date(parcela.data_vencimento).toLocaleDateString('pt-BR')}
-                    </p>
-                    {parcela.valor_multa > 0 && (
-                      <p className="text-xs text-red-600">
-                        + Multa: {formatCurrency(parcela.valor_multa)} | Juros: {formatCurrency(parcela.valor_juros)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-lg font-bold">{formatCurrency(parcela.valor_final)}</p>
-                    <Badge className={cn("border", status.bgColor, status.color)}>
-                      <StatusIcon className="h-3 w-3 mr-1" />
-                      {status.label}
-                    </Badge>
-                  </div>
-
-                  {/* Botões de Ação */}
-                  {isPendente && (
-                    <div className="flex gap-2">
-                      {isBoleto ? (
-                        <>
-                          {parcela.boleto_url ? (
-                            <Button
-                              size="sm"
-                              onClick={() => window.open(parcela.boleto_url!, '_blank')}
-                            >
-                              <Download className="h-4 w-4 mr-1" />
-                              Baixar Boleto
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => handleGenerateBoleto(parcela)}
-                              disabled={generatingBoleto === parcela.id}
-                            >
-                              {generatingBoleto === parcela.id ? (
-                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                              ) : (
-                                <FileText className="h-4 w-4 mr-1" />
-                              )}
-                              Gerar Boleto
-                            </Button>
-                          )}
-                        </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => handleGeneratePix(parcela)}
-                          disabled={generatingPix === parcela.id}
-                        >
-                          {generatingPix === parcela.id ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <QrCode className="h-4 w-4 mr-1" />
-                          )}
-                          Pagar com PIX
-                        </Button>
-                      )}
+      {/* Lista de Pedidos Agrupados */}
+      <div className="space-y-4">
+        {pedidos.map((pedido) => {
+          const isExpanded = expandedPedidos.has(pedido.id);
+          const parcelasPagas = pedido.parcelas.filter(p => p.status === 'pago').length;
+          const totalParcelas = pedido.parcelas.length;
+          const isBoleto = pedido.tipo_pagamento === 'boleto_fidelidade';
+          const primeiraParcela = pedido.parcelas.find(p => p.numero_parcela === 1);
+          const primeiraPendente = pedido.parcelas.find(p => p.status !== 'pago');
+          
+          return (
+            <Card key={pedido.id} className={cn(
+              "transition-all",
+              pedidoIdFromUrl === pedido.id && "ring-2 ring-primary"
+            )}>
+              <Collapsible open={isExpanded} onOpenChange={() => togglePedido(pedido.id)}>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <Building2 className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            Plano {getPlanoNome(pedido.plano_meses || pedido.total_parcelas)}
+                            <Badge variant="outline" className="ml-2">
+                              {isBoleto ? 'Boleto' : 'PIX'}
+                            </Badge>
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            Pedido #{pedido.id.substring(0, 8)} • Criado em {new Date(pedido.created_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-lg font-bold">{formatCurrency(pedido.valor_total)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {parcelasPagas}/{totalParcelas} parcelas pagas
+                          </p>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
                     </div>
-                  )}
+                  </CardHeader>
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent>
+                  <CardContent className="pt-0 space-y-3">
+                    {/* Resumo */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg mb-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Valor Mensal</p>
+                        <p className="font-semibold">{formatCurrency(pedido.valor_total / (pedido.total_parcelas || 1))}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Dia Vencimento</p>
+                        <p className="font-semibold">Dia {pedido.dia_vencimento}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Progresso</p>
+                        <p className="font-semibold">{parcelasPagas}/{totalParcelas}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Status</p>
+                        <Badge variant={parcelasPagas > 0 ? 'default' : 'secondary'}>
+                          {parcelasPagas === 0 ? 'Aguardando 1ª Parcela' : parcelasPagas === totalParcelas ? 'Quitado' : 'Em Andamento'}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    {/* Lista de Parcelas */}
+                    {pedido.parcelas.map((parcela) => {
+                      const status = getParcelaStatus(parcela);
+                      const StatusIcon = status.icon;
+                      const isPrimeira = parcela.numero_parcela === 1;
+                      const isPago = parcela.status === 'pago';
+                      const isPendente = parcela.status === 'aguardando_pagamento' || parcela.status === 'pendente';
+                      const isProxima = primeiraPendente?.id === parcela.id;
+                      
+                      return (
+                        <div
+                          key={parcela.id}
+                          className={cn(
+                            "flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border-2 transition-all",
+                            status.bgColor,
+                            isProxima && !isPago && "ring-2 ring-primary ring-offset-2"
+                          )}
+                        >
+                          <div className="flex items-center gap-4 mb-3 md:mb-0">
+                            <div className={cn(
+                              "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm",
+                              isPago ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                            )}>
+                              {parcela.numero_parcela}
+                            </div>
+                            <div>
+                              <p className="font-semibold flex items-center gap-2">
+                                Parcela {parcela.numero_parcela}/{totalParcelas}
+                                {isProxima && !isPago && (
+                                  <Badge className="bg-primary text-primary-foreground">
+                                    Pagar Agora
+                                  </Badge>
+                                )}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Vencimento: {new Date(parcela.data_vencimento).toLocaleDateString('pt-BR')}
+                              </p>
+                              {parcela.valor_multa > 0 && (
+                                <p className="text-xs text-red-600">
+                                  + Multa: {formatCurrency(parcela.valor_multa)} | Juros: {formatCurrency(parcela.valor_juros)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
 
-                  {isPago && parcela.data_pagamento && (
-                    <p className="text-xs text-green-600">
-                      Pago em {new Date(parcela.data_pagamento).toLocaleDateString('pt-BR')}
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="text-lg font-bold">{formatCurrency(parcela.valor_final)}</p>
+                              <Badge className={cn("border", status.bgColor, status.color)}>
+                                <StatusIcon className="h-3 w-3 mr-1" />
+                                {status.label}
+                              </Badge>
+                            </div>
+
+                            {/* Botões de Ação */}
+                            {isPendente && (
+                              <div className="flex gap-2">
+                                {isBoleto ? (
+                                  <>
+                                    {parcela.boleto_url ? (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => window.open(parcela.boleto_url!, '_blank')}
+                                      >
+                                        <Download className="h-4 w-4 mr-1" />
+                                        Baixar Boleto
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleGenerateBoleto(parcela, pedido)}
+                                        disabled={generatingBoleto === parcela.id}
+                                      >
+                                        {generatingBoleto === parcela.id ? (
+                                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                        ) : (
+                                          <FileText className="h-4 w-4 mr-1" />
+                                        )}
+                                        Gerar Boleto
+                                      </Button>
+                                    )}
+                                  </>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleGeneratePix(parcela, pedido)}
+                                    disabled={generatingPix === parcela.id}
+                                  >
+                                    {generatingPix === parcela.id ? (
+                                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                    ) : (
+                                      <QrCode className="h-4 w-4 mr-1" />
+                                    )}
+                                    Pagar com PIX
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+
+                            {isPago && parcela.data_pagamento && (
+                              <p className="text-xs text-green-600">
+                                Pago em {new Date(parcela.data_pagamento).toLocaleDateString('pt-BR')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
+          );
+        })}
+      </div>
 
       {/* Dialog PIX */}
       <PixQrCodeDialog
