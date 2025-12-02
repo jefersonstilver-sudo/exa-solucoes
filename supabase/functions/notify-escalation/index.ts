@@ -228,8 +228,10 @@ serve(async (req) => {
     let message = `🔔 *ESCALAÇÃO COMERCIAL*\n`;
     message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
     message += `📅 *Data/Hora:* ${dateStr} às ${timeStr}\n\n`;
+    const cleanPhoneForLink = phoneNumber.replace(/\D/g, '');
     message += `👤 *Lead:* ${leadName || 'Não identificado'}\n`;
     message += `📱 *Telefone:* ${formatPhoneDisplay(phoneNumber)}\n`;
+    message += `📲 *WhatsApp:* https://wa.me/${cleanPhoneForLink}\n`;
     
     if (leadSegment) {
       message += `🏢 *Segmento:* ${leadSegment}\n`;
