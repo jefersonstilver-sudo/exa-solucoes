@@ -97,7 +97,7 @@ serve(async (req) => {
       .insert({
         client_id: user.id,
         lista_paineis: listaPaineis,
-        valor: totalPrice,
+        valor_total: totalPrice,
         status: 'aguardando_pagamento',
         tipo_pagamento: paymentMethod,
         is_fidelidade: true,
