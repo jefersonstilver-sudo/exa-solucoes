@@ -68,7 +68,7 @@ serve(async (req) => {
     // Buscar todos os zapi_logs com mensagens
     const { data: allZapiLogs, error: zapiError } = await supabase
       .from('zapi_logs')
-      .select('id, zapi_message_id, phone_number, message_text, direction, agent_key, created_at, raw_payload')
+      .select('id, zapi_message_id, phone_number, message_text, direction, agent_key, created_at, metadata')
       .not('message_text', 'is', null)
       .order('created_at', { ascending: false });
 
@@ -171,8 +171,8 @@ serve(async (req) => {
         orphanLogsFound++;
 
         // Determinar direção
-        const rawPayload = log.raw_payload as any;
-        const isFromMe = rawPayload?.fromMe === true;
+        const metadata = log.metadata as any;
+        const isFromMe = metadata?.fromMe === true;
         const direction = isFromMe ? 'outbound' : (log.direction || 'inbound');
 
         // Inserir mensagem
@@ -185,7 +185,7 @@ serve(async (req) => {
             external_id: log.zapi_message_id,
             from_role: direction === 'outbound' ? 'agent' : 'contact',
             created_at: log.created_at,
-            raw_payload: log.raw_payload
+            raw_payload: log.metadata
           });
 
         if (insertError) {

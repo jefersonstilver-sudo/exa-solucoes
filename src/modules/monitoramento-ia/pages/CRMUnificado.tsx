@@ -11,6 +11,7 @@ import { ImperativePanelHandle } from 'react-resizable-panels';
 import { PanelLeftOpen, PanelRightOpen, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 export const CRMUnificado = () => {
   const isMobile = useIsMobile();
@@ -101,29 +102,43 @@ export const CRMUnificado = () => {
         </div>
       )}
 
-      {/* Layout de 2 colunas com painéis redimensionáveis */}
+      {/* Layout de 2 colunas com painéis redimensionáveis - drag-to-resize responsivo */}
       <div className="flex-1 overflow-hidden relative">
         <ResizablePanelGroup direction="horizontal">
-          {/* Painel de conversas (esquerda) */}
+          {/* Painel de conversas (esquerda) - permite scroll mesmo quando retraído */}
           <ResizablePanel 
             ref={leftPanelRef}
             defaultSize={30} 
-            minSize={5}
-            maxSize={50}
+            minSize={12}
+            maxSize={55}
+            collapsible={true}
+            collapsedSize={5}
+            onCollapse={() => setLeftPanelCollapsed(true)}
+            onExpand={() => setLeftPanelCollapsed(false)}
             onResize={(size) => {
-              setLeftPanelCollapsed(size < 10);
+              setLeftPanelCollapsed(size < 12);
             }}
+            className="transition-all duration-200"
           >
-            <WhatsAppCRMInbox
-              conversations={conversations}
-              selectedId={selectedConversationId}
-              onSelect={selectConversation}
-              loading={loading}
-              isFullscreen={isFullscreen}
-            />
+            <div className={cn(
+              "h-full overflow-hidden",
+              leftPanelCollapsed && "overflow-y-auto overscroll-contain"
+            )}>
+              <WhatsAppCRMInbox
+                conversations={conversations}
+                selectedId={selectedConversationId}
+                onSelect={selectConversation}
+                loading={loading}
+                isFullscreen={isFullscreen}
+              />
+            </div>
           </ResizablePanel>
 
-          <ResizableHandle withHandle className="w-px bg-border/30 hover:bg-border/50" />
+          {/* Handle de arraste elegante - mais visível ao hover */}
+          <ResizableHandle 
+            withHandle 
+            className="w-1.5 bg-border/20 hover:bg-primary/30 active:bg-primary/50 transition-colors duration-200 data-[resize-handle-active]:bg-primary/50"
+          />
 
           {/* Área de chat (direita) */}
           <ResizablePanel 
