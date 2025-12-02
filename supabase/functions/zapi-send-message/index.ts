@@ -100,7 +100,7 @@ serve(async (req) => {
 
     if (cachedTimestamp) {
       const timeDiff = Date.now() - cachedTimestamp;
-      if (timeDiff < 3000) { // menos de 3 segundos
+      if (timeDiff < 8000) { // 8 segundos de proteção contra duplicação
         console.log('[ZAPI-SEND] ⚠️ Duplicate blocked (cache):', {
           message: message.substring(0, 30),
           timeDiff: `${timeDiff}ms ago`
@@ -135,7 +135,7 @@ serve(async (req) => {
 
       if (recentMessages?.[0]?.body === message) {
         const timeDiff = Date.now() - new Date(recentMessages[0].created_at).getTime();
-        if (timeDiff < 3000) { // menos de 3 segundos
+        if (timeDiff < 8000) { // 8 segundos de proteção contra duplicação
           console.log('[ZAPI-SEND] ⚠️ Duplicate blocked (DB):', {
             message: message.substring(0, 30),
             timeDiff: `${timeDiff}ms ago`
@@ -163,33 +163,84 @@ serve(async (req) => {
         }, 10000);
       });
 
-    // 🤖 QUEBRAR MENSAGENS LONGAS (humanizar comunicação)
-    const splitMessage = (text: string, maxLength = 150): string[] => {
+    // 🤖 QUEBRAR MENSAGENS LONGAS (humanizar comunicação) - FARC FIX 2024-12
+    const splitMessage = (text: string, maxLength = 1000): string[] => {
       if (text.length <= maxLength) return [text];
       
-      // 🔧 CORREÇÃO: Proteger pontos de separadores de milhares (ex: R$ 4.862,40)
-      // Substituir temporariamente pontos entre números por placeholder
-      const PLACEHOLDER = '§§§';
-      const protectedText = text.replace(/(\d)\.(\d{3})/g, `$1${PLACEHOLDER}$2`);
+      // 🛡️ PROTEÇÃO 1: URLs completas (https://, http://, www.)
+      const URL_PLACEHOLDER = '⟦URL⟧';
+      const urls: string[] = [];
+      let protectedText = text.replace(
+        /(https?:\/\/[^\s]+|www\.[^\s]+)/gi, 
+        (match) => {
+          urls.push(match);
+          return `${URL_PLACEHOLDER}${urls.length - 1}${URL_PLACEHOLDER}`;
+        }
+      );
       
-      // Agora dividir por sentenças (pontos normais)
-      const sentences = protectedText.match(/[^.!?]+[.!?]+/g) || [protectedText];
+      // 🛡️ PROTEÇÃO 2: Listas numeradas (1. 2. 3. etc)
+      const LIST_PLACEHOLDER = '⟦LIST⟧';
+      protectedText = protectedText.replace(/(\d+)\.\s/g, `$1${LIST_PLACEHOLDER} `);
+      
+      // 🛡️ PROTEÇÃO 3: Valores monetários (R$ 4.862,40)
+      const MONEY_PLACEHOLDER = '⟦MONEY⟧';
+      protectedText = protectedText.replace(/(\d)\.(\d{3})/g, `$1${MONEY_PLACEHOLDER}$2`);
+      
+      // Função para restaurar todos os placeholders
+      const restorePlaceholders = (chunk: string): string => {
+        let restored = chunk;
+        // Restaurar URLs
+        restored = restored.replace(/⟦URL⟧(\d+)⟦URL⟧/g, (_, idx) => urls[parseInt(idx)] || '');
+        // Restaurar listas numeradas
+        restored = restored.replace(new RegExp(LIST_PLACEHOLDER, 'g'), '.');
+        // Restaurar valores monetários
+        restored = restored.replace(new RegExp(MONEY_PLACEHOLDER, 'g'), '.');
+        return restored;
+      };
+      
+      // 🔄 DIVIDIR POR PARÁGRAFOS PRIMEIRO (preserva estrutura)
+      const paragraphs = protectedText.split(/\n\n+/);
       const chunks: string[] = [];
       let currentChunk = '';
       
-      for (const sentence of sentences) {
-        // Restaurar os pontos de milhares
-        const restored = sentence.replace(new RegExp(PLACEHOLDER, 'g'), '.');
-        if ((currentChunk + restored).length <= maxLength) {
-          currentChunk += restored;
+      for (const paragraph of paragraphs) {
+        const testChunk = currentChunk ? currentChunk + '\n\n' + paragraph : paragraph;
+        
+        if (restorePlaceholders(testChunk).length <= maxLength) {
+          currentChunk = testChunk;
         } else {
-          if (currentChunk) chunks.push(currentChunk.trim());
-          currentChunk = restored;
+          // Parágrafo não cabe, salvar chunk atual e começar novo
+          if (currentChunk) {
+            chunks.push(restorePlaceholders(currentChunk.trim()));
+          }
+          
+          // Se parágrafo individual é muito grande, dividir por linhas
+          if (restorePlaceholders(paragraph).length > maxLength) {
+            const lines = paragraph.split(/\n/);
+            let lineChunk = '';
+            
+            for (const line of lines) {
+              const testLine = lineChunk ? lineChunk + '\n' + line : line;
+              if (restorePlaceholders(testLine).length <= maxLength) {
+                lineChunk = testLine;
+              } else {
+                if (lineChunk) chunks.push(restorePlaceholders(lineChunk.trim()));
+                lineChunk = line;
+              }
+            }
+            currentChunk = lineChunk;
+          } else {
+            currentChunk = paragraph;
+          }
         }
       }
-      if (currentChunk) chunks.push(currentChunk.trim().replace(new RegExp(PLACEHOLDER, 'g'), '.'));
       
-      return chunks;
+      if (currentChunk) {
+        chunks.push(restorePlaceholders(currentChunk.trim()));
+      }
+      
+      // Filtrar chunks vazios
+      return chunks.filter(c => c.trim().length > 0);
     };
 
     // 🛡️ ENVIAR COM RETRY (blindagem contra desconexão)

@@ -1465,11 +1465,15 @@ Qual te interessou? 😊`;
       sendResult = result.data;
       sendError = result.error;
     } else {
+      // 🛡️ FARC FIX: Detectar se mensagem contém links (Google Drive, examidia, etc)
+      const hasLinks = sanitizedReply.match(/https?:\/\/|www\./i);
+      
       const result = await supabase.functions.invoke('zapi-send-message', {
         body: {
           agentKey,
           phone: phoneNumber,
-          message: sanitizedReply
+          message: sanitizedReply,
+          skipSplit: hasLinks ? true : undefined  // Não quebrar mensagens com links
         }
       });
       sendResult = result.data;
