@@ -30,6 +30,14 @@ interface OrderWithClient {
   parcela_atual?: number;
   total_parcelas?: number;
   status_adimplencia?: string;
+  // Campos do termo aceito
+  termo_aceito_em?: string;
+  dados_empresa_termo?: {
+    cnpj?: string;
+    razao_social?: string;
+    nomeEmpresa?: string;
+  };
+  versao_termo?: string;
 }
 
 interface OrderVideo {
@@ -131,6 +139,25 @@ export const useRealOrderDetails = (orderId: string) => {
           console.error('Erro ao buscar nome do cliente:', error);
         }
 
+        // Buscar dados do termo de fidelidade aceito
+        let termoData: { aceito_em?: string; dados_empresa?: any; versao_termo?: string } | null = null;
+        
+        if (order.is_fidelidade) {
+          const { data: termo, error: termoError } = await supabase
+            .from('termos_fidelidade_aceites')
+            .select('aceito_em, dados_empresa, versao_termo')
+            .eq('pedido_id', orderId)
+            .maybeSingle();
+          
+          if (!termoError && termo) {
+            termoData = termo;
+            console.log('📜 [ORDER DETAILS] Termo de fidelidade encontrado:', {
+              aceito_em: termo.aceito_em,
+              versao: termo.versao_termo
+            });
+          }
+        }
+
         // Montar objeto completo do pedido
         const orderWithClient: OrderWithClient = {
           id: order.id,
@@ -150,7 +177,7 @@ export const useRealOrderDetails = (orderId: string) => {
           log_pagamento: order.log_pagamento,
           compliance_data: order.compliance_data,
           cupom_id: order.cupom_id,
-          termos_aceitos: order.termos_aceitos,
+          termos_aceitos: order.termos_aceitos || !!termoData,
           transaction_id: order.transaction_id,
           // Campos fidelidade
           tipo_pagamento: order.tipo_pagamento,
@@ -158,7 +185,11 @@ export const useRealOrderDetails = (orderId: string) => {
           dia_vencimento: order.dia_vencimento,
           parcela_atual: order.parcela_atual,
           total_parcelas: order.total_parcelas,
-          status_adimplencia: order.status_adimplencia
+          status_adimplencia: order.status_adimplencia,
+          // Campos do termo aceito
+          termo_aceito_em: termoData?.aceito_em,
+          dados_empresa_termo: termoData?.dados_empresa,
+          versao_termo: termoData?.versao_termo
         };
 
         console.log('📦 [ORDER DETAILS] Order montado:', {
@@ -166,7 +197,9 @@ export const useRealOrderDetails = (orderId: string) => {
           lista_predios_count: orderWithClient.lista_predios?.length || 0,
           lista_paineis_count: orderWithClient.lista_paineis?.length || 0,
           is_fidelidade: orderWithClient.is_fidelidade,
-          tipo_pagamento: orderWithClient.tipo_pagamento
+          tipo_pagamento: orderWithClient.tipo_pagamento,
+          termos_aceitos: orderWithClient.termos_aceitos,
+          termo_aceito_em: orderWithClient.termo_aceito_em
         });
 
         setOrderDetails(orderWithClient);
