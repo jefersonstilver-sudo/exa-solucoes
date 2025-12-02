@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MonitorPlay, ArrowRight, AlertTriangle, CheckCircle } from 'lucide-react';
+import { MonitorPlay, ArrowRight, AlertTriangle, CheckCircle, Wifi, WifiOff } from 'lucide-react';
 import { DashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,9 +19,24 @@ const PanelsStatusCard = ({ metrics }: PanelsStatusCardProps) => {
   return (
     <Card className="bg-gradient-to-br from-background via-background to-accent/5 rounded-2xl border border-border/40 shadow-lg hover:shadow-xl hover:border-primary/20 transition-all">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm md:text-base flex items-center gap-2">
-          <MonitorPlay className="h-4 w-4 text-blue-500" />
-          Status dos Painéis
+        <CardTitle className="text-sm md:text-base flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MonitorPlay className="h-4 w-4 text-blue-500" />
+            Status dos Painéis
+          </div>
+          <div className="flex items-center gap-1.5">
+            {metrics.isRealtimeConnected ? (
+              <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                <Wifi className="h-3 w-3 animate-pulse" />
+                <span>Ao vivo</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
+                <WifiOff className="h-3 w-3" />
+                <span>Offline</span>
+              </div>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
