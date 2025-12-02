@@ -15,7 +15,9 @@ import {
   ExternalLink,
   Building2,
   Target,
-  FileText
+  FileText,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,11 +55,22 @@ interface Vendedor {
   recebe_escalacoes: boolean;
 }
 
+interface Message {
+  id: string;
+  body: string;
+  direction: 'inbound' | 'outbound';
+  created_at: string;
+  from_role?: string;
+}
+
 export default function EscalacoesComerciais() {
   const [escalacoes, setEscalacoes] = useState<Escalacao[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEscalacao, setSelectedEscalacao] = useState<Escalacao | null>(null);
+  const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showFullHistory, setShowFullHistory] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -84,6 +97,25 @@ export default function EscalacoesComerciais() {
     }
   };
 
+  const fetchConversationHistory = async (conversationId: string) => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('id, body, direction, created_at, from_role')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setConversationHistory(data as Message[] || []);
+    } catch (error) {
+      console.error('Erro ao buscar histórico:', error);
+      toast.error('Erro ao carregar histórico da conversa');
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
     
@@ -97,6 +129,15 @@ export default function EscalacoesComerciais() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Buscar histórico quando selecionar uma escalação
+  useEffect(() => {
+    if (selectedEscalacao?.conversation_id) {
+      fetchConversationHistory(selectedEscalacao.conversation_id);
+    } else {
+      setConversationHistory([]);
+    }
+  }, [selectedEscalacao?.conversation_id]);
 
   const toggleVendedorStatus = async (vendedor: Vendedor, field: 'ativo' | 'recebe_escalacoes') => {
     try {
@@ -359,6 +400,12 @@ export default function EscalacoesComerciais() {
                             </p>
                           )}
 
+                          {escalacao.first_message && (
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2 bg-background/50 p-2 rounded border border-border/30">
+                              "{escalacao.first_message}"
+                            </p>
+                          )}
+
                           {escalacao.plans_interested && escalacao.plans_interested.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {escalacao.plans_interested.map((plan, idx) => (
@@ -508,6 +555,74 @@ export default function EscalacoesComerciais() {
                   )}
                 </div>
               </div>
+
+              {/* Histórico Completo da Conversa */}
+              {selectedEscalacao.conversation_id && (
+                <div className="mt-6">
+                  <Button
+                    variant="outline"
+                    className="w-full mb-4"
+                    onClick={() => setShowFullHistory(!showFullHistory)}
+                  >
+                    {showFullHistory ? (
+                      <>
+                        <ChevronUp className="w-4 h-4 mr-2" />
+                        Ocultar Histórico Completo
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-4 h-4 mr-2" />
+                        Ver Histórico Completo ({conversationHistory.length} mensagens)
+                      </>
+                    )}
+                  </Button>
+
+                  {showFullHistory && (
+                    <div className="border border-border/50 rounded-lg p-4 bg-background/30">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">
+                        📋 Histórico Completo da Conversa
+                      </p>
+                      
+                      {loadingHistory ? (
+                        <div className="flex items-center justify-center py-8">
+                          <RefreshCw className="w-5 h-5 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : (
+                        <ScrollArea className="h-[400px]">
+                          <div className="space-y-3">
+                            {conversationHistory.map((msg) => (
+                              <div 
+                                key={msg.id}
+                                className={`flex ${msg.direction === 'inbound' ? 'justify-start' : 'justify-end'}`}
+                              >
+                                <div className={`max-w-[80%] p-3 rounded-lg ${
+                                  msg.direction === 'inbound'
+                                    ? 'bg-white/10 border border-border/50'
+                                    : 'bg-primary/20 border border-primary/30'
+                                }`}>
+                                  <p className="text-[10px] font-medium mb-1 opacity-70">
+                                    {msg.direction === 'inbound' ? '👤 Cliente' : '🤖 Sofia'}
+                                  </p>
+                                  <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                                    {format(new Date(msg.created_at), 'dd/MM HH:mm', { locale: ptBR })}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                            
+                            {conversationHistory.length === 0 && (
+                              <p className="text-center text-muted-foreground py-4">
+                                Nenhuma mensagem encontrada
+                              </p>
+                            )}
+                          </div>
+                        </ScrollArea>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
