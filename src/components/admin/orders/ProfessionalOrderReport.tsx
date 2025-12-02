@@ -29,6 +29,14 @@ interface OrderData {
   parcela_atual?: number;
   total_parcelas?: number;
   status_adimplencia?: string;
+  // Campos do termo aceito
+  termo_aceito_em?: string;
+  dados_empresa_termo?: {
+    cnpj?: string;
+    razao_social?: string;
+    nomeEmpresa?: string;
+  };
+  versao_termo?: string;
 }
 interface PanelData {
   id: string;
@@ -85,6 +93,17 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
 
   // Verificar se os dados de auditoria estão incompletos
   const hasIncompleteAuditData = !order.compliance_data || !order.compliance_data.payer || order.log_pagamento?.pixData?.mpResponse?.status === 'pending';
+
+  // Calcular status correto baseado em vídeos
+  const getCorrectStatus = (orderStatus: string, videosCount: number) => {
+    // Se pedido pago/ativo mas sem vídeos -> Aguardando Vídeo
+    if ((orderStatus === 'pago' || orderStatus === 'ativo') && videosCount === 0) {
+      return 'pago_pendente_video';
+    }
+    return orderStatus;
+  };
+
+  const correctStatus = getCorrectStatus(order.status, videos.length);
 
   // Ordenar vídeos: em exibição primeiro
   const sortedVideos = [...videos].sort((a, b) => {
@@ -172,7 +191,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
       icon: <FileText className="h-4 w-4" />
     };
   };
-  const statusConfig = getStatusConfig(order.status);
+  const statusConfig = getStatusConfig(correctStatus);
   const emittedAt = new Date().toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -267,16 +286,43 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <div>
                 <p className="text-gray-500 mb-1">Termos Aceitos</p>
                 <p className="font-semibold text-gray-900">
-                  {order.termos_aceitos ? <span className="inline-flex items-center gap-1 text-green-700">
+                  {order.termos_aceitos ? (
+                    <span className="inline-flex items-center gap-1 text-green-700">
                       <CheckCircle2 className="h-3 w-3" />
-                      Sim
-                    </span> : <span className="inline-flex items-center gap-1 text-red-700">
+                      Sim {order.termo_aceito_em && `- ${formatDate(order.termo_aceito_em)}`}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-red-700">
                       <XCircle className="h-3 w-3" />
                       Não
-                    </span>}
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
+            
+            {/* Dados da empresa do termo de fidelidade */}
+            {order.dados_empresa_termo && (order.dados_empresa_termo.razao_social || order.dados_empresa_termo.nomeEmpresa || order.dados_empresa_termo.cnpj) && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className="text-gray-500 mb-2 text-xs font-semibold">Dados da Empresa (Termo Fidelidade)</p>
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  {(order.dados_empresa_termo.razao_social || order.dados_empresa_termo.nomeEmpresa) && (
+                    <div>
+                      <p className="text-gray-500 mb-1">Razão Social</p>
+                      <p className="font-semibold text-gray-900">
+                        {order.dados_empresa_termo.razao_social || order.dados_empresa_termo.nomeEmpresa}
+                      </p>
+                    </div>
+                  )}
+                  {order.dados_empresa_termo.cnpj && (
+                    <div>
+                      <p className="text-gray-500 mb-1">CNPJ</p>
+                      <p className="font-semibold text-gray-900">{order.dados_empresa_termo.cnpj}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
