@@ -87,10 +87,16 @@ serve(async (req) => {
       .eq('key', 'sofia')
       .single();
 
-    const zapiConfig = agent?.zapi_config as { instanceId?: string; token?: string } | null;
+    const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
+    
+    console.log('[NOTIFY-ESCALATION] 🔧 Z-API config check:', {
+      hasConfig: !!zapiConfig,
+      hasInstanceId: !!zapiConfig?.instance_id,
+      hasToken: !!zapiConfig?.token
+    });
 
-    if (!zapiConfig?.instanceId || !zapiConfig?.token) {
-      console.log('[NOTIFY-ESCALATION] ⚠️ Z-API not configured');
+    if (!zapiConfig?.instance_id || !zapiConfig?.token) {
+      console.log('[NOTIFY-ESCALATION] ⚠️ Z-API not configured - missing instance_id or token');
       return new Response(JSON.stringify({ 
         success: true, 
         escalacaoId: escalacao.id,
@@ -159,9 +165,11 @@ serve(async (req) => {
           ? vendedor.telefone 
           : `55${vendedor.telefone}`;
 
-        const response = await fetch(
-          `https://api.z-api.io/instances/${zapiConfig.instanceId}/token/${zapiConfig.token}/send-text`,
-          {
+        console.log(`[NOTIFY-ESCALATION] 📤 Sending to ${vendedor.nome} at ${vendedorPhone}`);
+        
+        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+        
+        const response = await fetch(zapiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
