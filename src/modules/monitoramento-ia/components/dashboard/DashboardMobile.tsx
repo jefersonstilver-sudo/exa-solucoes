@@ -181,7 +181,7 @@ export const DashboardMobile = ({ onMenuClick }: DashboardMobileProps) => {
   }, []);
 
   return (
-    <div className="h-[100dvh] flex flex-col fixed inset-0 z-50 bg-module-primary overflow-hidden">
+    <div className="h-[100dvh] flex flex-col fixed inset-0 z-50 bg-background overflow-hidden">
       {/* Header mobile */}
       <header className="bg-[#9C1E1E] pt-safe sticky top-0 z-50 shadow-lg">
         <div className="flex items-center justify-between px-4 py-3">
