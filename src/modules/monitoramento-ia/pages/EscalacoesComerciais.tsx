@@ -308,12 +308,24 @@ export default function EscalacoesComerciais() {
       const dateStr = now.toLocaleDateString('pt-BR');
       const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
+      // Função para formatar telefone com +
+      const formatPhoneWithPlus = (phone: string): string => {
+        const clean = phone.replace(/\D/g, '');
+        if (clean.length >= 12) {
+          return `+${clean.slice(0, 2)} (${clean.slice(2, 4)}) ${clean.slice(4, 9)}-${clean.slice(9)}`;
+        }
+        return `+${clean}`;
+      };
+
+      const cleanPhone = sendingEscalacao.phone_number.replace(/\D/g, '');
+
       let message = `🔔 *ESCALAÇÃO COMERCIAL (REENVIO MANUAL)*\n`;
       message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
       message += `📅 *Escalação criada em:* ${format(new Date(sendingEscalacao.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}\n`;
       message += `📤 *Reenviado em:* ${dateStr} às ${timeStr}\n\n`;
       message += `👤 *Lead:* ${sendingEscalacao.lead_name || 'Não identificado'}\n`;
-      message += `📱 *Telefone:* ${sendingEscalacao.phone_number}\n`;
+      message += `📱 *Telefone:* ${formatPhoneWithPlus(sendingEscalacao.phone_number)}\n`;
+      message += `📲 *WhatsApp:* https://wa.me/${cleanPhone}\n`;
       
       if (sendingEscalacao.lead_segment) {
         message += `🏢 *Segmento:* ${sendingEscalacao.lead_segment}\n`;
