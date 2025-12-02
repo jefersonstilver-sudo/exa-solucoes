@@ -3323,6 +3323,8 @@ export type Database = {
           notes: string | null
           phone_number: string
           plans_interested: string[] | null
+          responded_at: string | null
+          response_type: string | null
           status: string | null
           updated_at: string | null
           viewed_at: string | null
@@ -3342,6 +3344,8 @@ export type Database = {
           notes?: string | null
           phone_number: string
           plans_interested?: string[] | null
+          responded_at?: string | null
+          response_type?: string | null
           status?: string | null
           updated_at?: string | null
           viewed_at?: string | null
@@ -3361,6 +3365,8 @@ export type Database = {
           notes?: string | null
           phone_number?: string
           plans_interested?: string[] | null
+          responded_at?: string | null
+          response_type?: string | null
           status?: string | null
           updated_at?: string | null
           viewed_at?: string | null

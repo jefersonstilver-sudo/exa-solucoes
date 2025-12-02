@@ -261,9 +261,9 @@ serve(async (req) => {
 
     message += `\n━━━━━━━━━━━━━━━━━━━━`;
     message += `\n⚡ Cliente solicitou condição especial`;
-    message += `\n💼 Aguardando seu contato!`;
+    message += `\n💼 *Clique no botão abaixo após responder!*`;
 
-    // 5. Enviar mensagem para cada vendedor
+    // 5. Enviar mensagem COM BOTÕES para cada vendedor
     let notifiedCount = 0;
     
     for (const vendedor of vendedores) {
@@ -272,15 +272,20 @@ serve(async (req) => {
           ? vendedor.telefone 
           : `55${vendedor.telefone}`;
 
-        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+        // ✅ NOVO: Usar endpoint de botões interativos
+        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-button-actions`;
         const fullMessage = `Olá ${vendedor.nome}!\n\n${message}`;
         
-        console.log(`[NOTIFY-ESCALATION] 📤 Z-API Request Details:`, {
+        // Criar IDs únicos para os botões usando o ID da escalação
+        const buttonJaRespondi = `escalacao_respondida_${escalacao.id}`;
+        const buttonVouResponder = `escalacao_depois_${escalacao.id}`;
+        
+        console.log(`[NOTIFY-ESCALATION] 📤 Z-API Button Request:`, {
           url: zapiUrl.replace(zapiConfig.token!, '***TOKEN***'),
           vendedor: vendedor.nome,
           phone: vendedorPhone,
           messageLength: fullMessage.length,
-          messagePreview: fullMessage.substring(0, 200)
+          buttons: [buttonJaRespondi, buttonVouResponder]
         });
         
         const response = await fetch(zapiUrl, {
@@ -291,7 +296,17 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             phone: vendedorPhone,
-            message: fullMessage
+            message: fullMessage,
+            buttonActions: [
+              {
+                id: buttonJaRespondi,
+                label: "✅ Já respondi"
+              },
+              {
+                id: buttonVouResponder,
+                label: "⏰ Vou responder depois"
+              }
+            ]
           })
         });
 
@@ -304,10 +319,31 @@ serve(async (req) => {
         });
 
         if (response.ok) {
-          console.log(`[NOTIFY-ESCALATION] ✅ Successfully sent to ${vendedor.nome}`);
+          console.log(`[NOTIFY-ESCALATION] ✅ Successfully sent buttons to ${vendedor.nome}`);
           notifiedCount++;
         } else {
-          console.error(`[NOTIFY-ESCALATION] ❌ Failed to send to ${vendedor.nome}: Status ${response.status}`, responseText);
+          // Fallback para mensagem simples se botões não funcionarem
+          console.log(`[NOTIFY-ESCALATION] ⚠️ Buttons failed, trying simple text for ${vendedor.nome}`);
+          
+          const fallbackUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+          const fallbackResponse = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Client-Token': zapiClientToken
+            },
+            body: JSON.stringify({
+              phone: vendedorPhone,
+              message: fullMessage + `\n\n📌 *Responda:*\n• "ok" = Já respondi\n• "depois" = Vou responder depois`
+            })
+          });
+          
+          if (fallbackResponse.ok) {
+            console.log(`[NOTIFY-ESCALATION] ✅ Fallback text sent to ${vendedor.nome}`);
+            notifiedCount++;
+          } else {
+            console.error(`[NOTIFY-ESCALATION] ❌ Failed to send to ${vendedor.nome}: Status ${response.status}`, responseText);
+          }
         }
       } catch (error) {
         console.error(`[NOTIFY-ESCALATION] ❌ Error sending to ${vendedor.nome}:`, error);
@@ -324,13 +360,15 @@ serve(async (req) => {
         lead_phone: phoneNumber,
         lead_name: leadName,
         notified_sellers: notifiedCount,
+        with_buttons: true,
         sent_at: new Date().toISOString()
       }
     });
 
     console.log('[NOTIFY-ESCALATION] ✅ Complete:', {
       escalacaoId: escalacao.id,
-      notified: notifiedCount
+      notified: notifiedCount,
+      withButtons: true
     });
 
     return new Response(JSON.stringify({ 

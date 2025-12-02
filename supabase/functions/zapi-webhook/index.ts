@@ -199,6 +199,208 @@ serve(async (req) => {
       });
     }
 
+    // ========== PROCESSAR RESPOSTA DE BOTÕES (ESCALAÇÕES) ==========
+    const buttonReply = payload.buttonReply || payload.buttonsResponseMessage;
+    
+    if (buttonReply) {
+      const buttonId = buttonReply.buttonId || buttonReply.selectedButtonId || buttonReply.id;
+      console.log('[ZAPI-WEBHOOK] 🔘 Button reply detected:', {
+        buttonId,
+        phone,
+        payload: buttonReply
+      });
+      
+      // Verificar se é um botão de escalação
+      // Formato: escalacao_respondida_UUID ou escalacao_depois_UUID
+      if (buttonId?.startsWith('escalacao_')) {
+        const parts = buttonId.split('_');
+        // escalacao_respondida_UUID ou escalacao_depois_UUID
+        const action = parts[1]; // 'respondida' ou 'depois'
+        const escalacaoId = parts.slice(2).join('_'); // UUID (pode ter underscores)
+        
+        console.log('[ZAPI-WEBHOOK] 📍 Escalation button action:', {
+          action,
+          escalacaoId,
+          phone
+        });
+        
+        if (escalacaoId) {
+          let newStatus = 'pendente';
+          let responseType = null;
+          let confirmMsg = '';
+          
+          if (action === 'respondida') {
+            newStatus = 'concluido';
+            responseType = 'ja_respondido';
+            confirmMsg = '✅ *Escalação marcada como atendida!*\n\nO lead foi removido da lista de pendentes. Bom trabalho! 💪';
+          } else if (action === 'depois') {
+            newStatus = 'pendente';
+            responseType = 'vou_responder';
+            confirmMsg = '⏰ *Escalação permanece pendente.*\n\nVocê pode ver todos os leads pendentes no dashboard.';
+          }
+          
+          // Atualizar escalação no banco
+          const { error: updateError } = await supabase
+            .from('escalacoes_comerciais')
+            .update({ 
+              status: newStatus,
+              viewed_at: new Date().toISOString(),
+              responded_at: action === 'respondida' ? new Date().toISOString() : null,
+              response_type: responseType,
+              attended_at: action === 'respondida' ? new Date().toISOString() : undefined
+            })
+            .eq('id', escalacaoId);
+          
+          if (updateError) {
+            console.error('[ZAPI-WEBHOOK] ❌ Error updating escalation:', updateError);
+          } else {
+            console.log('[ZAPI-WEBHOOK] ✅ Escalation updated:', {
+              escalacaoId,
+              newStatus,
+              responseType
+            });
+            
+            // Enviar confirmação para o vendedor
+            try {
+              // Buscar config Z-API
+              const { data: agent } = await supabase
+                .from('agents')
+                .select('zapi_config')
+                .eq('key', 'sofia')
+                .single();
+              
+              const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
+              const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+              
+              if (zapiConfig?.instance_id && zapiConfig?.token && zapiClientToken) {
+                const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+                
+                await fetch(zapiUrl, {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Client-Token': zapiClientToken
+                  },
+                  body: JSON.stringify({
+                    phone: phone,
+                    message: confirmMsg
+                  })
+                });
+                
+                console.log('[ZAPI-WEBHOOK] ✅ Confirmation sent to seller');
+              }
+            } catch (confirmError) {
+              console.error('[ZAPI-WEBHOOK] ⚠️ Error sending confirmation:', confirmError);
+            }
+          }
+          
+          // Log da ação
+          await supabase.from('agent_logs').insert({
+            agent_key: 'sofia',
+            event_type: 'escalation_button_response',
+            metadata: {
+              escalacao_id: escalacaoId,
+              action,
+              response_type: responseType,
+              seller_phone: phone,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          processed: 'escalation_button_response',
+          action
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
+    // ========== PROCESSAR RESPOSTAS DE TEXTO COMO FALLBACK (ok/depois) ==========
+    const textLower = (payload.text?.message || payload.body || '').toLowerCase().trim();
+    
+    if (textLower === 'ok' || textLower === 'depois') {
+      console.log('[ZAPI-WEBHOOK] 📝 Text fallback for escalation detected:', textLower);
+      
+      // Buscar escalação pendente mais recente do vendedor
+      const { data: escalacaoPendente, error: escError } = await supabase
+        .from('escalacoes_comerciais')
+        .select('id, lead_name')
+        .eq('status', 'pendente')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (escalacaoPendente && !escError) {
+        const action = textLower === 'ok' ? 'respondida' : 'depois';
+        const newStatus = action === 'respondida' ? 'concluido' : 'pendente';
+        const responseType = action === 'respondida' ? 'ja_respondido' : 'vou_responder';
+        
+        const { error: updateError } = await supabase
+          .from('escalacoes_comerciais')
+          .update({ 
+            status: newStatus,
+            viewed_at: new Date().toISOString(),
+            responded_at: action === 'respondida' ? new Date().toISOString() : null,
+            response_type: responseType,
+            attended_at: action === 'respondida' ? new Date().toISOString() : undefined
+          })
+          .eq('id', escalacaoPendente.id);
+        
+        if (!updateError) {
+          console.log('[ZAPI-WEBHOOK] ✅ Escalation updated via text fallback:', {
+            id: escalacaoPendente.id,
+            leadName: escalacaoPendente.lead_name,
+            action
+          });
+          
+          // Enviar confirmação
+          const confirmMsg = action === 'respondida'
+            ? `✅ *Escalação de ${escalacaoPendente.lead_name || 'lead'} marcada como atendida!*`
+            : `⏰ *Escalação de ${escalacaoPendente.lead_name || 'lead'} permanece pendente.*`;
+          
+          try {
+            const { data: agent } = await supabase
+              .from('agents')
+              .select('zapi_config')
+              .eq('key', 'sofia')
+              .single();
+            
+            const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
+            const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+            
+            if (zapiConfig?.instance_id && zapiConfig?.token && zapiClientToken) {
+              const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+              
+              await fetch(zapiUrl, {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Client-Token': zapiClientToken
+                },
+                body: JSON.stringify({
+                  phone: phone,
+                  message: confirmMsg
+                })
+              });
+            }
+          } catch (e) {
+            console.error('[ZAPI-WEBHOOK] Error sending text fallback confirmation:', e);
+          }
+        }
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          processed: 'escalation_text_fallback',
+          action
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     // ========== PROCESSAR EVENTOS DE STATUS ==========
     const eventType = payload.type;
 

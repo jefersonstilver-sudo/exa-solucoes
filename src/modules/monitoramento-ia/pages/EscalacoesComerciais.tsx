@@ -59,6 +59,8 @@ interface Escalacao {
   attended_at: string | null;
   notes: string | null;
   viewed_at: string | null;
+  responded_at: string | null;
+  response_type: 'ja_respondido' | 'vou_responder' | null;
 }
 
 interface Vendedor {
@@ -612,13 +614,24 @@ export default function EscalacoesComerciais() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="font-medium truncate">
                               {escalacao.lead_name || escalacao.phone_number}
                             </span>
                             <Badge className={getStatusColor(escalacao.status)}>
                               {getStatusLabel(escalacao.status)}
                             </Badge>
+                            {/* Indicador de resposta via botão */}
+                            {escalacao.response_type === 'ja_respondido' && (
+                              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">
+                                ✅ Via Botão
+                              </Badge>
+                            )}
+                            {escalacao.response_type === 'vou_responder' && escalacao.status === 'pendente' && (
+                              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-[10px]">
+                                ⏰ Responderá depois
+                              </Badge>
+                            )}
                           </div>
                           
                           <p className="text-sm text-muted-foreground flex items-center gap-1">
@@ -774,6 +787,31 @@ export default function EscalacoesComerciais() {
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Interesse</p>
                     <p className="font-medium">{selectedEscalacao.lead_interest || 'Não especificado'}</p>
                   </div>
+
+                  {/* Status de Resposta via Botão */}
+                  {selectedEscalacao.response_type && (
+                    <div className="p-3 rounded-lg border bg-gradient-to-r from-green-500/10 to-transparent border-green-500/30">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Resposta do Vendedor</p>
+                      <div className="flex items-center gap-2">
+                        {selectedEscalacao.response_type === 'ja_respondido' ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-green-400" />
+                            <span className="font-medium text-green-400">Já respondido</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-4 h-4 text-orange-400" />
+                            <span className="font-medium text-orange-400">Vai responder depois</span>
+                          </>
+                        )}
+                      </div>
+                      {selectedEscalacao.responded_at && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(selectedEscalacao.responded_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {selectedEscalacao.plans_interested && selectedEscalacao.plans_interested.length > 0 && (
                     <div>
