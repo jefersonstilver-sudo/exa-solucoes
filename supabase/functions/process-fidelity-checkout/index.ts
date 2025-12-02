@@ -108,7 +108,7 @@ serve(async (req) => {
         dias_atraso: 0,
         contrato_status: 'pendente_envio',
         proxima_cobranca: proximoVencimento.toISOString().split('T')[0],
-        duracao_meses: selectedPlan,
+        plano_meses: selectedPlan,
         data_inicio: startDate.toISOString(),
         data_fim: endDate.toISOString(),
         cupom_id: couponId
