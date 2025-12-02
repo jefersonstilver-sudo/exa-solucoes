@@ -10,7 +10,8 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  Upload
+  Upload,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { CortesiaOrderSuccessModal } from '@/components/orders/CortesiaOrderSuccessModal';
 import { useCortesiaSuccessDetection } from '@/hooks/useCortesiaSuccessDetection';
 
@@ -53,6 +55,11 @@ const MobileAdvertiserOrders = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    orderId: string | null;
+  }>({ isOpen: false, orderId: null });
+  const [isDeleting, setIsDeleting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { 
@@ -150,6 +157,30 @@ const MobileAdvertiserOrders = () => {
     }
 
     setFilteredOrders(filtered);
+  };
+
+  // Função para excluir pedido
+  const handleDeleteOrder = async () => {
+    if (!deleteConfirm.orderId) return;
+    setIsDeleting(true);
+    
+    try {
+      const { error } = await supabase
+        .from('pedidos')
+        .delete()
+        .eq('id', deleteConfirm.orderId);
+      if (error) throw error;
+      toast.success('Pedido excluído com sucesso');
+      loadOrders();
+    } catch (error: any) {
+      console.error('Erro ao excluir:', error);
+      toast.error('Erro ao excluir pedido', {
+        description: error.message || 'Tente novamente'
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirm({ isOpen: false, orderId: null });
+    }
   };
 
   const getStatusConfig = (status: string) => {
@@ -340,18 +371,36 @@ const MobileAdvertiserOrders = () => {
                             </div>
                           </div>
 
-                          {/* Action */}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              vibrate();
-                              navigate(`/anunciante/pedido/${order.id}`);
-                            }}
-                            className="w-full h-8 text-xs border-gray-200 hover:bg-[#9C1E1E] hover:text-white hover:border-[#9C1E1E]"
-                          >
-                            Ver Detalhes
-                          </Button>
+                          {/* Actions */}
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                vibrate();
+                                navigate(`/anunciante/pedido/${order.id}`);
+                              }}
+                              className="flex-1 h-8 text-xs border-gray-200 hover:bg-[#9C1E1E] hover:text-white hover:border-[#9C1E1E]"
+                            >
+                              Ver Detalhes
+                            </Button>
+                            
+                            {/* Botão de excluir para pedidos pendente/cancelado */}
+                            {['pendente', 'cancelado'].includes(order.status) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  vibrate();
+                                  setDeleteConfirm({ isOpen: true, orderId: order.id });
+                                }}
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </CardContent>
                       </Card>
                     </motion.div>
@@ -401,6 +450,35 @@ const MobileAdvertiserOrders = () => {
         panelCount={orderData?.lista_paineis?.length || orderData?.selected_buildings?.length || 1}
         onClose={closeModal}
       />
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={deleteConfirm.isOpen} onOpenChange={(open) => !open && setDeleteConfirm({ isOpen: false, orderId: null })}>
+        <AlertDialogContent className="max-w-[90vw] rounded-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel disabled={isDeleting} className="flex-1">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteOrder} 
+              className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                'Excluir'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
