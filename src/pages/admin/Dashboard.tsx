@@ -101,8 +101,10 @@ const Dashboard = () => {
               todayRevenue: 0,
               pendingOrders: 0,
               panelsOffline: unifiedStats.prediosTotal - unifiedStats.prediosAtivos,
-              loading: unifiedStats.loading
-            }} 
+              loading: unifiedStats.loading,
+              isRealtimeConnected: true,
+              lastUpdate: new Date()
+            }}
           />
           <RecentSalesCard />
         </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnreadCount } from '@/modules/monitoramento-ia/hooks/useUnreadCount';
 
@@ -10,6 +10,8 @@ export interface DashboardMetrics {
   pendingOrders: number;
   panelsOffline: number;
   loading: boolean;
+  isRealtimeConnected: boolean;
+  lastUpdate: Date | null;
 }
 
 export const useDashboardMetrics = () => {
@@ -21,10 +23,12 @@ export const useDashboardMetrics = () => {
     todayRevenue: 0,
     pendingOrders: 0,
     panelsOffline: 0,
-    loading: true
+    loading: true,
+    isRealtimeConnected: false,
+    lastUpdate: null
   });
 
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     try {
       // Buscar painéis
       const { data: panels, error: panelsError } = await supabase
@@ -58,39 +62,48 @@ export const useDashboardMetrics = () => {
 
       if (pendingError) throw pendingError;
 
-      setMetrics({
+      setMetrics(prev => ({
         unreadConversations: unreadCount,
         panelsOnline,
         panelsTotal,
         todayRevenue,
         pendingOrders: pendingCount || 0,
         panelsOffline: panelsTotal - panelsOnline,
-        loading: false
-      });
+        loading: false,
+        isRealtimeConnected: prev.isRealtimeConnected,
+        lastUpdate: new Date()
+      }));
     } catch (error) {
       console.error('[useDashboardMetrics] Error:', error);
       setMetrics(prev => ({ ...prev, loading: false }));
     }
-  };
+  }, [unreadCount]);
 
   useEffect(() => {
     fetchMetrics();
 
-    // Realtime para painéis
+    // Realtime para painéis com status de conexão
     const panelsChannel = supabase
-      .channel('panels_status_updates')
+      .channel('panels_status_updates_v2')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'painels'
-      }, () => {
+      }, (payload) => {
+        console.log('[useDashboardMetrics] Panel change detected:', payload);
         fetchMetrics();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[useDashboardMetrics] Panels channel status:', status);
+        setMetrics(prev => ({
+          ...prev,
+          isRealtimeConnected: status === 'SUBSCRIBED'
+        }));
+      });
 
     // Realtime para pedidos
     const ordersChannel = supabase
-      .channel('orders_updates')
+      .channel('orders_updates_v2')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -100,11 +113,17 @@ export const useDashboardMetrics = () => {
       })
       .subscribe();
 
+    // Heartbeat para verificar conexão a cada 30s
+    const heartbeat = setInterval(() => {
+      setMetrics(prev => ({ ...prev, lastUpdate: new Date() }));
+    }, 30000);
+
     return () => {
       supabase.removeChannel(panelsChannel);
       supabase.removeChannel(ordersChannel);
+      clearInterval(heartbeat);
     };
-  }, [unreadCount]);
+  }, [fetchMetrics]);
 
   return metrics;
 };
