@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshCw, CheckCircle, AlertCircle, MessageSquare, Users, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { RefreshCw, CheckCircle, AlertCircle, MessageSquare, Users, ArrowDownCircle, ArrowUpCircle, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +27,14 @@ interface SyncResult {
     eduardo: { conversations: number; messages: number; recovered: number };
     others: { conversations: number; messages: number; recovered: number };
   };
+  zapiHistory?: {
+    contacts_processed: number;
+    messages_fetched_from_zapi: number;
+    messages_synced: number;
+    messages_outbound_synced: number;
+    messages_inbound_synced: number;
+    duplicates_skipped: number;
+  };
 }
 
 interface SyncMessagesButtonProps {
@@ -39,19 +47,50 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
   className 
 }) => {
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncPhase, setSyncPhase] = useState<'idle' | 'logs' | 'history'>('idle');
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState<SyncResult | null>(null);
 
   const handleSync = async () => {
     setIsSyncing(true);
     setResult(null);
+    setSyncPhase('logs');
 
     try {
-      const { data, error } = await supabase.functions.invoke('sync-all-messages', {});
+      // FASE 1: Sincronizar do zapi_logs
+      console.log('🔄 [SYNC] Fase 1: Sincronizando logs...');
+      const { data: logsData, error: logsError } = await supabase.functions.invoke('sync-all-messages', {});
 
-      if (error) throw error;
+      if (logsError) throw logsError;
 
-      setResult(data);
+      // FASE 2: Buscar histórico direto do Z-API
+      setSyncPhase('history');
+      console.log('🔄 [SYNC] Fase 2: Buscando histórico do Z-API...');
+      
+      let zapiHistoryData = null;
+      try {
+        const { data: historyData, error: historyError } = await supabase.functions.invoke('fetch-zapi-history', {});
+        if (!historyError && historyData) {
+          zapiHistoryData = historyData.stats;
+          console.log('✅ [SYNC] Histórico Z-API recuperado:', zapiHistoryData);
+        }
+      } catch (historyErr) {
+        console.warn('⚠️ [SYNC] Erro ao buscar histórico Z-API (não crítico):', historyErr);
+      }
+
+      // Combinar resultados
+      const combinedResult: SyncResult = {
+        ...logsData,
+        zapiHistory: zapiHistoryData,
+        stats: {
+          ...logsData.stats,
+          messages_recovered: logsData.stats.messages_recovered + (zapiHistoryData?.messages_synced || 0),
+          messages_outbound_recovered: logsData.stats.messages_outbound_recovered + (zapiHistoryData?.messages_outbound_synced || 0),
+          messages_inbound_recovered: logsData.stats.messages_inbound_recovered + (zapiHistoryData?.messages_inbound_synced || 0),
+        }
+      };
+
+      setResult(combinedResult);
       setShowResult(true);
       onSyncComplete?.();
     } catch (error) {
@@ -81,6 +120,7 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
       setShowResult(true);
     } finally {
       setIsSyncing(false);
+      setSyncPhase('idle');
     }
   };
 
@@ -96,7 +136,7 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
         )}
         onClick={handleSync}
         disabled={isSyncing}
-        title="Sincronizar todas as mensagens"
+        title={isSyncing ? (syncPhase === 'logs' ? 'Sincronizando logs...' : 'Buscando histórico Z-API...') : 'Sincronizar todas as mensagens'}
       >
         <AnimatePresence mode="wait">
           {isSyncing ? (
@@ -114,11 +154,18 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
               />
               <motion.div
-                className="absolute inset-1 rounded-full border-t-2 border-primary"
+                className={cn(
+                  "absolute inset-1 rounded-full border-t-2",
+                  syncPhase === 'logs' ? "border-primary" : "border-purple-500"
+                )}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
-              <RefreshCw className="w-4 h-4 text-primary animate-spin" />
+              {syncPhase === 'history' ? (
+                <History className="w-4 h-4 text-purple-500 animate-pulse" />
+              ) : (
+                <RefreshCw className="w-4 h-4 text-primary animate-spin" />
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -198,6 +245,37 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
                   variant="green"
                 />
               </div>
+
+              {/* Divisor */}
+              <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+
+              {/* Stats Z-API History */}
+              {result.zapiHistory && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    <History className="w-3 h-3" />
+                    Histórico Z-API
+                  </p>
+                  <div className="bg-purple-500/10 rounded-xl p-3 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Contatos processados</span>
+                      <span className="font-semibold">{result.zapiHistory.contacts_processed}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Msgs do WhatsApp</span>
+                      <span className="font-semibold">{result.zapiHistory.messages_fetched_from_zapi}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Sincronizadas</span>
+                      <span className="font-semibold text-green-500">+{result.zapiHistory.messages_synced}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Duplicatas ignoradas</span>
+                      <span>{result.zapiHistory.duplicates_skipped}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Divisor */}
               <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
