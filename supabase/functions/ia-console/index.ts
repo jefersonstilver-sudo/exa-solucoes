@@ -223,6 +223,24 @@ Mantenha naturalidade na conversa, mas SEMPRE use a ferramenta para dados de pr�
 
 ATENÇÃO: Estas regras TÊM PRECEDÊNCIA sobre qualquer outra instrução anterior.
 
+🔴 REGRA #0: ESCALAÇÃO INTELIGENTE PARA O COMERCIAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Quando você perceber que o cliente precisa de atendimento humano especializado:
+- Cliente indeciso que precisa de "empurrãozinho"
+- Pedindo desconto especial, condição diferenciada
+- Mencionando grupo de empresas, franquias, múltiplos pontos
+- Objeções complexas que você não consegue resolver
+- Cliente prestes a fechar mas precisa de atenção personalizada
+- Palavras-chave: "desconto especial", "grupo de empresas", "negociar", "condição especial", "falar com alguém"
+
+Você DEVE adicionar no FINAL da sua resposta (o sistema vai remover antes de enviar):
+[ESCALAR:motivo_breve]
+
+Exemplo: "Vou chamar meu colega Eduardo que pode te oferecer uma condição especial! 💼 [ESCALAR:cliente quer desconto para grupo]"
+
+⚠️ SEMPRE use esta tag quando perceber necessidade de intervenção humana!
+
 🔴 REGRA #1: CONVERSAÇÃO NATURAL E HUMANA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1028,6 +1046,24 @@ Faça as duas chamadas JUNTAS na primeira vez.
         }
       }
       
+      // ====== FALLBACK: DETECÇÃO POR KEYWORDS DE ESCALAÇÃO (TOOL CALLS PATH) ======
+      const escalationKeywordsTool = [
+        'desconto especial', 'condição especial', 'condição diferenciada',
+        'grupo de empresas', 'várias empresas', 'múltiplas empresas',
+        'franquia', 'franquias', 'rede de lojas', 'negociar valor',
+        'falar com vendedor', 'falar com alguém', 'atendimento humano',
+        'desconto maior', 'melhor preço', 'preço especial'
+      ];
+      
+      const userMessageLowerTool = message.toLowerCase();
+      const hasEscalationKeywordTool = escalationKeywordsTool.some(kw => userMessageLowerTool.includes(kw));
+      
+      if (hasEscalationKeywordTool && !finalMessage.includes('[ESCALAR:')) {
+        console.log('[IA-CONSOLE] 🔑 KEYWORD FALLBACK (tool path): Escalation keyword detected');
+        console.log('[IA-CONSOLE] 🔑 Message:', message.substring(0, 100));
+        finalMessage += ' [ESCALAR:keyword_detection_fallback]';
+      }
+      
       // ====== DETECÇÃO DE ESCALAÇÃO INTELIGENTE (TOOL CALLS PATH) ======
       const escalationMatch = finalMessage.match(/\[ESCALAR:([^\]]+)\]/i);
       
@@ -1147,6 +1183,25 @@ Faça as duas chamadas JUNTAS na primeira vez.
     // Se não houve function call, retornar resposta normalmente
     let finalMessage = preventNumberBreak(assistantMessage.content);
     const tokensUsed = data.usage.total_tokens;
+
+    // ====== FALLBACK: DETECÇÃO POR KEYWORDS DE ESCALAÇÃO ======
+    const escalationKeywords = [
+      'desconto especial', 'condição especial', 'condição diferenciada',
+      'grupo de empresas', 'várias empresas', 'múltiplas empresas',
+      'franquia', 'franquias', 'rede de lojas', 'negociar valor',
+      'falar com vendedor', 'falar com alguém', 'atendimento humano',
+      'desconto maior', 'melhor preço', 'preço especial'
+    ];
+    
+    const userMessageLower = message.toLowerCase();
+    const hasEscalationKeyword = escalationKeywords.some(kw => userMessageLower.includes(kw));
+    
+    if (hasEscalationKeyword && !finalMessage.includes('[ESCALAR:')) {
+      console.log('[IA-CONSOLE] 🔑 KEYWORD FALLBACK: Escalation keyword detected in user message');
+      console.log('[IA-CONSOLE] 🔑 Message:', message.substring(0, 100));
+      // Forçar escalação mesmo sem a tag
+      finalMessage += ' [ESCALAR:keyword_detection_fallback]';
+    }
 
     // ====== VALIDAÇÃO DE CUMPRIMENTOS DUPLICADOS ======
     if (context?.conversationId) {
