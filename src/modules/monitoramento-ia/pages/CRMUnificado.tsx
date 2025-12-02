@@ -3,6 +3,7 @@ import { WhatsAppCRMInbox } from '../components/crm/WhatsAppCRMInbox';
 import { WhatsAppCRMChat } from '../components/crm/WhatsAppCRMChat';
 import { CRMFilters } from '../components/crm/CRMFilters';
 import { CRMMetrics } from '../components/crm/CRMMetrics';
+import { SyncAllConversationsButton } from '../components/crm/SyncAllConversationsButton';
 import { useUnifiedConversations } from '../hooks/useUnifiedConversations';
 import { CRMUnificadoMobile } from '../components/crm/mobile/CRMUnificadoMobile';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -67,9 +68,11 @@ export const CRMUnificado = () => {
         <div className="p-4 border-b border-border/30 bg-gradient-to-r from-background/95 to-background/80 backdrop-blur-sm">
           {/* Barra horizontal com Filtros | Relatórios | Métricas */}
           <div className="flex items-center justify-between gap-3 mb-3">
-            {/* Esquerda: Filtros + Relatórios */}
+            {/* Esquerda: Filtros + Sync + Relatórios */}
             <div className="flex items-center gap-2">
               <CRMFilters filters={filters} onFilterChange={setFilters} onRefresh={refetch} />
+              
+              <SyncAllConversationsButton onSyncComplete={refetch} />
               
               <Button
                 variant="outline"

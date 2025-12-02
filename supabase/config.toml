@@ -1,5 +1,8 @@
 project_id = "aakenoljsycyrcrchgxj"
 
+[functions.sync-single-conversation]
+verify_jwt = false
+
 [api]
 enabled = true
 port = 54321
