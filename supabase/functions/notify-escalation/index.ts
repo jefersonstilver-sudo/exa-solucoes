@@ -178,10 +178,14 @@ serve(async (req) => {
 
     const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
     
+    // CRITICAL: Get Client-Token from environment
+    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+    
     console.log('[NOTIFY-ESCALATION] 🔧 Z-API config check:', {
       hasConfig: !!zapiConfig,
       hasInstanceId: !!zapiConfig?.instance_id,
-      hasToken: !!zapiConfig?.token
+      hasToken: !!zapiConfig?.token,
+      hasClientToken: !!zapiClientToken
     });
 
     if (!zapiConfig?.instance_id || !zapiConfig?.token) {
@@ -191,6 +195,18 @@ serve(async (req) => {
         escalacaoId: escalacao.id,
         notified: 0,
         reason: 'zapi_not_configured'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (!zapiClientToken) {
+      console.error('[NOTIFY-ESCALATION] ❌ ZAPI_CLIENT_TOKEN not configured in secrets');
+      return new Response(JSON.stringify({ 
+        success: true, 
+        escalacaoId: escalacao.id,
+        notified: 0,
+        reason: 'client_token_not_configured'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -267,7 +283,10 @@ serve(async (req) => {
         
         const response = await fetch(zapiUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Client-Token': zapiClientToken
+          },
           body: JSON.stringify({
             phone: vendedorPhone,
             message: fullMessage
