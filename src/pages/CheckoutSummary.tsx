@@ -336,9 +336,21 @@ const CheckoutSummary = () => {
     <CheckoutLayout currentStep={2} maxWidth="6xl">
       {/* Main Content Grid - Mobile Otimizado */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3 sm:gap-4 lg:gap-6 mt-6 sm:mt-8">
-        {/* Left Column - Order Details */}
+        {/* Left Column - Order Details + Resumo Financeiro */}
         <div className="space-y-3 sm:space-y-4">
           <OrderSummaryCard cartItems={cartItems} selectedPlan={selectedPlan} />
+          
+          {/* Pricing Breakdown - Movido para cá */}
+          <PricingBreakdown 
+            cartItems={cartItems} 
+            selectedPlan={selectedPlan} 
+            couponValid={couponValid} 
+            couponDiscount={couponDiscount} 
+            paymentMethod={paymentMethod}
+            couponCode={couponCode}
+            couponCategoria={couponCategoria}
+            finalTotal={finalTotal}
+          />
         </div>
 
         {/* Right Column - Payment (Sticky) */}
@@ -370,18 +382,6 @@ const CheckoutSummary = () => {
               </div>
             </div>
           )}
-
-          {/* Pricing Breakdown */}
-          <PricingBreakdown 
-            cartItems={cartItems} 
-            selectedPlan={selectedPlan} 
-            couponValid={couponValid} 
-            couponDiscount={couponDiscount} 
-            paymentMethod={paymentMethod}
-            couponCode={couponCode}
-            couponCategoria={couponCategoria}
-            finalTotal={finalTotal}
-          />
 
           {/* Payment Buttons - CORTESIA OU NORMAL */}
           <div className="space-y-1.5 sm:space-y-3">
