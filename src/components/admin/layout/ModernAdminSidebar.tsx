@@ -74,7 +74,7 @@ import { useEscalacoesPendentes } from '@/hooks/useEscalacoesPendentes';
 import { useOfflineAlerts } from '@/hooks/useOfflineAlerts';
 
 export function ModernAdminSidebar() {
-  const { state, open, setOpen } = useSidebar();
+  const { state, open, setOpen, setOpenMobile, isMobile: isSidebarMobile } = useSidebar();
   const location = useLocation();
   const { userProfile, session, isSuperAdmin, logout } = useAuth();
   const { permissions, userInfo } = useUserPermissions();
@@ -448,8 +448,8 @@ export function ModernAdminSidebar() {
                         WebkitTapHighlightColor: 'transparent',
                       }}
                       onClick={() => {
-                        if (isMobile) {
-                          setOpen(false);
+                        if (isMobile || isSidebarMobile) {
+                          setOpenMobile(false);
                         }
                       }}
                     >
