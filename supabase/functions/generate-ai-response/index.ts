@@ -624,7 +624,46 @@ ${isFullListRequest ? `
 ✅ Responda em UMA mensagem curta
 ✅ Máximo 3 prédios por vez
 ✅ Se pedir "todos": enviar lista completa
-`}`;
+`}
+
+## 🚀 ESCALAÇÃO INTELIGENTE PARA EDUARDO
+
+QUANDO VOCÊ PERCEBER que o cliente:
+- Está indeciso e precisa de um empurrãozinho humano para fechar
+- Pediu condição especial, desconto extra ou negociação
+- Mencionou múltiplas empresas, franquias ou grande volume
+- Tem dúvidas complexas que você não consegue resolver sozinha
+- Parece estar prestes a fechar mas precisa de conversa mais personalizada
+- Expressou objeções que um humano resolveria melhor
+- Demonstra frustração ou insatisfação
+- Quer falar com alguém "de verdade" ou um vendedor
+
+→ ADICIONE ao FINAL da sua resposta a tag: [ESCALAR:motivo_breve]
+
+⚠️ IMPORTANTE: 
+- A tag [ESCALAR:...] será REMOVIDA automaticamente antes de enviar ao cliente
+- O cliente NUNCA verá essa tag
+- Use com sabedoria - apenas quando realmente precisar de intervenção humana
+
+✅ EXEMPLOS DE RESPOSTA COM ESCALAÇÃO:
+
+Exemplo 1 (desconto especial):
+"Entendo que você quer uma condição melhor! Vou chamar meu colega Eduardo, ele é especialista em encontrar o melhor custo-benefício pra você. Ele vai entrar em contato rapidinho! Enquanto isso, posso te ajudar com mais alguma dúvida?"
+[ESCALAR:cliente pediu desconto especial para 3 prédios]
+
+Exemplo 2 (múltiplas empresas):
+"Que legal que você tem interesse pra mais de uma empresa! O Eduardo é a pessoa certa pra te ajudar com isso, ele consegue montar uma proposta personalizada pra vocês. Vou avisar ele agora mesmo!"
+[ESCALAR:cliente tem 2 empresas, quer proposta conjunta]
+
+Exemplo 3 (indecisão):
+"Percebo que você ainda tá na dúvida... Olha, vou chamar o Eduardo que ele tem mais jogo de cintura pra te ajudar a decidir. Ele conhece bem as necessidades de cada tipo de negócio e vai te dar uma atenção especial!"
+[ESCALAR:cliente indeciso após várias mensagens, precisa de toque humano]
+
+❌ NÃO ESCALAR PARA:
+- Dúvidas simples sobre preço (use calcular_preco)
+- Perguntas sobre formas de pagamento (você tem essa info)
+- Informações básicas sobre prédios
+- Cliente apenas explorando, sem intenção clara`;
 
     console.log('[AI-RESPONSE] 📝 Prompt constructed:', {
       promptLength: systemPrompt.length,
@@ -1430,11 +1469,40 @@ Qual te interessou? 😊`;
     }
 
     // ====== DETECÇÃO DE ESCALAÇÃO COMERCIAL (EDUARDO) ======
-    // Detectar quando cliente pede condições especiais, grupo de empresas, mais desconto
-    const escalationKeywords = /grupo.*empresa|mais.*desconto|desconto.*especial|condição.*especial|condição.*diferenciada|várias.*empresas|muitos.*prédios|grande.*quantidade|negociação|negociar.*preço|falar.*vendedor|falar.*comercial|preciso.*melhor.*preço|desconto.*maior/i;
+    // MÉTODO 1: ESCALAÇÃO INTELIGENTE - Sofia decide via tag [ESCALAR:motivo]
+    const escalationMatch = sanitizedReply.match(/\[ESCALAR:([^\]]+)\]/i);
+    let shouldEscalate = false;
+    let escalationReason = '';
+    let escalationMethod = '';
     
-    if (message.match(escalationKeywords)) {
-      console.log('[AI-RESPONSE] 🚀 ESCALATION DETECTED - Notifying Eduardo');
+    if (escalationMatch) {
+      shouldEscalate = true;
+      escalationReason = escalationMatch[1].trim();
+      escalationMethod = 'intelligent_ai_decision';
+      
+      // REMOVER a tag da resposta antes de enviar ao cliente
+      sanitizedReply = sanitizedReply.replace(/\[ESCALAR:[^\]]+\]/gi, '').trim();
+      
+      console.log('[AI-RESPONSE] 🚀 INTELLIGENT ESCALATION - Sofia decided to escalate');
+      console.log('[AI-RESPONSE] 📝 Reason from Sofia:', escalationReason);
+    }
+    
+    // MÉTODO 2: FALLBACK - Detecção por keywords na mensagem do cliente
+    if (!shouldEscalate) {
+      const escalationKeywords = /grupo.*empresa|mais.*desconto|desconto.*especial|condição.*especial|condição.*diferenciada|várias.*empresas|muitos.*prédios|grande.*quantidade|negociação|negociar.*preço|falar.*vendedor|falar.*comercial|preciso.*melhor.*preço|desconto.*maior|(\d+|duas?|três|várias?)\s*empresas?/i;
+      
+      if (message.match(escalationKeywords)) {
+        shouldEscalate = true;
+        escalationReason = `Keyword detected: "${message.substring(0, 100)}"`;
+        escalationMethod = 'keyword_fallback';
+        
+        console.log('[AI-RESPONSE] 🚀 KEYWORD FALLBACK ESCALATION - Detected keywords in message');
+      }
+    }
+    
+    // Se precisa escalar (por qualquer método)
+    if (shouldEscalate) {
+      console.log('[AI-RESPONSE] 🚀 ESCALATION TRIGGERED via:', escalationMethod);
       
       // Buscar resumo do histórico
       const conversationSummary = conversationHistory?.slice(-5).map((m: any) => 
@@ -1466,8 +1534,10 @@ Qual te interessou? 😊`;
       if (fullHistory.match(/semestral|6\s*meses/i)) plansInterested.push('Semestral');
       if (fullHistory.match(/anual|12\s*meses/i)) plansInterested.push('Anual');
       
-      // Análise da Sofia
-      const aiAnalysis = `Cliente pediu: "${message.substring(0, 150)}"\nSofia identificou interesse em condições especiais/negociação que requer intervenção humana.`;
+      // Análise da Sofia - inclui motivo dela se disponível
+      const aiAnalysis = escalationMethod === 'intelligent_ai_decision'
+        ? `🤖 Sofia decidiu escalar: "${escalationReason}"\n\nÚltima mensagem do cliente: "${message.substring(0, 150)}"`
+        : `Cliente pediu: "${message.substring(0, 150)}"\nSofia identificou interesse em condições especiais/negociação que requer intervenção humana.`;
       
       try {
         // Chamar notify-escalation
@@ -1481,13 +1551,15 @@ Qual te interessou? 😊`;
             plansInterested,
             firstMessage: firstLeadMessage,
             conversationSummary,
-            aiAnalysis
+            aiAnalysis,
+            escalationMethod,
+            escalationReason
           }
         });
         
         console.log('[AI-RESPONSE] ✅ Escalation sent:', escalationResult.data);
         
-        // Log
+        // Log detalhado
         await supabase.from('agent_logs').insert({
           agent_key: agentKey,
           conversation_id: conversationId,
@@ -1497,6 +1569,8 @@ Qual te interessou? 😊`;
             trigger_message: message,
             escalation_id: escalationResult.data?.escalacaoId,
             notified_count: escalationResult.data?.notified,
+            escalation_method: escalationMethod,
+            escalation_reason: escalationReason,
             timestamp: new Date().toISOString()
           }
         });
