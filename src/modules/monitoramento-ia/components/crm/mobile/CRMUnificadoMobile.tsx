@@ -17,7 +17,6 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
   const [filters, setFilters] = useState(initialFilters);
   const [showChat, setShowChat] = useState(false);
   const [agents, setAgents] = useState<Array<{ key: string; display_name: string }>>([]);
-  const { setSidebarOpen } = useSidebarContext();
   
   // Pull to refresh states
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -113,7 +112,7 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
             {/* Header */}
             <MobileCRMHeader
               unreadCount={metrics.unread}
-              onMenuClick={() => setSidebarOpen(true)}
+              onMenuClick={() => {}} // Sidebar now managed by unified layout
               onSearchClick={() => {}}
               onRefreshClick={handleRefresh}
             />
