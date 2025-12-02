@@ -51,6 +51,7 @@ import Exa from './pages/Exa';
 import TestLinks from './pages/TestLinks';
 import AIReportsPage from './pages/admin/monitoramento-ia/AIReportsPage';
 import ProfileSettings from './pages/ProfileSettings';
+import AdvertiserInvoices from './pages/advertiser/AdvertiserInvoices';
 
 // Video Editor Pages
 import VideoEditorDashboard from './pages/video-editor/VideoEditorDashboard';
@@ -439,6 +440,11 @@ const AppContent = () => {
             <Route path="configuracoes" element={
               <Suspense fallback={<GlobalLoadingPage message="Carregando perfil..." />}>
                 <ProfileSettings />
+              </Suspense>
+            } />
+            <Route path="faturas" element={
+              <Suspense fallback={<GlobalLoadingPage message="Carregando faturas..." />}>
+                <AdvertiserInvoices />
               </Suspense>
             } />
           </Route>
