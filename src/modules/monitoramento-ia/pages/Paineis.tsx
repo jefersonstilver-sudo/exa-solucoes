@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { RefreshCw, Monitor, Wifi, WifiOff, HelpCircle, ChevronDown, Maximize2 } from 'lucide-react';
 import {
   Device,
@@ -15,6 +15,7 @@ import { useOfflineAlerts } from '../hooks/useOfflineAlerts';
 import { AnimatePresence } from 'framer-motion';
 import { useDevices } from '../hooks/useDevices';
 import { useModuleTheme } from '../hooks/useModuleTheme';
+import { usePeriodDeviceEvents } from '../hooks/usePeriodDeviceEvents';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +23,7 @@ import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MobileHeader } from '../components/MobileHeader';
 import { Sidebar } from '../components/Sidebar';
+import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
 
 // Compact Stat Icon Component for mobile
 const CompactStatIcon = ({ icon: Icon, value, color, label }: { 
@@ -60,6 +62,19 @@ const SimpleStatCard = ({ label, value, color }: { label: string; value: number;
   );
 };
 
+// Get period label for display
+const getPeriodLabel = (period: PeriodType): string => {
+  switch (period) {
+    case 'hoje': return 'hoje';
+    case 'ontem': return 'ontem';
+    case 'esta-semana': return 'esta semana';
+    case '7dias': return 'últ. 7 dias';
+    case '30dias': return 'últ. 30 dias';
+    case 'personalizado': return 'no período';
+    default: return 'hoje';
+  }
+};
+
 export const PaineisPage = () => {
   const {
     devices,
@@ -77,6 +92,24 @@ export const PaineisPage = () => {
 
   const { theme } = useModuleTheme();
 
+  // Period state
+  const [period, setPeriod] = useState<PeriodType>('hoje');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+
+  // Hook to get events count per device for the selected period
+  const { eventsMap: periodEventsMap, loading: eventsLoading } = usePeriodDeviceEvents(
+    period,
+    customStartDate,
+    customEndDate
+  );
+
+  const handlePeriodChange = (newPeriod: PeriodType, customStart?: Date, customEnd?: Date) => {
+    setPeriod(newPeriod);
+    if (customStart) setCustomStartDate(customStart);
+    if (customEnd) setCustomEndDate(customEnd);
+  };
+
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -90,12 +123,19 @@ export const PaineisPage = () => {
   // Hook de alertas offline
   const { offlineDevices, activeAlerts, dismissAlert } = useOfflineAlerts();
 
-  // Ordenar devices por total_events (mais eventos primeiro)
-  const sortedDevices = [...devices].sort((a, b) => {
-    const eventsA = (a as any).total_events || 0;
-    const eventsB = (b as any).total_events || 0;
-    return eventsB - eventsA;
-  });
+  // Sort devices: 1. Offline first, 2. By period events count (descending)
+  const sortedDevices = useMemo(() => {
+    return [...devices].sort((a, b) => {
+      // 1. Offline devices always first
+      if (a.status === 'offline' && b.status !== 'offline') return -1;
+      if (a.status !== 'offline' && b.status === 'offline') return 1;
+      
+      // 2. Among same status, sort by period events count (more events first)
+      const eventsA = periodEventsMap.get(a.id) || 0;
+      const eventsB = periodEventsMap.get(b.id) || 0;
+      return eventsB - eventsA;
+    });
+  }, [devices, periodEventsMap]);
 
   const handleRefresh = () => {
     refresh();
@@ -225,6 +265,13 @@ export const PaineisPage = () => {
             </div>
             
             <div className="flex items-center gap-2 lg:gap-3">
+              {/* Period Selector */}
+              <PeriodSelector
+                value={period}
+                onChange={handlePeriodChange}
+                customStartDate={customStartDate}
+                customEndDate={customEndDate}
+              />
               <button
                 onClick={handleSyncAnyDesk}
                 disabled={syncing}
@@ -342,6 +389,8 @@ export const PaineisPage = () => {
                 <PanelCard
                   key={device.id}
                   device={device}
+                  periodEventsCount={periodEventsMap.get(device.id) || 0}
+                  periodLabel={getPeriodLabel(period)}
                   onClick={() => {
                     setSelectedDevice(device);
                     setIsDetailModalOpen(true);

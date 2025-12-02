@@ -7,6 +7,7 @@ import { Device } from '../utils/devices';
 import { cn } from '@/lib/utils';
 import { useRealTimeCounter } from '../hooks/useRealTimeCounter';
 import { usePeriodAlerts } from '../hooks/usePeriodAlerts';
+import { usePeriodDeviceEvents } from '../hooks/usePeriodDeviceEvents';
 import { PeriodSelector, PeriodType } from './PeriodSelector';
 
 interface FullscreenMonitorProps {
@@ -14,11 +15,20 @@ interface FullscreenMonitorProps {
   onClose: () => void;
 }
 
-const MonitorCard = ({ device, compact }: { device: Device; compact: boolean }) => {
+interface MonitorCardProps {
+  device: Device;
+  compact: boolean;
+  periodEventsCount?: number;
+}
+
+const MonitorCard = ({ device, compact, periodEventsCount }: MonitorCardProps) => {
   const displayName = (device.comments || device.name).split(' - ')[0].trim();
   const provider = device.provider || 'Sem provedor';
   const elapsed = useRealTimeCounter(device.last_online_at);
   const isOnline = device.status === 'online';
+  
+  // Use period events count if provided, otherwise fallback to total_events
+  const displayEventsCount = periodEventsCount !== undefined ? periodEventsCount : (device.total_events || 0);
   
   const getProviderColor = (providerName: string) => {
     const upperProvider = providerName.toUpperCase();
@@ -74,7 +84,7 @@ const MonitorCard = ({ device, compact }: { device: Device; compact: boolean }) 
               {/* Badge de Eventos */}
               <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-md">
                 <Zap className="w-3.5 h-3.5" />
-                <span className="text-sm font-semibold">{device.total_events || 0}</span>
+                <span className="text-sm font-semibold">{displayEventsCount}</span>
               </div>
             </div>
           )}
@@ -132,6 +142,9 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
   
   // Hook com período dinâmico e realtime
   const { alerts } = usePeriodAlerts(period, customStartDate, customEndDate);
+  
+  // Hook to get events count per device for the selected period
+  const { eventsMap: periodEventsMap } = usePeriodDeviceEvents(period, customStartDate, customEndDate);
 
   const handlePeriodChange = (newPeriod: PeriodType, customStart?: Date, customEnd?: Date) => {
     setPeriod(newPeriod);
@@ -173,18 +186,23 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Separar online/offline
-  const onlineDevices = useMemo(() => devices.filter(d => d.status === 'online'), [devices]);
-  const offlineDevices = useMemo(() => 
-    devices
-      .filter(d => d.status !== 'online')
-      .sort((a, b) => {
-        const dateA = new Date(a.last_online_at || 0).getTime();
-        const dateB = new Date(b.last_online_at || 0).getTime();
-        return dateA - dateB;
-      }), 
-    [devices]
-  );
+  // Sort devices: 1. Offline first, 2. By period events count (descending)
+  const sortedDevices = useMemo(() => {
+    return [...devices].sort((a, b) => {
+      // 1. Offline devices always first
+      if (a.status === 'offline' && b.status !== 'offline') return -1;
+      if (a.status !== 'offline' && b.status === 'offline') return 1;
+      
+      // 2. Among same status, sort by period events count (more events first)
+      const eventsA = periodEventsMap.get(a.id) || 0;
+      const eventsB = periodEventsMap.get(b.id) || 0;
+      return eventsB - eventsA;
+    });
+  }, [devices, periodEventsMap]);
+
+  // Separar online/offline (usando sortedDevices para manter consistência)
+  const onlineDevices = useMemo(() => sortedDevices.filter(d => d.status === 'online'), [sortedDevices]);
+  const offlineDevices = useMemo(() => sortedDevices.filter(d => d.status !== 'online'), [sortedDevices]);
 
   // Grid Dinâmico - Desktop e Mobile
   const gridConfig = useMemo(() => {
@@ -365,14 +383,15 @@ export const FullscreenMonitor = ({ devices, onClose }: FullscreenMonitorProps) 
                   isMobile ? "gap-2" : "gap-4"
                 )}
                 style={{ 
-                  gridTemplateColumns: `repeat(${gridConfig.cols}, minmax(0, 1fr))`,
+                  gridTemplateColumns: `repeat(${gridConfig.cols}, minmax(0, 1fr))`
                 }}
               >
-                {devices.map(device => (
+                {sortedDevices.map(device => (
                   <MonitorCard 
                     key={device.id} 
                     device={device} 
                     compact={gridConfig.compact}
+                    periodEventsCount={periodEventsMap.get(device.id) || 0}
                   />
                 ))}
               </div>
