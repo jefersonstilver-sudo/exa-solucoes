@@ -1028,6 +1028,37 @@ Faça as duas chamadas JUNTAS na primeira vez.
         }
       }
       
+      // ====== DETECÇÃO DE ESCALAÇÃO INTELIGENTE (TOOL CALLS PATH) ======
+      const escalationMatch = finalMessage.match(/\[ESCALAR:([^\]]+)\]/i);
+      
+      if (escalationMatch) {
+        const escalationReason = escalationMatch[1].trim();
+        
+        // REMOVER a tag da resposta antes de enviar ao cliente
+        finalMessage = finalMessage.replace(/\[ESCALAR:[^\]]+\]/gi, '').trim();
+        
+        console.log('[IA-CONSOLE] 🚀 INTELLIGENT ESCALATION detected (tool calls path)');
+        console.log('[IA-CONSOLE] 📝 Reason:', escalationReason);
+        console.log('[IA-CONSOLE] 📞 Phone:', context?.phoneNumber);
+        console.log('[IA-CONSOLE] 💬 ConversationId:', context?.conversationId);
+        
+        // Criar escalação via notify-escalation
+        try {
+          const escalationResult = await supabase.functions.invoke('notify-escalation', {
+            body: {
+              conversationId: context?.conversationId,
+              phoneNumber: context?.phoneNumber,
+              escalationReason,
+              escalationMethod: 'intelligent_ai_decision',
+              aiAnalysis: `🤖 Sofia decidiu escalar: "${escalationReason}"`
+            }
+          });
+          console.log('[IA-CONSOLE] ✅ Escalation created successfully:', escalationResult);
+        } catch (escError) {
+          console.error('[IA-CONSOLE] ❌ Escalation failed:', escError);
+        }
+      }
+      
       // Registrar em logs
       await supabase.from('agent_logs').insert({
         agent_key: agentKey,
@@ -1038,7 +1069,8 @@ Faça as duas chamadas JUNTAS na primeira vez.
           tokens: tokensUsed,
           latency: Date.now() - startTime,
           model: finalData.model,
-          tool_calls_processed: allToolCalls.length
+          tool_calls_processed: allToolCalls.length,
+          escalation_detected: !!escalationMatch
         }
       });
       
@@ -1104,6 +1136,37 @@ Faça as duas chamadas JUNTAS na primeira vez.
       }
     }
 
+    // ====== DETECÇÃO DE ESCALAÇÃO INTELIGENTE (NO TOOL CALLS PATH) ======
+    const escalationMatchNoTool = finalMessage.match(/\[ESCALAR:([^\]]+)\]/i);
+    
+    if (escalationMatchNoTool) {
+      const escalationReason = escalationMatchNoTool[1].trim();
+      
+      // REMOVER a tag da resposta antes de enviar ao cliente
+      finalMessage = finalMessage.replace(/\[ESCALAR:[^\]]+\]/gi, '').trim();
+      
+      console.log('[IA-CONSOLE] 🚀 INTELLIGENT ESCALATION detected (no tool calls path)');
+      console.log('[IA-CONSOLE] 📝 Reason:', escalationReason);
+      console.log('[IA-CONSOLE] 📞 Phone:', context?.phoneNumber);
+      console.log('[IA-CONSOLE] 💬 ConversationId:', context?.conversationId);
+      
+      // Criar escalação via notify-escalation
+      try {
+        const escalationResult = await supabase.functions.invoke('notify-escalation', {
+          body: {
+            conversationId: context?.conversationId,
+            phoneNumber: context?.phoneNumber,
+            escalationReason,
+            escalationMethod: 'intelligent_ai_decision',
+            aiAnalysis: `🤖 Sofia decidiu escalar: "${escalationReason}"`
+          }
+        });
+        console.log('[IA-CONSOLE] ✅ Escalation created successfully:', escalationResult);
+      } catch (escError) {
+        console.error('[IA-CONSOLE] ❌ Escalation failed:', escError);
+      }
+    }
+
     // Registrar métricas de performance (Fase 3.2)
     await supabase.from('agent_performance_metrics').insert({
       agent_key: agentKey,
@@ -1123,7 +1186,8 @@ Faça as duas chamadas JUNTAS na primeira vez.
         response: finalMessage.substring(0, 200),
         tokens: tokensUsed,
         latency: Date.now() - startTime,
-        model: data.model
+        model: data.model,
+        escalation_detected: !!escalationMatchNoTool
       }
     });
 
