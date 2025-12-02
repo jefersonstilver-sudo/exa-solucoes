@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { X, User, Phone, Bot, Flame, AlertTriangle, Plus, FileText, Sparkles, BarChart3 } from 'lucide-react';
+import { User, Phone, Bot, Flame, AlertTriangle, Plus, FileText, Sparkles, BarChart3 } from 'lucide-react';
 import { useLeadDetails } from '../../hooks/useLeadDetails';
 import { useContactTypes } from '../../hooks/useContactTypes';
 import { useLeadProfile } from '../../hooks/useLeadProfile';
@@ -97,28 +97,23 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             "w-[70vw] max-w-6xl h-[85vh]",
             // Mobile: Fullscreen
             "sm:w-[70vw] sm:h-[85vh] max-sm:w-screen max-sm:h-screen max-sm:max-w-full max-sm:rounded-none",
-            // Glass Premium
-            "bg-white/70 dark:bg-neutral-900/55",
+            // Glass Premium - OPACIDADE AUMENTADA
+            "bg-white/95 dark:bg-neutral-900/92",
             "backdrop-blur-xl",
-            "border border-white/20 dark:border-white/10",
+            "border border-white/30 dark:border-white/15",
             "shadow-2xl rounded-2xl max-sm:rounded-none",
             // Overflow
             "overflow-hidden flex flex-col"
           )}
         >
-          <DialogHeader className="border-b border-white/10 px-6 py-4 flex-shrink-0">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <DialogTitle className="text-xl font-bold">
-                  Detalhes do Lead
-                </DialogTitle>
-                <DialogDescription className="text-sm">
-                  Análise completa e métricas inteligentes da conversa
-                </DialogDescription>
-              </div>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="w-5 h-5" />
-              </Button>
+          <DialogHeader className="border-b border-border/30 px-6 py-4 flex-shrink-0">
+            <div className="space-y-1">
+              <DialogTitle className="text-xl font-bold">
+                Detalhes do Lead
+              </DialogTitle>
+              <DialogDescription className="text-sm">
+                Análise completa e métricas inteligentes da conversa
+              </DialogDescription>
             </div>
           </DialogHeader>
 

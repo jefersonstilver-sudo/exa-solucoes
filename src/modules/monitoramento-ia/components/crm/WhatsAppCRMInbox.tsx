@@ -332,8 +332,8 @@ export const WhatsAppCRMInbox: React.FC<WhatsAppCRMInboxProps> = ({
           )}
         </div>
 
-      {/* Lista de conversas */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      {/* Lista de conversas - com scroll sempre ativo */}
+      <div className="flex-1 overflow-y-auto min-h-0 overscroll-contain scroll-smooth">
         {filteredConversations.length === 0 ? (
           <div className="p-8 text-center text-whatsapp-text-secondary">
             <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />

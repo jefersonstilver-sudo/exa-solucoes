@@ -135,9 +135,9 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
         </AnimatePresence>
       </Button>
 
-      {/* Modal de Resultado - Apple Glassmorphism Style */}
+      {/* Modal de Resultado - Apple Glassmorphism Style - OPACIDADE AUMENTADA */}
       <Dialog open={showResult} onOpenChange={setShowResult}>
-        <DialogContent className="max-w-md bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-white/20 shadow-2xl">
+        <DialogContent className="max-w-md bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border border-border/30 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
               {result?.success ? (
