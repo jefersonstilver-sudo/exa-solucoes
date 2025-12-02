@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 export const useCheckout = () => {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useUserSession();
-  const { cartItems, selectedPlan, setSelectedPlan } = useCartManager();
+  const { cartItems, selectedPlan, setSelectedPlan, isLoading: isCartLoading } = useCartManager();
   const { 
     couponCode, 
     setCouponCode, 
@@ -129,6 +129,7 @@ export const useCheckout = () => {
     cartItems,
     selectedPlan,
     setSelectedPlan,
+    isCartLoading,
     
     // Estados do cupom - CORRIGIDO
     couponCode,

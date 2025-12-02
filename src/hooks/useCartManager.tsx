@@ -67,6 +67,7 @@ export const useCartManager = () => {
 
   return {
     ...simpleCart,
+    isLoading: simpleCart.isLoading,
     selectedPlan,
     setSelectedPlan,
     initialLoadDone,
