@@ -39,9 +39,9 @@ serve(async (req) => {
     });
 
     // ========== ENRIQUECIMENTO DE DADOS ==========
-    // Se não recebeu dados enriquecidos, buscar do banco usando conversationId
-    if (conversationId && (!leadName || !firstMessage)) {
-      console.log('[NOTIFY-ESCALATION] 🔍 Enriching data from database...');
+    // SEMPRE buscar dados FRESCOS do banco, ignorando o que foi passado
+    if (conversationId) {
+      console.log('[NOTIFY-ESCALATION] 🔍 ALWAYS fetching fresh data from database...');
       
       // Buscar dados da conversa
       const { data: conversationData, error: convError } = await supabase
@@ -63,41 +63,46 @@ serve(async (req) => {
         console.log('[NOTIFY-ESCALATION] ⚠️ Could not fetch conversation data:', convError?.message);
       }
       
-      // Buscar mensagens da conversa
+      // SEMPRE buscar últimas 15 mensagens FRESCAS - ignorando o que foi passado
+      console.log('[NOTIFY-ESCALATION] 🔄 Fetching FRESH last 15 messages...');
       const { data: messagesData, error: msgError } = await supabase
         .from('messages')
         .select('body, direction, created_at')
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true })
-        .limit(30);
+        .order('created_at', { ascending: false }) // DESC para pegar as mais recentes
+        .limit(15);
       
       if (messagesData && messagesData.length > 0 && !msgError) {
+        console.log('[NOTIFY-ESCALATION] 📨 Fetched', messagesData.length, 'fresh messages');
+        
+        // Reverter para ordem cronológica (mais antiga primeiro)
+        const sortedMessages = messagesData.reverse();
+        
         // Primeira mensagem do cliente (inbound) COM DATA/HORA
-        if (!firstMessage) {
-          const firstInbound = messagesData.find((m: any) => m.direction === 'inbound');
-          if (firstInbound) {
-            const date = new Date(firstInbound.created_at);
-            const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            firstMessage = `[${dateStr} às ${timeStr}]\n${firstInbound.body}`;
-            console.log('[NOTIFY-ESCALATION] ✅ Enriched firstMessage with timestamp:', firstMessage?.substring(0, 50));
-          }
+        const firstInbound = sortedMessages.find((m: any) => m.direction === 'inbound');
+        if (firstInbound) {
+          const date = new Date(firstInbound.created_at);
+          const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          firstMessage = `[${dateStr} às ${timeStr}]\n${firstInbound.body}`;
+          console.log('[NOTIFY-ESCALATION] ✅ First message with timestamp:', firstMessage?.substring(0, 80));
         }
         
-        // Resumo da conversa (últimas 15 mensagens) COM TIMESTAMPS
-        if (!conversationSummary) {
-          const recentMessages = messagesData.slice(-15);
-          conversationSummary = recentMessages.map((m: any) => {
-            const role = m.direction === 'inbound' ? '👤 Cliente' : '🤖 Sofia';
-            const text = m.body?.substring(0, 120) || '[mídia]';
-            // Adicionar data/hora
-            const date = new Date(m.created_at);
-            const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-            const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            return `[${dateStr} ${timeStr}] ${role}: ${text}`;
-          }).join('\n');
-          console.log('[NOTIFY-ESCALATION] ✅ Enriched conversationSummary with', recentMessages.length, 'messages (with timestamps)');
-        }
+        // SEMPRE gerar resumo fresco com timestamps
+        conversationSummary = sortedMessages.map((m: any) => {
+          const role = m.direction === 'inbound' ? '👤 Cliente' : '🤖 Sofia';
+          // Remover tags de escalação da mensagem
+          let text = (m.body || '[mídia]').replace(/\s*\[ESCALAR:[^\]]*\]\s*/g, '');
+          text = text.substring(0, 150);
+          
+          const date = new Date(m.created_at);
+          const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+          const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          return `[${dateStr} ${timeStr}] ${role}: ${text}`;
+        }).join('\n');
+        
+        console.log('[NOTIFY-ESCALATION] ✅ Generated FRESH conversationSummary with', sortedMessages.length, 'messages');
+        console.log('[NOTIFY-ESCALATION] 📝 Summary preview:', conversationSummary?.substring(0, 200));
       } else {
         console.log('[NOTIFY-ESCALATION] ⚠️ Could not fetch messages:', msgError?.message);
       }
@@ -108,7 +113,8 @@ serve(async (req) => {
       hasLeadSegment: !!leadSegment,
       hasFirstMessage: !!firstMessage,
       hasSummary: !!conversationSummary,
-      summaryLength: conversationSummary?.length
+      summaryLength: conversationSummary?.length,
+      summaryPreview: conversationSummary?.substring(0, 100)
     });
 
     // 1. Salvar escalação no banco com dados enriquecidos
@@ -240,26 +246,39 @@ serve(async (req) => {
           ? vendedor.telefone 
           : `55${vendedor.telefone}`;
 
-        console.log(`[NOTIFY-ESCALATION] 📤 Sending to ${vendedor.nome} at ${vendedorPhone}`);
-        
         const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+        const fullMessage = `Olá ${vendedor.nome}!\n\n${message}`;
+        
+        console.log(`[NOTIFY-ESCALATION] 📤 Z-API Request Details:`, {
+          url: zapiUrl.replace(zapiConfig.token!, '***TOKEN***'),
+          vendedor: vendedor.nome,
+          phone: vendedorPhone,
+          messageLength: fullMessage.length,
+          messagePreview: fullMessage.substring(0, 200)
+        });
         
         const response = await fetch(zapiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              phone: vendedorPhone,
-              message: `Olá ${vendedor.nome}!\n\n${message}`
-            })
-          }
-        );
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: vendedorPhone,
+            message: fullMessage
+          })
+        });
+
+        const responseText = await response.text();
+        console.log(`[NOTIFY-ESCALATION] 📥 Z-API Response:`, {
+          vendedor: vendedor.nome,
+          status: response.status,
+          ok: response.ok,
+          body: responseText.substring(0, 300)
+        });
 
         if (response.ok) {
-          console.log(`[NOTIFY-ESCALATION] ✅ Sent to ${vendedor.nome}`);
+          console.log(`[NOTIFY-ESCALATION] ✅ Successfully sent to ${vendedor.nome}`);
           notifiedCount++;
         } else {
-          const errorText = await response.text();
-          console.error(`[NOTIFY-ESCALATION] ❌ Failed to send to ${vendedor.nome}:`, errorText);
+          console.error(`[NOTIFY-ESCALATION] ❌ Failed to send to ${vendedor.nome}: Status ${response.status}`, responseText);
         }
       } catch (error) {
         console.error(`[NOTIFY-ESCALATION] ❌ Error sending to ${vendedor.nome}:`, error);
