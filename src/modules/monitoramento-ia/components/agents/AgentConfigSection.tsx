@@ -31,8 +31,9 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
   const agentStatus = statuses[agent?.key];
   
   // Hook para buscar dados do agente (seções e knowledge items)
-  const { agents: supabaseAgents } = useSupabaseAgents();
-  const supabaseAgent = supabaseAgents.find(a => a.id === agent?.id);
+  const { agents: supabaseAgents, loading: supabaseLoading } = useSupabaseAgents();
+  // CRITICAL FIX: Match by KEY not ID, since agent comes from JSON and supabaseAgents from DB
+  const supabaseAgent = supabaseAgents.find(a => a.key === agent?.key);
 
   // Realtime sync - detectar mudanças na base de conhecimento
   useEffect(() => {
@@ -353,11 +354,11 @@ export const AgentConfigSection = ({ agent, onUpdate }: AgentConfigSectionProps)
                 />
               </TabsContent>
 
-              {/* Section 4: Use KnowledgeItems - THE FIX! */}
+              {/* Section 4: Use KnowledgeItems - FIXED: Pass KEY not UUID */}
               <TabsContent value="section4" className="mt-4">
                 <KnowledgeItems  
                   items={knowledgeItems}
-                  agentId={supabaseAgent?.id || ''}
+                  agentId={agent.key}
                   agentKey={agent.key}
                   agentName={agent.display_name}
                 />

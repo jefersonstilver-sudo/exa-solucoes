@@ -59,8 +59,8 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
       return;
     }
 
-    // Validar agentId
-    if (!agentId || agentId.length < 10) {
+    // Validar agentId (accepts both UUID and agent key like 'sofia')
+    if (!agentId || agentId.trim() === '') {
       console.error('❌ Agent ID inválido:', agentId);
       setAddError(`ID do agente inválido: ${agentId}`);
       toast.error('ID do agente inválido. Recarregue a página.');
