@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
@@ -12,9 +13,9 @@ import {
   Plus,
   Send,
   Bell,
-  BellOff,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +66,7 @@ interface Vendedor {
 }
 
 export default function EscalacoesComerciais() {
+  const navigate = useNavigate();
   const [escalacoes, setEscalacoes] = useState<Escalacao[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +83,7 @@ export default function EscalacoesComerciais() {
   const [selectedVendedores, setSelectedVendedores] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [escalacoesRes, vendedoresRes] = await Promise.all([
@@ -104,7 +106,7 @@ export default function EscalacoesComerciais() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Marcar escalações como visualizadas ao abrir a página
   const markAsViewed = async () => {
@@ -127,15 +129,33 @@ export default function EscalacoesComerciais() {
   useEffect(() => {
     fetchData();
     
+    // Realtime subscription com toast de atualização
     const channel = supabase
-      .channel('escalacoes-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'escalacoes_comerciais' }, fetchData)
+      .channel('escalacoes-realtime')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'escalacoes_comerciais' 
+      }, (payload) => {
+        console.log('[REALTIME] Escalação atualizada:', payload);
+        fetchData();
+        
+        // Toast visual de atualização
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          const newData = payload.new as Escalacao;
+          if (newData.status === 'concluido' && newData.responded_by_name) {
+            toast.success(`${newData.responded_by_name} assumiu o lead!`, {
+              description: newData.lead_name || 'Lead atendido'
+            });
+          }
+        }
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchData]);
 
   useEffect(() => {
     if (escalacoes.length > 0 && !loading) {
@@ -198,7 +218,7 @@ export default function EscalacoesComerciais() {
 
   const updateEscalacaoStatus = async (id: string, status: string) => {
     try {
-      const updateData: any = { status };
+      const updateData: Record<string, unknown> = { status };
       if (status === 'em_atendimento') {
         updateData.attended_at = new Date().toISOString();
       }
@@ -264,6 +284,14 @@ export default function EscalacoesComerciais() {
     }
   };
 
+  const openCrmConversation = (conversationId: string | null) => {
+    if (!conversationId) {
+      toast.error('Conversa não encontrada');
+      return;
+    }
+    navigate(`/admin/monitoramento-ia/crm-conversas?conversationId=${conversationId}`);
+  };
+
   const formatPhone = (phone: string) => {
     const clean = phone.replace(/\D/g, '');
     if (clean.length >= 12) {
@@ -280,17 +308,17 @@ export default function EscalacoesComerciais() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       {/* Header Apple-like */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border/40">
+      <div className="sticky top-0 z-20 bg-white/70 backdrop-blur-xl border-b border-gray-200/60 shadow-sm">
         <div className="px-4 lg:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/30 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold">Escalações</h1>
-              <p className="text-xs text-muted-foreground">Leads especiais</p>
+              <h1 className="text-lg font-semibold text-gray-900">Escalações</h1>
+              <p className="text-xs text-gray-500">Leads especiais</p>
             </div>
           </div>
           <Button
@@ -298,68 +326,68 @@ export default function EscalacoesComerciais() {
             size="icon"
             onClick={fetchData}
             disabled={loading}
-            className="rounded-full h-9 w-9"
+            className="rounded-full h-9 w-9 hover:bg-gray-100"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
 
       <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
-        {/* KPIs compactos */}
+        {/* KPIs compactos com design Apple */}
         <div className="grid grid-cols-4 gap-3">
           {[
-            { label: 'Total', value: stats.total, color: 'text-foreground' },
-            { label: 'Pendentes', value: stats.pendentes, color: 'text-yellow-500' },
-            { label: 'Atendendo', value: stats.emAtendimento, color: 'text-blue-500' },
-            { label: 'Concluídos', value: stats.concluidos, color: 'text-green-500' },
+            { label: 'Total', value: stats.total, gradient: 'from-gray-100 to-gray-50', textColor: 'text-gray-900' },
+            { label: 'Pendentes', value: stats.pendentes, gradient: 'from-yellow-50 to-orange-50', textColor: 'text-yellow-600' },
+            { label: 'Atendendo', value: stats.emAtendimento, gradient: 'from-blue-50 to-indigo-50', textColor: 'text-blue-600' },
+            { label: 'Concluídos', value: stats.concluidos, gradient: 'from-green-50 to-emerald-50', textColor: 'text-green-600' },
           ].map((stat) => (
             <div 
               key={stat.label}
-              className="bg-card/50 backdrop-blur-sm rounded-2xl p-4 border border-border/40"
+              className={`bg-gradient-to-br ${stat.gradient} rounded-2xl p-4 border border-gray-200/60 shadow-sm hover:shadow-md transition-shadow`}
             >
-              <p className="text-2xl font-bold tabular-nums text-center">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground text-center uppercase tracking-wide">{stat.label}</p>
+              <p className={`text-2xl font-bold tabular-nums text-center ${stat.textColor}`}>{stat.value}</p>
+              <p className="text-[10px] text-gray-500 text-center uppercase tracking-wide font-medium">{stat.label}</p>
             </div>
           ))}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Vendedores - Design Apple minimalista */}
-          <div className="bg-card/50 backdrop-blur-sm rounded-2xl border border-border/40 overflow-hidden">
-            <div className="p-4 border-b border-border/40 flex items-center justify-between">
+          {/* Vendedores - Card com sombra e glassmorphism */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200/60 shadow-lg shadow-gray-200/50 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
               <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-muted-foreground" />
-                <span className="font-medium text-sm">Vendedores</span>
+                <Bell className="w-4 h-4 text-gray-500" />
+                <span className="font-semibold text-sm text-gray-800">Vendedores</span>
               </div>
               <Button 
                 size="sm" 
                 variant="ghost"
                 onClick={() => setShowAddVendedor(true)}
-                className="rounded-full h-8 px-3 text-xs"
+                className="rounded-full h-8 px-3 text-xs hover:bg-gray-100"
               >
                 <Plus className="w-3.5 h-3.5 mr-1" />
                 Adicionar
               </Button>
             </div>
             
-            <div className="divide-y divide-border/40">
+            <div className="divide-y divide-gray-100">
               {vendedores.map((vendedor) => (
                 <div 
                   key={vendedor.id} 
-                  className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
+                  className="p-4 flex items-center justify-between hover:bg-gray-50/80 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${
                       vendedor.recebe_escalacoes 
-                        ? 'bg-green-500/10 text-green-600' 
-                        : 'bg-muted text-muted-foreground'
+                        ? 'bg-gradient-to-br from-green-400 to-green-500 text-white' 
+                        : 'bg-gray-100 text-gray-400'
                     }`}>
                       <User className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{vendedor.nome}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-medium text-sm text-gray-900">{vendedor.nome}</p>
+                      <p className="text-xs text-gray-500">
                         {formatPhone(vendedor.telefone)}
                       </p>
                     </div>
@@ -370,7 +398,7 @@ export default function EscalacoesComerciais() {
                       href={getWhatsAppLink(vendedor.telefone)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 rounded-full hover:bg-green-500/10 transition-colors"
+                      className="p-2 rounded-full hover:bg-green-50 transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5 text-green-600" />
                     </a>
@@ -384,46 +412,47 @@ export default function EscalacoesComerciais() {
               ))}
               
               {vendedores.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground text-sm">
+                <div className="p-8 text-center text-gray-400 text-sm">
                   Nenhum vendedor cadastrado
                 </div>
               )}
             </div>
           </div>
 
-          {/* Lista de Escalações - Apple style */}
-          <div className="lg:col-span-2 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/40 overflow-hidden">
-            <div className="p-4 border-b border-border/40 flex items-center justify-between">
+          {/* Lista de Escalações - Cards com sombra */}
+          <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200/60 shadow-lg shadow-gray-200/50 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                <span className="font-medium text-sm">Escalações Recentes</span>
+                <MessageSquare className="w-4 h-4 text-gray-500" />
+                <span className="font-semibold text-sm text-gray-800">Escalações Recentes</span>
               </div>
-              <Badge variant="secondary" className="rounded-full text-xs">
+              <Badge className="rounded-full text-xs bg-yellow-100 text-yellow-700 border-yellow-200">
                 {stats.pendentes} pendentes
               </Badge>
             </div>
             
             <ScrollArea className="h-[500px]">
-              <div className="divide-y divide-border/40">
+              <div className="divide-y divide-gray-100">
                 {escalacoes.map((escalacao) => (
                   <div 
                     key={escalacao.id}
-                    className="p-4 hover:bg-muted/30 transition-colors"
+                    className={`p-4 hover:bg-gray-50/80 transition-all ${
+                      escalacao.status === 'pendente' ? 'bg-yellow-50/30' : ''
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm truncate">
+                          <span className="font-semibold text-sm text-gray-900 truncate">
                             {escalacao.lead_name || 'Lead não identificado'}
                           </span>
                           <Badge 
-                            variant="outline"
-                            className={`rounded-full text-[10px] px-2 py-0 ${
+                            className={`rounded-full text-[10px] px-2 py-0 border ${
                               escalacao.status === 'pendente' 
-                                ? 'border-yellow-500/50 text-yellow-600 bg-yellow-500/10'
+                                ? 'border-yellow-300 text-yellow-700 bg-yellow-100'
                                 : escalacao.status === 'concluido'
-                                ? 'border-green-500/50 text-green-600 bg-green-500/10'
-                                : 'border-blue-500/50 text-blue-600 bg-blue-500/10'
+                                ? 'border-green-300 text-green-700 bg-green-100'
+                                : 'border-blue-300 text-blue-700 bg-blue-100'
                             }`}
                           >
                             {escalacao.status === 'pendente' ? 'Pendente' : 
@@ -431,7 +460,7 @@ export default function EscalacoesComerciais() {
                           </Badge>
                         </div>
                         
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                        <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
                           <span className="flex items-center gap-1">
                             <Phone className="w-3 h-3" />
                             {formatPhone(escalacao.phone_number)}
@@ -442,26 +471,41 @@ export default function EscalacoesComerciais() {
                           </span>
                         </div>
 
-                        {escalacao.lead_segment && (
-                          <Badge variant="secondary" className="rounded-full text-[10px] mr-2">
-                            {escalacao.lead_segment}
-                          </Badge>
-                        )}
-                        
-                        {escalacao.response_type && escalacao.status === 'concluido' && (
-                          <span className="text-[10px] text-green-600">
-                            ✓ {escalacao.responded_by_name || 'Atendido'} 
-                            {escalacao.response_type === 'button' ? ' (botão)' : ' (texto)'}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {escalacao.lead_segment && (
+                            <Badge className="rounded-full text-[10px] bg-gray-100 text-gray-600 border-gray-200">
+                              {escalacao.lead_segment}
+                            </Badge>
+                          )}
+                          
+                          {escalacao.response_type && escalacao.status === 'concluido' && (
+                            <span className="text-[10px] text-green-600 font-medium">
+                              ✓ {escalacao.responded_by_name || 'Atendido'} 
+                              {escalacao.response_type === 'button' ? ' (botão)' : ' (texto)'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {/* Botão Ver Conversa no CRM */}
+                        {escalacao.conversation_id && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openCrmConversation(escalacao.conversation_id)}
+                            className="rounded-full h-8 w-8 p-0 hover:bg-blue-50"
+                            title="Ver conversa no CRM"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-blue-600" />
+                          </Button>
+                        )}
+                        
                         <a
                           href={getWhatsAppLink(escalacao.phone_number)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 rounded-full bg-green-500/10 hover:bg-green-500/20 transition-colors"
+                          className="p-2 rounded-full bg-green-50 hover:bg-green-100 transition-colors"
                         >
                           <ExternalLink className="w-3.5 h-3.5 text-green-600" />
                         </a>
@@ -472,7 +516,7 @@ export default function EscalacoesComerciais() {
                               size="sm"
                               variant="ghost"
                               onClick={() => openSendDialog(escalacao)}
-                              className="rounded-full h-8 px-3 text-xs"
+                              className="rounded-full h-8 px-3 text-xs hover:bg-gray-100"
                             >
                               <Send className="w-3.5 h-3.5 mr-1" />
                               Enviar
@@ -480,7 +524,7 @@ export default function EscalacoesComerciais() {
                             <Button
                               size="sm"
                               onClick={() => updateEscalacaoStatus(escalacao.id, 'concluido')}
-                              className="rounded-full h-8 px-3 text-xs bg-green-600 hover:bg-green-700"
+                              className="rounded-full h-8 px-3 text-xs bg-green-600 hover:bg-green-700 shadow-sm"
                             >
                               <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                               Concluir
@@ -492,9 +536,9 @@ export default function EscalacoesComerciais() {
                           variant="ghost"
                           size="icon"
                           onClick={() => setSelectedEscalacao(escalacao)}
-                          className="rounded-full h-8 w-8"
+                          className="rounded-full h-8 w-8 hover:bg-gray-100"
                         >
-                          <ChevronRight className="w-4 h-4" />
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
                         </Button>
                       </div>
                     </div>
@@ -502,7 +546,7 @@ export default function EscalacoesComerciais() {
                 ))}
                 
                 {escalacoes.length === 0 && (
-                  <div className="p-12 text-center text-muted-foreground text-sm">
+                  <div className="p-12 text-center text-gray-400 text-sm">
                     Nenhuma escalação encontrada
                   </div>
                 )}
@@ -514,33 +558,33 @@ export default function EscalacoesComerciais() {
 
       {/* Dialog Adicionar Vendedor */}
       <Dialog open={showAddVendedor} onOpenChange={setShowAddVendedor}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogContent className="sm:max-w-md rounded-2xl shadow-2xl">
           <DialogHeader>
-            <DialogTitle>Adicionar Vendedor</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-gray-900">Adicionar Vendedor</DialogTitle>
+            <DialogDescription className="text-gray-500">
               Cadastre um novo vendedor para receber escalações
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Nome</label>
+              <label className="text-sm font-medium text-gray-700">Nome</label>
               <Input
                 placeholder="Nome do vendedor"
                 value={newVendedor.nome}
                 onChange={(e) => setNewVendedor(prev => ({ ...prev, nome: e.target.value }))}
-                className="rounded-xl"
+                className="rounded-xl border-gray-200"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">WhatsApp</label>
+              <label className="text-sm font-medium text-gray-700">WhatsApp</label>
               <Input
                 placeholder="45999999999"
                 value={newVendedor.telefone}
                 onChange={(e) => setNewVendedor(prev => ({ ...prev, telefone: e.target.value }))}
-                className="rounded-xl"
+                className="rounded-xl border-gray-200"
               />
-              <p className="text-xs text-muted-foreground">DDD + número, sem espaços</p>
+              <p className="text-xs text-gray-400">DDD + número, sem espaços</p>
             </div>
           </div>
           
@@ -555,7 +599,7 @@ export default function EscalacoesComerciais() {
             <Button 
               onClick={addVendedor} 
               disabled={addingVendedor}
-              className="rounded-full"
+              className="rounded-full bg-gray-900 hover:bg-gray-800"
             >
               {addingVendedor ? 'Adicionando...' : 'Adicionar'}
             </Button>
@@ -565,10 +609,10 @@ export default function EscalacoesComerciais() {
 
       {/* Dialog Enviar Escalação */}
       <Dialog open={showSendDialog} onOpenChange={setShowSendDialog}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogContent className="sm:max-w-md rounded-2xl shadow-2xl">
           <DialogHeader>
-            <DialogTitle>Enviar Escalação</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-gray-900">Enviar Escalação</DialogTitle>
+            <DialogDescription className="text-gray-500">
               Selecione os vendedores que receberão esta escalação
             </DialogDescription>
           </DialogHeader>
@@ -577,7 +621,7 @@ export default function EscalacoesComerciais() {
             {vendedores.filter(v => v.ativo).map((vendedor) => (
               <label 
                 key={vendedor.id}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors border border-gray-100"
               >
                 <Checkbox
                   checked={selectedVendedores.includes(vendedor.id)}
@@ -590,8 +634,8 @@ export default function EscalacoesComerciais() {
                   }}
                 />
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{vendedor.nome}</p>
-                  <p className="text-xs text-muted-foreground">{formatPhone(vendedor.telefone)}</p>
+                  <p className="font-medium text-sm text-gray-900">{vendedor.nome}</p>
+                  <p className="text-xs text-gray-500">{formatPhone(vendedor.telefone)}</p>
                 </div>
                 {vendedor.recebe_escalacoes && (
                   <Bell className="w-3.5 h-3.5 text-green-500" />
@@ -611,7 +655,7 @@ export default function EscalacoesComerciais() {
             <Button 
               onClick={sendManualEscalation}
               disabled={isSending || selectedVendedores.length === 0}
-              className="rounded-full"
+              className="rounded-full bg-gray-900 hover:bg-gray-800"
             >
               {isSending ? 'Enviando...' : `Enviar (${selectedVendedores.length})`}
             </Button>
@@ -621,58 +665,73 @@ export default function EscalacoesComerciais() {
 
       {/* Dialog Detalhes da Escalação */}
       <Dialog open={!!selectedEscalacao} onOpenChange={() => setSelectedEscalacao(null)}>
-        <DialogContent className="sm:max-w-lg rounded-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg rounded-2xl max-h-[80vh] overflow-y-auto shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-gray-900">
               <User className="w-5 h-5" />
               {selectedEscalacao?.lead_name || 'Lead não identificado'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-500">
               Criado em {selectedEscalacao && format(new Date(selectedEscalacao.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
             </DialogDescription>
           </DialogHeader>
           
           {selectedEscalacao && (
             <div className="space-y-4 py-4">
-              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                <span className="font-medium">{formatPhone(selectedEscalacao.phone_number)}</span>
-                <a
-                  href={getWhatsAppLink(selectedEscalacao.phone_number)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-auto"
-                >
-                  <Button size="sm" variant="outline" className="rounded-full h-8">
-                    <ExternalLink className="w-3.5 h-3.5 mr-1" />
-                    WhatsApp
-                  </Button>
-                </a>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <Phone className="w-4 h-4 text-gray-400" />
+                <span className="font-medium text-gray-900">{formatPhone(selectedEscalacao.phone_number)}</span>
+                <div className="ml-auto flex gap-2">
+                  {selectedEscalacao.conversation_id && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="rounded-full h-8"
+                      onClick={() => {
+                        setSelectedEscalacao(null);
+                        openCrmConversation(selectedEscalacao.conversation_id);
+                      }}
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 mr-1" />
+                      CRM
+                    </Button>
+                  )}
+                  <a
+                    href={getWhatsAppLink(selectedEscalacao.phone_number)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button size="sm" variant="outline" className="rounded-full h-8">
+                      <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                      WhatsApp
+                    </Button>
+                  </a>
+                </div>
               </div>
 
               {selectedEscalacao.lead_segment && (
-                <div className="p-3 bg-muted/50 rounded-xl">
-                  <p className="text-xs text-muted-foreground mb-1">Segmento</p>
-                  <p className="font-medium">{selectedEscalacao.lead_segment}</p>
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 mb-1">Segmento</p>
+                  <p className="font-medium text-gray-900">{selectedEscalacao.lead_segment}</p>
                 </div>
               )}
 
               {selectedEscalacao.first_message && (
-                <div className="p-3 bg-muted/50 rounded-xl">
-                  <p className="text-xs text-muted-foreground mb-1">Primeira Mensagem</p>
-                  <p className="text-sm">{selectedEscalacao.first_message}</p>
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 mb-1">Primeira Mensagem</p>
+                  <p className="text-sm text-gray-700">{selectedEscalacao.first_message}</p>
                 </div>
               )}
 
               {selectedEscalacao.conversation_summary && (
-                <div className="p-3 bg-muted/50 rounded-xl">
-                  <p className="text-xs text-muted-foreground mb-1">Resumo da Conversa</p>
-                  <p className="text-sm whitespace-pre-wrap">{selectedEscalacao.conversation_summary}</p>
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 mb-1">Resumo da Conversa</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedEscalacao.conversation_summary}</p>
                 </div>
               )}
 
               {selectedEscalacao.response_type && (
-                <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+                <div className="p-3 bg-green-50 rounded-xl border border-green-200">
                   <p className="text-xs text-green-600 mb-1">Resposta</p>
                   <p className="font-medium text-green-700">
                     {selectedEscalacao.responded_by_name || 'Vendedor'} respondeu via {selectedEscalacao.response_type === 'button' ? 'botão' : 'texto'}
