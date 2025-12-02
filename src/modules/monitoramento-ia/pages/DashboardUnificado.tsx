@@ -88,7 +88,6 @@ const OfflinePanelCard = ({ device }: { device: OfflineDevice }) => {
 
 export const DashboardUnificado = () => {
   const isMobile = useIsMobile();
-  const { setSidebarOpen } = useSidebarContext();
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     panels_online: 0,
     panels_offline: 0,
@@ -182,7 +181,7 @@ export const DashboardUnificado = () => {
 
   // Renderizar versão mobile
   if (isMobile) {
-    return <DashboardMobile onMenuClick={() => setSidebarOpen(true)} />;
+    return <DashboardMobile onMenuClick={() => {}} />; // Sidebar now managed by unified layout
   }
 
   if (loading) {

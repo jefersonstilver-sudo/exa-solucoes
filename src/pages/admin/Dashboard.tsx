@@ -70,7 +70,7 @@ const Dashboard = () => {
   console.log('✅ [DASHBOARD] Renderizando dashboard completo');
   
   return (
-    <div className="min-h-screen bg-background p-2 md:p-4 lg:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 p-2 md:p-4 lg:p-6">
       <div className="max-w-[2000px] mx-auto space-y-4 md:space-y-6">
         {/* Header Compacto */}
         <DashboardHeader 
