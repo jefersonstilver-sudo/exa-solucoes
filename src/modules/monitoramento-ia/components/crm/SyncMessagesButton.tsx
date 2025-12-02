@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshCw, CheckCircle, AlertCircle, MessageSquare, Users, ArrowDownCircle, ArrowUpCircle, History } from 'lucide-react';
+import { RefreshCw, CheckCircle, AlertCircle, MessageSquare, Users, ArrowDownCircle, ArrowUpCircle, History, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +35,15 @@ interface SyncResult {
     messages_inbound_synced: number;
     duplicates_skipped: number;
   };
+  chatsSync?: {
+    chats_from_zapi: number;
+    conversations_created: number;
+    conversations_updated: number;
+    messages_synced: number;
+    messages_outbound_synced: number;
+    messages_inbound_synced: number;
+    duplicates_skipped: number;
+  };
 }
 
 interface SyncMessagesButtonProps {
@@ -47,7 +56,7 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
   className 
 }) => {
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncPhase, setSyncPhase] = useState<'idle' | 'logs' | 'history'>('idle');
+  const [syncPhase, setSyncPhase] = useState<'idle' | 'logs' | 'history' | 'chats'>('idle');
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState<SyncResult | null>(null);
 
@@ -63,9 +72,24 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
 
       if (logsError) throw logsError;
 
-      // FASE 2: Buscar histórico direto do Z-API
+      // FASE 2: Sincronizar lista de chats do Z-API
+      setSyncPhase('chats');
+      console.log('🔄 [SYNC] Fase 2: Sincronizando chats do Z-API...');
+      
+      let chatsData = null;
+      try {
+        const { data: chatsResult, error: chatsError } = await supabase.functions.invoke('sync-whatsapp-chats', {});
+        if (!chatsError && chatsResult) {
+          chatsData = chatsResult.stats;
+          console.log('✅ [SYNC] Chats Z-API sincronizados:', chatsData);
+        }
+      } catch (chatsErr) {
+        console.warn('⚠️ [SYNC] Erro ao sincronizar chats (não crítico):', chatsErr);
+      }
+
+      // FASE 3: Buscar histórico direto do Z-API (fallback)
       setSyncPhase('history');
-      console.log('🔄 [SYNC] Fase 2: Buscando histórico do Z-API...');
+      console.log('🔄 [SYNC] Fase 3: Buscando histórico do Z-API...');
       
       let zapiHistoryData = null;
       try {
@@ -82,11 +106,12 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
       const combinedResult: SyncResult = {
         ...logsData,
         zapiHistory: zapiHistoryData,
+        chatsSync: chatsData,
         stats: {
           ...logsData.stats,
-          messages_recovered: logsData.stats.messages_recovered + (zapiHistoryData?.messages_synced || 0),
-          messages_outbound_recovered: logsData.stats.messages_outbound_recovered + (zapiHistoryData?.messages_outbound_synced || 0),
-          messages_inbound_recovered: logsData.stats.messages_inbound_recovered + (zapiHistoryData?.messages_inbound_synced || 0),
+          messages_recovered: logsData.stats.messages_recovered + (zapiHistoryData?.messages_synced || 0) + (chatsData?.messages_synced || 0),
+          messages_outbound_recovered: logsData.stats.messages_outbound_recovered + (zapiHistoryData?.messages_outbound_synced || 0) + (chatsData?.messages_outbound_synced || 0),
+          messages_inbound_recovered: logsData.stats.messages_inbound_recovered + (zapiHistoryData?.messages_inbound_synced || 0) + (chatsData?.messages_inbound_synced || 0),
         }
       };
 
@@ -136,7 +161,11 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
         )}
         onClick={handleSync}
         disabled={isSyncing}
-        title={isSyncing ? (syncPhase === 'logs' ? 'Sincronizando logs...' : 'Buscando histórico Z-API...') : 'Sincronizar todas as mensagens'}
+        title={isSyncing 
+          ? (syncPhase === 'logs' ? 'Fase 1/3: Sincronizando logs...' 
+            : syncPhase === 'chats' ? 'Fase 2/3: Buscando chats...' 
+            : 'Fase 3/3: Buscando histórico...') 
+          : 'Sincronizar todas as mensagens'}
       >
         <AnimatePresence mode="wait">
           {isSyncing ? (
@@ -156,13 +185,17 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
               <motion.div
                 className={cn(
                   "absolute inset-1 rounded-full border-t-2",
-                  syncPhase === 'logs' ? "border-primary" : "border-purple-500"
+                  syncPhase === 'logs' ? "border-primary" 
+                    : syncPhase === 'chats' ? "border-green-500" 
+                    : "border-purple-500"
                 )}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
               {syncPhase === 'history' ? (
                 <History className="w-4 h-4 text-purple-500 animate-pulse" />
+              ) : syncPhase === 'chats' ? (
+                <MessageCircle className="w-4 h-4 text-green-500 animate-pulse" />
               ) : (
                 <RefreshCw className="w-4 h-4 text-primary animate-spin" />
               )}
@@ -248,6 +281,34 @@ export const SyncMessagesButton: React.FC<SyncMessagesButtonProps> = ({
 
               {/* Divisor */}
               <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+
+              {/* Stats Z-API Chats */}
+              {result.chatsSync && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    <MessageCircle className="w-3 h-3" />
+                    Chats WhatsApp
+                  </p>
+                  <div className="bg-green-500/10 rounded-xl p-3 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Chats encontrados</span>
+                      <span className="font-semibold">{result.chatsSync.chats_from_zapi}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Conversas criadas</span>
+                      <span className="font-semibold text-green-500">+{result.chatsSync.conversations_created}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Msgs sincronizadas</span>
+                      <span className="font-semibold text-green-500">+{result.chatsSync.messages_synced}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Duplicatas ignoradas</span>
+                      <span>{result.chatsSync.duplicates_skipped}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Stats Z-API History */}
               {result.zapiHistory && (
