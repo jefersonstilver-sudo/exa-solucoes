@@ -7,19 +7,21 @@ export const useOfflineAlerts = () => {
 
   const fetchOfflineCount = async () => {
     try {
-      const result = await (supabase
-        .from('devices') as any)
+      const result = await supabase
+        .from('devices')
         .select('id')
-        .eq('is_online', false);
+        .eq('status', 'offline');
 
       if (result.error) {
         console.error('[useOfflineAlerts] Error fetching:', result.error);
+        setOfflineCount(0);
         return;
       }
 
       setOfflineCount(result.data?.length || 0);
     } catch (error) {
       console.error('[useOfflineAlerts] Error:', error);
+      setOfflineCount(0);
     } finally {
       setLoading(false);
     }
