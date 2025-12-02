@@ -24,7 +24,7 @@ interface UserProfile {
 const CheckoutFidelidade = () => {
   const navigate = useNavigate();
   const { user, isLoggedIn, isLoading: authLoading } = useUserSession();
-  const { cartItems, selectedPlan, calculateTotalPrice, couponId, couponValid } = useCheckout();
+  const { cartItems, selectedPlan, calculateTotalPrice, couponId, couponValid, isCartLoading } = useCheckout();
   
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -76,13 +76,13 @@ const CheckoutFidelidade = () => {
     }
   }, [authLoading, isLoggedIn, navigate]);
   
-  // Validar dados do checkout
+  // Validar dados do checkout - Aguardar carrinho carregar
   useEffect(() => {
-    if (!authLoading && (!cartItems || cartItems.length === 0)) {
+    if (!authLoading && !isCartLoading && (!cartItems || cartItems.length === 0)) {
       toast.error('Carrinho vazio');
       navigate('/paineis-digitais/loja');
     }
-  }, [cartItems, navigate, authLoading]);
+  }, [cartItems, navigate, authLoading, isCartLoading]);
   
   // Gerar parcelas previstas
   const gerarParcelas = () => {
@@ -170,7 +170,7 @@ const CheckoutFidelidade = () => {
     }
   };
   
-  if (authLoading || loadingProfile) {
+  if (authLoading || loadingProfile || isCartLoading) {
     return (
       <CheckoutLayout currentStep={2} maxWidth="4xl">
         <div className="flex items-center justify-center py-20">
