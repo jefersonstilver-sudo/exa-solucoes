@@ -337,6 +337,9 @@ verify_jwt = true
 [functions.sync-all-messages]
 verify_jwt = false
 
+[functions.fetch-zapi-history]
+verify_jwt = false
+
 [[cron]]
 function_name = "billing-scheduler"
 schedule = "0 8 * * *"  # Todos os dias às 08:00
