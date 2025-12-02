@@ -167,11 +167,11 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Accordion Principal - Lista de Prédios */}
-      <div className="space-y-2">
+      {/* Card de Locais Selecionados - Mesmo estilo visual */}
+      <Card className="shadow-lg border rounded-2xl overflow-hidden">
         <button
           onClick={() => setIsListOpen(!isListOpen)}
-          className="w-full bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg p-3 sm:p-4 border border-gray-200"
+          className="w-full bg-white hover:bg-gray-50 transition-colors p-3 sm:p-4"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-3">
@@ -192,47 +192,50 @@ const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         </button>
         
         {isListOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden space-y-2"
-          >
-            {Object.entries(paineisPorPredio).map(([buildingId, building]: [string, any]) => (
-              <div
-                key={buildingId}
-                className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white hover:shadow-sm transition-shadow"
-              >
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="flex-shrink-0">
-                    <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
-                      {building.nome}
-                    </h4>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                      <div className="flex items-center space-x-1">
-                        <Monitor className="h-3 w-3 text-gray-400" />
-                        <span className="text-[10px] sm:text-xs text-gray-600">
-                          {building.quantidadeTelas} {building.quantidadeTelas === 1 ? 'tela' : 'telas'}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Users className="h-3 w-3 text-gray-400" />
-                        <span className="text-[10px] sm:text-xs text-gray-600">
-                          {building.publico_estimado.toLocaleString()} pessoas/mês
-                        </span>
+          <CardContent className="p-0 border-t border-gray-100">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className="divide-y divide-gray-100"
+            >
+              {Object.entries(paineisPorPredio).map(([buildingId, building]: [string, any], index) => (
+                <div
+                  key={buildingId}
+                  className={`p-3 sm:p-4 transition-colors ${
+                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <div className="flex-shrink-0">
+                      <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
+                        {building.nome}
+                      </h4>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                        <div className="flex items-center space-x-1">
+                          <Monitor className="h-3 w-3 text-gray-400" />
+                          <span className="text-[10px] sm:text-xs text-gray-600">
+                            {building.quantidadeTelas} {building.quantidadeTelas === 1 ? 'tela' : 'telas'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Users className="h-3 w-3 text-gray-400" />
+                          <span className="text-[10px] sm:text-xs text-gray-600">
+                            {building.publico_estimado.toLocaleString()} pessoas/mês
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </motion.div>
+              ))}
+            </motion.div>
+          </CardContent>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
