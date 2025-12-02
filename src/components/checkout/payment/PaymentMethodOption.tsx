@@ -90,7 +90,7 @@ const PaymentMethodOption = ({
         {/* PIX discount highlight */}
         {method.id === 'pix' && isSelected && (
           <div className="mt-3 bg-green-50 border border-green-100 rounded-md p-2 text-sm text-green-700">
-            Você economiza {formatCurrency(method.totalValue * 0.05)} pagando com PIX!
+            Você economiza {formatCurrency(method.totalValue * 0.10)} pagando com PIX!
           </div>
         )}
       </div>

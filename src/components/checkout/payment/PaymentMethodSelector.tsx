@@ -28,8 +28,8 @@ const PaymentMethodSelector = ({
   // 🎯 CUPOM 573040: Força R$ 0,05 sem desconto PIX adicional
   const isCupom573040 = couponCode === '573040';
   
-  // Aplicar 5% de desconto para pagamentos PIX (exceto cupom 573040)
-  const pixDiscount = isCupom573040 ? 0 : 0.05;
+  // Aplicar 10% de desconto para pagamentos PIX (exceto cupom 573040)
+  const pixDiscount = isCupom573040 ? 0 : 0.10;
   const pixAmount = isCupom573040 ? 0.05 : totalAmount * (1 - pixDiscount);
   
   return (

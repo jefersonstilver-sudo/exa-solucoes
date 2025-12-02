@@ -26,7 +26,7 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   const isCupom573040 = couponCode === '573040';
   
   // Calcular valores
-  const pixDiscount = 0.05; // 5% desconto PIX à vista
+  const pixDiscount = 0.10; // 10% desconto PIX à vista
   const pixAvistaAmount = isCupom573040 ? 0.05 : totalAmount * (1 - pixDiscount);
   const monthlyAmount = totalAmount / selectedPlan;
   

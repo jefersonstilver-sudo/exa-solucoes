@@ -19,10 +19,10 @@ const PaymentMethods = ({ selectedMethod, setSelectedMethod, totalPrice }: Payme
     console.log("[PaymentMethods] Current selected method:", selectedMethod);
   }, [selectedMethod]);
   
-  // Calculate PIX discount (5% off for PIX payments)
+  // Calculate PIX discount (10% off for PIX payments)
   useEffect(() => {
-    // Apply 5% discount for PIX payments
-    const pixDiscount = 0.05; // 5%
+    // Apply 10% discount for PIX payments
+    const pixDiscount = 0.10; // 10%
     setPixTotal(totalPrice * (1 - pixDiscount));
   }, [totalPrice]);
 
