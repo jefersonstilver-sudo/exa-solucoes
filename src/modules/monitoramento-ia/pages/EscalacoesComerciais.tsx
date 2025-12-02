@@ -17,7 +17,8 @@ import {
   Target,
   FileText,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Plus
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,16 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getWhatsAppLink } from '@/utils/whatsapp';
@@ -71,6 +82,11 @@ export default function EscalacoesComerciais() {
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showFullHistory, setShowFullHistory] = useState(false);
+  
+  // Estado para adicionar vendedor
+  const [showAddVendedor, setShowAddVendedor] = useState(false);
+  const [newVendedor, setNewVendedor] = useState({ nome: '', telefone: '' });
+  const [addingVendedor, setAddingVendedor] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -153,6 +169,45 @@ export default function EscalacoesComerciais() {
     } catch (error) {
       console.error('Erro:', error);
       toast.error('Erro ao atualizar vendedor');
+    }
+  };
+
+  const addVendedor = async () => {
+    if (!newVendedor.nome.trim() || !newVendedor.telefone.trim()) {
+      toast.error('Preencha nome e telefone');
+      return;
+    }
+    
+    setAddingVendedor(true);
+    try {
+      // Limpar telefone - manter apenas números
+      const telefoneClean = newVendedor.telefone.replace(/\D/g, '');
+      
+      // Garantir formato 55XXXXXXXXXXX
+      const telefoneFormatted = telefoneClean.startsWith('55') 
+        ? telefoneClean 
+        : `55${telefoneClean}`;
+      
+      const { error } = await supabase
+        .from('escalacao_vendedores')
+        .insert({
+          nome: newVendedor.nome.trim(),
+          telefone: telefoneFormatted,
+          ativo: true,
+          recebe_escalacoes: true
+        });
+
+      if (error) throw error;
+      
+      toast.success(`${newVendedor.nome} adicionado com sucesso!`);
+      setNewVendedor({ nome: '', telefone: '' });
+      setShowAddVendedor(false);
+      fetchData();
+    } catch (error) {
+      console.error('Erro:', error);
+      toast.error('Erro ao adicionar vendedor');
+    } finally {
+      setAddingVendedor(false);
     }
   };
 
@@ -279,11 +334,20 @@ export default function EscalacoesComerciais() {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Configuração de Vendedores */}
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
                 <User className="w-5 h-5" />
                 Vendedores
               </CardTitle>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setShowAddVendedor(true)}
+                className="h-8"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Adicionar
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {vendedores.map((vendedor) => (
@@ -627,6 +691,62 @@ export default function EscalacoesComerciais() {
           </Card>
         )}
       </div>
+
+      {/* Dialog para adicionar vendedor */}
+      <Dialog open={showAddVendedor} onOpenChange={setShowAddVendedor}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Adicionar Vendedor
+            </DialogTitle>
+            <DialogDescription>
+              Adicione um novo vendedor para receber escalações comerciais.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome</Label>
+              <Input
+                id="nome"
+                placeholder="Ex: Eduardo"
+                value={newVendedor.nome}
+                onChange={(e) => setNewVendedor(prev => ({ ...prev, nome: e.target.value }))}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="telefone">Telefone (WhatsApp)</Label>
+              <Input
+                id="telefone"
+                placeholder="Ex: 45991415856"
+                value={newVendedor.telefone}
+                onChange={(e) => setNewVendedor(prev => ({ ...prev, telefone: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Apenas números, com DDD. Ex: 45991415856
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAddVendedor(false)}
+              disabled={addingVendedor}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={addVendedor}
+              disabled={addingVendedor || !newVendedor.nome || !newVendedor.telefone}
+            >
+              {addingVendedor ? 'Adicionando...' : 'Adicionar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
