@@ -409,10 +409,22 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-gray-500">Status de Adimplência:</span>
-                  {order.status_adimplencia === 'em_dia' && (
+                  {order.status_adimplencia === 'em_dia' && order.parcela_atual && order.parcela_atual > 1 && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       Em Dia
+                    </span>
+                  )}
+                  {(order.status_adimplencia === 'em_dia' && (!order.parcela_atual || order.parcela_atual === 1)) && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                      <Clock className="h-3.5 w-3.5" />
+                      Aguardando 1º Pagamento
+                    </span>
+                  )}
+                  {order.status_adimplencia === 'aguardando_pagamento' && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                      <Clock className="h-3.5 w-3.5" />
+                      Aguardando Pagamento
                     </span>
                   )}
                   {order.status_adimplencia === 'atrasado' && (
@@ -429,7 +441,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                   )}
                   {!order.status_adimplencia && order.is_fidelidade && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
-                      Aguardando Pagamento
+                      Não Definido
                     </span>
                   )}
                 </div>
