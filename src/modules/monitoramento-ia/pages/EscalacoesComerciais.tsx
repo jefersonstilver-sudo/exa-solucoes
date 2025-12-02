@@ -18,7 +18,8 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
-  Plus
+  Plus,
+  Send
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -56,6 +58,7 @@ interface Escalacao {
   created_at: string;
   attended_at: string | null;
   notes: string | null;
+  viewed_at: string | null;
 }
 
 interface Vendedor {
@@ -88,6 +91,12 @@ export default function EscalacoesComerciais() {
   const [newVendedor, setNewVendedor] = useState({ nome: '', telefone: '' });
   const [addingVendedor, setAddingVendedor] = useState(false);
 
+  // Estado para envio manual
+  const [showSendDialog, setShowSendDialog] = useState(false);
+  const [sendingEscalacao, setSendingEscalacao] = useState<Escalacao | null>(null);
+  const [selectedVendedores, setSelectedVendedores] = useState<string[]>([]);
+  const [isSending, setIsSending] = useState(false);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -110,6 +119,26 @@ export default function EscalacoesComerciais() {
       toast.error('Erro ao carregar dados');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Marcar escalações como visualizadas ao abrir a página
+  const markAsViewed = async () => {
+    try {
+      const pendingIds = escalacoes
+        .filter(e => e.status === 'pendente' && !e.viewed_at)
+        .map(e => e.id);
+      
+      if (pendingIds.length === 0) return;
+
+      console.log('[EscalacoesComerciais] Marking as viewed:', pendingIds.length);
+      
+      await supabase
+        .from('escalacoes_comerciais')
+        .update({ viewed_at: new Date().toISOString() })
+        .in('id', pendingIds);
+    } catch (error) {
+      console.error('Erro ao marcar como visto:', error);
     }
   };
 
@@ -145,6 +174,13 @@ export default function EscalacoesComerciais() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Marcar como visto após carregar escalações
+  useEffect(() => {
+    if (escalacoes.length > 0 && !loading) {
+      markAsViewed();
+    }
+  }, [escalacoes, loading]);
 
   // Buscar histórico quando selecionar uma escalação
   useEffect(() => {
@@ -231,6 +267,127 @@ export default function EscalacoesComerciais() {
       console.error('Erro:', error);
       toast.error('Erro ao atualizar status');
     }
+  };
+
+  // Abrir dialog de envio manual
+  const openSendDialog = (escalacao: Escalacao) => {
+    setSendingEscalacao(escalacao);
+    // Pré-selecionar vendedores ativos que recebem escalações
+    const activeVendedorIds = vendedores
+      .filter(v => v.ativo && v.recebe_escalacoes)
+      .map(v => v.id);
+    setSelectedVendedores(activeVendedorIds);
+    setShowSendDialog(true);
+  };
+
+  // Enviar escalação manualmente para vendedores selecionados
+  const sendManualEscalation = async () => {
+    if (!sendingEscalacao || selectedVendedores.length === 0) {
+      toast.error('Selecione ao menos um vendedor');
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      // Buscar config Z-API
+      const { data: agent } = await supabase
+        .from('agents')
+        .select('zapi_config')
+        .eq('key', 'sofia')
+        .single();
+
+      const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
+
+      if (!zapiConfig?.instance_id || !zapiConfig?.token) {
+        toast.error('Z-API não configurado');
+        return;
+      }
+
+      // Montar mensagem
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('pt-BR');
+      const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+      let message = `🔔 *ESCALAÇÃO COMERCIAL (REENVIO MANUAL)*\n`;
+      message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+      message += `📅 *Escalação criada em:* ${format(new Date(sendingEscalacao.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}\n`;
+      message += `📤 *Reenviado em:* ${dateStr} às ${timeStr}\n\n`;
+      message += `👤 *Lead:* ${sendingEscalacao.lead_name || 'Não identificado'}\n`;
+      message += `📱 *Telefone:* ${sendingEscalacao.phone_number}\n`;
+      
+      if (sendingEscalacao.lead_segment) {
+        message += `🏢 *Segmento:* ${sendingEscalacao.lead_segment}\n`;
+      }
+      
+      if (sendingEscalacao.plans_interested && sendingEscalacao.plans_interested.length > 0) {
+        message += `📊 *Planos:* ${sendingEscalacao.plans_interested.join(', ')}\n`;
+      }
+
+      if (sendingEscalacao.first_message) {
+        message += `\n💬 *Primeira mensagem:*\n"${sendingEscalacao.first_message.substring(0, 200)}"\n`;
+      }
+
+      if (sendingEscalacao.conversation_summary) {
+        message += `\n📝 *Resumo:*\n${sendingEscalacao.conversation_summary.substring(0, 500)}\n`;
+      }
+
+      message += `\n━━━━━━━━━━━━━━━━━━━━`;
+      message += `\n⚡ Cliente solicitou condição especial`;
+      message += `\n💼 Aguardando seu contato!`;
+
+      // Enviar para cada vendedor selecionado
+      let successCount = 0;
+      const selectedVendedorsList = vendedores.filter(v => selectedVendedores.includes(v.id));
+
+      for (const vendedor of selectedVendedorsList) {
+        try {
+          const vendedorPhone = vendedor.telefone.startsWith('55') 
+            ? vendedor.telefone 
+            : `55${vendedor.telefone}`;
+
+          const { data, error } = await supabase.functions.invoke('zapi-send-message', {
+            body: {
+              to: vendedorPhone,
+              message: `Olá ${vendedor.nome}!\n\n${message}`,
+              agentKey: 'sofia'
+            }
+          });
+
+          if (!error && data?.success) {
+            successCount++;
+            console.log(`[SendManual] ✅ Enviado para ${vendedor.nome}`);
+          } else {
+            console.error(`[SendManual] ❌ Erro ao enviar para ${vendedor.nome}:`, error || data);
+          }
+        } catch (err) {
+          console.error(`[SendManual] ❌ Erro ao enviar para ${vendedor.nome}:`, err);
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Escalação enviada para ${successCount} vendedor(es)!`);
+      } else {
+        toast.error('Falha ao enviar para todos os vendedores');
+      }
+
+      setShowSendDialog(false);
+      setSendingEscalacao(null);
+      setSelectedVendedores([]);
+
+    } catch (error) {
+      console.error('Erro ao enviar:', error);
+      toast.error('Erro ao enviar escalação');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const toggleVendedorSelection = (vendedorId: string) => {
+    setSelectedVendedores(prev => 
+      prev.includes(vendedorId)
+        ? prev.filter(id => id !== vendedorId)
+        : [...prev, vendedorId]
+    );
   };
 
   const getStatusColor = (status: string) => {
@@ -486,33 +643,61 @@ export default function EscalacoesComerciais() {
                             {format(new Date(escalacao.created_at), 'dd/MM HH:mm', { locale: ptBR })}
                           </p>
                           
-                          <div className="flex gap-1 mt-2">
+                          <div className="flex flex-col gap-1 mt-2">
                             {escalacao.status === 'pendente' && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  updateEscalacaoStatus(escalacao.id, 'em_atendimento');
-                                }}
-                              >
-                                Atender
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateEscalacaoStatus(escalacao.id, 'em_atendimento');
+                                  }}
+                                >
+                                  Atender
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openSendDialog(escalacao);
+                                  }}
+                                >
+                                  <Send className="w-3 h-3 mr-1" />
+                                  Enviar
+                                </Button>
+                              </>
                             )}
                             {escalacao.status === 'em_atendimento' && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs text-green-400"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  updateEscalacaoStatus(escalacao.id, 'concluido');
-                                }}
-                              >
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                Concluir
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs text-green-400"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateEscalacaoStatus(escalacao.id, 'concluido');
+                                  }}
+                                >
+                                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                                  Concluir
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openSendDialog(escalacao);
+                                  }}
+                                >
+                                  <Send className="w-3 h-3 mr-1" />
+                                  Reenviar
+                                </Button>
+                              </>
                             )}
                           </div>
                         </div>
@@ -761,6 +946,88 @@ export default function EscalacoesComerciais() {
               disabled={addingVendedor || !newVendedor.nome || !newVendedor.telefone}
             >
               {addingVendedor ? 'Adicionando...' : 'Adicionar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para envio manual */}
+      <Dialog open={showSendDialog} onOpenChange={setShowSendDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="w-5 h-5" />
+              Enviar para Vendedores
+            </DialogTitle>
+            <DialogDescription>
+              Selecione os vendedores que devem receber esta escalação.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            {sendingEscalacao && (
+              <div className="p-3 rounded-lg bg-background/50 border border-border/50">
+                <p className="text-sm font-medium">{sendingEscalacao.lead_name || sendingEscalacao.phone_number}</p>
+                <p className="text-xs text-muted-foreground">{sendingEscalacao.phone_number}</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Vendedores:</p>
+              {vendedores.map((vendedor) => (
+                <div 
+                  key={vendedor.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${
+                    selectedVendedores.includes(vendedor.id)
+                      ? 'bg-primary/10 border-primary/50'
+                      : 'bg-background/50 border-border/50 hover:bg-accent/50'
+                  }`}
+                  onClick={() => toggleVendedorSelection(vendedor.id)}
+                >
+                  <Checkbox 
+                    checked={selectedVendedores.includes(vendedor.id)}
+                    onCheckedChange={() => toggleVendedorSelection(vendedor.id)}
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{vendedor.nome}</p>
+                    <p className="text-xs text-muted-foreground">
+                      +55 {vendedor.telefone.slice(2, 4)} {vendedor.telefone.slice(4)}
+                    </p>
+                  </div>
+                  {vendedor.ativo && vendedor.recebe_escalacoes && (
+                    <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowSendDialog(false);
+                setSendingEscalacao(null);
+              }}
+              disabled={isSending}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={sendManualEscalation}
+              disabled={isSending || selectedVendedores.length === 0}
+            >
+              {isSending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Enviar ({selectedVendedores.length})
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

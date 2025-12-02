@@ -13,7 +13,8 @@ export const useEscalacoesPendentes = () => {
       const { data, count, error } = await supabase
         .from('escalacoes_comerciais')
         .select('id, conversation_id, phone_number', { count: 'exact' })
-        .eq('status', 'pendente');
+        .eq('status', 'pendente')
+        .is('viewed_at', null);
 
       if (error) {
         console.error('[useEscalacoesPendentes] Error:', error);

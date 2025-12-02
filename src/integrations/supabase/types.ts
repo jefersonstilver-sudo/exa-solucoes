@@ -3325,6 +3325,7 @@ export type Database = {
           plans_interested: string[] | null
           status: string | null
           updated_at: string | null
+          viewed_at: string | null
         }
         Insert: {
           ai_analysis?: string | null
@@ -3343,6 +3344,7 @@ export type Database = {
           plans_interested?: string[] | null
           status?: string | null
           updated_at?: string | null
+          viewed_at?: string | null
         }
         Update: {
           ai_analysis?: string | null
@@ -3361,6 +3363,7 @@ export type Database = {
           plans_interested?: string[] | null
           status?: string | null
           updated_at?: string | null
+          viewed_at?: string | null
         }
         Relationships: []
       }
