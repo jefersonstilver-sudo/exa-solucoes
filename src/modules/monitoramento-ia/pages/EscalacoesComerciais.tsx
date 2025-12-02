@@ -347,7 +347,7 @@ export default function EscalacoesComerciais() {
 
           const { data, error } = await supabase.functions.invoke('zapi-send-message', {
             body: {
-              to: vendedorPhone,
+              phone: vendedorPhone,
               message: `Olá ${vendedor.nome}!\n\n${message}`,
               agentKey: 'sofia'
             }
