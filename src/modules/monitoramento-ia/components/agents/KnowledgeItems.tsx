@@ -226,21 +226,35 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold text-module-primary">Conhecimento</h3>
+      {/* Header - Mobile Optimized */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <div className="text-center sm:text-left">
+          <h3 className="text-lg font-semibold text-module-primary">
+            Conhecimento ({items.length} itens)
+          </h3>
           <p className="text-sm text-module-secondary">
-            Adicione documentos, links e textos que o agente pode consultar
+            Documentos, links e textos que o agente pode consultar
           </p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 bg-module-accent hover:bg-module-accent-hover">
+            <Button 
+              className={cn(
+                "gap-2 bg-module-accent hover:bg-module-accent-hover",
+                "w-full sm:w-auto",
+                "min-h-[44px] touch-manipulation"
+              )}
+            >
               <Plus className="h-4 w-4" />
-              Adicionar Conhecimento
+              <span className="sm:inline">Adicionar</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className={cn(getThemeClass(theme), "max-w-5xl w-[95vw] bg-module-card border-2 border-module text-module-primary max-h-[90vh] overflow-y-auto")}>
+          <DialogContent className={cn(
+            getThemeClass(theme), 
+            "w-[95vw] max-w-5xl bg-module-card border-2 border-module text-module-primary",
+            "max-h-[90vh] overflow-y-auto",
+            "rounded-2xl"
+          )}>
             <DialogHeader>
               <DialogTitle className="text-module-primary text-xl font-bold">Novo Item de Conhecimento</DialogTitle>
             </DialogHeader>
@@ -248,7 +262,7 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
               <div>
                 <Label className="text-module-primary font-semibold mb-2 block">Tipo de Conteúdo</Label>
                 <select
-                  className="w-full mt-1 p-3 border rounded-md bg-module-secondary border-module text-module-primary focus:border-module-accent focus:outline-none focus:ring-2 focus:ring-module-accent/30 transition-all"
+                  className="w-full mt-1 p-3 border rounded-xl bg-module-secondary border-module text-module-primary focus:border-module-accent focus:outline-none focus:ring-2 focus:ring-module-accent/30 transition-all min-h-[44px]"
                   value={newItem.content_type}
                   onChange={(e) => setNewItem({ ...newItem, content_type: e.target.value as any })}
                 >
@@ -263,7 +277,7 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
                   value={newItem.title}
                   onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
                   placeholder="Ex: Media Kit Profissional"
-                  className="bg-module-secondary border-module text-module-primary placeholder:text-module-secondary focus:border-module-accent focus:ring-2 focus:ring-module-accent/30 transition-all"
+                  className="bg-module-secondary border-module text-module-primary placeholder:text-module-secondary focus:border-module-accent focus:ring-2 focus:ring-module-accent/30 transition-all min-h-[44px] rounded-xl"
                 />
               </div>
               <div>
@@ -272,7 +286,7 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
                   value={newItem.keywords}
                   onChange={(e) => setNewItem({ ...newItem, keywords: e.target.value })}
                   placeholder="Ex: media kit, apresentação, creator"
-                  className="bg-module-secondary border-module text-module-primary placeholder:text-module-secondary focus:border-module-accent focus:ring-2 focus:ring-module-accent/30 transition-all"
+                  className="bg-module-secondary border-module text-module-primary placeholder:text-module-secondary focus:border-module-accent focus:ring-2 focus:ring-module-accent/30 transition-all min-h-[44px] rounded-xl"
                 />
               </div>
               <div>
@@ -281,7 +295,7 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
                   value={newItem.description}
                   onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                   placeholder="Breve descrição sobre este conhecimento"
-                  className="bg-module-secondary border-module text-module-primary placeholder:text-module-secondary focus:border-module-accent focus:ring-2 focus:ring-module-accent/30 transition-all"
+                  className="bg-module-secondary border-module text-module-primary placeholder:text-module-secondary focus:border-module-accent focus:ring-2 focus:ring-module-accent/30 transition-all min-h-[44px] rounded-xl"
                 />
               </div>
               {newItem.content_type === 'pdf' ? (
@@ -307,7 +321,7 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
                         ? 'Cole o link aqui...'
                         : 'Digite o conteúdo completo...'
                     }
-                    className="min-h-[200px] bg-module-secondary border-module text-module-primary placeholder:text-module-secondary focus:border-module-accent focus:ring-2 focus:ring-module-accent/30 transition-all resize-none"
+                    className="min-h-[200px] bg-module-secondary border-module text-module-primary placeholder:text-module-secondary focus:border-module-accent focus:ring-2 focus:ring-module-accent/30 transition-all resize-none rounded-xl"
                   />
                 </div>
               )}
@@ -317,27 +331,27 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
                   value={newItem.instruction}
                   onChange={(e) => setNewItem({ ...newItem, instruction: e.target.value })}
                   placeholder="Ex: Usar este conteúdo quando o cliente perguntar sobre..."
-                  className="min-h-[100px] bg-module-secondary border-module text-module-primary placeholder:text-module-secondary focus:border-module-accent focus:ring-2 focus:ring-module-accent/30 transition-all resize-none"
+                  className="min-h-[100px] bg-module-secondary border-module text-module-primary placeholder:text-module-secondary focus:border-module-accent focus:ring-2 focus:ring-module-accent/30 transition-all resize-none rounded-xl"
                 />
               </div>
               {addError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-md">
+                <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-xl">
                   <p className="text-sm text-red-400 font-semibold">Erro:</p>
                   <p className="text-xs text-red-300">{addError}</p>
                 </div>
               )}
-              <div className="flex justify-end gap-3 pt-4 border-t border-module">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-module">
                 <Button 
                   variant="outline" 
                   onClick={() => setIsAddDialogOpen(false)}
-                  className="border-module text-module-primary hover:bg-module-secondary"
+                  className="border-module text-module-primary hover:bg-module-secondary min-h-[44px] rounded-xl order-2 sm:order-1"
                 >
                   Cancelar
                 </Button>
                 <Button 
                   onClick={handleAdd} 
                   disabled={saving}
-                  className="bg-module-accent hover:bg-module-accent-hover text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-module-accent hover:bg-module-accent-hover text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] rounded-xl order-1 sm:order-2"
                 >
                   {saving ? 'Salvando...' : 'Adicionar'}
                 </Button>
@@ -347,7 +361,8 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Cards Grid - Single column on mobile, 2 columns on desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
         {items.length === 0 ? (
           <Card className="bg-module-card border-module col-span-full">
             <CardContent className="py-12 text-center">
@@ -365,19 +380,20 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
             <Card 
               key={item.id} 
               className={cn(
-                "bg-module-card border-module group relative overflow-hidden",
-                "transition-all duration-300 ease-in-out",
-                "hover:shadow-lg hover:scale-[1.02] hover:border-module-accent",
+                "bg-module-card border-module group relative overflow-hidden rounded-xl",
+                "transition-all duration-300 ease-out",
+                "lg:hover:shadow-lg lg:hover:scale-[1.02] lg:hover:border-module-accent",
+                "active:scale-[0.98] touch-manipulation",
                 editingId === item.id && "ring-2 ring-module-accent col-span-full"
               )}
             >
-              {/* Número do card com 4.X */}
-              <div className="absolute top-2 left-2 w-auto px-3 h-8 rounded-full bg-module-accent flex items-center justify-center text-white font-bold text-sm z-10">
+              {/* Número do card com 4.X - Badge proeminente */}
+              <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-module-accent flex items-center justify-center text-white font-bold text-sm z-10 shadow-md">
                 4.{item.display_order || index + 1}
               </div>
 
-              <CardHeader className="pb-3 pt-12">
-                <div className="flex justify-between items-start gap-2">
+              <CardHeader className="pb-3 pt-14 px-4 lg:px-6">
+                <div className="flex justify-between items-start gap-3">
                   <div className="flex-1 min-w-0">
                     {editingId === item.id && editingItem ? (
                       <div className="space-y-3">
@@ -386,7 +402,7 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
                           <Input
                             value={editingItem.title}
                             onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                            className="bg-module-input border-module text-module-primary text-sm"
+                            className="bg-module-input border-module text-module-primary text-sm min-h-[44px] rounded-xl"
                           />
                         </div>
                         <div>
@@ -394,7 +410,7 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
                           <Input
                             value={editingItem.description || ''}
                             onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                            className="bg-module-input border-module text-module-primary text-sm"
+                            className="bg-module-input border-module text-module-primary text-sm min-h-[44px] rounded-xl"
                           />
                         </div>
                         <div>
@@ -405,52 +421,60 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
                               ...editingItem, 
                               keywords: e.target.value.split(',').map(k => k.trim()).filter(Boolean)
                             })}
-                            className="bg-module-input border-module text-module-primary text-sm"
+                            className="bg-module-input border-module text-module-primary text-sm min-h-[44px] rounded-xl"
                           />
                         </div>
                       </div>
                     ) : (
                       <>
                         <div className="flex items-start gap-2 mb-2">
-                          <div className="mt-0.5 flex-shrink-0">
+                          <div className="mt-0.5 flex-shrink-0 text-module-secondary">
                             {getIcon(item.content_type)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <CardTitle className="text-sm font-semibold text-module-primary line-clamp-2 group-hover:text-module-accent transition-colors">
+                            <CardTitle className="text-sm lg:text-base font-semibold text-module-primary line-clamp-2 group-hover:text-module-accent transition-colors">
                               {item.title}
                             </CardTitle>
-                            <Badge variant="secondary" className="text-xs mt-1">
-                              {item.content_type}
-                            </Badge>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <Badge variant="secondary" className="text-xs px-2 py-0.5 rounded-full">
+                                {item.content_type}
+                              </Badge>
+                              {item.keywords.length > 0 && (
+                                <span className="text-xs text-module-secondary hidden sm:inline">
+                                  {item.keywords.length} tags
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
-                        {/* Conteúdo retraído - só expande no hover */}
-                        <div className="max-h-0 opacity-0 overflow-hidden transition-all duration-300 group-hover:max-h-96 group-hover:opacity-100">
-                          {item.description && (
-                            <p className="text-xs text-module-secondary mb-2 pt-2">
-                              {item.description}
-                            </p>
-                          )}
-                          {item.keywords.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {item.keywords.slice(0, 4).map((keyword, idx) => (
-                                <Badge key={idx} variant="outline" className="text-xs">
-                                  {keyword}
-                                </Badge>
-                              ))}
-                              {item.keywords.length > 4 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{item.keywords.length - 4}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                        {/* Description always visible on mobile, hover on desktop */}
+                        {item.description && (
+                          <p className="text-xs text-module-secondary mt-2 line-clamp-2 lg:line-clamp-1 lg:max-h-0 lg:opacity-0 lg:overflow-hidden lg:transition-all lg:duration-300 lg:group-hover:max-h-20 lg:group-hover:opacity-100">
+                            {item.description}
+                          </p>
+                        )}
+
+                        {/* Keywords - visible on hover for desktop */}
+                        {item.keywords.length > 0 && (
+                          <div className="hidden lg:flex flex-wrap gap-1 mt-2 max-h-0 opacity-0 overflow-hidden transition-all duration-300 group-hover:max-h-20 group-hover:opacity-100">
+                            {item.keywords.slice(0, 4).map((keyword, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs rounded-full">
+                                {keyword}
+                              </Badge>
+                            ))}
+                            {item.keywords.length > 4 && (
+                              <Badge variant="outline" className="text-xs rounded-full">
+                                +{item.keywords.length - 4}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
                   
+                  {/* Action buttons - Always visible on mobile, hover on desktop */}
                   <div className="flex gap-1 flex-shrink-0">
                     {editingId === item.id ? (
                       <>
@@ -459,57 +483,59 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
                           variant="ghost"
                           onClick={handleCancelEdit}
                           disabled={saving}
-                          className="h-7 w-7 p-0"
+                          className="h-10 w-10 lg:h-8 lg:w-8 p-0 rounded-full touch-manipulation"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <X className="h-4 w-4 lg:h-3.5 lg:w-3.5" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={handleSaveEdit}
                           disabled={saving}
-                          className="h-7 w-7 p-0 text-module-accent"
+                          className="h-10 w-10 lg:h-8 lg:w-8 p-0 text-module-accent rounded-full touch-manipulation"
                         >
-                          <Save className="h-3.5 w-3.5" />
+                          <Save className="h-4 w-4 lg:h-3.5 lg:w-3.5" />
                         </Button>
                       </>
                     ) : (
-                      <>
+                      <div className="flex gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleExportItem(item, index)}
-                          className="h-7 w-7 p-0 hover:bg-blue-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Exportar item"
+                          onClick={() => handleEdit(item)}
+                          className="h-10 w-10 lg:h-8 lg:w-8 p-0 rounded-full touch-manipulation hover:bg-module-accent/20"
+                          title="Editar"
                         >
-                          <Download className="h-3.5 w-3.5" />
+                          <Edit className="h-4 w-4 lg:h-3.5 lg:w-3.5" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => handleOpenHistory(item)}
-                          className="h-7 w-7 p-0 hover:bg-purple-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Ver histórico"
+                          className="h-10 w-10 lg:h-8 lg:w-8 p-0 rounded-full touch-manipulation hover:bg-purple-500/20"
+                          title="Histórico"
                         >
-                          <History className="h-3.5 w-3.5" />
+                          <History className="h-4 w-4 lg:h-3.5 lg:w-3.5" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleEdit(item)}
-                          className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleExportItem(item, index)}
+                          className="hidden sm:flex h-10 w-10 lg:h-8 lg:w-8 p-0 rounded-full touch-manipulation hover:bg-blue-500/20"
+                          title="Exportar"
                         >
-                          <Edit className="h-3.5 w-3.5" />
+                          <Download className="h-4 w-4 lg:h-3.5 lg:w-3.5" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-10 w-10 lg:h-8 lg:w-8 p-0 text-destructive rounded-full touch-manipulation hover:bg-destructive/20"
                           onClick={() => handleDelete(item.id)}
+                          title="Excluir"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4 lg:h-3.5 lg:w-3.5" />
                         </Button>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -517,14 +543,14 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
 
               {/* Conteúdo expandido apenas no modo de edição */}
               {editingId === item.id && editingItem && (
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 px-4 lg:px-6">
                   <div className="space-y-3">
                     <div>
                       <Label className="text-module-primary text-xs">Conteúdo</Label>
                       <Textarea
                         value={editingItem.content}
                         onChange={(e) => setEditingItem({ ...editingItem, content: e.target.value })}
-                        className="min-h-[200px] bg-module-input border-module text-module-primary text-sm"
+                        className="min-h-[200px] bg-module-input border-module text-module-primary text-sm rounded-xl"
                       />
                     </div>
                     <div>
@@ -532,22 +558,22 @@ export const KnowledgeItems = ({ items, agentId, agentKey, agentName }: Knowledg
                       <Textarea
                         value={editingItem.instruction || ''}
                         onChange={(e) => setEditingItem({ ...editingItem, instruction: e.target.value })}
-                        className="min-h-[100px] bg-module-input border-module text-module-primary text-sm"
+                        className="min-h-[100px] bg-module-input border-module text-module-primary text-sm rounded-xl"
                       />
                     </div>
                   </div>
                 </CardContent>
               )}
 
-              {/* Preview do conteúdo - só aparece no hover quando não está editando */}
+              {/* Preview do conteúdo - Desktop: hover only, Mobile: tap to see */}
               {editingId !== item.id && (
-                <div className="max-h-0 opacity-0 overflow-hidden transition-all duration-300 group-hover:max-h-32 group-hover:opacity-100 px-6 pb-4">
-                  <div className="text-xs text-module-secondary line-clamp-3 whitespace-pre-wrap">
+                <div className="lg:max-h-0 lg:opacity-0 overflow-hidden transition-all duration-300 lg:group-hover:max-h-32 lg:group-hover:opacity-100 px-4 lg:px-6 pb-4">
+                  <div className="text-xs text-module-secondary line-clamp-2 lg:line-clamp-3 whitespace-pre-wrap border-t border-module/50 pt-3">
                     {item.content.substring(0, 150)}...
                   </div>
                   {item.instruction && (
-                    <div className="mt-2 pt-2 border-t border-module-muted">
-                      <p className="text-xs font-semibold text-module-accent">Uso:</p>
+                    <div className="mt-2 pt-2 border-t border-module/30">
+                      <p className="text-xs font-semibold text-module-accent">Instrução:</p>
                       <p className="text-xs text-module-secondary line-clamp-2">{item.instruction}</p>
                     </div>
                   )}
