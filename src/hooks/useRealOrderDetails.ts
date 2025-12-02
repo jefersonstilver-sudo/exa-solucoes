@@ -258,23 +258,38 @@ export const useRealOrderDetails = (orderId: string) => {
           buildingIds = order.lista_predios;
           console.log('🏗️ [ORDER DETAILS] Usando lista_predios:', buildingIds.length, 'prédios');
         } 
-        // Se lista_predios vazio, extrair de lista_paineis (objetos JSON)
+        // Se lista_predios vazio, extrair de lista_paineis (objetos JSON ou strings JSON)
         else if (order.lista_paineis && order.lista_paineis.length > 0) {
           console.log('🔍 [ORDER DETAILS] lista_predios vazio, extraindo de lista_paineis...');
           
-          // lista_paineis pode conter objetos com building_id ou strings simples
+          // lista_paineis pode conter objetos, strings JSON, ou strings simples (UUIDs)
           buildingIds = order.lista_paineis
             .map((item: any) => {
+              // Se for uma string, tentar parsear como JSON primeiro
               if (typeof item === 'string') {
-                return item;
+                // Tentar parsear como JSON (caso seja "{\"building_id\":\"...\"}")
+                try {
+                  const parsed = JSON.parse(item);
+                  if (parsed && typeof parsed === 'object') {
+                    return parsed.building_id || parsed.painel_id || parsed.id;
+                  }
+                } catch {
+                  // Se não for JSON válido, verificar se é um UUID válido
+                  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                  if (uuidRegex.test(item)) {
+                    return item;
+                  }
+                }
+                return null;
               } else if (item && typeof item === 'object') {
                 return item.building_id || item.painel_id || item.id;
               }
               return null;
             })
-            .filter((id: string | null): id is string => id !== null);
+            .filter((id: string | null): id is string => id !== null && id.length > 0);
           
           console.log('🏗️ [ORDER DETAILS] Extraídos de lista_paineis:', buildingIds.length, 'building_ids');
+          console.log('🏗️ [ORDER DETAILS] Building IDs extraídos:', buildingIds.slice(0, 3), '...');
         }
 
         // Buscar dados dos prédios
