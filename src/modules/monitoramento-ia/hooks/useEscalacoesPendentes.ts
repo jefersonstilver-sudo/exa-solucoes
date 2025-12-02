@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const useEscalacoesPendentes = () => {
   const [pendentesCount, setPendentesCount] = useState(0);
   const [phonesEscalados, setPhonesEscalados] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const previousCountRef = useRef<number>(0);
 
   const fetchEscalacoes = async () => {
     try {
@@ -18,7 +20,20 @@ export const useEscalacoesPendentes = () => {
         return;
       }
 
-      setPendentesCount(count || 0);
+      const newCount = count || 0;
+      
+      // Notificar se houve NOVA escalação (count aumentou)
+      if (previousCountRef.current > 0 && newCount > previousCountRef.current) {
+        const diff = newCount - previousCountRef.current;
+        toast.warning(`🔔 ${diff} nova${diff > 1 ? 's' : ''} escalação${diff > 1 ? 'ões' : ''} comercial${diff > 1 ? 'is' : ''}!`, {
+          description: 'Cliente solicitou atendimento especial',
+          duration: 8000,
+        });
+        console.log('[useEscalacoesPendentes] 🔔 Nova escalação detectada!', { previous: previousCountRef.current, new: newCount });
+      }
+      
+      previousCountRef.current = newCount;
+      setPendentesCount(newCount);
       
       // Extrair telefones das conversas escaladas para indicador na lista
       const phones = (data || [])
@@ -42,12 +57,14 @@ export const useEscalacoesPendentes = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'escalacoes_comerciais' },
-        () => {
-          console.log('[useEscalacoesPendentes] Realtime update detected');
+        (payload) => {
+          console.log('[useEscalacoesPendentes] 🔄 Realtime update detected:', payload.eventType);
           fetchEscalacoes();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[useEscalacoesPendentes] 📡 Subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);

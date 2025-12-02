@@ -144,18 +144,26 @@ serve(async (req) => {
     console.log('[NOTIFY-ESCALATION] ✅ Escalation saved:', escalacao.id);
 
     // 2. Buscar vendedores ativos que recebem escalações
-    const { data: vendedores } = await supabase
+    console.log('[NOTIFY-ESCALATION] 🔍 Querying escalacao_vendedores...');
+    const { data: vendedores, error: vendedoresError } = await supabase
       .from('escalacao_vendedores')
       .select('*')
       .eq('ativo', true)
       .eq('recebe_escalacoes', true);
 
+    console.log('[NOTIFY-ESCALATION] 📋 Vendedores query result:', {
+      error: vendedoresError?.message,
+      count: vendedores?.length || 0,
+      vendedores: vendedores?.map(v => ({ id: v.id, nome: v.nome, telefone: v.telefone, ativo: v.ativo, recebe: v.recebe_escalacoes }))
+    });
+
     if (!vendedores || vendedores.length === 0) {
-      console.log('[NOTIFY-ESCALATION] ⚠️ No active sellers to notify');
+      console.log('[NOTIFY-ESCALATION] ⚠️ No active sellers to notify - check escalacao_vendedores table');
       return new Response(JSON.stringify({ 
         success: true, 
         escalacaoId: escalacao.id,
-        notified: 0 
+        notified: 0,
+        reason: 'no_active_sellers'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
