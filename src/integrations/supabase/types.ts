@@ -7340,9 +7340,11 @@ export type Database = {
           data_fim: string
           data_inicio: string
           id: string
+          is_fidelidade: boolean
           lista_paineis: string[]
           plano_meses: number
           status: string
+          tipo_pagamento: string
           valor_total: number
           video_status: string
         }[]
