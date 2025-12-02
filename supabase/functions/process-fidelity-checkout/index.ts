@@ -111,7 +111,7 @@ serve(async (req) => {
         duracao_meses: selectedPlan,
         data_inicio: startDate.toISOString(),
         data_fim: endDate.toISOString(),
-        coupon_id: couponId
+        cupom_id: couponId
       })
       .select()
       .single();
