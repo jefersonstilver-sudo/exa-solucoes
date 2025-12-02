@@ -8,7 +8,7 @@ interface OrderWithClient {
   created_at: string;
   status: string;
   valor_total: number;
-  lista_paineis: string[];
+  lista_paineis: any[];
   lista_predios: string[];
   plano_meses: number;
   data_inicio: string;
@@ -23,6 +23,13 @@ interface OrderWithClient {
   cupom_id?: string;
   termos_aceitos?: boolean;
   transaction_id?: string;
+  // Campos de fidelidade
+  tipo_pagamento?: string;
+  is_fidelidade?: boolean;
+  dia_vencimento?: number;
+  parcela_atual?: number;
+  total_parcelas?: number;
+  status_adimplencia?: string;
 }
 
 interface OrderVideo {
@@ -89,6 +96,12 @@ export const useRealOrderDetails = (orderId: string) => {
             cupom_id,
             termos_aceitos,
             transaction_id,
+            tipo_pagamento,
+            is_fidelidade,
+            dia_vencimento,
+            parcela_atual,
+            total_parcelas,
+            status_adimplencia,
             users!pedidos_client_id_fkey (
               email
             )
@@ -138,13 +151,22 @@ export const useRealOrderDetails = (orderId: string) => {
           compliance_data: order.compliance_data,
           cupom_id: order.cupom_id,
           termos_aceitos: order.termos_aceitos,
-          transaction_id: order.transaction_id
+          transaction_id: order.transaction_id,
+          // Campos fidelidade
+          tipo_pagamento: order.tipo_pagamento,
+          is_fidelidade: order.is_fidelidade,
+          dia_vencimento: order.dia_vencimento,
+          parcela_atual: order.parcela_atual,
+          total_parcelas: order.total_parcelas,
+          status_adimplencia: order.status_adimplencia
         };
 
         console.log('📦 [ORDER DETAILS] Order montado:', {
           id: orderWithClient.id.slice(0, 8),
           lista_predios_count: orderWithClient.lista_predios?.length || 0,
-          lista_predios: orderWithClient.lista_predios
+          lista_paineis_count: orderWithClient.lista_paineis?.length || 0,
+          is_fidelidade: orderWithClient.is_fidelidade,
+          tipo_pagamento: orderWithClient.tipo_pagamento
         });
 
         setOrderDetails(orderWithClient);
@@ -195,10 +217,37 @@ export const useRealOrderDetails = (orderId: string) => {
 
         setOrderVideos(formattedVideos);
 
-        // Buscar dados dos prédios
+        // NOVA LÓGICA: Extrair building_ids de lista_paineis se lista_predios estiver vazio
+        let buildingIds: string[] = [];
+
+        // Primeiro, tentar usar lista_predios
         if (order.lista_predios && order.lista_predios.length > 0) {
-          console.log('🏗️ [ORDER DETAILS] Buscando', order.lista_predios.length, 'prédios');
-          console.log('🏗️ [ORDER DETAILS] IDs dos prédios:', order.lista_predios);
+          buildingIds = order.lista_predios;
+          console.log('🏗️ [ORDER DETAILS] Usando lista_predios:', buildingIds.length, 'prédios');
+        } 
+        // Se lista_predios vazio, extrair de lista_paineis (objetos JSON)
+        else if (order.lista_paineis && order.lista_paineis.length > 0) {
+          console.log('🔍 [ORDER DETAILS] lista_predios vazio, extraindo de lista_paineis...');
+          
+          // lista_paineis pode conter objetos com building_id ou strings simples
+          buildingIds = order.lista_paineis
+            .map((item: any) => {
+              if (typeof item === 'string') {
+                return item;
+              } else if (item && typeof item === 'object') {
+                return item.building_id || item.painel_id || item.id;
+              }
+              return null;
+            })
+            .filter((id: string | null): id is string => id !== null);
+          
+          console.log('🏗️ [ORDER DETAILS] Extraídos de lista_paineis:', buildingIds.length, 'building_ids');
+        }
+
+        // Buscar dados dos prédios
+        if (buildingIds.length > 0) {
+          console.log('🏗️ [ORDER DETAILS] Buscando', buildingIds.length, 'prédios');
+          console.log('🏗️ [ORDER DETAILS] IDs dos prédios:', buildingIds);
           
           const { data: buildings, error: buildingsError } = await supabase
             .from('buildings')
@@ -214,7 +263,7 @@ export const useRealOrderDetails = (orderId: string) => {
               imageurl,
               image_urls
             `)
-            .in('id', order.lista_predios);
+            .in('id', buildingIds);
 
           if (buildingsError) {
             console.error('💥 [ORDER DETAILS] Erro ao buscar prédios:', buildingsError);
@@ -240,7 +289,7 @@ export const useRealOrderDetails = (orderId: string) => {
           setBuildingData(formattedBuildings);
           console.log('💾 [ORDER DETAILS] BuildingData setado com', formattedBuildings.length, 'prédios');
         } else {
-          console.log('⚠️ [ORDER DETAILS] Nenhum prédio na lista_predios');
+          console.log('⚠️ [ORDER DETAILS] Nenhum building_id encontrado em lista_predios ou lista_paineis');
         }
 
       } catch (error) {
