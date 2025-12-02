@@ -98,7 +98,7 @@ export const CRMUnificadoMobile: React.FC<CRMUnificadoMobileProps> = ({ initialF
   const selectedConversation = filteredConversations.find(c => c.id === selectedConversationId);
 
   return (
-    <div className="h-[100dvh] flex flex-col fixed inset-0 z-50 bg-module-primary overflow-hidden">
+    <div className="h-[100dvh] flex flex-col fixed inset-0 z-50 bg-background overflow-hidden">
       <AnimatePresence mode="wait">
         {!showChat ? (
           // Lista de Conversas
