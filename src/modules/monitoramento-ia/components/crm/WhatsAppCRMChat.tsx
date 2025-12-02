@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { StickyNote, Tag, User, Users, Phone, Video, Search, Smile, Paperclip, Send, Mic, Pencil, Check, X, Maximize2, Minimize2, MessageSquare } from 'lucide-react';
-import { SyncMessagesButton } from './SyncMessagesButton';
+import { SingleConversationSyncButton } from './SingleConversationSyncButton';
 import { MediaInputBar } from './MediaInputBar';
 import { ConversationNotes } from './ConversationNotes';
 import { ConversationTags } from './ConversationTags';
@@ -288,7 +288,12 @@ export const WhatsAppCRMChat: React.FC<WhatsAppCRMChatProps> = ({ conversationId
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </Button>
             )}
-            <SyncMessagesButton onSyncComplete={onRefresh} />
+            <SingleConversationSyncButton 
+              conversationId={conversationId} 
+              contactPhone={conversation?.contact_phone}
+              contactName={conversation?.contact_name}
+              onSyncComplete={onRefresh} 
+            />
           </div>
         </div>
 
