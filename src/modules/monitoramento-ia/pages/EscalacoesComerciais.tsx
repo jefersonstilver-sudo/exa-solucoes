@@ -60,7 +60,8 @@ interface Escalacao {
   notes: string | null;
   viewed_at: string | null;
   responded_at: string | null;
-  response_type: 'ja_respondido' | 'vou_responder' | null;
+  response_type: 'ja_respondido' | 'vou_responder' | 'button' | 'text' | null;
+  responded_by_name?: string | null;
 }
 
 interface Vendedor {
