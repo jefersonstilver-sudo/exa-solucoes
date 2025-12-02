@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/utils/priceUtils';
 import { cn } from '@/lib/utils';
 import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Parcela {
   id: string;
@@ -37,6 +38,7 @@ export const OrderInstallmentsSection: React.FC<OrderInstallmentsSectionProps> =
   tipoPagamento,
   totalParcelas
 }) => {
+  const { userProfile } = useAuth();
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingBoleto, setGeneratingBoleto] = useState<string | null>(null);
@@ -76,9 +78,38 @@ export const OrderInstallmentsSection: React.FC<OrderInstallmentsSectionProps> =
   };
 
   const handleGenerateBoleto = async (parcela: Parcela) => {
+    if (!userProfile?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+    
     setGeneratingBoleto(parcela.id);
     
     try {
+      // Buscar dados do usuário
+      const { data: userData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userProfile.id)
+        .single();
+      
+      const userDataAny = userData as any;
+      
+      // Validar documento
+      const documento = userData?.empresa_documento?.replace(/\D/g, '') || userDataAny?.cpf?.replace(/\D/g, '');
+      
+      if (!documento || documento.length < 11) {
+        toast.error('Dados incompletos', {
+          description: 'Para gerar boleto, é necessário ter CPF ou CNPJ cadastrado no seu perfil.'
+        });
+        setGeneratingBoleto(null);
+        return;
+      }
+      
+      const tipoDocumento = documento.length === 11 ? 'CPF' : 'CNPJ';
+      const nomeCompleto = userData?.empresa_nome || userDataAny?.nome || userProfile.email?.split('@')[0] || 'Cliente';
+      const nomeParts = nomeCompleto.split(' ');
+      
       const { data, error } = await supabase.functions.invoke('generate-boleto-payment', {
         body: {
           parcela_id: parcela.id,
@@ -86,17 +117,20 @@ export const OrderInstallmentsSection: React.FC<OrderInstallmentsSectionProps> =
           vencimento: parcela.data_vencimento,
           descricao: `Parcela ${parcela.numero_parcela}/${totalParcelas} - EXA`,
           payer: {
-            email: 'cliente@exa.com.br',
-            first_name: 'Cliente',
-            last_name: 'EXA',
-            identification: { type: 'CPF', number: '00000000000' },
+            email: userData?.email || userProfile.email || 'cliente@exapaineis.com.br',
+            first_name: nomeParts[0] || 'Cliente',
+            last_name: nomeParts.slice(1).join(' ') || 'EXA',
+            identification: { 
+              type: tipoDocumento, 
+              number: documento 
+            },
             address: {
-              zip_code: '01310100',
-              street_name: 'Av. Paulista',
-              street_number: '1000',
-              neighborhood: 'Bela Vista',
-              city: 'São Paulo',
-              federal_unit: 'SP'
+              zip_code: (userDataAny?.cep || '01310100').replace(/\D/g, ''),
+              street_name: userDataAny?.endereco || 'Av. Paulista',
+              street_number: userDataAny?.numero || '1000',
+              neighborhood: userDataAny?.bairro || 'Bela Vista',
+              city: userDataAny?.cidade || 'São Paulo',
+              federal_unit: userDataAny?.estado || 'SP'
             }
           }
         }
