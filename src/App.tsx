@@ -281,6 +281,11 @@ const AppContent = () => {
           <Route path="/checkout" element={<Navigate to="/selecionar-plano" replace />} />
           <Route path="/checkout/cupom" element={<CheckoutCoupon />} />
           <Route path="/checkout/resumo" element={<CheckoutSummary />} />
+          <Route path="/checkout/fidelidade" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando contrato..." />}>
+              {React.createElement(lazy(() => import('./pages/CheckoutFidelidade')))}
+            </Suspense>
+          } />
           <Route path="/checkout/finalizar" element={<CheckoutFinish />} />
           
           {/* PAGAMENTO - ROTAS CORRIGIDAS */}
