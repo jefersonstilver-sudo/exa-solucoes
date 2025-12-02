@@ -26,6 +26,8 @@ export interface UserCompleteOrder {
   client_id: string;
   nome_pedido?: string;
   metodo_pagamento?: string;
+  tipo_pagamento?: string;
+  is_fidelidade?: boolean;
   total_visualizacoes_mes?: number;
   total_publico_estimado?: number;
   total_telas?: number;
@@ -58,7 +60,7 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
       // Buscar pedidos completos do usuário primeiro (prioridade)
       const { data: orders, error: ordersError } = await supabase
         .from('pedidos')
-        .select('*, nome_pedido')
+        .select('*, nome_pedido, tipo_pagamento, is_fidelidade')
         .eq('client_id', userId)
         .order('created_at', { ascending: false });
 
@@ -185,6 +187,8 @@ export const useUserOrdersAndAttempts = (userId?: string) => {
           client_id: order.client_id,
           nome_pedido: order.nome_pedido,
           metodo_pagamento: order.metodo_pagamento,
+          tipo_pagamento: order.tipo_pagamento,
+          is_fidelidade: order.is_fidelidade,
           total_visualizacoes_mes: totals.visualizacoes,
           total_publico_estimado: totals.publico,
           total_telas: totals.telas,

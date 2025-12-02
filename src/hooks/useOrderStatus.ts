@@ -55,17 +55,21 @@ export const useOrderStatus = (
     const hasVideos = order?.videos && order.videos.length > 0;
     const hasApprovedVideo = order?.videos?.some((v: any) => v.approval_status === 'approved');
     const isFidelidade = order?.is_fidelidade === true;
+    const paymentMethod = order?.metodo_pagamento || order?.tipo_pagamento || 'pix';
 
-    // NOVO: Tratamento especial para pedidos fidelidade
+    // NOVO: Tratamento especial para pedidos fidelidade (PIX ou Boleto)
     if (isFidelidade && status === 'pendente') {
+      const isPix = paymentMethod === 'pix_fidelidade';
       return {
         label: 'Aguardando 1ª Parcela',
-        description: 'Pague a primeira parcela para ativar sua campanha',
+        description: isPix 
+          ? 'Pague a primeira parcela PIX para ativar sua campanha' 
+          : 'Pague a primeira parcela para ativar sua campanha',
         color: 'text-white',
         bgColor: 'bg-purple-600 border-purple-700',
         icon: CreditCard,
         action: {
-          label: 'Ver Parcelas',
+          label: isPix ? 'Ver Parcelas PIX' : 'Ver Parcelas',
           variant: 'default',
           href: `/anunciante/faturas?pedido=${order.id}`
         }
@@ -74,10 +78,7 @@ export const useOrderStatus = (
 
     switch (status) {
       case 'pendente':
-        // Verificar método de pagamento original do pedido
-        const paymentMethod = order.metodo_pagamento || order.tipo_pagamento || 'pix';
-        
-        // Verificar se é boleto
+        // Verificar se é boleto (normal ou fidelidade)
         if (paymentMethod === 'boleto' || paymentMethod === 'boleto_fidelidade') {
           return {
             label: 'Aguardando Pagamento',
@@ -87,6 +88,22 @@ export const useOrderStatus = (
             icon: CreditCard,
             action: {
               label: 'Gerar Boleto',
+              variant: 'default',
+              href: `/anunciante/faturas?pedido=${order.id}`
+            }
+          };
+        }
+        
+        // Verificar se é PIX fidelidade
+        if (paymentMethod === 'pix_fidelidade') {
+          return {
+            label: 'Aguardando Pagamento',
+            description: 'Pague a parcela PIX para ativar sua campanha',
+            color: 'text-white',
+            bgColor: 'bg-purple-600 border-purple-700',
+            icon: CreditCard,
+            action: {
+              label: 'Ver Parcelas PIX',
               variant: 'default',
               href: `/anunciante/faturas?pedido=${order.id}`
             }
@@ -110,7 +127,7 @@ export const useOrderStatus = (
           };
         }
         
-        // Default: PIX
+        // Default: PIX à Vista
         return {
           label: 'Aguardando Pagamento',
           description: 'Efetue o pagamento PIX para ativar sua campanha',

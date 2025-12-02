@@ -8,12 +8,13 @@ import { useAttemptFinalizer } from '@/hooks/useAttemptFinalizer';
 import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
 import { VideoDisplayPopup } from '@/components/video-management/VideoDisplayPopup';
 import { OrderVideoThumbnail } from '@/components/video-management/OrderVideoThumbnail';
-import { Loader2, ShoppingBag, Calendar, Search, Eye, AlertTriangle, CheckCircle, Upload, CreditCard, Repeat } from 'lucide-react';
+import { Loader2, ShoppingBag, Calendar, Search, Eye, AlertTriangle, CheckCircle, Upload, CreditCard, Repeat, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -59,10 +60,48 @@ const AdvertiserOrders = () => {
     pixData: null
   });
   const [isGeneratingPix, setIsGeneratingPix] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    itemId: string | null;
+    itemType: 'order' | 'attempt';
+  }>({ isOpen: false, itemId: null, itemType: 'order' });
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     finalizeAttemptToOrder,
     isProcessing: isProcessingAttempt
   } = useAttemptFinalizer();
+
+  // Função para excluir pedido ou tentativa
+  const handleDeleteItem = async () => {
+    if (!deleteConfirm.itemId) return;
+    setIsDeleting(true);
+    
+    try {
+      if (deleteConfirm.itemType === 'attempt') {
+        const { error } = await supabase
+          .from('tentativas_compra')
+          .delete()
+          .eq('id', deleteConfirm.itemId);
+        if (error) throw error;
+        toast.success('Tentativa excluída com sucesso');
+      } else {
+        const { error } = await supabase
+          .from('pedidos')
+          .delete()
+          .eq('id', deleteConfirm.itemId);
+        if (error) throw error;
+        toast.success('Pedido excluído com sucesso');
+      }
+    } catch (error: any) {
+      console.error('Erro ao excluir:', error);
+      toast.error('Erro ao excluir item', {
+        description: error.message || 'Tente novamente'
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirm({ isOpen: false, itemId: null, itemType: 'order' });
+    }
+  };
 
   // Listen for video display popup events
   useEffect(() => {
@@ -242,6 +281,10 @@ const AdvertiserOrders = () => {
 
     // Verificar se deve mostrar preview (apenas pedidos com vídeo aprovado)
     const shouldShowVideoPreview = item.type === 'order' && item.status === 'video_aprovado';
+    
+    // Verificar se pode excluir (tentativas ou pedidos pendente/cancelado)
+    const canDelete = item.type === 'attempt' || 
+      (item.type === 'order' && ['pendente', 'cancelado'].includes(item.status));
 
     return <Card className={cn('hover:shadow-lg transition-all duration-200 overflow-hidden', item.type === 'attempt' ? 'border-l-4 border-l-orange-500' : 'border-l-0')}>
         <CardContent className="p-0">
@@ -347,6 +390,22 @@ const AdvertiserOrders = () => {
                     <Eye className="h-4 w-4 mr-1" />
                     Detalhes
                   </Button>}
+
+                {/* Botão de excluir */}
+                {canDelete && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => setDeleteConfirm({
+                      isOpen: true,
+                      itemId: item.id,
+                      itemType: item.type
+                    })}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -464,6 +523,36 @@ const AdvertiserOrders = () => {
       isOpen: false,
       pixData: null
     })} qrCodeBase64={pixDialog.pixData?.qrCodeBase64} qrCodeText={pixDialog.pixData?.qrCodeText} userId={userProfile?.id} pedidoId={pixDialog.pixData?.pedidoId} />
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={deleteConfirm.isOpen} onOpenChange={(open) => !open && setDeleteConfirm({ isOpen: false, itemId: null, itemType: 'order' })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir {deleteConfirm.itemType === 'attempt' ? 'esta tentativa' : 'este pedido'}?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteItem} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                'Excluir'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>;
 };
 export default AdvertiserOrders;
