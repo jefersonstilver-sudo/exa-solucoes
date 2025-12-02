@@ -312,3 +312,19 @@ schedule = "*/5 * * * *"  # A cada 5 minutos
 [[cron]]
 function_name = "relatorio-var-scheduled"
 schedule = "* * * * *"  # A cada minuto (verifica se deve enviar)
+
+[functions.generate-boleto-payment]
+verify_jwt = true
+
+[functions.process-fidelity-checkout]
+verify_jwt = true
+
+[functions.billing-scheduler]
+verify_jwt = false
+
+[functions.send-billing-notification]
+verify_jwt = false
+
+[[cron]]
+function_name = "billing-scheduler"
+schedule = "0 8 * * *"  # Todos os dias às 08:00

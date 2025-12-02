@@ -1613,6 +1613,66 @@ export type Database = {
           },
         ]
       }
+      cobranca_logs: {
+        Row: {
+          canal: string
+          client_id: string | null
+          created_at: string
+          destinatario: string | null
+          erro: string | null
+          id: string
+          mensagem: string | null
+          metadata: Json | null
+          parcela_id: string | null
+          pedido_id: string | null
+          status: string
+          tipo_notificacao: string
+        }
+        Insert: {
+          canal: string
+          client_id?: string | null
+          created_at?: string
+          destinatario?: string | null
+          erro?: string | null
+          id?: string
+          mensagem?: string | null
+          metadata?: Json | null
+          parcela_id?: string | null
+          pedido_id?: string | null
+          status?: string
+          tipo_notificacao: string
+        }
+        Update: {
+          canal?: string
+          client_id?: string | null
+          created_at?: string
+          destinatario?: string | null
+          erro?: string | null
+          id?: string
+          mensagem?: string | null
+          metadata?: Json | null
+          parcela_id?: string | null
+          pedido_id?: string | null
+          status?: string
+          tipo_notificacao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cobranca_logs_parcela_id_fkey"
+            columns: ["parcela_id"]
+            isOneToOne: false
+            referencedRelation: "parcelas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cobranca_logs_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       configuracoes_adicionais: {
         Row: {
           backup_automatico_ativo: boolean | null
@@ -4711,6 +4771,83 @@ export type Database = {
         }
         Relationships: []
       }
+      parcelas: {
+        Row: {
+          boleto_barcode: string | null
+          boleto_url: string | null
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string
+          id: string
+          mercadopago_external_reference: string | null
+          mercadopago_payment_id: string | null
+          metodo_pagamento: string | null
+          numero_parcela: number
+          pedido_id: string
+          pix_qr_code: string | null
+          pix_qr_code_base64: string | null
+          status: string
+          updated_at: string
+          valor_desconto: number | null
+          valor_final: number
+          valor_juros: number | null
+          valor_multa: number | null
+          valor_original: number
+        }
+        Insert: {
+          boleto_barcode?: string | null
+          boleto_url?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          id?: string
+          mercadopago_external_reference?: string | null
+          mercadopago_payment_id?: string | null
+          metodo_pagamento?: string | null
+          numero_parcela: number
+          pedido_id: string
+          pix_qr_code?: string | null
+          pix_qr_code_base64?: string | null
+          status?: string
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_final: number
+          valor_juros?: number | null
+          valor_multa?: number | null
+          valor_original: number
+        }
+        Update: {
+          boleto_barcode?: string | null
+          boleto_url?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          id?: string
+          mercadopago_external_reference?: string | null
+          mercadopago_payment_id?: string | null
+          metodo_pagamento?: string | null
+          numero_parcela?: number
+          pedido_id?: string
+          pix_qr_code?: string | null
+          pix_qr_code_base64?: string | null
+          status?: string
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_final?: number
+          valor_juros?: number | null
+          valor_multa?: number | null
+          valor_original?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_processing_control: {
         Row: {
           amount: number | null
@@ -4908,28 +5045,42 @@ export type Database = {
           checkout_session_id: string | null
           client_id: string
           compliance_data: Json | null
+          contrato_assinado_em: string | null
+          contrato_enviado_em: string | null
+          contrato_status: string | null
           created_at: string | null
           created_by_admin: string | null
           cupom_id: string | null
           data_fim: string | null
           data_inicio: string | null
+          data_suspensao: string | null
+          desconto_pix_avista: number | null
           device_info: Json | null
+          dia_vencimento: number | null
+          dias_atraso: number | null
           email: string | null
           expires_at: string | null
           id: string
           ip_origem: string | null
+          is_fidelidade: boolean | null
           is_test_order: boolean | null
           lista_paineis: string[] | null
           lista_predios: string[] | null
           log_pagamento: Json | null
           metodo_pagamento: string | null
           nome_pedido: string | null
+          parcela_atual: number | null
           plano_meses: number
           price_sync_verified: boolean | null
+          proxima_cobranca: string | null
           source_tentativa_id: string | null
           status: string
+          status_adimplencia: string | null
           termos_aceitos: boolean | null
+          tipo_pagamento: string | null
+          total_parcelas: number | null
           transaction_id: string | null
+          ultima_notificacao_cobranca: string | null
           updated_at: string | null
           valor_total: number | null
         }
@@ -4940,28 +5091,42 @@ export type Database = {
           checkout_session_id?: string | null
           client_id: string
           compliance_data?: Json | null
+          contrato_assinado_em?: string | null
+          contrato_enviado_em?: string | null
+          contrato_status?: string | null
           created_at?: string | null
           created_by_admin?: string | null
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
+          data_suspensao?: string | null
+          desconto_pix_avista?: number | null
           device_info?: Json | null
+          dia_vencimento?: number | null
+          dias_atraso?: number | null
           email?: string | null
           expires_at?: string | null
           id?: string
           ip_origem?: string | null
+          is_fidelidade?: boolean | null
           is_test_order?: boolean | null
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
           metodo_pagamento?: string | null
           nome_pedido?: string | null
+          parcela_atual?: number | null
           plano_meses?: number
           price_sync_verified?: boolean | null
+          proxima_cobranca?: string | null
           source_tentativa_id?: string | null
           status?: string
+          status_adimplencia?: string | null
           termos_aceitos?: boolean | null
+          tipo_pagamento?: string | null
+          total_parcelas?: number | null
           transaction_id?: string | null
+          ultima_notificacao_cobranca?: string | null
           updated_at?: string | null
           valor_total?: number | null
         }
@@ -4972,28 +5137,42 @@ export type Database = {
           checkout_session_id?: string | null
           client_id?: string
           compliance_data?: Json | null
+          contrato_assinado_em?: string | null
+          contrato_enviado_em?: string | null
+          contrato_status?: string | null
           created_at?: string | null
           created_by_admin?: string | null
           cupom_id?: string | null
           data_fim?: string | null
           data_inicio?: string | null
+          data_suspensao?: string | null
+          desconto_pix_avista?: number | null
           device_info?: Json | null
+          dia_vencimento?: number | null
+          dias_atraso?: number | null
           email?: string | null
           expires_at?: string | null
           id?: string
           ip_origem?: string | null
+          is_fidelidade?: boolean | null
           is_test_order?: boolean | null
           lista_paineis?: string[] | null
           lista_predios?: string[] | null
           log_pagamento?: Json | null
           metodo_pagamento?: string | null
           nome_pedido?: string | null
+          parcela_atual?: number | null
           plano_meses?: number
           price_sync_verified?: boolean | null
+          proxima_cobranca?: string | null
           source_tentativa_id?: string | null
           status?: string
+          status_adimplencia?: string | null
           termos_aceitos?: boolean | null
+          tipo_pagamento?: string | null
+          total_parcelas?: number | null
           transaction_id?: string | null
+          ultima_notificacao_cobranca?: string | null
           updated_at?: string | null
           valor_total?: number | null
         }
@@ -5632,6 +5811,50 @@ export type Database = {
           valor_total?: number | null
         }
         Relationships: []
+      }
+      termos_fidelidade_aceites: {
+        Row: {
+          aceito_em: string
+          client_id: string
+          created_at: string
+          dados_empresa: Json | null
+          id: string
+          ip_address: string | null
+          pedido_id: string
+          user_agent: string | null
+          versao_termo: string
+        }
+        Insert: {
+          aceito_em?: string
+          client_id: string
+          created_at?: string
+          dados_empresa?: Json | null
+          id?: string
+          ip_address?: string | null
+          pedido_id: string
+          user_agent?: string | null
+          versao_termo?: string
+        }
+        Update: {
+          aceito_em?: string
+          client_id?: string
+          created_at?: string
+          dados_empresa?: Json | null
+          id?: string
+          ip_address?: string | null
+          pedido_id?: string
+          user_agent?: string | null
+          versao_termo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "termos_fidelidade_aceites_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       terms_acceptance: {
         Row: {
@@ -6703,6 +6926,14 @@ export type Database = {
         }
         Returns: Json
       }
+      calcular_multa_juros: {
+        Args: { p_data_vencimento: string; p_valor_original: number }
+        Returns: {
+          valor_juros: number
+          valor_multa: number
+          valor_total: number
+        }[]
+      }
       calculate_device_stats: {
         Args: { device_id: string; period_end?: string; period_start?: string }
         Returns: Json
@@ -7581,6 +7812,15 @@ export type Database = {
       validate_video_upload_permission: {
         Args: { p_pedido_id: string }
         Returns: boolean
+      }
+      verificar_adimplencia_pedido: {
+        Args: { p_pedido_id: string }
+        Returns: {
+          dias_atraso: number
+          parcela_atrasada_id: string
+          status_adimplencia: string
+          valor_pendente: number
+        }[]
       }
     }
     Enums: {
