@@ -52,11 +52,11 @@ serve(async (req) => {
   try {
     console.log('🔄 [FETCH-ZAPI-HISTORY] Iniciando busca de histórico do Z-API');
 
-    // Buscar configuração do agente Eduardo
+    // Buscar configuração do agente Eduardo ou Sofia
     const { data: agents, error: agentsError } = await supabase
       .from('agents')
       .select('key, zapi_config, whatsapp_number')
-      .in('key', ['sofia_exa', 'eduardo_exa']);
+      .in('key', ['sofia', 'eduardo']);
 
     if (agentsError) {
       throw new Error(`Erro ao buscar agentes: ${agentsError.message}`);
