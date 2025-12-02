@@ -80,9 +80,9 @@ serve(async (req) => {
     // Buscar todas as mensagens existentes com seus IDs externos
     const { data: existingMessages } = await supabase
       .from('messages')
-      .select('id, external_id, body, conversation_id');
+      .select('id, external_message_id, body, conversation_id');
 
-    const existingExternalIds = new Set(existingMessages?.map(m => m.external_id).filter(Boolean) || []);
+    const existingExternalIds = new Set(existingMessages?.map(m => m.external_message_id).filter(Boolean) || []);
     const existingBodies = new Map(existingMessages?.map(m => [m.body + '_' + m.conversation_id, m.id]) || []);
 
     console.log(`📊 [SYNC-ALL] ${existingExternalIds.size} external_ids conhecidos, ${existingBodies.size} mensagens únicas`);
@@ -182,7 +182,7 @@ serve(async (req) => {
             conversation_id: conversation.id,
             body: log.message_text,
             direction: direction,
-            external_id: log.zapi_message_id,
+            external_message_id: log.zapi_message_id,
             from_role: direction === 'outbound' ? 'agent' : 'contact',
             created_at: log.created_at,
             raw_payload: log.metadata
