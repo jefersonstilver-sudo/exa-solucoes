@@ -2,33 +2,25 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
-  Briefcase, 
   Phone, 
   User, 
   MessageSquare, 
   Clock, 
   CheckCircle2, 
-  XCircle,
   RefreshCw,
-  Power,
-  PowerOff,
   ExternalLink,
-  Building2,
-  Target,
-  FileText,
-  ChevronDown,
-  ChevronUp,
   Plus,
-  Send
+  Send,
+  Bell,
+  BellOff,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
@@ -60,7 +52,7 @@ interface Escalacao {
   notes: string | null;
   viewed_at: string | null;
   responded_at: string | null;
-  response_type: 'ja_respondido' | 'vou_responder' | 'button' | 'text' | null;
+  response_type: 'button' | 'text' | null;
   responded_by_name?: string | null;
 }
 
@@ -72,22 +64,11 @@ interface Vendedor {
   recebe_escalacoes: boolean;
 }
 
-interface Message {
-  id: string;
-  body: string;
-  direction: 'inbound' | 'outbound';
-  created_at: string;
-  from_role?: string;
-}
-
 export default function EscalacoesComerciais() {
   const [escalacoes, setEscalacoes] = useState<Escalacao[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEscalacao, setSelectedEscalacao] = useState<Escalacao | null>(null);
-  const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [showFullHistory, setShowFullHistory] = useState(false);
   
   // Estado para adicionar vendedor
   const [showAddVendedor, setShowAddVendedor] = useState(false);
@@ -134,8 +115,6 @@ export default function EscalacoesComerciais() {
       
       if (pendingIds.length === 0) return;
 
-      console.log('[EscalacoesComerciais] Marking as viewed:', pendingIds.length);
-      
       await supabase
         .from('escalacoes_comerciais')
         .update({ viewed_at: new Date().toISOString() })
@@ -145,29 +124,9 @@ export default function EscalacoesComerciais() {
     }
   };
 
-  const fetchConversationHistory = async (conversationId: string) => {
-    setLoadingHistory(true);
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('id, body, direction, created_at, from_role')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setConversationHistory(data as Message[] || []);
-    } catch (error) {
-      console.error('Erro ao buscar histórico:', error);
-      toast.error('Erro ao carregar histórico da conversa');
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
-
   useEffect(() => {
     fetchData();
     
-    // Realtime subscription
     const channel = supabase
       .channel('escalacoes-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'escalacoes_comerciais' }, fetchData)
@@ -178,32 +137,22 @@ export default function EscalacoesComerciais() {
     };
   }, []);
 
-  // Marcar como visto após carregar escalações
   useEffect(() => {
     if (escalacoes.length > 0 && !loading) {
       markAsViewed();
     }
   }, [escalacoes, loading]);
 
-  // Buscar histórico quando selecionar uma escalação
-  useEffect(() => {
-    if (selectedEscalacao?.conversation_id) {
-      fetchConversationHistory(selectedEscalacao.conversation_id);
-    } else {
-      setConversationHistory([]);
-    }
-  }, [selectedEscalacao?.conversation_id]);
-
-  const toggleVendedorStatus = async (vendedor: Vendedor, field: 'ativo' | 'recebe_escalacoes') => {
+  const toggleNotifications = async (vendedor: Vendedor) => {
     try {
       const { error } = await supabase
         .from('escalacao_vendedores')
-        .update({ [field]: !vendedor[field] })
+        .update({ recebe_escalacoes: !vendedor.recebe_escalacoes })
         .eq('id', vendedor.id);
 
       if (error) throw error;
       
-      toast.success(`${vendedor.nome} ${field === 'recebe_escalacoes' ? 'notificações' : 'status'} atualizado`);
+      toast.success(`${vendedor.nome}: notificações ${!vendedor.recebe_escalacoes ? 'ativadas' : 'desativadas'}`);
       fetchData();
     } catch (error) {
       console.error('Erro:', error);
@@ -219,10 +168,7 @@ export default function EscalacoesComerciais() {
     
     setAddingVendedor(true);
     try {
-      // Limpar telefone - manter apenas números
       const telefoneClean = newVendedor.telefone.replace(/\D/g, '');
-      
-      // Garantir formato 55XXXXXXXXXXX
       const telefoneFormatted = telefoneClean.startsWith('55') 
         ? telefoneClean 
         : `55${telefoneClean}`;
@@ -238,7 +184,7 @@ export default function EscalacoesComerciais() {
 
       if (error) throw error;
       
-      toast.success(`${newVendedor.nome} adicionado com sucesso!`);
+      toast.success(`${newVendedor.nome} adicionado!`);
       setNewVendedor({ nome: '', telefone: '' });
       setShowAddVendedor(false);
       fetchData();
@@ -272,10 +218,8 @@ export default function EscalacoesComerciais() {
     }
   };
 
-  // Abrir dialog de envio manual
   const openSendDialog = (escalacao: Escalacao) => {
     setSendingEscalacao(escalacao);
-    // Pré-selecionar vendedores ativos que recebem escalações
     const activeVendedorIds = vendedores
       .filter(v => v.ativo && v.recebe_escalacoes)
       .map(v => v.id);
@@ -283,7 +227,6 @@ export default function EscalacoesComerciais() {
     setShowSendDialog(true);
   };
 
-  // Enviar escalação manualmente para vendedores selecionados (com botões interativos)
   const sendManualEscalation = async () => {
     if (!sendingEscalacao || selectedVendedores.length === 0) {
       toast.error('Selecione ao menos um vendedor');
@@ -292,12 +235,6 @@ export default function EscalacoesComerciais() {
 
     setIsSending(true);
     try {
-      console.log('[SendManual] 📤 Enviando escalação com botões:', {
-        escalacaoId: sendingEscalacao.id,
-        vendedorIds: selectedVendedores
-      });
-
-      // Usar a nova edge function que envia COM BOTÕES
       const { data, error } = await supabase.functions.invoke('resend-escalation', {
         body: {
           escalacaoId: sendingEscalacao.id,
@@ -305,27 +242,20 @@ export default function EscalacoesComerciais() {
         }
       });
 
-      console.log('[SendManual] 📥 Resposta:', { data, error });
-
       if (error) {
-        console.error('[SendManual] ❌ Erro:', error);
         toast.error('Erro ao enviar escalação');
         return;
       }
 
       if (data?.success) {
-        toast.success(`Escalação enviada para ${data.sent} vendedor(es) com botões!`);
-        if (data.errors && data.errors.length > 0) {
-          console.warn('[SendManual] ⚠️ Alguns erros:', data.errors);
-        }
+        toast.success(`Enviado para ${data.sent} vendedor(es)!`);
       } else {
-        toast.error(data?.error || 'Falha ao enviar escalação');
+        toast.error(data?.error || 'Falha ao enviar');
       }
 
       setShowSendDialog(false);
       setSendingEscalacao(null);
       setSelectedVendedores([]);
-
     } catch (error) {
       console.error('Erro ao enviar:', error);
       toast.error('Erro ao enviar escalação');
@@ -334,32 +264,12 @@ export default function EscalacoesComerciais() {
     }
   };
 
-  const toggleVendedorSelection = (vendedorId: string) => {
-    setSelectedVendedores(prev => 
-      prev.includes(vendedorId)
-        ? prev.filter(id => id !== vendedorId)
-        : [...prev, vendedorId]
-    );
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pendente': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'em_atendimento': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'concluido': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'cancelado': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  const formatPhone = (phone: string) => {
+    const clean = phone.replace(/\D/g, '');
+    if (clean.length >= 12) {
+      return `+${clean.slice(0, 2)} (${clean.slice(2, 4)}) ${clean.slice(4, 9)}-${clean.slice(9)}`;
     }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'pendente': return 'Pendente';
-      case 'em_atendimento': return 'Em Atendimento';
-      case 'concluido': return 'Concluído';
-      case 'cancelado': return 'Cancelado';
-      default: return status;
-    }
+    return phone;
   };
 
   const stats = {
@@ -370,568 +280,282 @@ export default function EscalacoesComerciais() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header simples */}
-      <div className="sticky top-0 z-20 glass-card backdrop-blur-xl border-b border-border/50">
-        <div className="px-4 lg:px-8 py-4 flex items-center gap-3">
-          <Briefcase className="w-6 h-6 text-primary" />
-          <h1 className="text-xl font-bold">Escalações Comerciais</h1>
-          <Badge variant="outline" className="ml-2">Eduardo</Badge>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      {/* Header Apple-like */}
+      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border/40">
+        <div className="px-4 lg:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold">Escalações</h1>
+              <p className="text-xs text-muted-foreground">Leads especiais</p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={fetchData}
+            disabled={loading}
+            className="rounded-full h-9 w-9"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
       </div>
 
-      <div className="p-4 lg:p-6 space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Briefcase className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Total</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-sm border-yellow-500/30">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-yellow-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Pendentes</p>
-                  <p className="text-2xl font-bold text-yellow-400">{stats.pendentes}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-sm border-blue-500/30">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Em Atendimento</p>
-                  <p className="text-2xl font-bold text-blue-400">{stats.emAtendimento}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-sm border-green-500/30">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Concluídos</p>
-                  <p className="text-2xl font-bold text-green-400">{stats.concluidos}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
+        {/* KPIs compactos */}
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: 'Total', value: stats.total, color: 'text-foreground' },
+            { label: 'Pendentes', value: stats.pendentes, color: 'text-yellow-500' },
+            { label: 'Atendendo', value: stats.emAtendimento, color: 'text-blue-500' },
+            { label: 'Concluídos', value: stats.concluidos, color: 'text-green-500' },
+          ].map((stat) => (
+            <div 
+              key={stat.label}
+              className="bg-card/50 backdrop-blur-sm rounded-2xl p-4 border border-border/40"
+            >
+              <p className="text-2xl font-bold tabular-nums text-center">{stat.value}</p>
+              <p className="text-[10px] text-muted-foreground text-center uppercase tracking-wide">{stat.label}</p>
+            </div>
+          ))}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Configuração de Vendedores */}
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Vendedores
-              </CardTitle>
+          {/* Vendedores - Design Apple minimalista */}
+          <div className="bg-card/50 backdrop-blur-sm rounded-2xl border border-border/40 overflow-hidden">
+            <div className="p-4 border-b border-border/40 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium text-sm">Vendedores</span>
+              </div>
               <Button 
                 size="sm" 
-                variant="outline"
+                variant="ghost"
                 onClick={() => setShowAddVendedor(true)}
-                className="h-8"
+                className="rounded-full h-8 px-3 text-xs"
               >
-                <Plus className="w-4 h-4 mr-1" />
+                <Plus className="w-3.5 h-3.5 mr-1" />
                 Adicionar
               </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+            
+            <div className="divide-y divide-border/40">
               {vendedores.map((vendedor) => (
                 <div 
                   key={vendedor.id} 
-                  className="p-4 rounded-lg bg-background/50 border border-border/50 space-y-3"
+                  className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        vendedor.ativo ? 'bg-green-500/20' : 'bg-red-500/20'
-                      }`}>
-                        <User className={`w-5 h-5 ${vendedor.ativo ? 'text-green-400' : 'text-red-400'}`} />
-                      </div>
-                      <div>
-                        <p className="font-medium">{vendedor.nome}</p>
-                        <p className="text-xs text-muted-foreground">
-                          +55 {vendedor.telefone.slice(2, 4)} {vendedor.telefone.slice(4, 9)}-{vendedor.telefone.slice(9)}
-                        </p>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                      vendedor.recebe_escalacoes 
+                        ? 'bg-green-500/10 text-green-600' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      <User className="w-4 h-4" />
                     </div>
+                    <div>
+                      <p className="font-medium text-sm">{vendedor.nome}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatPhone(vendedor.telefone)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
                     <a
                       href={getWhatsAppLink(vendedor.telefone)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 transition-colors"
+                      className="p-2 rounded-full hover:bg-green-500/10 transition-colors"
                     >
-                      <ExternalLink className="w-4 h-4 text-green-400" />
+                      <ExternalLink className="w-3.5 h-3.5 text-green-600" />
                     </a>
-                  </div>
-
-                  <Separator className="bg-border/50" />
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {vendedor.ativo ? (
-                        <Power className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <PowerOff className="w-4 h-4 text-red-400" />
-                      )}
-                      <span className="text-sm">Ativo</span>
-                    </div>
-                    <Switch
-                      checked={vendedor.ativo}
-                      onCheckedChange={() => toggleVendedorStatus(vendedor, 'ativo')}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">Receber Escalações</span>
-                    </div>
                     <Switch
                       checked={vendedor.recebe_escalacoes}
-                      onCheckedChange={() => toggleVendedorStatus(vendedor, 'recebe_escalacoes')}
+                      onCheckedChange={() => toggleNotifications(vendedor)}
+                      className="data-[state=checked]:bg-green-500"
                     />
                   </div>
                 </div>
               ))}
-
+              
               {vendedores.length === 0 && (
-                <p className="text-center text-muted-foreground py-4">
-                  Nenhum vendedor configurado
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Lista de Escalações */}
-          <Card className="lg:col-span-2 bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Briefcase className="w-5 h-5" />
-                Escalações Recentes
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={fetchData} disabled={loading}>
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[500px] pr-4">
-                <div className="space-y-3">
-                  {escalacoes.map((escalacao) => (
-                    <div
-                      key={escalacao.id}
-                      className={`p-4 rounded-lg border cursor-pointer transition-all hover:bg-accent/50 ${
-                        selectedEscalacao?.id === escalacao.id
-                          ? 'bg-accent/50 border-primary/50'
-                          : 'bg-background/50 border-border/50'
-                      }`}
-                      onClick={() => setSelectedEscalacao(escalacao)}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-medium truncate">
-                              {escalacao.lead_name || escalacao.phone_number}
-                            </span>
-                            <Badge className={getStatusColor(escalacao.status)}>
-                              {getStatusLabel(escalacao.status)}
-                            </Badge>
-                            {/* Indicador de resposta via botão ou texto */}
-                            {(escalacao.response_type === 'button' || escalacao.response_type === 'ja_respondido') && escalacao.status === 'concluido' && (
-                              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">
-                                ✅ {escalacao.responded_by_name || 'Respondido'}
-                              </Badge>
-                            )}
-                            {(escalacao.response_type === 'text' || escalacao.response_type === 'vou_responder') && escalacao.status === 'pendente' && (
-                              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-[10px]">
-                                ⏰ Responderá depois
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {escalacao.phone_number}
-                          </p>
-
-                          {escalacao.lead_segment && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                              <Building2 className="w-3 h-3" />
-                              {escalacao.lead_segment}
-                            </p>
-                          )}
-
-                          {escalacao.first_message && (
-                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2 bg-background/50 p-2 rounded border border-border/30">
-                              "{escalacao.first_message}"
-                            </p>
-                          )}
-
-                          {escalacao.plans_interested && escalacao.plans_interested.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {escalacao.plans_interested.map((plan, idx) => (
-                                <Badge key={idx} variant="outline" className="text-[10px]">
-                                  {plan}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(escalacao.created_at), 'dd/MM HH:mm', { locale: ptBR })}
-                          </p>
-                          
-                          <div className="flex flex-col gap-1 mt-2">
-                            {escalacao.status === 'pendente' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateEscalacaoStatus(escalacao.id, 'em_atendimento');
-                                  }}
-                                >
-                                  Atender
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openSendDialog(escalacao);
-                                  }}
-                                >
-                                  <Send className="w-3 h-3 mr-1" />
-                                  Enviar
-                                </Button>
-                              </>
-                            )}
-                            {escalacao.status === 'em_atendimento' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 text-xs text-green-400"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateEscalacaoStatus(escalacao.id, 'concluido');
-                                  }}
-                                >
-                                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                                  Concluir
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openSendDialog(escalacao);
-                                  }}
-                                >
-                                  <Send className="w-3 h-3 mr-1" />
-                                  Reenviar
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {escalacoes.length === 0 && !loading && (
-                    <div className="text-center py-12">
-                      <Briefcase className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
-                      <p className="text-muted-foreground">Nenhuma escalação registrada</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Quando leads pedirem condições especiais, aparecerão aqui
-                      </p>
-                    </div>
-                  )}
+                <div className="p-8 text-center text-muted-foreground text-sm">
+                  Nenhum vendedor cadastrado
                 </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </div>
+              )}
+            </div>
+          </div>
 
-        {/* Detalhes da Escalação Selecionada */}
-        {selectedEscalacao && (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Detalhes da Escalação
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedEscalacao(null)}>
-                <XCircle className="w-4 h-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Lead</p>
-                    <p className="font-medium">{selectedEscalacao.lead_name || 'Não identificado'}</p>
-                  </div>
+          {/* Lista de Escalações - Apple style */}
+          <div className="lg:col-span-2 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/40 overflow-hidden">
+            <div className="p-4 border-b border-border/40 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium text-sm">Escalações Recentes</span>
+              </div>
+              <Badge variant="secondary" className="rounded-full text-xs">
+                {stats.pendentes} pendentes
+              </Badge>
+            </div>
+            
+            <ScrollArea className="h-[500px]">
+              <div className="divide-y divide-border/40">
+                {escalacoes.map((escalacao) => (
+                  <div 
+                    key={escalacao.id}
+                    className="p-4 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm truncate">
+                            {escalacao.lead_name || 'Lead não identificado'}
+                          </span>
+                          <Badge 
+                            variant="outline"
+                            className={`rounded-full text-[10px] px-2 py-0 ${
+                              escalacao.status === 'pendente' 
+                                ? 'border-yellow-500/50 text-yellow-600 bg-yellow-500/10'
+                                : escalacao.status === 'concluido'
+                                ? 'border-green-500/50 text-green-600 bg-green-500/10'
+                                : 'border-blue-500/50 text-blue-600 bg-blue-500/10'
+                            }`}
+                          >
+                            {escalacao.status === 'pendente' ? 'Pendente' : 
+                             escalacao.status === 'concluido' ? 'Concluído' : 'Atendendo'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {formatPhone(escalacao.phone_number)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {format(new Date(escalacao.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                          </span>
+                        </div>
 
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Telefone</p>
-                    <a
-                      href={getWhatsAppLink(selectedEscalacao.phone_number)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-green-400 hover:underline flex items-center gap-2"
-                    >
-                      {selectedEscalacao.phone_number}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Segmento</p>
-                    <p className="font-medium">{selectedEscalacao.lead_segment || 'Não informado'}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Interesse</p>
-                    <p className="font-medium">{selectedEscalacao.lead_interest || 'Não especificado'}</p>
-                  </div>
-
-                  {/* Status de Resposta via Botão */}
-                  {selectedEscalacao.response_type && (
-                    <div className="p-3 rounded-lg border bg-gradient-to-r from-green-500/10 to-transparent border-green-500/30">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Resposta do Vendedor</p>
-                      <div className="flex items-center gap-2">
-                        {selectedEscalacao.response_type === 'ja_respondido' ? (
-                          <>
-                            <CheckCircle2 className="w-4 h-4 text-green-400" />
-                            <span className="font-medium text-green-400">Já respondido</span>
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="w-4 h-4 text-orange-400" />
-                            <span className="font-medium text-orange-400">Vai responder depois</span>
-                          </>
+                        {escalacao.lead_segment && (
+                          <Badge variant="secondary" className="rounded-full text-[10px] mr-2">
+                            {escalacao.lead_segment}
+                          </Badge>
+                        )}
+                        
+                        {escalacao.response_type && escalacao.status === 'concluido' && (
+                          <span className="text-[10px] text-green-600">
+                            ✓ {escalacao.responded_by_name || 'Atendido'} 
+                            {escalacao.response_type === 'button' ? ' (botão)' : ' (texto)'}
+                          </span>
                         )}
                       </div>
-                      {selectedEscalacao.responded_at && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(selectedEscalacao.responded_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {selectedEscalacao.plans_interested && selectedEscalacao.plans_interested.length > 0 && (
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Planos de Interesse</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedEscalacao.plans_interested.map((plan, idx) => (
-                          <Badge key={idx} variant="secondary">{plan}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  {selectedEscalacao.first_message && (
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Primeira Mensagem</p>
-                      <p className="text-sm bg-background/50 p-3 rounded-lg border border-border/50">
-                        {selectedEscalacao.first_message}
-                      </p>
-                    </div>
-                  )}
-
-                  {selectedEscalacao.conversation_summary && (
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
-                        📋 Últimas 15 Mensagens
-                      </p>
-                      <div className="bg-background/50 rounded-lg border border-border/50 p-3 max-h-[400px] overflow-y-auto">
-                        <div className="space-y-2">
-                          {selectedEscalacao.conversation_summary.split('\n').map((line, idx) => {
-                            const isCliente = line.includes('👤 Cliente');
-                            return (
-                              <div 
-                                key={idx} 
-                                className={`p-2 rounded text-sm font-mono ${
-                                  isCliente 
-                                    ? 'bg-white/5 border-l-2 border-blue-400' 
-                                    : 'bg-primary/10 border-l-2 border-green-400'
-                                }`}
-                              >
-                                {line}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedEscalacao.ai_analysis && (
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Análise da Sofia</p>
-                      <p className="text-sm bg-blue-500/10 p-3 rounded-lg border border-blue-500/30 whitespace-pre-wrap">
-                        {selectedEscalacao.ai_analysis}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Histórico Completo da Conversa */}
-              {selectedEscalacao.conversation_id && (
-                <div className="mt-6">
-                  <Button
-                    variant="outline"
-                    className="w-full mb-4"
-                    onClick={() => setShowFullHistory(!showFullHistory)}
-                  >
-                    {showFullHistory ? (
-                      <>
-                        <ChevronUp className="w-4 h-4 mr-2" />
-                        Ocultar Histórico Completo
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-4 h-4 mr-2" />
-                        Ver Histórico Completo ({conversationHistory.length} mensagens)
-                      </>
-                    )}
-                  </Button>
-
-                  {showFullHistory && (
-                    <div className="border border-border/50 rounded-lg p-4 bg-background/30">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">
-                        📋 Histórico Completo da Conversa
-                      </p>
                       
-                      {loadingHistory ? (
-                        <div className="flex items-center justify-center py-8">
-                          <RefreshCw className="w-5 h-5 animate-spin text-muted-foreground" />
-                        </div>
-                      ) : (
-                        <ScrollArea className="h-[400px]">
-                          <div className="space-y-3">
-                            {conversationHistory.map((msg) => (
-                              <div 
-                                key={msg.id}
-                                className={`flex ${msg.direction === 'inbound' ? 'justify-start' : 'justify-end'}`}
-                              >
-                                <div className={`max-w-[80%] p-3 rounded-lg ${
-                                  msg.direction === 'inbound'
-                                    ? 'bg-white/10 border border-border/50'
-                                    : 'bg-primary/20 border border-primary/30'
-                                }`}>
-                                  <p className="text-[10px] font-medium mb-1 opacity-70">
-                                    {msg.direction === 'inbound' ? '👤 Cliente' : '🤖 Sofia'}
-                                  </p>
-                                  <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
-                                  <p className="text-[10px] text-muted-foreground mt-1 text-right">
-                                    {format(new Date(msg.created_at), 'dd/MM HH:mm', { locale: ptBR })}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                            
-                            {conversationHistory.length === 0 && (
-                              <p className="text-center text-muted-foreground py-4">
-                                Nenhuma mensagem encontrada
-                              </p>
-                            )}
-                          </div>
-                        </ScrollArea>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={getWhatsAppLink(escalacao.phone_number)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-full bg-green-500/10 hover:bg-green-500/20 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-green-600" />
+                        </a>
+                        
+                        {escalacao.status === 'pendente' && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openSendDialog(escalacao)}
+                              className="rounded-full h-8 px-3 text-xs"
+                            >
+                              <Send className="w-3.5 h-3.5 mr-1" />
+                              Enviar
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => updateEscalacaoStatus(escalacao.id, 'concluido')}
+                              className="rounded-full h-8 px-3 text-xs bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                              Concluir
+                            </Button>
+                          </>
+                        )}
+                        
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setSelectedEscalacao(escalacao)}
+                          className="rounded-full h-8 w-8"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                  </div>
+                ))}
+                
+                {escalacoes.length === 0 && (
+                  <div className="p-12 text-center text-muted-foreground text-sm">
+                    Nenhuma escalação encontrada
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
       </div>
 
-      {/* Dialog para adicionar vendedor */}
+      {/* Dialog Adicionar Vendedor */}
       <Dialog open={showAddVendedor} onOpenChange={setShowAddVendedor}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Adicionar Vendedor
-            </DialogTitle>
+            <DialogTitle>Adicionar Vendedor</DialogTitle>
             <DialogDescription>
-              Adicione um novo vendedor para receber escalações comerciais.
+              Cadastre um novo vendedor para receber escalações
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome</Label>
+              <label className="text-sm font-medium">Nome</label>
               <Input
-                id="nome"
-                placeholder="Ex: Eduardo"
+                placeholder="Nome do vendedor"
                 value={newVendedor.nome}
                 onChange={(e) => setNewVendedor(prev => ({ ...prev, nome: e.target.value }))}
+                className="rounded-xl"
               />
             </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="telefone">Telefone (WhatsApp)</Label>
+              <label className="text-sm font-medium">WhatsApp</label>
               <Input
-                id="telefone"
-                placeholder="Ex: 45991415856"
+                placeholder="45999999999"
                 value={newVendedor.telefone}
                 onChange={(e) => setNewVendedor(prev => ({ ...prev, telefone: e.target.value }))}
+                className="rounded-xl"
               />
-              <p className="text-xs text-muted-foreground">
-                Apenas números, com DDD. Ex: 45991415856
-              </p>
+              <p className="text-xs text-muted-foreground">DDD + número, sem espaços</p>
             </div>
           </div>
           
           <DialogFooter>
             <Button 
-              variant="outline" 
+              variant="ghost" 
               onClick={() => setShowAddVendedor(false)}
-              disabled={addingVendedor}
+              className="rounded-full"
             >
               Cancelar
             </Button>
             <Button 
-              onClick={addVendedor}
-              disabled={addingVendedor || !newVendedor.nome || !newVendedor.telefone}
+              onClick={addVendedor} 
+              disabled={addingVendedor}
+              className="rounded-full"
             >
               {addingVendedor ? 'Adicionando...' : 'Adicionar'}
             </Button>
@@ -939,84 +563,132 @@ export default function EscalacoesComerciais() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog para envio manual */}
+      {/* Dialog Enviar Escalação */}
       <Dialog open={showSendDialog} onOpenChange={setShowSendDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Send className="w-5 h-5" />
-              Enviar para Vendedores
-            </DialogTitle>
+            <DialogTitle>Enviar Escalação</DialogTitle>
             <DialogDescription>
-              Selecione os vendedores que devem receber esta escalação.
+              Selecione os vendedores que receberão esta escalação
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4 space-y-4">
-            {sendingEscalacao && (
-              <div className="p-3 rounded-lg bg-background/50 border border-border/50">
-                <p className="text-sm font-medium">{sendingEscalacao.lead_name || sendingEscalacao.phone_number}</p>
-                <p className="text-xs text-muted-foreground">{sendingEscalacao.phone_number}</p>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Vendedores:</p>
-              {vendedores.map((vendedor) => (
-                <div 
-                  key={vendedor.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${
-                    selectedVendedores.includes(vendedor.id)
-                      ? 'bg-primary/10 border-primary/50'
-                      : 'bg-background/50 border-border/50 hover:bg-accent/50'
-                  }`}
-                  onClick={() => toggleVendedorSelection(vendedor.id)}
-                >
-                  <Checkbox 
-                    checked={selectedVendedores.includes(vendedor.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    onCheckedChange={() => toggleVendedorSelection(vendedor.id)}
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{vendedor.nome}</p>
-                    <p className="text-xs text-muted-foreground">
-                      +55 {vendedor.telefone.slice(2, 4)} {vendedor.telefone.slice(4)}
-                    </p>
-                  </div>
-                  {vendedor.ativo && vendedor.recebe_escalacoes && (
-                    <Badge variant="secondary" className="text-[10px]">Auto</Badge>
-                  )}
+          <div className="py-4 space-y-3">
+            {vendedores.filter(v => v.ativo).map((vendedor) => (
+              <label 
+                key={vendedor.id}
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors"
+              >
+                <Checkbox
+                  checked={selectedVendedores.includes(vendedor.id)}
+                  onCheckedChange={() => {
+                    setSelectedVendedores(prev => 
+                      prev.includes(vendedor.id)
+                        ? prev.filter(id => id !== vendedor.id)
+                        : [...prev, vendedor.id]
+                    );
+                  }}
+                />
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{vendedor.nome}</p>
+                  <p className="text-xs text-muted-foreground">{formatPhone(vendedor.telefone)}</p>
                 </div>
-              ))}
-            </div>
+                {vendedor.recebe_escalacoes && (
+                  <Bell className="w-3.5 h-3.5 text-green-500" />
+                )}
+              </label>
+            ))}
           </div>
           
           <DialogFooter>
             <Button 
-              variant="outline" 
-              onClick={() => {
-                setShowSendDialog(false);
-                setSendingEscalacao(null);
-              }}
-              disabled={isSending}
+              variant="ghost" 
+              onClick={() => setShowSendDialog(false)}
+              className="rounded-full"
             >
               Cancelar
             </Button>
             <Button 
               onClick={sendManualEscalation}
               disabled={isSending || selectedVendedores.length === 0}
+              className="rounded-full"
             >
-              {isSending ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Enviar ({selectedVendedores.length})
-                </>
+              {isSending ? 'Enviando...' : `Enviar (${selectedVendedores.length})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Detalhes da Escalação */}
+      <Dialog open={!!selectedEscalacao} onOpenChange={() => setSelectedEscalacao(null)}>
+        <DialogContent className="sm:max-w-lg rounded-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              {selectedEscalacao?.lead_name || 'Lead não identificado'}
+            </DialogTitle>
+            <DialogDescription>
+              Criado em {selectedEscalacao && format(new Date(selectedEscalacao.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEscalacao && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
+                <Phone className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium">{formatPhone(selectedEscalacao.phone_number)}</span>
+                <a
+                  href={getWhatsAppLink(selectedEscalacao.phone_number)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-auto"
+                >
+                  <Button size="sm" variant="outline" className="rounded-full h-8">
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                    WhatsApp
+                  </Button>
+                </a>
+              </div>
+
+              {selectedEscalacao.lead_segment && (
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground mb-1">Segmento</p>
+                  <p className="font-medium">{selectedEscalacao.lead_segment}</p>
+                </div>
               )}
+
+              {selectedEscalacao.first_message && (
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground mb-1">Primeira Mensagem</p>
+                  <p className="text-sm">{selectedEscalacao.first_message}</p>
+                </div>
+              )}
+
+              {selectedEscalacao.conversation_summary && (
+                <div className="p-3 bg-muted/50 rounded-xl">
+                  <p className="text-xs text-muted-foreground mb-1">Resumo da Conversa</p>
+                  <p className="text-sm whitespace-pre-wrap">{selectedEscalacao.conversation_summary}</p>
+                </div>
+              )}
+
+              {selectedEscalacao.response_type && (
+                <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+                  <p className="text-xs text-green-600 mb-1">Resposta</p>
+                  <p className="font-medium text-green-700">
+                    {selectedEscalacao.responded_by_name || 'Vendedor'} respondeu via {selectedEscalacao.response_type === 'button' ? 'botão' : 'texto'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="ghost" 
+              onClick={() => setSelectedEscalacao(null)}
+              className="rounded-full"
+            >
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
