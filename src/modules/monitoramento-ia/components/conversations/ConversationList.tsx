@@ -1,10 +1,11 @@
-import { Loader2, MessageCircle, Phone, WifiOff } from 'lucide-react';
+import { Loader2, MessageCircle, Phone, WifiOff, AlertCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { ConversationGroup } from '../../hooks/useConversations';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useZAPIRealtimeMonitor } from '../../hooks/useZAPIRealtimeMonitor';
+import { useEscalacoesPendentes } from '../../hooks/useEscalacoesPendentes';
 
 interface ConversationListProps {
   conversations: ConversationGroup[];
@@ -20,7 +21,7 @@ export const ConversationList = ({
   loading 
 }: ConversationListProps) => {
   const { agentStatuses } = useZAPIRealtimeMonitor();
-
+  const { phonesEscalados } = useEscalacoesPendentes();
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full p-8">
@@ -51,12 +52,12 @@ export const ConversationList = ({
       {/* Lista */}
       <ScrollArea className="flex-1">
         <div className="divide-y divide-border">
-          {conversations.map((conv) => {
+        {conversations.map((conv) => {
             const isSelected = selectedConversation === `${conv.phone_number}_${conv.agent_key}`;
             const hasUnread = conv.unread_count > 0;
             const agentStatus = agentStatuses[conv.agent_key];
             const isDisconnected = agentStatus?.status === 'disconnected';
-
+            const isEscalated = phonesEscalados.includes(conv.phone_number);
             return (
               <button
                 key={`${conv.phone_number}_${conv.agent_key}`}
@@ -130,6 +131,12 @@ export const ConversationList = ({
                         <Badge variant="destructive" className="text-[10px] md:text-xs px-1.5 py-0 h-5 gap-1 animate-pulse">
                           <WifiOff className="w-3 h-3" />
                           Desconectado
+                        </Badge>
+                      )}
+                      {isEscalated && (
+                        <Badge variant="outline" className="text-[10px] md:text-xs px-1.5 py-0 h-5 gap-1 border-amber-500 text-amber-500 bg-amber-500/10 animate-pulse">
+                          <AlertCircle className="w-3 h-3" />
+                          Escalado
                         </Badge>
                       )}
                       {hasUnread && (

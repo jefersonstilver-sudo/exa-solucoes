@@ -1042,12 +1042,64 @@ Faça as duas chamadas JUNTAS na primeira vez.
         console.log('[IA-CONSOLE] 📞 Phone:', context?.phoneNumber);
         console.log('[IA-CONSOLE] 💬 ConversationId:', context?.conversationId);
         
-        // Criar escalação via notify-escalation
+        // ====== ENRIQUECER DADOS ANTES DE ESCALAR ======
+        let leadName: string | null = null;
+        let leadSegment: string | null = null;
+        let firstUserMessage: string | null = null;
+        let conversationSummary: string | null = null;
+        
+        try {
+          // Buscar dados da conversa
+          if (context?.conversationId) {
+            const { data: conversationData } = await supabase
+              .from('conversations')
+              .select('contact_name, contact_phone, contact_type, metadata')
+              .eq('id', context.conversationId)
+              .single();
+            
+            if (conversationData) {
+              leadName = conversationData.contact_name;
+              leadSegment = conversationData.contact_type;
+              console.log('[IA-CONSOLE] 📋 Found conversation data:', { leadName, leadSegment });
+            }
+            
+            // Buscar últimas 20 mensagens para criar resumo
+            const { data: messagesData } = await supabase
+              .from('messages')
+              .select('body, direction, from_role, created_at')
+              .eq('conversation_id', context.conversationId)
+              .order('created_at', { ascending: true })
+              .limit(20);
+            
+            if (messagesData && messagesData.length > 0) {
+              // Primeira mensagem do cliente
+              const firstInbound = messagesData.find(m => m.direction === 'inbound');
+              firstUserMessage = firstInbound?.body || null;
+              
+              // Resumo das últimas 10 mensagens
+              const lastMessages = messagesData.slice(-10);
+              conversationSummary = lastMessages.map(m => 
+                `[${m.direction === 'inbound' ? 'Cliente' : 'Sofia'}]: ${(m.body || '').substring(0, 100)}`
+              ).join('\n');
+              
+              console.log('[IA-CONSOLE] 📋 First message:', firstUserMessage?.substring(0, 50));
+              console.log('[IA-CONSOLE] 📋 Summary length:', conversationSummary?.length);
+            }
+          }
+        } catch (enrichError) {
+          console.error('[IA-CONSOLE] ⚠️ Error enriching escalation data:', enrichError);
+        }
+        
+        // Criar escalação via notify-escalation COM DADOS ENRIQUECIDOS
         try {
           const escalationResult = await supabase.functions.invoke('notify-escalation', {
             body: {
               conversationId: context?.conversationId,
               phoneNumber: context?.phoneNumber,
+              leadName,
+              leadSegment,
+              firstMessage: firstUserMessage,
+              conversationSummary,
               escalationReason,
               escalationMethod: 'intelligent_ai_decision',
               aiAnalysis: `🤖 Sofia decidiu escalar: "${escalationReason}"`
@@ -1150,12 +1202,64 @@ Faça as duas chamadas JUNTAS na primeira vez.
       console.log('[IA-CONSOLE] 📞 Phone:', context?.phoneNumber);
       console.log('[IA-CONSOLE] 💬 ConversationId:', context?.conversationId);
       
-      // Criar escalação via notify-escalation
+      // ====== ENRIQUECER DADOS ANTES DE ESCALAR ======
+      let leadName: string | null = null;
+      let leadSegment: string | null = null;
+      let firstUserMessage: string | null = null;
+      let conversationSummary: string | null = null;
+      
+      try {
+        // Buscar dados da conversa
+        if (context?.conversationId) {
+          const { data: conversationData } = await supabase
+            .from('conversations')
+            .select('contact_name, contact_phone, contact_type, metadata')
+            .eq('id', context.conversationId)
+            .single();
+          
+          if (conversationData) {
+            leadName = conversationData.contact_name;
+            leadSegment = conversationData.contact_type;
+            console.log('[IA-CONSOLE] 📋 Found conversation data:', { leadName, leadSegment });
+          }
+          
+          // Buscar últimas 20 mensagens para criar resumo
+          const { data: messagesData } = await supabase
+            .from('messages')
+            .select('body, direction, from_role, created_at')
+            .eq('conversation_id', context.conversationId)
+            .order('created_at', { ascending: true })
+            .limit(20);
+          
+          if (messagesData && messagesData.length > 0) {
+            // Primeira mensagem do cliente
+            const firstInbound = messagesData.find(m => m.direction === 'inbound');
+            firstUserMessage = firstInbound?.body || null;
+            
+            // Resumo das últimas 10 mensagens
+            const lastMessages = messagesData.slice(-10);
+            conversationSummary = lastMessages.map(m => 
+              `[${m.direction === 'inbound' ? 'Cliente' : 'Sofia'}]: ${(m.body || '').substring(0, 100)}`
+            ).join('\n');
+            
+            console.log('[IA-CONSOLE] 📋 First message:', firstUserMessage?.substring(0, 50));
+            console.log('[IA-CONSOLE] 📋 Summary length:', conversationSummary?.length);
+          }
+        }
+      } catch (enrichError) {
+        console.error('[IA-CONSOLE] ⚠️ Error enriching escalation data:', enrichError);
+      }
+      
+      // Criar escalação via notify-escalation COM DADOS ENRIQUECIDOS
       try {
         const escalationResult = await supabase.functions.invoke('notify-escalation', {
           body: {
             conversationId: context?.conversationId,
             phoneNumber: context?.phoneNumber,
+            leadName,
+            leadSegment,
+            firstMessage: firstUserMessage,
+            conversationSummary,
             escalationReason,
             escalationMethod: 'intelligent_ai_decision',
             aiAnalysis: `🤖 Sofia decidiu escalar: "${escalationReason}"`

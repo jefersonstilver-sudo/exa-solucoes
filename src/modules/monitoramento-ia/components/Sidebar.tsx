@@ -23,6 +23,7 @@ import { useUnreadCount } from '../hooks/useUnreadCount';
 import { useOfflineAlerts } from '../hooks/useOfflineAlerts';
 import { useModuleTheme } from '../hooks/useModuleTheme';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useEscalacoesPendentes } from '../hooks/useEscalacoesPendentes';
 
 const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
 
@@ -84,7 +85,6 @@ const menuItems: MenuItem[] = [
     title: 'Escalações Eduardo',
     icon: Briefcase,
     path: '/admin/monitoramento-ia/escalacoes',
-    badge: 'NOVO'
   },
 ];
 
@@ -94,6 +94,7 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
   const { totalOffline } = useOfflineAlerts();
   const { toggleTheme } = useModuleTheme();
   const isMobile = useIsMobile();
+  const { pendentesCount } = useEscalacoesPendentes();
   
   return (
     <aside
@@ -244,10 +245,22 @@ export const Sidebar = ({ isOpen, onClose, theme, collapsed, onToggleCollapse }:
                       {unreadCount}
                     </span>
                   )}
+                  {/* Badge de escalações pendentes - apenas para Escalações Eduardo */}
+                  {item.path === '/admin/monitoramento-ia/escalacoes' && pendentesCount > 0 && (
+                    <span className={cn(
+                      "ml-auto text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1",
+                      "bg-amber-500 text-white",
+                      "animate-[pulse_0.8s_ease-in-out_infinite] shadow-lg shadow-amber-500/50",
+                      "ring-2 ring-amber-400/50"
+                    )}>
+                      🔔 {pendentesCount}
+                    </span>
+                  )}
                   {/* Badge padrão (NOVO, BETA) - só mostra se não tiver badges dinâmicos */}
                   {item.badge && 
                    !(item.path === '/admin/monitoramento-ia/crm' && unreadCount > 0) && 
-                   !(item.path === '/admin/monitoramento-ia/paineis' && totalOffline > 0) && (
+                   !(item.path === '/admin/monitoramento-ia/paineis' && totalOffline > 0) &&
+                   !(item.path === '/admin/monitoramento-ia/escalacoes' && pendentesCount > 0) && (
                     <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">
                       {item.badge}
                     </span>
