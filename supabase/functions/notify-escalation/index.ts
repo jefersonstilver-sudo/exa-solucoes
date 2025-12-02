@@ -39,11 +39,9 @@ serve(async (req) => {
     });
 
     // ========== ENRIQUECIMENTO DE DADOS ==========
-    // SEMPRE buscar dados FRESCOS do banco, ignorando o que foi passado
     if (conversationId) {
-      console.log('[NOTIFY-ESCALATION] 🔍 ALWAYS fetching fresh data from database...');
+      console.log('[NOTIFY-ESCALATION] 🔍 Fetching fresh data from database...');
       
-      // Buscar dados da conversa
       const { data: conversationData, error: convError } = await supabase
         .from('conversations')
         .select('contact_name, contact_type')
@@ -59,39 +57,29 @@ serve(async (req) => {
           leadSegment = conversationData.contact_type;
           console.log('[NOTIFY-ESCALATION] ✅ Enriched leadSegment:', leadSegment);
         }
-      } else {
-        console.log('[NOTIFY-ESCALATION] ⚠️ Could not fetch conversation data:', convError?.message);
       }
       
-      // SEMPRE buscar últimas 15 mensagens FRESCAS - ignorando o que foi passado
-      console.log('[NOTIFY-ESCALATION] 🔄 Fetching FRESH last 15 messages...');
+      // Buscar últimas 15 mensagens
       const { data: messagesData, error: msgError } = await supabase
         .from('messages')
         .select('body, direction, created_at')
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: false }) // DESC para pegar as mais recentes
+        .order('created_at', { ascending: false })
         .limit(15);
       
       if (messagesData && messagesData.length > 0 && !msgError) {
-        console.log('[NOTIFY-ESCALATION] 📨 Fetched', messagesData.length, 'fresh messages');
-        
-        // Reverter para ordem cronológica (mais antiga primeiro)
         const sortedMessages = messagesData.reverse();
         
-        // Primeira mensagem do cliente (inbound) COM DATA/HORA
         const firstInbound = sortedMessages.find((m: any) => m.direction === 'inbound');
         if (firstInbound) {
           const date = new Date(firstInbound.created_at);
           const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
           const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           firstMessage = `[${dateStr} às ${timeStr}]\n${firstInbound.body}`;
-          console.log('[NOTIFY-ESCALATION] ✅ First message with timestamp:', firstMessage?.substring(0, 80));
         }
         
-        // SEMPRE gerar resumo fresco com timestamps
         conversationSummary = sortedMessages.map((m: any) => {
           const role = m.direction === 'inbound' ? '👤 Cliente' : '🤖 Sofia';
-          // Remover tags de escalação da mensagem
           let text = (m.body || '[mídia]').replace(/\s*\[ESCALAR:[^\]]*\]\s*/g, '');
           text = text.substring(0, 150);
           
@@ -100,24 +88,10 @@ serve(async (req) => {
           const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           return `[${dateStr} ${timeStr}] ${role}: ${text}`;
         }).join('\n');
-        
-        console.log('[NOTIFY-ESCALATION] ✅ Generated FRESH conversationSummary with', sortedMessages.length, 'messages');
-        console.log('[NOTIFY-ESCALATION] 📝 Summary preview:', conversationSummary?.substring(0, 200));
-      } else {
-        console.log('[NOTIFY-ESCALATION] ⚠️ Could not fetch messages:', msgError?.message);
       }
     }
 
-    console.log('[NOTIFY-ESCALATION] 📦 Final enriched data:', {
-      hasLeadName: !!leadName,
-      hasLeadSegment: !!leadSegment,
-      hasFirstMessage: !!firstMessage,
-      hasSummary: !!conversationSummary,
-      summaryLength: conversationSummary?.length,
-      summaryPreview: conversationSummary?.substring(0, 100)
-    });
-
-    // 1. Salvar escalação no banco com dados enriquecidos
+    // 1. Salvar escalação no banco
     const { data: escalacao, error: insertError } = await supabase
       .from('escalacoes_comerciais')
       .insert({
@@ -144,21 +118,16 @@ serve(async (req) => {
     console.log('[NOTIFY-ESCALATION] ✅ Escalation saved:', escalacao.id);
 
     // 2. Buscar vendedores ativos que recebem escalações
-    console.log('[NOTIFY-ESCALATION] 🔍 Querying escalacao_vendedores...');
     const { data: vendedores, error: vendedoresError } = await supabase
       .from('escalacao_vendedores')
       .select('*')
       .eq('ativo', true)
       .eq('recebe_escalacoes', true);
 
-    console.log('[NOTIFY-ESCALATION] 📋 Vendedores query result:', {
-      error: vendedoresError?.message,
-      count: vendedores?.length || 0,
-      vendedores: vendedores?.map(v => ({ id: v.id, nome: v.nome, telefone: v.telefone, ativo: v.ativo, recebe: v.recebe_escalacoes }))
-    });
+    console.log('[NOTIFY-ESCALATION] 📋 Vendedores found:', vendedores?.length || 0);
 
     if (!vendedores || vendedores.length === 0) {
-      console.log('[NOTIFY-ESCALATION] ⚠️ No active sellers to notify - check escalacao_vendedores table');
+      console.log('[NOTIFY-ESCALATION] ⚠️ No active sellers to notify');
       return new Response(JSON.stringify({ 
         success: true, 
         escalacaoId: escalacao.id,
@@ -169,7 +138,7 @@ serve(async (req) => {
       });
     }
 
-    // 3. Buscar configuração Z-API para enviar mensagem
+    // 3. Buscar configuração Z-API
     const { data: agent } = await supabase
       .from('agents')
       .select('zapi_config')
@@ -177,19 +146,10 @@ serve(async (req) => {
       .single();
 
     const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
-    
-    // CRITICAL: Get Client-Token from environment
     const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
-    
-    console.log('[NOTIFY-ESCALATION] 🔧 Z-API config check:', {
-      hasConfig: !!zapiConfig,
-      hasInstanceId: !!zapiConfig?.instance_id,
-      hasToken: !!zapiConfig?.token,
-      hasClientToken: !!zapiClientToken
-    });
 
-    if (!zapiConfig?.instance_id || !zapiConfig?.token) {
-      console.log('[NOTIFY-ESCALATION] ⚠️ Z-API not configured - missing instance_id or token');
+    if (!zapiConfig?.instance_id || !zapiConfig?.token || !zapiClientToken) {
+      console.log('[NOTIFY-ESCALATION] ⚠️ Z-API not configured');
       return new Response(JSON.stringify({ 
         success: true, 
         escalacaoId: escalacao.id,
@@ -200,19 +160,7 @@ serve(async (req) => {
       });
     }
 
-    if (!zapiClientToken) {
-      console.error('[NOTIFY-ESCALATION] ❌ ZAPI_CLIENT_TOKEN not configured in secrets');
-      return new Response(JSON.stringify({ 
-        success: true, 
-        escalacaoId: escalacao.id,
-        notified: 0,
-        reason: 'client_token_not_configured'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // 4. Montar mensagem para Eduardo
+    // 4. Montar mensagem
     const formatPhoneDisplay = (phone: string) => {
       const clean = phone.replace(/\D/g, '');
       if (clean.length === 13) {
@@ -224,26 +172,18 @@ serve(async (req) => {
     const now = new Date();
     const dateStr = now.toLocaleDateString('pt-BR');
     const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const cleanPhoneForLink = phoneNumber.replace(/\D/g, '');
 
     let message = `🔔 *ESCALAÇÃO COMERCIAL*\n`;
     message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
     message += `📅 *Data/Hora:* ${dateStr} às ${timeStr}\n\n`;
-    const cleanPhoneForLink = phoneNumber.replace(/\D/g, '');
     message += `👤 *Lead:* ${leadName || 'Não identificado'}\n`;
     message += `📱 *Telefone:* ${formatPhoneDisplay(phoneNumber)}\n`;
     message += `📲 *WhatsApp:* https://wa.me/${cleanPhoneForLink}\n`;
     
-    if (leadSegment) {
-      message += `🏢 *Segmento:* ${leadSegment}\n`;
-    }
-    
-    if (leadInterest) {
-      message += `💡 *Interesse:* ${leadInterest}\n`;
-    }
-    
-    if (plansInterested && plansInterested.length > 0) {
-      message += `📊 *Planos:* ${plansInterested.join(', ')}\n`;
-    }
+    if (leadSegment) message += `🏢 *Segmento:* ${leadSegment}\n`;
+    if (leadInterest) message += `💡 *Interesse:* ${leadInterest}\n`;
+    if (plansInterested?.length > 0) message += `📊 *Planos:* ${plansInterested.join(', ')}\n`;
 
     message += `\n━━━━━━━━━━━━━━━━━━━━\n`;
     
@@ -261,10 +201,11 @@ serve(async (req) => {
 
     message += `\n━━━━━━━━━━━━━━━━━━━━`;
     message += `\n⚡ Cliente solicitou condição especial`;
-    message += `\n💼 *Clique no botão abaixo após responder!*`;
 
-    // 5. Enviar mensagem COM BOTÕES para cada vendedor
+    // 5. NOVA ESTRATÉGIA: TEXTO PRIMEIRO (garantido) + BOTÕES DEPOIS (opcional)
     let notifiedCount = 0;
+    const textUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+    const buttonUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-button-actions`;
     
     for (const vendedor of vendedores) {
       try {
@@ -272,23 +213,12 @@ serve(async (req) => {
           ? vendedor.telefone 
           : `55${vendedor.telefone}`;
 
-        // ✅ NOVO: Usar endpoint de botões interativos
-        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-button-actions`;
-        const fullMessage = `Olá ${vendedor.nome}!\n\n${message}`;
+        // ✅ PASSO 1: SEMPRE enviar TEXTO PRIMEIRO (100% garantido funcionar)
+        const fullTextMessage = `Olá ${vendedor.nome}!\n\n${message}\n\n📌 *RESPONDA:*\n• "OK" ou "ATENDI" = Já respondi ao lead\n• "DEPOIS" = Vou responder depois`;
         
-        // Criar IDs únicos para os botões usando o ID da escalação
-        const buttonJaRespondi = `escalacao_respondida_${escalacao.id}`;
-        const buttonVouResponder = `escalacao_depois_${escalacao.id}`;
+        console.log(`[NOTIFY-ESCALATION] 📤 Sending TEXT to ${vendedor.nome}...`);
         
-        console.log(`[NOTIFY-ESCALATION] 📤 Z-API Button Request:`, {
-          url: zapiUrl.replace(zapiConfig.token!, '***TOKEN***'),
-          vendedor: vendedor.nome,
-          phone: vendedorPhone,
-          messageLength: fullMessage.length,
-          buttons: [buttonJaRespondi, buttonVouResponder]
-        });
-        
-        const response = await fetch(zapiUrl, {
+        const textResponse = await fetch(textUrl, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -296,61 +226,61 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             phone: vendedorPhone,
-            message: fullMessage,
-            buttonActions: [
-              {
-                id: buttonJaRespondi,
-                label: "✅ Já respondi"
-              },
-              {
-                id: buttonVouResponder,
-                label: "⏰ Vou responder depois"
-              }
-            ]
+            message: fullTextMessage
           })
         });
 
-        const responseText = await response.text();
-        console.log(`[NOTIFY-ESCALATION] 📥 Z-API Response:`, {
-          vendedor: vendedor.nome,
-          status: response.status,
-          ok: response.ok,
-          body: responseText.substring(0, 300)
+        const textResult = await textResponse.text();
+        console.log(`[NOTIFY-ESCALATION] 📥 Text response for ${vendedor.nome}:`, {
+          status: textResponse.status,
+          ok: textResponse.ok,
+          body: textResult.substring(0, 200)
         });
 
-        if (response.ok) {
-          console.log(`[NOTIFY-ESCALATION] ✅ Successfully sent buttons to ${vendedor.nome}`);
+        if (textResponse.ok) {
           notifiedCount++;
-        } else {
-          // Fallback para mensagem simples se botões não funcionarem
-          console.log(`[NOTIFY-ESCALATION] ⚠️ Buttons failed, trying simple text for ${vendedor.nome}`);
+          console.log(`[NOTIFY-ESCALATION] ✅ TEXT sent successfully to ${vendedor.nome}`);
           
-          const fallbackUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
-          const fallbackResponse = await fetch(fallbackUrl, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Client-Token': zapiClientToken
-            },
-            body: JSON.stringify({
-              phone: vendedorPhone,
-              message: fullMessage + `\n\n📌 *Responda:*\n• "ok" = Já respondi\n• "depois" = Vou responder depois`
-            })
-          });
-          
-          if (fallbackResponse.ok) {
-            console.log(`[NOTIFY-ESCALATION] ✅ Fallback text sent to ${vendedor.nome}`);
-            notifiedCount++;
-          } else {
-            console.error(`[NOTIFY-ESCALATION] ❌ Failed to send to ${vendedor.nome}: Status ${response.status}`, responseText);
+          // ✅ PASSO 2: TENTAR enviar BOTÕES como mensagem SEPARADA (pode falhar, tudo bem)
+          try {
+            const buttonJaRespondi = `escalacao_respondida_${escalacao.id}`;
+            const buttonVouResponder = `escalacao_depois_${escalacao.id}`;
+            
+            console.log(`[NOTIFY-ESCALATION] 🔘 Attempting BUTTONS for ${vendedor.nome}...`);
+            
+            const buttonResponse = await fetch(buttonUrl, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Client-Token': zapiClientToken
+              },
+              body: JSON.stringify({
+                phone: vendedorPhone,
+                message: "👆 Ou clique em um botão:",
+                buttonActions: [
+                  { id: buttonJaRespondi, label: "✅ Já respondi" },
+                  { id: buttonVouResponder, label: "⏰ Vou responder depois" }
+                ]
+              })
+            });
+
+            if (buttonResponse.ok) {
+              console.log(`[NOTIFY-ESCALATION] ✅ BUTTONS also sent to ${vendedor.nome} (bonus!)`);
+            } else {
+              console.log(`[NOTIFY-ESCALATION] ⚠️ Buttons failed for ${vendedor.nome}, but text was already sent`);
+            }
+          } catch (buttonError) {
+            console.log(`[NOTIFY-ESCALATION] ⚠️ Button attempt failed for ${vendedor.nome}, text was sent:`, buttonError);
           }
+        } else {
+          console.error(`[NOTIFY-ESCALATION] ❌ Failed to send text to ${vendedor.nome}:`, textResult);
         }
       } catch (error) {
         console.error(`[NOTIFY-ESCALATION] ❌ Error sending to ${vendedor.nome}:`, error);
       }
     }
 
-    // 6. Log da escalação
+    // 6. Log
     await supabase.from('agent_logs').insert({
       agent_key: 'sofia',
       conversation_id: conversationId,
@@ -360,7 +290,7 @@ serve(async (req) => {
         lead_phone: phoneNumber,
         lead_name: leadName,
         notified_sellers: notifiedCount,
-        with_buttons: true,
+        strategy: 'text_first_buttons_optional',
         sent_at: new Date().toISOString()
       }
     });
@@ -368,7 +298,7 @@ serve(async (req) => {
     console.log('[NOTIFY-ESCALATION] ✅ Complete:', {
       escalacaoId: escalacao.id,
       notified: notifiedCount,
-      withButtons: true
+      strategy: 'text_first_buttons_optional'
     });
 
     return new Response(JSON.stringify({ 

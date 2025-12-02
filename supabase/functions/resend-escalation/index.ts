@@ -71,27 +71,16 @@ serve(async (req) => {
     }
 
     // 3. Buscar config Z-API
-    const { data: agent, error: agentError } = await supabase
+    const { data: agent } = await supabase
       .from('agents')
       .select('zapi_config')
       .eq('key', 'sofia')
       .single();
 
-    if (agentError || !agent?.zapi_config) {
-      console.error('[RESEND-ESCALATION] ❌ Config Z-API não encontrada:', agentError);
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Configuração Z-API não encontrada' 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const zapiConfig = agent.zapi_config as { instance_id?: string; token?: string };
+    const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
     const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
-    if (!zapiConfig.instance_id || !zapiConfig.token || !zapiClientToken) {
+    if (!zapiConfig?.instance_id || !zapiConfig?.token || !zapiClientToken) {
       console.error('[RESEND-ESCALATION] ❌ Credenciais Z-API incompletas');
       return new Response(JSON.stringify({ 
         success: false, 
@@ -123,13 +112,8 @@ serve(async (req) => {
     message += `📱 *Telefone:* ${formatPhoneDisplay(escalacao.phone_number)}\n`;
     message += `📲 *WhatsApp:* https://wa.me/${cleanPhoneForLink}\n`;
     
-    if (escalacao.lead_segment) {
-      message += `🏢 *Segmento:* ${escalacao.lead_segment}\n`;
-    }
-    
-    if (escalacao.plans_interested && escalacao.plans_interested.length > 0) {
-      message += `📊 *Planos:* ${escalacao.plans_interested.join(', ')}\n`;
-    }
+    if (escalacao.lead_segment) message += `🏢 *Segmento:* ${escalacao.lead_segment}\n`;
+    if (escalacao.plans_interested?.length > 0) message += `📊 *Planos:* ${escalacao.plans_interested.join(', ')}\n`;
 
     message += `\n━━━━━━━━━━━━━━━━━━━━\n`;
     
@@ -143,11 +127,12 @@ serve(async (req) => {
 
     message += `\n━━━━━━━━━━━━━━━━━━━━`;
     message += `\n⚡ Cliente solicitou condição especial`;
-    message += `\n💼 *Clique no botão abaixo após responder!*`;
 
-    // 5. Enviar para cada vendedor COM BOTÕES
+    // 5. NOVA ESTRATÉGIA: TEXTO PRIMEIRO (garantido) + BOTÕES DEPOIS (opcional)
     let successCount = 0;
     const errors: string[] = [];
+    const textUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
+    const buttonUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-button-actions`;
     
     for (const vendedor of vendedores) {
       try {
@@ -155,20 +140,12 @@ serve(async (req) => {
           ? vendedor.telefone 
           : `55${vendedor.telefone}`;
 
-        const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-button-actions`;
-        const fullMessage = `Olá ${vendedor.nome}!\n\n${message}`;
+        // ✅ PASSO 1: SEMPRE enviar TEXTO PRIMEIRO (100% garantido funcionar)
+        const fullTextMessage = `Olá ${vendedor.nome}!\n\n${message}\n\n📌 *RESPONDA:*\n• "OK" ou "ATENDI" = Já respondi ao lead\n• "DEPOIS" = Vou responder depois`;
         
-        // Botões com ID da escalação
-        const buttonJaRespondi = `escalacao_respondida_${escalacao.id}`;
-        const buttonVouResponder = `escalacao_depois_${escalacao.id}`;
+        console.log(`[RESEND-ESCALATION] 📤 Sending TEXT to ${vendedor.nome}...`);
         
-        console.log(`[RESEND-ESCALATION] 📤 Enviando para ${vendedor.nome}:`, {
-          phone: vendedorPhone,
-          messageLength: fullMessage.length,
-          buttons: [buttonJaRespondi, buttonVouResponder]
-        });
-        
-        const response = await fetch(zapiUrl, {
+        const textResponse = await fetch(textUrl, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -176,55 +153,51 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             phone: vendedorPhone,
-            message: fullMessage,
-            buttonActions: [
-              {
-                id: buttonJaRespondi,
-                label: "✅ Já respondi"
-              },
-              {
-                id: buttonVouResponder,
-                label: "⏰ Vou responder depois"
-              }
-            ]
+            message: fullTextMessage
           })
         });
 
-        const responseText = await response.text();
-        console.log(`[RESEND-ESCALATION] 📥 Resposta Z-API para ${vendedor.nome}:`, {
-          status: response.status,
-          ok: response.ok,
-          body: responseText.substring(0, 200)
+        const textResult = await textResponse.text();
+        console.log(`[RESEND-ESCALATION] 📥 Text response for ${vendedor.nome}:`, {
+          status: textResponse.status,
+          ok: textResponse.ok
         });
 
-        if (response.ok) {
+        if (textResponse.ok) {
           successCount++;
-          console.log(`[RESEND-ESCALATION] ✅ Enviado com sucesso para ${vendedor.nome}`);
-        } else {
-          // Fallback para texto simples se botões falharem
-          console.log(`[RESEND-ESCALATION] ⚠️ Botões falharam, tentando texto simples...`);
+          console.log(`[RESEND-ESCALATION] ✅ TEXT sent to ${vendedor.nome}`);
           
-          const textUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
-          const fallbackMessage = fullMessage + `\n\n⚠️ Responda "OK" quando atender ou "DEPOIS" para lembrete.`;
-          
-          const textResponse = await fetch(textUrl, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Client-Token': zapiClientToken
-            },
-            body: JSON.stringify({
-              phone: vendedorPhone,
-              message: fallbackMessage
-            })
-          });
+          // ✅ PASSO 2: TENTAR botões como bônus
+          try {
+            const buttonJaRespondi = `escalacao_respondida_${escalacao.id}`;
+            const buttonVouResponder = `escalacao_depois_${escalacao.id}`;
+            
+            const buttonResponse = await fetch(buttonUrl, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Client-Token': zapiClientToken
+              },
+              body: JSON.stringify({
+                phone: vendedorPhone,
+                message: "👆 Ou clique em um botão:",
+                buttonActions: [
+                  { id: buttonJaRespondi, label: "✅ Já respondi" },
+                  { id: buttonVouResponder, label: "⏰ Vou responder depois" }
+                ]
+              })
+            });
 
-          if (textResponse.ok) {
-            successCount++;
-            console.log(`[RESEND-ESCALATION] ✅ Fallback texto enviado para ${vendedor.nome}`);
-          } else {
-            errors.push(`Falha ao enviar para ${vendedor.nome}`);
+            if (buttonResponse.ok) {
+              console.log(`[RESEND-ESCALATION] ✅ BUTTONS also sent to ${vendedor.nome}`);
+            } else {
+              console.log(`[RESEND-ESCALATION] ⚠️ Buttons failed for ${vendedor.nome}, text was sent`);
+            }
+          } catch (buttonError) {
+            console.log(`[RESEND-ESCALATION] ⚠️ Button attempt failed, text was sent`);
           }
+        } else {
+          errors.push(`Falha ao enviar para ${vendedor.nome}`);
         }
       } catch (err) {
         console.error(`[RESEND-ESCALATION] ❌ Erro ao enviar para ${vendedor.nome}:`, err);
@@ -235,7 +208,8 @@ serve(async (req) => {
     console.log('[RESEND-ESCALATION] ✅ Concluído:', {
       total: vendedores.length,
       successCount,
-      errors: errors.length
+      errors: errors.length,
+      strategy: 'text_first_buttons_optional'
     });
 
     return new Response(JSON.stringify({ 
