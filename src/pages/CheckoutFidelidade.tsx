@@ -12,6 +12,7 @@ import { useUserSession } from '@/hooks/useUserSession';
 import { useCheckout } from '@/hooks/useCheckout';
 import { supabase } from '@/integrations/supabase/client';
 import CheckoutLayout from '@/components/checkout/CheckoutLayout';
+import FidelitySuccessModal from '@/components/checkout/FidelitySuccessModal';
 import { formatCurrency } from '@/utils/priceUtils';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,23 @@ const CheckoutFidelidade = () => {
   const [diaVencimento, setDiaVencimento] = useState<'5' | '10' | '15'>('10');
   const [termoAceito, setTermoAceito] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Estado para modal de sucesso
+  const [successModal, setSuccessModal] = useState<{
+    isOpen: boolean;
+    pedidoId: string;
+    totalParcelas: number;
+    valorMensal: number;
+    proximoVencimento: string;
+    boletoUrl?: string | null;
+    boletoBarcode?: string | null;
+  }>({
+    isOpen: false,
+    pedidoId: '',
+    totalParcelas: 0,
+    valorMensal: 0,
+    proximoVencimento: ''
+  });
   
   // Recuperar método de pagamento do localStorage
   const paymentMethod = localStorage.getItem('checkout_payment_method') as 'pix_fidelidade' | 'boleto_fidelidade' || 'pix_fidelidade';
@@ -154,14 +172,17 @@ const CheckoutFidelidade = () => {
       localStorage.removeItem('checkout_coupon');
       localStorage.removeItem('checkout_payment_method');
       
-      toast.success('Plano de fidelidade criado! Pague a primeira parcela.');
+      // Mostrar modal de sucesso
+      setSuccessModal({
+        isOpen: true,
+        pedidoId: data.pedidoId,
+        totalParcelas: data.totalParcelas,
+        valorMensal: data.valorMensal,
+        proximoVencimento: data.proximoVencimento,
+        boletoUrl: data.boletoUrl,
+        boletoBarcode: data.boletoBarcode
+      });
       
-      // Redirecionar para página de faturas ou pagamento
-      if (data.primeiraParcelaPixUrl) {
-        window.location.href = data.primeiraParcelaPixUrl;
-      } else {
-        navigate(`/anunciante/faturas?pedido=${data.pedidoId}`);
-      }
     } catch (error: any) {
       console.error('❌ Erro no checkout fidelidade:', error);
       toast.error(error.message || 'Erro ao processar fidelidade');
@@ -413,6 +434,19 @@ const CheckoutFidelidade = () => {
           </button>
         </div>
       </motion.div>
+      
+      {/* Modal de Sucesso */}
+      <FidelitySuccessModal
+        isOpen={successModal.isOpen}
+        onClose={() => setSuccessModal(prev => ({ ...prev, isOpen: false }))}
+        pedidoId={successModal.pedidoId}
+        totalParcelas={successModal.totalParcelas}
+        valorMensal={successModal.valorMensal}
+        proximoVencimento={successModal.proximoVencimento}
+        boletoUrl={successModal.boletoUrl}
+        boletoBarcode={successModal.boletoBarcode}
+        onNavigateToInvoices={() => navigate(`/anunciante/faturas?pedido=${successModal.pedidoId}`)}
+      />
     </CheckoutLayout>
   );
 };

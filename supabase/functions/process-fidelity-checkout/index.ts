@@ -17,6 +17,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    const MERCADOPAGO_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
+
     // Verificar autenticação
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -182,6 +184,93 @@ serve(async (req) => {
       .eq('numero_parcela', 1)
       .single();
 
+    // GERAR BOLETO DA PRIMEIRA PARCELA (se for boleto_fidelidade)
+    let boletoData = null;
+    if (paymentMethod === 'boleto_fidelidade' && primeiraParcela && MERCADOPAGO_ACCESS_TOKEN) {
+      console.log('[FIDELITY-CHECKOUT] Gerando boleto da primeira parcela...');
+      
+      try {
+        // Buscar dados do usuário
+        const { data: userDataFromDb } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        const externalReference = `PARCELA_${primeiraParcela.id}_${Date.now()}`;
+        
+        const paymentData = {
+          transaction_amount: valorMensal,
+          description: `Parcela 1/${selectedPlan} - Plano Fidelidade EXA Painéis`,
+          payment_method_id: 'bolbradesco',
+          date_of_expiration: new Date(proximoVencimento.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(), // +3 dias
+          external_reference: externalReference,
+          payer: {
+            email: userDataFromDb?.email || user.email,
+            first_name: nomeEmpresa?.split(' ')[0] || 'Cliente',
+            last_name: nomeEmpresa?.split(' ').slice(1).join(' ') || 'EXA',
+            identification: {
+              type: 'CNPJ',
+              number: cnpj.replace(/\D/g, '')
+            },
+            address: {
+              zip_code: userDataFromDb?.cep || '01310100',
+              street_name: userDataFromDb?.endereco || 'Av. Paulista',
+              street_number: userDataFromDb?.numero || '1000',
+              neighborhood: userDataFromDb?.bairro || 'Bela Vista',
+              city: userDataFromDb?.cidade || 'São Paulo',
+              federal_unit: userDataFromDb?.estado || 'SP'
+            }
+          }
+        };
+
+        console.log('[FIDELITY-CHECKOUT] Enviando para Mercado Pago:', JSON.stringify(paymentData, null, 2));
+
+        const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${MERCADOPAGO_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+            'X-Idempotency-Key': externalReference
+          },
+          body: JSON.stringify(paymentData)
+        });
+
+        const mpData = await mpResponse.json();
+        console.log('[FIDELITY-CHECKOUT] Resposta MP:', JSON.stringify(mpData, null, 2));
+
+        if (mpResponse.ok) {
+          const boletoUrl = mpData.transaction_details?.external_resource_url;
+          const boletoBarcode = mpData.barcode?.content;
+
+          // Atualizar parcela com dados do boleto
+          await supabase
+            .from('parcelas')
+            .update({
+              mercadopago_payment_id: String(mpData.id),
+              mercadopago_external_reference: externalReference,
+              boleto_url: boletoUrl,
+              boleto_barcode: boletoBarcode,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', primeiraParcela.id);
+
+          boletoData = {
+            payment_id: mpData.id,
+            boleto_url: boletoUrl,
+            boleto_barcode: boletoBarcode,
+            status: mpData.status
+          };
+
+          console.log('[FIDELITY-CHECKOUT] Boleto gerado com sucesso:', boletoData);
+        } else {
+          console.error('[FIDELITY-CHECKOUT] Erro ao gerar boleto:', mpData);
+        }
+      } catch (boletoError) {
+        console.error('[FIDELITY-CHECKOUT] Erro ao gerar boleto (não crítico):', boletoError);
+      }
+    }
+
     console.log('[FIDELITY-CHECKOUT] Checkout concluído com sucesso');
 
     return new Response(JSON.stringify({
@@ -195,7 +284,11 @@ serve(async (req) => {
       valorMensal: valorMensal,
       valor_mensal: valorMensal,
       proximoVencimento: proximoVencimento.toISOString().split('T')[0],
-      proximo_vencimento: proximoVencimento.toISOString().split('T')[0]
+      proximo_vencimento: proximoVencimento.toISOString().split('T')[0],
+      // Dados do boleto (se gerado)
+      boletoUrl: boletoData?.boleto_url || null,
+      boletoBarcode: boletoData?.boleto_barcode || null,
+      boletoStatus: boletoData?.status || null
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
