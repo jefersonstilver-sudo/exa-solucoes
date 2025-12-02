@@ -21,6 +21,7 @@ import BenefitPurchaseInstructions from '@/pages/admin/BenefitPurchaseInstructio
 import BenefitManagement from '@/pages/admin/BenefitManagement';
 import FinancialReports from '@/pages/admin/FinancialReports';
 import EmailLogs from '@/pages/admin/EmailLogs';
+import AssinaturasPage from '@/pages/admin/AssinaturasPage';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 const AdminRoutes = () => {
@@ -32,6 +33,7 @@ const AdminRoutes = () => {
       <Route index element={<Dashboard />} />
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
+      <Route path="assinaturas" element={<AssinaturasPage />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />
       <Route path="beneficio-prestadores" element={<ProviderBenefits />} />
       <Route path="instrucoes-compra-vales" element={<BenefitPurchaseInstructions />} />

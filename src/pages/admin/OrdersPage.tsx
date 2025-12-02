@@ -28,6 +28,7 @@ const OrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [couponFilter, setCouponFilter] = useState('all');
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState('all');
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('current_month');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   
@@ -49,7 +50,7 @@ const OrdersPage = () => {
     return filterByPeriod(ordersAndAttempts, periodFilter);
   }, [ordersAndAttempts, periodFilter]);
 
-  // Aplicar filtros de busca, status, tipo e cupom
+  // Aplicar filtros de busca, status, tipo, cupom e tipo de pagamento
   const filteredItems = useMemo(() => {
     return periodFilteredItems.filter(item => {
       const matchesSearch = 
@@ -68,9 +69,14 @@ const OrdersPage = () => {
         (couponFilter === 'with' && (item.cupom_id || item.coupon_code)) ||
         (couponFilter === 'without' && !item.cupom_id && !item.coupon_code);
       
-      return matchesSearch && matchesStatus && matchesType && matchesCoupon;
+      const matchesPaymentType = paymentTypeFilter === 'all' ||
+        (paymentTypeFilter === 'fidelidade' && item.is_fidelidade) ||
+        (paymentTypeFilter === 'avista' && !item.is_fidelidade && item.tipo_pagamento === 'pix_avista') ||
+        (paymentTypeFilter === 'cartao' && item.tipo_pagamento === 'cartao');
+      
+      return matchesSearch && matchesStatus && matchesType && matchesCoupon && matchesPaymentType;
     });
-  }, [periodFilteredItems, searchTerm, statusFilter, typeFilter, couponFilter]);
+  }, [periodFilteredItems, searchTerm, statusFilter, typeFilter, couponFilter, paymentTypeFilter]);
 
   // Recalcular stats baseado nos itens filtrados
   const filteredStats = useMemo(() => {
@@ -118,8 +124,9 @@ const OrdersPage = () => {
     if (statusFilter !== 'all') count++;
     if (typeFilter !== 'all') count++;
     if (couponFilter !== 'all') count++;
+    if (paymentTypeFilter !== 'all') count++;
     return count;
-  }, [searchTerm, statusFilter, typeFilter, couponFilter]);
+  }, [searchTerm, statusFilter, typeFilter, couponFilter, paymentTypeFilter]);
 
   // Chips de filtros
   const filterChips = useMemo(() => {
@@ -144,8 +151,16 @@ const OrdersPage = () => {
     if (couponFilter !== 'all') {
       chips.push({ key: 'coupon', label: couponFilter === 'with' ? 'Com Cupom' : 'Sem Cupom', value: couponFilter });
     }
+    if (paymentTypeFilter !== 'all') {
+      const paymentLabels: Record<string, string> = {
+        fidelidade: 'Fidelidade',
+        avista: 'PIX à Vista',
+        cartao: 'Cartão'
+      };
+      chips.push({ key: 'payment', label: paymentLabels[paymentTypeFilter] || paymentTypeFilter, value: paymentTypeFilter });
+    }
     return chips;
-  }, [searchTerm, statusFilter, typeFilter, couponFilter]);
+  }, [searchTerm, statusFilter, typeFilter, couponFilter, paymentTypeFilter]);
 
   const handleRemoveFilter = (key: string) => {
     switch (key) {
@@ -153,6 +168,7 @@ const OrdersPage = () => {
       case 'status': setStatusFilter('all'); break;
       case 'type': setTypeFilter('all'); break;
       case 'coupon': setCouponFilter('all'); break;
+      case 'payment': setPaymentTypeFilter('all'); break;
     }
   };
 
@@ -161,6 +177,7 @@ const OrdersPage = () => {
     setStatusFilter('all');
     setTypeFilter('all');
     setCouponFilter('all');
+    setPaymentTypeFilter('all');
   };
 
   const handleViewOrderDetails = (orderId: string) => {
@@ -274,12 +291,14 @@ const OrdersPage = () => {
             status: statusFilter,
             type: typeFilter,
             coupon: couponFilter,
+            payment: paymentTypeFilter,
           }}
           onFiltersChange={(newFilters) => {
             setSearchTerm(newFilters.search || '');
             setStatusFilter(newFilters.status || 'all');
             setTypeFilter(newFilters.type || 'all');
             setCouponFilter(newFilters.coupon || 'all');
+            setPaymentTypeFilter(newFilters.payment || 'all');
           }}
           categories={[
             {
@@ -311,6 +330,16 @@ const OrdersPage = () => {
                 { value: 'all', label: 'Todos', count: periodFilteredItems.length },
                 { value: 'with', label: 'Com Cupom', count: countByCoupon(true) },
                 { value: 'without', label: 'Sem Cupom', count: countByCoupon(false) },
+              ],
+            },
+            {
+              id: 'payment',
+              title: '💳 Pagamento',
+              options: [
+                { value: 'all', label: 'Todos', count: periodFilteredItems.length },
+                { value: 'fidelidade', label: 'Fidelidade', count: periodFilteredItems.filter(i => i.is_fidelidade).length },
+                { value: 'avista', label: 'PIX à Vista', count: periodFilteredItems.filter(i => !i.is_fidelidade && i.tipo_pagamento === 'pix_avista').length },
+                { value: 'cartao', label: 'Cartão', count: periodFilteredItems.filter(i => i.tipo_pagamento === 'cartao').length },
               ],
             },
           ]}
@@ -354,6 +383,8 @@ const OrdersPage = () => {
             setStatusFilter={setStatusFilter}
             typeFilter={typeFilter}
             setTypeFilter={setTypeFilter}
+            paymentTypeFilter={paymentTypeFilter}
+            setPaymentTypeFilter={setPaymentTypeFilter}
           />
         </div>
 

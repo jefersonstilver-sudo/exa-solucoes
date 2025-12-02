@@ -26,6 +26,7 @@ import CRMClients from '@/pages/admin/CRMClients';
 import SecurityDashboard from '@/pages/admin/SecurityDashboard';
 import FinancialReports from '@/pages/admin/FinancialReports';
 import ZApiDiagnostics from '@/pages/admin/ZApiDiagnostics';
+import AssinaturasPage from '@/pages/admin/AssinaturasPage';
 
 const SuperAdminRoutes = () => {
   return (
@@ -34,6 +35,7 @@ const SuperAdminRoutes = () => {
       <Route index element={<Dashboard />} />
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
+      <Route path="assinaturas" element={<AssinaturasPage />} />
       <Route path="crm" element={<CRMClients />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />
       <Route path="beneficio-prestadores" element={<ProviderBenefits />} />

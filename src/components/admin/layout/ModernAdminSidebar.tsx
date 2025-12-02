@@ -25,7 +25,8 @@ import {
   Tv,
   Clapperboard,
   Brain,
-  MessageSquare
+  MessageSquare,
+  CreditCard
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -100,6 +101,12 @@ export function ModernAdminSidebar() {
           title: 'Pedidos',
           href: buildPath('pedidos'),
           icon: ShoppingBag,
+          permission: 'canViewOrders'
+        },
+        {
+          title: 'Assinaturas',
+          href: buildPath('assinaturas'),
+          icon: CreditCard,
           permission: 'canViewOrders'
         },
         {

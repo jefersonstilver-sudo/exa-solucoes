@@ -60,7 +60,9 @@ export const useOrdersWithAttemptsRefactored = () => {
         client_email: pedido.client_email,
         client_name: pedido.client_name,
         video_status: pedido.video_status,
-        cupom_id: pedido.cupom_id
+        cupom_id: pedido.cupom_id,
+        tipo_pagamento: pedido.tipo_pagamento,
+        is_fidelidade: pedido.is_fidelidade
       }));
       
       const tentativasFormatadas = formatAttemptsData(tentativasComEmails);
