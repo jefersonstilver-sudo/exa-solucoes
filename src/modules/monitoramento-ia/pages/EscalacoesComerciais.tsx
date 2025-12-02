@@ -1036,6 +1036,7 @@ export default function EscalacoesComerciais() {
                 >
                   <Checkbox 
                     checked={selectedVendedores.includes(vendedor.id)}
+                    onClick={(e) => e.stopPropagation()}
                     onCheckedChange={() => toggleVendedorSelection(vendedor.id)}
                   />
                   <div className="flex-1">
