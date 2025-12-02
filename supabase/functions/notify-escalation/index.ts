@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { 
+    let { 
       conversationId, 
       phoneNumber, 
       leadName,
@@ -33,22 +33,90 @@ serve(async (req) => {
       conversationId,
       phoneNumber,
       leadName,
+      leadSegment,
+      firstMessage: firstMessage?.substring(0, 50),
       timestamp: new Date().toISOString()
     });
 
-    // 1. Salvar escalação no banco
+    // ========== ENRIQUECIMENTO DE DADOS ==========
+    // Se não recebeu dados enriquecidos, buscar do banco usando conversationId
+    if (conversationId && (!leadName || !firstMessage)) {
+      console.log('[NOTIFY-ESCALATION] 🔍 Enriching data from database...');
+      
+      // Buscar dados da conversa
+      const { data: conversationData, error: convError } = await supabase
+        .from('conversations')
+        .select('contact_name, contact_type')
+        .eq('id', conversationId)
+        .single();
+      
+      if (conversationData && !convError) {
+        if (!leadName && conversationData.contact_name) {
+          leadName = conversationData.contact_name;
+          console.log('[NOTIFY-ESCALATION] ✅ Enriched leadName:', leadName);
+        }
+        if (!leadSegment && conversationData.contact_type) {
+          leadSegment = conversationData.contact_type;
+          console.log('[NOTIFY-ESCALATION] ✅ Enriched leadSegment:', leadSegment);
+        }
+      } else {
+        console.log('[NOTIFY-ESCALATION] ⚠️ Could not fetch conversation data:', convError?.message);
+      }
+      
+      // Buscar mensagens da conversa
+      const { data: messagesData, error: msgError } = await supabase
+        .from('messages')
+        .select('body, direction, created_at')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+        .limit(30);
+      
+      if (messagesData && messagesData.length > 0 && !msgError) {
+        // Primeira mensagem do cliente (inbound)
+        if (!firstMessage) {
+          const firstInbound = messagesData.find((m: any) => m.direction === 'inbound');
+          if (firstInbound) {
+            firstMessage = firstInbound.body;
+            console.log('[NOTIFY-ESCALATION] ✅ Enriched firstMessage:', firstMessage?.substring(0, 50));
+          }
+        }
+        
+        // Resumo da conversa (últimas 15 mensagens)
+        if (!conversationSummary) {
+          const recentMessages = messagesData.slice(-15);
+          conversationSummary = recentMessages.map((m: any) => {
+            const role = m.direction === 'inbound' ? '👤 Cliente' : '🤖 Sofia';
+            const text = m.body?.substring(0, 120) || '[mídia]';
+            return `${role}: ${text}`;
+          }).join('\n');
+          console.log('[NOTIFY-ESCALATION] ✅ Enriched conversationSummary with', recentMessages.length, 'messages');
+        }
+      } else {
+        console.log('[NOTIFY-ESCALATION] ⚠️ Could not fetch messages:', msgError?.message);
+      }
+    }
+
+    console.log('[NOTIFY-ESCALATION] 📦 Final enriched data:', {
+      hasLeadName: !!leadName,
+      hasLeadSegment: !!leadSegment,
+      hasFirstMessage: !!firstMessage,
+      hasSummary: !!conversationSummary,
+      summaryLength: conversationSummary?.length
+    });
+
+    // 1. Salvar escalação no banco com dados enriquecidos
     const { data: escalacao, error: insertError } = await supabase
       .from('escalacoes_comerciais')
       .insert({
         conversation_id: conversationId,
         phone_number: phoneNumber,
-        lead_name: leadName,
-        lead_segment: leadSegment,
-        lead_interest: leadInterest,
-        plans_interested: plansInterested,
-        first_message: firstMessage,
-        conversation_summary: conversationSummary,
-        ai_analysis: aiAnalysis,
+        lead_name: leadName || null,
+        lead_segment: leadSegment || null,
+        lead_interest: leadInterest || null,
+        plans_interested: plansInterested || null,
+        first_message: firstMessage || null,
+        conversation_summary: conversationSummary || null,
+        ai_analysis: aiAnalysis || null,
         status: 'pendente',
         assigned_to: 'eduardo'
       })
