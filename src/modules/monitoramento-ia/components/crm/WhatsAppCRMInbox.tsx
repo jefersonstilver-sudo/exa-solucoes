@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Users, Check, CheckCheck, Clock, TrendingUp, AlertCircle, Search } from 'lucide-react';
+import { Users, Check, CheckCheck, Clock, TrendingUp, AlertCircle, Search, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatContactName, formatContactNameWithBuilding, buildConversationTitle, suggestContactType } from '@/modules/monitoramento-ia/utils/contactFormatters';
 
@@ -231,6 +232,25 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isSel
                 <div className="bg-whatsapp-green-light text-white rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 text-xs font-semibold">
                   {conversation.unread_count || 1}
                 </div>
+              )}
+              
+              {/* Indicador de problema de sincronização */}
+              {(conversation.audit_sync_issue || (conversation.audit_outbound_count === 0 && conversation.audit_inbound_count > 3)) && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="bg-amber-500/20 rounded-full p-1">
+                        <AlertTriangle className="w-3 h-3 text-amber-500" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-[200px]">
+                      <p className="text-xs">
+                        ⚠️ Possível problema de sincronização: {conversation.audit_inbound_count || 0} msgs recebidas, 
+                        {conversation.audit_outbound_count || 0} enviadas
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               
               {conversation.is_critical && (
