@@ -72,24 +72,31 @@ serve(async (req) => {
         .limit(30);
       
       if (messagesData && messagesData.length > 0 && !msgError) {
-        // Primeira mensagem do cliente (inbound)
+        // Primeira mensagem do cliente (inbound) COM DATA/HORA
         if (!firstMessage) {
           const firstInbound = messagesData.find((m: any) => m.direction === 'inbound');
           if (firstInbound) {
-            firstMessage = firstInbound.body;
-            console.log('[NOTIFY-ESCALATION] ✅ Enriched firstMessage:', firstMessage?.substring(0, 50));
+            const date = new Date(firstInbound.created_at);
+            const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            firstMessage = `[${dateStr} às ${timeStr}]\n${firstInbound.body}`;
+            console.log('[NOTIFY-ESCALATION] ✅ Enriched firstMessage with timestamp:', firstMessage?.substring(0, 50));
           }
         }
         
-        // Resumo da conversa (últimas 15 mensagens)
+        // Resumo da conversa (últimas 15 mensagens) COM TIMESTAMPS
         if (!conversationSummary) {
           const recentMessages = messagesData.slice(-15);
           conversationSummary = recentMessages.map((m: any) => {
             const role = m.direction === 'inbound' ? '👤 Cliente' : '🤖 Sofia';
             const text = m.body?.substring(0, 120) || '[mídia]';
-            return `${role}: ${text}`;
+            // Adicionar data/hora
+            const date = new Date(m.created_at);
+            const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            return `[${dateStr} ${timeStr}] ${role}: ${text}`;
           }).join('\n');
-          console.log('[NOTIFY-ESCALATION] ✅ Enriched conversationSummary with', recentMessages.length, 'messages');
+          console.log('[NOTIFY-ESCALATION] ✅ Enriched conversationSummary with', recentMessages.length, 'messages (with timestamps)');
         }
       } else {
         console.log('[NOTIFY-ESCALATION] ⚠️ Could not fetch messages:', msgError?.message);

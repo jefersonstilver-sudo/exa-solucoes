@@ -602,10 +602,28 @@ export default function EscalacoesComerciais() {
 
                   {selectedEscalacao.conversation_summary && (
                     <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Resumo da Conversa</p>
-                      <p className="text-sm bg-background/50 p-3 rounded-lg border border-border/50 whitespace-pre-wrap">
-                        {selectedEscalacao.conversation_summary}
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
+                        📋 Últimas 15 Mensagens
                       </p>
+                      <div className="bg-background/50 rounded-lg border border-border/50 p-3 max-h-[400px] overflow-y-auto">
+                        <div className="space-y-2">
+                          {selectedEscalacao.conversation_summary.split('\n').map((line, idx) => {
+                            const isCliente = line.includes('👤 Cliente');
+                            return (
+                              <div 
+                                key={idx} 
+                                className={`p-2 rounded text-sm font-mono ${
+                                  isCliente 
+                                    ? 'bg-white/5 border-l-2 border-blue-400' 
+                                    : 'bg-primary/10 border-l-2 border-green-400'
+                                }`}
+                              >
+                                {line}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   )}
 
