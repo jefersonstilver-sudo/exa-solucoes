@@ -1,5 +1,6 @@
 
-import { Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/admin/Dashboard';
 import BuildingsManagement from '@/pages/admin/BuildingsManagement';
 import OrdersPage from '@/pages/admin/OrdersPage';
@@ -16,7 +17,6 @@ import VideoManagement from '@/pages/admin/VideoManagement';
 import VideosSitePage from '@/pages/admin/VideosSitePage';
 import VideoEditorAccessControl from '@/pages/video-editor/VideoEditorAccessControl';
 import LeadsExa from '@/pages/admin/LeadsExa';
-import PaineisExa from '@/pages/admin/PaineisExa';
 import LogosPage from '@/pages/admin/LogosPage';
 import ProviderBenefits from '@/pages/admin/ProviderBenefits';
 import BenefitPurchaseInstructions from '@/pages/admin/BenefitPurchaseInstructions';
@@ -26,45 +26,100 @@ import SecurityDashboard from '@/pages/admin/SecurityDashboard';
 import FinancialReports from '@/pages/admin/FinancialReports';
 import ZApiDiagnostics from '@/pages/admin/ZApiDiagnostics';
 import AssinaturasPage from '@/pages/admin/AssinaturasPage';
+import EmailLogs from '@/pages/admin/EmailLogs';
+import LogosAdmin from '@/components/admin/LogosAdmin';
+import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
+
+// Lazy imports para páginas do monitoramento-ia (integradas)
+const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
+const EscalacoesComerciais = lazy(() => import('@/modules/monitoramento-ia/pages/EscalacoesComerciais'));
+const Agentes = lazy(() => import('@/modules/monitoramento-ia/pages/Agentes').then(m => ({ default: m.Agentes })));
+const AlertasPage = lazy(() => import('@/modules/monitoramento-ia/pages/Alertas').then(m => ({ default: m.AlertasPage })));
+const PaineisPage = lazy(() => import('@/modules/monitoramento-ia/pages/Paineis').then(m => ({ default: m.PaineisPage })));
+const AgentKnowledge = lazy(() => import('@/modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge })));
 
 const SuperAdminRoutes = () => {
   return (
     <Routes>
-      {/* GESTÃO PRINCIPAL */}
+      {/* ============ GESTÃO PRINCIPAL ============ */}
       <Route index element={<Dashboard />} />
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
       <Route path="assinaturas" element={<AssinaturasPage />} />
-      <Route path="crm" element={<CRMClients />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />
+      <Route path="cupons" element={<CouponsPage />} />
       <Route path="beneficio-prestadores" element={<ProviderBenefits />} />
       <Route path="instrucoes-compra-vales" element={<BenefitPurchaseInstructions />} />
       <Route path="gerenciar-beneficios" element={<BenefitManagement />} />
       <Route path="relatorios-financeiros" element={<FinancialReports />} />
       
-      {/* ATIVOS */}
-      <Route path="predios" element={<BuildingsManagement />} />
-      <Route path="paineis-exa" element={<PaineisExa />} />
+      {/* ============ CRM ============ */}
+      <Route path="crm" element={<CRMClients />} />
+      <Route path="crm-chat" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando CRM Chat..." />}>
+          <CRMUnificado />
+        </Suspense>
+      } />
+      <Route path="escalacoes" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Escalações..." />}>
+          <EscalacoesComerciais />
+        </Suspense>
+      } />
       
-      {/* LEADS & CLIENTES */}
+      {/* ============ INTELIGÊNCIA ============ */}
+      <Route path="agentes-sofia" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Agentes..." />}>
+          <Agentes />
+        </Suspense>
+      } />
+      <Route path="agentes-sofia/:id/base-conhecimento" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Base de Conhecimento..." />}>
+          <AgentKnowledge />
+        </Suspense>
+      } />
+      <Route path="exa-alerts" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando EXA Alerts..." />}>
+          <AlertasPage />
+        </Suspense>
+      } />
+      
+      {/* ============ ATIVOS ============ */}
+      <Route path="predios" element={<BuildingsManagement />} />
+      <Route path="paineis-exa" element={
+        <Suspense fallback={<GlobalLoadingPage message="Carregando Painéis EXA..." />}>
+          <PaineisPage />
+        </Suspense>
+      } />
+      
+      {/* ============ LEADS & CLIENTES ============ */}
       <Route path="sindicos-interessados" element={<SindicosInteressados />} />
       <Route path="leads-exa" element={<LeadsExa />} />
       
-      {/* SISTEMA */}
-      <Route path="usuarios" element={<UsersPage />} />
-      <Route path="cupons" element={<CouponsPage />} />
+      {/* ============ CONTEÚDO ============ */}
+      <Route path="videos" element={<VideoManagement />} />
+      <Route path="videos-site" element={<VideosSitePage />} />
+      <Route path="ticker" element={<LogosAdmin />} />
+      <Route path="logos" element={<LogosPage />} />
+      <Route path="editor-video-controle" element={<VideoEditorAccessControl />} />
       <Route path="homepage-config" element={<HomepageImagesPage />} />
+      <Route path="comunicacoes" element={<ComunicacoesPage />} />
+      <Route path="email-logs" element={<EmailLogs />} />
+      
+      {/* ============ SISTEMA ============ */}
+      <Route path="usuarios" element={<UsersPage />} />
+      <Route path="notificacoes" element={<NotificationsPage />} />
       <Route path="configuracoes" element={<ConfiguracoesPage />} />
       <Route path="seguranca" element={<SecurityDashboard />} />
       <Route path="zapi-diagnostico" element={<ZApiDiagnostics />} />
       
-      {/* CONTEÚDO */}
-      <Route path="videos" element={<VideoManagement />} />
-      <Route path="videos-site" element={<VideosSitePage />} />
-      <Route path="editor-video-controle" element={<VideoEditorAccessControl />} />
-      <Route path="logos" element={<LogosPage />} />
-      <Route path="notificacoes" element={<NotificationsPage />} />
-      <Route path="comunicacoes" element={<ComunicacoesPage />} />
+      {/* ============ REDIRECTS (rotas antigas) ============ */}
+      <Route path="monitoramento-ia" element={<Navigate to="/super_admin/paineis-exa" replace />} />
+      <Route path="monitoramento-ia/dashboard" element={<Navigate to="/super_admin" replace />} />
+      <Route path="monitoramento-ia/paineis" element={<Navigate to="/super_admin/paineis-exa" replace />} />
+      <Route path="monitoramento-ia/crm" element={<Navigate to="/super_admin/crm-chat" replace />} />
+      <Route path="monitoramento-ia/agentes" element={<Navigate to="/super_admin/agentes-sofia" replace />} />
+      <Route path="monitoramento-ia/alertas" element={<Navigate to="/super_admin/exa-alerts" replace />} />
+      <Route path="monitoramento-ia/escalacoes" element={<Navigate to="/super_admin/escalacoes" replace />} />
     </Routes>
   );
 };
