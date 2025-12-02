@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Dados da empresa EXA
+const EXA_COMPANY_DATA = {
+  razao_social: 'EXA Soluções Digitais LTDA',
+  cnpj: '62.878.193/0001-35',
+  endereco: 'Avenida Paraná, 974 - Sala 301',
+  bairro: 'Centro',
+  cidade: 'Foz do Iguaçu',
+  estado: 'PR',
+  cep: '85852-000',
+  telefone: '(45) 9 9141-5856',
+  whatsapp: '+5545991415856',
+  site: 'www.examidia.com.br',
+  email_contato: 'contato@examidia.com.br',
+  email_financeiro: 'financeiro@examidia.com.br'
+};
+
 interface BoletoRequest {
   parcela_id: string;
   valor: number;
@@ -75,14 +91,32 @@ serve(async (req) => {
       payment_method_id: 'bolbradesco',
       date_of_expiration: new Date(body.vencimento + 'T23:59:59-03:00').toISOString(),
       external_reference: externalReference,
+      statement_descriptor: 'EXA PAINEIS',
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
       payer: {
         email: body.payer.email,
         first_name: body.payer.first_name,
         last_name: body.payer.last_name,
         identification: body.payer.identification,
         address: body.payer.address
+      },
+      additional_info: {
+        items: [{
+          id: body.parcela_id,
+          title: body.descricao || `Parcela - EXA Painéis`,
+          description: `Serviço de publicidade em painéis digitais - ${EXA_COMPANY_DATA.razao_social}`,
+          category_id: 'services',
+          quantity: 1,
+          unit_price: body.valor
+        }],
+        payer: {
+          first_name: body.payer.first_name,
+          last_name: body.payer.last_name
+        }
       }
     };
+
+    console.log('[GENERATE-BOLETO] Dados da empresa EXA:', EXA_COMPANY_DATA);
 
     console.log('[GENERATE-BOLETO] Enviando para MP:', JSON.stringify(paymentData, null, 2));
 
