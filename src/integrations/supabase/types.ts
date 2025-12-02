@@ -3277,6 +3277,93 @@ export type Database = {
         }
         Relationships: []
       }
+      escalacao_vendedores: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          id: string
+          nome: string
+          recebe_escalacoes: boolean | null
+          telefone: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          recebe_escalacoes?: boolean | null
+          telefone: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          recebe_escalacoes?: boolean | null
+          telefone?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      escalacoes_comerciais: {
+        Row: {
+          ai_analysis: string | null
+          assigned_to: string | null
+          attended_at: string | null
+          conversation_id: string | null
+          conversation_summary: string | null
+          created_at: string | null
+          first_message: string | null
+          id: string
+          lead_interest: string | null
+          lead_name: string | null
+          lead_segment: string | null
+          notes: string | null
+          phone_number: string
+          plans_interested: string[] | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          assigned_to?: string | null
+          attended_at?: string | null
+          conversation_id?: string | null
+          conversation_summary?: string | null
+          created_at?: string | null
+          first_message?: string | null
+          id?: string
+          lead_interest?: string | null
+          lead_name?: string | null
+          lead_segment?: string | null
+          notes?: string | null
+          phone_number: string
+          plans_interested?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          assigned_to?: string | null
+          attended_at?: string | null
+          conversation_id?: string | null
+          conversation_summary?: string | null
+          created_at?: string | null
+          first_message?: string | null
+          id?: string
+          lead_interest?: string | null
+          lead_name?: string | null
+          lead_segment?: string | null
+          notes?: string | null
+          phone_number?: string
+          plans_interested?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       events_log: {
         Row: {
           computer_id: string

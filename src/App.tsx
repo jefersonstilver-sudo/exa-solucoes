@@ -496,6 +496,13 @@ const AppContent = () => {
             
             {/* Relatórios IA */}
             <Route path="relatorios-ia" element={<AIReportsPage />} />
+            
+            {/* Escalações Comerciais */}
+            <Route path="escalacoes" element={
+              <Suspense fallback={<GlobalLoadingPage message="Carregando escalações..." />}>
+                {React.createElement(lazy(() => import('./modules/monitoramento-ia/pages/EscalacoesComerciais')))}
+              </Suspense>
+            } />
           </Route>
 
           {/* Rotas administrativas */}

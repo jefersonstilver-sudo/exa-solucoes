@@ -1429,6 +1429,82 @@ Qual te interessou? 😊`;
       });
     }
 
+    // ====== DETECÇÃO DE ESCALAÇÃO COMERCIAL (EDUARDO) ======
+    // Detectar quando cliente pede condições especiais, grupo de empresas, mais desconto
+    const escalationKeywords = /grupo.*empresa|mais.*desconto|desconto.*especial|condição.*especial|condição.*diferenciada|várias.*empresas|muitos.*prédios|grande.*quantidade|negociação|negociar.*preço|falar.*vendedor|falar.*comercial|preciso.*melhor.*preço|desconto.*maior/i;
+    
+    if (message.match(escalationKeywords)) {
+      console.log('[AI-RESPONSE] 🚀 ESCALATION DETECTED - Notifying Eduardo');
+      
+      // Buscar resumo do histórico
+      const conversationSummary = conversationHistory?.slice(-5).map((m: any) => 
+        `${m.direction === 'inbound' ? 'Cliente' : 'Sofia'}: ${m.body?.substring(0, 100)}`
+      ).join('\n') || '';
+      
+      // Primeira mensagem do lead
+      const firstLeadMessage = conversationHistory?.find((m: any) => m.direction === 'inbound')?.body || message;
+      
+      // Detectar possível segmento/interesse
+      let leadSegment = null;
+      let leadInterest = null;
+      const plansInterested: string[] = [];
+      
+      const fullHistory = conversationHistory?.map((m: any) => m.body).join(' ') || message;
+      
+      if (fullHistory.match(/restaurante|lanchonete|bar|café/i)) leadSegment = 'Alimentação';
+      if (fullHistory.match(/academia|fitness|crossfit/i)) leadSegment = 'Fitness';
+      if (fullHistory.match(/imobiliár|corretor|apartamento/i)) leadSegment = 'Imobiliário';
+      if (fullHistory.match(/clínica|médico|consultório|saúde/i)) leadSegment = 'Saúde';
+      if (fullHistory.match(/escola|curso|educação|faculdade/i)) leadSegment = 'Educação';
+      if (fullHistory.match(/loja|comércio|varejo/i)) leadSegment = 'Varejo';
+      
+      if (fullHistory.match(/anunciar|divulgar|propaganda|publicidade/i)) leadInterest = 'Anunciar';
+      if (fullHistory.match(/síndico|condomínio|prédio/i)) leadInterest = 'Síndico';
+      
+      if (fullHistory.match(/mensal|1\s*mês/i)) plansInterested.push('Mensal');
+      if (fullHistory.match(/trimestral|3\s*meses/i)) plansInterested.push('Trimestral');
+      if (fullHistory.match(/semestral|6\s*meses/i)) plansInterested.push('Semestral');
+      if (fullHistory.match(/anual|12\s*meses/i)) plansInterested.push('Anual');
+      
+      // Análise da Sofia
+      const aiAnalysis = `Cliente pediu: "${message.substring(0, 150)}"\nSofia identificou interesse em condições especiais/negociação que requer intervenção humana.`;
+      
+      try {
+        // Chamar notify-escalation
+        const escalationResult = await supabase.functions.invoke('notify-escalation', {
+          body: {
+            conversationId,
+            phoneNumber,
+            leadName: customerName,
+            leadSegment,
+            leadInterest,
+            plansInterested,
+            firstMessage: firstLeadMessage,
+            conversationSummary,
+            aiAnalysis
+          }
+        });
+        
+        console.log('[AI-RESPONSE] ✅ Escalation sent:', escalationResult.data);
+        
+        // Log
+        await supabase.from('agent_logs').insert({
+          agent_key: agentKey,
+          conversation_id: conversationId,
+          event_type: 'escalation_triggered',
+          metadata: {
+            phone: phoneNumber,
+            trigger_message: message,
+            escalation_id: escalationResult.data?.escalacaoId,
+            notified_count: escalationResult.data?.notified,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (escalationError) {
+        console.error('[AI-RESPONSE] ❌ Escalation error:', escalationError);
+      }
+    }
+
     console.log('[AI-RESPONSE] ✅ AI reply generated:', sanitizedReply.substring(0, 80) + '...');
 
     // ====== LOG RESPOSTA EM AGENT_LOGS (COM PERFORMANCE) ======

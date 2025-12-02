@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   Sun,
   Moon,
+  Briefcase,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUnreadCount } from '../hooks/useUnreadCount';
@@ -76,6 +77,14 @@ const menuItems: MenuItem[] = [
     title: 'Alertas',
     icon: Bell,
     path: '/admin/monitoramento-ia/alertas',
+  },
+  { divider: true },
+  { sectionTitle: 'COMERCIAL' },
+  {
+    title: 'Escalações Eduardo',
+    icon: Briefcase,
+    path: '/admin/monitoramento-ia/escalacoes',
+    badge: 'NOVO'
   },
 ];
 
