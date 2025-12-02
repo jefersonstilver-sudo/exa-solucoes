@@ -25,6 +25,8 @@ export interface OrderOrAttempt {
   cupom_id?: string;
   coupon_code?: string;
   coupon_category?: string;
+  tipo_pagamento?: string;
+  is_fidelidade?: boolean;
 }
 
 export interface OrdersStats {

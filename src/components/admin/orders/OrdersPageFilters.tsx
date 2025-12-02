@@ -20,6 +20,8 @@ interface OrdersPageFiltersProps {
   setStatusFilter: (status: string) => void;
   typeFilter: string;
   setTypeFilter: (type: string) => void;
+  paymentTypeFilter?: string;
+  setPaymentTypeFilter?: (type: string) => void;
 }
 
 const OrdersPageFilters: React.FC<OrdersPageFiltersProps> = ({
@@ -28,12 +30,14 @@ const OrdersPageFilters: React.FC<OrdersPageFiltersProps> = ({
   statusFilter,
   setStatusFilter,
   typeFilter,
-  setTypeFilter
+  setTypeFilter,
+  paymentTypeFilter = 'all',
+  setPaymentTypeFilter
 }) => {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 flex-wrap">
       {/* Search Input */}
-      <div className="flex-1 relative">
+      <div className="flex-1 min-w-[200px] relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar por ID, nome ou email..."
@@ -100,6 +104,48 @@ const OrdersPageFilters: React.FC<OrdersPageFiltersProps> = ({
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Payment Type Filter */}
+      {setPaymentTypeFilter && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline"
+              size="sm"
+              className="h-10 border-border/50 hover:border-[#9C1E1E]/50 hover:bg-[#9C1E1E]/5 transition-all"
+            >
+              <Filter className="h-3.5 w-3.5 mr-2" />
+              {paymentTypeFilter === 'all' ? 'Pagamento' : 
+               paymentTypeFilter === 'fidelidade' ? 'Fidelidade' :
+               paymentTypeFilter === 'avista' ? 'À Vista' : 'Cartão'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-background/95 backdrop-blur-md border-border/50">
+            <DropdownMenuRadioGroup value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
+              <DropdownMenuRadioItem value="all" className="cursor-pointer">Todos</DropdownMenuRadioItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuRadioItem value="fidelidade" className="cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-purple-500" />
+                  <span>Fidelidade</span>
+                </div>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="avista" className="cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span>PIX à Vista</span>
+                </div>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="cartao" className="cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span>Cartão</span>
+                </div>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 };
