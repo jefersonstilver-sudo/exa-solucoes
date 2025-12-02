@@ -270,14 +270,18 @@ serve(async (req) => {
     }
 
     // ============================================================
-    // FASE 3: Buscar mensagens via /queue (funciona com multi-device)
+    // FASE 3: Buscar histórico de mensagens via /chat-messages/{phone}
     // ============================================================
-    console.log('[SYNC-SINGLE] Fase 3: Buscando do Z-API /queue...');
+    const cleanTargetPhone = targetPhone.replace(/\D/g, '');
+    console.log('[SYNC-SINGLE] Fase 3: Buscando histórico do Z-API /chat-messages/' + cleanTargetPhone);
+    
     try {
-      // CORREÇÃO: Usar /queue em vez de /chat-messages/{phone} (multi-device)
-      const queueUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/queue`;
+      // Usar /chat-messages/{phone} para buscar histórico REAL (últimas 50 mensagens)
+      const messagesUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/chat-messages/${cleanTargetPhone}?amount=50`;
       
-      const queueResponse = await fetch(queueUrl, {
+      console.log('[SYNC-SINGLE] URL:', messagesUrl);
+      
+      const messagesResponse = await fetch(messagesUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -285,38 +289,44 @@ serve(async (req) => {
         }
       });
 
-      if (queueResponse.ok) {
-        const queueData = await queueResponse.json();
-        const queueMessages = Array.isArray(queueData) ? queueData : [];
-        
-        console.log(`[SYNC-SINGLE] Z-API /queue retornou ${queueMessages.length} mensagens total`);
-        
-        // Filtrar mensagens do telefone específico
-        const chatMessages = queueMessages.filter((msg: any) => {
-          const msgPhone = (msg.phone || msg.to || msg.from || '').replace(/\D/g, '');
-          return phonesMatch(msgPhone, targetPhone);
-        });
+      console.log('[SYNC-SINGLE] Response status:', messagesResponse.status);
 
+      if (messagesResponse.ok) {
+        const messagesData = await messagesResponse.json();
+        const chatMessages = Array.isArray(messagesData) ? messagesData : (messagesData?.messages || []);
+        
+        console.log(`[SYNC-SINGLE] Z-API /chat-messages retornou ${chatMessages.length} mensagens`);
         stats.queue_messages_found = chatMessages.length;
-        console.log(`[SYNC-SINGLE] ${chatMessages.length} mensagens filtradas para ${targetPhone}`);
 
         for (const msg of chatMessages) {
-          const msgBody = msg.text?.message || msg.body || msg.caption || msg.message || '';
+          // Extrair texto da mensagem (vários formatos possíveis)
+          const msgBody = msg.text?.message || msg.body || msg.caption || msg.message || msg.content || '';
           if (!msgBody) continue;
 
-          const msgTimestamp = msg.momment 
-            ? new Date(msg.momment * 1000) 
-            : (msg.timestamp ? new Date(msg.timestamp) : new Date());
-          const direction = msg.fromMe ? 'outbound' : 'inbound';
+          // Timestamp - Z-API usa 'momment' ou 'timestamp' (em segundos)
+          let msgTimestamp: Date;
+          if (msg.momment) {
+            msgTimestamp = new Date(msg.momment * 1000);
+          } else if (msg.timestamp) {
+            // Timestamp pode ser em segundos ou millisegundos
+            msgTimestamp = msg.timestamp > 9999999999 
+              ? new Date(msg.timestamp) 
+              : new Date(msg.timestamp * 1000);
+          } else {
+            msgTimestamp = new Date();
+          }
 
-          // Verificar duplicata
+          // fromMe = true significa que foi enviado pelo Eduardo (outbound)
+          const direction = msg.fromMe === true ? 'outbound' : 'inbound';
+
+          // Verificar duplicata com janela de 60s
           const { data: existingMsg } = await supabase
             .from('messages')
             .select('id')
             .eq('conversation_id', conversation.id)
             .eq('body', msgBody)
-            .gte('created_at', new Date(msgTimestamp.getTime() - 30000).toISOString())
-            .lte('created_at', new Date(msgTimestamp.getTime() + 30000).toISOString())
+            .gte('created_at', new Date(msgTimestamp.getTime() - 60000).toISOString())
+            .lte('created_at', new Date(msgTimestamp.getTime() + 60000).toISOString())
             .maybeSingle();
 
           if (existingMsg) {
@@ -342,16 +352,17 @@ serve(async (req) => {
             } else {
               stats.messages_inbound_synced++;
             }
+            console.log(`[SYNC-SINGLE] + Mensagem ${direction}: "${msgBody.substring(0, 50)}..."`);
           }
         }
       } else {
-        const errorText = await queueResponse.text();
-        console.log('[SYNC-SINGLE] Erro ao buscar /queue:', queueResponse.status, errorText);
-        stats.errors.push(`Z-API /queue: ${queueResponse.status}`);
+        const errorText = await messagesResponse.text();
+        console.log('[SYNC-SINGLE] Erro ao buscar /chat-messages:', messagesResponse.status, errorText);
+        stats.errors.push(`Z-API /chat-messages: ${messagesResponse.status} - ${errorText}`);
       }
-    } catch (queueError) {
-      console.error('[SYNC-SINGLE] Erro ao consultar Z-API /queue:', queueError);
-      stats.errors.push(`Z-API /queue: ${String(queueError)}`);
+    } catch (messagesError) {
+      console.error('[SYNC-SINGLE] Erro ao consultar Z-API /chat-messages:', messagesError);
+      stats.errors.push(`Z-API /chat-messages: ${String(messagesError)}`);
     }
 
     // Contar mensagens finais
