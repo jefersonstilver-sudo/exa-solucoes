@@ -429,9 +429,13 @@ export function ModernAdminSidebar() {
             
             <SidebarGroupContent>
               <SidebarMenu className="space-y-0.5">
-                {group.items.map((item) => {
-                  const isActive = location.pathname === item.href || 
-                    (item.href !== basePath && location.pathname.startsWith(item.href));
+              {group.items.map((item) => {
+                  // Lógica melhorada para evitar seleção dupla
+                  // Ex: /super_admin/crm-chat NÃO deve ativar /super_admin/crm
+                  const isExactMatch = location.pathname === item.href;
+                  const isSubRoute = item.href !== basePath && 
+                    location.pathname.startsWith(item.href + '/');
+                  const isActive = isExactMatch || isSubRoute;
                   const Icon = item.icon;
                   const badge = (item as any).badge;
                   const badgeColor = (item as any).badgeColor || 'bg-red-500';
