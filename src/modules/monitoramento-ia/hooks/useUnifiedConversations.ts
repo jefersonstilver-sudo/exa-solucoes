@@ -91,8 +91,12 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
         .select('*')
         .order('last_message_at', { ascending: false });
 
+      // Debug: Log dos filtros aplicados
+      console.log('[useUnifiedConversations] 🔍 Filtros aplicados:', filters);
+
       // Aplicar filtros
       if (filters.agentKey) {
+        console.log('[useUnifiedConversations] 📌 Filtrando por agentKey:', filters.agentKey);
         query = query.eq('agent_key', filters.agentKey);
       }
       if (filters.unreadOnly) {
@@ -162,6 +166,16 @@ export const useUnifiedConversations = (filters: CRMFilters) => {
           };
         })
       );
+
+      // Debug: Log das conversas carregadas por agente
+      const sofiaConvs = enrichedConversations.filter(c => c.agent_key === 'sofia');
+      const eduardoConvs = enrichedConversations.filter(c => c.agent_key === 'eduardo');
+      console.log('[useUnifiedConversations] ✅ Conversas carregadas:', {
+        total: enrichedConversations.length,
+        sofia: sofiaConvs.length,
+        eduardo: eduardoConvs.length,
+        outros: enrichedConversations.length - sofiaConvs.length - eduardoConvs.length
+      });
 
       setConversations(enrichedConversations);
 
