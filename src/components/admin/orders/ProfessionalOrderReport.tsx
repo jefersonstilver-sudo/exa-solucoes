@@ -22,6 +22,13 @@ interface OrderData {
   ip_origem?: string;
   device_info?: any;
   expires_at?: string;
+  // Campos de fidelidade
+  tipo_pagamento?: string;
+  is_fidelidade?: boolean;
+  dia_vencimento?: number;
+  parcela_atual?: number;
+  total_parcelas?: number;
+  status_adimplencia?: string;
 }
 interface PanelData {
   id: string;
@@ -299,6 +306,89 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                 <span className="text-lg font-black text-gray-900">{formatCurrency(order.valor_total)}</span>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* SEÇÃO: DADOS DE PAGAMENTO */}
+        <section className="border border-gray-200 rounded">
+          <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Dados de Pagamento</h2>
+          </div>
+          
+          <div className="p-4">
+            <div className="grid grid-cols-4 gap-4 text-xs">
+              <div>
+                <p className="text-gray-500 mb-1">Tipo de Pagamento</p>
+                <p className="font-semibold text-gray-900">
+                  {order.tipo_pagamento === 'pix_avista' && 'PIX à Vista'}
+                  {order.tipo_pagamento === 'pix_fidelidade' && 'PIX Fidelidade'}
+                  {order.tipo_pagamento === 'boleto_fidelidade' && 'Boleto Fidelidade'}
+                  {order.tipo_pagamento === 'cartao' && 'Cartão de Crédito'}
+                  {!order.tipo_pagamento && (order.log_pagamento?.method === 'pix' ? 'PIX' : 'Não informado')}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 mb-1">Modalidade</p>
+                <p className="font-semibold text-gray-900">
+                  {order.is_fidelidade ? (
+                    <span className="inline-flex items-center gap-1 text-blue-700">
+                      <CreditCard className="h-3 w-3" />
+                      Assinatura Fidelidade
+                    </span>
+                  ) : (
+                    <span className="text-gray-700">Pagamento Único</span>
+                  )}
+                </p>
+              </div>
+              {order.is_fidelidade && (
+                <>
+                  <div>
+                    <p className="text-gray-500 mb-1">Parcela Atual</p>
+                    <p className="font-semibold text-gray-900">
+                      {order.parcela_atual || 1} / {order.total_parcelas || order.plano_meses}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1">Dia de Vencimento</p>
+                    <p className="font-semibold text-gray-900">
+                      Dia {order.dia_vencimento || 'N/A'}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {/* Badge de Status de Adimplência */}
+            {order.is_fidelidade && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500">Status de Adimplência:</span>
+                  {order.status_adimplencia === 'em_dia' && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Em Dia
+                    </span>
+                  )}
+                  {order.status_adimplencia === 'atrasado' && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                      <Clock className="h-3.5 w-3.5" />
+                      Atrasado
+                    </span>
+                  )}
+                  {order.status_adimplencia === 'suspenso' && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                      <XCircle className="h-3.5 w-3.5" />
+                      Suspenso
+                    </span>
+                  )}
+                  {!order.status_adimplencia && order.is_fidelidade && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
+                      Aguardando Pagamento
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
