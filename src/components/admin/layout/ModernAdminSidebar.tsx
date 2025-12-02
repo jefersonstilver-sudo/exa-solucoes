@@ -334,16 +334,16 @@ export function ModernAdminSidebar() {
 
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#0F0F0F] via-[#1A1A1A] to-[#2D1F1F] border-r border-white/10 shadow-2xl overscroll-contain"
+      className="h-screen bg-gradient-to-b from-[#1A0A0A] via-[#2D1515] to-[#3D1F1F] border-r border-red-900/20 shadow-2xl overscroll-contain"
       collapsible={isMobile ? "offcanvas" : "icon"}
       variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
-        backgroundColor: '#0F0F0F',
+        backgroundColor: '#1A0A0A',
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)'
       }}
     >
-      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-white/10 bg-[#0F0F0F]/95 backdrop-blur-sm`}>
+      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-red-900/30 bg-[#1A0A0A]/95 backdrop-blur-sm`}>
         <div className="flex items-center justify-center mb-3">
           <UnifiedLogo 
             size="custom" 
@@ -380,25 +380,25 @@ export function ModernAdminSidebar() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-[#1A1A1A] border-white/10" align="end">
+                <DropdownMenuContent className="w-56 bg-[#2D1515] border-red-900/30" align="end">
                   <div className="flex flex-col space-y-1 p-2">
                     <p className="text-sm font-medium text-white">{userProfile?.email || 'Admin'}</p>
-                    <p className="text-xs text-white/60">{getAdminTitle()}</p>
+                    <p className="text-xs text-red-200/60">{getAdminTitle()}</p>
                   </div>
-                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuSeparator className="bg-red-900/30" />
                   {isSuperAdmin && (
                     <DropdownMenuItem 
                       onClick={() => navigate(buildPath('configuracoes'))}
-                      className="text-white/80 hover:text-white hover:bg-white/10"
+                      className="text-red-100/80 hover:text-white hover:bg-red-500/15"
                     >
                       <Settings className="mr-2 h-4 w-4" />
                       Configurações
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuSeparator className="bg-red-900/30" />
                   <DropdownMenuItem 
                     onClick={handleSignOut}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-500/15"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     Sair
@@ -413,7 +413,7 @@ export function ModernAdminSidebar() {
       <SidebarContent 
         className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-3 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain`}
         style={{ 
-          background: 'linear-gradient(180deg, #0F0F0F 0%, #1A1A1A 50%, #2D1F1F 100%)',
+          background: 'linear-gradient(180deg, #1A0A0A 0%, #2D1515 50%, #3D1F1F 100%)',
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)'
@@ -422,7 +422,7 @@ export function ModernAdminSidebar() {
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && (
-              <SidebarGroupLabel className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-2 px-2">
+              <SidebarGroupLabel className="text-[9px] font-bold text-red-300/50 uppercase tracking-widest mb-2 px-2">
                 {group.label}
               </SidebarGroupLabel>
             )}
@@ -441,8 +441,8 @@ export function ModernAdminSidebar() {
                       to={item.href}
                       className={`flex items-center ${collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5 gap-3'} rounded-lg transition-all duration-200 font-medium group relative ${
                         isActive 
-                          ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-900/30" 
-                          : "text-white/70 hover:bg-white/5 hover:text-white active:scale-[0.98]"
+                          ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-900/40" 
+                          : "text-red-100/80 hover:bg-red-500/15 hover:text-white active:scale-[0.98]"
                       } min-h-[44px] touch-manipulation`}
                       style={{
                         WebkitTapHighlightColor: 'transparent',
