@@ -1,13 +1,28 @@
 
+// Payment method types for the checkout
+export type PaymentMethodType = 
+  | 'pix_avista'        // PIX with 5% discount, single payment
+  | 'pix_fidelidade'    // PIX monthly with contract
+  | 'boleto_fidelidade' // Boleto monthly with contract
+  | 'credit_card';      // Credit card, single payment
+
+// Fidelity data interface
+export interface FidelidadeData {
+  diaVencimento: 5 | 10 | 15;
+  termoAceito: boolean;
+  termoAceitoEm?: Date;
+  paymentMethod: 'pix_fidelidade' | 'boleto_fidelidade';
+}
+
 export interface Plan {
   id: number;
   name: string;
   description?: string;
   months: number;
   discount: number;
-  price: number; // Add this property
+  price: number;
   mostPopular?: boolean;
-  pricePerMonth?: number; // Make optional since we calculate dynamically
+  pricePerMonth?: number;
   extras?: string[];
   
   // New fields needed for PlanSelector and CheckoutSummary

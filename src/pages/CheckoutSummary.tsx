@@ -3,12 +3,12 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import CheckoutLayout from '@/components/checkout/CheckoutLayout';
 import OrderSummaryCard from '@/components/checkout/summary/OrderSummaryCard';
-import PaymentMethodSelector from '@/components/checkout/summary/PaymentMethodSelector';
+import PaymentMethodSelector, { PaymentMethodType } from '@/components/checkout/summary/PaymentMethodSelector';
 import PricingBreakdown from '@/components/checkout/summary/PricingBreakdown';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useUserSession } from '@/hooks/useUserSession';
-import { useAuth } from '@/hooks/useAuth'; // Adicionar import
+import { useAuth } from '@/hooks/useAuth';
 import { useCheckout } from '@/hooks/useCheckout';
 import { usePaymentFlow } from '@/hooks/payment/usePaymentFlow';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ import PixQrCodeDialog from '@/components/checkout/payment/PixQrCodeDialog';
 import CreditCardCheckoutModal from '@/components/checkout/payment/CreditCardCheckoutModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useCheckoutPro } from '@/hooks/payment/useCheckoutPro';
+
 const CheckoutSummary = () => {
   const navigate = useNavigate();
   const {
@@ -28,10 +29,10 @@ const CheckoutSummary = () => {
     isLoading
   } = useUserSession();
   
-  const { isSuperAdmin } = useAuth(); // Adicionar verificação de super admin
+  const { isSuperAdmin } = useAuth();
   
   const [hasValidatedCart, setHasValidatedCart] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('pix_avista');
   
   // Estados para o popup PIX
   const [isPixDialogOpen, setIsPixDialogOpen] = useState(false);
@@ -51,11 +52,12 @@ const CheckoutSummary = () => {
     couponId,
     couponDiscount,
     couponCode,
-    couponCategoria  // Adicionar categoria
+    couponCategoria
   } = useCheckout();
   
   const { isCreatingPayment, processPayment } = usePaymentFlow();
   const { validateCartPanels } = useCartValidation();
+  
   console.log('[CheckoutSummary] Estado atual:', {
     isLoggedIn,
     userId: user?.id,
@@ -123,8 +125,9 @@ const CheckoutSummary = () => {
   // Calcular preços usando função centralizada
   const baseTotal = calculateTotalPrice();
   
-  // 🆕 FASE 4: Usar valor mínimo correto por método de pagamento
-  const minimumValue = getMinimumOrderValue(paymentMethod);
+  // Map legacy payment methods for minimum value calculation
+  const legacyPaymentMethod = paymentMethod === 'credit_card' ? 'credit_card' : 'pix';
+  const minimumValue = getMinimumOrderValue(legacyPaymentMethod);
   
   // 🎯 DETECTAR CUPOM 573040 (teste)
   const isCupom573040 = couponCode === '573040';
@@ -132,35 +135,34 @@ const CheckoutSummary = () => {
   // 🎁 DETECTAR CUPOM CORTESIA - Usar categoria do cupom
   const isCortesia = couponCategoria === 'cortesia' || (couponCode?.toUpperCase().trim() === 'CORTESIA_ADMIN' && baseTotal === 0);
   
+  // 💰 Calcular valor com desconto PIX à vista (5%)
+  const pixAvistaDiscount = 0.05;
+  const totalAfterCoupon = baseTotal;
+  
+  // Aplicar desconto PIX à vista se selecionado
+  const totalWithPixDiscount = paymentMethod === 'pix_avista' 
+    ? totalAfterCoupon * (1 - pixAvistaDiscount) 
+    : totalAfterCoupon;
+  
+  // CRÍTICO: Garantir valor mínimo correto por método
+  const finalTotal = isCupom573040 ? 0.05 : Math.max(totalWithPixDiscount, minimumValue);
+
+  // Verificar se foi aplicado o mínimo
+  const isPedidoComValorMinimo = finalTotal === minimumValue && totalWithPixDiscount < minimumValue;
+  
+  // Verificar se é método fidelidade (redireciona para outra página)
+  const isFidelidade = paymentMethod === 'pix_fidelidade' || paymentMethod === 'boleto_fidelidade';
+  
   console.log('[CheckoutSummary] Preços calculados:', {
     baseTotal,
-    couponValid,
-    couponDiscount,
+    totalAfterCoupon,
+    totalWithPixDiscount,
+    finalTotal,
     paymentMethod,
+    isFidelidade,
     minimumValue,
     couponCode: couponCode || 'SEM CÓDIGO',
     isCortesia
-  });
-  
-  // ✅ baseTotal JÁ inclui o desconto do cupom (calculado em calculateTotalPrice)
-  // NÃO reaplicar o desconto aqui para evitar dupla aplicação!
-  const totalAfterCoupon = baseTotal;
-  
-  // CRÍTICO: Garantir valor mínimo correto por método
-  // 🎯 EXCEÇÃO: Cupom 573040 SEMPRE força R$ 0,05 (ignora mínimo)
-  const finalTotal = isCupom573040 ? 0.05 : Math.max(totalAfterCoupon, minimumValue);
-
-  // Verificar se foi aplicado o mínimo
-  const isPedidoComValorMinimo = finalTotal === minimumValue && totalAfterCoupon < minimumValue;
-  
-  console.log('[CheckoutSummary] TOTAL FINAL COM MÍNIMO:', {
-    baseTotal,
-    totalAfterCoupon,
-    finalTotal,
-    minimumValue,
-    paymentMethod,
-    isPedidoComValorMinimo,
-    appliedMinimum: totalAfterCoupon < minimumValue
   });
   const handleBack = () => {
     navigate('/checkout/cupom');
@@ -177,21 +179,29 @@ const CheckoutSummary = () => {
       toast.error("Seu carrinho está vazio");
       return;
     }
+    
+    // 🔄 FIDELIDADE: Redirecionar para página de dados do contrato
+    if (isFidelidade) {
+      localStorage.setItem('checkout_payment_method', paymentMethod);
+      navigate('/checkout/fidelidade');
+      return;
+    }
+    
     // 🎯 EXCEÇÃO: Cupom 573040 permite valor mínimo de R$ 0,05
     if (!isCupom573040 && finalTotal < minimumValue) {
       toast.error(`O valor mínimo do pedido é R$ ${minimumValue.toFixed(2)}`);
       return;
     }
 
-    // 💳 NOVO: Abrir modal para cartão de crédito
+    // 💳 Abrir modal para cartão de crédito
     if (paymentMethod === 'credit_card') {
       console.log('[CheckoutSummary] Abrindo modal de cartão');
       setIsCardModalOpen(true);
       return;
     }
 
-    // 🎯 PIX: Continua com o fluxo normal (gera QR code)
-    console.log('[CheckoutSummary] Processando pagamento PIX');
+    // 🎯 PIX à Vista: Continua com o fluxo normal (gera QR code)
+    console.log('[CheckoutSummary] Processando pagamento PIX à Vista');
 
     try {
       const startDate = new Date();
@@ -204,7 +214,7 @@ const CheckoutSummary = () => {
         selectedPlan: selectedPlan || 1,
         totalPrice: finalTotal,
         couponId: couponValid ? couponId : null,
-        paymentMethod,
+        paymentMethod: 'pix', // Legacy format for processPayment
         startDate,
         endDate,
         acceptTerms: true,
@@ -338,7 +348,8 @@ const CheckoutSummary = () => {
             <PaymentMethodSelector 
               selectedMethod={paymentMethod}
               onMethodChange={setPaymentMethod}
-              totalAmount={finalTotal}
+              totalAmount={baseTotal}
+              selectedPlan={selectedPlan || 1}
               couponCode={couponCode}
             />
           )}
@@ -369,6 +380,7 @@ const CheckoutSummary = () => {
             paymentMethod={paymentMethod}
             couponCode={couponCode}
             couponCategoria={couponCategoria}
+            finalTotal={finalTotal}
           />
 
           {/* Payment Buttons - CORTESIA OU NORMAL */}
@@ -396,7 +408,11 @@ const CheckoutSummary = () => {
                   </>
                 ) : (
                   <>
-                    {paymentMethod === 'pix' ? 'Pagar com PIX' : 'Pagar com Cartão'}
+                    {isFidelidade 
+                      ? 'Continuar para Contrato' 
+                      : paymentMethod === 'pix_avista' 
+                        ? 'Pagar com PIX' 
+                        : 'Pagar com Cartão'}
                   </>
                 )}
               </Button>
