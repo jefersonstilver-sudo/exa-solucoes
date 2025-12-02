@@ -11,7 +11,8 @@ import {
   HelpCircle,
   LogOut,
   BarChart3,
-  Crown
+  Crown,
+  Receipt
 } from 'lucide-react';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { useUserSession } from '@/hooks/useUserSession';
@@ -56,6 +57,12 @@ const AdvertiserSidebarContent = ({ onItemClick, isCollapsed = false }: Advertis
       title: 'Meus Pedidos',
       href: '/anunciante/pedidos',
       icon: ShoppingBag,
+      section: 'main'
+    },
+    {
+      title: 'Minhas Faturas',
+      href: '/anunciante/faturas',
+      icon: Receipt,
       section: 'main'
     },
     

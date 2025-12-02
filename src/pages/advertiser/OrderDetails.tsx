@@ -36,6 +36,7 @@ import { useVideoScheduleMonitor } from '@/hooks/useVideoScheduleMonitor';
 import { BlockedOrderAlert } from '@/components/order/BlockedOrderAlert';
 import { OrderNameEdit } from '@/components/order/OrderNameEdit';
 import { useSelectedBuildingsDetails } from '@/hooks/useSelectedBuildingsDetails';
+import { OrderInstallmentsSection } from '@/components/order/OrderInstallmentsSection';
 
 interface OrderDetails {
   id: string;
@@ -53,6 +54,9 @@ interface OrderDetails {
   blocked_at?: string;
   cupom_id?: string;
   nome_pedido?: string;
+  is_fidelidade?: boolean;
+  tipo_pagamento?: string;
+  total_parcelas?: number;
 }
 
 const OrderDetails = () => {
@@ -482,7 +486,16 @@ const OrderDetails = () => {
           />
         )}
 
-        {/* 4. Resumo - Colapsável e RETRAÍDO */}
+        {/* 4. Parcelas (apenas para pedidos fidelidade) */}
+        {orderDetails.is_fidelidade && orderDetails.total_parcelas && (
+          <OrderInstallmentsSection
+            orderId={orderDetails.id}
+            tipoPagamento={orderDetails.tipo_pagamento || 'pix_fidelidade'}
+            totalParcelas={orderDetails.total_parcelas}
+          />
+        )}
+
+        {/* 5. Resumo - Colapsável e RETRAÍDO */}
         <CollapsibleOrderSummary
           orderDetails={orderDetails}
           displayPanels={displayPanels}
@@ -491,10 +504,10 @@ const OrderDetails = () => {
           totalAudience={totalAudience}
         />
 
-        {/* 5. Compra - Colapsável e RETRAÍDO */}
+        {/* 6. Compra - Colapsável e RETRAÍDO */}
         <CollapsiblePurchaseInfo orderDetails={orderDetails} />
 
-          {/* 6. Programação Semanal - Colapsável e RETRAÍDO */}
+          {/* 7. Programação Semanal - Colapsável e RETRAÍDO */}
           {!contractStatus.isExpired && (
             <CollapsibleScheduleManager
               videoSlots={videoSlots}
