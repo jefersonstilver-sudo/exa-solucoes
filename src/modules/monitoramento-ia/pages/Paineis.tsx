@@ -22,7 +22,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MobileHeader } from '../components/MobileHeader';
-import { Sidebar } from '../components/Sidebar';
 import { PeriodSelector, PeriodType } from '../components/PeriodSelector';
 
 // Compact Stat Icon Component for mobile
@@ -216,16 +215,7 @@ export const PaineisPage = () => {
         />
       )}
       
-      {/* Sidebar */}
-      <div className="lg:hidden">
-        <Sidebar 
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          theme={theme}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-      </div>
+      {/* Sidebar removido - agora usando sidebar unificado do admin */}
 
       {/* Mobile Header */}
       <MobileHeader onMenuClick={() => setSidebarOpen(true)} />

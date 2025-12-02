@@ -15,7 +15,6 @@ import {
   Ticket,
   Bell,
   Mail,
-  Megaphone,
   LogOut,
   Zap,
   Film,
@@ -26,7 +25,9 @@ import {
   Clapperboard,
   Brain,
   MessageSquare,
-  CreditCard
+  CreditCard,
+  Bot,
+  AlertTriangle
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -67,6 +68,11 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+// Hooks para badges dinâmicos
+import { useUnreadCount } from '@/modules/monitoramento-ia/hooks/useUnreadCount';
+import { useEscalacoesPendentes } from '@/hooks/useEscalacoesPendentes';
+import { useOfflineAlerts } from '@/hooks/useOfflineAlerts';
+
 export function ModernAdminSidebar() {
   const { state, open, setOpen } = useSidebar();
   const location = useLocation();
@@ -75,6 +81,11 @@ export function ModernAdminSidebar() {
   const { basePath, buildPath } = useAdminBasePath();
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsiveLayout();
+
+  // Badges dinâmicos
+  const { unreadCount } = useUnreadCount();
+  const { pendentesCount: escalacoesPendentes } = useEscalacoesPendentes();
+  const { offlineCount } = useOfflineAlerts();
 
   const handleSignOut = async () => {
     try {
@@ -87,6 +98,7 @@ export function ModernAdminSidebar() {
     }
   };
 
+  // 7 SEÇÕES REORGANIZADAS conforme especificação
   const navigationGroups = [
     {
       label: 'Gestão Principal',
@@ -110,34 +122,68 @@ export function ModernAdminSidebar() {
           permission: 'canViewOrders'
         },
         {
-          title: 'CRM Site',
-          href: buildPath('crm'),
-          icon: UsersRound,
-          permission: 'canViewCRM'
-        },
-        {
-          title: 'CRM Agentes',
-          href: buildPath('monitoramento-ia/conversas'),
-          icon: MessageSquare,
-          permission: 'canViewCRM'
-        },
-        {
           title: 'Aprovações',
           href: buildPath('aprovacoes'),
           icon: CheckSquare,
           permission: 'canViewApprovals'
         },
         {
-          title: 'Benefício Prestadores',
+          title: 'Cupons',
+          href: buildPath('cupons'),
+          icon: Ticket,
+          permission: 'canManageCoupons'
+        },
+        {
+          title: 'Benefícios Prestadores',
           href: buildPath('beneficio-prestadores'),
           icon: Gift,
           permission: 'canManageProviderBenefits'
+        }
+      ]
+    },
+    {
+      label: 'CRM',
+      items: [
+        {
+          title: 'CRM Site',
+          href: buildPath('crm'),
+          icon: UsersRound,
+          permission: 'canViewCRM'
         },
         {
-          title: 'Relatórios Financeiros',
-          href: buildPath('relatorios-financeiros'),
-          icon: FileBarChart,
-          permission: 'canViewFinancialReports'
+          title: 'CRM Chat',
+          href: buildPath('crm-chat'),
+          icon: MessageSquare,
+          permission: 'canViewCRM',
+          badge: unreadCount > 0 ? unreadCount : undefined,
+          badgeColor: 'bg-green-500'
+        },
+        {
+          title: 'Escalações',
+          href: buildPath('escalacoes'),
+          icon: AlertTriangle,
+          permission: 'canViewCRM',
+          badge: escalacoesPendentes > 0 ? escalacoesPendentes : undefined,
+          badgeColor: 'bg-orange-500'
+        }
+      ]
+    },
+    {
+      label: 'Inteligência',
+      items: [
+        {
+          title: 'Agentes Sofia',
+          href: buildPath('agentes-sofia'),
+          icon: Bot,
+          permission: 'canManageSystemSettings',
+          requireSuperAdmin: true
+        },
+        {
+          title: 'EXA Alerts',
+          href: buildPath('exa-alerts'),
+          icon: Brain,
+          permission: 'canManageSystemSettings',
+          requireSuperAdmin: true
         }
       ]
     },
@@ -151,16 +197,12 @@ export function ModernAdminSidebar() {
           permission: 'canManageBuildings'
         },
         {
-          title: 'Painéis',
-          href: buildPath('paineis'),
-          icon: MonitorPlay,
-          permission: 'canManagePanels'
-        },
-        {
           title: 'Painéis EXA',
           href: buildPath('paineis-exa'),
           icon: Tv,
-          permission: 'canManagePanels'
+          permission: 'canManagePanels',
+          badge: offlineCount > 0 ? offlineCount : undefined,
+          badgeColor: 'bg-red-500'
         }
       ]
     },
@@ -182,6 +224,44 @@ export function ModernAdminSidebar() {
       ]
     },
     {
+      label: 'Conteúdo',
+      items: [
+        {
+          title: 'Vídeos Anunciantes',
+          href: buildPath('videos'),
+          icon: Video,
+          permission: 'canManageVideos'
+        },
+        {
+          title: 'Vídeos Site EXA',
+          href: buildPath('videos-site'),
+          icon: Film,
+          permission: 'canManagePortfolio'
+        },
+        {
+          title: 'Ticker',
+          href: buildPath('ticker'),
+          icon: Images,
+          permission: 'canManageHomepageConfig'
+        },
+        {
+          title: 'Editor de Vídeos',
+          href: buildPath('editor-video-controle'),
+          icon: Clapperboard,
+          permission: 'canManageSystemSettings',
+          requireSuperAdmin: true,
+          badge: 'BETA',
+          badgeColor: 'bg-purple-500'
+        },
+        {
+          title: 'Emails',
+          href: buildPath('comunicacoes'),
+          icon: Mail,
+          permission: 'canManageEmails'
+        }
+      ]
+    },
+    {
       label: 'Sistema',
       items: [
         {
@@ -192,10 +272,16 @@ export function ModernAdminSidebar() {
           requireSuperAdmin: true
         },
         {
-          title: 'Cupons',
-          href: buildPath('cupons'),
-          icon: Ticket,
-          permission: 'canManageCoupons'
+          title: 'Notificações',
+          href: buildPath('notificacoes'),
+          icon: Bell,
+          permission: 'canManageNotifications'
+        },
+        {
+          title: 'Relatórios Financeiros',
+          href: buildPath('relatorios-financeiros'),
+          icon: FileBarChart,
+          permission: 'canViewFinancialReports'
         },
         {
           title: 'Segurança',
@@ -205,61 +291,11 @@ export function ModernAdminSidebar() {
           requireSuperAdmin: true
         },
         {
-          title: 'Monitoramento IA',
-          href: '/admin/monitoramento-ia/dashboard',
-          icon: Brain,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true
-        },
-        {
           title: 'Configurações',
           href: buildPath('configuracoes'),
           icon: Settings,
           permission: 'canManageSystemSettings',
           requireSuperAdmin: true
-        }
-      ]
-    },
-    {
-      label: 'Conteúdo',
-      items: [
-        {
-          title: 'Vídeos',
-          href: buildPath('videos'),
-          icon: Video,
-          permission: 'canManageVideos'
-        },
-        {
-          title: 'Vídeos do Site',
-          href: buildPath('videos-site'),
-          icon: Film,
-          permission: 'canManagePortfolio'
-        },
-        {
-          title: 'Editor de Vídeos',
-          href: buildPath('editor-video-controle'),
-          icon: Clapperboard,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true,
-          badge: 'BETA'
-        },
-        {
-          title: 'Logos EXA',
-          href: buildPath('logos'),
-          icon: Images,
-          permission: 'canManageHomepageConfig'
-        },
-        {
-          title: 'Notificações',
-          href: buildPath('notificacoes'),
-          icon: Bell,
-          permission: 'canManageNotifications'
-        },
-        {
-          title: 'Emails',
-          href: buildPath('comunicacoes'),
-          icon: Mail,
-          permission: 'canManageEmails'
         }
       ]
     }
@@ -294,78 +330,76 @@ export function ModernAdminSidebar() {
     }
   };
 
-  // CRITICAL: Forçar sidebar expandido no mobile para mostrar textos
   const collapsed = isMobile ? false : state === "collapsed";
-
-  // Remover auto-close automático - usuário fecha manualmente ou ao clicar em link
-  // React.useEffect(() => {
-  //   if (isMobile && open) {
-  //     setOpen(false);
-  //   }
-  // }, [location.pathname, isMobile, setOpen]);
 
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#180A0A] via-[#3B1E1E] to-[#9C1E1E] border-r border-white/20 shadow-2xl overscroll-contain"
+      className="h-screen bg-gradient-to-b from-[#0F0F0F] via-[#1A1A1A] to-[#2D1F1F] border-r border-white/10 shadow-2xl overscroll-contain"
       collapsible={isMobile ? "offcanvas" : "icon"}
       variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
-        backgroundColor: '#180A0A',
+        backgroundColor: '#0F0F0F',
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)'
       }}
     >
-      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-6'} border-b border-white/20 bg-[#180A0A]`}>
-        <div className="flex items-center justify-center mb-3 md:mb-4">
+      <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-white/10 bg-[#0F0F0F]/95 backdrop-blur-sm`}>
+        <div className="flex items-center justify-center mb-3">
           <UnifiedLogo 
             size="custom" 
             linkTo="/" 
             variant="light"
-            className={collapsed ? "w-12 h-12 md:w-14 md:h-14" : "w-16 h-16 md:w-24 md:h-24"}
+            className={collapsed ? "w-10 h-10" : "w-14 h-14 md:w-20 md:h-20"}
           />
         </div>
         
         {!collapsed && (
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <div className="text-white font-semibold text-xs md:text-sm truncate">
+              <div className="text-white font-medium text-xs truncate">
                 {userProfile?.email?.split('@')[0] || 'Admin'}
               </div>
-              <div className="flex items-center space-x-1 md:space-x-2 mt-1">
+              <div className="flex items-center space-x-1 mt-0.5">
                 <Crown className={`h-3 w-3 ${getAdminBadgeColor()}`} />
-                <span className={`text-[10px] md:text-xs font-medium ${getAdminBadgeColor()} truncate`}>
+                <span className={`text-[10px] font-medium ${getAdminBadgeColor()} truncate`}>
                   {getAdminTitle()}
                 </span>
               </div>
             </div>
             
-            <div className="flex items-center space-x-1 md:space-x-2">
+            <div className="flex items-center space-x-1">
               <NotificationCenter />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/20 touch-target">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-white text-[#9C1E1E] font-semibold text-xs">
+                  <Button variant="ghost" className="relative h-7 w-7 rounded-full hover:bg-white/10 touch-target">
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white font-semibold text-xs">
                         {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end">
+                <DropdownMenuContent className="w-56 bg-[#1A1A1A] border-white/10" align="end">
                   <div className="flex flex-col space-y-1 p-2">
-                    <p className="text-sm font-medium">{userProfile?.email || 'Admin'}</p>
-                    <p className="text-xs text-muted-foreground">{getAdminTitle()}</p>
+                    <p className="text-sm font-medium text-white">{userProfile?.email || 'Admin'}</p>
+                    <p className="text-xs text-white/60">{getAdminTitle()}</p>
                   </div>
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-white/10" />
                   {isSuperAdmin && (
-                    <DropdownMenuItem onClick={() => navigate(buildPath('configuracoes'))}>
+                    <DropdownMenuItem 
+                      onClick={() => navigate(buildPath('configuracoes'))}
+                      className="text-white/80 hover:text-white hover:bg-white/10"
+                    >
                       <Settings className="mr-2 h-4 w-4" />
                       Configurações
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem 
+                    onClick={handleSignOut}
+                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     Sair
                   </DropdownMenuItem>
@@ -377,92 +411,113 @@ export function ModernAdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent 
-        className={`${collapsed ? 'px-2' : 'px-3 md:px-4'} py-4 md:py-6 space-y-4 md:space-y-6 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain`}
+        className={`${collapsed ? 'px-2' : 'px-3'} py-4 space-y-3 overflow-y-auto admin-sidebar-scroll touch-pan-y overscroll-contain`}
         style={{ 
-          background: 'linear-gradient(180deg, #180A0A 0%, #3B1E1E 50%, #9C1E1E 100%)',
-          backgroundColor: '#180A0A',
+          background: 'linear-gradient(180deg, #0F0F0F 0%, #1A1A1A 50%, #2D1F1F 100%)',
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'smooth',
-          paddingBottom: 'env(safe-area-inset-bottom)'
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)'
         }}
       >
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && (
-              <SidebarGroupLabel className="text-[10px] md:text-xs font-semibold text-red-200 uppercase tracking-wider mb-2 md:mb-3 px-2">
+              <SidebarGroupLabel className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-2 px-2">
                 {group.label}
               </SidebarGroupLabel>
             )}
             
-             <SidebarGroupContent>
-               <SidebarMenu className="space-y-1">
-                 {group.items.map((item) => {
-                   const isActive = location.pathname === item.href;
-                   const Icon = item.icon;
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-0.5">
+                {group.items.map((item) => {
+                  const isActive = location.pathname === item.href || 
+                    (item.href !== basePath && location.pathname.startsWith(item.href));
+                  const Icon = item.icon;
+                  const badge = (item as any).badge;
+                  const badgeColor = (item as any).badgeColor || 'bg-red-500';
 
-                    const linkContent = (
-                       <NavLink
-                        to={item.href}
-                        className={`flex flex-row items-center ${collapsed ? 'px-3 py-3 gap-0 justify-center' : 'px-4 py-4 gap-3'} rounded-xl transition-all duration-200 font-medium group ${
-                          isActive 
-                            ? "bg-white !text-[#9C1E1E] font-bold shadow-lg hover:!bg-white hover:!text-[#9C1E1E]" 
-                            : "text-white hover:bg-white/20 hover:text-white active:scale-95"
-                        } min-h-[48px] touch-manipulation`}
-                        style={{
-                          WebkitTapHighlightColor: 'transparent',
-                          WebkitTouchCallout: 'none'
-                        }}
-                        onClick={() => {
-                          // Auto-fechar sidebar no mobile após clicar
-                          if (isMobile) {
-                            setOpen(false);
-                          }
-                        }}
-                      >
-                        <Icon className={`${collapsed ? 'h-5 w-5' : isMobile ? 'h-6 w-6' : 'h-5 w-5'} flex-shrink-0 transition-transform duration-200 group-hover:scale-110`} />
-                        {!collapsed && (
-                          <span className={`${isMobile ? 'text-base' : 'text-sm'} font-semibold truncate`}>
+                  const linkContent = (
+                    <NavLink
+                      to={item.href}
+                      className={`flex items-center ${collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5 gap-3'} rounded-lg transition-all duration-200 font-medium group relative ${
+                        isActive 
+                          ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-900/30" 
+                          : "text-white/70 hover:bg-white/5 hover:text-white active:scale-[0.98]"
+                      } min-h-[44px] touch-manipulation`}
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                      onClick={() => {
+                        if (isMobile) {
+                          setOpen(false);
+                        }
+                      }}
+                    >
+                      <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 transition-transform duration-200`} />
+                      {!collapsed && (
+                        <>
+                          <span className="text-sm font-medium truncate flex-1">
                             {item.title}
                           </span>
-                        )}
-                      </NavLink>
-                    );
+                          {badge !== undefined && (
+                            <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center`}>
+                              {badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {collapsed && badge !== undefined && (
+                        <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center`}>
+                          {typeof badge === 'number' && badge > 9 ? '9+' : badge}
+                        </span>
+                      )}
+                    </NavLink>
+                  );
 
-                   return (
-                     <SidebarMenuItem key={item.href}>
-                       <SidebarMenuButton asChild>
-                         {collapsed ? (
-                           <TooltipProvider delayDuration={0}>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 {linkContent}
-                               </TooltipTrigger>
-                               <TooltipContent side="right" className="bg-white text-[#9C1E1E] font-semibold">
-                                 <p>{item.title}</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
-                         ) : (
-                           linkContent
-                         )}
-                       </SidebarMenuButton>
-                     </SidebarMenuItem>
-                   );
-                 })}
-               </SidebarMenu>
-             </SidebarGroupContent>
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton asChild>
+                        {collapsed ? (
+                          <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                {linkContent}
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="bg-[#1A1A1A] text-white border-white/10 font-medium">
+                                <div className="flex items-center gap-2">
+                                  <p>{item.title}</p>
+                                  {badge !== undefined && (
+                                    <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full`}>
+                                      {badge}
+                                    </span>
+                                  )}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          linkContent
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
           </SidebarGroup>
         ))}
       </SidebarContent>
       
-      <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3 md:p-4'} border-t border-white/20 bg-[#9C1E1E]`}>
-        <div className="flex items-center space-x-2 text-white text-xs md:text-sm">
-          <Shield className={`${collapsed ? 'h-4 w-4' : 'h-3 w-3 md:h-4 md:w-4'} flex-shrink-0`} />
-          <span className={`${collapsed ? 'text-[9px]' : 'text-xs'} truncate whitespace-nowrap`}>Sistema Seguro</span>
+      <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3'} border-t border-white/10 bg-[#0F0F0F]/95 backdrop-blur-sm`}>
+        <div className="flex items-center space-x-2 text-white/60 text-xs">
+          <Shield className="h-3 w-3 flex-shrink-0" />
+          {!collapsed && <span className="text-[10px] truncate">Sistema Seguro</span>}
         </div>
-        <div className={`${collapsed ? 'text-[8px]' : 'text-[10px] md:text-xs'} text-white/60 mt-0.5 truncate`}>
-          EXA Admin v3.0
-        </div>
+        {!collapsed && (
+          <div className="text-[10px] text-white/40 mt-0.5">
+            EXA Admin v3.0
+          </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );

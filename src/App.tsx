@@ -58,13 +58,7 @@ import VideoEditorDashboard from './pages/video-editor/VideoEditorDashboard';
 import VideoEditorAccessControl from './pages/video-editor/VideoEditorAccessControl';
 import VideoEditorPage from './pages/video-editor/VideoEditorPage';
 
-// Monitoramento IA Module
-import { MonitoramentoIALayout } from './modules/monitoramento-ia/layout/MonitoramentoIALayout';
-import { DashboardUnificado } from './modules/monitoramento-ia/pages/DashboardUnificado';
-import { PaineisPage } from './modules/monitoramento-ia/pages/Paineis';
-import { HistoricoQuedasPage } from './modules/monitoramento-ia/pages/HistoricoQuedas';
-import { AlertasPage } from './modules/monitoramento-ia/pages/Alertas';
-import { Agentes } from './modules/monitoramento-ia/pages/Agentes';
+// Monitoramento IA Module imports removidos - agora integrados no AdminRoutes
 
 // Lazy load apenas para páginas menos usadas
 const SouSindico = lazy(() => import('./pages/SouSindico'));
@@ -462,48 +456,9 @@ const AppContent = () => {
           {/* Página de teste de links */}
           <Route path="/test-links" element={<TestLinks />} />
 
-          {/* Módulo Monitoramento IA */}
-          <Route path="/admin/monitoramento-ia" element={<MonitoramentoIALayout />}>
-            <Route index element={<Navigate to="/admin/monitoramento-ia/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardUnificado />} />
-            
-            {/* Seção Painéis */}
-            <Route path="paineis" element={<PaineisPage />} />
-            <Route path="historico-quedas" element={<HistoricoQuedasPage />} />
-            <Route path="alertas" element={<AlertasPage />} />
-            
-            {/* Seção Agentes */}
-            <Route path="agentes" element={<Agentes />} />
-            <Route path="agentes/:id/base-conhecimento" element={
-              <Suspense fallback={<GlobalLoadingPage message="Carregando base de conhecimento..." />}>
-                {React.createElement(lazy(() => import('./modules/monitoramento-ia/pages/agents/AgentKnowledge').then(m => ({ default: m.AgentKnowledge }))))}
-              </Suspense>
-            } />
-            
-            {/* CRM Unificado */}
-            <Route path="crm" element={
-              <Suspense fallback={<GlobalLoadingPage message="Carregando CRM..." />}>
-                {React.createElement(lazy(() => import('./modules/monitoramento-ia/pages/CRMUnificado')))}
-              </Suspense>
-            } />
-            
-            {/* Relatórios Corporativos */}
-            <Route path="relatorios" element={
-              <Suspense fallback={<GlobalLoadingPage message="Carregando relatórios..." />}>
-                {React.createElement(lazy(() => import('./modules/monitoramento-ia/pages/RelatoriosCorporativos')))}
-              </Suspense>
-            } />
-            
-            {/* Relatórios IA */}
-            <Route path="relatorios-ia" element={<AIReportsPage />} />
-            
-            {/* Escalações Comerciais */}
-            <Route path="escalacoes" element={
-              <Suspense fallback={<GlobalLoadingPage message="Carregando escalações..." />}>
-                {React.createElement(lazy(() => import('./modules/monitoramento-ia/pages/EscalacoesComerciais')))}
-              </Suspense>
-            } />
-          </Route>
+          {/* Redirects para rotas antigas do Monitoramento IA - agora integrado no AdminRoutes */}
+          <Route path="/admin/monitoramento-ia" element={<Navigate to="/admin/paineis-exa" replace />} />
+          <Route path="/admin/monitoramento-ia/*" element={<Navigate to="/admin" replace />} />
 
           {/* Rotas administrativas */}
           <Route path="/super_admin/*" element={<SuperAdminPage />} />

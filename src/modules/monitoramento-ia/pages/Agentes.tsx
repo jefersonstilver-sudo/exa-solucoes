@@ -9,7 +9,6 @@ import { AgentConfigSection } from '../components/agents/AgentConfigSection';
 import { AIConsole } from '../components/agents/AIConsole';
 import { KnowledgeBaseSection } from '../components/agents/KnowledgeBaseSection';
 import { MonitorAPIs } from './MonitorAPIs';
-import { Sidebar } from '../components/Sidebar';
 import { useModuleTheme } from '../hooks/useModuleTheme';
 
 const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
@@ -56,16 +55,7 @@ export const Agentes = () => {
         />
       )}
       
-      {/* Sidebar - Apenas mobile */}
-      <div className={`lg:hidden ${sidebarOpen ? '' : 'pointer-events-none'}`}>
-        <Sidebar 
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          theme={theme}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-      </div>
+      {/* Sidebar removido - agora usando sidebar unificado do admin */}
 
       <div className="min-h-screen bg-background">
         {/* Header Mobile - FIXO NO TOPO - Gradiente Vermelho EXA */}

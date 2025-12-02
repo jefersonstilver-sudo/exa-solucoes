@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DashboardMobile } from '../components/dashboard/DashboardMobile';
-import { useSidebarContext } from '../context/SidebarContext';
-import { 
+import {
   Monitor, 
   AlertTriangle, 
   CheckCircle2, 
