@@ -331,6 +331,9 @@ verify_jwt = false
 [functions.notify-escalation]
 verify_jwt = false
 
+[functions.resend-escalation]
+verify_jwt = true
+
 [[cron]]
 function_name = "billing-scheduler"
 schedule = "0 8 * * *"  # Todos os dias às 08:00

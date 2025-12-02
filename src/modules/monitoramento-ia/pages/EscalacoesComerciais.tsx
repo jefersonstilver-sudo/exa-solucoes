@@ -282,7 +282,7 @@ export default function EscalacoesComerciais() {
     setShowSendDialog(true);
   };
 
-  // Enviar escalação manualmente para vendedores selecionados
+  // Enviar escalação manualmente para vendedores selecionados (com botões interativos)
   const sendManualEscalation = async () => {
     if (!sendingEscalacao || selectedVendedores.length === 0) {
       toast.error('Selecione ao menos um vendedor');
@@ -291,97 +291,34 @@ export default function EscalacoesComerciais() {
 
     setIsSending(true);
     try {
-      // Buscar config Z-API
-      const { data: agent } = await supabase
-        .from('agents')
-        .select('zapi_config')
-        .eq('key', 'sofia')
-        .single();
+      console.log('[SendManual] 📤 Enviando escalação com botões:', {
+        escalacaoId: sendingEscalacao.id,
+        vendedorIds: selectedVendedores
+      });
 
-      const zapiConfig = agent?.zapi_config as { instance_id?: string; token?: string } | null;
+      // Usar a nova edge function que envia COM BOTÕES
+      const { data, error } = await supabase.functions.invoke('resend-escalation', {
+        body: {
+          escalacaoId: sendingEscalacao.id,
+          vendedorIds: selectedVendedores
+        }
+      });
 
-      if (!zapiConfig?.instance_id || !zapiConfig?.token) {
-        toast.error('Z-API não configurado');
+      console.log('[SendManual] 📥 Resposta:', { data, error });
+
+      if (error) {
+        console.error('[SendManual] ❌ Erro:', error);
+        toast.error('Erro ao enviar escalação');
         return;
       }
 
-      // Montar mensagem
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('pt-BR');
-      const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-      // Função para formatar telefone com +
-      const formatPhoneWithPlus = (phone: string): string => {
-        const clean = phone.replace(/\D/g, '');
-        if (clean.length >= 12) {
-          return `+${clean.slice(0, 2)} (${clean.slice(2, 4)}) ${clean.slice(4, 9)}-${clean.slice(9)}`;
+      if (data?.success) {
+        toast.success(`Escalação enviada para ${data.sent} vendedor(es) com botões!`);
+        if (data.errors && data.errors.length > 0) {
+          console.warn('[SendManual] ⚠️ Alguns erros:', data.errors);
         }
-        return `+${clean}`;
-      };
-
-      const cleanPhone = sendingEscalacao.phone_number.replace(/\D/g, '');
-
-      let message = `🔔 *ESCALAÇÃO COMERCIAL (REENVIO MANUAL)*\n`;
-      message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-      message += `📅 *Escalação criada em:* ${format(new Date(sendingEscalacao.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}\n`;
-      message += `📤 *Reenviado em:* ${dateStr} às ${timeStr}\n\n`;
-      message += `👤 *Lead:* ${sendingEscalacao.lead_name || 'Não identificado'}\n`;
-      message += `📱 *Telefone:* ${formatPhoneWithPlus(sendingEscalacao.phone_number)}\n`;
-      message += `📲 *WhatsApp:* https://wa.me/${cleanPhone}\n`;
-      
-      if (sendingEscalacao.lead_segment) {
-        message += `🏢 *Segmento:* ${sendingEscalacao.lead_segment}\n`;
-      }
-      
-      if (sendingEscalacao.plans_interested && sendingEscalacao.plans_interested.length > 0) {
-        message += `📊 *Planos:* ${sendingEscalacao.plans_interested.join(', ')}\n`;
-      }
-
-      if (sendingEscalacao.first_message) {
-        message += `\n💬 *Primeira mensagem:*\n"${sendingEscalacao.first_message.substring(0, 200)}"\n`;
-      }
-
-      if (sendingEscalacao.conversation_summary) {
-        message += `\n📝 *Resumo:*\n${sendingEscalacao.conversation_summary.substring(0, 500)}\n`;
-      }
-
-      message += `\n━━━━━━━━━━━━━━━━━━━━`;
-      message += `\n⚡ Cliente solicitou condição especial`;
-      message += `\n💼 Aguardando seu contato!`;
-
-      // Enviar para cada vendedor selecionado
-      let successCount = 0;
-      const selectedVendedorsList = vendedores.filter(v => selectedVendedores.includes(v.id));
-
-      for (const vendedor of selectedVendedorsList) {
-        try {
-          const vendedorPhone = vendedor.telefone.startsWith('55') 
-            ? vendedor.telefone 
-            : `55${vendedor.telefone}`;
-
-          const { data, error } = await supabase.functions.invoke('zapi-send-message', {
-            body: {
-              phone: vendedorPhone,
-              message: `Olá ${vendedor.nome}!\n\n${message}`,
-              agentKey: 'sofia'
-            }
-          });
-
-          if (!error && data?.success) {
-            successCount++;
-            console.log(`[SendManual] ✅ Enviado para ${vendedor.nome}`);
-          } else {
-            console.error(`[SendManual] ❌ Erro ao enviar para ${vendedor.nome}:`, error || data);
-          }
-        } catch (err) {
-          console.error(`[SendManual] ❌ Erro ao enviar para ${vendedor.nome}:`, err);
-        }
-      }
-
-      if (successCount > 0) {
-        toast.success(`Escalação enviada para ${successCount} vendedor(es)!`);
       } else {
-        toast.error('Falha ao enviar para todos os vendedores');
+        toast.error(data?.error || 'Falha ao enviar escalação');
       }
 
       setShowSendDialog(false);
