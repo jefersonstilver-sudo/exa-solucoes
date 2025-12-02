@@ -559,13 +559,13 @@ export default function EscalacoesComerciais() {
                             <Badge className={getStatusColor(escalacao.status)}>
                               {getStatusLabel(escalacao.status)}
                             </Badge>
-                            {/* Indicador de resposta via botão */}
-                            {escalacao.response_type === 'ja_respondido' && (
+                            {/* Indicador de resposta via botão ou texto */}
+                            {(escalacao.response_type === 'button' || escalacao.response_type === 'ja_respondido') && escalacao.status === 'concluido' && (
                               <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">
-                                ✅ Via Botão
+                                ✅ {escalacao.responded_by_name || 'Respondido'}
                               </Badge>
                             )}
-                            {escalacao.response_type === 'vou_responder' && escalacao.status === 'pendente' && (
+                            {(escalacao.response_type === 'text' || escalacao.response_type === 'vou_responder') && escalacao.status === 'pendente' && (
                               <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-[10px]">
                                 ⏰ Responderá depois
                               </Badge>

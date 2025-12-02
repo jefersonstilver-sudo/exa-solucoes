@@ -394,7 +394,17 @@ serve(async (req) => {
       if (escalacaoPendente && !escError) {
         const action = textLower === 'ok' ? 'respondida' : 'depois';
         const newStatus = action === 'respondida' ? 'concluido' : 'pendente';
-        const responseType = action === 'respondida' ? 'ja_respondido' : 'vou_responder';
+        // Usar 'text' para respostas via texto (consistente com 'button' para botões)
+        const responseType = 'text';
+        
+        // Buscar vendedor que respondeu pelo telefone
+        const { data: sellerData } = await supabase
+          .from('escalacao_vendedores')
+          .select('id, nome, telefone')
+          .eq('telefone', phone)
+          .single();
+        
+        const sellerName = sellerData?.nome || 'Vendedor';
         
         const { error: updateError } = await supabase
           .from('escalacoes_comerciais')
@@ -403,7 +413,8 @@ serve(async (req) => {
             viewed_at: new Date().toISOString(),
             responded_at: action === 'respondida' ? new Date().toISOString() : null,
             response_type: responseType,
-            attended_at: action === 'respondida' ? new Date().toISOString() : undefined
+            attended_at: action === 'respondida' ? new Date().toISOString() : undefined,
+            responded_by_name: action === 'respondida' ? sellerName : null
           })
           .eq('id', escalacaoPendente.id);
         
@@ -411,12 +422,13 @@ serve(async (req) => {
           console.log('[ZAPI-WEBHOOK] ✅ Escalation updated via text fallback:', {
             id: escalacaoPendente.id,
             leadName: escalacaoPendente.lead_name,
-            action
+            action,
+            respondedBy: sellerName
           });
           
           // Enviar confirmação
           const confirmMsg = action === 'respondida'
-            ? `✅ *Escalação de ${escalacaoPendente.lead_name || 'lead'} marcada como atendida!*`
+            ? `✅ *Escalação de ${escalacaoPendente.lead_name || 'lead'} marcada como atendida!*\n\nBom trabalho! 💪`
             : `⏰ *Escalação de ${escalacaoPendente.lead_name || 'lead'} permanece pendente.*`;
           
           try {
@@ -432,6 +444,7 @@ serve(async (req) => {
             if (zapiConfig?.instance_id && zapiConfig?.token && zapiClientToken) {
               const zapiUrl = `https://api.z-api.io/instances/${zapiConfig.instance_id}/token/${zapiConfig.token}/send-text`;
               
+              // Enviar confirmação para quem respondeu
               await fetch(zapiUrl, {
                 method: 'POST',
                 headers: { 
@@ -443,6 +456,45 @@ serve(async (req) => {
                   message: confirmMsg
                 })
               });
+              
+              // SE FOI "OK" (JÁ RESPONDI) - Notificar OUTROS vendedores via texto também
+              if (action === 'respondida') {
+                console.log('[ZAPI-WEBHOOK] 📢 (TEXT) Notifying other sellers that', sellerName, 'took the lead');
+                
+                const { data: allSellers } = await supabase
+                  .from('escalacao_vendedores')
+                  .select('id, nome, telefone')
+                  .eq('ativo', true)
+                  .eq('recebe_escalacoes', true);
+                
+                if (allSellers && allSellers.length > 1) {
+                  const leadInfo = escalacaoPendente.lead_name || 'lead';
+                  
+                  for (const seller of allSellers) {
+                    if (seller.telefone === phone) continue;
+                    
+                    try {
+                      const otherMsg = `ℹ️ *Escalação assumida!*\n\n👤 *${sellerName}* já assumiu o atendimento do lead *${leadInfo}*.\n\n✅ Você não precisa mais responder esta escalação.`;
+                      
+                      await fetch(zapiUrl, {
+                        method: 'POST',
+                        headers: { 
+                          'Content-Type': 'application/json',
+                          'Client-Token': zapiClientToken
+                        },
+                        body: JSON.stringify({
+                          phone: seller.telefone,
+                          message: otherMsg
+                        })
+                      });
+                      
+                      console.log('[ZAPI-WEBHOOK] ✅ (TEXT) Notified', seller.nome, 'that', sellerName, 'took the lead');
+                    } catch (notifyError) {
+                      console.error('[ZAPI-WEBHOOK] ⚠️ (TEXT) Error notifying', seller.nome, ':', notifyError);
+                    }
+                  }
+                }
+              }
             }
           } catch (e) {
             console.error('[ZAPI-WEBHOOK] Error sending text fallback confirmation:', e);
