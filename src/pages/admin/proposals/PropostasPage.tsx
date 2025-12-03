@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import MobilePageHeader from '@/components/admin/shared/MobilePageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, isToday, startOfMonth, endOfMonth } from 'date-fns';
+import { format, isToday, startOfMonth, endOfMonth, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
 
@@ -34,6 +34,11 @@ interface Proposal {
   sent_at: string | null;
   expires_at: string | null;
   selected_buildings: any[];
+  // Tracking fields
+  view_count: number | null;
+  total_time_spent_seconds: number | null;
+  first_viewed_at: string | null;
+  last_viewed_at: string | null;
 }
 
 const PropostasPage = () => {
@@ -264,13 +269,30 @@ const PropostasPage = () => {
         ) : (
           <div className="space-y-3">
             {filteredProposals.map((proposal) => (
-              <Card key={proposal.id} className="p-4 bg-white/80 backdrop-blur-sm border-white/50">
+              <Card 
+                key={proposal.id} 
+                className="p-4 bg-white/80 backdrop-blur-sm border-white/50 cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {/* Header */}
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-mono text-xs text-primary font-semibold">{proposal.number}</span>
                       {getStatusBadge(proposal.status)}
+                      
+                      {/* Indicador de visualização */}
+                      {proposal.view_count && proposal.view_count > 0 && (
+                        <div className="flex items-center gap-1 text-purple-600 text-[10px] bg-purple-50 px-1.5 py-0.5 rounded-full">
+                          <Eye className="h-3 w-3" />
+                          <span>{proposal.view_count}x</span>
+                          {proposal.last_viewed_at && (
+                            <span className="text-purple-400">
+                              • {formatDistanceToNow(new Date(proposal.last_viewed_at), { locale: ptBR, addSuffix: false })}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     
                     {/* Cliente */}
@@ -301,21 +323,36 @@ const PropostasPage = () => {
 
                   {/* Actions */}
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleCopyLink(proposal)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(buildPath(`propostas/${proposal.id}`));
+                      }}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Detalhes
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyLink(proposal);
+                      }}>
                         <Copy className="h-4 w-4 mr-2" />
                         Copiar Link
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => window.open(`https://examidia.com.br/propostacomercial/${proposal.id}`, '_blank')}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(`https://examidia.com.br/propostacomercial/${proposal.id}`, '_blank');
+                      }}>
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Visualizar
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={async () => {
+                      <DropdownMenuItem onClick={async (e) => {
+                        e.stopPropagation();
                         try {
                           const exporter = new ProposalPDFExporter();
                           await exporter.generateProposalPDF(proposal as any, 'Equipe EXA');
@@ -327,14 +364,21 @@ const PropostasPage = () => {
                         <Download className="h-4 w-4 mr-2" />
                         Baixar PDF
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       {proposal.client_phone && (
-                        <DropdownMenuItem onClick={() => handleResend(proposal, 'whatsapp')}>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          handleResend(proposal, 'whatsapp');
+                        }}>
                           <MessageSquare className="h-4 w-4 mr-2" />
                           Reenviar WhatsApp
                         </DropdownMenuItem>
                       )}
                       {proposal.client_email && (
-                        <DropdownMenuItem onClick={() => handleResend(proposal, 'email')}>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          handleResend(proposal, 'email');
+                        }}>
                           <Mail className="h-4 w-4 mr-2" />
                           Reenviar E-mail
                         </DropdownMenuItem>
