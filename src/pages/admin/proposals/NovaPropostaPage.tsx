@@ -44,6 +44,7 @@ const NovaPropostaPage = () => {
   });
 
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
+  const [durationMonths, setDurationMonths] = useState(6); // Período: 1, 3, 6 ou 12 meses
   const [fidelValue, setFidelValue] = useState('');
   const [discountPercent, setDiscountPercent] = useState(10);
   const [overwriteCashValue, setOverwriteCashValue] = useState(false);
@@ -53,6 +54,14 @@ const NovaPropostaPage = () => {
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendViaWhatsApp, setSendViaWhatsApp] = useState(true);
   const [sendViaEmail, setSendViaEmail] = useState(false);
+
+  // Opções de período
+  const periodOptions = [
+    { value: 1, label: '1 mês', discount: 0 },
+    { value: 3, label: '3 meses', discount: 20 },
+    { value: 6, label: '6 meses', discount: 30 },
+    { value: 12, label: '12 meses', discount: 37.5 },
+  ];
 
   // Buscar prédios ativos do banco de dados
   const { data: buildings = [], isLoading: isLoadingBuildings } = useQuery({
@@ -116,7 +125,7 @@ const NovaPropostaPage = () => {
 
   // Cálculos de valores
   const fidelMonthly = parseFloat(fidelValue) || 0;
-  const fidelTotal = fidelMonthly * 6;
+  const fidelTotal = fidelMonthly * durationMonths;
   const cashTotal = overwriteCashValue 
     ? parseFloat(cashValue) || 0 
     : fidelTotal * (1 - discountPercent / 100);
@@ -159,7 +168,7 @@ const NovaPropostaPage = () => {
           fidel_monthly_value: fidelMonthly,
           cash_total_value: cashTotal,
           discount_percent: discountPercent,
-          duration_months: 6,
+          duration_months: durationMonths,
           status: 'enviada',
           sent_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 horas
@@ -424,6 +433,35 @@ const NovaPropostaPage = () => {
           </div>
 
           <div className="space-y-4">
+            {/* Seletor de Período */}
+            <div>
+              <Label className="text-xs mb-2 block">Período do Contrato *</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {periodOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setDurationMonths(option.value)}
+                    className={`p-3 rounded-lg border-2 text-center transition-all ${
+                      durationMonths === option.value
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="font-bold text-sm">{option.value}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {option.value === 1 ? 'mês' : 'meses'}
+                    </div>
+                    {option.discount > 0 && (
+                      <div className="text-[9px] text-primary font-medium mt-1">
+                        {option.discount}% OFF
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div>
               <div className="flex items-center justify-between">
                 <Label className="text-xs">Valor Fidelidade Mensal *</Label>
@@ -505,21 +543,21 @@ const NovaPropostaPage = () => {
                 <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                   {discountPercent}% OFF
                 </span>
-                <span className="text-xs text-muted-foreground">À Vista</span>
+                <span className="text-xs text-muted-foreground">À Vista ({durationMonths} {durationMonths === 1 ? 'mês' : 'meses'})</span>
               </div>
               <div className="text-2xl font-bold text-primary">
                 {formatCurrency(cashTotal)}
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                = {formatCurrency(cashTotal / 6)}/mês
-                {totalPanels > 0 && ` • R$ ${((cashTotal / 6) / (totalPanels * 30)).toFixed(2)}/painel/dia`}
+                = {formatCurrency(cashTotal / durationMonths)}/mês
+                {totalPanels > 0 && ` • R$ ${((cashTotal / durationMonths) / (totalPanels * 30)).toFixed(2)}/painel/dia`}
               </div>
             </div>
 
             {/* Plano Fidelidade */}
             <div className="p-4 rounded-xl border border-gray-200 bg-white">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">Fidelidade 6 meses</span>
+                <span className="text-xs text-muted-foreground">Fidelidade {durationMonths} {durationMonths === 1 ? 'mês' : 'meses'}</span>
               </div>
               <div className="text-2xl font-bold">
                 {formatCurrency(fidelMonthly)}
@@ -643,12 +681,16 @@ const NovaPropostaPage = () => {
                 <span className="font-medium">{selectedBuildings.length}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-muted-foreground">Período:</span>
+                <span className="font-medium">{durationMonths} {durationMonths === 1 ? 'mês' : 'meses'}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-muted-foreground">Valor à Vista:</span>
                 <span className="font-medium text-primary">{formatCurrency(cashTotal)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Valor Fidelidade:</span>
-                <span className="font-medium">{formatCurrency(fidelMonthly)}/mês</span>
+                <span className="font-medium">{formatCurrency(fidelMonthly)}/mês (total: {formatCurrency(fidelTotal)})</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Validade:</span>
