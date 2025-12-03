@@ -62,22 +62,15 @@ const ModernAdminHeader = () => {
         return 'Admin';
     }
   };
-  return (
-    <div className="flex items-center justify-between flex-1">
+  return <div className="flex items-center justify-between flex-1">
       {/* EXA Logo - Only on Mobile - Clean style */}
-      {isMobile && (
-        <div className="flex items-center gap-2">
-          <img 
-            src={exaLogo} 
-            alt="EXA" 
-            className="h-7 w-auto" 
-          />
+      {isMobile && <div className="flex items-center gap-2">
+          <img src={exaLogo} alt="EXA" className="h-7 w-auto" />
           <div className="h-4 w-px bg-border/50" />
-          <span className="text-[10px] text-muted-foreground font-medium">
+          <span className="text-[10px] font-medium text-primary-foreground">
             {getRoleLabel()}
           </span>
-        </div>
-      )}
+        </div>}
 
       {/* Desktop: Dynamic Title */}
       {!isMobile && <div />}
@@ -86,7 +79,9 @@ const ModernAdminHeader = () => {
         {/* Data e hora com segundos em tempo real - Desktop only */}
         <div className="hidden md:flex flex-col items-end text-right border-r border-border/30 pr-3 mr-1">
           <span className="text-sm font-medium text-foreground leading-tight">
-            {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+            {format(currentTime, "EEEE, dd 'de' MMMM", {
+            locale: ptBR
+          })}
           </span>
           <span className="text-xs text-muted-foreground leading-tight font-mono">
             {format(currentTime, 'HH:mm:ss')}
@@ -97,12 +92,7 @@ const ModernAdminHeader = () => {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              className={`relative h-7 w-7 rounded-full touch-target ${
-                isMobile ? 'hover:bg-black/5' : 'hover:bg-accent'
-              }`}
-            >
+            <Button variant="ghost" className={`relative h-7 w-7 rounded-full touch-target ${isMobile ? 'hover:bg-black/5' : 'hover:bg-accent'}`}>
               <Avatar className="h-7 w-7">
                 <AvatarFallback className="font-semibold text-[10px] bg-muted text-muted-foreground">
                   {userProfile?.email?.charAt(0).toUpperCase() || 'A'}
@@ -127,8 +117,6 @@ const ModernAdminHeader = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default ModernAdminHeader;
