@@ -1,15 +1,16 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MonitorPlay, ArrowRight, AlertTriangle, CheckCircle, Wifi, WifiOff } from 'lucide-react';
+import { MonitorPlay, ArrowRight, AlertTriangle, CheckCircle, Wifi, WifiOff, TrendingDown } from 'lucide-react';
 import { DashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { useNavigate } from 'react-router-dom';
 
 interface PanelsStatusCardProps {
   metrics: DashboardMetrics;
+  quedasPeriodo?: number;
 }
 
-const PanelsStatusCard = ({ metrics }: PanelsStatusCardProps) => {
+const PanelsStatusCard = ({ metrics, quedasPeriodo = 0 }: PanelsStatusCardProps) => {
   const navigate = useNavigate();
   
   const onlinePercentage = metrics.panelsTotal > 0
@@ -22,7 +23,7 @@ const PanelsStatusCard = ({ metrics }: PanelsStatusCardProps) => {
         <CardTitle className="text-sm md:text-base flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MonitorPlay className="h-4 w-4 text-blue-500" />
-            Status dos Painéis
+            Dispositivos
           </div>
           <div className="flex items-center gap-1.5">
             {metrics.isRealtimeConnected ? (
@@ -43,7 +44,7 @@ const PanelsStatusCard = ({ metrics }: PanelsStatusCardProps) => {
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-gray-600">
-            <span>Online: {metrics.panelsOnline}</span>
+            <span>Online: {metrics.panelsOnline}/{metrics.panelsTotal}</span>
             <span className="font-bold text-gray-900">{onlinePercentage}%</span>
           </div>
           <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
@@ -55,24 +56,34 @@ const PanelsStatusCard = ({ metrics }: PanelsStatusCardProps) => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2 rounded-lg bg-green-50 border border-green-200">
             <div className="flex items-center gap-1 mb-1">
               <CheckCircle className="h-3 w-3 text-green-600" />
               <span className="text-[10px] text-green-700 font-medium">Online</span>
             </div>
-            <p className="text-xl font-bold text-green-700">
+            <p className="text-lg font-bold text-green-700">
               {metrics.panelsOnline}
             </p>
           </div>
 
-          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+          <div className="p-2 rounded-lg bg-red-50 border border-red-200">
             <div className="flex items-center gap-1 mb-1">
               <AlertTriangle className="h-3 w-3 text-red-600" />
               <span className="text-[10px] text-red-700 font-medium">Offline</span>
             </div>
-            <p className="text-xl font-bold text-red-700">
+            <p className="text-lg font-bold text-red-700">
               {metrics.panelsOffline}
+            </p>
+          </div>
+
+          <div className="p-2 rounded-lg bg-orange-50 border border-orange-200">
+            <div className="flex items-center gap-1 mb-1">
+              <TrendingDown className="h-3 w-3 text-orange-600" />
+              <span className="text-[10px] text-orange-700 font-medium">Quedas</span>
+            </div>
+            <p className="text-lg font-bold text-orange-700">
+              {quedasPeriodo}
             </p>
           </div>
         </div>
@@ -81,7 +92,7 @@ const PanelsStatusCard = ({ metrics }: PanelsStatusCardProps) => {
         {metrics.panelsOffline > 0 && (
           <div className="p-2 rounded-lg bg-yellow-50 border border-yellow-200">
             <p className="text-xs text-yellow-700">
-              ⚠️ {metrics.panelsOffline} painel{metrics.panelsOffline > 1 ? 'éis' : ''} offline
+              ⚠️ {metrics.panelsOffline} dispositivo{metrics.panelsOffline > 1 ? 's' : ''} offline
             </p>
           </div>
         )}
@@ -90,7 +101,7 @@ const PanelsStatusCard = ({ metrics }: PanelsStatusCardProps) => {
           variant="ghost"
           size="sm"
           className="w-full"
-          onClick={() => navigate('/admin/monitoramento-ia')}
+          onClick={() => navigate('/admin/paineis-exa')}
         >
           Ver monitoramento
           <ArrowRight className="h-3 w-3 ml-1" />
