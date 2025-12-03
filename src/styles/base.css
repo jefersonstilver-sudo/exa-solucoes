@@ -4,11 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Force sidebar background - Definitive fix for CSS variable issues */
-[data-sidebar="sidebar"] {
-  background: linear-gradient(180deg, #1A0A0A 0%, #2D1515 50%, #3D1F1F 100%) !important;
-}
-
 /* Critical CSS only - Removed unused styles */
 @layer base {
   * {
@@ -76,17 +71,6 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
-    
-    /* Sidebar CSS Variables - Required by shadcn sidebar */
-    --sidebar-background: 0 41% 7%;          /* #180A0A - EXA Dark */
-    --sidebar-foreground: 0 0% 95%;          /* Light text */
-    --sidebar-primary: 355 68% 37%;          /* #9C1E1E - EXA Red */
-    --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 355 50% 20%;           /* Dark red accent */
-    --sidebar-accent-foreground: 0 0% 95%;   /* Light text */
-    --sidebar-border: 355 40% 15%;           /* Dark red border */
-    --sidebar-ring: 355 68% 37%;             /* EXA Red ring */
-    
     --exa-red: 355 68% 37%;           /* #9C1E1E - EXA Red Primary */
     --exa-red-dark: 355 50% 25%;       /* #5C1A1A - Burgundy elegante para sidebar */
     --exa-dark: 0 41% 7%;              /* #180A0A - EXA Dark Background */
@@ -137,16 +121,6 @@
     --border: 0 0% 20%;               /* Borda mais clara */
     --input: 0 0% 15%;
     --ring: 0 0% 83%;
-    
-    /* Sidebar CSS Variables - Dark mode */
-    --sidebar-background: 0 41% 7%;          /* #180A0A - EXA Dark */
-    --sidebar-foreground: 0 0% 95%;          /* Light text */
-    --sidebar-primary: 355 68% 45%;          /* EXA Red lighter for dark mode */
-    --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 355 50% 20%;           /* Dark red accent */
-    --sidebar-accent-foreground: 0 0% 95%;   /* Light text */
-    --sidebar-border: 355 40% 15%;           /* Dark red border */
-    --sidebar-ring: 355 68% 45%;             /* EXA Red ring */
     
     /* Cores EXA ajustadas para dark mode - mantém a identidade visual */
     --exa-red: 355 68% 45%;           /* Um pouco mais claro que no light mode */
