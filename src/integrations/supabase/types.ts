@@ -5203,6 +5203,7 @@ export type Database = {
           blocked_reason: string | null
           checkout_session_id: string | null
           client_id: string
+          client_name: string | null
           compliance_data: Json | null
           contrato_assinado_em: string | null
           contrato_enviado_em: string | null
@@ -5250,6 +5251,7 @@ export type Database = {
           blocked_reason?: string | null
           checkout_session_id?: string | null
           client_id: string
+          client_name?: string | null
           compliance_data?: Json | null
           contrato_assinado_em?: string | null
           contrato_enviado_em?: string | null
@@ -5297,6 +5299,7 @@ export type Database = {
           blocked_reason?: string | null
           checkout_session_id?: string | null
           client_id?: string
+          client_name?: string | null
           compliance_data?: Json | null
           contrato_assinado_em?: string | null
           contrato_enviado_em?: string | null

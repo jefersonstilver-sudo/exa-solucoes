@@ -207,6 +207,7 @@ serve(async (req) => {
     console.log('📦 Criando pedido no banco...');
     const orderData = {
       client_id: userId,
+      client_name: proposal.client_name, // Salvar nome do cliente diretamente no pedido
       status: 'pago_pendente_video',
       valor_total: proposal.cash_total_value || proposal.fidel_monthly_value,
       plano_meses: proposal.duration_months || 1,
