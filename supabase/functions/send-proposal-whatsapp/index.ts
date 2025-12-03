@@ -110,17 +110,19 @@ Olá, ${proposal.client_name?.split(' ')[0] || 'Cliente'}!
 _${sellerName}_
 EXA Mídia Digital`;
 
-    // Get Z-API config from agents table (using sofia agent)
+    // Get Z-API config from agents table (using EXA Alert agent for proposals)
+    console.log('[SEND-PROPOSAL-WHATSAPP] Usando agente: EXA Alert para envio de propostas');
+    
     const { data: agent, error: agentError } = await supabase
       .from('agents')
       .select('zapi_config')
-      .eq('key', 'sofia')
+      .eq('key', 'exa_alert')
       .single();
 
     if (agentError || !agent?.zapi_config) {
-      console.error('Erro ao buscar configuração Z-API:', agentError);
+      console.error('Erro ao buscar configuração Z-API do EXA Alert:', agentError);
       return new Response(
-        JSON.stringify({ error: 'Z-API não configurado no agente Sofia' }),
+        JSON.stringify({ error: 'Z-API não configurado no agente EXA Alert' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -131,9 +133,9 @@ EXA Mídia Digital`;
     const zapiClientToken = zapiConfig.client_token || Deno.env.get('ZAPI_CLIENT_TOKEN') || '';
 
     if (!zapiInstanceId || !zapiToken) {
-      console.error('Z-API credentials não encontradas no agente');
+      console.error('Z-API credentials não encontradas no agente EXA Alert');
       return new Response(
-        JSON.stringify({ error: 'Z-API não configurado corretamente' }),
+        JSON.stringify({ error: 'Z-API não configurado corretamente no EXA Alert' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
