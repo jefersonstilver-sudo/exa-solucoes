@@ -80,19 +80,28 @@ export class ProposalPDFExporter {
     }
   }
 
-  private async drawHeader(proposal: ProposalData): Promise<void> {
-    // Header vermelho EXA
-    this.doc.setFillColor(156, 30, 30);
-    this.doc.rect(0, 0, this.pageWidth, 40, 'F');
+  private async drawHeader(proposal: ProposalData, isCortesia: boolean = false): Promise<void> {
+    // Header - verde/dourado para cortesia, vermelho EXA para normal
+    if (isCortesia) {
+      // Gradient effect for cortesia
+      this.doc.setFillColor(217, 119, 6); // amber-600
+      this.doc.rect(0, 0, this.pageWidth / 2, 40, 'F');
+      this.doc.setFillColor(5, 150, 105); // emerald-600
+      this.doc.rect(this.pageWidth / 2, 0, this.pageWidth / 2, 40, 'F');
+    } else {
+      this.doc.setFillColor(156, 30, 30);
+      this.doc.rect(0, 0, this.pageWidth, 40, 'F');
+    }
     
-    // Logo EXA
+    // Logo EXA - mantém proporção
     try {
       const logoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
       const dataUrl = await this.loadImageAsDataURL(logoUrl);
-      this.doc.addImage(dataUrl, 'PNG', this.margin, 8, 24, 24);
+      // Manter proporção da logo (quadrada) - max height 20
+      this.doc.addImage(dataUrl, 'PNG', this.margin, 10, 20, 20);
     } catch {
       this.doc.setTextColor(255, 255, 255);
-      this.doc.setFontSize(16);
+      this.doc.setFontSize(14);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text('EXA', this.margin, 22);
     }
@@ -101,7 +110,12 @@ export class ProposalPDFExporter {
     this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('PROPOSTA COMERCIAL', this.pageWidth / 2, 18, { align: 'center' });
+    
+    if (isCortesia) {
+      this.doc.text('🎁 PRESENTE CORTESIA 🎉', this.pageWidth / 2, 18, { align: 'center' });
+    } else {
+      this.doc.text('PROPOSTA COMERCIAL', this.pageWidth / 2, 18, { align: 'center' });
+    }
     
     // Subtítulo
     this.doc.setFontSize(8);
@@ -116,20 +130,24 @@ export class ProposalPDFExporter {
     this.yPosition = 48;
   }
 
-  private drawProposalNumber(proposal: ProposalData): void {
+  private drawProposalNumber(proposal: ProposalData, isCortesia: boolean = false): void {
     // Box com número e status
-    this.doc.setFillColor(254, 242, 242);
+    if (isCortesia) {
+      this.doc.setFillColor(254, 243, 199); // amber-100
+    } else {
+      this.doc.setFillColor(254, 242, 242);
+    }
     this.doc.rect(this.margin, this.yPosition, this.contentWidth, 16, 'F');
     
-    this.doc.setDrawColor(156, 30, 30);
+    this.doc.setDrawColor(isCortesia ? 217 : 156, isCortesia ? 119 : 30, isCortesia ? 6 : 30);
     this.doc.setLineWidth(0.5);
     this.doc.rect(this.margin, this.yPosition, this.contentWidth, 16);
     
     // Número
-    this.doc.setTextColor(156, 30, 30);
+    this.doc.setTextColor(isCortesia ? 146 : 156, isCortesia ? 64 : 30, isCortesia ? 14 : 30);
     this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(`Proposta ${proposal.number}`, this.margin + 4, this.yPosition + 10);
+    this.doc.text(isCortesia ? `🎁 Cortesia ${proposal.number}` : `Proposta ${proposal.number}`, this.margin + 4, this.yPosition + 10);
     
     // Status badge
     const statusConfig: Record<string, { bg: number[]; text: string }> = {
@@ -219,6 +237,9 @@ export class ProposalPDFExporter {
     this.yPosition += 9;
     
     // Linhas
+    let totalPanels = 0;
+    let totalImpressions = 0;
+    
     buildings.forEach((b, index) => {
       if (index % 2 === 0) {
         this.doc.setFillColor(249, 250, 251);
@@ -231,20 +252,35 @@ export class ProposalPDFExporter {
       
       const nome = (b.building_name || b.nome || '').substring(0, 28);
       const bairro = (b.bairro || '').substring(0, 18);
-      const telas = String(b.quantidade_telas || 1);
-      const imp = (b.visualizacoes_mes || 0).toLocaleString();
+      const telas = b.quantidade_telas || 1;
+      const imp = b.visualizacoes_mes || 0;
       const valor = this.formatCurrency(b.preco_base || 0);
+      
+      totalPanels += telas;
+      totalImpressions += imp;
       
       this.doc.text(nome, cols[0].x, this.yPosition + 4);
       this.doc.text(bairro, cols[1].x, this.yPosition + 4);
-      this.doc.text(telas, cols[2].x, this.yPosition + 4);
-      this.doc.text(imp, cols[3].x, this.yPosition + 4);
+      this.doc.text(String(telas), cols[2].x, this.yPosition + 4);
+      this.doc.text(imp.toLocaleString(), cols[3].x, this.yPosition + 4);
       this.doc.text(valor, cols[4].x, this.yPosition + 4);
       
       this.yPosition += 6;
     });
     
-    this.yPosition += 5;
+    // Linha de totais
+    this.doc.setFillColor(229, 231, 235);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 7, 'F');
+    
+    this.doc.setTextColor(31, 41, 55);
+    this.doc.setFontSize(7);
+    this.doc.setFont('helvetica', 'bold');
+    
+    this.doc.text('TOTAIS', cols[0].x, this.yPosition + 5);
+    this.doc.text(String(totalPanels), cols[2].x, this.yPosition + 5);
+    this.doc.text(totalImpressions.toLocaleString(), cols[3].x, this.yPosition + 5);
+    
+    this.yPosition += 12;
   }
 
   private drawFinancialSummary(proposal: ProposalData): void {
@@ -291,7 +327,63 @@ export class ProposalPDFExporter {
     this.yPosition += 38;
   }
 
-  private async drawValidationFooter(proposal: ProposalData): Promise<void> {
+  private drawCortesiaFinancialSummary(proposal: ProposalData, baseTotalValue: number): void {
+    this.checkPageBreak(45);
+    
+    // Box financeiro cortesia - verde/dourado
+    this.doc.setFillColor(236, 253, 245); // emerald-50
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 42, 'F');
+    
+    this.doc.setDrawColor(5, 150, 105); // emerald-600
+    this.doc.setLineWidth(0.5);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 42);
+    
+    // Título
+    this.doc.setTextColor(5, 150, 105);
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('🎁 PRESENTE CORTESIA', this.margin + 4, this.yPosition + 7);
+    
+    const leftCol = this.margin + 4;
+    const rightCol = this.pageWidth / 2 + 10;
+    
+    // Coluna esquerda - Valor que seria pago
+    this.doc.setTextColor(107, 114, 128);
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text(`Período: ${proposal.duration_months} meses`, leftCol, this.yPosition + 14);
+    this.doc.text('Se fosse pago:', leftCol, this.yPosition + 22);
+    
+    this.doc.setFontSize(10);
+    this.doc.setTextColor(156, 30, 30);
+    // Strikethrough effect
+    const strikeValue = this.formatCurrency(baseTotalValue);
+    this.doc.text(strikeValue, leftCol, this.yPosition + 30);
+    const strikeWidth = this.doc.getTextWidth(strikeValue);
+    this.doc.setLineWidth(0.3);
+    this.doc.line(leftCol, this.yPosition + 28, leftCol + strikeWidth, this.yPosition + 28);
+    
+    // Coluna direita - PRESENTE
+    this.doc.setFillColor(209, 250, 229); // emerald-200
+    this.doc.rect(rightCol - 4, this.yPosition + 8, 80, 28, 'F');
+    
+    this.doc.setTextColor(5, 150, 105);
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('SEU PRESENTE:', rightCol, this.yPosition + 16);
+    
+    this.doc.setFontSize(20);
+    this.doc.text('R$ 0,00', rightCol, this.yPosition + 28);
+    
+    // Badge economia
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text(`💰 Economia de 100%`, rightCol, this.yPosition + 36);
+    
+    this.yPosition += 48;
+  }
+
+  private async drawValidationFooter(proposal: ProposalData, isCortesia: boolean = false): Promise<void> {
     const footerY = this.pageHeight - 45;
     
     // Linha separadora
@@ -311,13 +403,13 @@ export class ProposalPDFExporter {
     this.doc.setTextColor(107, 114, 128);
     this.doc.setFontSize(7);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Escaneie o QR Code para', this.margin + 28, footerY + 8);
-    this.doc.text('validar esta proposta online', this.margin + 28, footerY + 13);
+    this.doc.text(isCortesia ? 'Escaneie o QR Code para' : 'Escaneie o QR Code para', this.margin + 28, footerY + 8);
+    this.doc.text(isCortesia ? 'aceitar seu presente online' : 'validar esta proposta online', this.margin + 28, footerY + 13);
     
     // Número da proposta
     this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.setTextColor(156, 30, 30);
+    this.doc.setTextColor(isCortesia ? 5 : 156, isCortesia ? 150 : 30, isCortesia ? 105 : 30);
     this.doc.text(proposal.number, this.margin + 28, footerY + 21);
     
     // Validade
@@ -337,15 +429,20 @@ export class ProposalPDFExporter {
     this.doc.text('(45) 99141-5856', rightX, footerY + 20);
   }
 
-  public async generateProposalPDF(proposal: ProposalData, sellerName: string = 'Equipe EXA'): Promise<void> {
+  public async generateProposalPDF(
+    proposal: ProposalData, 
+    sellerName: string = 'Equipe EXA',
+    isCortesia: boolean = false,
+    baseTotalValue: number = 0
+  ): Promise<void> {
     // Header
-    await this.drawHeader(proposal);
+    await this.drawHeader(proposal, isCortesia);
     
     // Número e status
-    this.drawProposalNumber(proposal);
+    this.drawProposalNumber(proposal, isCortesia);
     
     // Dados do cliente
-    this.drawSection('DADOS DO CLIENTE');
+    this.drawSection(isCortesia ? 'PRESENTEADO' : 'DADOS DO CLIENTE');
     this.drawInfoRow('Nome', proposal.client_name, true);
     if (proposal.client_cnpj) {
       this.drawInfoRow('CNPJ', proposal.client_cnpj);
@@ -361,18 +458,26 @@ export class ProposalPDFExporter {
     
     // Prédios
     const buildings = proposal.selected_buildings || [];
-    this.drawSection(`PRÉDIOS INCLUÍDOS (${buildings.length} prédios • ${proposal.total_panels} telas)`);
+    const totalPanels = buildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0);
+    const totalImpressions = buildings.reduce((sum: number, b: any) => sum + (b.visualizacoes_mes || 0), 0);
+    
+    this.drawSection(`PRÉDIOS INCLUÍDOS (${buildings.length} prédios • ${totalPanels} telas • ${(totalImpressions / 1000).toFixed(0)}k imp/mês)`);
     this.drawBuildingsTable(buildings);
     
-    // Resumo financeiro
-    this.drawFinancialSummary(proposal);
+    // Resumo financeiro - diferente para cortesia
+    if (isCortesia) {
+      this.drawCortesiaFinancialSummary(proposal, baseTotalValue);
+    } else {
+      this.drawFinancialSummary(proposal);
+    }
     
     // Footer com QR Code
-    await this.drawValidationFooter(proposal);
+    await this.drawValidationFooter(proposal, isCortesia);
     
     // Salvar
     const cleanName = proposal.client_name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
-    const fileName = `Proposta_${proposal.number}_${cleanName}.pdf`;
+    const prefix = isCortesia ? 'Cortesia' : 'Proposta';
+    const fileName = `${prefix}_${proposal.number}_${cleanName}.pdf`;
     this.doc.save(fileName);
   }
 }

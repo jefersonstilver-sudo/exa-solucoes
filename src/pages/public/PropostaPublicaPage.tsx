@@ -446,7 +446,13 @@ const PropostaPublicaPage = () => {
     setIsDownloadingPDF(true);
     try {
       const exporter = new ProposalPDFExporter();
-      await exporter.generateProposalPDF(proposal, sellerName);
+      // Pass enriched buildings and cortesia info
+      await exporter.generateProposalPDF(
+        { ...proposal, selected_buildings: enrichedBuildings.length > 0 ? enrichedBuildings : proposal.selected_buildings },
+        sellerName,
+        isCortesia,
+        baseTotalValue
+      );
       toast.success('PDF baixado com sucesso!');
     } catch (err) {
       console.error('Erro ao gerar PDF:', err);
@@ -923,9 +929,9 @@ const PropostaPublicaPage = () => {
     : '0';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
+    <div className={`min-h-screen ${isCortesia ? 'bg-gradient-to-br from-amber-50 to-emerald-50' : 'bg-gradient-to-br from-gray-50 to-slate-100'}`}>
       {/* Header */}
-      <header className="bg-gradient-to-r from-[#4a0f0f] to-[#7D1818] text-white p-4">
+      <header className={`${isCortesia ? 'bg-gradient-to-r from-amber-600 to-emerald-600' : 'bg-gradient-to-r from-[#4a0f0f] to-[#7D1818]'} text-white p-4`}>
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-12 bg-white/10 rounded-lg flex items-center justify-center">
@@ -936,7 +942,15 @@ const PropostaPublicaPage = () => {
               />
             </div>
             <div className="flex-1">
-              <h1 className="text-lg font-bold">Proposta Comercial • EXA Mídia</h1>
+              {isCortesia ? (
+                <div className="flex items-center gap-2">
+                  <Gift className="h-5 w-5" />
+                  <h1 className="text-lg font-bold">Presente Cortesia • EXA Mídia</h1>
+                  <PartyPopper className="h-5 w-5" />
+                </div>
+              ) : (
+                <h1 className="text-lg font-bold">Proposta Comercial • EXA Mídia</h1>
+              )}
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="bg-white/10 px-3 py-1 rounded-full text-xs font-medium">
                   {proposal.number}
@@ -959,11 +973,19 @@ const PropostaPublicaPage = () => {
                     </span>
                   );
                 })()}
+                {isCortesia && (
+                  <span className="bg-gradient-to-r from-amber-400 to-emerald-400 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                    🎁 CORTESIA
+                  </span>
+                )}
               </div>
             </div>
           </div>
           <div className="text-sm opacity-90 space-y-1">
-            <div>Cliente: <strong>{proposal.client_name}</strong></div>
+            <div>
+              {isCortesia ? 'Você ganhou um presente!' : 'Cliente:'}{' '}
+              <strong>{proposal.client_name}</strong>
+            </div>
             {proposal.client_cnpj && (
               <div>CNPJ: <strong>{proposal.client_cnpj}</strong></div>
             )}
@@ -972,6 +994,20 @@ const PropostaPublicaPage = () => {
       </header>
 
       <div className="max-w-4xl mx-auto p-4 space-y-4">
+        {/* Banner Cortesia Especial */}
+        {isCortesia && !['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
+          <Card className="p-4 bg-gradient-to-r from-amber-100 to-emerald-100 border-2 border-amber-300 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Gift className="h-6 w-6 text-amber-600" />
+              <span className="text-xl font-bold text-amber-800">VOCÊ GANHOU UM PRESENTE!</span>
+              <PartyPopper className="h-6 w-6 text-emerald-600" />
+            </div>
+            <p className="text-sm text-amber-700">
+              A EXA Mídia está oferecendo <strong>{proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'}</strong> de publicidade gratuita para você!
+            </p>
+          </Card>
+        )}
+
         {/* Banner de Status Destacado - para propostas já respondidas */}
         {(proposal.status === 'aceita' || proposal.status === 'recusada') && (
           <Card className={`p-4 text-center ${
@@ -988,7 +1024,10 @@ const PropostaPublicaPage = () => {
               <span className={`text-lg font-semibold ${
                 proposal.status === 'aceita' ? 'text-emerald-700' : 'text-red-700'
               }`}>
-                Esta proposta foi {proposal.status === 'aceita' ? 'ACEITA' : 'RECUSADA'}
+                {isCortesia 
+                  ? `Este presente foi ${proposal.status === 'aceita' ? 'ACEITO' : 'RECUSADO'}`
+                  : `Esta proposta foi ${proposal.status === 'aceita' ? 'ACEITA' : 'RECUSADA'}`
+                }
               </span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
@@ -1053,185 +1092,258 @@ const PropostaPublicaPage = () => {
           </div>
         </Card>
 
-        {/* Planos */}
-        <div className="space-y-3">
-          <h2 className="font-semibold flex items-center gap-2">
-            <Eye className="h-4 w-4 text-[#9C1E1E]" />
-            Escolha sua condição
-          </h2>
-
-          {/* Plano À Vista */}
-          <Card 
-            className={`p-4 cursor-pointer transition-all ${
-              selectedPlan === 'avista' 
-                ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
-                : 'border hover:border-gray-300'
-            }`}
-            onClick={() => setSelectedPlan('avista')}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="bg-[#9C1E1E] text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    {proposal.discount_percent}% OFF
-                  </span>
-                  <span className="font-bold">À Vista — Oferta Especial</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Pagamento único — desconto aplicado</p>
+        {/* Card Especial para Cortesia - Mostra valor que seria pago */}
+        {isCortesia && (
+          <Card className="p-6 bg-gradient-to-br from-amber-50 to-emerald-50 border-2 border-amber-300 shadow-lg">
+            <div className="text-center space-y-4">
+              <div className="flex items-center justify-center gap-2">
+                <Gift className="h-8 w-8 text-amber-600" />
+                <span className="text-2xl font-bold text-amber-800">CORTESIA</span>
+                <PartyPopper className="h-8 w-8 text-emerald-600" />
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-[#9C1E1E]">
-                  {proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  = {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Plano Fidelidade */}
-          <Card 
-            className={`p-4 cursor-pointer transition-all ${
-              selectedPlan === 'fidelidade' 
-                ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
-                : 'border hover:border-gray-300'
-            }`}
-            onClick={() => setSelectedPlan('fidelidade')}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="font-bold mb-1">Plano Fidelidade — {proposal.duration_months} meses</div>
-                <p className="text-xs text-muted-foreground">Pagamento mensal — fidelize e garanta slots</p>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold">
-                  {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  <span className="text-sm font-normal text-muted-foreground">/mês</span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Total: {fidelTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* ==== BREAKDOWN DE PREÇO ==== */}
-          {baseTotalValue > 0 && (
-            <Card className="p-4 bg-gradient-to-br from-gray-50 to-white border-dashed border-gray-300">
-              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 text-muted-foreground">
-                <Calculator className="h-4 w-4" />
-                Como chegamos neste valor
-              </h3>
               
-              <div className="space-y-2 text-sm">
-                {/* Valor Original */}
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">
-                    Valor base ({proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'})
-                  </span>
-                  <span className="line-through text-muted-foreground">
-                    {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </span>
+              {/* Valor que seria cobrado */}
+              <div className="bg-white/60 rounded-xl p-4">
+                <p className="text-sm text-muted-foreground mb-2">Se fosse pago, custaria:</p>
+                <div className="text-xl text-muted-foreground line-through">
+                  {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </div>
-                
-                {/* Desconto Plano */}
-                {planDiscountPercent > 0 && (
-                  <div className="flex justify-between items-center text-emerald-600">
-                    <span className="flex items-center gap-1">
-                      <span className="text-xs">✓</span>
-                      Desconto Plano {proposal.duration_months}M ({planDiscountPercent}%)
+                <p className="text-xs text-muted-foreground mt-1">
+                  ({proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'} × {baseMonthlyTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês)
+                </p>
+              </div>
+              
+              {/* Valor da cortesia */}
+              <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 rounded-xl p-4">
+                <p className="text-sm text-emerald-700 font-medium mb-1">Seu presente:</p>
+                <div className="text-4xl font-bold text-emerald-600">
+                  R$ 0,00
+                </div>
+                <p className="text-sm text-emerald-700 mt-2">🎁 Presente especial da EXA Mídia</p>
+              </div>
+              
+              {/* Badge de economia */}
+              <div className="flex items-center justify-center gap-2">
+                <span className="bg-emerald-500 text-white text-sm font-bold px-4 py-2 rounded-full">
+                  💰 Economia de 100% — {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Planos - NÃO APARECEM para cortesia */}
+        {!isCortesia && (
+          <div className="space-y-3">
+            <h2 className="font-semibold flex items-center gap-2">
+              <Eye className="h-4 w-4 text-[#9C1E1E]" />
+              Escolha sua condição
+            </h2>
+
+            {/* Plano À Vista */}
+            <Card 
+              className={`p-4 cursor-pointer transition-all ${
+                selectedPlan === 'avista' 
+                  ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
+                  : 'border hover:border-gray-300'
+              }`}
+              onClick={() => setSelectedPlan('avista')}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="bg-[#9C1E1E] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {proposal.discount_percent}% OFF
                     </span>
-                    <span>
-                      - {planDiscountValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
+                    <span className="font-bold">À Vista — Oferta Especial</span>
                   </div>
-                )}
-                
-                {/* Subtotal após plano - só mostra se selecionou À Vista e tem desconto plano */}
-                {selectedPlan === 'avista' && planDiscountPercent > 0 && (
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="line-through text-muted-foreground">
-                      {afterPlanDiscount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
+                  <p className="text-xs text-muted-foreground">Pagamento único — desconto aplicado</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-[#9C1E1E]">
+                    {proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </div>
-                )}
-                
-                {/* Desconto PIX - só mostra se selecionou À Vista */}
-                {selectedPlan === 'avista' && (
-                  <div className="flex justify-between items-center text-emerald-600">
-                    <span className="flex items-center gap-1">
-                      <span className="text-xs">✓</span>
-                      Desconto PIX à Vista ({pixDiscountPercent}%)
-                    </span>
-                    <span>
-                      - {pixDiscountValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
-                  </div>
-                )}
-                
-                {/* Divisor e Valor Final */}
-                <div className="border-t pt-3 mt-3 space-y-1">
-                  <div className="flex justify-between items-center font-bold">
-                    <span className="text-[#9C1E1E]">
-                      {selectedPlan === 'avista' ? 'VALOR FINAL' : 'TOTAL DO CONTRATO'}
-                    </span>
-                    <span className="text-[#9C1E1E] text-lg">
-                      {selectedPlan === 'avista' 
-                        ? proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                        : fidelTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                      }
-                    </span>
-                  </div>
-                  
-                  {/* Mensalidade se fidelidade */}
-                  {selectedPlan === 'fidelidade' && (
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Mensalidade</span>
-                      <span className="font-medium">
-                        {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Badge de economia */}
-                  <div className="text-right">
-                    <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-1 rounded-full">
-                      🎉 Economia de {selectedPlan === 'avista' ? totalSavingsAvista : totalSavingsFidelidade}%
-                    </span>
+                  <div className="text-xs text-muted-foreground">
+                    = {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                   </div>
                 </div>
               </div>
             </Card>
-          )}
-        </div>
+
+            {/* Plano Fidelidade */}
+            <Card 
+              className={`p-4 cursor-pointer transition-all ${
+                selectedPlan === 'fidelidade' 
+                  ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
+                  : 'border hover:border-gray-300'
+              }`}
+              onClick={() => setSelectedPlan('fidelidade')}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-bold mb-1">Plano Fidelidade — {proposal.duration_months} meses</div>
+                  <p className="text-xs text-muted-foreground">Pagamento mensal — fidelize e garanta slots</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">
+                    {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Total: {fidelTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* ==== BREAKDOWN DE PREÇO ==== */}
+            {baseTotalValue > 0 && (
+              <Card className="p-4 bg-gradient-to-br from-gray-50 to-white border-dashed border-gray-300">
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 text-muted-foreground">
+                  <Calculator className="h-4 w-4" />
+                  Como chegamos neste valor
+                </h3>
+                
+                <div className="space-y-2 text-sm">
+                  {/* Valor Original */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Valor base ({proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'})
+                    </span>
+                    <span className="line-through text-muted-foreground">
+                      {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                  
+                  {/* Desconto Plano */}
+                  {planDiscountPercent > 0 && (
+                    <div className="flex justify-between items-center text-emerald-600">
+                      <span className="flex items-center gap-1">
+                        <span className="text-xs">✓</span>
+                        Desconto Plano {proposal.duration_months}M ({planDiscountPercent}%)
+                      </span>
+                      <span>
+                        - {planDiscountValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Subtotal após plano - só mostra se selecionou À Vista e tem desconto plano */}
+                  {selectedPlan === 'avista' && planDiscountPercent > 0 && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="line-through text-muted-foreground">
+                        {afterPlanDiscount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Desconto PIX - só mostra se selecionou À Vista */}
+                  {selectedPlan === 'avista' && (
+                    <div className="flex justify-between items-center text-emerald-600">
+                      <span className="flex items-center gap-1">
+                        <span className="text-xs">✓</span>
+                        Desconto PIX à Vista ({pixDiscountPercent}%)
+                      </span>
+                      <span>
+                        - {pixDiscountValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Divisor e Valor Final */}
+                  <div className="border-t pt-3 mt-3 space-y-1">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-[#9C1E1E]">
+                        {selectedPlan === 'avista' ? 'VALOR FINAL' : 'TOTAL DO CONTRATO'}
+                      </span>
+                      <span className="text-[#9C1E1E] text-lg">
+                        {selectedPlan === 'avista' 
+                          ? proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                          : fidelTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                        }
+                      </span>
+                    </div>
+                    
+                    {/* Mensalidade se fidelidade */}
+                    {selectedPlan === 'fidelidade' && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Mensalidade</span>
+                        <span className="font-medium">
+                          {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Badge de economia */}
+                    <div className="text-right">
+                      <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-1 rounded-full">
+                        🎉 Economia de {selectedPlan === 'avista' ? totalSavingsAvista : totalSavingsFidelidade}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
+        )}
 
         {/* Botões de Ação - SÓ aparecem se proposta ainda pode ser respondida */}
         {!['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
           <div className="space-y-3 pt-4">
-            <Button
-              className="w-full h-14 text-lg bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={handleAccept}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              ) : (
-                <Check className="h-5 w-5 mr-2" />
-              )}
-              Aceitar Proposta ({selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade'})
-            </Button>
+            {isCortesia ? (
+              <>
+                {/* Botões especiais para Cortesia */}
+                <Button
+                  className="w-full h-14 text-lg bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white shadow-lg"
+                  onClick={handleAcceptCortesia}
+                  disabled={isAcceptingCortesia}
+                >
+                  {isAcceptingCortesia ? (
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  ) : (
+                    <Gift className="h-5 w-5 mr-2" />
+                  )}
+                  🎁 Aceitar Meu Presente
+                </Button>
 
-            <Button
-              variant="outline"
-              className="w-full h-12"
-              onClick={handleReject}
-              disabled={isSubmitting}
-            >
-              <X className="h-4 w-4 mr-2" />
-              Recusar Proposta
-            </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-12 border-amber-300 text-amber-700 hover:bg-amber-50"
+                  onClick={handleReject}
+                  disabled={isSubmitting}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Recusar Presente
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* Botões normais para proposta comercial */}
+                <Button
+                  className="w-full h-14 text-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={handleAccept}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  ) : (
+                    <Check className="h-5 w-5 mr-2" />
+                  )}
+                  Aceitar Proposta ({selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade'})
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full h-12"
+                  onClick={handleReject}
+                  disabled={isSubmitting}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Recusar Proposta
+                </Button>
+              </>
+            )}
           </div>
         )}
 
