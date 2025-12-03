@@ -160,184 +160,164 @@ const ProviderBenefits = () => {
     handleInsertCode(benefit.id);
   };
 
-  // Mobile View - Otimizado e Minimalista
+  // Mobile View - Apple-like Clean Design
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Mobile Header - Fixo no topo sem sticky */}
-        <div className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-b border-white/10">
-          <div className="px-4 py-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
-                <Gift className="w-4 h-4 text-white" />
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pb-20">
+        {/* Mobile Header - Clean glassmorphism */}
+        <div className="sticky top-0 z-10 mobile-header-clean">
+          <div className="px-3 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
+                  <Gift className="w-4.5 h-4.5 text-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold text-foreground">Benefícios</h1>
+                  <p className="text-xs text-muted-foreground">Prestadores</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-base font-semibold text-white tracking-tight">
-                  Benefício Prestadores
-                </h1>
-                <p className="text-xs text-white/80">
-                  Gerencie presentes dos prestadores
-                </p>
+              <div className="flex items-center gap-1">
+                <Button 
+                  onClick={() => listBenefits()}
+                  size="sm"
+                  variant="ghost"
+                  disabled={isLoading}
+                  className="h-8 w-8 p-0 hover:bg-black/5"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                </Button>
+                <Button 
+                  onClick={() => setShowForm(!showForm)} 
+                  size="sm"
+                  className="h-8 text-xs bg-foreground text-background hover:bg-foreground/90"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  Novo
+                </Button>
               </div>
-            </div>
-
-            {/* Month Selector no header */}
-            <div className="mt-3">
-              <MonthSelector
-                selectedMonth={selectedMonth}
-                onMonthChange={handleMonthChange}
-                variant="onColor"
-              />
-            </div>
-
-            {/* Botões de ação */}
-            <div className="mt-3 flex gap-2">
-              <Button 
-                onClick={() => listBenefits()}
-                size="sm"
-                variant="ghost"
-                disabled={isLoading}
-                className="h-9 w-9 p-0 text-white hover:bg-white/10"
-                title="Atualizar"
-              >
-                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </Button>
-              <Button 
-                onClick={() => setShowForm(!showForm)} 
-                size="sm"
-                className="flex-1 h-9 bg-white/10 hover:bg-white/20 text-white border-0 text-sm"
-              >
-                <Plus className="w-3.5 h-3.5 mr-1.5" />
-                Novo Benefício
-              </Button>
-              <Button 
-                onClick={() => navigate(buildPath('gerenciar-beneficios'))}
-                size="sm"
-                variant="ghost"
-                className="h-9 w-9 p-0 text-white hover:bg-white/10"
-              >
-                <Gift className="w-4 h-4" />
-              </Button>
             </div>
           </div>
         </div>
 
+        {/* Month Selector */}
+        <div className="px-3 py-2 border-b border-border/30">
+          <MonthSelector
+            selectedMonth={selectedMonth}
+            onMonthChange={handleMonthChange}
+            variant="default"
+          />
+        </div>
+
         {/* Dashboard de Estatísticas */}
-        <div className="px-4 py-4 bg-white border-b">
+        <div className="px-3 py-3">
           <BenefitStatsCards stats={stats} loading={loadingStats} />
         </div>
 
         {/* Mobile Form */}
         {showForm && (
-          <div className="px-4 py-3 bg-gray-50">
-            <Card className="border shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold">Criar Novo Benefício</CardTitle>
-                <CardDescription className="text-xs">
-                  Preencha os dados do prestador
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="provider_name" className="text-sm font-medium">
-                      Nome completo *
-                    </Label>
-                    <Input
-                      id="provider_name"
-                      required
-                      value={formData.provider_name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, provider_name: e.target.value })
-                      }
-                      placeholder="Ex: João Silva"
-                      className="h-10 text-sm"
-                    />
-                  </div>
+          <div className="px-3 py-2">
+            <div className="glass-card-mobile p-4">
+              <h3 className="text-sm font-semibold mb-3">Criar Novo Benefício</h3>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="provider_name" className="text-xs font-medium">
+                    Nome completo *
+                  </Label>
+                  <Input
+                    id="provider_name"
+                    required
+                    value={formData.provider_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, provider_name: e.target.value })
+                    }
+                    placeholder="Ex: João Silva"
+                    className="h-9 text-sm"
+                  />
+                </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="provider_email" className="text-sm font-medium">
-                      E-mail *
-                    </Label>
-                    <Input
-                      id="provider_email"
-                      type="email"
-                      required
-                      value={formData.provider_email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, provider_email: e.target.value })
-                      }
-                      placeholder="joao@email.com"
-                      className="h-10 text-sm"
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <Label htmlFor="provider_email" className="text-xs font-medium">
+                    E-mail *
+                  </Label>
+                  <Input
+                    id="provider_email"
+                    type="email"
+                    required
+                    value={formData.provider_email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, provider_email: e.target.value })
+                    }
+                    placeholder="joao@email.com"
+                    className="h-9 text-sm"
+                  />
+                </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="activation_point" className="text-sm font-medium">
-                      Nome do ponto ativado
-                    </Label>
-                    <Input
-                      id="activation_point"
-                      value={formData.activation_point}
-                      onChange={(e) =>
-                        setFormData({ ...formData, activation_point: e.target.value })
-                      }
-                      placeholder="Ex: Edifício Copacabana"
-                      className="h-10 text-sm"
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <Label htmlFor="activation_point" className="text-xs font-medium">
+                    Nome do ponto
+                  </Label>
+                  <Input
+                    id="activation_point"
+                    value={formData.activation_point}
+                    onChange={(e) =>
+                      setFormData({ ...formData, activation_point: e.target.value })
+                    }
+                    placeholder="Ex: Edifício Copacabana"
+                    className="h-9 text-sm"
+                  />
+                </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="observation" className="text-sm font-medium">
-                      Observação
-                    </Label>
-                    <Textarea
-                      id="observation"
-                      value={formData.observation}
-                      onChange={(e) =>
-                        setFormData({ ...formData, observation: e.target.value })
-                      }
-                      placeholder="Notas internas"
-                      rows={2}
-                      className="text-sm resize-none"
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <Label htmlFor="observation" className="text-xs font-medium">
+                    Observação
+                  </Label>
+                  <Textarea
+                    id="observation"
+                    value={formData.observation}
+                    onChange={(e) =>
+                      setFormData({ ...formData, observation: e.target.value })
+                    }
+                    placeholder="Notas internas"
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <Button 
-                      type="submit" 
-                      disabled={isLoading} 
-                      className="flex-1 h-10 text-sm bg-[#9C1E1E] hover:bg-[#7D1818]"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                          Criando...
-                        </>
-                      ) : (
-                        <>
-                          <Mail className="mr-1.5 h-3.5 w-3.5" />
-                          Criar e Enviar
-                        </>
-                      )}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setShowForm(false)}
-                      className="h-10 text-sm px-4"
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
+                <div className="flex gap-2 pt-1">
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading} 
+                    className="flex-1 h-9 text-xs"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        Criando...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="mr-1 h-3 w-3" />
+                        Criar e Enviar
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowForm(false)}
+                    className="h-9 text-xs px-3"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
         {/* Mobile List */}
-        <div className="px-4 py-3 bg-gray-50">
+        <div className="px-3 py-2">
           <BenefitMobileList
             benefits={benefits}
             isLoading={isLoading}

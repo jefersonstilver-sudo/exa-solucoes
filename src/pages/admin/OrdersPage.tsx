@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { RefreshCw, Gift, Download, Search, Filter, Loader2 } from 'lucide-react';
+import { RefreshCw, ShoppingCart, Download, Search, Filter, Loader2 } from 'lucide-react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrdersWithAttemptsRefactored } from '@/hooks/useOrdersWithAttemptsRefactored';
@@ -215,23 +215,23 @@ const OrdersPage = () => {
     },
   ];
 
-  // Mobile Layout
+  // Mobile Layout - Apple-like Clean Design
   if (isMobile) {
     const orders = filteredItems.filter(item => item.type === 'order');
     
     return (
-      <div className="min-h-screen bg-background pb-20">
-        {/* Mobile Header */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-b border-white/20 shadow-lg">
-          <div className="p-4">
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pb-20">
+        {/* Mobile Header - Clean glassmorphism */}
+        <div className="sticky top-0 z-10 mobile-header-clean">
+          <div className="px-3 py-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <Gift className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
+                  <ShoppingCart className="w-4.5 h-4.5 text-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-white">Pedidos</h1>
-                  <p className="text-sm text-white/90">
+                  <h1 className="text-lg font-semibold text-foreground">Pedidos</h1>
+                  <p className="text-xs text-muted-foreground">
                     {filteredItems.length} resultados
                   </p>
                 </div>
@@ -241,28 +241,26 @@ const OrdersPage = () => {
           </div>
         </div>
 
-        {/* Period Filter */}
-        <div className="p-4 bg-white border-b">
+        {/* Period Filter - Clean style */}
+        <div className="px-3 py-2 border-b border-border/30">
           <OrderPeriodFilter value={periodFilter} onChange={setPeriodFilter} />
         </div>
 
-        {/* Mobile Stats - Compact */}
-        <div className="p-4 bg-white border-b">
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="text-xs text-muted-foreground">Pedidos</p>
-              <p className="text-lg font-bold text-foreground">{filteredStats.total_orders}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Receita</p>
-              <p className="text-lg font-bold text-green-600">
-                R$ {(filteredStats.total_revenue / 1000).toFixed(1)}k
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Conversão</p>
-              <p className="text-lg font-bold text-blue-600">{filteredStats.conversion_rate}%</p>
-            </div>
+        {/* Mobile Stats - Glassmorphism cards */}
+        <div className="grid grid-cols-3 gap-2 px-3 py-3">
+          <div className="glass-card-mobile-subtle p-2.5 text-center">
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">Pedidos</p>
+            <p className="text-lg font-bold text-foreground">{filteredStats.total_orders}</p>
+          </div>
+          <div className="glass-card-mobile-subtle p-2.5 text-center">
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">Receita</p>
+            <p className="text-lg font-bold text-emerald-600">
+              R$ {(filteredStats.total_revenue / 1000).toFixed(1)}k
+            </p>
+          </div>
+          <div className="glass-card-mobile-subtle p-2.5 text-center">
+            <p className="text-[10px] text-muted-foreground font-medium uppercase">Conversão</p>
+            <p className="text-lg font-bold text-blue-600">{filteredStats.conversion_rate}%</p>
           </div>
         </div>
 
@@ -274,7 +272,7 @@ const OrdersPage = () => {
         />
 
         {/* Mobile Order List */}
-        <div className="p-4">
+        <div className="px-3 py-2">
           <OrderMobileList
             orders={orders}
             loading={loading}
@@ -307,9 +305,9 @@ const OrdersPage = () => {
               options: [
                 { value: 'all', label: 'Todos', count: periodFilteredItems.length },
                 { value: 'pago', label: 'Pago', count: countByStatus('pago') },
-                { value: 'pago_pendente_video', label: 'Pago (Pendente Vídeo)', count: countByStatus('pago_pendente_video') },
+                { value: 'pago_pendente_video', label: 'Pago (Vídeo)', count: countByStatus('pago_pendente_video') },
                 { value: 'video_enviado', label: 'Vídeo Enviado', count: countByStatus('video_enviado') },
-                { value: 'video_aprovado', label: 'Vídeo Aprovado', count: countByStatus('video_aprovado') },
+                { value: 'video_aprovado', label: 'Aprovado', count: countByStatus('video_aprovado') },
                 { value: 'pending', label: 'Pendente', count: countByStatus('pending') },
                 { value: 'bloqueado', label: 'Bloqueado', count: countByStatus('bloqueado') },
               ],

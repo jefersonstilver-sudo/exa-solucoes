@@ -124,36 +124,44 @@ const ApprovalsPage = () => {
         </Card>
       </div>
 
-      {/* Tabs para Separação */}
+      {/* Tabs para Separação - Mobile scrollable */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-muted">
+        <TabsList className="w-full h-auto p-1 bg-muted overflow-x-auto scrollbar-hide flex md:grid md:grid-cols-4 gap-1">
           <TabsTrigger 
             value="pending-orders" 
-            className="flex items-center space-x-2"
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs md:text-sm px-3 py-2"
           >
-            <Clock className="h-4 w-4" />
-            <span>Aguardando Vídeo ({stats.paidWithoutVideo})</span>
+            <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Aguardando</span>
+            <span className="sm:hidden">Aguard.</span>
+            <span>({stats.paidWithoutVideo})</span>
           </TabsTrigger>
           <TabsTrigger 
             value="pending-videos" 
-            className="flex items-center space-x-2"
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs md:text-sm px-3 py-2"
           >
-            <AlertTriangle className="h-4 w-4" />
-            <span>Para Aprovação ({stats.pendingApproval})</span>
+            <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Para Aprovação</span>
+            <span className="sm:hidden">Aprovar</span>
+            <span>({stats.pendingApproval})</span>
           </TabsTrigger>
           <TabsTrigger 
             value="approved-videos" 
-            className="flex items-center space-x-2"
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs md:text-sm px-3 py-2"
           >
-            <CheckCircle className="h-4 w-4" />
-            <span>Aprovados ({stats.approved})</span>
+            <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Aprovados</span>
+            <span className="sm:hidden">Aprov.</span>
+            <span>({stats.approved})</span>
           </TabsTrigger>
           <TabsTrigger 
             value="rejected-videos" 
-            className="flex items-center space-x-2"
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs md:text-sm px-3 py-2"
           >
-            <XCircle className="h-4 w-4" />
-            <span>Rejeitados ({stats.rejected})</span>
+            <XCircle className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Rejeitados</span>
+            <span className="sm:hidden">Rejeit.</span>
+            <span>({stats.rejected})</span>
           </TabsTrigger>
         </TabsList>
 
