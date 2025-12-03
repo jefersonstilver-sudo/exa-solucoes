@@ -82,10 +82,10 @@ serve(async (req) => {
       throw new Error('Valor mínimo para pagamento é R$ 5,00');
     }
 
-    // Get Mercado Pago access token
-    const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN');
+    // Get Mercado Pago access token (try both possible secret names)
+    const mpAccessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') || Deno.env.get('MP_ACCESS_TOKEN');
     if (!mpAccessToken) {
-      throw new Error('MP_ACCESS_TOKEN não configurado');
+      throw new Error('MERCADO_PAGO_ACCESS_TOKEN não configurado');
     }
 
     let paymentData: any = {};
