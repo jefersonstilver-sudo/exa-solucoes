@@ -301,7 +301,10 @@ const NovaPropostaPage = () => {
       toast.error('Selecione ao menos uma forma de envio');
       return;
     }
-    createProposalMutation.mutate({ whatsapp: sendViaWhatsApp, email: sendViaEmail });
+    // REGRA: Se email está selecionado, SEMPRE enviar também por WhatsApp (se tiver telefone)
+    // Isso garante que o cliente receba por ambos os canais
+    const shouldSendWhatsApp = sendViaWhatsApp || (sendViaEmail && !!clientData.phone);
+    createProposalMutation.mutate({ whatsapp: shouldSendWhatsApp, email: sendViaEmail });
   };
 
   // Handler para abrir dialog de confirmação de cortesia

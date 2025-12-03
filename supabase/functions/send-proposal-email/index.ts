@@ -106,7 +106,7 @@ serve(async (req) => {
       `).join('')
       : '';
 
-    // Build HTML email
+    // Build HTML email - SIMPLIFIED: Only monthly value
     const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -131,7 +131,7 @@ serve(async (req) => {
         É com grande satisfação que apresentamos uma proposta personalizada para sua empresa anunciar nas telas digitais da EXA Mídia.
       </p>
 
-      <!-- Proposal Summary -->
+      <!-- Proposal Summary - SIMPLIFIED -->
       <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h2 style="margin: 0 0 15px; font-size: 16px; color: #374151;">📄 Proposta ${proposal.number}</h2>
         
@@ -145,56 +145,19 @@ serve(async (req) => {
             <strong style="color: #374151;">${proposal.total_panels} painéis</strong>
           </div>
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-            <span style="color: #6b7280;">Impressões/mês:</span>
-            <strong style="color: #374151;">${(proposal.total_impressions_month || 0).toLocaleString('pt-BR')}</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
             <span style="color: #6b7280;">Período:</span>
             <strong style="color: #374151;">${proposal.duration_months} meses</strong>
           </div>
         </div>
       </div>
 
-      <!-- Pricing -->
-      <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <h3 style="margin: 0 0 15px; font-size: 14px; color: #92400e;">💰 Investimento</h3>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span style="color: #78350f;">Mensal (Fidelidade):</span>
-          <strong style="color: #78350f; font-size: 18px;">${formatCurrency(proposal.fidel_monthly_value)}/mês</strong>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span style="color: #78350f;">Total (${proposal.duration_months}x):</span>
-          <strong style="color: #78350f;">${formatCurrency(fidelTotal)}</strong>
-        </div>
-
-        <hr style="border: none; border-top: 1px dashed #d97706; margin: 15px 0;">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #166534; font-weight: 600;">✨ À Vista (10% OFF):</span>
-          <strong style="color: #166534; font-size: 20px;">${formatCurrency(proposal.cash_total_value)}</strong>
+      <!-- Pricing - ONLY MONTHLY VALUE -->
+      <div style="background: linear-gradient(135deg, #9C1E1E 0%, #7D1818 100%); padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+        <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 0 0 8px;">Investimento a partir de</p>
+        <div style="color: white; font-size: 32px; font-weight: bold;">
+          ${formatCurrency(proposal.fidel_monthly_value)}<span style="font-size: 14px; font-weight: normal;">/mês</span>
         </div>
       </div>
-
-      <!-- Buildings Table -->
-      ${buildingsCount > 0 ? `
-      <div style="margin: 20px 0;">
-        <h3 style="font-size: 14px; color: #374151; margin-bottom: 10px;">🏢 Locais Inclusos</h3>
-        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-          <thead>
-            <tr style="background: #f3f4f6;">
-              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Prédio</th>
-              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Bairro</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb;">Telas</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${buildingsList}
-          </tbody>
-        </table>
-      </div>
-      ` : ''}
 
       <!-- CTA Button -->
       <div style="text-align: center; margin: 30px 0;">

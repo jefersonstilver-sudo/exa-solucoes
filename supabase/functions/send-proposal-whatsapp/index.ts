@@ -92,7 +92,7 @@ serve(async (req) => {
       }
     }
 
-    // Build WhatsApp message - Template Profissional
+    // Build WhatsApp message - Template SIMPLIFICADO: apenas valor mensal
     const message = `═══════════════════════════════
 🎯 *PROPOSTA COMERCIAL — EXA MÍDIA*
 ═══════════════════════════════
@@ -101,22 +101,21 @@ Olá, *${proposal.client_name?.split(' ')[0] || 'Cliente'}*! 👋
 
 📄 *Proposta:* ${proposal.number}
 
-📊 *Detalhes da campanha:*
+📊 *Sua campanha:*
 ━━━━━━━━━━━━━━━━━━━━━
-🏢 ${buildingsCount} prédio(s) selecionado(s)
-📺 ${proposal.total_panels} tela(s) de alta visibilidade
-👁️ ${(proposal.total_impressions_month || 0).toLocaleString('pt-BR')} exibições/mês
-📅 ${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'} de campanha
+🏢 ${buildingsCount} prédio(s)
+📺 ${proposal.total_panels} tela(s)
+📅 ${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'}
 ━━━━━━━━━━━━━━━━━━━━━
 
-💰 *Condições comerciais:*
-• Fidelidade: *${formatCurrency(proposal.fidel_monthly_value)}/mês* (${proposal.duration_months}x)
-• Total contrato: *${formatCurrency(fidelTotal)}*
-• ✨ *À Vista com 10% OFF:* *${formatCurrency(proposal.cash_total_value)}*
+💰 *Investimento a partir de:*
+*${formatCurrency(proposal.fidel_monthly_value)}/mês*
+
+📋 *Ver proposta completa:*
+${proposalLink}
 
 🎥 *Conheça a EXA:*
-• Vídeo Institucional: https://drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ/view
-• Mídia Kit: https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view
+• Vídeo: https://drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ/view
 
 ⏰ _Válida até ${expiresAt}_
 
