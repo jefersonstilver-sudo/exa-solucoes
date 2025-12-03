@@ -66,8 +66,8 @@ serve(async (req) => {
     // Calculate total fidelity value
     const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
 
-    // Build proposal link - CORRETO: indexamidia.com.br
-    const proposalLink = `https://www.indexamidia.com.br/propostacomercial/${proposal.id}`;
+    // Build proposal link - CORRETO: examidia.com.br
+    const proposalLink = `https://examidia.com.br/propostacomercial/${proposal.id}`;
 
     // Format expiration date
     const expiresAt = proposal.expires_at 
@@ -165,8 +165,32 @@ EXA Mídia Digital`;
     // Small delay to ensure message order
     await new Promise(resolve => setTimeout(resolve, 500));
 
+    // Send proposal number as separate message (easy to copy, without dots/dashes)
+    const cleanNumber = proposal.number.replace(/[.-]/g, '');
+    const numberMessage = `📋 *Número da proposta:*
+
+${cleanNumber}`;
+
+    await fetch(zapiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Client-Token': zapiClientToken || '',
+      },
+      body: JSON.stringify({
+        phone: formattedPhone,
+        message: numberMessage,
+      }),
+    });
+
+    console.log('WhatsApp número da proposta enviado');
+
+    // Small delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     // Send link as separate message (easier to click)
     const linkMessage = `🔗 *Acesse sua proposta aqui:*
+
 ${proposalLink}`;
 
     await fetch(zapiUrl, {
