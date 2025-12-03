@@ -6,20 +6,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface SingleSyncResult {
+interface ForceSyncResult {
   success: boolean;
-  conversation_id: string;
-  contact_name: string;
-  contact_phone: string;
+  error?: string;
   stats: {
-    messages_before: number;
-    messages_after: number;
-    messages_synced: number;
-    messages_outbound_synced: number;
-    messages_inbound_synced: number;
-    duplicates_skipped: number;
-    zapi_messages_fetched: number;
-    errors: string[];
+    recuperadas: number;
+    outbound: number;
+    inbound: number;
+    duplicatas: number;
+    erros: number;
+    zapi_logs_total: number;
+    debug_messages: string[];
+  };
+  conversation: {
+    id: string;
+    contact_name: string;
+    contact_phone: string;
+    total_messages: number;
+    outbound_count: number;
+    inbound_count: number;
   };
 }
 
@@ -40,41 +45,47 @@ export const SingleConversationSyncButton: React.FC<SingleConversationSyncButton
 }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [result, setResult] = useState<SingleSyncResult | null>(null);
+  const [result, setResult] = useState<ForceSyncResult | null>(null);
 
   const handleSync = async () => {
     setIsSyncing(true);
     setResult(null);
 
     try {
-      console.log('[SINGLE-SYNC] Sincronizando conversa:', conversationId);
+      console.log('[FORCE-SYNC] Sincronizando conversa:', conversationId);
       
-      const { data, error } = await supabase.functions.invoke('sync-single-conversation', {
-        body: { conversationId, phone: contactPhone }
+      // Chama force-sync-zapi-conversation que usa zapi_logs (funciona com multi-device)
+      const { data, error } = await supabase.functions.invoke('force-sync-zapi-conversation', {
+        body: { conversationId }
       });
 
       if (error) throw error;
 
-      console.log('[SINGLE-SYNC] Resultado:', data);
+      console.log('[FORCE-SYNC] Resultado:', data);
       setResult(data);
       setShowResult(true);
       onSyncComplete?.();
     } catch (error) {
-      console.error('[SINGLE-SYNC] Erro:', error);
+      console.error('[FORCE-SYNC] Erro:', error);
       setResult({
         success: false,
-        conversation_id: conversationId,
-        contact_name: contactName || '',
-        contact_phone: contactPhone || '',
+        error: String(error),
         stats: {
-          messages_before: 0,
-          messages_after: 0,
-          messages_synced: 0,
-          messages_outbound_synced: 0,
-          messages_inbound_synced: 0,
-          duplicates_skipped: 0,
-          zapi_messages_fetched: 0,
-          errors: [String(error)]
+          recuperadas: 0,
+          outbound: 0,
+          inbound: 0,
+          duplicatas: 0,
+          erros: 1,
+          zapi_logs_total: 0,
+          debug_messages: [String(error)]
+        },
+        conversation: {
+          id: conversationId,
+          contact_name: contactName || '',
+          contact_phone: contactPhone || '',
+          total_messages: 0,
+          outbound_count: 0,
+          inbound_count: 0
         }
       });
       setShowResult(true);
@@ -167,8 +178,8 @@ export const SingleConversationSyncButton: React.FC<SingleConversationSyncButton
             >
               {/* Info do contato */}
               <div className="bg-muted/50 rounded-xl p-3">
-                <p className="text-sm font-medium">{result.contact_name || 'Contato'}</p>
-                <p className="text-xs text-muted-foreground">{result.contact_phone}</p>
+                <p className="text-sm font-medium">{result.conversation?.contact_name || contactName || 'Contato'}</p>
+                <p className="text-xs text-muted-foreground">{result.conversation?.contact_phone || contactPhone}</p>
               </div>
 
               {/* Stats principais */}
@@ -177,14 +188,14 @@ export const SingleConversationSyncButton: React.FC<SingleConversationSyncButton
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <ArrowDownCircle className="w-4 h-4 text-blue-500" />
                   </div>
-                  <p className="text-xl font-bold">{result.stats.messages_inbound_synced}</p>
+                  <p className="text-xl font-bold">{result.stats.inbound}</p>
                   <p className="text-xs text-muted-foreground">Recebidas</p>
                 </div>
                 <div className="bg-green-500/10 rounded-xl p-3 text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <ArrowUpCircle className="w-4 h-4 text-green-500" />
                   </div>
-                  <p className="text-xl font-bold">{result.stats.messages_outbound_synced}</p>
+                  <p className="text-xl font-bold">{result.stats.outbound}</p>
                   <p className="text-xs text-muted-foreground">Enviadas</p>
                 </div>
               </div>
@@ -192,29 +203,29 @@ export const SingleConversationSyncButton: React.FC<SingleConversationSyncButton
               {/* Detalhes */}
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Antes</span>
-                  <span>{result.stats.messages_before} msgs</span>
+                  <span className="text-muted-foreground">Recuperadas</span>
+                  <span className="font-semibold text-green-600">+{result.stats.recuperadas}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Depois</span>
-                  <span className="font-semibold text-green-600">{result.stats.messages_after} msgs</span>
+                  <span className="text-muted-foreground">Total Conversa</span>
+                  <span>{result.conversation?.total_messages || 0} msgs</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Do Z-API</span>
-                  <span>{result.stats.zapi_messages_fetched}</span>
+                  <span className="text-muted-foreground">Logs Z-API</span>
+                  <span>{result.stats.zapi_logs_total}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Duplicatas</span>
-                  <span>{result.stats.duplicates_skipped}</span>
+                  <span>{result.stats.duplicatas}</span>
                 </div>
               </div>
 
               {/* Erros */}
-              {result.stats.errors.length > 0 && (
+              {(result.stats.erros > 0 || result.stats.debug_messages.length > 0) && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
                   <p className="text-xs font-medium text-red-500 mb-1">Avisos:</p>
-                  {result.stats.errors.map((err, i) => (
-                    <p key={i} className="text-xs text-red-400 truncate">{err}</p>
+                  {result.stats.debug_messages.map((msg, i) => (
+                    <p key={i} className="text-xs text-red-400 truncate">{msg}</p>
                   ))}
                 </div>
               )}
