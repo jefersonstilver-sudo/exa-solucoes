@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,17 @@ interface Proposal {
   created_by: string | null;
 }
 
+interface PaymentData {
+  method: 'pix' | 'boleto';
+  paymentId?: string;
+  status?: string;
+  qrCode?: string;
+  qrCodeBase64?: string;
+  boletoUrl?: string;
+  boletoBarcode?: string;
+  dueDate?: string;
+}
+
 const PropostaPublicaPage = () => {
   const { id } = useParams<{ id: string }>();
   
@@ -46,6 +57,17 @@ const PropostaPublicaPage = () => {
   const [showEmailCapture, setShowEmailCapture] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
+  
+  // Payment states
+  const [paymentStep, setPaymentStep] = useState<'select' | 'generating' | 'ready'>('select');
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'boleto' | null>(null);
+  const [diaVencimento, setDiaVencimento] = useState<5 | 10 | 15>(10);
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
+  
+  // Current building data for accurate panel count
+  const [enrichedBuildings, setEnrichedBuildings] = useState<any[]>([]);
+  const [realTotalPanels, setRealTotalPanels] = useState(0);
 
   // Buscar proposta do banco de dados
   useEffect(() => {
@@ -79,12 +101,51 @@ const PropostaPublicaPage = () => {
         console.log('✅ Proposta encontrada:', data);
         setProposal(data as Proposal);
 
+        // Fetch CURRENT building data for accurate panel count
+        const buildings = Array.isArray(data.selected_buildings) ? data.selected_buildings : [];
+        const buildingIds = buildings.map((b: any) => b.building_id).filter(Boolean);
+        
+        if (buildingIds.length > 0) {
+          const { data: currentBuildingsData } = await supabase
+            .from('buildings')
+            .select('id, quantidade_telas, numero_elevadores')
+            .in('id', buildingIds);
+
+          if (currentBuildingsData) {
+            // Create map of current data
+            const buildingsMap = new Map(currentBuildingsData.map(b => [
+              b.id,
+              b.quantidade_telas || b.numero_elevadores || 1
+            ]));
+
+            // Enrich selected_buildings with current panel data
+            const enriched = buildings.map((b: any) => ({
+              ...b,
+              quantidade_telas: buildingsMap.get(b.building_id) || b.quantidade_telas || 1
+            }));
+
+            setEnrichedBuildings(enriched);
+            
+            // Calculate real total panels
+            const total = enriched.reduce((sum: number, b: any) => 
+              sum + (b.quantidade_telas || 1), 0
+            );
+            setRealTotalPanels(total);
+            console.log('📊 Total de telas atualizado:', total);
+          } else {
+            setEnrichedBuildings(buildings);
+            setRealTotalPanels(data.total_panels || buildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0));
+          }
+        } else {
+          setEnrichedBuildings(buildings);
+          setRealTotalPanels(data.total_panels || 0);
+        }
+
         // Verificar se expirou
         if (data.expires_at) {
           const expiresAt = new Date(data.expires_at);
           if (expiresAt < new Date()) {
             setIsExpired(true);
-            // Atualizar status para expirada se ainda não estiver
             if (data.status !== 'expirada' && data.status !== 'aceita' && data.status !== 'recusada') {
               await supabase
                 .from('proposals')
@@ -94,7 +155,7 @@ const PropostaPublicaPage = () => {
           }
         }
 
-        // Registrar visualização apenas se ainda não foi aceita/recusada
+        // Registrar visualização
         if (!['aceita', 'recusada', 'expirada'].includes(data.status)) {
           await supabase.from('proposal_logs').insert({
             proposal_id: id,
@@ -102,7 +163,6 @@ const PropostaPublicaPage = () => {
             details: { timestamp: new Date().toISOString() }
           });
 
-          // Atualizar status para visualizada se estava como enviada
           if (data.status === 'enviada') {
             await supabase
               .from('proposals')
@@ -143,7 +203,6 @@ const PropostaPublicaPage = () => {
     
     setIsSubmitting(true);
     try {
-      // Atualizar status da proposta
       const { error } = await supabase
         .from('proposals')
         .update({ 
@@ -154,7 +213,6 @@ const PropostaPublicaPage = () => {
 
       if (error) throw error;
 
-      // Registrar log
       await supabase.from('proposal_logs').insert({
         proposal_id: proposal.id,
         action: 'aceita',
@@ -164,12 +222,9 @@ const PropostaPublicaPage = () => {
         }
       });
 
-      // Verificar se precisa capturar email
+      // Check if email capture needed
       if (!proposal.client_email) {
         setShowEmailCapture(true);
-      } else {
-        // Enviar email de confirmação diretamente
-        await sendConfirmationEmail(proposal.client_email);
       }
 
       setShowSuccess(true);
@@ -181,14 +236,61 @@ const PropostaPublicaPage = () => {
     }
   };
 
-  // Enviar email de confirmação
-  const sendConfirmationEmail = async (email: string) => {
+  // Generate payment (PIX or Boleto)
+  const handleGeneratePayment = async () => {
+    if (!proposal || !paymentMethod) return;
+    
+    setIsGeneratingPayment(true);
+    setPaymentStep('generating');
+    
+    try {
+      const emailToUse = emailInput || proposal.client_email || '';
+      
+      const { data, error } = await supabase.functions.invoke('generate-proposal-payment', {
+        body: {
+          proposalId: proposal.id,
+          paymentMethod,
+          selectedPlan,
+          clientEmail: emailToUse,
+          diaVencimento: paymentMethod === 'boleto' ? diaVencimento : undefined
+        }
+      });
+
+      if (error) throw error;
+      
+      if (!data?.success) {
+        throw new Error(data?.error || 'Erro ao gerar pagamento');
+      }
+
+      setPaymentData(data.paymentData);
+      setPaymentStep('ready');
+      
+      // Send confirmation email with payment data
+      await sendConfirmationEmail(emailToUse, data.paymentData);
+      
+      toast.success('Pagamento gerado com sucesso!');
+      
+    } catch (err: any) {
+      console.error('Erro ao gerar pagamento:', err);
+      toast.error(err.message || 'Erro ao gerar pagamento');
+      setPaymentStep('select');
+    } finally {
+      setIsGeneratingPayment(false);
+    }
+  };
+
+  // Send confirmation email with payment data
+  const sendConfirmationEmail = async (email: string, payment?: PaymentData) => {
+    if (!email) return;
+    
     try {
       const { error } = await supabase.functions.invoke('send-proposal-accepted-email', {
         body: {
           proposalId: proposal?.id,
           clientEmail: email,
-          selectedPlan
+          selectedPlan,
+          paymentMethod: payment?.method,
+          paymentData: payment
         }
       });
       
@@ -202,7 +304,7 @@ const PropostaPublicaPage = () => {
     }
   };
 
-  // Confirmar email capturado
+  // Confirm email captured
   const handleConfirmEmail = async () => {
     if (!emailInput.trim()) {
       toast.error('Digite seu e-mail');
@@ -214,8 +316,13 @@ const PropostaPublicaPage = () => {
       return;
     }
 
-    await sendConfirmationEmail(emailInput);
     setShowEmailCapture(false);
+  };
+
+  // Copy to clipboard
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado!`);
   };
 
   // Download PDF
@@ -235,13 +342,12 @@ const PropostaPublicaPage = () => {
     }
   };
 
-  // Recusar proposta
+  // Reject proposal
   const handleReject = async () => {
     if (!proposal || isSubmitting) return;
     
     setIsSubmitting(true);
     try {
-      // Atualizar status da proposta
       const { error } = await supabase
         .from('proposals')
         .update({ 
@@ -252,7 +358,6 @@ const PropostaPublicaPage = () => {
 
       if (error) throw error;
 
-      // Registrar log
       await supabase.from('proposal_logs').insert({
         proposal_id: proposal.id,
         action: 'recusada',
@@ -329,67 +434,266 @@ const PropostaPublicaPage = () => {
     );
   }
 
-  // Proposta aceita - tela de sucesso
+  // Proposta aceita - tela de sucesso com seleção de pagamento
   if (showSuccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 text-center bg-white/90 backdrop-blur-sm">
+        <Card className="max-w-md w-full p-6 bg-white/95 backdrop-blur-sm shadow-xl">
           {/* Ícone animado */}
-          <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
-            <Check className="h-10 w-10 text-white" />
+          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+            <Check className="h-8 w-8 text-white" />
           </div>
           
-          <h1 className="text-3xl font-bold text-foreground mb-2">🎉 Parabéns!</h1>
-          <p className="text-lg text-muted-foreground mb-4">
+          <h1 className="text-2xl font-bold text-center text-foreground mb-1">🎉 Parabéns!</h1>
+          <p className="text-center text-muted-foreground mb-4">
             Sua proposta foi aceita com sucesso!
           </p>
 
           {/* Campo de email se não tinha */}
-          {showEmailCapture && (
-            <div className="mb-6 space-y-3 bg-gray-50 p-4 rounded-lg">
+          {showEmailCapture && paymentStep === 'select' && (
+            <div className="mb-4 space-y-3 bg-gray-50 p-4 rounded-xl">
               <p className="text-sm text-muted-foreground">
-                Informe seu e-mail para receber todos os detalhes:
+                Informe seu e-mail para receber os detalhes:
               </p>
               <Input
                 type="email"
                 placeholder="seu@email.com"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
-                className="h-12"
+                className="h-11"
               />
               <Button 
                 className="w-full bg-[#9C1E1E] hover:bg-[#7D1818]"
                 onClick={handleConfirmEmail}
               >
                 <Mail className="h-4 w-4 mr-2" />
-                Confirmar e Receber Detalhes
+                Confirmar E-mail
               </Button>
             </div>
           )}
 
-          {/* Info do que vai acontecer */}
-          <div className="bg-emerald-50 rounded-lg p-4 text-left space-y-2 text-sm mb-6">
-            <p className="flex items-start gap-2">
-              <span className="text-emerald-600">✅</span>
-              <span>Você receberá um e-mail com todos os detalhes</span>
-            </p>
-            <p className="flex items-start gap-2">
-              <span className="text-emerald-600">📄</span>
-              <span>Em até <strong>1 dia útil</strong>, enviaremos o contrato</span>
-            </p>
-            <p className="flex items-start gap-2">
-              <span className="text-emerald-600">🔐</span>
-              <span>Após assinatura, receberá <strong>login e senha</strong> da plataforma</span>
-            </p>
-          </div>
+          {/* Payment Step: Select Method */}
+          {paymentStep === 'select' && !showEmailCapture && (
+            <div className="space-y-4">
+              <h2 className="font-semibold text-center">💳 Como deseja pagar?</h2>
+              
+              {/* PIX Option */}
+              <Card 
+                className={`p-4 cursor-pointer transition-all border-2 ${
+                  paymentMethod === 'pix' 
+                    ? 'border-emerald-500 bg-emerald-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setPaymentMethod('pix')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    paymentMethod === 'pix' ? 'bg-emerald-500' : 'bg-gray-100'
+                  }`}>
+                    <Zap className={`h-5 w-5 ${paymentMethod === 'pix' ? 'text-white' : 'text-gray-500'}`} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold">PIX</div>
+                    <div className="text-xs text-muted-foreground">Pagamento instantâneo • QR Code</div>
+                  </div>
+                  {paymentMethod === 'pix' && (
+                    <Check className="h-5 w-5 text-emerald-500" />
+                  )}
+                </div>
+              </Card>
 
-          <Button
-            className="w-full h-12 bg-[#25D366] hover:bg-[#20BD5A] text-white"
-            onClick={() => window.open(`https://wa.me/55${sellerPhone.replace(/\D/g, '')}`, '_blank')}
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Falar com {sellerName.split(' ')[0]}
-          </Button>
+              {/* Boleto Option */}
+              <Card 
+                className={`p-4 cursor-pointer transition-all border-2 ${
+                  paymentMethod === 'boleto' 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setPaymentMethod('boleto')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    paymentMethod === 'boleto' ? 'bg-blue-500' : 'bg-gray-100'
+                  }`}>
+                    <FileBarChart className={`h-5 w-5 ${paymentMethod === 'boleto' ? 'text-white' : 'text-gray-500'}`} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold">Boleto Bancário</div>
+                    <div className="text-xs text-muted-foreground">Vencimento em até 3 dias úteis</div>
+                  </div>
+                  {paymentMethod === 'boleto' && (
+                    <Check className="h-5 w-5 text-blue-500" />
+                  )}
+                </div>
+
+                {/* Due date selector for Boleto */}
+                {paymentMethod === 'boleto' && (
+                  <div className="mt-4 pt-3 border-t border-blue-200">
+                    <p className="text-sm font-medium mb-2">Dia do vencimento:</p>
+                    <div className="flex gap-2">
+                      {([5, 10, 15] as const).map((day) => (
+                        <button
+                          key={day}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDiaVencimento(day);
+                          }}
+                          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                            diaVencimento === day
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-white border border-blue-200 text-blue-600 hover:bg-blue-50'
+                          }`}
+                        >
+                          Dia {day}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
+
+              {/* Generate Payment Button */}
+              <Button
+                className="w-full h-12 bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
+                disabled={!paymentMethod || isGeneratingPayment}
+                onClick={handleGeneratePayment}
+              >
+                {isGeneratingPayment ? (
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                ) : (
+                  <Check className="h-5 w-5 mr-2" />
+                )}
+                Gerar Pagamento
+              </Button>
+            </div>
+          )}
+
+          {/* Payment Step: Generating */}
+          {paymentStep === 'generating' && (
+            <div className="text-center py-8">
+              <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-[#9C1E1E]" />
+              <p className="text-muted-foreground">Gerando {paymentMethod === 'pix' ? 'PIX' : 'Boleto'}...</p>
+            </div>
+          )}
+
+          {/* Payment Step: Ready - PIX */}
+          {paymentStep === 'ready' && paymentData?.method === 'pix' && (
+            <div className="space-y-4">
+              <div className="bg-emerald-50 rounded-xl p-4 text-center">
+                <Zap className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                <h3 className="font-semibold text-emerald-700">PIX Gerado!</h3>
+              </div>
+
+              {/* QR Code */}
+              {paymentData.qrCodeBase64 && (
+                <div className="flex justify-center">
+                  <img 
+                    src={`data:image/png;base64,${paymentData.qrCodeBase64}`}
+                    alt="QR Code PIX"
+                    className="w-48 h-48 rounded-lg border-2 border-gray-200"
+                  />
+                </div>
+              )}
+
+              {/* Copy Code */}
+              {paymentData.qrCode && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-center">Código Pix Copia e Cola:</p>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={paymentData.qrCode}
+                      readOnly
+                      className="text-xs font-mono"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copyToClipboard(paymentData.qrCode!, 'Código PIX')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                className="w-full h-10 bg-[#25D366] hover:bg-[#20BD5A] text-white"
+                onClick={() => window.open(`https://wa.me/55${sellerPhone.replace(/\D/g, '')}`, '_blank')}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Confirmar Pagamento via WhatsApp
+              </Button>
+            </div>
+          )}
+
+          {/* Payment Step: Ready - Boleto */}
+          {paymentStep === 'ready' && paymentData?.method === 'boleto' && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 rounded-xl p-4 text-center">
+                <FileBarChart className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                <h3 className="font-semibold text-blue-700">Boleto Gerado!</h3>
+                {paymentData.dueDate && (
+                  <p className="text-sm text-blue-600">
+                    Vencimento: {new Date(paymentData.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}
+                  </p>
+                )}
+              </div>
+
+              {/* Download Boleto */}
+              {paymentData.boletoUrl && (
+                <Button
+                  className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white"
+                  onClick={() => window.open(paymentData.boletoUrl, '_blank')}
+                >
+                  <Download className="h-5 w-5 mr-2" />
+                  Baixar Boleto
+                </Button>
+              )}
+
+              {/* Barcode */}
+              {paymentData.boletoBarcode && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-center">Código de Barras:</p>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={paymentData.boletoBarcode}
+                      readOnly
+                      className="text-xs font-mono"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copyToClipboard(paymentData.boletoBarcode!, 'Código de barras')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                className="w-full h-10 bg-[#25D366] hover:bg-[#20BD5A] text-white"
+                onClick={() => window.open(`https://wa.me/55${sellerPhone.replace(/\D/g, '')}`, '_blank')}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Falar com {sellerName.split(' ')[0]}
+              </Button>
+            </div>
+          )}
+
+          {/* Info do que vai acontecer - only show before payment */}
+          {paymentStep === 'select' && !showEmailCapture && (
+            <div className="mt-4 bg-gray-50 rounded-lg p-3 text-left space-y-2 text-xs">
+              <p className="flex items-start gap-2">
+                <span className="text-emerald-600">📧</span>
+                <span>Você receberá um e-mail com os detalhes</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <span className="text-emerald-600">📄</span>
+                <span>Em até <strong>1 dia útil</strong>, enviaremos o contrato</span>
+              </p>
+            </div>
+          )}
         </Card>
       </div>
     );
@@ -420,9 +724,9 @@ const PropostaPublicaPage = () => {
     );
   }
 
-  // Cálculos
-  const buildings = proposal.selected_buildings || [];
-  const totalPanels = proposal.total_panels || buildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 0), 0);
+  // Use enriched building data
+  const buildings = enrichedBuildings.length > 0 ? enrichedBuildings : (proposal.selected_buildings || []);
+  const totalPanels = realTotalPanels || proposal.total_panels || buildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0);
   const totalImpressions = proposal.total_impressions_month || buildings.reduce((sum: number, b: any) => sum + (b.visualizacoes_mes || 0), 0);
   const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
 
@@ -448,7 +752,6 @@ const PropostaPublicaPage = () => {
                 <span className="bg-white/10 px-3 py-1 rounded-full text-xs">
                   {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
                 </span>
-                {/* Status Badge */}
                 {(() => {
                   const statusConfig: Record<string, { bg: string; text: string }> = {
                     'enviada': { bg: 'bg-blue-500', text: 'Enviada' },
@@ -467,7 +770,6 @@ const PropostaPublicaPage = () => {
               </div>
             </div>
           </div>
-          {/* Cliente Info */}
           <div className="text-sm opacity-90 space-y-1">
             <div>Cliente: <strong>{proposal.client_name}</strong></div>
             {proposal.client_cnpj && (
@@ -631,19 +933,19 @@ const PropostaPublicaPage = () => {
             </Button>
           </div>
 
-        <Button
-          variant="outline"
-          className="w-full h-10 text-sm"
-          onClick={handleDownloadPDF}
-          disabled={isDownloadingPDF}
-        >
-          {isDownloadingPDF ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4 mr-2" />
-          )}
-          Baixar Proposta em PDF
-        </Button>
+          <Button
+            variant="outline"
+            className="w-full h-10 text-sm"
+            onClick={handleDownloadPDF}
+            disabled={isDownloadingPDF}
+          >
+            {isDownloadingPDF ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Baixar Proposta em PDF
+          </Button>
         </div>
 
         {/* Contato */}

@@ -8,10 +8,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface PaymentData {
+  method: 'pix' | 'boleto';
+  qrCode?: string;
+  qrCodeBase64?: string;
+  boletoUrl?: string;
+  boletoBarcode?: string;
+  dueDate?: string;
+}
+
 interface RequestBody {
   proposalId: string;
-  clientEmail?: string; // Email capturado no popup (se não tinha antes)
+  clientEmail?: string;
   selectedPlan: 'avista' | 'fidelidade';
+  paymentMethod?: 'pix' | 'boleto';
+  paymentData?: PaymentData;
 }
 
 serve(async (req) => {
@@ -21,9 +32,9 @@ serve(async (req) => {
   }
 
   try {
-    const { proposalId, clientEmail, selectedPlan } = await req.json() as RequestBody;
+    const { proposalId, clientEmail, selectedPlan, paymentMethod, paymentData } = await req.json() as RequestBody;
 
-    console.log('📧 Iniciando envio de email de proposta aceita:', { proposalId, clientEmail, selectedPlan });
+    console.log('📧 Iniciando envio de email de proposta aceita:', { proposalId, clientEmail, selectedPlan, paymentMethod });
 
     if (!proposalId) {
       throw new Error('proposalId é obrigatório');
@@ -89,7 +100,7 @@ serve(async (req) => {
     // Build email data
     const buildings = proposal.selected_buildings || [];
     
-    const emailData = {
+    const emailData: any = {
       clientName: proposal.client_name,
       clientEmail: emailToSend,
       clientCnpj: proposal.client_cnpj,
@@ -104,6 +115,24 @@ serve(async (req) => {
       sellerName,
       sellerPhone,
     };
+
+    // Add payment data if available
+    if (paymentMethod && paymentData) {
+      emailData.paymentMethod = paymentMethod;
+      
+      if (paymentMethod === 'pix') {
+        emailData.pixData = {
+          qrCodeBase64: paymentData.qrCodeBase64,
+          qrCode: paymentData.qrCode,
+        };
+      } else if (paymentMethod === 'boleto') {
+        emailData.boletoData = {
+          boletoUrl: paymentData.boletoUrl,
+          boletoBarcode: paymentData.boletoBarcode,
+          dueDate: paymentData.dueDate,
+        };
+      }
+    }
 
     // Generate email HTML
     const emailHtml = createProposalAcceptedEmail(emailData);
@@ -132,6 +161,7 @@ serve(async (req) => {
       details: {
         email: emailToSend,
         selected_plan: selectedPlan,
+        payment_method: paymentMethod,
         resend_id: emailResponse?.id,
         timestamp: new Date().toISOString()
       }
