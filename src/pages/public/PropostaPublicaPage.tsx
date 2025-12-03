@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,10 @@ interface Proposal {
   sent_at: string | null;
   expires_at: string | null;
   created_by: string | null;
+  metadata?: {
+    type?: string;
+    cortesia_code_id?: string;
+  };
 }
 
 interface PaymentData {
@@ -64,6 +68,13 @@ const PropostaPublicaPage = () => {
   const [diaVencimento, setDiaVencimento] = useState<5 | 10 | 15>(10);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
+  
+  // Cortesia states
+  const [isCortesia, setIsCortesia] = useState(false);
+  const [cortesiaAccepted, setCortesiaAccepted] = useState(false);
+  const [cortesiaPasswordLink, setCortesiaPasswordLink] = useState<string | null>(null);
+  const [cortesiaIsNewUser, setCortesiaIsNewUser] = useState(false);
+  const [isAcceptingCortesia, setIsAcceptingCortesia] = useState(false);
   
   // Current building data for accurate panel count
   const [enrichedBuildings, setEnrichedBuildings] = useState<any[]>([]);
@@ -154,6 +165,13 @@ const PropostaPublicaPage = () => {
 
         console.log('✅ Proposta encontrada:', data);
         setProposal(data as Proposal);
+
+        // Detectar se é uma cortesia
+        const metadata = data.metadata as any;
+        if (metadata?.type === 'cortesia') {
+          setIsCortesia(true);
+          console.log('🎁 Proposta é uma CORTESIA');
+        }
 
         // Fetch CURRENT building data for accurate panel count
         const buildings = Array.isArray(data.selected_buildings) ? data.selected_buildings : [];
@@ -300,6 +318,35 @@ const PropostaPublicaPage = () => {
       toast.error('Erro ao processar. Tente novamente.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Aceitar cortesia (cria conta + pedido)
+  const handleAcceptCortesia = async () => {
+    if (!proposal || isAcceptingCortesia) return;
+    
+    setIsAcceptingCortesia(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('accept-cortesia-proposal', {
+        body: { proposalId: proposal.id }
+      });
+
+      if (error) throw error;
+      
+      if (!data?.success) {
+        throw new Error(data?.error || 'Erro ao aceitar cortesia');
+      }
+
+      setCortesiaAccepted(true);
+      setCortesiaIsNewUser(data.isNewUser);
+      setCortesiaPasswordLink(data.passwordResetLink);
+      
+      toast.success('🎁 Presente aceito com sucesso!');
+    } catch (err: any) {
+      console.error('Erro ao aceitar cortesia:', err);
+      toast.error(err.message || 'Erro ao processar. Tente novamente.');
+    } finally {
+      setIsAcceptingCortesia(false);
     }
   };
 
@@ -471,6 +518,54 @@ const PropostaPublicaPage = () => {
             <MessageSquare className="h-4 w-4 mr-2" />
             Falar com a equipe
           </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Cortesia aceita - tela de sucesso especial
+  if (cortesiaAccepted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-amber-50 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full p-8 text-center bg-white/95 backdrop-blur-sm shadow-xl">
+          <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+            <Gift className="h-10 w-10 text-white" />
+          </div>
+          
+          <h1 className="text-2xl font-bold text-foreground mb-2">🎉 Presente Aceito!</h1>
+          <p className="text-muted-foreground mb-6">
+            Sua cortesia foi ativada com sucesso!
+          </p>
+
+          {cortesiaIsNewUser && cortesiaPasswordLink && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-left">
+              <p className="text-sm font-medium text-amber-800 mb-2">📧 Próximo passo:</p>
+              <p className="text-sm text-amber-700 mb-3">
+                Enviamos um e-mail para você definir sua senha e acessar sua área do anunciante.
+              </p>
+              <Button
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                onClick={() => window.open(cortesiaPasswordLink, '_blank')}
+              >
+                Definir Minha Senha
+              </Button>
+            </div>
+          )}
+
+          <div className="bg-emerald-50 rounded-xl p-4 text-left space-y-2 text-sm">
+            <p className="flex items-start gap-2">
+              <span className="text-emerald-600">✅</span>
+              <span>Seu pedido foi criado automaticamente</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-emerald-600">📹</span>
+              <span>Faça upload do seu vídeo (15s horizontal)</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-emerald-600">🚀</span>
+              <span>Após aprovação, seu anúncio entrará no ar!</span>
+            </p>
+          </div>
         </Card>
       </div>
     );

@@ -76,8 +76,8 @@ serve(async (req) => {
 
     console.log('[validate-cortesia-code] Código validado com sucesso');
 
-    // Chamar create-proposal-cortesia para criar a cortesia
-    const { data: cortesiaResult, error: cortesiaError } = await supabase.functions.invoke('create-proposal-cortesia', {
+    // Chamar create-cortesia-proposal para criar PROPOSTA (não pedido!)
+    const { data: proposalResult, error: proposalError } = await supabase.functions.invoke('create-cortesia-proposal', {
       body: {
         requestId,
         requestData: codeRecord.request_data,
@@ -85,27 +85,27 @@ serve(async (req) => {
       }
     });
 
-    if (cortesiaError) {
-      console.error('[validate-cortesia-code] Erro ao criar cortesia:', cortesiaError);
-      throw cortesiaError;
+    if (proposalError) {
+      console.error('[validate-cortesia-code] Erro ao criar proposta de cortesia:', proposalError);
+      throw proposalError;
     }
 
-    // Marcar código como usado
-    await supabase
-      .from('cortesia_codes')
-      .update({ used_at: new Date().toISOString() })
-      .eq('id', requestId);
+    // NÃO marcar código como usado ainda - será marcado quando cliente ACEITAR
+    // await supabase
+    //   .from('cortesia_codes')
+    //   .update({ used_at: new Date().toISOString() })
+    //   .eq('id', requestId);
 
     // Log do evento
     await supabase.from('log_eventos_sistema').insert({
       tipo_evento: 'CORTESIA_CODE_VALIDATED',
-      descricao: `Código de cortesia validado para ${codeRecord.request_data.client_name}`
+      descricao: `Código de cortesia validado para ${codeRecord.request_data.client_name}. Proposta enviada.`
     });
 
     return new Response(JSON.stringify({
       success: true,
-      message: 'Cortesia criada com sucesso!',
-      cortesia: cortesiaResult
+      message: 'Proposta de cortesia enviada para o cliente!',
+      proposal: proposalResult
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
