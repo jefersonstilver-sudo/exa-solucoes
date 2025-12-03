@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -769,6 +769,34 @@ const PropostaPublicaPage = () => {
   const totalImpressions = proposal.total_impressions_month || buildings.reduce((sum: number, b: any) => sum + (b.visualizacoes_mes || 0), 0);
   const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
 
+  // ==== CÁLCULO DO BREAKDOWN DE PREÇO ====
+  // Calcular valor base mensal total (soma de todos os preco_base dos prédios)
+  const baseMonthlyTotal = buildings.reduce((sum: number, b: any) => sum + (b.preco_base || 0), 0);
+  const baseTotalValue = baseMonthlyTotal * proposal.duration_months;
+  
+  // Desconto do plano (baseado em duration_months)
+  const planDiscountPercent = proposal.duration_months === 12 ? 37.5 
+    : proposal.duration_months === 6 ? 30 
+    : proposal.duration_months === 3 ? 20 
+    : 0;
+  const planDiscountValue = baseTotalValue * (planDiscountPercent / 100);
+  const afterPlanDiscount = baseTotalValue - planDiscountValue;
+  
+  // Desconto PIX à Vista (10%) - aplicado sobre o valor já com desconto do plano
+  const pixDiscountPercent = 10;
+  const pixDiscountValue = afterPlanDiscount * (pixDiscountPercent / 100);
+  const finalCashValue = afterPlanDiscount - pixDiscountValue;
+  
+  // Economia total À Vista
+  const totalSavingsAvista = baseTotalValue > 0 
+    ? ((baseTotalValue - proposal.cash_total_value) / baseTotalValue * 100).toFixed(1)
+    : '0';
+    
+  // Economia total Fidelidade
+  const totalSavingsFidelidade = baseTotalValue > 0
+    ? ((baseTotalValue - fidelTotal) / baseTotalValue * 100).toFixed(1)
+    : '0';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
       {/* Header */}
@@ -962,6 +990,96 @@ const PropostaPublicaPage = () => {
               </div>
             </div>
           </Card>
+
+          {/* ==== BREAKDOWN DE PREÇO ==== */}
+          {baseTotalValue > 0 && (
+            <Card className="p-4 bg-gradient-to-br from-gray-50 to-white border-dashed border-gray-300">
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 text-muted-foreground">
+                <Calculator className="h-4 w-4" />
+                Como chegamos neste valor
+              </h3>
+              
+              <div className="space-y-2 text-sm">
+                {/* Valor Original */}
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">
+                    Valor base ({proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'})
+                  </span>
+                  <span className="line-through text-muted-foreground">
+                    {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
+                
+                {/* Desconto Plano */}
+                {planDiscountPercent > 0 && (
+                  <div className="flex justify-between items-center text-emerald-600">
+                    <span className="flex items-center gap-1">
+                      <span className="text-xs">✓</span>
+                      Desconto Plano {proposal.duration_months}M ({planDiscountPercent}%)
+                    </span>
+                    <span>
+                      - {planDiscountValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Subtotal após plano - só mostra se selecionou À Vista e tem desconto plano */}
+                {selectedPlan === 'avista' && planDiscountPercent > 0 && (
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="line-through text-muted-foreground">
+                      {afterPlanDiscount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Desconto PIX - só mostra se selecionou À Vista */}
+                {selectedPlan === 'avista' && (
+                  <div className="flex justify-between items-center text-emerald-600">
+                    <span className="flex items-center gap-1">
+                      <span className="text-xs">✓</span>
+                      Desconto PIX à Vista ({pixDiscountPercent}%)
+                    </span>
+                    <span>
+                      - {pixDiscountValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Divisor e Valor Final */}
+                <div className="border-t pt-3 mt-3 space-y-1">
+                  <div className="flex justify-between items-center font-bold">
+                    <span className="text-[#9C1E1E]">
+                      {selectedPlan === 'avista' ? 'VALOR FINAL' : 'TOTAL DO CONTRATO'}
+                    </span>
+                    <span className="text-[#9C1E1E] text-lg">
+                      {selectedPlan === 'avista' 
+                        ? proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                        : fidelTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                      }
+                    </span>
+                  </div>
+                  
+                  {/* Mensalidade se fidelidade */}
+                  {selectedPlan === 'fidelidade' && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Mensalidade</span>
+                      <span className="font-medium">
+                        {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Badge de economia */}
+                  <div className="text-right">
+                    <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-1 rounded-full">
+                      🎉 Economia de {selectedPlan === 'avista' ? totalSavingsAvista : totalSavingsFidelidade}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
 
         {/* Botões de Ação - SÓ aparecem se proposta ainda pode ser respondida */}
