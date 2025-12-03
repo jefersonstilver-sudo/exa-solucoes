@@ -11,7 +11,6 @@ import {
   TrendingUp, 
   AlertCircle, 
   Building2, 
-  Percent,
   Clock,
   Target,
   CheckCircle2,
@@ -83,7 +82,7 @@ const CouponDetailsHoverCard: React.FC<CouponDetailsHoverCardProps> = ({ coupon,
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          {/* Header com gradiente */}
+          {/* Header com gradiente EXA */}
           <div className={`${statusInfo.bgColor} border-b-2 p-4`}>
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -100,7 +99,7 @@ const CouponDetailsHoverCard: React.FC<CouponDetailsHoverCardProps> = ({ coupon,
                   </span>
                 </div>
               </div>
-              <div className={`flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-[#3C1361] to-[#5a1a8f] shadow-lg`}>
+              <div className="flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-[#9C1E1E] to-[#7a1717] shadow-lg">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-white">
                     {coupon.desconto_percentual}%
@@ -128,7 +127,7 @@ const CouponDetailsHoverCard: React.FC<CouponDetailsHoverCardProps> = ({ coupon,
             <div className="grid grid-cols-2 gap-3">
               {/* Categoria */}
               <div className="flex items-start gap-2 p-2 bg-white rounded-lg border">
-                <Target className="h-4 w-4 text-[#3C1361] mt-0.5 flex-shrink-0" />
+                <Target className="h-4 w-4 text-[#9C1E1E] mt-0.5 flex-shrink-0" />
                 <div>
                   <div className="text-[10px] text-gray-500 uppercase font-semibold">
                     Categoria
@@ -141,7 +140,7 @@ const CouponDetailsHoverCard: React.FC<CouponDetailsHoverCardProps> = ({ coupon,
 
               {/* Uso */}
               <div className="flex items-start gap-2 p-2 bg-white rounded-lg border">
-                <Users className="h-4 w-4 text-[#3C1361] mt-0.5 flex-shrink-0" />
+                <Users className="h-4 w-4 text-[#9C1E1E] mt-0.5 flex-shrink-0" />
                 <div>
                   <div className="text-[10px] text-gray-500 uppercase font-semibold">
                     Utilização
@@ -154,7 +153,7 @@ const CouponDetailsHoverCard: React.FC<CouponDetailsHoverCardProps> = ({ coupon,
                       className={`h-1 rounded-full transition-all ${
                         usagePercent >= 80 ? 'bg-red-500' : 
                         usagePercent >= 50 ? 'bg-orange-500' : 
-                        'bg-green-500'
+                        'bg-emerald-500'
                       }`}
                       style={{ width: `${Math.min(usagePercent, 100)}%` }}
                     />
@@ -173,10 +172,10 @@ const CouponDetailsHoverCard: React.FC<CouponDetailsHoverCardProps> = ({ coupon,
               <div className="space-y-2">
                 {/* Mínimo de meses */}
                 {coupon.min_meses > 1 && (
-                  <div className="flex items-center gap-2 text-sm p-2 bg-purple-50 border border-purple-200 rounded-lg">
-                    <Calendar className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                  <div className="flex items-center gap-2 text-sm p-2 bg-[#9C1E1E]/5 border border-[#9C1E1E]/20 rounded-lg">
+                    <Calendar className="h-4 w-4 text-[#9C1E1E] flex-shrink-0" />
                     <span className="text-gray-700">
-                      Plano mínimo: <span className="font-semibold text-purple-700">{coupon.min_meses} meses</span>
+                      Plano mínimo: <span className="font-semibold text-[#9C1E1E]">{coupon.min_meses} meses</span>
                     </span>
                   </div>
                 )}

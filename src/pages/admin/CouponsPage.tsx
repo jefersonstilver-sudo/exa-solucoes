@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, RefreshCw } from 'lucide-react';
+import { Plus, Download, RefreshCw, Ticket } from 'lucide-react';
 import { useCouponsData } from '@/hooks/useCouponsData';
 import CouponStatsCards from '@/components/admin/coupons/CouponStatsCards';
 import CouponFiltersComponent from '@/components/admin/coupons/CouponFilters';
@@ -10,9 +10,11 @@ import CouponsTable from '@/components/admin/coupons/CouponsTable';
 import CouponFormDialog from '@/components/admin/coupons/CouponFormDialog';
 import { Coupon } from '@/types/coupon';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 
 const CouponsPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { isMobile } = useAdvancedResponsive();
   
   const {
     coupons,
@@ -84,6 +86,133 @@ const CouponsPage: React.FC = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 pb-24">
+        {/* Mobile Header Glassmorphism */}
+        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-white/50 shadow-sm">
+          <div className="px-3 py-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
+                  <Ticket className="w-4 h-4 text-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-base font-semibold text-foreground">Cupons</h1>
+                  <p className="text-[10px] text-muted-foreground">Gestão de descontos</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  onClick={exportCoupons}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="bg-[#9C1E1E] hover:bg-[#7a1717] text-white h-8 px-3"
+                  onClick={handleCreateCoupon}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Filter Pills */}
+          <div className="px-3 pb-2.5 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 whitespace-nowrap pb-0.5">
+              <button 
+                onClick={() => setFilters({...filters, status: 'all'})}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium min-w-fit transition-all ${
+                  filters.status === 'all' 
+                    ? 'bg-[#9C1E1E] text-white shadow-sm' 
+                    : 'bg-white/80 text-muted-foreground border border-gray-200'
+                }`}
+              >
+                Todos {stats?.total_cupons || 0}
+              </button>
+              <button 
+                onClick={() => setFilters({...filters, status: 'active'})}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium min-w-fit transition-all ${
+                  filters.status === 'active' 
+                    ? 'bg-emerald-600 text-white shadow-sm' 
+                    : 'bg-white/80 text-muted-foreground border border-gray-200'
+                }`}
+              >
+                ✓ Ativos {stats?.cupons_ativos || 0}
+              </button>
+              <button 
+                onClick={() => setFilters({...filters, status: 'inactive'})}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium min-w-fit transition-all ${
+                  filters.status === 'inactive' 
+                    ? 'bg-gray-600 text-white shadow-sm' 
+                    : 'bg-white/80 text-muted-foreground border border-gray-200'
+                }`}
+              >
+                ○ Inativos
+              </button>
+              <button 
+                onClick={() => setFilters({...filters, status: 'expired'})}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium min-w-fit transition-all ${
+                  filters.status === 'expired' 
+                    ? 'bg-red-600 text-white shadow-sm' 
+                    : 'bg-white/80 text-muted-foreground border border-gray-200'
+                }`}
+              >
+                ⏰ Expirados {stats?.cupons_expirados || 0}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-3 pt-3">
+          {/* Stats Grid 2x2 */}
+          <CouponStatsCards stats={stats} isLoading={isLoading} />
+
+          {/* Filtros Mobile */}
+          <div className="px-3">
+            <CouponFiltersComponent filters={filters} onFiltersChange={setFilters} />
+          </div>
+
+          {/* Lista de Cupons */}
+          <CouponsTable
+            coupons={coupons}
+            isLoading={isLoading}
+            onEdit={handleEditCoupon}
+            onDelete={deleteCoupon}
+            onToggleStatus={handleToggleStatus}
+            onViewUsage={getCouponUsageDetails}
+          />
+        </div>
+
+        {/* Dialog de Criação/Edição */}
+        <CouponFormDialog
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          onSubmit={handleFormSubmit}
+          onGenerateCode={generateCouponCode}
+          editingCoupon={editingCoupon}
+        />
+      </div>
+    );
+  }
+
+  // Desktop Layout
   return (
     <div className="container mx-auto py-6 space-y-8 min-h-screen pb-24">
       {/* Header com título e ações */}
