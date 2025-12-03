@@ -890,13 +890,13 @@ const NovaPropostaPage = () => {
 
       {/* Dialog de Confirmação de Cortesia */}
       <Dialog open={cortesiaConfirmDialogOpen} onOpenChange={setCortesiaConfirmDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-sm border border-border/50">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Gift className="h-5 w-5 text-pink-500" />
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Gift className="h-5 w-5 text-primary" />
               Enviar como Cortesia
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-muted-foreground">
               Esta ação requer autorização do administrador
             </DialogDescription>
           </DialogHeader>
@@ -906,10 +906,10 @@ const NovaPropostaPage = () => {
               Você está enviando uma cortesia para:
             </p>
 
-            <div className="p-4 bg-pink-50 rounded-lg space-y-2">
+            <div className="p-4 bg-secondary/50 rounded-xl border border-border/30 space-y-2">
               <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-pink-500" />
-                <span className="font-medium">{clientData.name}</span>
+                <User className="h-4 w-4 text-primary" />
+                <span className="font-medium text-foreground">{clientData.name}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4" />
@@ -923,25 +923,31 @@ const NovaPropostaPage = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3 text-center p-3 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-3 gap-3 text-center p-4 bg-muted/30 rounded-xl border border-border/30">
               <div>
-                <div className="text-xl font-bold text-primary">{selectedBuildings.length}</div>
-                <div className="text-[10px] text-muted-foreground">📍 Prédios</div>
+                <div className="text-2xl font-bold text-foreground">{selectedBuildings.length}</div>
+                <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
+                  <MapPin className="h-3 w-3" /> Prédios
+                </div>
               </div>
               <div>
-                <div className="text-xl font-bold text-primary">{totalPanels}</div>
-                <div className="text-[10px] text-muted-foreground">📺 Telas</div>
+                <div className="text-2xl font-bold text-foreground">{totalPanels}</div>
+                <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
+                  <Building2 className="h-3 w-3" /> Telas
+                </div>
               </div>
               <div>
-                <div className="text-xl font-bold text-primary">{durationMonths}</div>
-                <div className="text-[10px] text-muted-foreground">📅 {durationMonths === 1 ? 'Mês' : 'Meses'}</div>
+                <div className="text-2xl font-bold text-foreground">{durationMonths}</div>
+                <div className="text-[10px] text-muted-foreground">
+                  {durationMonths === 1 ? 'Mês' : 'Meses'}
+                </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg">
-              <Shield className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-800">
-                <strong>Validação necessária:</strong> Um código de 4 dígitos será enviado via WhatsApp para o administrador. 
+            <div className="flex items-start gap-3 p-4 bg-primary/5 rounded-xl border border-primary/20">
+              <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-muted-foreground">
+                <strong className="text-foreground">Validação necessária:</strong> Um código de 4 dígitos será enviado via WhatsApp para o administrador. 
                 Você precisará digitar esse código para confirmar a cortesia.
               </div>
             </div>
@@ -954,7 +960,7 @@ const NovaPropostaPage = () => {
             <Button 
               onClick={handleRequestCortesiaCode}
               disabled={isRequestingCode}
-              className="gap-2 bg-pink-500 hover:bg-pink-600"
+              className="gap-2"
             >
               {isRequestingCode ? (
                 <>
