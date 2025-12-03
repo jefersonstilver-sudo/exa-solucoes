@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -14,17 +14,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, isToday, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
 
 interface Proposal {
   id: string;
   number: string;
   client_name: string;
+  client_cnpj?: string | null;
   client_phone: string | null;
   client_email: string | null;
   total_panels: number;
   total_impressions_month: number;
   fidel_monthly_value: number;
   cash_total_value: number;
+  discount_percent: number;
   duration_months: number;
   status: string;
   created_at: string;
@@ -311,6 +314,18 @@ const PropostasPage = () => {
                       <DropdownMenuItem onClick={() => window.open(`https://examidia.com.br/propostacomercial/${proposal.id}`, '_blank')}>
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Visualizar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={async () => {
+                        try {
+                          const exporter = new ProposalPDFExporter();
+                          await exporter.generateProposalPDF(proposal as any, 'Equipe EXA');
+                          toast.success('PDF gerado!');
+                        } catch (err) {
+                          toast.error('Erro ao gerar PDF');
+                        }
+                      }}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Baixar PDF
                       </DropdownMenuItem>
                       {proposal.client_phone && (
                         <DropdownMenuItem onClick={() => handleResend(proposal, 'whatsapp')}>

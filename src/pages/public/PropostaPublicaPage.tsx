@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2 } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import UnifiedLogo from '@/components/layout/UnifiedLogo';
 import { supabase } from '@/integrations/supabase/client';
+import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
+import { validateEmail } from '@/utils/inputValidation';
 
 interface Proposal {
   id: string;
@@ -40,6 +43,9 @@ const PropostaPublicaPage = () => {
   const [showReject, setShowReject] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
 
   // Buscar proposta do banco de dados
   useEffect(() => {
@@ -158,13 +164,74 @@ const PropostaPublicaPage = () => {
         }
       });
 
-      toast.success('Proposta aceita com sucesso!');
+      // Verificar se precisa capturar email
+      if (!proposal.client_email) {
+        setShowEmailCapture(true);
+      } else {
+        // Enviar email de confirmação diretamente
+        await sendConfirmationEmail(proposal.client_email);
+      }
+
       setShowSuccess(true);
     } catch (err) {
       console.error('Erro ao aceitar proposta:', err);
       toast.error('Erro ao processar. Tente novamente.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Enviar email de confirmação
+  const sendConfirmationEmail = async (email: string) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-proposal-accepted-email', {
+        body: {
+          proposalId: proposal?.id,
+          clientEmail: email,
+          selectedPlan
+        }
+      });
+      
+      if (error) {
+        console.error('Erro ao enviar email:', error);
+      } else {
+        toast.success('E-mail de confirmação enviado!');
+      }
+    } catch (err) {
+      console.error('Erro ao enviar email:', err);
+    }
+  };
+
+  // Confirmar email capturado
+  const handleConfirmEmail = async () => {
+    if (!emailInput.trim()) {
+      toast.error('Digite seu e-mail');
+      return;
+    }
+    
+    if (!validateEmail(emailInput)) {
+      toast.error('E-mail inválido');
+      return;
+    }
+
+    await sendConfirmationEmail(emailInput);
+    setShowEmailCapture(false);
+  };
+
+  // Download PDF
+  const handleDownloadPDF = async () => {
+    if (!proposal) return;
+    
+    setIsDownloadingPDF(true);
+    try {
+      const exporter = new ProposalPDFExporter();
+      await exporter.generateProposalPDF(proposal, sellerName);
+      toast.success('PDF baixado com sucesso!');
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      toast.error('Erro ao gerar PDF');
+    } finally {
+      setIsDownloadingPDF(false);
     }
   };
 
@@ -267,13 +334,55 @@ const PropostaPublicaPage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white flex items-center justify-center p-4">
         <Card className="max-w-md w-full p-8 text-center bg-white/90 backdrop-blur-sm">
-          <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check className="h-8 w-8 text-emerald-600" />
+          {/* Ícone animado */}
+          <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+            <Check className="h-10 w-10 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Proposta Aceita!</h1>
-          <p className="text-muted-foreground mb-6">
-            Obrigado por escolher a EXA Mídia! Nossa equipe entrará em contato em breve para finalizar os detalhes.
+          
+          <h1 className="text-3xl font-bold text-foreground mb-2">🎉 Parabéns!</h1>
+          <p className="text-lg text-muted-foreground mb-4">
+            Sua proposta foi aceita com sucesso!
           </p>
+
+          {/* Campo de email se não tinha */}
+          {showEmailCapture && (
+            <div className="mb-6 space-y-3 bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Informe seu e-mail para receber todos os detalhes:
+              </p>
+              <Input
+                type="email"
+                placeholder="seu@email.com"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                className="h-12"
+              />
+              <Button 
+                className="w-full bg-[#9C1E1E] hover:bg-[#7D1818]"
+                onClick={handleConfirmEmail}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Confirmar e Receber Detalhes
+              </Button>
+            </div>
+          )}
+
+          {/* Info do que vai acontecer */}
+          <div className="bg-emerald-50 rounded-lg p-4 text-left space-y-2 text-sm mb-6">
+            <p className="flex items-start gap-2">
+              <span className="text-emerald-600">✅</span>
+              <span>Você receberá um e-mail com todos os detalhes</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-emerald-600">📄</span>
+              <span>Em até <strong>1 dia útil</strong>, enviaremos o contrato</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-emerald-600">🔐</span>
+              <span>Após assinatura, receberá <strong>login e senha</strong> da plataforma</span>
+            </p>
+          </div>
+
           <Button
             className="w-full h-12 bg-[#25D366] hover:bg-[#20BD5A] text-white"
             onClick={() => window.open(`https://wa.me/55${sellerPhone.replace(/\D/g, '')}`, '_blank')}
@@ -330,7 +439,7 @@ const PropostaPublicaPage = () => {
                 className="w-12 h-12"
               />
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="text-lg font-bold">Proposta Comercial • EXA Mídia</h1>
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="bg-white/10 px-3 py-1 rounded-full text-xs font-medium">
@@ -339,11 +448,31 @@ const PropostaPublicaPage = () => {
                 <span className="bg-white/10 px-3 py-1 rounded-full text-xs">
                   {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
                 </span>
+                {/* Status Badge */}
+                {(() => {
+                  const statusConfig: Record<string, { bg: string; text: string }> = {
+                    'enviada': { bg: 'bg-blue-500', text: 'Enviada' },
+                    'visualizada': { bg: 'bg-purple-500', text: 'Visualizada' },
+                    'aceita': { bg: 'bg-emerald-500', text: 'Aceita' },
+                    'recusada': { bg: 'bg-red-500', text: 'Recusada' },
+                    'expirada': { bg: 'bg-gray-500', text: 'Expirada' },
+                  };
+                  const config = statusConfig[proposal.status] || { bg: 'bg-gray-500', text: proposal.status };
+                  return (
+                    <span className={`${config.bg} px-3 py-1 rounded-full text-xs font-medium`}>
+                      {config.text}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
           </div>
-          <div className="text-sm opacity-90">
-            Cliente: <strong>{proposal.client_name}</strong>
+          {/* Cliente Info */}
+          <div className="text-sm opacity-90 space-y-1">
+            <div>Cliente: <strong>{proposal.client_name}</strong></div>
+            {proposal.client_cnpj && (
+              <div>CNPJ: <strong>{proposal.client_cnpj}</strong></div>
+            )}
           </div>
         </div>
       </header>
@@ -502,14 +631,19 @@ const PropostaPublicaPage = () => {
             </Button>
           </div>
 
-          <Button
-            variant="ghost"
-            className="w-full h-10 text-sm"
-            onClick={() => toast.info('PDF em desenvolvimento')}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Baixar Proposta em PDF
-          </Button>
+        <Button
+          variant="outline"
+          className="w-full h-10 text-sm"
+          onClick={handleDownloadPDF}
+          disabled={isDownloadingPDF}
+        >
+          {isDownloadingPDF ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4 mr-2" />
+          )}
+          Baixar Proposta em PDF
+        </Button>
         </div>
 
         {/* Contato */}
