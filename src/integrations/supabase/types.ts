@@ -5482,6 +5482,182 @@ export type Database = {
         }
         Relationships: []
       }
+      proposal_alert_recipients: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string
+          receive_email: boolean | null
+          receive_whatsapp: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone: string
+          receive_email?: boolean | null
+          receive_whatsapp?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string
+          receive_email?: boolean | null
+          receive_whatsapp?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      proposal_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          performed_by: string | null
+          proposal_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          performed_by?: string | null
+          proposal_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          performed_by?: string | null
+          proposal_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_logs_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          access_token: string
+          cash_total_value: number
+          chosen_plan: string | null
+          client_cnpj: string | null
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string | null
+          created_by: string | null
+          discount_percent: number | null
+          duration_months: number | null
+          expires_at: string | null
+          fidel_monthly_value: number
+          id: string
+          metadata: Json | null
+          number: string
+          pdf_url: string | null
+          rejection_reason: string | null
+          responded_at: string | null
+          selected_buildings: Json
+          seller_email: string | null
+          seller_name: string | null
+          seller_phone: string | null
+          sent_at: string | null
+          status: string | null
+          total_impressions_month: number
+          total_panels: number
+          updated_at: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          access_token?: string
+          cash_total_value: number
+          chosen_plan?: string | null
+          client_cnpj?: string | null
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          discount_percent?: number | null
+          duration_months?: number | null
+          expires_at?: string | null
+          fidel_monthly_value: number
+          id?: string
+          metadata?: Json | null
+          number: string
+          pdf_url?: string | null
+          rejection_reason?: string | null
+          responded_at?: string | null
+          selected_buildings?: Json
+          seller_email?: string | null
+          seller_name?: string | null
+          seller_phone?: string | null
+          sent_at?: string | null
+          status?: string | null
+          total_impressions_month?: number
+          total_panels?: number
+          updated_at?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          cash_total_value?: number
+          chosen_plan?: string | null
+          client_cnpj?: string | null
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          discount_percent?: number | null
+          duration_months?: number | null
+          expires_at?: string | null
+          fidel_monthly_value?: number
+          id?: string
+          metadata?: Json | null
+          number?: string
+          pdf_url?: string | null
+          rejection_reason?: string | null
+          responded_at?: string | null
+          selected_buildings?: Json
+          seller_email?: string | null
+          seller_name?: string | null
+          seller_phone?: string | null
+          sent_at?: string | null
+          status?: string | null
+          total_impressions_month?: number
+          total_panels?: number
+          updated_at?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: []
+      }
       provider_alerts: {
         Row: {
           computer_id: string
@@ -7120,6 +7296,7 @@ export type Database = {
       extract_compliance_data: { Args: { payment_data: Json }; Returns: Json }
       generate_coupon_code: { Args: { prefix?: string }; Returns: string }
       generate_developer_token: { Args: never; Returns: string }
+      generate_proposal_number: { Args: never; Returns: string }
       generate_secure_temp_password: { Args: never; Returns: string }
       get_active_videos_for_panel: {
         Args: { p_panel_id: string }

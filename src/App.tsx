@@ -452,6 +452,13 @@ const AppContent = () => {
 
           {/* Rota pública de escolha de benefício prestadores */}
           <Route path="/presente" element={<ProviderBenefitChoice />} />
+          
+          {/* Página pública de proposta comercial */}
+          <Route path="/proposta" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando proposta..." />}>
+              {React.createElement(lazy(() => import('./pages/public/PropostaPublicaPage')))}
+            </Suspense>
+          } />
 
           {/* Página de teste de links */}
           <Route path="/test-links" element={<TestLinks />} />
