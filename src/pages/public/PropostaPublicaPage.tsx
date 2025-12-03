@@ -367,6 +367,17 @@ const PropostaPublicaPage = () => {
   const handleGeneratePayment = async () => {
     if (!proposal || !paymentMethod) return;
     
+    // Calcular valor a ser pago
+    const paymentValue = selectedPlan === 'avista' 
+      ? proposal.cash_total_value 
+      : proposal.fidel_monthly_value * proposal.duration_months;
+    
+    // Validar valor mínimo do Mercado Pago (R$ 5,00)
+    if (paymentValue < 5) {
+      toast.error('O valor mínimo para pagamento é R$ 5,00. Entre em contato com o vendedor.');
+      return;
+    }
+    
     setIsGeneratingPayment(true);
     setPaymentStep('generating');
     
@@ -386,6 +397,10 @@ const PropostaPublicaPage = () => {
       if (error) throw error;
       
       if (!data?.success) {
+        // Verificar se é erro de valor mínimo
+        if (data?.error?.includes('5') || data?.error?.includes('mínimo')) {
+          throw new Error('Valor abaixo do mínimo permitido (R$ 5,00). Entre em contato com o vendedor.');
+        }
         throw new Error(data?.error || 'Erro ao gerar pagamento');
       }
 
