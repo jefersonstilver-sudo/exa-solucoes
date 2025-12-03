@@ -160,7 +160,19 @@ const NovaPropostaPage = () => {
     setCustomInstallments(prev => prev.filter(p => p.id !== id));
   };
 
-  const updateInstallmentDate = (id: number, date: Date) => {
+  // Helper para formatar data de forma segura
+  const formatDateForInput = (date: Date): string => {
+    if (!date || isNaN(date.getTime())) {
+      return new Date().toISOString().split('T')[0];
+    }
+    return date.toISOString().split('T')[0];
+  };
+
+  const updateInstallmentDate = (id: number, date: Date | null) => {
+    // Só atualiza se a data for válida
+    if (!date || isNaN(date.getTime())) {
+      return;
+    }
     setCustomInstallments(prev => prev.map(p => 
       p.id === id ? { ...p, dueDate: date } : p
     ));
@@ -322,7 +334,7 @@ const NovaPropostaPage = () => {
           payment_type: isCustomPayment ? 'custom' : 'standard',
           custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
             installment: idx + 1,
-            due_date: p.dueDate.toISOString().split('T')[0],
+            due_date: formatDateForInput(p.dueDate),
             amount: parseFloat(p.amount) || 0
           })) as Json : null
         }])
@@ -839,8 +851,16 @@ const NovaPropostaPage = () => {
                       <span className="text-xs font-medium text-muted-foreground w-6">{index + 1}ª</span>
                       <Input
                         type="date"
-                        value={installment.dueDate.toISOString().split('T')[0]}
-                        onChange={(e) => updateInstallmentDate(installment.id, new Date(e.target.value))}
+                        value={formatDateForInput(installment.dueDate)}
+                        onChange={(e) => {
+                          const dateValue = e.target.value;
+                          if (dateValue) {
+                            const newDate = new Date(dateValue + 'T00:00:00');
+                            if (!isNaN(newDate.getTime())) {
+                              updateInstallmentDate(installment.id, newDate);
+                            }
+                          }
+                        }}
                         className="flex-1 h-9 text-sm"
                       />
                       <div className="relative flex-1">
