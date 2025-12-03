@@ -5,6 +5,7 @@ import ModernAdminSidebar from './ModernAdminSidebar';
 import ModernAdminHeader from './ModernAdminHeader';
 import MobileBottomNav from './MobileBottomNav';
 import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
+import { useSidebarResize } from '@/hooks/useSidebarResize';
 
 interface ModernAdminLayoutProps {
   children?: React.ReactNode;
@@ -12,19 +13,27 @@ interface ModernAdminLayoutProps {
 
 const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
+  const { width, isDragging, isCollapsed, startResize } = useSidebarResize();
+  
+  // Determine sidebar width based on resize or default
+  const sidebarWidth = isMobile ? "18rem" : isCollapsed ? "64px" : `${width}px`;
   
   return (
     <SidebarProvider 
-      defaultOpen={!isMobile} 
+      defaultOpen={!isMobile && !isCollapsed} 
       style={{
-        "--sidebar-width": isTablet ? "240px" : "320px",
+        "--sidebar-width": sidebarWidth,
         "--sidebar-width-icon": "64px",
       } as React.CSSProperties}
     >
-      <div className="flex h-screen w-full bg-background overflow-hidden">
+      <div className={`flex h-screen w-full bg-background overflow-hidden ${isDragging ? 'select-none' : ''}`}>
         {/* Sidebar sempre renderizada, mas em modo drawer/overlay no mobile */}
         <div className="relative z-30">
-          <ModernAdminSidebar />
+          <ModernAdminSidebar 
+            width={isMobile ? undefined : width}
+            isDragging={isDragging}
+            onStartResize={isMobile ? undefined : startResize}
+          />
         </div>
         <SidebarInset className="flex flex-col w-full overflow-x-hidden">
           {/* Header with hamburger menu - sempre visível */}

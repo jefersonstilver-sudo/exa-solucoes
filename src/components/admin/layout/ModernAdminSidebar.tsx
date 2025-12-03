@@ -27,7 +27,8 @@ import {
   MessageSquare,
   CreditCard,
   Bot,
-  AlertTriangle
+  AlertTriangle,
+  Star
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -47,6 +48,9 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useSidebarFavorites } from '@/hooks/useSidebarFavorites';
+import { SidebarFavoritesStar } from './SidebarFavoritesStar';
+import { SidebarResizeHandle } from '@/components/ui/sidebar-resize-handle';
 import {
   Tooltip,
   TooltipContent,
@@ -73,7 +77,20 @@ import { useUnreadCount } from '@/modules/monitoramento-ia/hooks/useUnreadCount'
 import { useEscalacoesPendentes } from '@/hooks/useEscalacoesPendentes';
 import { useOfflineAlerts } from '@/hooks/useOfflineAlerts';
 
-export function ModernAdminSidebar() {
+// Icon map for favorites
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  LayoutDashboard, ShoppingBag, Building2, MonitorPlay, Settings, Users, Shield,
+  Video, Images, CheckSquare, UserCheck, Ticket, Bell, Mail, Zap, Film, Gift,
+  UsersRound, FileBarChart, Tv, Clapperboard, Brain, MessageSquare, CreditCard, Bot, AlertTriangle
+};
+
+interface SidebarResizeProps {
+  width?: number;
+  isDragging?: boolean;
+  onStartResize?: (e: React.MouseEvent) => void;
+}
+
+export function ModernAdminSidebar({ width, isDragging, onStartResize }: SidebarResizeProps) {
   const { state, open, setOpen, setOpenMobile, isMobile: isSidebarMobile } = useSidebar();
   const location = useLocation();
   const { userProfile, session, isSuperAdmin, logout } = useAuth();
@@ -81,6 +98,7 @@ export function ModernAdminSidebar() {
   const { basePath, buildPath } = useAdminBasePath();
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsiveLayout();
+  const { favorites, isFavorite, toggleFavorite, canAddMore } = useSidebarFavorites();
 
   // Badges dinâmicos
   const { unreadCount } = useUnreadCount();
@@ -103,200 +121,61 @@ export function ModernAdminSidebar() {
     {
       label: 'Gestão Principal',
       items: [
-        {
-          title: 'Dashboard',
-          href: basePath,
-          icon: LayoutDashboard,
-          permission: 'canViewDashboard'
-        },
-        {
-          title: 'Pedidos',
-          href: buildPath('pedidos'),
-          icon: ShoppingBag,
-          permission: 'canViewOrders'
-        },
-        {
-          title: 'Assinaturas',
-          href: buildPath('assinaturas'),
-          icon: CreditCard,
-          permission: 'canViewOrders'
-        },
-        {
-          title: 'Aprovações',
-          href: buildPath('aprovacoes'),
-          icon: CheckSquare,
-          permission: 'canViewApprovals'
-        },
-        {
-          title: 'Cupons',
-          href: buildPath('cupons'),
-          icon: Ticket,
-          permission: 'canManageCoupons'
-        },
-        {
-          title: 'Benefícios Prestadores',
-          href: buildPath('beneficio-prestadores'),
-          icon: Gift,
-          permission: 'canManageProviderBenefits'
-        }
+        { title: 'Dashboard', href: basePath, icon: LayoutDashboard, iconName: 'LayoutDashboard', permission: 'canViewDashboard' },
+        { title: 'Pedidos', href: buildPath('pedidos'), icon: ShoppingBag, iconName: 'ShoppingBag', permission: 'canViewOrders' },
+        { title: 'Assinaturas', href: buildPath('assinaturas'), icon: CreditCard, iconName: 'CreditCard', permission: 'canViewOrders' },
+        { title: 'Aprovações', href: buildPath('aprovacoes'), icon: CheckSquare, iconName: 'CheckSquare', permission: 'canViewApprovals' },
+        { title: 'Cupons', href: buildPath('cupons'), icon: Ticket, iconName: 'Ticket', permission: 'canManageCoupons' },
+        { title: 'Benefícios Prestadores', href: buildPath('beneficio-prestadores'), icon: Gift, iconName: 'Gift', permission: 'canManageProviderBenefits' }
       ]
     },
     {
       label: 'CRM',
       items: [
-        {
-          title: 'CRM Site',
-          href: buildPath('crm'),
-          icon: UsersRound,
-          permission: 'canViewCRM'
-        },
-        {
-          title: 'CRM Chat',
-          href: buildPath('crm-chat'),
-          icon: MessageSquare,
-          permission: 'canViewCRM',
-          badge: unreadCount > 0 ? unreadCount : undefined,
-          badgeColor: 'bg-green-500'
-        },
-        {
-          title: 'Escalações',
-          href: buildPath('escalacoes'),
-          icon: AlertTriangle,
-          permission: 'canViewCRM',
-          badge: escalacoesPendentes > 0 ? escalacoesPendentes : undefined,
-          badgeColor: 'bg-orange-500'
-        }
+        { title: 'CRM Site', href: buildPath('crm'), icon: UsersRound, iconName: 'UsersRound', permission: 'canViewCRM' },
+        { title: 'CRM Chat', href: buildPath('crm-chat'), icon: MessageSquare, iconName: 'MessageSquare', permission: 'canViewCRM', badge: unreadCount > 0 ? unreadCount : undefined, badgeColor: 'bg-green-500' },
+        { title: 'Escalações', href: buildPath('escalacoes'), icon: AlertTriangle, iconName: 'AlertTriangle', permission: 'canViewCRM', badge: escalacoesPendentes > 0 ? escalacoesPendentes : undefined, badgeColor: 'bg-orange-500' }
       ]
     },
     {
       label: 'Inteligência',
       items: [
-        {
-          title: 'Agentes Sofia',
-          href: buildPath('agentes-sofia'),
-          icon: Bot,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true
-        },
-        {
-          title: 'EXA Alerts',
-          href: buildPath('exa-alerts'),
-          icon: Brain,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true
-        }
+        { title: 'Agentes Sofia', href: buildPath('agentes-sofia'), icon: Bot, iconName: 'Bot', permission: 'canManageSystemSettings', requireSuperAdmin: true },
+        { title: 'EXA Alerts', href: buildPath('exa-alerts'), icon: Brain, iconName: 'Brain', permission: 'canManageSystemSettings', requireSuperAdmin: true }
       ]
     },
     {
       label: 'Ativos',
       items: [
-        {
-          title: 'Prédios',
-          href: buildPath('predios'),
-          icon: Building2,
-          permission: 'canManageBuildings'
-        },
-        {
-          title: 'Painéis EXA',
-          href: buildPath('paineis-exa'),
-          icon: Tv,
-          permission: 'canManagePanels',
-          badge: offlineCount > 0 ? offlineCount : undefined,
-          badgeColor: 'bg-red-500'
-        }
+        { title: 'Prédios', href: buildPath('predios'), icon: Building2, iconName: 'Building2', permission: 'canManageBuildings' },
+        { title: 'Painéis EXA', href: buildPath('paineis-exa'), icon: Tv, iconName: 'Tv', permission: 'canManagePanels', badge: offlineCount > 0 ? offlineCount : undefined, badgeColor: 'bg-red-500' }
       ]
     },
     {
       label: 'Leads & Clientes',
       items: [
-        {
-          title: 'Síndicos Interessados',
-          href: buildPath('sindicos-interessados'),
-          icon: UserCheck,
-          permission: 'canViewSindicosInteressados'
-        },
-        {
-          title: 'Leads EXA',
-          href: buildPath('leads-exa'),
-          icon: Zap,
-          permission: 'canViewLeadsExa'
-        }
+        { title: 'Síndicos Interessados', href: buildPath('sindicos-interessados'), icon: UserCheck, iconName: 'UserCheck', permission: 'canViewSindicosInteressados' },
+        { title: 'Leads EXA', href: buildPath('leads-exa'), icon: Zap, iconName: 'Zap', permission: 'canViewLeadsExa' }
       ]
     },
     {
       label: 'Conteúdo',
       items: [
-        {
-          title: 'Vídeos Anunciantes',
-          href: buildPath('videos'),
-          icon: Video,
-          permission: 'canManageVideos'
-        },
-        {
-          title: 'Vídeos Site EXA',
-          href: buildPath('videos-site'),
-          icon: Film,
-          permission: 'canManagePortfolio'
-        },
-        {
-          title: 'Ticker',
-          href: buildPath('ticker'),
-          icon: Images,
-          permission: 'canManageHomepageConfig'
-        },
-        {
-          title: 'Editor de Vídeos',
-          href: buildPath('editor-video-controle'),
-          icon: Clapperboard,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true,
-          badge: 'BETA',
-          badgeColor: 'bg-purple-500'
-        },
-        {
-          title: 'Emails',
-          href: buildPath('comunicacoes'),
-          icon: Mail,
-          permission: 'canManageEmails'
-        }
+        { title: 'Vídeos Anunciantes', href: buildPath('videos'), icon: Video, iconName: 'Video', permission: 'canManageVideos' },
+        { title: 'Vídeos Site EXA', href: buildPath('videos-site'), icon: Film, iconName: 'Film', permission: 'canManagePortfolio' },
+        { title: 'Ticker', href: buildPath('ticker'), icon: Images, iconName: 'Images', permission: 'canManageHomepageConfig' },
+        { title: 'Editor de Vídeos', href: buildPath('editor-video-controle'), icon: Clapperboard, iconName: 'Clapperboard', permission: 'canManageSystemSettings', requireSuperAdmin: true, badge: 'BETA', badgeColor: 'bg-purple-500' },
+        { title: 'Emails', href: buildPath('comunicacoes'), icon: Mail, iconName: 'Mail', permission: 'canManageEmails' }
       ]
     },
     {
       label: 'Sistema',
       items: [
-        {
-          title: 'Usuários',
-          href: buildPath('usuarios'),
-          icon: Users,
-          permission: 'canManageUsers',
-          requireSuperAdmin: true
-        },
-        {
-          title: 'Notificações',
-          href: buildPath('notificacoes'),
-          icon: Bell,
-          permission: 'canManageNotifications'
-        },
-        {
-          title: 'Relatórios Financeiros',
-          href: buildPath('relatorios-financeiros'),
-          icon: FileBarChart,
-          permission: 'canViewFinancialReports'
-        },
-        {
-          title: 'Segurança',
-          href: buildPath('seguranca'),
-          icon: Shield,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true
-        },
-        {
-          title: 'Configurações',
-          href: buildPath('configuracoes'),
-          icon: Settings,
-          permission: 'canManageSystemSettings',
-          requireSuperAdmin: true
-        }
+        { title: 'Usuários', href: buildPath('usuarios'), icon: Users, iconName: 'Users', permission: 'canManageUsers', requireSuperAdmin: true },
+        { title: 'Notificações', href: buildPath('notificacoes'), icon: Bell, iconName: 'Bell', permission: 'canManageNotifications' },
+        { title: 'Relatórios Financeiros', href: buildPath('relatorios-financeiros'), icon: FileBarChart, iconName: 'FileBarChart', permission: 'canViewFinancialReports' },
+        { title: 'Segurança', href: buildPath('seguranca'), icon: Shield, iconName: 'Shield', permission: 'canManageSystemSettings', requireSuperAdmin: true },
+        { title: 'Configurações', href: buildPath('configuracoes'), icon: Settings, iconName: 'Settings', permission: 'canManageSystemSettings', requireSuperAdmin: true }
       ]
     }
   ];
@@ -309,6 +188,14 @@ export function ModernAdminSidebar() {
       return hasPermission;
     })
   })).filter(group => group.items.length > 0);
+
+  // Get all items flat for favorites lookup
+  const allItems = filteredGroups.flatMap(g => g.items);
+
+  // Build favorites items from current favorites
+  const favoriteItems = favorites
+    .map(href => allItems.find(item => item.href === href))
+    .filter(Boolean) as typeof allItems;
 
   const getAdminBadgeColor = () => {
     switch (userInfo.role) {
@@ -332,15 +219,93 @@ export function ModernAdminSidebar() {
 
   const collapsed = isMobile ? false : state === "collapsed";
 
+  // Render a single menu item
+  const renderMenuItem = (item: typeof allItems[0], showStar = true) => {
+    const isExactMatch = location.pathname === item.href;
+    const isSubRoute = item.href !== basePath && location.pathname.startsWith(item.href + '/');
+    const isActive = isExactMatch || isSubRoute;
+    const Icon = item.icon;
+    const badge = (item as any).badge;
+    const badgeColor = (item as any).badgeColor || 'bg-red-500';
+
+    const linkContent = (
+      <NavLink
+        to={item.href}
+        className={`flex items-center ${collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5 gap-3'} rounded-lg transition-all duration-200 font-medium group relative ${
+          isActive 
+            ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-900/40" 
+            : "text-red-100/80 hover:bg-red-500/15 hover:text-white active:scale-[0.98]"
+        } min-h-[44px] touch-manipulation`}
+        style={{ WebkitTapHighlightColor: 'transparent' }}
+        onClick={() => {
+          if (isMobile || isSidebarMobile) {
+            setOpenMobile(false);
+          }
+        }}
+      >
+        <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 transition-transform duration-200`} />
+        {!collapsed && (
+          <>
+            <span className="text-sm font-medium truncate flex-1">{item.title}</span>
+            {badge !== undefined && (
+              <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center mr-5`}>
+                {badge}
+              </span>
+            )}
+          </>
+        )}
+        {collapsed && badge !== undefined && (
+          <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center`}>
+            {typeof badge === 'number' && badge > 9 ? '9+' : badge}
+          </span>
+        )}
+        {showStar && !collapsed && (
+          <SidebarFavoritesStar
+            isFavorite={isFavorite(item.href)}
+            onClick={() => toggleFavorite(item.href)}
+            collapsed={collapsed}
+            canAddMore={canAddMore}
+          />
+        )}
+      </NavLink>
+    );
+
+    return (
+      <SidebarMenuItem key={item.href}>
+        <SidebarMenuButton asChild>
+          {collapsed ? (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                <TooltipContent side="right" className="bg-[#1A1A1A] text-white border-white/10 font-medium">
+                  <div className="flex items-center gap-2">
+                    <p>{item.title}</p>
+                    {badge !== undefined && (
+                      <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full`}>
+                        {badge}
+                      </span>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : linkContent}
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
+
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#1A0A0A] via-[#2D1515] to-[#3D1F1F] border-r border-red-900/20 shadow-2xl overscroll-contain"
+      className="h-screen bg-gradient-to-b from-[#1A0A0A] via-[#2D1515] to-[#3D1F1F] border-r border-red-900/20 shadow-2xl overscroll-contain relative"
       collapsible={isMobile ? "offcanvas" : "icon"}
       variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
         backgroundColor: '#1A0A0A',
         height: '100dvh',
-        paddingTop: 'env(safe-area-inset-top)'
+        paddingTop: 'env(safe-area-inset-top)',
+        width: !isMobile && width ? `${width}px` : undefined,
+        transition: isDragging ? 'none' : 'width 200ms cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
       <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-red-900/30 bg-[#1A0A0A]/95 backdrop-blur-sm`}>
@@ -419,6 +384,27 @@ export function ModernAdminSidebar() {
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)'
         }}
       >
+        {/* FAVORITES SECTION */}
+        {favoriteItems.length > 0 && (
+          <SidebarGroup>
+            {!collapsed && (
+              <SidebarGroupLabel className="text-[9px] font-bold text-yellow-400/70 uppercase tracking-widest mb-2 px-2 flex items-center gap-1.5">
+                <Star className="h-3 w-3 fill-yellow-400/50 text-yellow-400/50" />
+                Favoritos
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <div className={`${!collapsed ? 'bg-gradient-to-r from-yellow-500/5 to-transparent rounded-lg p-1' : ''}`}>
+                <SidebarMenu className="space-y-0.5">
+                  {favoriteItems.map(item => renderMenuItem(item, false))}
+                </SidebarMenu>
+              </div>
+            </SidebarGroupContent>
+            {!collapsed && <div className="h-px bg-red-900/20 mt-3 mx-2" />}
+          </SidebarGroup>
+        )}
+
+        {/* REGULAR NAVIGATION GROUPS */}
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && (
@@ -426,103 +412,22 @@ export function ModernAdminSidebar() {
                 {group.label}
               </SidebarGroupLabel>
             )}
-            
             <SidebarGroupContent>
               <SidebarMenu className="space-y-0.5">
-              {group.items.map((item) => {
-                  // Lógica melhorada para evitar seleção dupla
-                  // Ex: /super_admin/crm-chat NÃO deve ativar /super_admin/crm
-                  const isExactMatch = location.pathname === item.href;
-                  const isSubRoute = item.href !== basePath && 
-                    location.pathname.startsWith(item.href + '/');
-                  const isActive = isExactMatch || isSubRoute;
-                  const Icon = item.icon;
-                  const badge = (item as any).badge;
-                  const badgeColor = (item as any).badgeColor || 'bg-red-500';
-
-                  const linkContent = (
-                    <NavLink
-                      to={item.href}
-                      className={`flex items-center ${collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5 gap-3'} rounded-lg transition-all duration-200 font-medium group relative ${
-                        isActive 
-                          ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-900/40" 
-                          : "text-red-100/80 hover:bg-red-500/15 hover:text-white active:scale-[0.98]"
-                      } min-h-[44px] touch-manipulation`}
-                      style={{
-                        WebkitTapHighlightColor: 'transparent',
-                      }}
-                      onClick={() => {
-                        if (isMobile || isSidebarMobile) {
-                          setOpenMobile(false);
-                        }
-                      }}
-                    >
-                      <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 transition-transform duration-200`} />
-                      {!collapsed && (
-                        <>
-                          <span className="text-sm font-medium truncate flex-1">
-                            {item.title}
-                          </span>
-                          {badge !== undefined && (
-                            <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center`}>
-                              {badge}
-                            </span>
-                          )}
-                        </>
-                      )}
-                      {collapsed && badge !== undefined && (
-                        <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center`}>
-                          {typeof badge === 'number' && badge > 9 ? '9+' : badge}
-                        </span>
-                      )}
-                    </NavLink>
-                  );
-
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild>
-                        {collapsed ? (
-                          <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                {linkContent}
-                              </TooltipTrigger>
-                              <TooltipContent side="right" className="bg-[#1A1A1A] text-white border-white/10 font-medium">
-                                <div className="flex items-center gap-2">
-                                  <p>{item.title}</p>
-                                  {badge !== undefined && (
-                                    <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full`}>
-                                      {badge}
-                                    </span>
-                                  )}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : (
-                          linkContent
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                {group.items.map(item => renderMenuItem(item))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
       </SidebarContent>
-      
-      <SidebarFooter className={`${collapsed ? 'p-2' : 'p-3'} border-t border-white/10 bg-[#0F0F0F]/95 backdrop-blur-sm`}>
-        <div className="flex items-center space-x-2 text-white/60 text-xs">
-          <Shield className="h-3 w-3 flex-shrink-0" />
-          {!collapsed && <span className="text-[10px] truncate">Sistema Seguro</span>}
-        </div>
-        {!collapsed && (
-          <div className="text-[10px] text-white/40 mt-0.5">
-            EXA Admin v3.0
-          </div>
-        )}
-      </SidebarFooter>
+
+      {/* Resize Handle - only on desktop */}
+      {!isMobile && onStartResize && (
+        <SidebarResizeHandle 
+          onMouseDown={onStartResize} 
+          isDragging={isDragging || false} 
+        />
+      )}
     </Sidebar>
   );
 }
