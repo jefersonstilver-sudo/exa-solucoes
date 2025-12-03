@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserPlus, ShoppingBag, DollarSign, MessageCircle, Building2, Gift } from 'lucide-react';
+import { UserPlus, ShoppingBag, DollarSign, MessageCircle, Building2, Gift, FileText } from 'lucide-react';
 import AppleLikeMetricCard from './AppleLikeMetricCard';
 import { UnifiedDashboardStats } from '@/hooks/useDashboardUnifiedStats';
 
@@ -165,26 +165,37 @@ const UnifiedStatsRow = ({ stats }: UnifiedStatsRowProps) => {
           }
         />
 
-        {/* 6. Vouchers Pendentes */}
+        {/* 6. Propostas */}
         <AppleLikeMetricCard
-          label="Vouchers Aguardando"
-          value={stats.loading ? '...' : stats.vouchersPendentes}
-          icon={Gift}
-          description={stats.loading ? undefined : 'Requer atenção'}
+          label="Propostas (mês)"
+          value={stats.loading ? '...' : stats.propostasEnviadas}
+          icon={FileText}
+          description={stats.loading ? undefined : `${stats.propostasAceitas} aceitas`}
           hoverContent={
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-semibold text-foreground mb-1">Vouchers Pendentes</p>
+                <p className="text-sm font-semibold text-foreground mb-1">Propostas Comerciais</p>
                 <p className="text-xs text-muted-foreground">
-                  Vouchers que precisam ser processados
+                  Acompanhe o pipeline de vendas
                 </p>
               </div>
-              <div className="pt-2 border-t border-border/50">
-                <p className="text-xs text-amber-600 font-medium">
-                  {stats.vouchersPendentes === 0 
-                    ? 'Todos os vouchers foram processados ✓' 
-                    : `${stats.vouchersPendentes} voucher(s) aguardando processamento`}
-                </p>
+              <div className="space-y-2 pt-2 border-t border-border/50">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Enviadas:</span>
+                  <span className="text-sm font-semibold">{stats.propostasEnviadas}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Aguardando:</span>
+                  <span className="text-sm font-semibold text-amber-600">{stats.propostasAguardando}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Aceitas:</span>
+                  <span className="text-sm font-semibold text-emerald-600">{stats.propostasAceitas}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Valor Potencial:</span>
+                  <span className="text-sm font-semibold">{formatCurrency(stats.propostasValorPotencial)}</span>
+                </div>
               </div>
             </div>
           }
