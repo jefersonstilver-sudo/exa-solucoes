@@ -114,7 +114,77 @@ const NovaPropostaPage = () => {
     { value: 3, label: '3 meses', discount: 20 },
     { value: 6, label: '6 meses', discount: 30 },
     { value: 12, label: '12 meses', discount: 37.5 },
+    { value: -1, label: 'Personalizado', discount: 0, custom: true },
   ];
+
+  // Estados para pagamento personalizado
+  const [isCustomPayment, setIsCustomPayment] = useState(false);
+  const [customDurationMonths, setCustomDurationMonths] = useState(12);
+  const [customInstallments, setCustomInstallments] = useState<{
+    id: number;
+    dueDate: Date;
+    amount: string;
+  }[]>([
+    { id: 1, dueDate: new Date(), amount: '' },
+    { id: 2, dueDate: new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000), amount: '' }
+  ]);
+
+  // Handlers para pagamento personalizado
+  const handlePeriodChange = (value: number) => {
+    if (value === -1) {
+      setIsCustomPayment(true);
+      setDurationMonths(customDurationMonths);
+    } else {
+      setIsCustomPayment(false);
+      setDurationMonths(value);
+    }
+  };
+
+  const addCustomInstallment = () => {
+    const lastInstallment = customInstallments[customInstallments.length - 1];
+    const newDate = new Date(lastInstallment.dueDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    
+    setCustomInstallments(prev => [...prev, {
+      id: prev.length + 1,
+      dueDate: newDate,
+      amount: ''
+    }]);
+  };
+
+  const removeCustomInstallment = (id: number) => {
+    if (customInstallments.length <= 2) {
+      toast.error('Mínimo de 2 parcelas');
+      return;
+    }
+    setCustomInstallments(prev => prev.filter(p => p.id !== id));
+  };
+
+  const updateInstallmentDate = (id: number, date: Date) => {
+    setCustomInstallments(prev => prev.map(p => 
+      p.id === id ? { ...p, dueDate: date } : p
+    ));
+  };
+
+  const updateInstallmentAmount = (id: number, amount: string) => {
+    setCustomInstallments(prev => prev.map(p => 
+      p.id === id ? { ...p, amount } : p
+    ));
+  };
+
+  const distributeEqually = () => {
+    if (!fidelValue || parseFloat(fidelValue) <= 0) {
+      toast.error('Defina o valor total primeiro');
+      return;
+    }
+    const total = parseFloat(fidelValue) * (isCustomPayment ? customDurationMonths : durationMonths);
+    const perInstallment = (total / customInstallments.length).toFixed(2);
+    setCustomInstallments(prev => prev.map(p => ({ ...p, amount: perInstallment })));
+  };
+
+  const customTotal = useMemo(() => {
+    return customInstallments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+  }, [customInstallments]);
 
   // Opções de validade da proposta
   const validityOptions = [
@@ -240,15 +310,21 @@ const NovaPropostaPage = () => {
           selected_buildings: buildingsData as Json,
           total_panels: totalPanels,
           total_impressions_month: totalImpressions,
-          fidel_monthly_value: fidelMonthly,
-          cash_total_value: cashTotal,
+          fidel_monthly_value: isCustomPayment ? customTotal / customInstallments.length : fidelMonthly,
+          cash_total_value: isCustomPayment ? customTotal : cashTotal,
           discount_percent: discountPercent,
           duration_months: durationMonths,
           status: 'enviada',
           sent_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
           created_by: user?.id,
-          seller_name: currentUser?.nome || currentUser?.email || 'Vendedor'
+          seller_name: currentUser?.nome || currentUser?.email || 'Vendedor',
+          payment_type: isCustomPayment ? 'custom' : 'standard',
+          custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
+            installment: idx + 1,
+            due_date: p.dueDate.toISOString().split('T')[0],
+            amount: parseFloat(p.amount) || 0
+          })) as Json : null
         }])
         .select()
         .single();
@@ -320,10 +396,25 @@ const NovaPropostaPage = () => {
       toast.error('Selecione ao menos um prédio');
       return;
     }
-    if (!fidelValue || parseFloat(fidelValue) <= 0) {
-      toast.error('Preencha o valor mensal fidelidade');
-      return;
+    
+    // Validação para pagamento personalizado
+    if (isCustomPayment) {
+      const invalidInstallments = customInstallments.filter(p => !p.amount || parseFloat(p.amount) <= 0);
+      if (invalidInstallments.length > 0) {
+        toast.error('Preencha o valor de todas as parcelas');
+        return;
+      }
+      if (customTotal <= 0) {
+        toast.error('O total das parcelas deve ser maior que zero');
+        return;
+      }
+    } else {
+      if (!fidelValue || parseFloat(fidelValue) <= 0) {
+        toast.error('Preencha o valor mensal fidelidade');
+        return;
+      }
     }
+    
     if (!clientData.phone && !clientData.email) {
       toast.error('Preencha ao menos um contato (WhatsApp ou E-mail)');
       return;
@@ -659,108 +750,215 @@ const NovaPropostaPage = () => {
           {/* Seletor de Período */}
           <div className="mb-4">
             <Label className="text-xs mb-2 block">Período do Contrato</Label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {periodOptions.map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => setDurationMonths(option.value)}
+                  onClick={() => handlePeriodChange(option.value)}
                   className={`p-3 rounded-lg border-2 text-center transition-all ${
-                    durationMonths === option.value
+                    (option.value === -1 && isCustomPayment) || (!isCustomPayment && durationMonths === option.value)
                       ? 'border-primary bg-primary/5'
                       : 'border-gray-100 hover:border-gray-200'
                   }`}
                 >
-                  <div className="font-bold text-lg">{option.value}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {option.value === 1 ? 'mês' : 'meses'}
-                  </div>
-                  {option.discount > 0 && (
-                    <div className="text-[10px] text-green-600 font-medium">
-                      -{option.discount}%
-                    </div>
+                  {option.value === -1 ? (
+                    <>
+                      <div className="font-bold text-sm">⚙️</div>
+                      <div className="text-[10px] text-muted-foreground">Custom</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="font-bold text-lg">{option.value}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {option.value === 1 ? 'mês' : 'meses'}
+                      </div>
+                      {option.discount > 0 && (
+                        <div className="text-[10px] text-green-600 font-medium">
+                          -{option.discount}%
+                        </div>
+                      )}
+                    </>
                   )}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Valor Mensal Fidelidade */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-1">
-              <Label className="text-xs">Valor Mensal (Fidelidade)</Label>
-              {valorSugeridoMensal > 0 && (
-                <button
-                  onClick={() => setFidelValue(valorSugeridoMensal.toFixed(2))}
-                  className="text-[10px] text-primary hover:underline"
+          {/* Configuração de Pagamento Personalizado */}
+          {isCustomPayment && (
+            <div className="mb-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">⚙️</span>
+                <h3 className="font-semibold text-amber-800">Pagamento Personalizado</h3>
+              </div>
+
+              {/* Duração do Contrato */}
+              <div className="mb-4">
+                <Label className="text-xs">Duração do Contrato (meses)</Label>
+                <Select 
+                  value={customDurationMonths.toString()} 
+                  onValueChange={(v) => {
+                    setCustomDurationMonths(parseInt(v));
+                    setDurationMonths(parseInt(v));
+                  }}
                 >
-                  Usar sugerido: {formatCurrency(valorSugeridoMensal)}
-                </button>
-              )}
-            </div>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-              <Input
-                type="number"
-                placeholder="0,00"
-                value={fidelValue}
-                onChange={(e) => setFidelValue(e.target.value)}
-                className="pl-10 h-12 text-base"
-              />
-            </div>
-            {fidelMonthly > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Total: {formatCurrency(fidelTotal)} em {durationMonths}x de {formatCurrency(fidelMonthly)}
-              </p>
-            )}
-          </div>
+                  <SelectTrigger className="mt-1 bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[3, 6, 9, 12, 18, 24].map(m => (
+                      <SelectItem key={m} value={m.toString()}>{m} meses</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Desconto PIX à Vista */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-xs">Desconto PIX à Vista</Label>
-              <span className="text-sm font-medium text-primary">{discountPercent}% OFF</span>
-            </div>
-            <Slider
-              value={[discountPercent]}
-              onValueChange={(value) => setDiscountPercent(value[0])}
-              min={0}
-              max={25}
-              step={1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-              <span>0%</span>
-              <span>25%</span>
-            </div>
-          </div>
+              {/* Parcelas */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-xs">Parcelas ({customInstallments.length})</Label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={distributeEqually}
+                      className="text-[10px] text-amber-700 hover:underline"
+                    >
+                      Dividir igualmente
+                    </button>
+                    <button
+                      onClick={addCustomInstallment}
+                      className="text-[10px] text-primary font-medium hover:underline"
+                    >
+                      + Adicionar
+                    </button>
+                  </div>
+                </div>
 
-          {/* Sobrescrever valor à vista */}
-          <div className="flex items-center gap-3 mb-3">
-            <Switch
-              checked={overwriteCashValue}
-              onCheckedChange={setOverwriteCashValue}
-            />
-            <Label className="text-xs">Definir valor à vista manualmente</Label>
-          </div>
+                <div className="space-y-2">
+                  {customInstallments.map((installment, index) => (
+                    <div key={installment.id} className="flex items-center gap-2 bg-white p-2 rounded-lg border">
+                      <span className="text-xs font-medium text-muted-foreground w-6">{index + 1}ª</span>
+                      <Input
+                        type="date"
+                        value={installment.dueDate.toISOString().split('T')[0]}
+                        onChange={(e) => updateInstallmentDate(installment.id, new Date(e.target.value))}
+                        className="flex-1 h-9 text-sm"
+                      />
+                      <div className="relative flex-1">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+                        <Input
+                          type="number"
+                          placeholder="0,00"
+                          value={installment.amount}
+                          onChange={(e) => updateInstallmentAmount(installment.id, e.target.value)}
+                          className="pl-8 h-9 text-sm"
+                        />
+                      </div>
+                      {customInstallments.length > 2 && (
+                        <button
+                          onClick={() => removeCustomInstallment(installment.id)}
+                          className="text-red-500 hover:text-red-700 text-sm p-1"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
-          {overwriteCashValue && (
-            <div className="mb-4">
-              <Label className="text-xs">Valor Total à Vista</Label>
-              <div className="relative mt-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-                <Input
-                  type="number"
-                  placeholder="0,00"
-                  value={cashValue}
-                  onChange={(e) => setCashValue(e.target.value)}
-                  className="pl-10 h-12 text-base"
-                />
+                {/* Total das parcelas */}
+                <div className="mt-3 p-2 bg-amber-100 rounded flex justify-between items-center">
+                  <span className="text-xs font-medium text-amber-800">Total das Parcelas:</span>
+                  <span className="font-bold text-amber-900">{formatCurrency(customTotal)}</span>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Resumo de Valores */}
-          {fidelMonthly > 0 && (
+          {/* Valor Mensal Fidelidade - Somente para pagamento padrão */}
+          {!isCustomPayment && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <Label className="text-xs">Valor Mensal (Fidelidade)</Label>
+                {valorSugeridoMensal > 0 && (
+                  <button
+                    onClick={() => setFidelValue(valorSugeridoMensal.toFixed(2))}
+                    className="text-[10px] text-primary hover:underline"
+                  >
+                    Usar sugerido: {formatCurrency(valorSugeridoMensal)}
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                <Input
+                  type="number"
+                  placeholder="0,00"
+                  value={fidelValue}
+                  onChange={(e) => setFidelValue(e.target.value)}
+                  className="pl-10 h-12 text-base"
+                />
+              </div>
+              {fidelMonthly > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total: {formatCurrency(fidelTotal)} em {durationMonths}x de {formatCurrency(fidelMonthly)}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Desconto PIX à Vista - Somente para pagamento padrão */}
+          {!isCustomPayment && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-xs">Desconto PIX à Vista</Label>
+                <span className="text-sm font-medium text-primary">{discountPercent}% OFF</span>
+              </div>
+              <Slider
+                value={[discountPercent]}
+                onValueChange={(value) => setDiscountPercent(value[0])}
+                min={0}
+                max={25}
+                step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                <span>0%</span>
+                <span>25%</span>
+              </div>
+            </div>
+          )}
+
+          {/* Sobrescrever valor à vista - Somente para pagamento padrão */}
+          {!isCustomPayment && (
+            <>
+              <div className="flex items-center gap-3 mb-3">
+                <Switch
+                  checked={overwriteCashValue}
+                  onCheckedChange={setOverwriteCashValue}
+                />
+                <Label className="text-xs">Definir valor à vista manualmente</Label>
+              </div>
+
+              {overwriteCashValue && (
+                <div className="mb-4">
+                  <Label className="text-xs">Valor Total à Vista</Label>
+                  <div className="relative mt-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                    <Input
+                      type="number"
+                      placeholder="0,00"
+                      value={cashValue}
+                      onChange={(e) => setCashValue(e.target.value)}
+                      className="pl-10 h-12 text-base"
+                    />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Resumo de Valores - Padrão */}
+          {!isCustomPayment && fidelMonthly > 0 && (
             <div className="p-3 bg-gray-50 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Fidelidade ({durationMonths}x):</span>
@@ -774,6 +972,29 @@ const NovaPropostaPage = () => {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">À Vista ({discountPercent}% OFF):</span>
                 <span className="font-bold text-primary">{formatCurrency(cashTotal)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Resumo de Valores - Personalizado */}
+          {isCustomPayment && customTotal > 0 && (
+            <div className="p-3 bg-amber-50 rounded-lg space-y-2 border border-amber-200">
+              <div className="flex items-center gap-2 mb-1">
+                <span>⚙️</span>
+                <span className="text-xs font-medium text-amber-800">Pagamento Personalizado</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Duração:</span>
+                <span className="font-medium">{customDurationMonths} meses</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Parcelas:</span>
+                <span className="font-medium">{customInstallments.length}x</span>
+              </div>
+              <hr className="border-amber-200" />
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total:</span>
+                <span className="font-bold text-amber-800">{formatCurrency(customTotal)}</span>
               </div>
             </div>
           )}
@@ -846,7 +1067,7 @@ const NovaPropostaPage = () => {
           {/* Botão Enviar Proposta */}
           <Button
             onClick={handleOpenSendDialog}
-            disabled={selectedBuildings.length === 0 || !fidelValue}
+            disabled={selectedBuildings.length === 0 || (isCustomPayment ? customTotal <= 0 : !fidelValue)}
             className="flex-[2] h-12 gap-2"
           >
             <Send className="h-4 w-4" />

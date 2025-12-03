@@ -5675,6 +5675,7 @@ export type Database = {
           converted_order_id: string | null
           created_at: string | null
           created_by: string | null
+          custom_installments: Json | null
           discount_percent: number | null
           duration_months: number | null
           expires_at: string | null
@@ -5684,6 +5685,7 @@ export type Database = {
           last_viewed_at: string | null
           metadata: Json | null
           number: string
+          payment_type: string | null
           pdf_url: string | null
           rejection_reason: string | null
           responded_at: string | null
@@ -5713,6 +5715,7 @@ export type Database = {
           converted_order_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          custom_installments?: Json | null
           discount_percent?: number | null
           duration_months?: number | null
           expires_at?: string | null
@@ -5722,6 +5725,7 @@ export type Database = {
           last_viewed_at?: string | null
           metadata?: Json | null
           number: string
+          payment_type?: string | null
           pdf_url?: string | null
           rejection_reason?: string | null
           responded_at?: string | null
@@ -5751,6 +5755,7 @@ export type Database = {
           converted_order_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          custom_installments?: Json | null
           discount_percent?: number | null
           duration_months?: number | null
           expires_at?: string | null
@@ -5760,6 +5765,7 @@ export type Database = {
           last_viewed_at?: string | null
           metadata?: Json | null
           number?: string
+          payment_type?: string | null
           pdf_url?: string | null
           rejection_reason?: string | null
           responded_at?: string | null
