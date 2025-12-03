@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -27,7 +27,8 @@ import {
   MessageSquare,
   CreditCard,
   Bot,
-  AlertTriangle
+  AlertTriangle,
+  Star
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -72,6 +73,8 @@ import {
 import { useUnreadCount } from '@/modules/monitoramento-ia/hooks/useUnreadCount';
 import { useEscalacoesPendentes } from '@/hooks/useEscalacoesPendentes';
 import { useOfflineAlerts } from '@/hooks/useOfflineAlerts';
+import { useSidebarFavorites } from '@/hooks/useSidebarFavorites';
+import { SidebarFavoritesStar } from './SidebarFavoritesStar';
 
 export function ModernAdminSidebar() {
   const { state, open, setOpen, setOpenMobile, isMobile: isSidebarMobile } = useSidebar();
@@ -86,6 +89,9 @@ export function ModernAdminSidebar() {
   const { unreadCount } = useUnreadCount();
   const { pendentesCount: escalacoesPendentes } = useEscalacoesPendentes();
   const { offlineCount } = useOfflineAlerts();
+  
+  // Favorites system
+  const { favorites, toggleFavorite, isFavorite } = useSidebarFavorites();
 
   const handleSignOut = async () => {
     try {
@@ -310,6 +316,14 @@ export function ModernAdminSidebar() {
     })
   })).filter(group => group.items.length > 0);
 
+  // Get favorite items from all groups
+  const favoriteItems = useMemo(() => {
+    const allItems = filteredGroups.flatMap(g => g.items);
+    return favorites
+      .map(href => allItems.find(item => item.href === href))
+      .filter(Boolean) as typeof allItems;
+  }, [favorites, filteredGroups]);
+
   const getAdminBadgeColor = () => {
     switch (userInfo.role) {
       case 'super_admin': return 'text-amber-200';
@@ -419,6 +433,67 @@ export function ModernAdminSidebar() {
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)'
         }}
       >
+        {/* Favorites Section */}
+        {favoriteItems.length > 0 && (
+          <SidebarGroup>
+            {!collapsed && (
+              <SidebarGroupLabel className="text-[9px] font-bold text-amber-400/70 uppercase tracking-widest mb-2 px-2 flex items-center gap-1">
+                <Star className="h-3 w-3 fill-amber-400/70" />
+                Favoritos
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-0.5">
+                {favoriteItems.map((item) => {
+                  const isExactMatch = location.pathname === item.href;
+                  const isSubRoute = item.href !== basePath && location.pathname.startsWith(item.href + '/');
+                  const isActive = isExactMatch || isSubRoute;
+                  const Icon = item.icon;
+                  const badge = (item as any).badge;
+                  const badgeColor = (item as any).badgeColor || 'bg-red-500';
+
+                  return (
+                    <SidebarMenuItem key={`fav-${item.href}`}>
+                      <SidebarMenuButton asChild>
+                        <NavLink
+                          to={item.href}
+                          className={`flex items-center ${collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5 gap-3'} rounded-lg transition-all duration-200 font-medium group relative ${
+                            isActive 
+                              ? "bg-gradient-to-r from-amber-600/80 to-amber-700/80 text-white shadow-lg shadow-amber-900/30" 
+                              : "text-amber-100/80 hover:bg-amber-500/15 hover:text-white active:scale-[0.98]"
+                          } min-h-[44px] touch-manipulation`}
+                          onClick={() => {
+                            if (isMobile || isSidebarMobile) {
+                              setOpenMobile(false);
+                            }
+                          }}
+                        >
+                          <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0`} />
+                          {!collapsed && (
+                            <>
+                              <span className="text-sm font-medium truncate flex-1">{item.title}</span>
+                              {badge !== undefined && (
+                                <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center`}>
+                                  {badge}
+                                </span>
+                              )}
+                              <SidebarFavoritesStar
+                                isFavorite={true}
+                                onToggle={() => toggleFavorite(item.href)}
+                                collapsed={collapsed}
+                              />
+                            </>
+                          )}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label}>
             {!collapsed && (
@@ -458,18 +533,23 @@ export function ModernAdminSidebar() {
                       }}
                     >
                       <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 transition-transform duration-200`} />
-                      {!collapsed && (
-                        <>
-                          <span className="text-sm font-medium truncate flex-1">
-                            {item.title}
-                          </span>
-                          {badge !== undefined && (
-                            <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center`}>
-                              {badge}
+                        {!collapsed && (
+                          <>
+                            <span className="text-sm font-medium truncate flex-1">
+                              {item.title}
                             </span>
-                          )}
-                        </>
-                      )}
+                            {badge !== undefined && (
+                              <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center`}>
+                                {badge}
+                              </span>
+                            )}
+                            <SidebarFavoritesStar
+                              isFavorite={isFavorite(item.href)}
+                              onToggle={() => toggleFavorite(item.href)}
+                              collapsed={collapsed}
+                            />
+                          </>
+                        )}
                       {collapsed && badge !== undefined && (
                         <span className={`absolute -top-1 -right-1 ${badgeColor} text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center`}>
                           {typeof badge === 'number' && badge > 9 ? '9+' : badge}
