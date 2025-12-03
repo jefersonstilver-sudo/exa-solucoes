@@ -124,7 +124,7 @@ const PropostasPage = () => {
   };
 
   const handleCopyLink = (proposal: Proposal) => {
-    const link = `https://www.indexamidia.com.br/propostacomercial/${proposal.id}`;
+    const link = `https://examidia.com.br/propostacomercial/${proposal.id}`;
     navigator.clipboard.writeText(link);
     toast.success('Link copiado!');
   };
@@ -308,7 +308,7 @@ const PropostasPage = () => {
                         <Copy className="h-4 w-4 mr-2" />
                         Copiar Link
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => window.open(`https://www.indexamidia.com.br/propostacomercial/${proposal.id}`, '_blank')}>
+                      <DropdownMenuItem onClick={() => window.open(`https://examidia.com.br/propostacomercial/${proposal.id}`, '_blank')}>
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Visualizar
                       </DropdownMenuItem>

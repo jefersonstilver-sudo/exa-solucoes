@@ -73,8 +73,8 @@ serve(async (req) => {
     // Calculate total fidelity value
     const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
 
-    // Build proposal link - CORRETO: indexamidia.com.br
-    const proposalLink = `https://www.indexamidia.com.br/propostacomercial/${proposal.id}`;
+    // Build proposal link - CORRETO: examidia.com.br
+    const proposalLink = `https://examidia.com.br/propostacomercial/${proposal.id}`;
     
     // Format expiration date
     const expiresAt = proposal.expires_at 
