@@ -45,6 +45,9 @@ interface Proposal {
   total_time_spent_seconds: number | null;
   first_viewed_at: string | null;
   last_viewed_at: string | null;
+  // Real-time viewing
+  is_viewing?: boolean;
+  last_heartbeat_at?: string | null;
   // Conversion fields
   converted_order_id?: string | null;
   // Seller info
@@ -296,9 +299,22 @@ const PropostasPage = () => {
   ];
 
   const getStatusBadge = (status: string, proposal?: Proposal) => {
+    // Se está visualizando em tempo real, mostrar badge especial
+    if (proposal?.is_viewing) {
+      return (
+        <Badge 
+          variant="default"
+          className="bg-green-500 hover:bg-green-600 animate-pulse"
+        >
+          👁️ Visualizando agora
+        </Badge>
+      );
+    }
+    
     const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; animated?: boolean }> = {
       pendente: { label: 'Pendente', variant: 'secondary' },
       enviada: { label: 'Enviada', variant: 'default', className: 'bg-primary' },
+      visualizando: { label: '👁️ Visualizando', variant: 'default', className: 'bg-green-500 hover:bg-green-600', animated: true },
       visualizada: { label: '👁️ Visualizada', variant: 'outline', className: 'border-purple-400 text-purple-600 bg-purple-50' },
       aceita: { label: '✅ Aceita', variant: 'default', className: 'bg-emerald-500 hover:bg-emerald-600' },
       paga: { label: '💰 Paga', variant: 'default', className: 'bg-green-600 hover:bg-green-700', animated: true },

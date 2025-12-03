@@ -5682,6 +5682,8 @@ export type Database = {
           fidel_monthly_value: number
           first_viewed_at: string | null
           id: string
+          is_viewing: boolean | null
+          last_heartbeat_at: string | null
           last_viewed_at: string | null
           metadata: Json | null
           number: string
@@ -5722,6 +5724,8 @@ export type Database = {
           fidel_monthly_value: number
           first_viewed_at?: string | null
           id?: string
+          is_viewing?: boolean | null
+          last_heartbeat_at?: string | null
           last_viewed_at?: string | null
           metadata?: Json | null
           number: string
@@ -5762,6 +5766,8 @@ export type Database = {
           fidel_monthly_value?: number
           first_viewed_at?: string | null
           id?: string
+          is_viewing?: boolean | null
+          last_heartbeat_at?: string | null
           last_viewed_at?: string | null
           metadata?: Json | null
           number?: string
