@@ -17,9 +17,9 @@
 
 /* Touch-friendly targets (Apple Human Interface Guidelines) */
 @media (max-width: 768px) {
-  button, 
+  button:not([data-checkbox]), 
   a, 
-  [role="button"],
+  [role="button"]:not([data-checkbox]),
   input[type="button"],
   input[type="submit"] {
     min-height: 44px;
