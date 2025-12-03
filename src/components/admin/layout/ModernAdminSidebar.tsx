@@ -75,8 +75,6 @@ import { useEscalacoesPendentes } from '@/hooks/useEscalacoesPendentes';
 import { useOfflineAlerts } from '@/hooks/useOfflineAlerts';
 import { useSidebarFavorites } from '@/hooks/useSidebarFavorites';
 import { SidebarFavoritesStar } from './SidebarFavoritesStar';
-import { useSidebarResize } from '@/hooks/useSidebarResize';
-import { SidebarResizeHandle } from './SidebarResizeHandle';
 
 export function ModernAdminSidebar() {
   const { state, open, setOpen, setOpenMobile, isMobile: isSidebarMobile } = useSidebar();
@@ -94,16 +92,6 @@ export function ModernAdminSidebar() {
   
   // Favorites system
   const { favorites, toggleFavorite, isFavorite } = useSidebarFavorites();
-  
-  // Resize system
-  const { 
-    width: sidebarWidth, 
-    isDragging, 
-    shouldCollapse: isResizeCollapsed,
-    handleMouseDown: handleResizeMouseDown,
-    handleDoubleClick: handleResizeDoubleClick,
-    textOpacity
-  } = useSidebarResize();
 
   const handleSignOut = async () => {
     try {
@@ -356,27 +344,19 @@ export function ModernAdminSidebar() {
     }
   };
 
-  const collapsed = isMobile ? false : (state === "collapsed" || isResizeCollapsed);
+  const collapsed = isMobile ? false : state === "collapsed";
 
   return (
     <Sidebar 
-      className="h-screen bg-gradient-to-b from-[#1A0A0A] via-[#2D1515] to-[#3D1F1F] border-r border-red-900/20 shadow-2xl overscroll-contain relative"
+      className="h-screen bg-gradient-to-b from-[#1A0A0A] via-[#2D1515] to-[#3D1F1F] border-r border-red-900/20 shadow-2xl overscroll-contain"
       collapsible={isMobile ? "offcanvas" : "icon"}
+      variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
-        '--sidebar-width': isMobile ? undefined : (collapsed ? '56px' : `${sidebarWidth}px`),
+        backgroundColor: '#1A0A0A',
         height: '100dvh',
-        paddingTop: 'env(safe-area-inset-top)',
-        transition: isDragging ? 'none' : 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
-      } as React.CSSProperties}
+        paddingTop: 'env(safe-area-inset-top)'
+      }}
     >
-      {/* Resize Handle - Desktop only */}
-      {!isMobile && !collapsed && (
-        <SidebarResizeHandle
-          onMouseDown={handleResizeMouseDown}
-          onDoubleClick={handleResizeDoubleClick}
-          isDragging={isDragging}
-        />
-      )}
       <SidebarHeader className={`${collapsed ? 'p-3' : 'p-4 md:p-5'} border-b border-red-900/30 bg-[#1A0A0A]/95 backdrop-blur-sm`}>
         <div className="flex items-center justify-center mb-3">
           <UnifiedLogo 
@@ -488,10 +468,10 @@ export function ModernAdminSidebar() {
                             }
                           }}
                         >
-                          <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 text-current`} />
+                          <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0`} />
                           {!collapsed && (
                             <>
-                              <span className="text-sm font-medium truncate flex-1 text-current">{item.title}</span>
+                              <span className="text-sm font-medium truncate flex-1">{item.title}</span>
                               {badge !== undefined && (
                                 <span className={`${badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center`}>
                                   {badge}
@@ -552,10 +532,10 @@ export function ModernAdminSidebar() {
                         }
                       }}
                     >
-                      <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 transition-transform duration-200 text-current`} />
+                      <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4'} flex-shrink-0 transition-transform duration-200`} />
                         {!collapsed && (
                           <>
-                            <span className="text-sm font-medium truncate flex-1 text-current">
+                            <span className="text-sm font-medium truncate flex-1">
                               {item.title}
                             </span>
                             {badge !== undefined && (

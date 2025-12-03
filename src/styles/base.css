@@ -99,16 +99,6 @@
     --whatsapp-hover: 0 0% 96%;             /* #F5F5F5 */
     --whatsapp-panel-bg: 0 0% 100%;         /* #FFFFFF */
     --whatsapp-icon-gray: 210 11% 71%;      /* #8696A0 */
-    
-    /* Sidebar CSS Variables - Required by shadcn */
-    --sidebar-background: 0 41% 7%;           /* #180A0A - Dark EXA */
-    --sidebar-foreground: 0 0% 95%;           /* White text */
-    --sidebar-primary: 355 68% 37%;           /* EXA Red */
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 355 50% 25%;            /* Dark red accent */
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 355 30% 20%;            /* Dark red border */
-    --sidebar-ring: 355 68% 37%;
   }
 
   .dark {
@@ -137,15 +127,5 @@
     --exa-dark: 0 0% 15%;              /* Cinza neutro escuro */
     --exa-graphite: 0 0% 25%;          /* Cinza médio */
     --exa-highlight-red: 355 67% 60%; /* Vermelho mais brilhante para contraste */
-    
-    /* Sidebar Dark Mode */
-    --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 355 68% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 355 68% 45%;
   }
 }
