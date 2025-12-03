@@ -97,9 +97,54 @@ serve(async (req) => {
       if (userData?.telefone) sellerPhone = userData.telefone;
     }
 
-    // Build email data
+    // Build buildings data
     const buildings = proposal.selected_buildings || [];
+    const buildingIds = buildings.map((b: any) => b.building_id).filter(Boolean);
     
+    // Fetch CURRENT building data to calculate real prices
+    let fullMonthlyPrice = 0;
+    let realTotalPanels = proposal.total_panels || 0;
+    
+    if (buildingIds.length > 0) {
+      const { data: buildingsData, error: buildingsError } = await supabase
+        .from('buildings')
+        .select('id, preco_base, quantidade_telas, numero_elevadores')
+        .in('id', buildingIds);
+      
+      if (!buildingsError && buildingsData) {
+        // Calculate full monthly price (sum of all preco_base)
+        fullMonthlyPrice = buildingsData.reduce((sum, b) => sum + (b.preco_base || 0), 0);
+        
+        // Calculate real total panels
+        realTotalPanels = buildingsData.reduce((sum, b) => sum + (b.quantidade_telas || b.numero_elevadores || 1), 0);
+        
+        console.log('📊 Dados atuais dos prédios:', {
+          buildingsCount: buildingsData.length,
+          fullMonthlyPrice,
+          realTotalPanels
+        });
+      }
+    }
+    
+    // Calculate full total price (without discounts)
+    const fullTotalPrice = fullMonthlyPrice * proposal.duration_months;
+    
+    // Calculate plan discount based on duration
+    const planDiscountMap: Record<number, number> = { 1: 0, 3: 20, 6: 30, 12: 37.5 };
+    const planDiscountPercent = planDiscountMap[proposal.duration_months] || 0;
+    
+    // Calculate PIX discount (10% if à vista)
+    const pixDiscountPercent = selectedPlan === 'avista' ? 10 : 0;
+
+    console.log('💰 Cálculo de descontos:', {
+      fullMonthlyPrice,
+      fullTotalPrice,
+      planDiscountPercent,
+      pixDiscountPercent,
+      durationMonths: proposal.duration_months
+    });
+
+    // Build email data
     const emailData: any = {
       clientName: proposal.client_name,
       clientEmail: emailToSend,
@@ -109,11 +154,16 @@ serve(async (req) => {
       fidelMonthlyValue: proposal.fidel_monthly_value,
       cashTotalValue: proposal.cash_total_value,
       discountPercent: proposal.discount_percent,
-      totalPanels: proposal.total_panels,
+      totalPanels: realTotalPanels,
       buildingsCount: buildings.length,
       selectedPlan: selectedPlan || 'avista',
       sellerName,
       sellerPhone,
+      // NEW: Discount breakdown data
+      fullMonthlyPrice,
+      fullTotalPrice,
+      planDiscountPercent,
+      pixDiscountPercent,
     };
 
     // Add payment data if available
@@ -163,6 +213,12 @@ serve(async (req) => {
         selected_plan: selectedPlan,
         payment_method: paymentMethod,
         resend_id: emailResponse?.id,
+        discount_breakdown: {
+          fullMonthlyPrice,
+          fullTotalPrice,
+          planDiscountPercent,
+          pixDiscountPercent
+        },
         timestamp: new Date().toISOString()
       }
     });
