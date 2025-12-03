@@ -5562,6 +5562,44 @@ export type Database = {
           },
         ]
       }
+      proposal_views: {
+        Row: {
+          created_at: string | null
+          device_type: string | null
+          id: string
+          proposal_id: string
+          time_spent_seconds: number | null
+          user_agent: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          proposal_id: string
+          time_spent_seconds?: number | null
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          proposal_id?: string
+          time_spent_seconds?: number | null
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_views_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposals: {
         Row: {
           access_token: string
@@ -5577,7 +5615,9 @@ export type Database = {
           duration_months: number | null
           expires_at: string | null
           fidel_monthly_value: number
+          first_viewed_at: string | null
           id: string
+          last_viewed_at: string | null
           metadata: Json | null
           number: string
           pdf_url: string | null
@@ -5591,7 +5631,9 @@ export type Database = {
           status: string | null
           total_impressions_month: number
           total_panels: number
+          total_time_spent_seconds: number | null
           updated_at: string | null
+          view_count: number | null
           viewed_at: string | null
         }
         Insert: {
@@ -5608,7 +5650,9 @@ export type Database = {
           duration_months?: number | null
           expires_at?: string | null
           fidel_monthly_value: number
+          first_viewed_at?: string | null
           id?: string
+          last_viewed_at?: string | null
           metadata?: Json | null
           number: string
           pdf_url?: string | null
@@ -5622,7 +5666,9 @@ export type Database = {
           status?: string | null
           total_impressions_month?: number
           total_panels?: number
+          total_time_spent_seconds?: number | null
           updated_at?: string | null
+          view_count?: number | null
           viewed_at?: string | null
         }
         Update: {
@@ -5639,7 +5685,9 @@ export type Database = {
           duration_months?: number | null
           expires_at?: string | null
           fidel_monthly_value?: number
+          first_viewed_at?: string | null
           id?: string
+          last_viewed_at?: string | null
           metadata?: Json | null
           number?: string
           pdf_url?: string | null
@@ -5653,7 +5701,9 @@ export type Database = {
           status?: string | null
           total_impressions_month?: number
           total_panels?: number
+          total_time_spent_seconds?: number | null
           updated_at?: string | null
+          view_count?: number | null
           viewed_at?: string | null
         }
         Relationships: []
