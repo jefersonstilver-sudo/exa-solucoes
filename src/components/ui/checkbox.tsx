@@ -11,14 +11,28 @@ const Checkbox = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <CheckboxPrimitive.Root
     ref={ref}
+    data-checkbox="true"
     className={cn(
-      "peer h-4 w-4 shrink-0 rounded border border-muted-foreground/30",
-      "hover:border-muted-foreground/50 hover:bg-muted/50",
-      "transition-all duration-150 ease-out",
-      "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1",
+      // Tamanho fixo Apple-style (18px)
+      "peer shrink-0",
+      "h-[18px] w-[18px] min-h-[18px] min-w-[18px] max-h-[18px] max-w-[18px]",
+      // Cantos arredondados Apple
+      "rounded-[5px]",
+      // Borda elegante
+      "border-[1.5px] border-gray-300",
+      // Hover sutil
+      "hover:border-gray-400 hover:bg-gray-50/50",
+      // Transição suave
+      "transition-all duration-200 ease-out",
+      // Focus ring
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-gray-400/50",
+      // Disabled state
       "disabled:cursor-not-allowed disabled:opacity-40",
-      "data-[state=checked]:bg-primary data-[state=checked]:border-primary",
-      "data-[state=checked]:text-primary-foreground",
+      // Checked state - Apple blue
+      "data-[state=checked]:bg-[#007AFF] data-[state=checked]:border-[#007AFF]",
+      "data-[state=checked]:text-white",
+      // Shadow sutil quando marcado
+      "data-[state=checked]:shadow-sm",
       className
     )}
     {...props}
@@ -26,10 +40,10 @@ const Checkbox = React.forwardRef<
     <CheckboxPrimitive.Indicator
       className={cn(
         "flex items-center justify-center text-current",
-        "animate-in zoom-in-50 duration-100"
+        "animate-in zoom-in-75 duration-150"
       )}
     >
-      <Check className="h-2.5 w-2.5" strokeWidth={3} />
+      <Check className="h-3 w-3" strokeWidth={2.5} />
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 ))
