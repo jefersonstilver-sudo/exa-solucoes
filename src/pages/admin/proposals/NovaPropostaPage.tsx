@@ -24,6 +24,7 @@ interface Building {
   bairro: string;
   endereco: string;
   quantidade_telas: number | null;
+  numero_elevadores: number | null;
   visualizacoes_mes: number | null;
   preco_base: number | null;
   publico_estimado: number | null;
@@ -80,7 +81,7 @@ const NovaPropostaPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('buildings')
-        .select('id, nome, bairro, endereco, quantidade_telas, visualizacoes_mes, preco_base, publico_estimado, imagem_principal')
+        .select('id, nome, bairro, endereco, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base, publico_estimado, imagem_principal')
         .eq('status', 'ativo')
         .order('nome');
       
@@ -114,7 +115,7 @@ const NovaPropostaPage = () => {
   }, [buildings, selectedBuildings]);
 
   const totalPanels = useMemo(() => {
-    return selectedBuildingsData.reduce((sum, b) => sum + (b.quantidade_telas || 0), 0);
+    return selectedBuildingsData.reduce((sum, b) => sum + (b.quantidade_telas || b.numero_elevadores || 0), 0);
   }, [selectedBuildingsData]);
 
   const totalImpressions = useMemo(() => {
@@ -129,7 +130,7 @@ const NovaPropostaPage = () => {
   const valorSugeridoMensal = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => {
       const precoBase = b.preco_base || 0;
-      const telas = b.quantidade_telas || 1;
+      const telas = b.quantidade_telas || b.numero_elevadores || 1;
       return sum + (precoBase * telas);
     }, 0);
   }, [selectedBuildingsData]);
@@ -153,7 +154,7 @@ const NovaPropostaPage = () => {
         building_name: b.nome,
         bairro: b.bairro,
         endereco: b.endereco,
-        quantidade_telas: b.quantidade_telas,
+        quantidade_telas: b.quantidade_telas || b.numero_elevadores || 0,
         visualizacoes_mes: b.visualizacoes_mes,
         preco_base: b.preco_base,
         publico_estimado: b.publico_estimado
@@ -441,7 +442,7 @@ const NovaPropostaPage = () => {
                       {/* Detalhes do prédio */}
                       <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[11px]">
                         <span className="text-muted-foreground">
-                          📺 <strong className="text-foreground">{building.quantidade_telas || 0}</strong> telas
+                          📺 <strong className="text-foreground">{building.quantidade_telas || building.numero_elevadores || 0}</strong> telas
                         </span>
                         <span className="text-muted-foreground">
                           👁️ <strong className="text-foreground">{(building.visualizacoes_mes || 0).toLocaleString()}</strong>/mês

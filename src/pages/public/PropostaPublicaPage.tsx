@@ -148,7 +148,7 @@ const PropostaPublicaPage = () => {
         .from('proposals')
         .update({ 
           status: 'aceita',
-          accepted_at: new Date().toISOString()
+          responded_at: new Date().toISOString()
         })
         .eq('id', proposal.id);
 
@@ -246,7 +246,7 @@ const PropostaPublicaPage = () => {
         .from('proposals')
         .update({ 
           status: 'recusada',
-          rejected_at: new Date().toISOString()
+          responded_at: new Date().toISOString()
         })
         .eq('id', proposal.id);
 
