@@ -1153,7 +1153,7 @@ const PropostaPublicaPage = () => {
               Escolha sua condição
             </h2>
 
-            {/* Plano À Vista */}
+            {/* Plano À Vista - Simplificado: apenas valor mensal equivalente */}
             <Card 
               className={`p-4 cursor-pointer transition-all ${
                 selectedPlan === 'avista' 
@@ -1166,24 +1166,22 @@ const PropostaPublicaPage = () => {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="bg-[#9C1E1E] text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                      {proposal.discount_percent}% OFF
+                      MELHOR OFERTA
                     </span>
-                    <span className="font-bold">À Vista — Oferta Especial</span>
+                    <span className="font-bold">PIX À Vista</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Pagamento único — desconto aplicado</p>
+                  <p className="text-xs text-muted-foreground">Pagamento único</p>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-[#9C1E1E]">
-                    {proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    = {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                    {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    <span className="text-sm font-normal text-muted-foreground">/mês</span>
                   </div>
                 </div>
               </div>
             </Card>
 
-            {/* Plano Fidelidade */}
+            {/* Plano Fidelidade - Simplificado: apenas valor mensal */}
             <Card 
               className={`p-4 cursor-pointer transition-all ${
                 selectedPlan === 'fidelidade' 
@@ -1194,110 +1192,17 @@ const PropostaPublicaPage = () => {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="font-bold mb-1">Plano Fidelidade — {proposal.duration_months} meses</div>
-                  <p className="text-xs text-muted-foreground">Pagamento mensal — fidelize e garanta slots</p>
+                  <div className="font-bold mb-1">Plano Fidelidade</div>
+                  <p className="text-xs text-muted-foreground">Pagamento mensal • {proposal.duration_months} meses</p>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold">
                     {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     <span className="text-sm font-normal text-muted-foreground">/mês</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Total: {fidelTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </div>
                 </div>
               </div>
             </Card>
-
-            {/* ==== BREAKDOWN DE PREÇO ==== */}
-            {baseTotalValue > 0 && (
-              <Card className="p-4 bg-gradient-to-br from-gray-50 to-white border-dashed border-gray-300">
-                <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 text-muted-foreground">
-                  <Calculator className="h-4 w-4" />
-                  Como chegamos neste valor
-                </h3>
-                
-                <div className="space-y-2 text-sm">
-                  {/* Valor Original */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">
-                      Valor base ({proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'})
-                    </span>
-                    <span className="line-through text-muted-foreground">
-                      {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
-                  </div>
-                  
-                  {/* Desconto Plano */}
-                  {planDiscountPercent > 0 && (
-                    <div className="flex justify-between items-center text-emerald-600">
-                      <span className="flex items-center gap-1">
-                        <span className="text-xs">✓</span>
-                        Desconto Plano {proposal.duration_months}M ({planDiscountPercent}%)
-                      </span>
-                      <span>
-                        - {planDiscountValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Subtotal após plano - só mostra se selecionou À Vista e tem desconto plano */}
-                  {selectedPlan === 'avista' && planDiscountPercent > 0 && (
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span className="line-through text-muted-foreground">
-                        {afterPlanDiscount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Desconto PIX - só mostra se selecionou À Vista */}
-                  {selectedPlan === 'avista' && (
-                    <div className="flex justify-between items-center text-emerald-600">
-                      <span className="flex items-center gap-1">
-                        <span className="text-xs">✓</span>
-                        Desconto PIX à Vista ({pixDiscountPercent}%)
-                      </span>
-                      <span>
-                        - {pixDiscountValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Divisor e Valor Final */}
-                  <div className="border-t pt-3 mt-3 space-y-1">
-                    <div className="flex justify-between items-center font-bold">
-                      <span className="text-[#9C1E1E]">
-                        {selectedPlan === 'avista' ? 'VALOR FINAL' : 'TOTAL DO CONTRATO'}
-                      </span>
-                      <span className="text-[#9C1E1E] text-lg">
-                        {selectedPlan === 'avista' 
-                          ? proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                          : fidelTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                        }
-                      </span>
-                    </div>
-                    
-                    {/* Mensalidade se fidelidade */}
-                    {selectedPlan === 'fidelidade' && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Mensalidade</span>
-                        <span className="font-medium">
-                          {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Badge de economia */}
-                    <div className="text-right">
-                      <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-1 rounded-full">
-                        🎉 Economia de {selectedPlan === 'avista' ? totalSavingsAvista : totalSavingsFidelidade}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
           </div>
         )}
 
