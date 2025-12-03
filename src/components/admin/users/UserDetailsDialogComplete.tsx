@@ -47,6 +47,7 @@ interface User {
   last_access_at?: string;
   raw_user_meta_data?: any;
   nome?: string;
+  telefone?: string;
 }
 
 interface UserDetailsDialogCompleteProps {
@@ -80,7 +81,7 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
     if (user && open) {
       setEditData({
         name: user.nome || user.raw_user_meta_data?.name || '',
-        telefone: user.raw_user_meta_data?.telefone || '',
+        telefone: user.telefone || user.raw_user_meta_data?.telefone || '',
         observacoes: user.raw_user_meta_data?.observacoes || ''
       });
       setSelectedRole(user.role);
@@ -262,7 +263,8 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
       const { error } = await supabase
         .from('users')
         .update({
-          nome: editData.name
+          nome: editData.name,
+          telefone: editData.telefone || null
         })
         .eq('id', user.id);
 
@@ -522,6 +524,18 @@ export const UserDetailsDialogComplete: React.FC<UserDetailsDialogCompleteProps>
                           className="text-sm"
                         />
                       </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">📱 Telefone Comercial</Label>
+                      <Input
+                        value={editData.telefone}
+                        onChange={(e) => setEditData(prev => ({ ...prev, telefone: e.target.value }))}
+                        placeholder="(45) 99999-9999"
+                        className="text-sm"
+                      />
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Este telefone aparecerá nas propostas comerciais enviadas
+                      </p>
                     </div>
                     <Button onClick={handleSaveProfile} disabled={loading} size="sm">
                       <Save className="h-4 w-4 mr-2" />
