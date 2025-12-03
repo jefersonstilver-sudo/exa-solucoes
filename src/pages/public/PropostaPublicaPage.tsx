@@ -69,6 +69,45 @@ const PropostaPublicaPage = () => {
   const [enrichedBuildings, setEnrichedBuildings] = useState<any[]>([]);
   const [realTotalPanels, setRealTotalPanels] = useState(0);
 
+  // Track page view time
+  const pageLoadTime = React.useRef<number>(Date.now());
+  
+  // Register view on mount and track time on unmount
+  useEffect(() => {
+    if (!id) return;
+    
+    const deviceType = /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+    
+    // Register view entry
+    supabase.functions.invoke('track-proposal-view', {
+      body: {
+        proposalId: id,
+        action: 'enter',
+        deviceType,
+        userAgent: navigator.userAgent
+      }
+    }).catch(err => console.log('Track error:', err));
+    
+    // Track time spent when leaving
+    const handleBeforeUnload = () => {
+      const timeSpent = Math.floor((Date.now() - pageLoadTime.current) / 1000);
+      navigator.sendBeacon(
+        `${import.meta.env.VITE_SUPABASE_URL || 'https://aakenoljsycyrcrchgxj.supabase.co'}/functions/v1/track-proposal-view`,
+        JSON.stringify({ proposalId: id, action: 'leave', timeSpentSeconds: timeSpent })
+      );
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Also track on component unmount
+      const timeSpent = Math.floor((Date.now() - pageLoadTime.current) / 1000);
+      supabase.functions.invoke('track-proposal-view', {
+        body: { proposalId: id, action: 'leave', timeSpentSeconds: timeSpent }
+      }).catch(() => {});
+    };
+  }, [id]);
+
   // Buscar proposta do banco de dados
   useEffect(() => {
     const fetchProposal = async () => {
