@@ -29,35 +29,20 @@ const BenefitMobileCard: React.FC<BenefitMobileCardProps> = ({
     ? benefitOptions.find(b => b.id === benefit.benefit_choice) 
     : null;
 
-  // Versão compacta (retraída) para finalizados/cancelados
+  // Versão planilha (retraída) para finalizados/cancelados - só nome + status
   if (isFinishedOrCancelled && !isExpanded) {
     return (
       <div 
-        className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl overflow-hidden shadow-sm opacity-75 cursor-pointer"
+        className="flex items-center justify-between px-3 py-2 bg-white/50 backdrop-blur-sm border border-white/30 rounded-lg cursor-pointer hover:bg-white/70 transition-colors"
         onClick={() => setIsExpanded(true)}
       >
-        <div className={`px-3 py-2 ${benefit.status === 'cancelled' ? 'bg-gray-400' : 'bg-green-600'}`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <span className="text-xs font-semibold text-white truncate">
-                {benefit.provider_name}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <BenefitStatusBadge status={benefit.status} />
-              <ChevronDown className="w-3.5 h-3.5 text-white/80" />
-            </div>
-          </div>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          <span className="text-xs text-muted-foreground truncate">
+            {benefit.provider_name}
+          </span>
         </div>
-        <div className="px-3 py-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
-          <span className="truncate">{benefit.provider_email}</span>
-          {benefit.benefit_choice && selectedBenefitOption && (
-            <span className="flex items-center gap-1 text-muted-foreground">
-              <Gift className="w-2.5 h-2.5" />
-              {selectedBenefitOption.name}
-            </span>
-          )}
-        </div>
+        <BenefitStatusBadge status={benefit.status} />
       </div>
     );
   }
