@@ -173,28 +173,37 @@ const PropostaPublicaPage = () => {
           console.log('🎁 Proposta é uma CORTESIA');
         }
 
-        // Fetch CURRENT building data for accurate panel count
+        // Fetch CURRENT building data for accurate panel count, impressions and price
         const buildings = Array.isArray(data.selected_buildings) ? data.selected_buildings : [];
         const buildingIds = buildings.map((b: any) => b.building_id).filter(Boolean);
         
         if (buildingIds.length > 0) {
           const { data: currentBuildingsData } = await supabase
             .from('buildings')
-            .select('id, quantidade_telas, numero_elevadores')
+            .select('id, quantidade_telas, numero_elevadores, visualizacoes_mes, preco_base')
             .in('id', buildingIds);
 
           if (currentBuildingsData) {
-            // Create map of current data
+            // Create map of current data with ALL fields
             const buildingsMap = new Map(currentBuildingsData.map(b => [
               b.id,
-              b.quantidade_telas || b.numero_elevadores || 1
+              {
+                quantidade_telas: b.quantidade_telas || b.numero_elevadores || 1,
+                visualizacoes_mes: b.visualizacoes_mes || 0,
+                preco_base: b.preco_base || 0
+              }
             ]));
 
-            // Enrich selected_buildings with current panel data
-            const enriched = buildings.map((b: any) => ({
-              ...b,
-              quantidade_telas: buildingsMap.get(b.building_id) || b.quantidade_telas || 1
-            }));
+            // Enrich selected_buildings with REAL current data from database
+            const enriched = buildings.map((b: any) => {
+              const currentData = buildingsMap.get(b.building_id);
+              return {
+                ...b,
+                quantidade_telas: currentData?.quantidade_telas || b.quantidade_telas || 1,
+                visualizacoes_mes: currentData?.visualizacoes_mes || b.visualizacoes_mes || 0,
+                preco_base: currentData?.preco_base || b.preco_base || 0
+              };
+            });
 
             setEnrichedBuildings(enriched);
             
@@ -203,7 +212,11 @@ const PropostaPublicaPage = () => {
               sum + (b.quantidade_telas || 1), 0
             );
             setRealTotalPanels(total);
-            console.log('📊 Total de telas atualizado:', total);
+            
+            const totalViews = enriched.reduce((sum: number, b: any) => 
+              sum + (b.visualizacoes_mes || 0), 0
+            );
+            console.log('📊 Dados reais atualizados:', { telas: total, visualizacoes: totalViews });
           } else {
             setEnrichedBuildings(buildings);
             setRealTotalPanels(data.total_panels || buildings.reduce((sum: number, b: any) => sum + (b.quantidade_telas || 1), 0));
@@ -929,9 +942,9 @@ const PropostaPublicaPage = () => {
     : '0';
 
   return (
-    <div className={`min-h-screen ${isCortesia ? 'bg-gradient-to-br from-amber-50 to-emerald-50' : 'bg-gradient-to-br from-gray-50 to-slate-100'}`}>
-      {/* Header */}
-      <header className={`${isCortesia ? 'bg-gradient-to-r from-amber-600 to-emerald-600' : 'bg-gradient-to-r from-[#4a0f0f] to-[#7D1818]'} text-white p-4`}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
+      {/* Header - Always EXA Red */}
+      <header className="bg-gradient-to-r from-[#4a0f0f] to-[#7D1818] text-white p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-12 bg-white/10 rounded-lg flex items-center justify-center">
@@ -974,7 +987,7 @@ const PropostaPublicaPage = () => {
                   );
                 })()}
                 {isCortesia && (
-                  <span className="bg-gradient-to-r from-amber-400 to-emerald-400 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                  <span className="bg-white text-[#9C1E1E] px-3 py-1 rounded-full text-xs font-bold animate-pulse">
                     🎁 CORTESIA
                   </span>
                 )}
@@ -994,15 +1007,15 @@ const PropostaPublicaPage = () => {
       </header>
 
       <div className="max-w-4xl mx-auto p-4 space-y-4">
-        {/* Banner Cortesia Especial */}
+        {/* Banner Cortesia Especial - EXA Red Theme */}
         {isCortesia && !['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
-          <Card className="p-4 bg-gradient-to-r from-amber-100 to-emerald-100 border-2 border-amber-300 text-center">
+          <Card className="p-4 bg-gradient-to-r from-red-50 to-red-100 border-2 border-[#9C1E1E] text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Gift className="h-6 w-6 text-amber-600" />
-              <span className="text-xl font-bold text-amber-800">VOCÊ GANHOU UM PRESENTE!</span>
-              <PartyPopper className="h-6 w-6 text-emerald-600" />
+              <Gift className="h-6 w-6 text-[#9C1E1E]" />
+              <span className="text-xl font-bold text-[#7D1818]">VOCÊ GANHOU UM PRESENTE!</span>
+              <PartyPopper className="h-6 w-6 text-[#9C1E1E]" />
             </div>
-            <p className="text-sm text-amber-700">
+            <p className="text-sm text-[#7D1818]">
               A EXA Mídia está oferecendo <strong>{proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'}</strong> de publicidade gratuita para você!
             </p>
           </Card>
@@ -1092,18 +1105,18 @@ const PropostaPublicaPage = () => {
           </div>
         </Card>
 
-        {/* Card Especial para Cortesia - Mostra valor que seria pago */}
+        {/* Card Especial para Cortesia - EXA Red Theme */}
         {isCortesia && (
-          <Card className="p-6 bg-gradient-to-br from-amber-50 to-emerald-50 border-2 border-amber-300 shadow-lg">
+          <Card className="p-6 bg-gradient-to-br from-red-50 to-white border-2 border-[#9C1E1E] shadow-lg">
             <div className="text-center space-y-4">
               <div className="flex items-center justify-center gap-2">
-                <Gift className="h-8 w-8 text-amber-600" />
-                <span className="text-2xl font-bold text-amber-800">CORTESIA</span>
-                <PartyPopper className="h-8 w-8 text-emerald-600" />
+                <Gift className="h-8 w-8 text-[#9C1E1E]" />
+                <span className="text-2xl font-bold text-[#7D1818]">CORTESIA</span>
+                <PartyPopper className="h-8 w-8 text-[#9C1E1E]" />
               </div>
               
               {/* Valor que seria cobrado */}
-              <div className="bg-white/60 rounded-xl p-4">
+              <div className="bg-gray-50 rounded-xl p-4">
                 <p className="text-sm text-muted-foreground mb-2">Se fosse pago, custaria:</p>
                 <div className="text-xl text-muted-foreground line-through">
                   {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
@@ -1114,17 +1127,17 @@ const PropostaPublicaPage = () => {
               </div>
               
               {/* Valor da cortesia */}
-              <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 rounded-xl p-4">
-                <p className="text-sm text-emerald-700 font-medium mb-1">Seu presente:</p>
-                <div className="text-4xl font-bold text-emerald-600">
+              <div className="bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] rounded-xl p-4">
+                <p className="text-sm text-white/80 font-medium mb-1">Seu presente:</p>
+                <div className="text-4xl font-bold text-white">
                   R$ 0,00
                 </div>
-                <p className="text-sm text-emerald-700 mt-2">🎁 Presente especial da EXA Mídia</p>
+                <p className="text-sm text-white/80 mt-2">🎁 Presente especial da EXA Mídia</p>
               </div>
               
               {/* Badge de economia */}
               <div className="flex items-center justify-center gap-2">
-                <span className="bg-emerald-500 text-white text-sm font-bold px-4 py-2 rounded-full">
+                <span className="bg-[#9C1E1E] text-white text-sm font-bold px-4 py-2 rounded-full">
                   💰 Economia de 100% — {baseTotalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
               </div>
