@@ -74,21 +74,25 @@ serve(async (req) => {
       ? new Date(proposal.expires_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
       : '24 horas';
 
-    // Get seller name (fetch from users table if created_by exists)
+    // Get seller name and phone (fetch from users table if created_by exists)
     let sellerName = 'Equipe EXA Mídia';
+    let sellerPhone = '';
     if (proposal.created_by) {
       const { data: userData } = await supabase
         .from('users')
-        .select('nome')
+        .select('nome, telefone')
         .eq('id', proposal.created_by)
         .single();
       
       if (userData?.nome) {
         sellerName = userData.nome;
       }
+      if (userData?.telefone) {
+        sellerPhone = userData.telefone;
+      }
     }
 
-    // Build WhatsApp message
+    // Build WhatsApp message - Mensagem principal
     const message = `🎯 *Proposta Comercial — EXA Mídia*
 
 Olá, ${proposal.client_name?.split(' ')[0] || 'Cliente'}!
@@ -101,12 +105,9 @@ Olá, ${proposal.client_name?.split(' ')[0] || 'Cliente'}!
 💵 Total: *${formatCurrency(fidelTotal)}*
 ✨ À Vista: *${formatCurrency(proposal.cash_total_value)}* (10% OFF)
 
-🔗 Acesse sua proposta:
-${proposalLink}
-
 ⏰ Válida até ${expiresAt}
 
-${sellerName}
+_${sellerName}_
 EXA Mídia Digital`;
 
     // Get Z-API config from agents table (using sofia agent)
@@ -137,9 +138,9 @@ EXA Mídia Digital`;
       );
     }
 
-    // Send message via Z-API
     const zapiUrl = `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiToken}/send-text`;
     
+    // Send main message
     const zapiResponse = await fetch(zapiUrl, {
       method: 'POST',
       headers: {
@@ -159,7 +160,56 @@ EXA Mídia Digital`;
       throw new Error(zapiResult.message || 'Erro ao enviar WhatsApp');
     }
 
-    console.log('WhatsApp enviado com sucesso:', zapiResult);
+    console.log('WhatsApp mensagem principal enviada:', zapiResult);
+
+    // Small delay to ensure message order
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Send link as separate message (easier to click)
+    const linkMessage = `🔗 *Acesse sua proposta aqui:*
+${proposalLink}`;
+
+    await fetch(zapiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Client-Token': zapiClientToken || '',
+      },
+      body: JSON.stringify({
+        phone: formattedPhone,
+        message: linkMessage,
+      }),
+    });
+
+    console.log('WhatsApp link enviado');
+
+    // If seller has phone, send it as separate message for easy copy
+    if (sellerPhone) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const cleanSellerPhone = sellerPhone.replace(/\D/g, '');
+      const formattedSellerPhone = cleanSellerPhone.length === 11 
+        ? `(${cleanSellerPhone.slice(0, 2)}) ${cleanSellerPhone.slice(2, 7)}-${cleanSellerPhone.slice(7)}`
+        : sellerPhone;
+      
+      const phoneMessage = `📞 Dúvidas? Fale comigo:
+
+${formattedSellerPhone}`;
+
+      await fetch(zapiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Client-Token': zapiClientToken || '',
+        },
+        body: JSON.stringify({
+          phone: formattedPhone,
+          message: phoneMessage,
+        }),
+      });
+
+      console.log('WhatsApp telefone do vendedor enviado');
+    }
 
     // Log the action
     await supabase.from('proposal_logs').insert({
@@ -168,6 +218,7 @@ EXA Mídia Digital`;
       details: {
         phone: formattedPhone,
         zapi_response: zapiResult,
+        seller_phone: sellerPhone || null,
       },
     });
 
