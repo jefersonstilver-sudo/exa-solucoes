@@ -7,6 +7,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Logo oficial EXA - URL pública do Supabase Storage
+const EXA_LOGO_URL = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/email-assets/exa-logo.png';
+
+// Cores oficiais
+const EXA_COLORS = {
+  primary: '#8B1A1A',
+  primaryDark: '#6B1414',
+  text: '#333333',
+  textLight: '#666666',
+};
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -80,67 +91,122 @@ serve(async (req) => {
     // Get client first name
     const clientFirstName = proposal.client_name?.split(' ')[0] || 'Cliente';
 
-    // Build SIMPLE HTML email - NO prices, NO details, ONLY logo + link
+    // Build HTML email using corporate template
+    // Forces light mode on all clients (including iPhone dark mode)
     const htmlContent = `
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light only">
   <meta name="supported-color-schemes" content="light only">
   <title>Proposta Comercial - EXA Mídia</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
   <style>
+    /* Force light mode on all email clients */
     :root { color-scheme: light only; }
+    
+    /* Dark mode overrides - force white backgrounds */
     @media (prefers-color-scheme: dark) {
-      body, .email-body { background-color: #ffffff !important; color: #333333 !important; }
-      .email-container { background-color: #ffffff !important; }
-      h1, p, span { color: #333333 !important; }
+      body, .email-body, .email-wrapper, .email-container, .content-section {
+        background-color: #ffffff !important;
+        background: #ffffff !important;
+        color: #333333 !important;
+      }
+      h1, h2, h3, p, span, td, th, div {
+        color: #333333 !important;
+      }
+      .header-section {
+        background-color: #8B1A1A !important;
+      }
+      .header-section h1, .header-section p {
+        color: #ffffff !important;
+      }
+    }
+    
+    /* Apple Mail dark mode fix */
+    [data-ogsc] body,
+    [data-ogsc] .email-wrapper,
+    [data-ogsc] .email-container {
+      background-color: #ffffff !important;
+      color: #333333 !important;
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff !important;" class="email-body">
-  <div style="max-width: 480px; margin: 0 auto; padding: 40px 24px;" class="email-container">
-    
-    <!-- Logo EXA -->
-    <div style="text-align: center; margin-bottom: 32px;">
-      <img 
-        src="https://i.imgur.com/YJQwQvZ.png" 
-        alt="EXA Mídia" 
-        style="height: 48px; width: auto;"
-      />
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f5f5f5 !important; -webkit-font-smoothing: antialiased;" class="email-body">
+  
+  <div class="email-wrapper" style="width: 100%; background-color: #f5f5f5 !important; padding: 40px 20px;">
+    <div class="email-container" style="max-width: 520px; margin: 0 auto; background-color: #ffffff !important; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);">
+      
+      <!-- Header com gradiente EXA -->
+      <div class="header-section" style="background: linear-gradient(135deg, ${EXA_COLORS.primary} 0%, ${EXA_COLORS.primaryDark} 100%); padding: 48px 32px; text-align: center;">
+        <img 
+          src="${EXA_LOGO_URL}" 
+          alt="EXA Mídia" 
+          style="height: 56px; width: auto; display: block; margin: 0 auto 20px auto;"
+        />
+        <h1 style="color: #ffffff !important; font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.3px;">
+          Nova Proposta Comercial
+        </h1>
+      </div>
+      
+      <!-- Content -->
+      <div class="content-section" style="padding: 40px 32px; background-color: #ffffff !important;">
+        
+        <h2 style="color: ${EXA_COLORS.text} !important; font-size: 20px; font-weight: 600; text-align: center; margin: 0 0 20px;">
+          Olá, ${clientFirstName}! 👋
+        </h2>
+        
+        <p style="color: ${EXA_COLORS.textLight} !important; font-size: 15px; text-align: center; line-height: 1.7; margin: 0 0 32px;">
+          Você recebeu uma proposta comercial da <strong style="color: ${EXA_COLORS.text};">EXA Mídia</strong>. 
+          Clique no botão abaixo para visualizar todos os detalhes.
+        </p>
+        
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 32px 0;">
+          <a 
+            href="${proposalLink}" 
+            style="display: inline-block; background: linear-gradient(135deg, ${EXA_COLORS.primary} 0%, ${EXA_COLORS.primaryDark} 100%); color: #ffffff !important; padding: 16px 48px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 16px rgba(139, 26, 26, 0.3);"
+          >
+            Ver Proposta
+          </a>
+        </div>
+        
+        <!-- Info box -->
+        <div style="background-color: #f8f9fa; border-left: 4px solid ${EXA_COLORS.primary}; border-radius: 8px; padding: 16px 20px; margin: 24px 0;">
+          <p style="color: ${EXA_COLORS.textLight} !important; font-size: 14px; margin: 0; line-height: 1.6;">
+            📅 Esta proposta tem <strong style="color: ${EXA_COLORS.text};">validade de 24 horas</strong>. 
+            Não perca a oportunidade!
+          </p>
+        </div>
+        
+      </div>
+      
+      <!-- Footer -->
+      <div style="background-color: #fafafa; padding: 28px 32px; text-align: center; border-top: 1px solid #e5e5e5;">
+        <p style="color: ${EXA_COLORS.primary}; font-size: 14px; font-weight: 700; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+          ${sellerName}
+        </p>
+        <p style="color: #999999; font-size: 13px; margin: 0 0 16px;">
+          EXA Mídia Digital
+        </p>
+        <p style="color: #bbbbbb; font-size: 12px; margin: 0;">
+          © ${new Date().getFullYear()} EXA Mídia - Todos os direitos reservados
+        </p>
+      </div>
+      
     </div>
-    
-    <!-- Greeting -->
-    <h1 style="color: #1f2937; font-size: 22px; font-weight: 600; text-align: center; margin: 0 0 16px;">
-      Olá, ${clientFirstName}!
-    </h1>
-    
-    <p style="color: #6b7280; font-size: 15px; text-align: center; line-height: 1.6; margin: 0 0 32px;">
-      Você recebeu uma proposta comercial da EXA Mídia. Clique no botão abaixo para visualizar todos os detalhes.
-    </p>
-    
-    <!-- CTA Button -->
-    <div style="text-align: center; margin: 32px 0;">
-      <a 
-        href="${proposalLink}" 
-        style="display: inline-block; background-color: #9C1E1E; color: #ffffff; padding: 16px 48px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;"
-      >
-        Ver Proposta
-      </a>
-    </div>
-    
-    <!-- Footer -->
-    <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
-      <p style="color: #374151; font-size: 14px; font-weight: 500; margin: 0;">
-        ${sellerName}
-      </p>
-      <p style="color: #9ca3af; font-size: 13px; margin: 4px 0 0;">
-        EXA Mídia Digital
-      </p>
-    </div>
-    
   </div>
+  
 </body>
 </html>
     `;
