@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper } from 'lucide-react';
+import { Check, X, MessageSquare, FileText, Building2, Eye, Clock, Phone, AlertTriangle, Loader2, Download, Mail, Zap, FileBarChart, Copy, Calculator, Gift, PartyPopper, Video, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -1301,14 +1301,42 @@ const PropostaPublicaPage = () => {
           </div>
         )}
 
+        {/* Seção de Vídeos - Conheça a EXA */}
+        <Card className="p-4 bg-white/80 backdrop-blur-sm border border-gray-200">
+          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2 text-[#9C1E1E]">
+            <Video className="h-4 w-4" />
+            Conheça a EXA Mídia
+          </h3>
+          <div className="flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
+              onClick={() => window.open('https://drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ/view?usp=drive_link', '_blank')}
+            >
+              <Video className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+              Assistir Vídeo Institucional
+              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full h-10 text-sm border-[#9C1E1E]/30 hover:bg-[#9C1E1E]/5 hover:border-[#9C1E1E] transition-all"
+              onClick={() => window.open('https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view?usp=drive_link', '_blank')}
+            >
+              <FileText className="h-4 w-4 mr-2 text-[#9C1E1E]" />
+              Ver Mídia Kit
+              <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+            </Button>
+          </div>
+        </Card>
+
         {/* Botões de Ação - SÓ aparecem se proposta ainda pode ser respondida */}
         {!['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
           <div className="space-y-3 pt-4">
             {isCortesia ? (
               <>
-                {/* Botões especiais para Cortesia */}
+                {/* Botões especiais para Cortesia - EXA Red Theme */}
                 <Button
-                  className="w-full h-14 text-lg bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white shadow-lg"
+                  className="w-full h-14 text-lg bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] hover:from-[#7D1818] hover:to-[#5a1212] text-white shadow-lg"
                   onClick={handleAcceptCortesia}
                   disabled={isAcceptingCortesia}
                 >
@@ -1322,7 +1350,7 @@ const PropostaPublicaPage = () => {
 
                 <Button
                   variant="outline"
-                  className="w-full h-12 border-amber-300 text-amber-700 hover:bg-amber-50"
+                  className="w-full h-12 border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
                   onClick={handleReject}
                   disabled={isSubmitting}
                 >

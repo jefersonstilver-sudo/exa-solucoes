@@ -65,7 +65,8 @@ export class ProposalPDFExporter {
   }
 
   private async generateValidationQRCode(proposalId: string): Promise<string> {
-    const validationUrl = `https://examidia.com.br/propostacomercial/${proposalId}`;
+    // Usar domínio Lovable que funciona
+    const validationUrl = `https://64f6806c-c0e0-422b-b85f-955fd5719544.lovableproject.com/propostacomercial/${proposalId}`;
     return await QRCode.toDataURL(validationUrl, {
       width: 120,
       margin: 1,
@@ -81,17 +82,9 @@ export class ProposalPDFExporter {
   }
 
   private async drawHeader(proposal: ProposalData, isCortesia: boolean = false): Promise<void> {
-    // Header - verde/dourado para cortesia, vermelho EXA para normal
-    if (isCortesia) {
-      // Gradient effect for cortesia
-      this.doc.setFillColor(217, 119, 6); // amber-600
-      this.doc.rect(0, 0, this.pageWidth / 2, 40, 'F');
-      this.doc.setFillColor(5, 150, 105); // emerald-600
-      this.doc.rect(this.pageWidth / 2, 0, this.pageWidth / 2, 40, 'F');
-    } else {
-      this.doc.setFillColor(156, 30, 30);
-      this.doc.rect(0, 0, this.pageWidth, 40, 'F');
-    }
+    // Header - SEMPRE vermelho EXA (profissional)
+    this.doc.setFillColor(156, 30, 30); // EXA Red
+    this.doc.rect(0, 0, this.pageWidth, 40, 'F');
     
     // Logo EXA - mantém proporção
     try {
@@ -112,7 +105,7 @@ export class ProposalPDFExporter {
     this.doc.setFont('helvetica', 'bold');
     
     if (isCortesia) {
-      this.doc.text('🎁 PRESENTE CORTESIA 🎉', this.pageWidth / 2, 18, { align: 'center' });
+      this.doc.text('PRESENTE CORTESIA', this.pageWidth / 2, 18, { align: 'center' });
     } else {
       this.doc.text('PROPOSTA COMERCIAL', this.pageWidth / 2, 18, { align: 'center' });
     }
@@ -283,6 +276,33 @@ export class ProposalPDFExporter {
     this.yPosition += 12;
   }
 
+  private drawVideoLinksSection(): void {
+    this.checkPageBreak(25);
+    
+    // Box com links de vídeo
+    this.doc.setFillColor(249, 250, 251);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 20, 'F');
+    
+    this.doc.setDrawColor(229, 231, 235);
+    this.doc.setLineWidth(0.3);
+    this.doc.rect(this.margin, this.yPosition, this.contentWidth, 20);
+    
+    // Título
+    this.doc.setTextColor(156, 30, 30);
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('CONHEÇA A EXA MÍDIA', this.margin + 4, this.yPosition + 6);
+    
+    // Links
+    this.doc.setTextColor(59, 130, 246); // blue-500
+    this.doc.setFontSize(7);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text('Vídeo Institucional: drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ', this.margin + 4, this.yPosition + 12);
+    this.doc.text('Mídia Kit: drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz', this.margin + 4, this.yPosition + 17);
+    
+    this.yPosition += 25;
+  }
+
   private drawFinancialSummary(proposal: ProposalData): void {
     this.checkPageBreak(35);
     
@@ -330,19 +350,19 @@ export class ProposalPDFExporter {
   private drawCortesiaFinancialSummary(proposal: ProposalData, baseTotalValue: number): void {
     this.checkPageBreak(45);
     
-    // Box financeiro cortesia - verde/dourado
-    this.doc.setFillColor(236, 253, 245); // emerald-50
+    // Box financeiro cortesia - EXA Red Theme (profissional)
+    this.doc.setFillColor(254, 242, 242); // red-50
     this.doc.rect(this.margin, this.yPosition, this.contentWidth, 42, 'F');
     
-    this.doc.setDrawColor(5, 150, 105); // emerald-600
+    this.doc.setDrawColor(156, 30, 30); // EXA Red
     this.doc.setLineWidth(0.5);
     this.doc.rect(this.margin, this.yPosition, this.contentWidth, 42);
     
     // Título
-    this.doc.setTextColor(5, 150, 105);
+    this.doc.setTextColor(156, 30, 30);
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('🎁 PRESENTE CORTESIA', this.margin + 4, this.yPosition + 7);
+    this.doc.text('PRESENTE CORTESIA', this.margin + 4, this.yPosition + 7);
     
     const leftCol = this.margin + 4;
     const rightCol = this.pageWidth / 2 + 10;
@@ -363,11 +383,11 @@ export class ProposalPDFExporter {
     this.doc.setLineWidth(0.3);
     this.doc.line(leftCol, this.yPosition + 28, leftCol + strikeWidth, this.yPosition + 28);
     
-    // Coluna direita - PRESENTE
-    this.doc.setFillColor(209, 250, 229); // emerald-200
+    // Coluna direita - PRESENTE (EXA Red)
+    this.doc.setFillColor(156, 30, 30); // EXA Red
     this.doc.rect(rightCol - 4, this.yPosition + 8, 80, 28, 'F');
     
-    this.doc.setTextColor(5, 150, 105);
+    this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('SEU PRESENTE:', rightCol, this.yPosition + 16);
@@ -378,7 +398,7 @@ export class ProposalPDFExporter {
     // Badge economia
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`💰 Economia de 100%`, rightCol, this.yPosition + 36);
+    this.doc.text('Economia de 100%', rightCol, this.yPosition + 36);
     
     this.yPosition += 48;
   }
@@ -470,6 +490,9 @@ export class ProposalPDFExporter {
     } else {
       this.drawFinancialSummary(proposal);
     }
+    
+    // Seção de Vídeos - Links importantes
+    this.drawVideoLinksSection();
     
     // Footer com QR Code
     await this.drawValidationFooter(proposal, isCortesia);
