@@ -29,6 +29,9 @@ import AssinaturasPage from '@/pages/admin/AssinaturasPage';
 import EmailLogs from '@/pages/admin/EmailLogs';
 import LogosAdmin from '@/components/admin/LogosAdmin';
 import GlobalLoadingPage from '@/components/loading/GlobalLoadingPage';
+import PropostasPage from '@/pages/admin/proposals/PropostasPage';
+import NovaPropostaPage from '@/pages/admin/proposals/NovaPropostaPage';
+import PropostaDetalhesPage from '@/pages/admin/proposals/PropostaDetalhesPage';
 
 // Lazy imports para páginas do monitoramento-ia (integradas)
 const CRMUnificado = lazy(() => import('@/modules/monitoramento-ia/pages/CRMUnificado'));
@@ -45,6 +48,9 @@ const SuperAdminRoutes = () => {
       <Route index element={<Dashboard />} />
       <Route path="pedidos" element={<OrdersPage />} />
       <Route path="pedidos/:id" element={<OrderDetails />} />
+      <Route path="propostas" element={<PropostasPage />} />
+      <Route path="propostas/nova" element={<NovaPropostaPage />} />
+      <Route path="propostas/:id" element={<PropostaDetalhesPage />} />
       <Route path="assinaturas" element={<AssinaturasPage />} />
       <Route path="aprovacoes" element={<ApprovalsPage />} />
       <Route path="cupons" element={<CouponsPage />} />

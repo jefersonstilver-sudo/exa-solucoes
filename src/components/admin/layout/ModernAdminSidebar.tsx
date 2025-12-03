@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { 
+import {
   LayoutDashboard, 
   ShoppingBag, 
   Building2, 
@@ -28,7 +28,8 @@ import {
   CreditCard,
   Bot,
   AlertTriangle,
-  Star
+  Star,
+  FileText
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -119,6 +120,12 @@ export function ModernAdminSidebar() {
           title: 'Pedidos',
           href: buildPath('pedidos'),
           icon: ShoppingBag,
+          permission: 'canViewOrders'
+        },
+        {
+          title: 'Propostas',
+          href: buildPath('propostas'),
+          icon: FileText,
           permission: 'canViewOrders'
         },
         {
