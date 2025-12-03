@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { format, isToday, startOfMonth, endOfMonth, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Proposal {
   id: string;
@@ -41,12 +42,21 @@ interface Proposal {
   last_viewed_at: string | null;
 }
 
+interface LiveViewNotification {
+  id: string;
+  proposalId: string;
+  clientName: string;
+  timestamp: Date;
+}
+
 const PropostasPage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { isMobile } = useResponsiveLayout();
   const { buildPath } = useAdminBasePath();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('todas');
+  const [liveViewNotifications, setLiveViewNotifications] = useState<LiveViewNotification[]>([]);
 
   // Buscar propostas do banco
   const { data: proposals = [], isLoading, refetch } = useQuery({
@@ -61,6 +71,54 @@ const PropostasPage = () => {
       return data as Proposal[];
     }
   });
+
+  // Real-time subscription para proposal_views
+  useEffect(() => {
+    const channel = supabase
+      .channel('proposal-views-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'proposal_views'
+        },
+        async (payload) => {
+          console.log('🔔 Nova visualização de proposta em tempo real:', payload);
+          
+          const proposalId = payload.new.proposal_id;
+          
+          // Buscar nome do cliente da proposta
+          const proposal = proposals.find(p => p.id === proposalId);
+          const clientName = proposal?.client_name || 'Cliente';
+          
+          // Adicionar notificação
+          const notification: LiveViewNotification = {
+            id: crypto.randomUUID(),
+            proposalId,
+            clientName,
+            timestamp: new Date()
+          };
+          
+          setLiveViewNotifications(prev => [notification, ...prev.slice(0, 4)]);
+          
+          // Remover notificação após 5 segundos
+          setTimeout(() => {
+            setLiveViewNotifications(prev => prev.filter(n => n.id !== notification.id));
+          }, 5000);
+          
+          // Refetch para atualizar contadores
+          queryClient.invalidateQueries({ queryKey: ['proposals'] });
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Realtime proposal_views status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [proposals, queryClient]);
 
   // Filtrar propostas
   const filteredProposals = proposals.filter(p => {
@@ -160,7 +218,36 @@ const PropostasPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 relative">
+      {/* Notificações de Visualização em Tempo Real - Estilo Apple */}
+      <AnimatePresence>
+        {liveViewNotifications.map((notification, index) => (
+          <motion.div
+            key={notification.id}
+            initial={{ opacity: 0, y: -20, x: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            style={{ top: `${80 + index * 70}px` }}
+            className="fixed right-4 z-50 max-w-xs"
+          >
+            <div className="bg-white/95 backdrop-blur-xl border border-white/50 rounded-2xl shadow-xl p-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                <Eye className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-foreground truncate">
+                  {notification.clientName}
+                </p>
+                <p className="text-[10px] text-purple-600 font-medium">
+                  Visualizando proposta agora 👀
+                </p>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
       {/* Header Mobile */}
       {isMobile ? (
         <MobilePageHeader
@@ -271,7 +358,7 @@ const PropostasPage = () => {
             {filteredProposals.map((proposal) => (
               <Card 
                 key={proposal.id} 
-                className="p-4 bg-white/80 backdrop-blur-sm border-white/50 cursor-pointer hover:shadow-md transition-shadow"
+                className="p-4 bg-white/80 backdrop-blur-sm border-white/50 cursor-pointer shadow-md hover:shadow-lg transition-all duration-300"
                 onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}
               >
                 <div className="flex items-start justify-between gap-3">
