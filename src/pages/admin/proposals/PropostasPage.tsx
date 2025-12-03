@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download } from 'lucide-react';
+import { Plus, FileText, Search, Clock, Check, X, Eye, Send, Copy, ExternalLink, MessageSquare, Mail, MoreVertical, Download, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
+import { useAuth } from '@/hooks/useAuth';
+import { useBulkSelection } from '@/hooks/useBulkSelection';
 import MobilePageHeader from '@/components/admin/shared/MobilePageHeader';
+import BulkActionsToolbar from '@/components/admin/orders/BulkActionsToolbar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, isToday, startOfMonth, endOfMonth, formatDistanceToNow } from 'date-fns';
@@ -60,9 +65,12 @@ const PropostasPage = () => {
   const queryClient = useQueryClient();
   const { isMobile } = useResponsiveLayout();
   const { buildPath } = useAdminBasePath();
+  const { isSuperAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('todas');
   const [liveViewNotifications, setLiveViewNotifications] = useState<LiveViewNotification[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Buscar propostas do banco com nome do vendedor
   const { data: proposals = [], isLoading, refetch } = useQuery({
@@ -203,6 +211,58 @@ const PropostasPage = () => {
 
     return matchesSearch && matchesFilter;
   });
+
+  // Bulk selection
+  const proposalIds = filteredProposals.map(p => p.id);
+  const { 
+    selectedIds, 
+    isAllSelected, 
+    selectedCount, 
+    toggleSelectAll, 
+    toggleSelectItem, 
+    clearSelection, 
+    isSelected 
+  } = useBulkSelection(proposalIds);
+
+  // Handler para excluir propostas em lote
+  const handleBulkDelete = async () => {
+    if (selectedCount === 0) return;
+    
+    setIsDeleting(true);
+    try {
+      const idsToDelete = Array.from(selectedIds);
+      
+      // 1. Deletar proposal_views relacionadas
+      await supabase
+        .from('proposal_views')
+        .delete()
+        .in('proposal_id', idsToDelete);
+      
+      // 2. Deletar proposal_logs relacionados
+      await supabase
+        .from('proposal_logs')
+        .delete()
+        .in('proposal_id', idsToDelete);
+      
+      // 3. Deletar as propostas
+      const { error } = await supabase
+        .from('proposals')
+        .delete()
+        .in('id', idsToDelete);
+      
+      if (error) throw error;
+      
+      toast.success(`${selectedCount} proposta${selectedCount > 1 ? 's' : ''} excluída${selectedCount > 1 ? 's' : ''} com sucesso!`);
+      clearSelection();
+      refetch();
+    } catch (error) {
+      console.error('Erro ao excluir propostas:', error);
+      toast.error('Erro ao excluir propostas');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
 
   // Calcular estatísticas
   const pagasCount = proposals.filter(p => ['paga', 'convertida'].includes(p.status)).length;
@@ -394,6 +454,31 @@ const PropostasPage = () => {
           </div>
         </div>
 
+        {/* Bulk Actions Toolbar */}
+        {isSuperAdmin && (
+          <BulkActionsToolbar
+            selectedCount={selectedCount}
+            onBulkDelete={() => setShowDeleteDialog(true)}
+            onClearSelection={clearSelection}
+            loading={isDeleting}
+            entityName="proposta"
+          />
+        )}
+
+        {/* Select All Checkbox */}
+        {isSuperAdmin && filteredProposals.length > 0 && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-sm rounded-lg">
+            <Checkbox
+              checked={isAllSelected}
+              onCheckedChange={toggleSelectAll}
+              className="data-[state=checked]:bg-[#9C1E1E] data-[state=checked]:border-[#9C1E1E]"
+            />
+            <span className="text-xs text-muted-foreground">
+              Selecionar todas ({filteredProposals.length})
+            </span>
+          </div>
+        )}
+
         {/* Lista de Propostas */}
         {isLoading ? (
           <div className="space-y-3">
@@ -427,10 +512,22 @@ const PropostasPage = () => {
             {filteredProposals.map((proposal) => (
               <Card 
                 key={proposal.id} 
-                className="p-4 bg-white/80 backdrop-blur-sm border-white/50 cursor-pointer shadow-md hover:shadow-lg transition-all duration-300"
+                className={`p-4 bg-white/80 backdrop-blur-sm border-white/50 cursor-pointer shadow-md hover:shadow-lg transition-all duration-300 ${
+                  isSelected(proposal.id) ? 'ring-2 ring-[#9C1E1E]' : ''
+                }`}
                 onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}
               >
                 <div className="flex items-start justify-between gap-3">
+                  {/* Checkbox para Super Admin */}
+                  {isSuperAdmin && (
+                    <Checkbox
+                      checked={isSelected(proposal.id)}
+                      onCheckedChange={() => toggleSelectItem(proposal.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-1 data-[state=checked]:bg-[#9C1E1E] data-[state=checked]:border-[#9C1E1E]"
+                    />
+                  )}
+                  
                   <div className="flex-1 min-w-0">
                     {/* Header */}
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -576,6 +673,23 @@ const PropostasPage = () => {
                           Reenviar E-mail
                         </DropdownMenuItem>
                       )}
+                      {isSuperAdmin && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearSelection();
+                              toggleSelectItem(proposal.id);
+                              setShowDeleteDialog(true);
+                            }}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir Proposta
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -594,6 +708,36 @@ const PropostasPage = () => {
           </button>
         )}
       </div>
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Confirmar Exclusão
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Você está prestes a excluir <strong>{selectedCount} proposta{selectedCount > 1 ? 's' : ''}</strong>.
+              </p>
+              <p className="text-red-500 font-medium">
+                ⚠️ Esta ação é irreversível! Todos os dados relacionados (visualizações, logs) também serão excluídos.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Excluindo...' : 'Sim, Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

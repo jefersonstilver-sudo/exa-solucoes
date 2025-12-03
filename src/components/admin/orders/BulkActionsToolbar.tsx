@@ -9,24 +9,29 @@ interface BulkActionsToolbarProps {
   onBulkDelete: () => void;
   onClearSelection: () => void;
   loading?: boolean;
+  entityName?: string; // "pedido" ou "proposta"
 }
 
 const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
   selectedCount,
   onBulkDelete,
   onClearSelection,
-  loading = false
+  loading = false,
+  entityName = 'item'
 }) => {
   const { isSuperAdmin } = useAuth();
 
   if (selectedCount === 0 || !isSuperAdmin) return null;
+
+  const plural = selectedCount !== 1;
+  const entityLabel = `${selectedCount} ${entityName}${plural ? 's' : ''} selecionado${plural ? 's' : ''}`;
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Badge variant="default" className="bg-blue-600">
-            {selectedCount} pedido{selectedCount !== 1 ? 's' : ''} selecionado{selectedCount !== 1 ? 's' : ''}
+            {entityLabel}
           </Badge>
           <span className="text-sm text-blue-700">
             Ações disponíveis para Super Admin
