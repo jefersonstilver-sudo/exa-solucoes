@@ -143,6 +143,30 @@ serve(async (req) => {
         descricao: `Pagamento PIX aprovado para proposta ${proposalId}. Pedido criado: ${conversionResult?.orderId}`
       });
 
+      // ========== NOTIFICAR VENDEDOR SOBRE PAGAMENTO ==========
+      if (conversionResult?.orderId) {
+        console.log('📱 [WEBHOOK-PIX-PROD] Notificando vendedor sobre pagamento...');
+        
+        try {
+          const { error: notifyError } = await supabase.functions.invoke('notify-seller-payment-confirmed', {
+            body: {
+              proposalId,
+              orderId: conversionResult.orderId,
+              paymentAmount: payment.transaction_amount,
+              paymentMethod: 'pix'
+            }
+          });
+
+          if (notifyError) {
+            console.error('⚠️ [WEBHOOK-PIX-PROD] Erro ao notificar vendedor (não crítico):', notifyError);
+          } else {
+            console.log('✅ [WEBHOOK-PIX-PROD] Vendedor notificado com sucesso');
+          }
+        } catch (notifyErr) {
+          console.error('⚠️ [WEBHOOK-PIX-PROD] Exceção ao notificar vendedor:', notifyErr);
+        }
+      }
+
       return new Response(JSON.stringify({ 
         success: true, 
         type: 'proposal_payment',
