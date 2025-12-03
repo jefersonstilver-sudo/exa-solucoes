@@ -141,7 +141,7 @@ serve(async (req) => {
         data_fim: endDate.toISOString().split('T')[0],
         metodo_pagamento: 'cortesia',
         lista_paineis: listaPaineis,
-        predios_selecionados: buildingIds,
+        lista_predios: buildingIds,
         log_pagamento: {
           type: 'cortesia',
           authorized_by: createdBy,
