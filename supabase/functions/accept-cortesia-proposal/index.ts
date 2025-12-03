@@ -146,7 +146,7 @@ serve(async (req) => {
         client_id: userId,
         status: 'pago_pendente_video',
         valor_total: 0,
-        plano_id: proposal.duration_months,
+        plano_meses: proposal.duration_months,
         data_inicio: startDate.toISOString().split('T')[0],
         data_fim: endDate.toISOString().split('T')[0],
         metodo_pagamento: 'cortesia',

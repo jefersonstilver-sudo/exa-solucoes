@@ -92,36 +92,22 @@ serve(async (req) => {
       }
     }
 
-    // Build WhatsApp message - Template SIMPLIFICADO: apenas valor mensal
-    const message = `═══════════════════════════════
-🎯 *PROPOSTA COMERCIAL — EXA MÍDIA*
-═══════════════════════════════
+    // Build WhatsApp message - UMA ÚNICA mensagem profissional e curta
+    const message = `🎯 *PROPOSTA COMERCIAL — EXA MÍDIA*
 
-Olá, *${proposal.client_name?.split(' ')[0] || 'Cliente'}*! 👋
+Olá *${proposal.client_name?.split(' ')[0] || 'Cliente'}*!
 
-📄 *Proposta:* ${proposal.number}
+Você recebeu uma proposta comercial.
 
-📊 *Sua campanha:*
-━━━━━━━━━━━━━━━━━━━━━
-🏢 ${buildingsCount} prédio(s)
-📺 ${proposal.total_panels} tela(s)
-📅 ${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'}
-━━━━━━━━━━━━━━━━━━━━━
+📋 *${proposal.number}*
 
-💰 *Investimento a partir de:*
-*${formatCurrency(proposal.fidel_monthly_value)}/mês*
-
-📋 *Ver proposta completa:*
+👉 *Ver proposta:*
 ${proposalLink}
 
-🎥 *Conheça a EXA:*
-• Vídeo: https://drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ/view
+_Válida até ${expiresAt}_
 
-⏰ _Válida até ${expiresAt}_
-
-*${sellerName}*
-EXA Mídia Digital
-═══════════════════════════════`;
+${sellerName}
+EXA Mídia`;
 
     // Get Z-API config from agents table (using EXA Alert agent for proposals)
     console.log('[SEND-PROPOSAL-WHATSAPP] Usando agente: EXA Alert para envio de propostas');
@@ -155,7 +141,7 @@ EXA Mídia Digital
 
     const zapiUrl = `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiToken}/send-text`;
     
-    // Send main message
+    // Enviar UMA ÚNICA mensagem
     const zapiResponse = await fetch(zapiUrl, {
       method: 'POST',
       headers: {
@@ -175,80 +161,7 @@ EXA Mídia Digital
       throw new Error(zapiResult.message || 'Erro ao enviar WhatsApp');
     }
 
-    console.log('WhatsApp mensagem principal enviada:', zapiResult);
-
-    // Small delay to ensure message order
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Send proposal number as separate message (easy to copy, without dots/dashes)
-    const cleanNumber = proposal.number.replace(/[.-]/g, '');
-    const numberMessage = `📋 *Número da proposta:*
-
-${cleanNumber}`;
-
-    await fetch(zapiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Client-Token': zapiClientToken || '',
-      },
-      body: JSON.stringify({
-        phone: formattedPhone,
-        message: numberMessage,
-      }),
-    });
-
-    console.log('WhatsApp número da proposta enviado');
-
-    // Small delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Send link as separate message (easier to click)
-    const linkMessage = `🔗 *Acesse sua proposta aqui:*
-
-${proposalLink}`;
-
-    await fetch(zapiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Client-Token': zapiClientToken || '',
-      },
-      body: JSON.stringify({
-        phone: formattedPhone,
-        message: linkMessage,
-      }),
-    });
-
-    console.log('WhatsApp link enviado');
-
-    // If seller has phone, send it as separate message for easy copy
-    if (sellerPhone) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const cleanSellerPhone = sellerPhone.replace(/\D/g, '');
-      const formattedSellerPhone = cleanSellerPhone.length === 11 
-        ? `(${cleanSellerPhone.slice(0, 2)}) ${cleanSellerPhone.slice(2, 7)}-${cleanSellerPhone.slice(7)}`
-        : sellerPhone;
-      
-      const phoneMessage = `📞 Dúvidas? Fale comigo:
-
-${formattedSellerPhone}`;
-
-      await fetch(zapiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Client-Token': zapiClientToken || '',
-        },
-        body: JSON.stringify({
-          phone: formattedPhone,
-          message: phoneMessage,
-        }),
-      });
-
-      console.log('WhatsApp telefone do vendedor enviado');
-    }
+    console.log('[SEND-PROPOSAL-WHATSAPP] Mensagem única enviada:', zapiResult);
 
     // Log the action
     await supabase.from('proposal_logs').insert({

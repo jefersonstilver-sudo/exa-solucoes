@@ -118,38 +118,21 @@ serve(async (req) => {
           // Construir link da proposta - usar domínio Lovable
           const proposalLink = `https://64f6806c-c0e0-422b-b85f-955fd5719544.lovableproject.com/propostacomercial/${proposal.id}`;
 
-          // Mensagem WhatsApp - Template Profissional
-          const message = `═══════════════════════════════
-🎁 *PRESENTE ESPECIAL — EXA MÍDIA*
-═══════════════════════════════
+          // Mensagem WhatsApp - Template Curto e Profissional
+          const message = `🎁 *PRESENTE EXCLUSIVO — EXA MÍDIA*
 
-Olá *${client_name}*! 👋
+Olá *${client_name}*!
 
-Temos uma *surpresa exclusiva* para você!
+Você recebeu um presente especial.
 
-📊 *Seu presente inclui:*
-━━━━━━━━━━━━━━━━━━━━━
-🏢 ${buildings?.length || 0} Prédio(s) selecionado(s)
-📺 ${totalPanels} Tela(s) de alta visibilidade  
-📅 ${duration_months} ${duration_months === 1 ? 'mês' : 'meses'} de campanha
-👁️ ${totalImpressions.toLocaleString('pt-BR')} exibições/mês
-━━━━━━━━━━━━━━━━━━━━━
+📋 *${proposalNumber}*
 
-💰 *VALOR: R$ 0,00 (100% CORTESIA)*
-
-📎 *Aceite seu presente aqui:*
+👉 *Aceite aqui:*
 ${proposalLink}
 
-🎥 *Conheça a EXA:*
-• Vídeo Institucional: https://drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ/view
-• Mídia Kit: https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view
+_Válido por 7 dias_
 
-⏰ _Válido por 7 dias_
-
-Estamos à disposição para qualquer dúvida!
-
-*Equipe EXA Mídia* ✨
-═══════════════════════════════`;
+Equipe EXA Mídia`;
 
           // Enviar via Z-API
           const zapiUrl = `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiToken}/send-text`;
