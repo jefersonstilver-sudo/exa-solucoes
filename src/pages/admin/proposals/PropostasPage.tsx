@@ -42,6 +42,9 @@ interface Proposal {
   last_viewed_at: string | null;
   // Conversion fields
   converted_order_id?: string | null;
+  // Seller info
+  created_by?: string | null;
+  seller_name?: string | null;
 }
 
 interface LiveViewNotification {
@@ -60,7 +63,7 @@ const PropostasPage = () => {
   const [activeFilter, setActiveFilter] = useState('todas');
   const [liveViewNotifications, setLiveViewNotifications] = useState<LiveViewNotification[]>([]);
 
-  // Buscar propostas do banco
+  // Buscar propostas do banco com nome do vendedor
   const { data: proposals = [], isLoading, refetch } = useQuery({
     queryKey: ['proposals'],
     queryFn: async () => {
@@ -70,7 +73,21 @@ const PropostasPage = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Proposal[];
+      
+      // Buscar nomes dos vendedores
+      const proposalsWithSellers = await Promise.all((data || []).map(async (proposal: any) => {
+        if (proposal.created_by) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('nome')
+            .eq('id', proposal.created_by)
+            .single();
+          return { ...proposal, seller_name: userData?.nome || null };
+        }
+        return proposal;
+      }));
+      
+      return proposalsWithSellers as Proposal[];
     }
   });
 
@@ -443,8 +460,15 @@ const PropostasPage = () => {
                       )}
                     </div>
                     
-                    {/* Cliente */}
-                    <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
+                    {/* Cliente + Vendedor */}
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
+                      {proposal.seller_name && (
+                        <span className="text-[10px] text-muted-foreground bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0">
+                          👤 {proposal.seller_name}
+                        </span>
+                      )}
+                    </div>
                     
                     {/* Info */}
                     <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[11px] text-muted-foreground">
@@ -463,9 +487,13 @@ const PropostasPage = () => {
                       </span>
                     </div>
 
-                    {/* Data */}
+                    {/* Data - "há quanto tempo" para pendentes, data fixa para outras */}
                     <div className="text-[10px] text-muted-foreground mt-2">
-                      Criada em {format(new Date(proposal.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      {['pendente', 'enviada', 'visualizada'].includes(proposal.status) ? (
+                        <span>📤 Enviada {formatDistanceToNow(new Date(proposal.created_at), { locale: ptBR, addSuffix: true })}</span>
+                      ) : (
+                        <span>Criada em {format(new Date(proposal.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
+                      )}
                     </div>
                   </div>
 

@@ -1168,7 +1168,7 @@ const PropostaPublicaPage = () => {
               Escolha sua condição
             </h2>
 
-            {/* Plano À Vista - Simplificado: apenas valor mensal equivalente */}
+            {/* Plano À Vista - TOTAL em destaque + equivalência mensal */}
             <Card 
               className={`p-4 cursor-pointer transition-all ${
                 selectedPlan === 'avista' 
@@ -1178,25 +1178,32 @@ const PropostaPublicaPage = () => {
               onClick={() => setSelectedPlan('avista')}
             >
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="bg-[#9C1E1E] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                       MELHOR OFERTA
                     </span>
                     <span className="font-bold">PIX À Vista</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Pagamento único</p>
+                  <p className="text-xs text-muted-foreground">Pagamento único • 10% OFF</p>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-[#9C1E1E]">
-                    {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                    {proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    (equivale {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês)
+                  </p>
+                  <div className="mt-1">
+                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                      💰 Economia de 10%
+                    </span>
                   </div>
                 </div>
               </div>
             </Card>
 
-            {/* Plano Fidelidade - Simplificado: apenas valor mensal */}
+            {/* Plano Fidelidade - Valor mensal + total */}
             <Card 
               className={`p-4 cursor-pointer transition-all ${
                 selectedPlan === 'fidelidade' 
@@ -1215,6 +1222,9 @@ const PropostaPublicaPage = () => {
                     {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     <span className="text-sm font-normal text-muted-foreground">/mês</span>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Total: {(proposal.fidel_monthly_value * proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
                 </div>
               </div>
             </Card>
