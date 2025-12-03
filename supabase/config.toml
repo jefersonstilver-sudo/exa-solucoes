@@ -349,6 +349,12 @@ verify_jwt = false
 [functions.force-sync-zapi-conversation]
 verify_jwt = false
 
+[functions.send-proposal-whatsapp]
+verify_jwt = true
+
+[functions.send-proposal-email]
+verify_jwt = true
+
 [[cron]]
 function_name = "billing-scheduler"
 schedule = "0 8 * * *"  # Todos os dias às 08:00

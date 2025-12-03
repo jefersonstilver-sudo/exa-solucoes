@@ -179,7 +179,7 @@ const NovaPropostaPage = () => {
 
       if (error) throw error;
 
-      // Registrar log
+      // Registrar log de criação
       await supabase.from('proposal_logs').insert({
         proposal_id: proposal.id,
         action: 'criada',
@@ -190,22 +190,45 @@ const NovaPropostaPage = () => {
         }
       });
 
-      // TODO: Chamar edge functions para enviar WhatsApp e/ou Email
+      // Enviar via WhatsApp se selecionado
       if (sendOptions.whatsapp && clientData.phone) {
-        // await supabase.functions.invoke('send-proposal-whatsapp', { body: { proposalId: proposal.id } });
-        console.log('Enviando WhatsApp para:', clientData.phone);
+        try {
+          const { error: whatsappError } = await supabase.functions.invoke('send-proposal-whatsapp', { 
+            body: { proposalId: proposal.id } 
+          });
+          if (whatsappError) {
+            console.error('Erro ao enviar WhatsApp:', whatsappError);
+            toast.error('Proposta criada, mas erro ao enviar WhatsApp');
+          } else {
+            toast.success('WhatsApp enviado!');
+          }
+        } catch (err) {
+          console.error('Erro ao enviar WhatsApp:', err);
+        }
       }
 
+      // Enviar via Email se selecionado
       if (sendOptions.email && clientData.email) {
-        // await supabase.functions.invoke('send-proposal-email', { body: { proposalId: proposal.id } });
-        console.log('Enviando Email para:', clientData.email);
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-proposal-email', { 
+            body: { proposalId: proposal.id } 
+          });
+          if (emailError) {
+            console.error('Erro ao enviar Email:', emailError);
+            toast.error('Proposta criada, mas erro ao enviar E-mail');
+          } else {
+            toast.success('E-mail enviado!');
+          }
+        } catch (err) {
+          console.error('Erro ao enviar Email:', err);
+        }
       }
 
       return proposal;
     },
     onSuccess: (proposal) => {
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
-      toast.success(`Proposta ${proposal.number} criada com sucesso!`);
+      toast.success(`Proposta ${proposal.number} criada e enviada!`);
       setSendDialogOpen(false);
       navigate(buildPath('propostas'));
     },
