@@ -100,7 +100,7 @@ ${clientCnpj ? `CNPJ: ${clientCnpj}` : ''}
     const { data: agent, error: agentError } = await supabase
       .from('agents')
       .select('zapi_config')
-      .eq('key', 'sofia')
+      .eq('key', 'exa_alert')
       .single();
 
     if (agentError || !agent?.zapi_config) {
