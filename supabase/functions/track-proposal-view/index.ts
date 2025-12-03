@@ -65,11 +65,28 @@ serve(async (req) => {
 
       console.log('✅ View registered');
 
-    } else if (action === 'leave' && timeSpentSeconds > 0) {
-      // Update time spent on the most recent view
+    } else if (action === 'heartbeat' && timeSpentSeconds > 0) {
+      // Heartbeat: update time incrementally (works on mobile!)
+      const { data: proposal } = await supabase
+        .from('proposals')
+        .select('total_time_spent_seconds')
+        .eq('id', proposalId)
+        .single();
+
+      const newTotalTime = (proposal?.total_time_spent_seconds || 0) + timeSpentSeconds;
+
+      await supabase
+        .from('proposals')
+        .update({
+          total_time_spent_seconds: newTotalTime,
+          last_viewed_at: new Date().toISOString(),
+        })
+        .eq('id', proposalId);
+
+      // Also update the most recent view record
       const { data: recentView } = await supabase
         .from('proposal_views')
-        .select('id')
+        .select('id, time_spent_seconds')
         .eq('proposal_id', proposalId)
         .order('viewed_at', { ascending: false })
         .limit(1)
@@ -78,11 +95,16 @@ serve(async (req) => {
       if (recentView) {
         await supabase
           .from('proposal_views')
-          .update({ time_spent_seconds: timeSpentSeconds })
+          .update({ 
+            time_spent_seconds: (recentView.time_spent_seconds || 0) + timeSpentSeconds 
+          })
           .eq('id', recentView.id);
       }
 
-      // Update total time in proposals
+      console.log(`✅ Heartbeat: +${timeSpentSeconds}s (total: ${newTotalTime}s)`);
+      
+    } else if (action === 'leave' && timeSpentSeconds > 0) {
+      // Legacy leave action (fallback)
       const { data: proposal } = await supabase
         .from('proposals')
         .select('total_time_spent_seconds')
@@ -96,7 +118,7 @@ serve(async (req) => {
         })
         .eq('id', proposalId);
 
-      console.log(`✅ Time updated: ${timeSpentSeconds}s`);
+      console.log(`✅ Leave time: ${timeSpentSeconds}s`);
     }
 
     return new Response(JSON.stringify({ success: true }), {
