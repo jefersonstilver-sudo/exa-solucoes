@@ -9,14 +9,14 @@ import { useSidebarResize } from '@/hooks/useSidebarResize';
 
 const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) => {
   const { isMobile, isTablet } = useAdvancedResponsive();
-  const { width, isDragging, isCollapsed, startResize } = useSidebarResize();
+  const { width, isDragging, startResize } = useSidebarResize();
   
-  // Determine sidebar width based on resize or default
-  const sidebarWidth = isMobile ? "18rem" : isCollapsed ? "64px" : `${width}px`;
+  // Determine sidebar width based on resize
+  const sidebarWidth = isMobile ? "18rem" : `${width}px`;
   
   return (
     <SidebarProvider
-        defaultOpen={!isMobile && !isCollapsed} 
+        defaultOpen={!isMobile} 
         style={{
           "--sidebar-width": sidebarWidth,
           "--sidebar-width-icon": "64px",

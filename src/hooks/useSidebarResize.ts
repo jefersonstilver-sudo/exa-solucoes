@@ -1,16 +1,21 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
 const STORAGE_KEY = 'sidebar-width';
-const MIN_WIDTH = 64;
+const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
-const COLLAPSE_THRESHOLD = 100;
+const COLLAPSE_THRESHOLD = 180;
 const DEFAULT_WIDTH = 280;
 
 export function useSidebarResize() {
   const [width, setWidth] = useState<number>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, parseInt(stored, 10))) : DEFAULT_WIDTH;
+      if (stored) {
+        const parsed = parseInt(stored, 10);
+        // Ensure minimum visible width
+        return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, parsed));
+      }
+      return DEFAULT_WIDTH;
     } catch {
       return DEFAULT_WIDTH;
     }
@@ -29,7 +34,8 @@ export function useSidebarResize() {
     }
   }, [width]);
 
-  const isCollapsed = width <= MIN_WIDTH;
+  // Never auto-collapse - just track if at minimum width
+  const isCollapsed = false;
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
