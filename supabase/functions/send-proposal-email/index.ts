@@ -230,7 +230,7 @@ serve(async (req) => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: 'EXA Mídia <comercial@exa.digital>',
+      from: 'EXA Mídia <comercial@examidia.com.br>',
       to: [proposal.client_email],
       subject: `📄 Proposta ${proposal.number} - EXA Mídia Digital`,
       html: htmlContent,
