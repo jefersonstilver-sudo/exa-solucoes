@@ -6,6 +6,17 @@ const MAX_WIDTH = 400;
 const COLLAPSE_THRESHOLD = 180;
 const DEFAULT_WIDTH = 280;
 
+// Clean up invalid old localStorage values on module load
+try {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    const parsed = parseInt(stored, 10);
+    if (isNaN(parsed) || parsed < MIN_WIDTH) {
+      localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH));
+    }
+  }
+} catch {}
+
 export function useSidebarResize() {
   const [width, setWidth] = useState<number>(() => {
     try {
@@ -13,6 +24,9 @@ export function useSidebarResize() {
       if (stored) {
         const parsed = parseInt(stored, 10);
         // Ensure minimum visible width
+        if (isNaN(parsed) || parsed < MIN_WIDTH) {
+          return DEFAULT_WIDTH;
+        }
         return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, parsed));
       }
       return DEFAULT_WIDTH;

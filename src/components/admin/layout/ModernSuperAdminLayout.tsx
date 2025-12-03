@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import ModernAdminSidebar from './ModernAdminSidebar';
@@ -11,26 +11,32 @@ const ModernSuperAdminLayout = ({ children }: { children?: React.ReactNode }) =>
   const { isMobile, isTablet } = useAdvancedResponsive();
   const { width, isDragging, startResize } = useSidebarResize();
   
+  // Force sidebar open on desktop by setting cookie
+  useEffect(() => {
+    if (!isMobile) {
+      document.cookie = 'sidebar:state=true; path=/; max-age=604800';
+    }
+  }, [isMobile]);
+  
   // Determine sidebar width based on resize
   const sidebarWidth = isMobile ? "18rem" : `${width}px`;
   
   return (
     <SidebarProvider
-        defaultOpen={!isMobile} 
+        defaultOpen={!isMobile}
+        open={isMobile ? undefined : true}
         style={{
           "--sidebar-width": sidebarWidth,
           "--sidebar-width-icon": "64px",
         } as React.CSSProperties}
       >
         <div className={`flex h-screen w-full bg-background overflow-hidden ${isDragging ? 'select-none' : ''}`}>
-          {/* Sidebar sempre renderizada, mas em modo drawer/overlay no mobile */}
-          <div className="relative z-30">
-            <ModernAdminSidebar 
-              width={isMobile ? undefined : width}
-              isDragging={isDragging}
-              onStartResize={isMobile ? undefined : startResize}
-            />
-          </div>
+          {/* Sidebar rendered directly without wrapper */}
+          <ModernAdminSidebar 
+            width={isMobile ? undefined : width}
+            isDragging={isDragging}
+            onStartResize={isMobile ? undefined : startResize}
+          />
           <SidebarInset className="flex flex-col w-full overflow-x-hidden">
             {/* Header with hamburger menu - sempre visível */}
             <header className={`sticky top-0 z-10 h-16 md:h-20 flex items-center border-b px-3 md:px-6 shadow-lg ${
