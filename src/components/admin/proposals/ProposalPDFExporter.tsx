@@ -5,6 +5,8 @@ interface ProposalData {
   id: string;
   number: string;
   client_name: string;
+  client_company_name?: string | null;
+  client_country?: 'BR' | 'AR' | 'PY' | null;
   client_cnpj: string | null;
   client_phone: string | null;
   client_email: string | null;
@@ -221,21 +223,35 @@ export class ProposalPDFExporter {
     this.yPosition += 10;
   }
 
+  private getDocumentLabel(country?: 'BR' | 'AR' | 'PY' | null): string {
+    switch (country) {
+      case 'BR': return 'CNPJ';
+      case 'AR': return 'CUIT';
+      case 'PY': return 'RUC';
+      default: return 'CNPJ/Documento';
+    }
+  }
+
   private drawClientInfo(proposal: ProposalData, isCortesia: boolean = false): void {
     this.drawSectionTitle(isCortesia ? 'PRESENTEADO' : 'DADOS DO CLIENTE');
     
     const startY = this.yPosition;
     const colWidth = this.contentWidth / 2;
     
-    // Layout em duas colunas
+    // Determinar label do documento baseado no país
+    const documentLabel = this.getDocumentLabel(proposal.client_country);
+    
+    // Layout em duas colunas - agora com 3 linhas
     const leftItems = [
-      { label: 'Nome/Razão Social', value: proposal.client_name },
-      { label: 'CNPJ/CPF', value: proposal.client_cnpj || 'Não informado' },
+      { label: 'Nome do Contato', value: proposal.client_name },
+      { label: 'Nome da Empresa', value: proposal.client_company_name || 'Não informado' },
+      { label: documentLabel, value: proposal.client_cnpj || 'Não informado' },
     ];
     
     const rightItems = [
       { label: 'Telefone', value: proposal.client_phone || 'Não informado' },
       { label: 'E-mail', value: proposal.client_email || 'Não informado' },
+      { label: 'País', value: proposal.client_country === 'AR' ? '🇦🇷 Argentina' : proposal.client_country === 'PY' ? '🇵🇾 Paraguai' : '🇧🇷 Brasil' },
     ];
     
     // Coluna esquerda
@@ -267,7 +283,7 @@ export class ProposalPDFExporter {
       this.doc.text(value, this.margin + colWidth, y + 10);
     });
     
-    this.yPosition = startY + 25;
+    this.yPosition = startY + 35;
   }
 
   private drawBuildingsTable(buildings: any[]): void {
