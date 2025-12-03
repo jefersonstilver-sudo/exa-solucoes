@@ -598,7 +598,7 @@ export class ProposalPDFExporter {
     this.yPosition += 35;
   }
 
-  private async drawFooter(proposal: ProposalData, sellerPhone: string, isCortesia: boolean = false): Promise<void> {
+  private async drawFooter(proposal: ProposalData, sellerName: string, sellerPhone: string, isCortesia: boolean = false): Promise<void> {
     const footerY = this.pageHeight - 42;
     
     // Linha separadora
@@ -635,19 +635,25 @@ export class ProposalPDFExporter {
       this.doc.text(`Válida até: ${new Date(proposal.expires_at).toLocaleString('pt-BR')}`, this.margin + 25, footerY + 23);
     }
     
-    // Contato EXA - lado direito
+    // Contato do Vendedor - lado direito
     const rightX = this.pageWidth - this.margin;
     this.setColor(this.colors.darkGray);
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Contato Comercial', rightX, footerY + 4, { align: 'right' });
     
+    // Nome do vendedor em negrito
+    this.setColor(this.colors.exaRed);
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text(sellerName || 'Equipe EXA', rightX, footerY + 10, { align: 'right' });
+    
+    // Telefone do vendedor
     this.setColor(this.colors.mediumGray);
     this.doc.setFontSize(7);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(sellerPhone || '(45) 99141-5856', rightX, footerY + 10, { align: 'right' });
-    this.doc.text('comercial@examidia.com.br', rightX, footerY + 15, { align: 'right' });
-    this.doc.text('www.examidia.com.br', rightX, footerY + 20, { align: 'right' });
+    this.doc.text(sellerPhone || '(45) 99141-5856', rightX, footerY + 16, { align: 'right' });
+    this.doc.text('www.examidia.com.br', rightX, footerY + 21, { align: 'right' });
   }
 
   public async generateProposalPDF(
@@ -685,7 +691,7 @@ export class ProposalPDFExporter {
     this.drawSignatureArea();
     
     // Footer com QR Code e contatos
-    await this.drawFooter(proposal, sellerPhone, isCortesia);
+    await this.drawFooter(proposal, sellerName, sellerPhone, isCortesia);
     
     // Salvar
     const cleanName = proposal.client_name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);

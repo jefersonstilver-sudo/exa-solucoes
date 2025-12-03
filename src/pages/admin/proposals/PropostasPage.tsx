@@ -45,6 +45,7 @@ interface Proposal {
   // Seller info
   created_by?: string | null;
   seller_name?: string | null;
+  seller_phone?: string | null;
 }
 
 interface LiveViewNotification {
@@ -74,15 +75,19 @@ const PropostasPage = () => {
       
       if (error) throw error;
       
-      // Buscar nomes dos vendedores
+      // Buscar nomes e telefones dos vendedores
       const proposalsWithSellers = await Promise.all((data || []).map(async (proposal: any) => {
         if (proposal.created_by) {
           const { data: userData } = await supabase
             .from('users')
-            .select('nome')
+            .select('nome, telefone')
             .eq('id', proposal.created_by)
             .single();
-          return { ...proposal, seller_name: userData?.nome || null };
+          return { 
+            ...proposal, 
+            seller_name: userData?.nome || null,
+            seller_phone: userData?.telefone || null 
+          };
         }
         return proposal;
       }));
@@ -539,9 +544,10 @@ const PropostasPage = () => {
                           
                           await exporter.generateProposalPDF(
                             proposal as any, 
-                            'Equipe EXA',
+                            proposal.seller_name || 'Equipe EXA',
                             isCortesia,
-                            baseTotalValue
+                            baseTotalValue,
+                            proposal.seller_phone || '(45) 99141-5856'
                           );
                           toast.success('PDF gerado!');
                         } catch (err) {
