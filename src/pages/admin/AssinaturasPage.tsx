@@ -111,70 +111,68 @@ const AssinaturasPage = () => {
     return <Badge variant="outline" className="text-[10px]">{tipo}</Badge>;
   };
 
-  // Mobile Layout
+  // Mobile Layout - Apple-like Clean Design
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-background pb-20">
-        {/* Mobile Header */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] shadow-lg">
-          <div className="p-3">
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pb-20">
+        {/* Mobile Header - Clean glassmorphism */}
+        <div className="sticky top-0 z-10 mobile-header-clean">
+          <div className="px-3 py-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-white" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
+                  <CreditCard className="w-4.5 h-4.5 text-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-base font-semibold text-white">Assinaturas</h1>
-                  <p className="text-[10px] text-white/80">{filteredOrders.length} fidelidade</p>
+                  <h1 className="text-lg font-semibold text-foreground">Assinaturas</h1>
+                  <p className="text-xs text-muted-foreground">{filteredOrders.length} fidelidade</p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => refetch()} className="text-white hover:bg-white/20 h-8 w-8 p-0">
+              <Button variant="ghost" size="sm" onClick={() => refetch()} className="h-8 w-8 p-0 hover:bg-black/5">
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Mobile Stats */}
-        <div className="p-3 bg-white border-b">
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <div>
-              <p className="text-[10px] text-muted-foreground">Total</p>
-              <p className="text-sm font-bold">{stats.total}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-muted-foreground">Ativos</p>
-              <p className="text-sm font-bold text-emerald-600">{stats.ativos}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-muted-foreground">Pendentes</p>
-              <p className="text-sm font-bold text-amber-600">{stats.pendentes}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-muted-foreground">MRR</p>
-              <p className="text-sm font-bold text-primary">{formatCurrency(stats.mrr)}</p>
-            </div>
+        {/* Mobile Stats - Glassmorphism */}
+        <div className="grid grid-cols-4 gap-2 px-3 py-3">
+          <div className="glass-card-mobile-subtle p-2 text-center">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase">Total</p>
+            <p className="text-base font-bold">{stats.total}</p>
+          </div>
+          <div className="glass-card-mobile-subtle p-2 text-center">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase">Ativos</p>
+            <p className="text-base font-bold text-emerald-600">{stats.ativos}</p>
+          </div>
+          <div className="glass-card-mobile-subtle p-2 text-center">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase">Pendentes</p>
+            <p className="text-base font-bold text-amber-600">{stats.pendentes}</p>
+          </div>
+          <div className="glass-card-mobile-subtle p-2 text-center">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase">MRR</p>
+            <p className="text-base font-bold text-primary">{formatCurrency(stats.mrr)}</p>
           </div>
         </div>
 
-        {/* Search */}
-        <div className="p-3 bg-white border-b">
+        {/* Search - Clean style */}
+        <div className="px-3 py-2 border-b border-border/30">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 h-8 text-sm"
+              className="pl-8 h-9 text-sm bg-muted/50 border-0"
             />
           </div>
         </div>
 
         {/* Mobile List */}
-        <div className="p-3 space-y-2">
+        <div className="px-3 py-2 space-y-2">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
@@ -182,30 +180,28 @@ const AssinaturasPage = () => {
             </div>
           ) : (
             filteredOrders.map((order) => (
-              <Card 
+              <div 
                 key={order.id} 
-                className="overflow-hidden border-l-2 border-l-primary hover:shadow-md transition-all cursor-pointer"
+                className="glass-card-mobile p-3 cursor-pointer active:scale-[0.98] transition-transform"
                 onClick={() => navigate(`/super_admin/pedidos/${order.id}`)}
               >
-                <CardContent className="p-3">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{order.client_name || 'Cliente'}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{order.client_email}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      {getStatusBadge(order.status)}
-                      {getPaymentBadge(order.tipo_pagamento || '')}
-                    </div>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{order.client_name || 'Cliente'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{order.client_email}</p>
                   </div>
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted-foreground">
-                      {order.plano_meses} {order.plano_meses === 1 ? 'mês' : 'meses'}
-                    </span>
-                    <span className="font-semibold">{formatCurrency(order.valor_total)}</span>
+                  <div className="flex flex-col items-end gap-1">
+                    {getStatusBadge(order.status)}
+                    {getPaymentBadge(order.tipo_pagamento || '')}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">
+                    {order.plano_meses} {order.plano_meses === 1 ? 'mês' : 'meses'}
+                  </span>
+                  <span className="font-semibold">{formatCurrency(order.valor_total)}</span>
+                </div>
+              </div>
             ))
           )}
         </div>

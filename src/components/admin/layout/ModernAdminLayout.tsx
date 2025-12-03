@@ -27,18 +27,22 @@ const ModernAdminLayout: React.FC<ModernAdminLayoutProps> = ({ children }) => {
           <ModernAdminSidebar />
         </div>
         <SidebarInset className="flex flex-col w-full overflow-x-hidden">
-          {/* Header with hamburger menu - sempre visível */}
-          <header className={`sticky top-0 z-10 flex items-center border-b px-3 md:px-4 ${
+          {/* Header - Apple-like clean design */}
+          <header className={`sticky top-0 z-10 flex items-center px-3 md:px-4 ${
             isMobile 
-              ? 'h-14 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-white/20' 
-              : 'h-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-border'
+              ? 'h-12 mobile-header-clean' 
+              : 'h-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border'
           }`}>
-            <SidebarTrigger className={`mr-3 md:mr-4 h-9 w-9 rounded-md transition-colors touch-target ${
-              isMobile ? 'hover:bg-white/20 text-white' : 'hover:bg-accent hover:text-accent-foreground'
+            <SidebarTrigger className={`mr-2 md:mr-4 h-8 w-8 rounded-lg transition-colors touch-target ${
+              isMobile 
+                ? 'hover:bg-black/5 text-foreground' 
+                : 'hover:bg-accent hover:text-accent-foreground'
             }`} />
             <ModernAdminHeader />
           </header>
-          <main className={`flex-1 p-3 md:p-6 overflow-y-auto bg-background min-h-0 overflow-x-hidden ${isMobile ? 'pb-20' : ''}`}>
+          <main className={`flex-1 overflow-y-auto bg-gradient-to-b from-background to-muted/20 min-h-0 overflow-x-hidden ${
+            isMobile ? 'pb-20' : 'p-6'
+          }`}>
             {children || <Outlet />}
           </main>
           {isMobile && <MobileBottomNav />}

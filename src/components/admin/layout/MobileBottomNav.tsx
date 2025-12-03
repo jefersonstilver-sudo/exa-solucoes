@@ -19,14 +19,6 @@ const MobileBottomNav = () => {
   const { buildPath } = useAdminBasePath();
   const { permissions, userInfo } = useUserPermissions();
 
-  // Debug: verificar role
-  console.log('🔍 MobileBottomNav - Role:', {
-    isSuperAdmin: userInfo.isSuperAdmin,
-    isAdmin: userInfo.isAdmin,
-    isFinancialAdmin: userInfo.isFinancialAdmin,
-    isMarketingAdmin: userInfo.isMarketingAdmin
-  });
-
   // Definir itens baseado na role do usuário
   const getNavItems = (): NavItem[] => {
     const items: NavItem[] = [
@@ -37,7 +29,7 @@ const MobileBottomNav = () => {
       }
     ];
 
-    // Itens específicos por role - ATUALIZADO
+    // Itens específicos por role
     if (userInfo.isSuperAdmin) {
       items.push(
         {
@@ -47,7 +39,7 @@ const MobileBottomNav = () => {
         },
         {
           icon: Activity,
-          label: 'Monitoramento',
+          label: 'Monitor',
           path: buildPath('monitoramento-ia'),
         },
         {
@@ -120,20 +112,21 @@ const MobileBottomNav = () => {
   const navItems = getNavItems();
 
   const isActive = (path: string) => {
-    // Exact match for dashboard
     if (path === buildPath('')) {
       return location.pathname === path;
     }
-    // For other paths, check if current path starts with it
     return location.pathname.includes(path.split('/').pop() || '');
   };
 
+  // EXA brand color for active state
+  const activeColor = 'hsl(0, 67%, 37%)'; // #9C1E1E in HSL
+
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] border-t border-white/20 shadow-2xl" 
+      className="fixed bottom-0 left-0 right-0 z-50 mobile-bottom-nav-clean" 
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="flex items-center justify-around h-16 max-w-screen-xl mx-auto">
+      <div className="flex items-center justify-around h-14 max-w-screen-xl mx-auto px-1">
         {navItems.map((item, idx) => {
           const active = item.path ? isActive(item.path) : false;
           const Icon = item.icon;
@@ -146,13 +139,13 @@ const MobileBottomNav = () => {
                 trigger={
                   <button
                     className={cn(
-                      'flex flex-col items-center justify-center flex-1 h-full gap-1',
-                      'transition-all duration-200 relative touch-target rounded-lg',
-                      'text-white/80 hover:bg-white/10 hover:text-white'
+                      'flex flex-col items-center justify-center flex-1 h-full gap-0.5 py-1',
+                      'transition-all duration-200 relative rounded-lg',
+                      'text-muted-foreground hover:text-foreground hover:bg-black/5'
                     )}
                   >
-                    <Icon className="h-7 w-7 transition-all" />
-                    <span className="text-[11px] font-semibold text-white/90">
+                    <Icon className="h-5 w-5 transition-all" />
+                    <span className="text-[10px] font-medium">
                       {item.label}
                     </span>
                   </button>
@@ -167,34 +160,35 @@ const MobileBottomNav = () => {
               key={item.path || idx}
               to={item.path!}
               className={cn(
-                'flex flex-col items-center justify-center flex-1 h-full gap-1',
-                'transition-all duration-200 relative touch-target rounded-lg',
+                'flex flex-col items-center justify-center flex-1 h-full gap-0.5 py-1',
+                'transition-all duration-200 relative rounded-lg',
                 active
-                  ? 'bg-white/20 text-white'
-                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  ? 'text-[#9C1E1E]'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-black/5'
               )}
             >
               <div className="relative">
                 <Icon className={cn(
-                  'h-7 w-7 transition-all',
-                  active && 'scale-110 text-[#00FFAB]'
+                  'h-5 w-5 transition-all',
+                  active && 'scale-105'
                 )} />
                 {item.badge && item.badge > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#00FFAB] text-gray-900 text-[10px] font-bold flex items-center justify-center shadow-lg">
+                  <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-[#9C1E1E] text-white text-[8px] font-bold flex items-center justify-center">
                     {item.badge > 9 ? '9+' : item.badge}
                   </span>
                 )}
               </div>
               <span
                 className={cn(
-                  'text-[11px] font-semibold',
-                  active ? 'text-white' : 'text-white/90'
+                  'text-[10px] font-medium',
+                  active && 'font-semibold'
                 )}
               >
                 {item.label}
               </span>
+              {/* Active indicator - subtle top line */}
               {active && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-[#00FFAB] rounded-b-full shadow-lg" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#9C1E1E] rounded-full" />
               )}
             </NavLink>
           );
