@@ -247,7 +247,8 @@ const NovaPropostaPage = () => {
           status: 'enviada',
           sent_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
-          created_by: user?.id
+          created_by: user?.id,
+          seller_name: currentUser?.nome || currentUser?.email || 'Vendedor'
         }])
         .select()
         .single();

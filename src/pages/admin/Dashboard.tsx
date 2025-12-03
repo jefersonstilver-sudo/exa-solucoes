@@ -8,9 +8,11 @@ import DashboardErrorState from '@/components/admin/dashboard/DashboardErrorStat
 import DashboardLoadingState from '@/components/admin/dashboard/DashboardLoadingState';
 import UnifiedStatsRow from '@/components/admin/dashboard/UnifiedStatsRow';
 import AgentStatsRow from '@/components/admin/dashboard/AgentStatsRow';
+import ProposalStatsRow from '@/components/admin/dashboard/ProposalStatsRow';
 import CRMInboxPreview from '@/components/admin/dashboard/CRMInboxPreview';
 import PanelsStatusCard from '@/components/admin/dashboard/PanelsStatusCard';
 import RecentSalesCard from '@/components/admin/dashboard/RecentSalesCard';
+import SellersRankingCard from '@/components/admin/dashboard/SellersRankingCard';
 import { ElegantPeriodType, getElegantPeriodDates } from '@/components/admin/dashboard/ElegantPeriodButton';
 
 const Dashboard = () => {
@@ -88,7 +90,12 @@ const Dashboard = () => {
         <UnifiedStatsRow stats={unifiedStats} />
 
         {/* Agent Stats Row - Segunda linha com métricas por agente */}
-        {showSecondaryStats && <AgentStatsRow stats={unifiedStats} />}
+        {showSecondaryStats && (
+          <>
+            <AgentStatsRow stats={unifiedStats} />
+            <ProposalStatsRow stats={unifiedStats} />
+          </>
+        )}
 
         {/* Priority Cards Grid - Mobile: Stack, Desktop: 3 cols */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -107,7 +114,10 @@ const Dashboard = () => {
             }}
             quedasPeriodo={unifiedStats.quedasPeriodo}
           />
-          <RecentSalesCard />
+          <SellersRankingCard 
+            vendedores={unifiedStats.propostasPorVendedor}
+            loading={unifiedStats.loading}
+          />
         </div>
 
         {/* Charts - Compactos */}

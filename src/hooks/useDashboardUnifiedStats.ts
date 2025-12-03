@@ -14,6 +14,16 @@ export interface AgentConversationStats {
   enviadasPorTipo: Record<string, number>;
 }
 
+export interface VendedorProposalStats {
+  vendedorId: string;
+  vendedorNome: string;
+  enviadas: number;
+  aguardando: number;
+  aceitas: number;
+  valorVendido: number;
+  taxaConversao: number;
+}
+
 export interface UnifiedDashboardStats {
   cadastros: number;
   cadastrosAnterior: number;
@@ -45,6 +55,12 @@ export interface UnifiedDashboardStats {
     benefit_choice: string;
     benefit_chosen_at: string;
   }>;
+  // Propostas
+  propostasEnviadas: number;
+  propostasAguardando: number;
+  propostasAceitas: number;
+  propostasValorPotencial: number;
+  propostasPorVendedor: VendedorProposalStats[];
   loading: boolean;
 }
 
@@ -71,6 +87,11 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
     quedasPeriodo: 0,
     vouchersPendentes: 0,
     vouchersList: [],
+    propostasEnviadas: 0,
+    propostasAguardando: 0,
+    propostasAceitas: 0,
+    propostasValorPotencial: 0,
+    propostasPorVendedor: [],
     loading: true
   });
 
@@ -270,6 +291,62 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         .is('gift_code', null)
         .order('benefit_chosen_at', { ascending: false });
 
+      // 7. Propostas do Período
+      const { data: propostasData } = await supabase
+        .from('proposals')
+        .select('id, status, cash_total_value, created_by, seller_name')
+        .gte('created_at', start)
+        .lte('created_at', end);
+
+      const propostasEnviadas = propostasData?.length || 0;
+      const propostasAguardando = propostasData?.filter(p => 
+        ['enviada', 'visualizada'].includes(p.status)
+      ).length || 0;
+      const propostasAceitas = propostasData?.filter(p => 
+        ['aceita', 'convertida'].includes(p.status)
+      ).length || 0;
+      const propostasValorPotencial = propostasData?.reduce((sum, p) => 
+        sum + (p.cash_total_value || 0), 0
+      ) || 0;
+
+      // Agrupar por vendedor
+      const vendedoresMap: Record<string, VendedorProposalStats> = {};
+      propostasData?.forEach(p => {
+        const vendedorId = p.created_by || 'unknown';
+        const vendedorNome = p.seller_name || 'Vendedor';
+        
+        if (!vendedoresMap[vendedorId]) {
+          vendedoresMap[vendedorId] = {
+            vendedorId,
+            vendedorNome,
+            enviadas: 0,
+            aguardando: 0,
+            aceitas: 0,
+            valorVendido: 0,
+            taxaConversao: 0
+          };
+        }
+        
+        vendedoresMap[vendedorId].enviadas++;
+        
+        if (['enviada', 'visualizada'].includes(p.status)) {
+          vendedoresMap[vendedorId].aguardando++;
+        }
+        
+        if (['aceita', 'convertida'].includes(p.status)) {
+          vendedoresMap[vendedorId].aceitas++;
+          vendedoresMap[vendedorId].valorVendido += p.cash_total_value || 0;
+        }
+      });
+
+      // Calcular taxa de conversão e ordenar por valor vendido
+      const propostasPorVendedor = Object.values(vendedoresMap)
+        .map(v => ({
+          ...v,
+          taxaConversao: v.enviadas > 0 ? (v.aceitas / v.enviadas) * 100 : 0
+        }))
+        .sort((a, b) => b.valorVendido - a.valorVendido);
+
       setStats({
         cadastros: cadastros || 0,
         cadastrosAnterior: cadastrosAnterior || 0,
@@ -292,6 +369,11 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         quedasPeriodo,
         vouchersPendentes: vouchers?.length || 0,
         vouchersList: vouchers || [],
+        propostasEnviadas,
+        propostasAguardando,
+        propostasAceitas,
+        propostasValorPotencial,
+        propostasPorVendedor,
         loading: false
       });
     } catch (error) {
