@@ -2447,6 +2447,54 @@ export type Database = {
         }
         Relationships: []
       }
+      cortesia_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string | null
+          expires_at: string
+          id: string
+          request_data: Json
+          used_at: string | null
+          validated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          request_data: Json
+          used_at?: string | null
+          validated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          request_data?: Json
+          used_at?: string | null
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cortesia_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cortesia_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_security_events: {
         Row: {
           coupon_code: string | null
