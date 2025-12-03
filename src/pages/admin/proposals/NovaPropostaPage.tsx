@@ -50,6 +50,9 @@ const NovaPropostaPage = () => {
   const [overwriteCashValue, setOverwriteCashValue] = useState(false);
   const [cashValue, setCashValue] = useState('');
   
+  // Validade da proposta
+  const [validityHours, setValidityHours] = useState(24);
+  
   // Dialog de envio
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendViaWhatsApp, setSendViaWhatsApp] = useState(true);
@@ -61,6 +64,13 @@ const NovaPropostaPage = () => {
     { value: 3, label: '3 meses', discount: 20 },
     { value: 6, label: '6 meses', discount: 30 },
     { value: 12, label: '12 meses', discount: 37.5 },
+  ];
+
+  // Opções de validade da proposta
+  const validityOptions = [
+    { value: 24, label: '24 horas', icon: '⚡' },
+    { value: 72, label: '72 horas', icon: '🕐' },
+    { value: 168, label: '7 dias', icon: '📅' },
   ];
 
   // Buscar prédios ativos do banco de dados
@@ -171,7 +181,7 @@ const NovaPropostaPage = () => {
           duration_months: durationMonths,
           status: 'enviada',
           sent_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 horas
+          expires_at: new Date(Date.now() + validityHours * 60 * 60 * 1000).toISOString(),
           created_by: user?.id
         }])
         .select()
@@ -480,6 +490,28 @@ const NovaPropostaPage = () => {
                         {option.discount}% OFF
                       </div>
                     )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Seletor de Validade da Proposta */}
+            <div>
+              <Label className="text-xs mb-2 block">⏰ Validade da Proposta *</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {validityOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setValidityHours(option.value)}
+                    className={`p-3 rounded-lg border-2 text-center transition-all ${
+                      validityHours === option.value
+                        ? 'border-amber-500 bg-amber-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-lg">{option.icon}</div>
+                    <div className="font-medium text-sm">{option.label}</div>
                   </button>
                 ))}
               </div>
