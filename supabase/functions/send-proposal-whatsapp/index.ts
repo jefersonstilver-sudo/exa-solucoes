@@ -66,8 +66,8 @@ serve(async (req) => {
     // Calculate total fidelity value
     const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
 
-    // Build proposal link - CORRETO: examidia.com.br
-    const proposalLink = `https://examidia.com.br/propostacomercial/${proposal.id}`;
+    // Build proposal link - usar domínio Lovable (funciona!)
+    const proposalLink = `https://64f6806c-c0e0-422b-b85f-955fd5719544.lovableproject.com/propostacomercial/${proposal.id}`;
 
     // Format expiration date
     const expiresAt = proposal.expires_at 
@@ -92,23 +92,37 @@ serve(async (req) => {
       }
     }
 
-    // Build WhatsApp message - Mensagem principal
-    const message = `🎯 *Proposta Comercial — EXA Mídia*
+    // Build WhatsApp message - Template Profissional
+    const message = `═══════════════════════════════
+🎯 *PROPOSTA COMERCIAL — EXA MÍDIA*
+═══════════════════════════════
 
-Olá, ${proposal.client_name?.split(' ')[0] || 'Cliente'}!
+Olá, *${proposal.client_name?.split(' ')[0] || 'Cliente'}*! 👋
 
-📄 Proposta: *${proposal.number}*
-🏢 ${buildingsCount} prédios | 📺 ${proposal.total_panels} telas
-👁️ ${(proposal.total_impressions_month || 0).toLocaleString('pt-BR')} impressões/mês
+📄 *Proposta:* ${proposal.number}
 
-💳 Fidelidade: *${formatCurrency(proposal.fidel_monthly_value)}/mês* (${proposal.duration_months}x)
-💵 Total: *${formatCurrency(fidelTotal)}*
-✨ À Vista: *${formatCurrency(proposal.cash_total_value)}* (10% OFF)
+📊 *Detalhes da campanha:*
+━━━━━━━━━━━━━━━━━━━━━
+🏢 ${buildingsCount} prédio(s) selecionado(s)
+📺 ${proposal.total_panels} tela(s) de alta visibilidade
+👁️ ${(proposal.total_impressions_month || 0).toLocaleString('pt-BR')} exibições/mês
+📅 ${proposal.duration_months} ${proposal.duration_months === 1 ? 'mês' : 'meses'} de campanha
+━━━━━━━━━━━━━━━━━━━━━
 
-⏰ Válida até ${expiresAt}
+💰 *Condições comerciais:*
+• Fidelidade: *${formatCurrency(proposal.fidel_monthly_value)}/mês* (${proposal.duration_months}x)
+• Total contrato: *${formatCurrency(fidelTotal)}*
+• ✨ *À Vista com 10% OFF:* *${formatCurrency(proposal.cash_total_value)}*
 
-_${sellerName}_
-EXA Mídia Digital`;
+🎥 *Conheça a EXA:*
+• Vídeo Institucional: https://drive.google.com/file/d/19g-1y4dzi60ydc5yXJKDD6sW6MPpyCaZ/view
+• Mídia Kit: https://drive.google.com/file/d/1hdg4-NcTZexrMGwtLnzBP9eFefBY97iz/view
+
+⏰ _Válida até ${expiresAt}_
+
+*${sellerName}*
+EXA Mídia Digital
+═══════════════════════════════`;
 
     // Get Z-API config from agents table (using EXA Alert agent for proposals)
     console.log('[SEND-PROPOSAL-WHATSAPP] Usando agente: EXA Alert para envio de propostas');
