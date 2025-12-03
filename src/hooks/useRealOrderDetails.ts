@@ -98,6 +98,7 @@ export const useRealOrderDetails = (orderId: string) => {
             data_inicio,
             data_fim,
             client_id,
+            client_name,
             nome_pedido,
             compliance_data,
             log_pagamento,
@@ -111,7 +112,8 @@ export const useRealOrderDetails = (orderId: string) => {
             total_parcelas,
             status_adimplencia,
             users!pedidos_client_id_fkey (
-              email
+              email,
+              nome
             )
           `)
           .eq('id', orderId)
@@ -124,19 +126,22 @@ export const useRealOrderDetails = (orderId: string) => {
           return;
         }
 
-        // Buscar nome real do cliente via edge function
-        let clientName = order.users?.email?.split('@')[0] || 'Cliente';
+        // Priorizar client_name do pedido, depois nome do usuário, depois email
+        let clientName = order.client_name || order.users?.nome || order.users?.email?.split('@')[0] || 'Cliente';
         
-        try {
-          const { data: usersData, error: usersError } = await supabase.functions.invoke('get-users-extended', {
-            body: { userIds: [order.client_id] }
-          });
-          
-          if (!usersError && usersData?.users && usersData.users.length > 0) {
-            clientName = usersData.users[0].name || clientName;
+        // Fallback: se ainda não tiver nome, buscar via edge function
+        if (!order.client_name && !order.users?.nome) {
+          try {
+            const { data: usersData, error: usersError } = await supabase.functions.invoke('get-users-extended', {
+              body: { userIds: [order.client_id] }
+            });
+            
+            if (!usersError && usersData?.users && usersData.users.length > 0) {
+              clientName = usersData.users[0].name || clientName;
+            }
+          } catch (error) {
+            console.error('Erro ao buscar nome do cliente:', error);
           }
-        } catch (error) {
-          console.error('Erro ao buscar nome do cliente:', error);
         }
 
         // Buscar dados do termo de fidelidade aceito

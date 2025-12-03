@@ -202,35 +202,35 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   const subtotal = order.valor_total;
   const desconto = order.cupom_id ? subtotal * 0.1 : 0;
   return <div className="w-full max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 overflow-hidden">
-      {/* HEADER MINIMALISTA PROFISSIONAL */}
-      <div className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] text-white px-6 py-5 border-b-2 border-gray-200">
-        <div className="flex justify-between items-center">
+      {/* HEADER MINIMALISTA PROFISSIONAL - RESPONSIVO */}
+      <div className="bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] text-white px-4 lg:px-6 py-4 lg:py-5 border-b-2 border-gray-200">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           {/* Logo e Info */}
-          <div className="flex items-center gap-6">
-            <img src={exaLogo} alt="EXA" className="h-10 w-auto brightness-0 invert" />
-            <div className="border-l border-white/30 pl-6">
-              <p className="text-xs text-white/80 mb-0.5">Relatório de Pedido</p>
-              <p className="text-sm font-semibold">#{order.id.substring(0, 8).toUpperCase()}</p>
+          <div className="flex items-center gap-4 lg:gap-6">
+            <img src={exaLogo} alt="EXA" className="h-8 lg:h-10 w-auto brightness-0 invert" />
+            <div className="border-l border-white/30 pl-4 lg:pl-6">
+              <p className="text-[10px] lg:text-xs text-white/80 mb-0.5">Relatório de Pedido</p>
+              <p className="text-xs lg:text-sm font-semibold">#{order.id.substring(0, 8).toUpperCase()}</p>
             </div>
           </div>
           
-          {/* Info Rápida */}
-          <div className="flex items-center gap-6 text-xs">
-            <div>
-              <p className="text-white/70">Cliente</p>
-              <p className="font-semibold">{order.client_name}</p>
+          {/* Info Rápida - Responsivo */}
+          <div className="flex flex-wrap items-center gap-3 lg:gap-6 text-xs w-full lg:w-auto">
+            <div className="min-w-0">
+              <p className="text-white/70 text-[10px] lg:text-xs">Cliente</p>
+              <p className="font-semibold truncate max-w-[120px] sm:max-w-[180px] lg:max-w-none">{order.client_name}</p>
             </div>
             <div>
-              <p className="text-white/70">Valor</p>
+              <p className="text-white/70 text-[10px] lg:text-xs">Valor</p>
               <p className="font-semibold">{formatCurrency(order.valor_total)}</p>
             </div>
-            <div className={`${statusConfig.bg} ${statusConfig.text} px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5`}>
+            <div className={`${statusConfig.bg} ${statusConfig.text} px-2 lg:px-3 py-1 lg:py-1.5 rounded text-[10px] lg:text-xs font-semibold flex items-center gap-1 lg:gap-1.5`}>
               {statusConfig.icon}
-              {statusConfig.label}
+              <span className="hidden sm:inline">{statusConfig.label}</span>
             </div>
-            <div className="text-white/70 text-right">
+            <div className="text-white/70 text-right hidden sm:block">
               <p className="text-[10px]">Emitido em</p>
-              <p className="font-medium">{emittedAt}</p>
+              <p className="font-medium text-[10px] lg:text-xs">{emittedAt}</p>
             </div>
           </div>
         </div>
@@ -246,7 +246,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </div>
           
           <div className="p-4">
-            <div className="grid grid-cols-4 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
               <div>
                 <p className="text-gray-500 mb-1">Data de Criação</p>
                 <p className="font-semibold text-gray-900">{formatDate(order.created_at)}</p>
@@ -274,7 +274,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </div>
           
           <div className="p-4">
-            <div className="grid grid-cols-3 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
               <div>
                 <p className="text-gray-500 mb-1">Nome Completo</p>
                 <p className="font-semibold text-gray-900">{order.client_name}</p>
@@ -362,7 +362,7 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
           </div>
           
           <div className="p-4">
-            <div className="grid grid-cols-4 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
               <div>
                 <p className="text-gray-500 mb-1">Tipo de Pagamento</p>
                 <p className="font-semibold text-gray-900">
