@@ -4,6 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Force sidebar background - Definitive fix for CSS variable issues */
+[data-sidebar="sidebar"] {
+  background: linear-gradient(180deg, #1A0A0A 0%, #2D1515 50%, #3D1F1F 100%) !important;
+}
+
 /* Critical CSS only - Removed unused styles */
 @layer base {
   * {
