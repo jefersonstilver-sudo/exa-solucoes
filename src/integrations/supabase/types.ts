@@ -5231,6 +5231,7 @@ export type Database = {
           parcela_atual: number | null
           plano_meses: number
           price_sync_verified: boolean | null
+          proposal_id: string | null
           proxima_cobranca: string | null
           source_tentativa_id: string | null
           status: string
@@ -5277,6 +5278,7 @@ export type Database = {
           parcela_atual?: number | null
           plano_meses?: number
           price_sync_verified?: boolean | null
+          proposal_id?: string | null
           proxima_cobranca?: string | null
           source_tentativa_id?: string | null
           status?: string
@@ -5323,6 +5325,7 @@ export type Database = {
           parcela_atual?: number | null
           plano_meses?: number
           price_sync_verified?: boolean | null
+          proposal_id?: string | null
           proxima_cobranca?: string | null
           source_tentativa_id?: string | null
           status?: string
@@ -5355,6 +5358,13 @@ export type Database = {
             columns: ["cupom_id"]
             isOneToOne: false
             referencedRelation: "cupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
             referencedColumns: ["id"]
           },
         ]
@@ -5659,6 +5669,7 @@ export type Database = {
           client_email: string | null
           client_name: string
           client_phone: string | null
+          converted_order_id: string | null
           created_at: string | null
           created_by: string | null
           discount_percent: number | null
@@ -5696,6 +5707,7 @@ export type Database = {
           client_email?: string | null
           client_name: string
           client_phone?: string | null
+          converted_order_id?: string | null
           created_at?: string | null
           created_by?: string | null
           discount_percent?: number | null
@@ -5733,6 +5745,7 @@ export type Database = {
           client_email?: string | null
           client_name?: string
           client_phone?: string | null
+          converted_order_id?: string | null
           created_at?: string | null
           created_by?: string | null
           discount_percent?: number | null
@@ -5760,7 +5773,15 @@ export type Database = {
           view_count?: number | null
           viewed_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "proposals_converted_order_id_fkey"
+            columns: ["converted_order_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       provider_alerts: {
         Row: {

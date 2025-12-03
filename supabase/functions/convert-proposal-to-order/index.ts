@@ -20,35 +20,57 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { proposalId, paymentId, paymentData } = await req.json();
+  const startTime = Date.now();
+  console.log('========================================');
+  console.log('🔄 [CONVERT-PROPOSAL] INÍCIO DA CONVERSÃO');
+  console.log('========================================');
 
-    console.log('🔄 [CONVERT-PROPOSAL] Iniciando conversão:', { proposalId, paymentId });
+  try {
+    const body = await req.json();
+    const { proposalId, paymentId, paymentData } = body;
+
+    console.log('📥 Payload recebido:', JSON.stringify({ proposalId, paymentId, paymentData }, null, 2));
 
     if (!proposalId) {
+      console.error('❌ ERRO: proposalId é obrigatório');
       throw new Error('proposalId é obrigatório');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    console.log('🔗 Conectando ao Supabase:', supabaseUrl);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // 1. Buscar proposta completa
+    console.log('📋 Buscando proposta:', proposalId);
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
       .select('*')
       .eq('id', proposalId)
       .single();
 
-    if (proposalError || !proposal) {
-      throw new Error(`Proposta não encontrada: ${proposalError?.message}`);
+    if (proposalError) {
+      console.error('❌ ERRO ao buscar proposta:', proposalError);
+      throw new Error(`Proposta não encontrada: ${proposalError.message}`);
     }
 
-    console.log('✅ Proposta encontrada:', proposal.number);
+    if (!proposal) {
+      console.error('❌ ERRO: Proposta não encontrada no banco');
+      throw new Error('Proposta não encontrada');
+    }
+
+    console.log('✅ Proposta encontrada:', {
+      number: proposal.number,
+      client_name: proposal.client_name,
+      client_email: proposal.client_email,
+      status: proposal.status,
+      converted_order_id: proposal.converted_order_id
+    });
 
     // Verificar se já foi convertida
     if (proposal.status === 'convertida' && proposal.converted_order_id) {
-      console.log('⚠️ Proposta já convertida:', proposal.converted_order_id);
+      console.log('⚠️ Proposta já foi convertida anteriormente:', proposal.converted_order_id);
       return new Response(JSON.stringify({
         success: true,
         orderId: proposal.converted_order_id,
@@ -59,19 +81,26 @@ serve(async (req) => {
     }
 
     // 2. Verificar/Criar usuário
+    console.log('👤 Processando usuário...');
     let userId: string | null = null;
     let isNewUser = false;
     let passwordResetLink: string | null = null;
 
     const clientEmail = proposal.client_email?.toLowerCase().trim();
+    console.log('📧 Email do cliente:', clientEmail);
     
     if (clientEmail) {
       // Buscar usuário existente
-      const { data: existingUser } = await supabase
+      console.log('🔍 Buscando usuário existente...');
+      const { data: existingUser, error: userError } = await supabase
         .from('users')
         .select('id')
         .eq('email', clientEmail)
         .single();
+
+      if (userError && userError.code !== 'PGRST116') {
+        console.log('⚠️ Erro ao buscar usuário (não crítico):', userError.message);
+      }
 
       if (existingUser) {
         userId = existingUser.id;
@@ -85,7 +114,7 @@ serve(async (req) => {
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
           email: clientEmail,
           password: tempPassword,
-          email_confirm: true, // Confirmar email automaticamente
+          email_confirm: true,
           user_metadata: {
             nome: proposal.client_name,
             telefone: proposal.client_phone,
@@ -108,7 +137,8 @@ serve(async (req) => {
           console.log('✅ Novo usuário auth criado:', userId);
 
           // Criar registro na tabela users
-          await supabase.from('users').insert({
+          console.log('📝 Criando registro na tabela users...');
+          const { error: insertUserError } = await supabase.from('users').insert({
             id: userId,
             email: clientEmail,
             nome: proposal.client_name || 'Cliente EXA',
@@ -118,7 +148,14 @@ serve(async (req) => {
             created_at: new Date().toISOString()
           });
 
+          if (insertUserError) {
+            console.error('⚠️ Erro ao inserir usuário na tabela users:', insertUserError);
+          } else {
+            console.log('✅ Usuário inserido na tabela users');
+          }
+
           // Gerar link de recuperação de senha
+          console.log('🔑 Gerando link de senha...');
           const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
             type: 'recovery',
             email: clientEmail,
@@ -135,21 +172,30 @@ serve(async (req) => {
           }
         }
       }
+    } else {
+      console.error('❌ ERRO: Email do cliente não disponível');
     }
 
     if (!userId) {
+      console.error('❌ ERRO CRÍTICO: Não foi possível criar/encontrar usuário');
       throw new Error('Não foi possível criar/encontrar usuário');
     }
 
     // 3. Calcular datas da campanha
+    console.log('📅 Calculando datas da campanha...');
     const startDate = new Date();
     const endDate = new Date();
     endDate.setMonth(endDate.getMonth() + (proposal.duration_months || 1));
+    
+    console.log('📅 Período:', startDate.toISOString(), 'até', endDate.toISOString());
 
     // 4. Preparar lista de painéis
+    console.log('🏢 Preparando lista de painéis...');
     const selectedBuildings = Array.isArray(proposal.selected_buildings) 
       ? proposal.selected_buildings 
       : [];
+
+    console.log('🏢 Prédios selecionados:', selectedBuildings.length);
 
     const listaPaineis = selectedBuildings.map((b: any) => ({
       building_id: b.building_id,
@@ -158,37 +204,52 @@ serve(async (req) => {
     }));
 
     // 5. Criar pedido
+    console.log('📦 Criando pedido no banco...');
+    const orderData = {
+      client_id: userId,
+      status: 'pago_pendente_video',
+      valor_total: proposal.cash_total_value || proposal.fidel_monthly_value,
+      plano_meses: proposal.duration_months || 1,
+      data_inicio: startDate.toISOString(),
+      data_fim: endDate.toISOString(),
+      lista_paineis: listaPaineis,
+      metodo_pagamento: paymentData?.method || 'pix',
+      proposal_id: proposalId,
+      log_pagamento: {
+        converted_from_proposal: true,
+        proposal_number: proposal.number,
+        payment_id: paymentId,
+        payment_data: paymentData,
+        converted_at: new Date().toISOString()
+      }
+    };
+
+    console.log('📦 Dados do pedido:', JSON.stringify(orderData, null, 2));
+
     const { data: newOrder, error: orderError } = await supabase
       .from('pedidos')
-      .insert({
-        client_id: userId,
-        status: 'pago_pendente_video',
-        valor_total: proposal.cash_total_value || proposal.fidel_monthly_value,
-        plano_meses: proposal.duration_months || 1,
-        data_inicio: startDate.toISOString(),
-        data_fim: endDate.toISOString(),
-        lista_paineis: listaPaineis,
-        metodo_pagamento: paymentData?.method || 'pix',
-        proposal_id: proposalId,
-        log_pagamento: {
-          converted_from_proposal: true,
-          proposal_number: proposal.number,
-          payment_id: paymentId,
-          payment_data: paymentData,
-          converted_at: new Date().toISOString()
-        }
-      })
+      .insert(orderData)
       .select()
       .single();
 
-    if (orderError || !newOrder) {
-      throw new Error(`Erro ao criar pedido: ${orderError?.message}`);
+    if (orderError) {
+      console.error('❌ ERRO ao criar pedido:', orderError);
+      console.error('❌ Código do erro:', orderError.code);
+      console.error('❌ Detalhes:', orderError.details);
+      console.error('❌ Hint:', orderError.hint);
+      throw new Error(`Erro ao criar pedido: ${orderError.message}`);
     }
 
-    console.log('✅ Pedido criado:', newOrder.id);
+    if (!newOrder) {
+      console.error('❌ ERRO: Pedido não retornado após insert');
+      throw new Error('Pedido não foi criado');
+    }
+
+    console.log('✅ PEDIDO CRIADO COM SUCESSO:', newOrder.id);
 
     // 6. Atualizar proposta como convertida
-    await supabase
+    console.log('📝 Atualizando proposta para status convertida...');
+    const { error: updateError } = await supabase
       .from('proposals')
       .update({
         status: 'convertida',
@@ -201,7 +262,14 @@ serve(async (req) => {
       })
       .eq('id', proposalId);
 
+    if (updateError) {
+      console.error('⚠️ Erro ao atualizar proposta:', updateError);
+    } else {
+      console.log('✅ Proposta atualizada para status convertida');
+    }
+
     // 7. Registrar log
+    console.log('📝 Registrando log da conversão...');
     await supabase.from('proposal_logs').insert({
       proposal_id: proposalId,
       action: 'convertida_em_pedido',
@@ -220,7 +288,14 @@ serve(async (req) => {
       descricao: `Proposta ${proposal.number} convertida em pedido ${newOrder.id}. Novo usuário: ${isNewUser}`
     });
 
-    console.log('🎉 Conversão concluída com sucesso!');
+    const duration = Date.now() - startTime;
+    console.log('========================================');
+    console.log('🎉 CONVERSÃO CONCLUÍDA COM SUCESSO!');
+    console.log('📦 Pedido ID:', newOrder.id);
+    console.log('👤 User ID:', userId);
+    console.log('🆕 Novo usuário:', isNewUser);
+    console.log('⏱️ Tempo total:', duration, 'ms');
+    console.log('========================================');
 
     const result: ConversionResult = {
       success: true,
@@ -232,6 +307,7 @@ serve(async (req) => {
 
     // 9. Enviar emails
     try {
+      console.log('📧 Enviando emails...');
       // Email de pagamento aprovado
       await supabase.functions.invoke('send-payment-approved-email', {
         body: {
@@ -241,6 +317,7 @@ serve(async (req) => {
           clientName: proposal.client_name
         }
       });
+      console.log('✅ Email de pagamento aprovado enviado');
 
       // Se novo usuário, enviar email de boas-vindas
       if (isNewUser && passwordResetLink) {
@@ -252,10 +329,10 @@ serve(async (req) => {
             orderId: newOrder.id
           }
         });
+        console.log('✅ Email de boas-vindas enviado');
       }
     } catch (emailError) {
-      console.error('⚠️ Erro ao enviar emails:', emailError);
-      // Não falhar a conversão por erro de email
+      console.error('⚠️ Erro ao enviar emails (não crítico):', emailError);
     }
 
     return new Response(JSON.stringify(result), {
@@ -264,7 +341,13 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('❌ Erro em convert-proposal-to-order:', error);
+    const duration = Date.now() - startTime;
+    console.error('========================================');
+    console.error('❌ ERRO NA CONVERSÃO');
+    console.error('❌ Mensagem:', error.message);
+    console.error('❌ Stack:', error.stack);
+    console.error('⏱️ Tempo até falha:', duration, 'ms');
+    console.error('========================================');
 
     return new Response(JSON.stringify({
       success: false,
