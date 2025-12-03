@@ -60,26 +60,8 @@ serve(async (req) => {
       );
     }
 
-    // Get buildings count
-    const buildingsCount = Array.isArray(proposal.selected_buildings) 
-      ? proposal.selected_buildings.length 
-      : 0;
-
-    // Format currency values
-    const formatCurrency = (value: number) => {
-      return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    };
-
-    // Calculate total fidelity value
-    const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
-
-    // Build proposal link - CORRETO: examidia.com.br
+    // Build proposal link
     const proposalLink = `https://examidia.com.br/propostacomercial/${proposal.id}`;
-    
-    // Format expiration date
-    const expiresAt = proposal.expires_at 
-      ? new Date(proposal.expires_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-      : '24 horas';
 
     // Get seller name
     let sellerName = 'Equipe EXA Mídia';
@@ -95,97 +77,69 @@ serve(async (req) => {
       }
     }
 
-    // Build buildings list HTML
-    const buildingsList = Array.isArray(proposal.selected_buildings)
-      ? proposal.selected_buildings.map((b: any) => `
-        <tr>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${b.building_name || 'N/A'}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${b.bairro || 'N/A'}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${b.quantidade_telas || 0}</td>
-        </tr>
-      `).join('')
-      : '';
+    // Get client first name
+    const clientFirstName = proposal.client_name?.split(' ')[0] || 'Cliente';
 
-    // Build HTML email - SIMPLIFIED: Only monthly value
+    // Build SIMPLE HTML email - NO prices, NO details, ONLY logo + link
     const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light only">
   <title>Proposta Comercial - EXA Mídia</title>
+  <style>
+    :root { color-scheme: light only; }
+    @media (prefers-color-scheme: dark) {
+      body, .email-body { background-color: #ffffff !important; color: #333333 !important; }
+      .email-container { background-color: #ffffff !important; }
+      h1, p, span { color: #333333 !important; }
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6;">
-  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-    <!-- Header -->
-    <div style="background: linear-gradient(135deg, #9C1E1E 0%, #7D1818 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-      <h1 style="color: white; margin: 0; font-size: 24px;">🎯 Proposta Comercial</h1>
-      <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px;">EXA Mídia Digital em Elevadores</p>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff !important;" class="email-body">
+  <div style="max-width: 480px; margin: 0 auto; padding: 40px 24px;" class="email-container">
+    
+    <!-- Logo EXA -->
+    <div style="text-align: center; margin-bottom: 32px;">
+      <img 
+        src="https://i.imgur.com/YJQwQvZ.png" 
+        alt="EXA Mídia" 
+        style="height: 48px; width: auto;"
+      />
     </div>
-
-    <!-- Content -->
-    <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-      <p style="font-size: 16px; color: #374151;">Olá, <strong>${proposal.client_name?.split(' ')[0] || 'Cliente'}</strong>!</p>
-      
-      <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
-        É com grande satisfação que apresentamos uma proposta personalizada para sua empresa anunciar nas telas digitais da EXA Mídia.
-      </p>
-
-      <!-- Proposal Summary - SIMPLIFIED -->
-      <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <h2 style="margin: 0 0 15px; font-size: 16px; color: #374151;">📄 Proposta ${proposal.number}</h2>
-        
-        <div style="display: grid; gap: 10px;">
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-            <span style="color: #6b7280;">Prédios:</span>
-            <strong style="color: #374151;">${buildingsCount} locais</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-            <span style="color: #6b7280;">Telas:</span>
-            <strong style="color: #374151;">${proposal.total_panels} painéis</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-            <span style="color: #6b7280;">Período:</span>
-            <strong style="color: #374151;">${proposal.duration_months} meses</strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pricing - ONLY MONTHLY VALUE -->
-      <div style="background: linear-gradient(135deg, #9C1E1E 0%, #7D1818 100%); padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-        <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 0 0 8px;">Investimento a partir de</p>
-        <div style="color: white; font-size: 32px; font-weight: bold;">
-          ${formatCurrency(proposal.fidel_monthly_value)}<span style="font-size: 14px; font-weight: normal;">/mês</span>
-        </div>
-      </div>
-
-      <!-- CTA Button -->
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${proposalLink}" 
-           style="display: inline-block; background: linear-gradient(135deg, #9C1E1E 0%, #7D1818 100%); color: white; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-          📋 Ver Proposta Completa
-        </a>
-      </div>
-
-      <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-        ⏰ Esta proposta é válida até ${expiresAt}
-      </p>
-
-      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-
-      <!-- Footer -->
-      <div style="text-align: center;">
-        <p style="font-size: 14px; color: #374151; margin: 0;">
-          <strong>${sellerName}</strong>
-        </p>
-        <p style="font-size: 13px; color: #6b7280; margin: 5px 0;">
-          EXA Mídia Digital
-        </p>
-        <p style="font-size: 12px; color: #9ca3af; margin: 10px 0 0;">
-          Publicidade em Elevadores de Alto Padrão
-        </p>
-      </div>
+    
+    <!-- Greeting -->
+    <h1 style="color: #1f2937; font-size: 22px; font-weight: 600; text-align: center; margin: 0 0 16px;">
+      Olá, ${clientFirstName}!
+    </h1>
+    
+    <p style="color: #6b7280; font-size: 15px; text-align: center; line-height: 1.6; margin: 0 0 32px;">
+      Você recebeu uma proposta comercial da EXA Mídia. Clique no botão abaixo para visualizar todos os detalhes.
+    </p>
+    
+    <!-- CTA Button -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a 
+        href="${proposalLink}" 
+        style="display: inline-block; background-color: #9C1E1E; color: #ffffff; padding: 16px 48px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;"
+      >
+        Ver Proposta
+      </a>
     </div>
+    
+    <!-- Footer -->
+    <div style="text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+      <p style="color: #374151; font-size: 14px; font-weight: 500; margin: 0;">
+        ${sellerName}
+      </p>
+      <p style="color: #9ca3af; font-size: 13px; margin: 4px 0 0;">
+        EXA Mídia Digital
+      </p>
+    </div>
+    
   </div>
 </body>
 </html>

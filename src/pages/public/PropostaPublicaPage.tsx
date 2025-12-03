@@ -733,18 +733,33 @@ const PropostaPublicaPage = () => {
                 )}
               </Card>
 
-              {/* Generate Payment Button */}
+              {/* Generate Payment Button - Dynamic based on selection */}
               <Button
                 className="w-full h-12 bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
                 disabled={!paymentMethod || isGeneratingPayment}
                 onClick={handleGeneratePayment}
               >
                 {isGeneratingPayment ? (
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Gerando...
+                  </>
+                ) : paymentMethod === 'pix' ? (
+                  <>
+                    <Zap className="h-5 w-5 mr-2" />
+                    Pagar com PIX
+                  </>
+                ) : paymentMethod === 'boleto' ? (
+                  <>
+                    <FileBarChart className="h-5 w-5 mr-2" />
+                    Gerar Boleto
+                  </>
                 ) : (
-                  <Check className="h-5 w-5 mr-2" />
+                  <>
+                    <Check className="h-5 w-5 mr-2" />
+                    Selecione um método
+                  </>
                 )}
-                Gerar Pagamento
               </Button>
             </div>
           )}
