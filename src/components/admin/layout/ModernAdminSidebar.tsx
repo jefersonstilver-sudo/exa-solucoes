@@ -312,10 +312,10 @@ export function ModernAdminSidebar() {
 
   const getAdminBadgeColor = () => {
     switch (userInfo.role) {
-      case 'super_admin': return 'text-yellow-400';
-      case 'admin': return 'text-blue-400';
-      case 'admin_marketing': return 'text-orange-400';
-      case 'admin_financeiro': return 'text-green-400';
+      case 'super_admin': return 'text-amber-200';
+      case 'admin': return 'text-blue-300';
+      case 'admin_marketing': return 'text-orange-300';
+      case 'admin_financeiro': return 'text-green-300';
       default: return 'text-indexa-mint';
     }
   };
