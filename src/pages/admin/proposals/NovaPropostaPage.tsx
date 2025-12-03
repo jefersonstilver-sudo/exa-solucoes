@@ -383,11 +383,12 @@ const NovaPropostaPage = () => {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('Cortesia criada com sucesso!');
+        toast.success('✅ Cortesia enviada! O cliente receberá um WhatsApp com o link.');
         setCortesiaCodeDialogOpen(false);
         setCortesiaCode('');
         setCortesiaRequestId(null);
-        navigate(buildPath('pedidos'));
+        // NÃO redirecionar para /pedidos - a proposta foi enviada, não o pedido criado
+        navigate(buildPath('propostas'));
       } else {
         throw new Error(data?.error || 'Código inválido');
       }

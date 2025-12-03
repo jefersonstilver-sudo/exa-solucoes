@@ -358,6 +358,12 @@ verify_jwt = true
 [functions.create-proposal-cortesia]
 verify_jwt = false
 
+[functions.create-cortesia-proposal]
+verify_jwt = false
+
+[functions.accept-cortesia-proposal]
+verify_jwt = false
+
 [functions.send-cortesia-welcome-email]
 verify_jwt = false
 
