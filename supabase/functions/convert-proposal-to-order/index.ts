@@ -203,24 +203,43 @@ serve(async (req) => {
       quantidade_telas: b.quantidade_telas || 1
     }));
 
-    // 5. Criar pedido
+    // 5. Verificar se é pagamento personalizado
+    const isCustomPayment = proposal.payment_type === 'custom';
+    const customInstallments = Array.isArray(proposal.custom_installments) 
+      ? proposal.custom_installments 
+      : [];
+
+    console.log('💳 Tipo de pagamento:', isCustomPayment ? 'PERSONALIZADO' : 'PADRÃO');
+    if (isCustomPayment) {
+      console.log('💳 Parcelas personalizadas:', JSON.stringify(customInstallments, null, 2));
+    }
+
+    // 6. Criar pedido
     console.log('📦 Criando pedido no banco...');
+    
+    // Calcular valor total (custom ou padrão)
+    const valorTotal = isCustomPayment
+      ? customInstallments.reduce((sum: number, inst: any) => sum + Number(inst.amount || 0), 0)
+      : (proposal.cash_total_value || proposal.fidel_monthly_value);
+
     const orderData = {
       client_id: userId,
-      client_name: proposal.client_name, // Salvar nome do cliente diretamente no pedido
+      client_name: proposal.client_name,
       status: 'pago_pendente_video',
-      valor_total: proposal.cash_total_value || proposal.fidel_monthly_value,
+      valor_total: valorTotal,
       plano_meses: proposal.duration_months || 1,
       data_inicio: startDate.toISOString(),
       data_fim: endDate.toISOString(),
       lista_paineis: listaPaineis,
-      metodo_pagamento: paymentData?.method || 'pix',
+      metodo_pagamento: isCustomPayment ? 'personalizado' : (paymentData?.method || 'pix'),
       proposal_id: proposalId,
       log_pagamento: {
         converted_from_proposal: true,
         proposal_number: proposal.number,
         payment_id: paymentId,
         payment_data: paymentData,
+        payment_type: proposal.payment_type,
+        custom_installments: isCustomPayment ? customInstallments : null,
         converted_at: new Date().toISOString()
       }
     };

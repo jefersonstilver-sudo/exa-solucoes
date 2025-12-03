@@ -10,6 +10,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { ProposalPDFExporter } from '@/components/admin/proposals/ProposalPDFExporter';
 import { validateEmail } from '@/utils/inputValidation';
 
+interface CustomInstallment {
+  id: number;
+  dueDate: string;
+  amount: number;
+}
+
 interface Proposal {
   id: string;
   number: string;
@@ -29,6 +35,8 @@ interface Proposal {
   sent_at: string | null;
   expires_at: string | null;
   created_by: string | null;
+  payment_type?: string;
+  custom_installments?: any;
   metadata?: {
     type?: string;
     cortesia_code_id?: string;
@@ -84,7 +92,7 @@ const PropostaPublicaPage = () => {
   const pageLoadTime = React.useRef<number>(Date.now());
   const lastSentTime = React.useRef<number>(0);
   
-  // Register view on mount and heartbeat every 15 seconds
+    // Register view on mount and heartbeat every 15 seconds
   useEffect(() => {
     if (!id) return;
     
@@ -121,14 +129,44 @@ const PropostaPublicaPage = () => {
       }
     }, 15000); // 15 segundos
     
+    // Handler para quando usuário sai da página
+    const handleLeave = () => {
+      const finalTime = Math.floor((Date.now() - pageLoadTime.current) / 1000);
+      const remaining = finalTime - lastSentTime.current;
+      
+      // Usar sendBeacon para garantir envio mesmo ao sair
+      const leaveData = JSON.stringify({ 
+        proposalId: id, 
+        action: 'leave', 
+        timeSpentSeconds: remaining 
+      });
+      
+      navigator.sendBeacon?.(
+        `${import.meta.env.VITE_SUPABASE_URL || 'https://aakenoljsycyrcrchgxj.supabase.co'}/functions/v1/track-proposal-view`,
+        new Blob([leaveData], { type: 'application/json' })
+      );
+    };
+    
+    // Registrar eventos de saída
+    window.addEventListener('beforeunload', handleLeave);
+    window.addEventListener('pagehide', handleLeave);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        handleLeave();
+      }
+    });
+    
     return () => {
       clearInterval(heartbeatInterval);
+      window.removeEventListener('beforeunload', handleLeave);
+      window.removeEventListener('pagehide', handleLeave);
+      
       // Final send on unmount
       const finalTime = Math.floor((Date.now() - pageLoadTime.current) / 1000);
       const remaining = finalTime - lastSentTime.current;
       if (remaining > 0) {
         supabase.functions.invoke('track-proposal-view', {
-          body: { proposalId: id, action: 'heartbeat', timeSpentSeconds: remaining }
+          body: { proposalId: id, action: 'leave', timeSpentSeconds: remaining }
         }).catch(() => {});
       }
     };
@@ -1180,69 +1218,123 @@ const PropostaPublicaPage = () => {
           <div className="space-y-3">
             <h2 className="font-semibold flex items-center gap-2">
               <Eye className="h-4 w-4 text-[#9C1E1E]" />
-              Escolha sua condição
+              {proposal.payment_type === 'custom' ? 'Condição Personalizada' : 'Escolha sua condição'}
             </h2>
 
-            {/* Plano À Vista - TOTAL em destaque + equivalência mensal */}
-            <Card 
-              className={`p-4 cursor-pointer transition-all ${
-                selectedPlan === 'avista' 
-                  ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
-                  : 'border hover:border-gray-300'
-              }`}
-              onClick={() => setSelectedPlan('avista')}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+            {/* PAGAMENTO PERSONALIZADO */}
+            {proposal.payment_type === 'custom' && proposal.custom_installments ? (
+              <Card className="p-4 border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
                     <span className="bg-[#9C1E1E] text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                      MELHOR OFERTA
-                    </span>
-                    <span className="font-bold">PIX À Vista</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Pagamento único • 10% OFF</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-[#9C1E1E]">
-                    {proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    (equivale {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês)
-                  </p>
-                  <div className="mt-1">
-                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                      💰 Economia de 10%
+                      💳 PAGAMENTO PERSONALIZADO
                     </span>
                   </div>
+                  
+                  {/* Lista de Parcelas */}
+                  <div className="space-y-2">
+                    {(Array.isArray(proposal.custom_installments) ? proposal.custom_installments : []).map((installment: CustomInstallment, index: number) => (
+                      <div key={installment.id || index} className="flex justify-between items-center p-3 bg-white rounded-lg border">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 bg-[#9C1E1E]/10 text-[#9C1E1E] rounded-full flex items-center justify-center text-xs font-bold">
+                            {index + 1}
+                          </span>
+                          <div>
+                            <div className="font-medium text-sm">Parcela {index + 1}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Venc: {new Date(installment.dueDate).toLocaleDateString('pt-BR')}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-[#9C1E1E]">
+                            {Number(installment.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Total */}
+                  <div className="border-t pt-3 mt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">Total ({(Array.isArray(proposal.custom_installments) ? proposal.custom_installments : []).length} parcelas)</span>
+                      <span className="text-xl font-bold text-[#9C1E1E]">
+                        {(Array.isArray(proposal.custom_installments) ? proposal.custom_installments : [])
+                          .reduce((sum: number, inst: CustomInstallment) => sum + Number(inst.amount), 0)
+                          .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Período: {proposal.duration_months} {proposal.duration_months === 1 ? 'mês' : 'meses'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            ) : (
+              <>
+                {/* Plano À Vista - TOTAL em destaque + equivalência mensal */}
+                <Card 
+                  className={`p-4 cursor-pointer transition-all ${
+                    selectedPlan === 'avista' 
+                      ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
+                      : 'border hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedPlan('avista')}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="bg-[#9C1E1E] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                          MELHOR OFERTA
+                        </span>
+                        <span className="font-bold">PIX À Vista</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Pagamento único • 10% OFF</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-[#9C1E1E]">
+                        {proposal.cash_total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        (equivale {(proposal.cash_total_value / proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês)
+                      </p>
+                      <div className="mt-1">
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                          💰 Economia de 10%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
 
-            {/* Plano Fidelidade - Valor mensal + total */}
-            <Card 
-              className={`p-4 cursor-pointer transition-all ${
-                selectedPlan === 'fidelidade' 
-                  ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
-                  : 'border hover:border-gray-300'
-              }`}
-              onClick={() => setSelectedPlan('fidelidade')}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="font-bold mb-1">Plano Fidelidade</div>
-                  <p className="text-xs text-muted-foreground">Pagamento mensal • {proposal.duration_months} meses</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold">
-                    {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                {/* Plano Fidelidade - Valor mensal + total */}
+                <Card 
+                  className={`p-4 cursor-pointer transition-all ${
+                    selectedPlan === 'fidelidade' 
+                      ? 'border-2 border-[#9C1E1E] bg-gradient-to-br from-red-50 to-white shadow-lg' 
+                      : 'border hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedPlan('fidelidade')}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-bold mb-1">Plano Fidelidade</div>
+                      <p className="text-xs text-muted-foreground">Pagamento mensal • {proposal.duration_months} meses</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold">
+                        {proposal.fidel_monthly_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Total: {(proposal.fidel_monthly_value * proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Total: {(proposal.fidel_monthly_value * proposal.duration_months).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </p>
-                </div>
-              </div>
-            </Card>
+                </Card>
+              </>
+            )}
           </div>
         )}
 

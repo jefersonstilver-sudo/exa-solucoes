@@ -52,6 +52,8 @@ serve(async (req) => {
       const updates: any = {
         view_count: (proposal?.view_count || 0) + 1,
         last_viewed_at: new Date().toISOString(),
+        is_viewing: true,
+        last_heartbeat_at: new Date().toISOString(),
       };
 
       // Se primeira visualização, atualizar first_viewed_at
@@ -59,15 +61,15 @@ serve(async (req) => {
         updates.first_viewed_at = new Date().toISOString();
       }
 
-      // ✅ NOVO: Atualizar status para 'visualizada' se ainda for 'enviada'
-      if (proposal?.status === 'enviada') {
-        updates.status = 'visualizada';
-        console.log('📊 Status atualizado: enviada → visualizada');
+      // ✅ Atualizar status para 'visualizando' enquanto cliente está na página
+      if (proposal?.status === 'enviada' || proposal?.status === 'visualizada') {
+        updates.status = 'visualizando';
+        console.log('📊 Status atualizado para: visualizando');
         
         // Registrar log de visualização
         await supabase.from('proposal_logs').insert({
           proposal_id: proposalId,
-          action: 'visualizada',
+          action: 'visualizando',
           details: {
             device_type: deviceType,
             timestamp: new Date().toISOString()
@@ -80,24 +82,33 @@ serve(async (req) => {
         .update(updates)
         .eq('id', proposalId);
 
-      console.log('✅ View registered, view_count:', updates.view_count);
+      console.log('✅ View registered, is_viewing: true, view_count:', updates.view_count);
 
     } else if (action === 'heartbeat' && timeSpentSeconds > 0) {
-      // Heartbeat: update time incrementally (works on mobile!)
+      // Heartbeat: update time incrementally and keep viewing status active
       const { data: proposal } = await supabase
         .from('proposals')
-        .select('total_time_spent_seconds')
+        .select('total_time_spent_seconds, status')
         .eq('id', proposalId)
         .single();
 
       const newTotalTime = (proposal?.total_time_spent_seconds || 0) + timeSpentSeconds;
 
+      const heartbeatUpdates: any = {
+        total_time_spent_seconds: newTotalTime,
+        last_viewed_at: new Date().toISOString(),
+        is_viewing: true,
+        last_heartbeat_at: new Date().toISOString(),
+      };
+
+      // Manter status como visualizando durante heartbeat
+      if (proposal?.status === 'visualizada' || proposal?.status === 'enviada') {
+        heartbeatUpdates.status = 'visualizando';
+      }
+
       await supabase
         .from('proposals')
-        .update({
-          total_time_spent_seconds: newTotalTime,
-          last_viewed_at: new Date().toISOString(),
-        })
+        .update(heartbeatUpdates)
         .eq('id', proposalId);
 
       // Also update the most recent view record
@@ -118,24 +129,38 @@ serve(async (req) => {
           .eq('id', recentView.id);
       }
 
-      console.log(`✅ Heartbeat: +${timeSpentSeconds}s (total: ${newTotalTime}s)`);
+      console.log(`✅ Heartbeat: +${timeSpentSeconds}s (total: ${newTotalTime}s), is_viewing: true`);
       
-    } else if (action === 'leave' && timeSpentSeconds > 0) {
-      // Legacy leave action (fallback)
+    } else if (action === 'leave') {
+      // Cliente saiu da página - marcar como não visualizando
       const { data: proposal } = await supabase
         .from('proposals')
-        .select('total_time_spent_seconds')
+        .select('total_time_spent_seconds, status')
         .eq('id', proposalId)
         .single();
 
+      const leaveUpdates: any = {
+        is_viewing: false,
+        last_viewed_at: new Date().toISOString(),
+      };
+
+      // Se estava visualizando, mudar para visualizada
+      if (proposal?.status === 'visualizando') {
+        leaveUpdates.status = 'visualizada';
+        console.log('📊 Status atualizado: visualizando → visualizada');
+      }
+
+      // Adicionar tempo final se houver
+      if (timeSpentSeconds > 0) {
+        leaveUpdates.total_time_spent_seconds = (proposal?.total_time_spent_seconds || 0) + timeSpentSeconds;
+      }
+
       await supabase
         .from('proposals')
-        .update({
-          total_time_spent_seconds: (proposal?.total_time_spent_seconds || 0) + timeSpentSeconds,
-        })
+        .update(leaveUpdates)
         .eq('id', proposalId);
 
-      console.log(`✅ Leave time: ${timeSpentSeconds}s`);
+      console.log(`✅ Leave: is_viewing: false, time: ${timeSpentSeconds}s`);
     }
 
     return new Response(JSON.stringify({ success: true }), {
