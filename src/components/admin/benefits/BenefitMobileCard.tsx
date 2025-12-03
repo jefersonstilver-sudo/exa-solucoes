@@ -1,10 +1,7 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import BenefitStatusBadge from '@/components/benefits/BenefitStatusBadge';
-import { Mail, MapPin, Gift, Calendar, Eye, Link2, Code } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { Mail, MapPin, Gift, Eye, Link2, Code } from 'lucide-react';
 import { ProviderBenefit, BenefitOption } from '@/types/providerBenefits';
 
 interface BenefitMobileCardProps {
@@ -26,150 +23,114 @@ const BenefitMobileCard: React.FC<BenefitMobileCardProps> = ({
   const selectedBenefitOption = benefit.benefit_choice 
     ? benefitOptions.find(b => b.id === benefit.benefit_choice) 
     : null;
-  const deliveryTime = selectedBenefitOption?.delivery_days === 1 
-    ? 'em até 24 horas' 
-    : `em até ${selectedBenefitOption?.delivery_days || 3} dias`;
 
   return (
-    <Card className={`border shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
-      requiresAction ? 'border-l-2 border-l-amber-500' : ''
+    <div className={`bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl overflow-hidden shadow-sm ${
+      requiresAction ? 'ring-1 ring-amber-300' : ''
     }`}>
-      {/* Header - Minimalista */}
-      <div className={`px-3 py-2.5 ${requiresAction ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-[#9C1E1E] to-[#DC2626]'}`}>
+      {/* Header compacto */}
+      <div className={`px-3 py-2 ${requiresAction ? 'bg-amber-500' : 'bg-[#9C1E1E]'}`}>
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
             {requiresAction && (
-              <span className="relative flex h-2 w-2">
+              <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
               </span>
             )}
-            <h3 className="text-sm font-semibold text-white truncate">
+            <span className="text-xs font-semibold text-white truncate">
               {benefit.provider_name}
-            </h3>
+            </span>
           </div>
           <BenefitStatusBadge status={benefit.status} />
         </div>
-        {requiresAction && (
-          <div className="mt-1.5 inline-flex items-center gap-1 bg-white/15 rounded px-2 py-0.5">
-            <span className="text-white font-semibold text-[10px]">⚡ AÇÃO NECESSÁRIA</span>
-          </div>
-        )}
       </div>
 
-      {/* Conteúdo - Compacto */}
-      <div className={`p-3 space-y-2.5 ${requiresAction ? 'bg-amber-50/30' : ''}`}>
-        {/* Email */}
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-            <Mail className="w-3.5 h-3.5 text-gray-600" />
+      {/* Conteúdo ultra-compacto */}
+      <div className="p-2.5 space-y-1.5">
+        {/* Email + Ponto inline */}
+        <div className="flex items-center justify-between gap-2 text-[11px]">
+          <div className="flex items-center gap-1 text-muted-foreground truncate flex-1">
+            <Mail className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">{benefit.provider_email}</span>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Email</p>
-            <p className="text-xs font-medium text-gray-900 truncate">{benefit.provider_email}</p>
-            {/* Indicadores de email enviado */}
-            <div className="flex items-center gap-1 mt-1">
-              {benefit.invitation_sent_at && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] bg-green-50 text-green-700 border border-green-200 px-1.5 py-0.5 rounded">
-                  <Mail className="w-2.5 h-2.5" />
-                  Convite enviado
-                </span>
-              )}
-              {benefit.final_email_sent_at && (
-                <span className="inline-flex items-center gap-0.5 text-[9px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded">
-                  <Gift className="w-2.5 h-2.5" />
-                  Código enviado
-                </span>
-              )}
+          {benefit.activation_point && (
+            <div className="flex items-center gap-0.5 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded truncate max-w-[100px]">
+              <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+              <span className="truncate text-[10px]">{benefit.activation_point}</span>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Ponto de Ativação */}
-        {benefit.activation_point && (
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-3.5 h-3.5 text-gray-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Ponto de Ativação</p>
-              <p className="text-xs font-medium text-gray-900 truncate">{benefit.activation_point}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Presente Escolhido */}
+        {/* Presente escolhido */}
         {benefit.benefit_choice && (
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <Gift className="w-3.5 h-3.5 text-gray-600" />
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <Gift className="w-3 h-3 text-muted-foreground" />
+              <span className="text-xs font-medium text-foreground">
+                {selectedBenefitOption?.name || benefit.benefit_choice}
+              </span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Presente Escolhido</p>
-              <p className="text-xs font-semibold text-gray-900 truncate">{selectedBenefitOption?.name || benefit.benefit_choice}</p>
-              {requiresAction && (
-                <p className="text-[10px] text-amber-700 font-medium mt-0.5">
-                  ⚡ Entrega {deliveryTime}
-                </p>
-              )}
-            </div>
+            {requiresAction && (
+              <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold animate-pulse">
+                CÓDIGO!
+              </span>
+            )}
           </div>
         )}
 
-        {/* Data de Criação */}
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-            <Calendar className="w-3.5 h-3.5 text-gray-600" />
+        {/* Badges de email */}
+        {(benefit.invitation_sent_at || benefit.final_email_sent_at) && (
+          <div className="flex items-center gap-1 flex-wrap">
+            {benefit.invitation_sent_at && (
+              <span className="inline-flex items-center gap-0.5 text-[8px] bg-green-50 text-green-700 border border-green-200 px-1 py-0.5 rounded">
+                ✓ Convite
+              </span>
+            )}
+            {benefit.final_email_sent_at && (
+              <span className="inline-flex items-center gap-0.5 text-[8px] bg-blue-50 text-blue-700 border border-blue-200 px-1 py-0.5 rounded">
+                ✓ Código
+              </span>
+            )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Criado em</p>
-            <p className="text-xs font-medium text-gray-900">
-              {format(new Date(benefit.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-            </p>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Botões de Ação - Otimizados */}
-      <div className={`p-2.5 border-t space-y-1.5 ${requiresAction ? 'bg-amber-50/30' : 'bg-muted/20'}`}>
+      {/* Ações compactas */}
+      <div className="px-2.5 pb-2.5 flex gap-1.5">
         <Button
           onClick={() => onViewDetails(benefit)}
           variant="outline"
           size="sm"
-          className="w-full h-9 text-xs font-medium"
+          className="flex-1 h-8 text-[11px] font-medium"
         >
-          <Eye className="w-3.5 h-3.5 mr-1.5" />
-          Ver Detalhes
+          <Eye className="w-3 h-3 mr-1" />
+          Ver
         </Button>
-        
-        <div className="grid grid-cols-2 gap-1.5">
+        <Button
+          onClick={() => onCopyLink(benefit)}
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+        >
+          <Link2 className="w-3.5 h-3.5" />
+        </Button>
+        {benefit.status !== 'cancelled' && !benefit.gift_code && (
           <Button
-            onClick={() => onCopyLink(benefit)}
-            variant="secondary"
+            onClick={() => onInsertCode(benefit)}
             size="sm"
-            className="h-9 text-xs font-medium"
+            className={`h-8 px-2.5 text-[11px] font-medium text-white ${
+              requiresAction 
+                ? 'bg-amber-500 hover:bg-amber-600' 
+                : 'bg-[#9C1E1E] hover:bg-[#7D1818]'
+            }`}
           >
-            <Link2 className="w-3.5 h-3.5 mr-1" />
-            Copiar Link
+            <Code className="w-3 h-3 mr-1" />
+            Código
           </Button>
-          
-          {benefit.status !== 'cancelled' && !benefit.gift_code && (
-            <Button
-              onClick={() => onInsertCode(benefit)}
-              size="sm"
-              className={`h-9 text-xs font-medium text-white ${
-                requiresAction 
-                  ? 'bg-amber-500 hover:bg-amber-600 animate-pulse' 
-                  : 'bg-[#9C1E1E] hover:bg-[#7D1818]'
-              }`}
-            >
-              <Code className="w-3.5 h-3.5 mr-1" />
-              Inserir Código
-            </Button>
-          )}
-        </div>
+        )}
       </div>
-    </Card>
+    </div>
   );
 };
 

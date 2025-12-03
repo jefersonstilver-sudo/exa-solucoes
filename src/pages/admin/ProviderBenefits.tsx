@@ -91,6 +91,9 @@ const ProviderBenefits = () => {
   // Novo estado para o dialog de detalhes
   const [selectedBenefitForDetails, setSelectedBenefitForDetails] = useState<ProviderBenefit | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  
+  // Estado para filtro de status (mobile)
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     console.log('🎁 useEffect: Loading benefits...');
@@ -160,58 +163,111 @@ const ProviderBenefits = () => {
     handleInsertCode(benefit.id);
   };
 
+  // Filtrar benefícios por status
+  const filteredBenefits = React.useMemo(() => {
+    if (statusFilter === 'all') return benefits;
+    if (statusFilter === 'pending') return benefits.filter(b => b.status === 'pending');
+    if (statusFilter === 'choice_made') return benefits.filter(b => b.status === 'choice_made');
+    if (statusFilter === 'code_sent') return benefits.filter(b => b.status === 'code_sent');
+    if (statusFilter === 'cancelled') return benefits.filter(b => b.status === 'cancelled');
+    return benefits;
+  }, [benefits, statusFilter]);
+
   // Mobile View - Apple-like Clean Design
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pb-20">
-        {/* Mobile Header - Clean glassmorphism */}
-        <div className="sticky top-0 z-10 mobile-header-clean">
-          <div className="px-3 py-3">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 pb-20">
+        {/* Mobile Header - Glassmorphism compacto */}
+        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-white/50">
+          <div className="px-3 py-2.5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
-                  <Gift className="w-4.5 h-4.5 text-foreground" />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
+                  <Gift className="w-4 h-4 text-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold text-foreground">Benefícios</h1>
-                  <p className="text-xs text-muted-foreground">Prestadores</p>
+                  <h1 className="text-base font-semibold text-foreground">Benefícios</h1>
+                  <p className="text-[10px] text-muted-foreground">Prestadores</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <Button 
                   onClick={() => listBenefits()}
                   size="sm"
                   variant="ghost"
                   disabled={isLoading}
-                  className="h-8 w-8 p-0 hover:bg-black/5"
+                  className="h-8 w-8 p-0"
                 >
                   <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                 </Button>
                 <Button 
                   onClick={() => setShowForm(!showForm)} 
                   size="sm"
-                  className="h-8 text-xs bg-foreground text-background hover:bg-foreground/90"
+                  className="h-8 px-3 text-xs bg-[#9C1E1E] text-white hover:bg-[#7D1818]"
                 >
-                  <Plus className="w-3.5 h-3.5 mr-1" />
-                  Novo
+                  <Plus className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Month Selector */}
-        <div className="px-3 py-2 border-b border-border/30">
-          <MonthSelector
-            selectedMonth={selectedMonth}
-            onMonthChange={handleMonthChange}
-            variant="default"
-          />
+        {/* Month Selector + Stats compacto */}
+        <div className="px-3 py-2">
+          <div className="mb-2">
+            <MonthSelector
+              selectedMonth={selectedMonth}
+              onMonthChange={handleMonthChange}
+              variant="default"
+            />
+          </div>
+          <BenefitStatsCards stats={stats} loading={loadingStats} />
         </div>
 
-        {/* Dashboard de Estatísticas */}
-        <div className="px-3 py-3">
-          <BenefitStatsCards stats={stats} loading={loadingStats} />
+        {/* Quick Filter Pills */}
+        <div className="px-3 pb-2 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 whitespace-nowrap pb-0.5">
+            <button 
+              onClick={() => setStatusFilter('all')}
+              className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium min-w-fit transition-all ${
+                statusFilter === 'all' 
+                  ? 'bg-[#9C1E1E] text-white shadow-sm' 
+                  : 'bg-muted/60 text-muted-foreground'
+              }`}
+            >
+              Todos {benefits.length}
+            </button>
+            <button 
+              onClick={() => setStatusFilter('pending')}
+              className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium min-w-fit transition-all ${
+                statusFilter === 'pending' 
+                  ? 'bg-amber-500 text-white shadow-sm' 
+                  : 'bg-amber-100 text-amber-700'
+              }`}
+            >
+              ⏳ Aguardando {stats.pending_count}
+            </button>
+            <button 
+              onClick={() => setStatusFilter('choice_made')}
+              className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium min-w-fit transition-all ${
+                statusFilter === 'choice_made' 
+                  ? 'bg-orange-500 text-white shadow-sm' 
+                  : 'bg-orange-100 text-orange-700'
+              }`}
+            >
+              ⚡ Req. Código {stats.choice_made_count}
+            </button>
+            <button 
+              onClick={() => setStatusFilter('code_sent')}
+              className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium min-w-fit transition-all ${
+                statusFilter === 'code_sent' 
+                  ? 'bg-green-500 text-white shadow-sm' 
+                  : 'bg-green-100 text-green-700'
+              }`}
+            >
+              ✓ Finalizados {stats.code_sent_count}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Form */}
@@ -319,7 +375,7 @@ const ProviderBenefits = () => {
         {/* Mobile List */}
         <div className="px-3 py-2">
           <BenefitMobileList
-            benefits={benefits}
+            benefits={filteredBenefits}
             isLoading={isLoading}
             onViewDetails={handleViewDetails}
             onCopyLink={handleCopyLinkMobile}
