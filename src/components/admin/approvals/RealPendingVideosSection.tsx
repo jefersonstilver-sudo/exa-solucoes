@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { CheckCircle, XCircle, User, AlertTriangle, RefreshCw, Download } from '
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { VideoPlayer } from '@/components/video-management/VideoPlayer';
+import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 
 interface PendingVideo {
   id: string;
@@ -34,7 +34,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [rejectionReason, setRejectionReason] = useState<{ [key: string]: string }>({});
   const [actionLoading, setActionLoading] = useState(false);
-  
+  const { isMobile } = useAdvancedResponsive();
 
   const conarViolations = [
     'Conteúdo inadequado para crianças',
@@ -54,7 +54,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
       
       console.log('🔍 [PENDING VIDEOS] Buscando vídeos pendentes...');
       
-      // ✅ Remover !inner para capturar TODOS os vídeos pending
       const { data: pendingData, error: pendingError } = await supabase
         .from('pedido_videos')
         .select(`
@@ -88,7 +87,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         return;
       }
 
-      // Buscar informações dos clientes
       const clientIds = [...new Set(pendingData.map(pv => pv.pedidos.client_id))];
       const { data: usersData, error: usersError } = await supabase
         .from('users')
@@ -99,7 +97,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         console.warn('Erro ao buscar usuários:', usersError);
       }
 
-      // Transformar dados
       const transformedVideos = pendingData.map(pv => {
         const userData = usersData?.find(u => u.id === pv.pedidos.client_id);
         
@@ -151,22 +148,19 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
       
       console.log('✅ [APPROVE] RPC retornou:', data);
       
-      // CRÍTICO: Verificar se a aprovação foi bem-sucedida
       if (data !== true) {
         console.error('💥 [APPROVE] Aprovação falhou - RPC retornou false');
-        throw new Error('Vídeo não pôde ser aprovado. Pode já estar aprovado ou não encontrado. Verifique os logs do banco de dados.');
+        throw new Error('Vídeo não pôde ser aprovado. Pode já estar aprovado ou não encontrado.');
       }
       
       console.log('✅ [APPROVE] Vídeo aprovado com sucesso no banco!');
 
-      // Buscar dados do vídeo para enviar email e verificar se é o primeiro
       const { data: videoData } = await supabase
         .from('pedido_videos')
         .select('video_id, pedido_id, videos(nome)')
         .eq('id', videoId)
         .single();
 
-      // ✅ NOVO: Verificar se é o primeiro vídeo aprovado e ativar automaticamente
       if (videoData?.pedido_id) {
         try {
           console.log('🔍 [APPROVE] Verificando se é o primeiro vídeo aprovado...');
@@ -189,15 +183,15 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
             if (activationError) {
               console.error('❌ [APPROVE] Erro ao ativar primeiro vídeo:', activationError);
-              toast.warning('Vídeo aprovado, mas houve erro na ativação automática. Verifique manualmente.');
+              toast.warning('Vídeo aprovado, mas houve erro na ativação automática.');
             } else if (activationData?.success) {
               console.log('✅ [APPROVE] Primeiro vídeo ativado automaticamente:', activationData);
-              toast.success('🎉 Primeiro vídeo aprovado e ativado automaticamente nos painéis!');
+              toast.success('🎉 Primeiro vídeo aprovado e ativado automaticamente!');
             } else if (activationData?.skipped) {
               console.log('⚠️ [APPROVE] Ativação não necessária:', activationData.message);
             } else {
               console.warn('⚠️ [APPROVE] Ativação parcial:', activationData);
-              toast.warning('Vídeo aprovado, mas ativação parcial. Verifique os logs.');
+              toast.warning('Vídeo aprovado, mas ativação parcial.');
             }
           }
         } catch (activationErr: any) {
@@ -206,7 +200,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         }
       }
 
-      // Enviar email de aprovação
       if (videoData?.pedido_id) {
         try {
           console.log('📧 [APPROVE] Enviando email de aprovação...');
@@ -228,7 +221,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         }
       }
 
-      // Enviar para API externa após aprovação - CRÍTICO
       try {
         console.log('📤 [APPROVE] Enviando vídeo para API externa...');
         const { data: externalApiData, error: externalApiError } = await supabase.functions.invoke(
@@ -242,7 +234,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           const errorMsg = externalApiData?.error || externalApiError?.message || 'Erro desconhecido';
           console.error('❌ [APPROVE] Falha na API externa:', errorMsg);
           
-          // REVERTER APROVAÇÃO - CRÍTICO
           console.log('🔄 [APPROVE] Revertendo aprovação devido a falha na API externa...');
           const { error: rejectError } = await supabase.rpc('reject_video', {
             p_pedido_video_id: videoId,
@@ -252,7 +243,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
           if (rejectError) {
             console.error('💥 [APPROVE] Erro ao reverter aprovação:', rejectError);
-            toast.error('Erro crítico: Falha na aprovação e na reversão. Contate o suporte.');
+            toast.error('Erro crítico: Falha na aprovação e na reversão.');
           } else {
             console.log('✅ [APPROVE] Aprovação revertida com sucesso');
             toast.error(`Erro ao aprovar: ${errorMsg}. Aprovação foi revertida.`);
@@ -260,7 +251,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
           
           onRefresh();
           fetchPendingVideos();
-          return; // Bloquear continuação
+          return;
         }
 
         console.log('✅ [APPROVE] Vídeo enviado para API externa com sucesso:', externalApiData);
@@ -269,7 +260,6 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
       } catch (externalError: any) {
         console.error('💥 [APPROVE] Erro ao processar API externa:', externalError);
         
-        // REVERTER APROVAÇÃO - CRÍTICO
         console.log('🔄 [APPROVE] Revertendo aprovação devido a exceção...');
         const { error: rejectError } = await supabase.rpc('reject_video', {
           p_pedido_video_id: videoId,
@@ -284,7 +274,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
         toast.error(`Erro crítico: ${externalError.message}`);
         onRefresh();
         fetchPendingVideos();
-        return; // Bloquear continuação
+        return;
       }
 
       onRefresh();
@@ -316,14 +306,12 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
       if (error) throw error;
 
-      // Buscar dados do vídeo para enviar email
       const { data: videoData } = await supabase
         .from('pedido_videos')
         .select('video_id, pedido_id, videos(nome)')
         .eq('id', videoId)
         .single();
 
-      // Enviar email de rejeição
       if (videoData?.pedido_id) {
         try {
           console.log('📧 [REJECT] Enviando email de rejeição...');
@@ -375,67 +363,183 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
   if (loadingVideos || loading) {
     return (
-      <Card className="bg-white border-gray-200">
-        <CardContent className="p-8">
-          <div className="flex items-center justify-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-[#00FFAB]" />
-            <span className="ml-3 text-black">Carregando vídeos para aprovação...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-center">
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-3 text-foreground text-sm">Carregando vídeos para aprovação...</span>
+        </div>
+      </div>
     );
   }
 
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <div className="space-y-3">
+        {pendingVideos.length === 0 ? (
+          <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 text-center shadow-sm">
+            <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+            <h3 className="text-sm font-medium text-foreground mb-1">
+              Nenhum vídeo para aprovação
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Todos os vídeos foram processados
+            </p>
+          </div>
+        ) : (
+          pendingVideos.map((video) => (
+            <div 
+              key={video.id} 
+              className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-3 shadow-sm space-y-3"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <Badge className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 font-medium">
+                  Aguardando
+                </Badge>
+                <span className="text-[10px] text-muted-foreground">{formatDate(video.created_at)}</span>
+              </div>
+
+              {/* Client Info */}
+              <div className="flex items-center gap-2">
+                <User className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-sm font-medium truncate">{video.client_name}</span>
+              </div>
+
+              {/* Video Preview */}
+              <div className="aspect-video rounded-lg overflow-hidden bg-black/5">
+                <VideoPlayer
+                  src={video.video_url}
+                  title={video.video_nome}
+                  className="w-full h-full"
+                  muted={true}
+                  controls={true}
+                  onDownload={() => handleDownload(video.video_url, video.video_nome)}
+                />
+              </div>
+
+              {/* Video Info */}
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-emerald-600 font-semibold">{formatCurrency(video.pedido_valor)}</span>
+                <span className="text-muted-foreground">{video.video_duracao}s • {video.video_orientacao}</span>
+              </div>
+
+              {/* CONAR Checklist - Compact */}
+              <div className="bg-muted/30 rounded-lg p-2">
+                <p className="text-[10px] font-medium text-foreground mb-1">Verificar CONAR:</p>
+                <p className="text-[9px] text-muted-foreground leading-relaxed">
+                  Conteúdo familiar • Linguagem apropriada • Sem violência
+                </p>
+              </div>
+
+              {/* Rejection Reason Selector */}
+              <select
+                value={rejectionReason[video.id] || ''}
+                onChange={(e) => setRejectionReason(prev => ({
+                  ...prev,
+                  [video.id]: e.target.value
+                }))}
+                className="w-full p-2 border border-gray-200 rounded-lg text-xs bg-white text-foreground"
+              >
+                <option value="">Motivo rejeição (se aplicável)...</option>
+                {conarViolations.map((violation) => (
+                  <option key={violation} value={violation}>
+                    {violation}
+                  </option>
+                ))}
+              </select>
+
+              {rejectionReason[video.id] === 'Outro motivo (especificar)' && (
+                <Textarea
+                  placeholder="Especifique o motivo..."
+                  className="text-xs h-16"
+                  onChange={(e) => setRejectionReason(prev => ({
+                    ...prev,
+                    [video.id]: `Outro motivo: ${e.target.value}`
+                  }))}
+                />
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => approveVideo(video.id, video.client_name)}
+                  disabled={actionLoading}
+                  size="sm"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-9"
+                >
+                  <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                  Aprovar
+                </Button>
+                <Button
+                  onClick={() => rejectVideo(video.id, video.client_name)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 border-red-200 text-red-600 hover:bg-red-50 h-9"
+                  disabled={!rejectionReason[video.id] || actionLoading}
+                >
+                  <XCircle className="w-3.5 h-3.5 mr-1" />
+                  Rejeitar
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  // Desktop Layout
   return (
     <div className="space-y-6">
-      <Card className="bg-white border-gray-200">
-        <CardHeader className="border-b border-gray-200">
-          <CardTitle className="flex items-center text-black">
-            <AlertTriangle className="h-5 w-5 mr-2 text-[#00FFAB]" />
+      <Card className="bg-card border">
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center text-foreground">
+            <AlertTriangle className="h-5 w-5 mr-2 text-amber-500" />
             Vídeos Aguardando Aprovação
           </CardTitle>
-          <CardDescription className="text-gray-600">
+          <CardDescription>
             Analise os vídeos conforme diretrizes CONAR - Conteúdo familiar adequado
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6">
           {pendingVideos.length === 0 ? (
             <div className="text-center py-12">
-              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-medium text-black mb-2">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 Nenhum vídeo para aprovação
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Todos os vídeos enviados foram processados
               </p>
             </div>
           ) : (
             <div className="space-y-8">
               {pendingVideos.map((video) => (
-                <Card key={video.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                <Card key={video.id} className="bg-card border hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Informações do Cliente e Pedido */}
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <Badge className="bg-yellow-100 text-yellow-800">
+                          <Badge className="bg-amber-100 text-amber-800">
                             Aguardando Aprovação
                           </Badge>
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-muted-foreground">
                             Enviado em: {formatDate(video.created_at)}
                           </span>
                         </div>
                         
                         <div className="space-y-3">
                           <div className="flex items-center">
-                            <User className="h-4 w-4 mr-2 text-[#00FFAB]" />
+                            <User className="h-4 w-4 mr-2 text-muted-foreground" />
                             <div>
-                              <span className="font-medium text-black">{video.client_name}</span>
-                              <div className="text-sm text-gray-600">{video.client_email}</div>
+                              <span className="font-medium text-foreground">{video.client_name}</span>
+                              <div className="text-sm text-muted-foreground">{video.client_email}</div>
                             </div>
                           </div>
                           
-                          <div className="text-sm text-gray-700 space-y-1">
+                          <div className="text-sm text-muted-foreground space-y-1">
                             <p><strong>Valor:</strong> {formatCurrency(video.pedido_valor)}</p>
                             <p><strong>Arquivo:</strong> {video.video_nome}</p>
                             <p><strong>Duração:</strong> {video.video_duracao}s • {video.video_orientacao}</p>
@@ -457,11 +561,11 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
                       {/* Painel de Aprovação/Rejeição */}
                       <div className="space-y-4">
-                        <h3 className="font-semibold text-black">Análise CONAR</h3>
+                        <h3 className="font-semibold text-foreground">Análise CONAR</h3>
                         
-                        <div className="bg-[#00FFAB]/10 border border-[#00FFAB]/30 rounded-lg p-4">
-                          <h4 className="font-medium text-black mb-2">Verificar:</h4>
-                          <ul className="text-sm text-gray-700 space-y-1">
+                        <div className="bg-muted/30 border rounded-lg p-4">
+                          <h4 className="font-medium text-foreground mb-2">Verificar:</h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
                             <li>• Conteúdo adequado para ambiente familiar</li>
                             <li>• Ausência de propaganda inadequada</li>
                             <li>• Linguagem apropriada</li>
@@ -472,7 +576,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
 
                         {/* Motivos de Rejeição */}
                         <div className="space-y-2">
-                          <label className="text-sm font-medium text-black">
+                          <label className="text-sm font-medium text-foreground">
                             Motivo da rejeição (se aplicável):
                           </label>
                           <select
@@ -481,7 +585,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                               ...prev,
                               [video.id]: e.target.value
                             }))}
-                            className="w-full p-2 border border-gray-300 rounded-md text-sm bg-white text-black focus:border-[#00FFAB] focus:ring-[#00FFAB]"
+                            className="w-full p-2 border rounded-md text-sm bg-background text-foreground"
                           >
                             <option value="">Selecione um motivo...</option>
                             {conarViolations.map((violation) => (
@@ -495,7 +599,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                         {rejectionReason[video.id] === 'Outro motivo (especificar)' && (
                           <Textarea
                             placeholder="Especifique o motivo da rejeição..."
-                            className="text-sm border-gray-300 bg-white text-black focus:border-[#00FFAB] focus:ring-[#00FFAB]"
+                            className="text-sm"
                             onChange={(e) => setRejectionReason(prev => ({
                               ...prev,
                               [video.id]: `Outro motivo: ${e.target.value}`
@@ -508,7 +612,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                           <Button
                             onClick={() => approveVideo(video.id, video.client_name)}
                             disabled={actionLoading}
-                            className="flex-1 bg-[#00FFAB] hover:bg-[#00FFAB]/80 text-black font-semibold"
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Aprovar
@@ -517,7 +621,7 @@ const RealPendingVideosSection: React.FC<RealPendingVideosSectionProps> = ({ loa
                           <Button
                             onClick={() => rejectVideo(video.id, video.client_name)}
                             variant="outline"
-                            className="flex-1 border-red-500 text-red-600 hover:bg-red-500 hover:text-white"
+                            className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
                             disabled={!rejectionReason[video.id] || actionLoading}
                           >
                             <XCircle className="h-4 w-4 mr-2" />

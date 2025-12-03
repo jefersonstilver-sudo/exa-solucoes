@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import PeriodSelector from './PeriodSelector';
 import VideoStatusIndicator from './VideoStatusIndicator';
 import VideoAdminActions from './VideoAdminActions';
+import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
 
 interface ApprovedVideo {
   pedido_video_id: string;
@@ -51,8 +52,8 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
   const [approvedVideos, setApprovedVideos] = useState<ApprovedVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [statusLoading, setStatusLoading] = useState(false);
+  const { isMobile } = useAdvancedResponsive();
   
-  // Estados do filtro de período
   const [selectedPeriod, setSelectedPeriod] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -67,7 +68,6 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
       let startDate: string | undefined;
       let endDate: string | undefined;
       
-      // Determinar período baseado na seleção
       if (selectedPeriod === 'custom') {
         if (customStartDate && customEndDate) {
           startDate = customStartDate.toISOString().split('T')[0];
@@ -77,16 +77,14 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
           return;
         }
       } else {
-        // Período mensal selecionado (formato: YYYY-MM)
         const [year, month] = selectedPeriod.split('-').map(Number);
         const monthStart = new Date(year, month - 1, 1);
-        const monthEnd = new Date(year, month, 0); // Último dia do mês
+        const monthEnd = new Date(year, month, 0);
         
         startDate = monthStart.toISOString().split('T')[0];
         endDate = monthEnd.toISOString().split('T')[0];
       }
       
-      // Usar nova função com filtro de período
       const { data, error } = await supabase.rpc('get_approved_videos_by_period', {
         p_start_date: startDate,
         p_end_date: endDate
@@ -107,7 +105,6 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
         return;
       }
 
-      // Mapear dados da função para o formato esperado
       const mappedVideos: ApprovedVideo[] = data.map((item: any) => ({
         pedido_video_id: item.pedido_video_id,
         video_id: item.video_id,
@@ -130,8 +127,6 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
       }));
 
       setApprovedVideos(mappedVideos);
-      
-      // Buscar status de cada vídeo
       await fetchVideoStatuses(mappedVideos);
     } catch (error) {
       console.error('Erro geral ao buscar vídeos aprovados:', error);
@@ -145,7 +140,6 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
     try {
       setStatusLoading(true);
       
-      // Buscar status de todos os vídeos em paralelo
       const statusPromises = videos.map(async (video) => {
         const { data, error } = await supabase.rpc('get_video_current_status', {
           p_video_id: video.video_id
@@ -164,7 +158,6 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
       
       const statuses = await Promise.all(statusPromises);
       
-      // Atualizar vídeos com status
       const videosWithStatus = videos.map(video => {
         const statusData = statuses.find(s => s?.video_id === video.video_id);
         const status = statusData?.status;
@@ -213,6 +206,13 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
     });
   };
 
+  const formatDateShort = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -222,22 +222,124 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
 
   if (loadingVideos || loading) {
     return (
-      <Card className="bg-background border">
-        <CardContent className="p-8">
-          <div className="flex items-center justify-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-3 text-foreground">
-              {statusLoading ? 'Carregando status dos vídeos...' : 'Carregando vídeos aprovados...'}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-center">
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-3 text-foreground text-sm">
+            {statusLoading ? 'Carregando status...' : 'Carregando vídeos aprovados...'}
+          </span>
+        </div>
+      </div>
     );
   }
 
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <div className="space-y-3">
+        {/* Period Selector - Compact */}
+        <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-2 shadow-sm">
+          <PeriodSelector
+            selectedPeriod={selectedPeriod}
+            onPeriodChange={setSelectedPeriod}
+            customStartDate={customStartDate}
+            customEndDate={customEndDate}
+            onCustomStartDateChange={setCustomStartDate}
+            onCustomEndDateChange={setCustomEndDate}
+          />
+        </div>
+
+        {approvedVideos.length === 0 ? (
+          <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 text-center shadow-sm">
+            <CheckCircle className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+            <h3 className="text-sm font-medium text-foreground mb-1">
+              Nenhum vídeo aprovado
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Selecione um período diferente
+            </p>
+          </div>
+        ) : (
+          approvedVideos.map((video) => (
+            <div 
+              key={video.pedido_video_id} 
+              className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-3 shadow-sm space-y-2"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Play className="h-3.5 w-3.5 text-emerald-600" />
+                  <span className="text-sm font-medium text-foreground truncate max-w-[180px]">
+                    {video.video_name}
+                  </span>
+                </div>
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] px-1.5">
+                  Slot {video.slot_position}
+                </Badge>
+              </div>
+
+              {/* Client & Value */}
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <User className="h-3 w-3" />
+                  {video.client_name?.split('@')[0] || video.client_email?.split('@')[0]}
+                </span>
+                <span className="text-emerald-600 font-semibold">{formatCurrency(video.valor_total)}</span>
+              </div>
+
+              {/* Approval Info */}
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3 text-emerald-500" />
+                  Por: {video.approver_name?.split('@')[0]}
+                </span>
+                <span>{formatDateShort(video.approved_at)}</span>
+              </div>
+
+              {/* Status */}
+              {video.status && (
+                <div className="pt-1">
+                  <VideoStatusIndicator status={video.status} />
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-8 text-[10px]"
+                  onClick={() => {
+                    window.open(`/admin/video-preview/${video.video_id}`, '_blank');
+                  }}
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  Ver
+                </Button>
+                
+                {video.status && (
+                  <VideoAdminActions
+                    video={{
+                      pedido_video_id: video.pedido_video_id,
+                      video_id: video.video_id,
+                      video_name: video.video_name,
+                      pedido_id: video.pedido_id
+                    }}
+                    status={video.status}
+                    onActionComplete={handleActionComplete}
+                  />
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  // Desktop Layout
   return (
     <div className="space-y-6">
-      {/* Seletor de Período */}
       <PeriodSelector
         selectedPeriod={selectedPeriod}
         onPeriodChange={setSelectedPeriod}
@@ -247,10 +349,10 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
         onCustomEndDateChange={setCustomEndDate}
       />
       
-      <Card className="bg-background border">
+      <Card className="bg-card border">
         <CardHeader className="border-b">
           <CardTitle className="flex items-center text-foreground">
-            <Shield className="h-5 w-5 mr-2 text-green-600" />
+            <Shield className="h-5 w-5 mr-2 text-emerald-600" />
             Vídeos Aprovados no Período ({approvedVideos.length})
             <Badge variant="outline" className="ml-2">
               Auditoria Segura
@@ -274,62 +376,62 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
           ) : (
             <div className="grid gap-6">
               {approvedVideos.map((video) => (
-                <Card key={video.pedido_video_id} className="bg-background border hover:shadow-md transition-shadow duration-200">
+                <Card key={video.pedido_video_id} className="bg-card border hover:shadow-md transition-shadow duration-200">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                          <Play className="h-5 w-5 text-blue-600" />
+                          <Play className="h-5 w-5 text-emerald-600" />
                           {video.video_name}
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                             Slot {video.slot_position}
                           </Badge>
                         </CardTitle>
                         
-                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-gray-400" />
+                              <User className="h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">Cliente:</span>
-                              <span className="text-gray-900">{video.client_name}</span>
+                              <span className="text-foreground">{video.client_name}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-400">@</span>
-                              <span className="text-gray-700">{video.client_email}</span>
+                              <span className="text-muted-foreground">@</span>
+                              <span>{video.client_email}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <CheckCircle className="h-4 w-4 text-emerald-500" />
                               <span className="font-medium">Aprovado por:</span>
-                              <span className="text-gray-900">{video.approver_name}</span>
+                              <span className="text-foreground">{video.approver_name}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-400">@</span>
-                              <span className="text-gray-700">{video.approver_email}</span>
+                              <span className="text-muted-foreground">@</span>
+                              <span>{video.approver_email}</span>
                             </div>
                           </div>
                           
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <DollarSign className="h-4 w-4 text-gray-400" />
+                              <DollarSign className="h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">Valor:</span>
-                              <span className="text-gray-900">{formatCurrency(video.valor_total)}</span>
+                              <span className="text-foreground">{formatCurrency(video.valor_total)}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">Período:</span>
-                              <span className="text-gray-900">{video.plano_meses} meses</span>
+                              <span className="text-foreground">{video.plano_meses} meses</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">Aprovado em:</span>
-                              <span className="text-gray-900">{formatDate(video.approved_at)}</span>
+                              <span className="text-foreground">{formatDate(video.approved_at)}</span>
                             </div>
                           </div>
                         </div>
                         
                         {video.data_inicio && video.data_fim && (
-                          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <div className="flex items-center gap-2 text-sm text-blue-700">
+                          <div className="mt-3 p-3 bg-muted/30 border rounded-lg">
+                            <div className="flex items-center gap-2 text-sm text-foreground">
                               <Calendar className="h-4 w-4" />
                               <span className="font-medium">Período de Exibição:</span>
                               <span>{formatDate(video.data_inicio)} até {formatDate(video.data_fim)}</span>
@@ -339,7 +441,6 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
                       </div>
                       
                       <div className="flex flex-col gap-4 ml-4">
-                        {/* Status do Vídeo */}
                         <div className="flex flex-col gap-2">
                           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                             Status Atual
@@ -354,7 +455,6 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
                           )}
                         </div>
 
-                        {/* Ações de Visualização */}
                         <div className="flex flex-col gap-2">
                           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                             Visualização
@@ -387,7 +487,6 @@ const RealApprovedVideosSection: React.FC<RealApprovedVideosSectionProps> = ({ l
                           </Button>
                         </div>
 
-                        {/* Ações Administrativas */}
                         <div className="flex flex-col gap-2">
                           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                             Ações Admin

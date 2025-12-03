@@ -1,19 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { Video, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Video, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, MoreVertical } from 'lucide-react';
 import { useRealApprovalsData } from '@/hooks/useRealApprovalsData';
 import RealPaidOrdersSection from '@/components/admin/approvals/RealPaidOrdersSection';
 import RealPendingVideosSection from '@/components/admin/approvals/RealPendingVideosSection';
 import RealApprovedVideosSection from '@/components/admin/approvals/RealApprovedVideosSection';
 import RealRejectedVideosSection from '@/components/admin/approvals/RealRejectedVideosSection';
 import AdminPeriodSelector, { PeriodType, getPeriodDates } from '@/components/admin/common/AdminPeriodSelector';
+import { useAdvancedResponsive } from '@/hooks/useAdvancedResponsive';
+import { MobileActionMenu } from '@/components/admin/shared/MobileActionMenu';
 
 const ApprovalsPage = () => {
   const [activeTab, setActiveTab] = useState('pending-orders');
-  const [periodFilter, setPeriodFilter] = useState<PeriodType>('current_month');
+  const [periodFilter, setPeriodFilter] = useState<PeriodType>('all');
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
+  const { isMobile } = useAdvancedResponsive();
 
   const { start, end } = useMemo(() => {
     return getPeriodDates(periodFilter, customStartDate, customEndDate);
@@ -30,6 +33,133 @@ const ApprovalsPage = () => {
     setCustomEndDate(end);
   };
 
+  const mobileActionItems = [
+    {
+      icon: <RefreshCw className="h-4 w-4" />,
+      label: 'Atualizar',
+      onClick: refetch,
+    },
+  ];
+
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
+        {/* Mobile Header - Glassmorphism */}
+        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-white/50 shadow-sm">
+          <div className="px-3 py-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm border border-gray-200/50">
+                  <Video className="w-4 h-4 text-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-base font-semibold text-foreground">Aprovações</h1>
+                  <p className="text-[10px] text-muted-foreground">Gestão CONAR</p>
+                </div>
+              </div>
+              <MobileActionMenu items={mobileActionItems} />
+            </div>
+          </div>
+
+          {/* Period Selector */}
+          <div className="px-3 pb-1.5">
+            <AdminPeriodSelector
+              value={periodFilter}
+              onChange={handlePeriodChange}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onCustomDateChange={handleCustomDateChange}
+            />
+          </div>
+
+          {/* Quick Filter Pills */}
+          <div className="px-3 pb-2.5 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 whitespace-nowrap pb-0.5">
+              <button
+                onClick={() => setActiveTab('pending-orders')}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
+                  activeTab === 'pending-orders'
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'bg-white/80 text-muted-foreground border border-gray-200/50'
+                }`}
+              >
+                ⏰ Aguard. {stats.paidWithoutVideo}
+              </button>
+              <button
+                onClick={() => setActiveTab('pending-videos')}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
+                  activeTab === 'pending-videos'
+                    ? 'bg-[#9C1E1E] text-white shadow-sm'
+                    : 'bg-white/80 text-muted-foreground border border-gray-200/50'
+                }`}
+              >
+                ⚠️ Aprovar {stats.pendingApproval}
+              </button>
+              <button
+                onClick={() => setActiveTab('approved-videos')}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
+                  activeTab === 'approved-videos'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-white/80 text-muted-foreground border border-gray-200/50'
+                }`}
+              >
+                ✅ Aprov. {stats.approved}
+              </button>
+              <button
+                onClick={() => setActiveTab('rejected-videos')}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
+                  activeTab === 'rejected-videos'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-white/80 text-muted-foreground border border-gray-200/50'
+                }`}
+              >
+                ❌ Rejeit. {stats.rejected}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Stats Grid 2x2 */}
+        <div className="grid grid-cols-2 gap-2 px-3 py-3">
+          <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-2.5 text-center shadow-sm">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">Aguard. Vídeo</p>
+            <p className="text-xl font-bold text-amber-600">{stats.paidWithoutVideo}</p>
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-2.5 text-center shadow-sm">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">P/ Aprovar</p>
+            <p className="text-xl font-bold text-[#9C1E1E]">{stats.pendingApproval}</p>
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-2.5 text-center shadow-sm">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">Aprovados</p>
+            <p className="text-xl font-bold text-emerald-600">{stats.approved}</p>
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-2.5 text-center shadow-sm">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">Rejeitados</p>
+            <p className="text-xl font-bold text-red-600">{stats.rejected}</p>
+          </div>
+        </div>
+
+        {/* Content Sections */}
+        <div className="px-3 pb-6">
+          {activeTab === 'pending-orders' && (
+            <RealPaidOrdersSection loading={loading} onRefresh={refetch} />
+          )}
+          {activeTab === 'pending-videos' && (
+            <RealPendingVideosSection loading={loading} onRefresh={refetch} />
+          )}
+          {activeTab === 'approved-videos' && (
+            <RealApprovedVideosSection loading={loading} onRefresh={refetch} />
+          )}
+          {activeTab === 'rejected-videos' && (
+            <RealRejectedVideosSection loading={loading} onRefresh={refetch} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop Layout
   return (
     <div className="space-y-6">
       {/* Header Principal */}
