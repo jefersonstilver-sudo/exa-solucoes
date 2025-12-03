@@ -69,16 +69,17 @@ const PropostaPublicaPage = () => {
   const [enrichedBuildings, setEnrichedBuildings] = useState<any[]>([]);
   const [realTotalPanels, setRealTotalPanels] = useState(0);
 
-  // Track page view time
+  // Track page view time with heartbeat system (works on mobile!)
   const pageLoadTime = React.useRef<number>(Date.now());
+  const lastSentTime = React.useRef<number>(0);
   
-  // Register view on mount and track time on unmount
+  // Register view on mount and heartbeat every 15 seconds
   useEffect(() => {
     if (!id) return;
     
     const deviceType = /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
     
-    // Register view entry
+    // Register view entry ONCE
     supabase.functions.invoke('track-proposal-view', {
       body: {
         proposalId: id,
@@ -86,25 +87,39 @@ const PropostaPublicaPage = () => {
         deviceType,
         userAgent: navigator.userAgent
       }
+    }).then(() => {
+      console.log('✅ View registered');
     }).catch(err => console.log('Track error:', err));
     
-    // Track time spent when leaving
-    const handleBeforeUnload = () => {
-      const timeSpent = Math.floor((Date.now() - pageLoadTime.current) / 1000);
-      navigator.sendBeacon(
-        `${import.meta.env.VITE_SUPABASE_URL || 'https://aakenoljsycyrcrchgxj.supabase.co'}/functions/v1/track-proposal-view`,
-        JSON.stringify({ proposalId: id, action: 'leave', timeSpentSeconds: timeSpent })
-      );
-    };
+    // Heartbeat: send time every 15 seconds (works on mobile!)
+    const heartbeatInterval = setInterval(() => {
+      const currentTimeSpent = Math.floor((Date.now() - pageLoadTime.current) / 1000);
+      const incrementalTime = currentTimeSpent - lastSentTime.current;
+      
+      if (incrementalTime > 0) {
+        supabase.functions.invoke('track-proposal-view', {
+          body: { 
+            proposalId: id, 
+            action: 'heartbeat', 
+            timeSpentSeconds: incrementalTime 
+          }
+        }).then(() => {
+          console.log(`⏱️ Heartbeat: +${incrementalTime}s`);
+          lastSentTime.current = currentTimeSpent;
+        }).catch(() => {});
+      }
+    }, 15000); // 15 segundos
     
-    window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      // Also track on component unmount
-      const timeSpent = Math.floor((Date.now() - pageLoadTime.current) / 1000);
-      supabase.functions.invoke('track-proposal-view', {
-        body: { proposalId: id, action: 'leave', timeSpentSeconds: timeSpent }
-      }).catch(() => {});
+      clearInterval(heartbeatInterval);
+      // Final send on unmount
+      const finalTime = Math.floor((Date.now() - pageLoadTime.current) / 1000);
+      const remaining = finalTime - lastSentTime.current;
+      if (remaining > 0) {
+        supabase.functions.invoke('track-proposal-view', {
+          body: { proposalId: id, action: 'heartbeat', timeSpentSeconds: remaining }
+        }).catch(() => {});
+      }
     };
   }, [id]);
 

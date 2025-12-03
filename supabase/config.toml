@@ -337,6 +337,15 @@ verify_jwt = false
 [functions.track-proposal-view]
 verify_jwt = false
 
+[functions.convert-proposal-to-order]
+verify_jwt = false
+
+[functions.send-payment-approved-email]
+verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false
+
 [[cron]]
 function_name = "auto-cancel-expired-orders"
 schedule = "0 */1 * * *"

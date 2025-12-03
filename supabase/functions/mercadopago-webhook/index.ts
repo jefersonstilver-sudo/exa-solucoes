@@ -104,13 +104,57 @@ serve(async (req) => {
       });
     }
 
-    // Buscar pedido por external_reference (pedidoId)
-    const pedidoId = payment.external_reference;
+    // Buscar pedido por external_reference (pedidoId ou proposalId)
+    const externalRef = payment.external_reference;
     
-    if (!pedidoId) {
-      throw new Error('external_reference (pedidoId) não encontrado no pagamento');
+    if (!externalRef) {
+      throw new Error('external_reference não encontrado no pagamento');
     }
 
+    // ✅ NOVO: Detectar se é pagamento de PROPOSTA
+    if (externalRef.startsWith('proposal:')) {
+      const proposalId = externalRef.replace('proposal:', '');
+      console.log(`🔔 [WEBHOOK-PIX-PROD] Detectado pagamento de PROPOSTA: ${proposalId}`);
+      
+      // Invocar convert-proposal-to-order
+      const { data: conversionResult, error: conversionError } = await supabase.functions.invoke('convert-proposal-to-order', {
+        body: {
+          proposalId,
+          paymentId: payment.id,
+          paymentData: {
+            method: 'pix',
+            status: payment.status,
+            amount: payment.transaction_amount,
+            approved_at: payment.date_approved
+          }
+        }
+      });
+
+      if (conversionError) {
+        console.error('❌ [WEBHOOK-PIX-PROD] Erro na conversão:', conversionError);
+        throw conversionError;
+      }
+
+      console.log('✅ [WEBHOOK-PIX-PROD] Proposta convertida em pedido:', conversionResult);
+
+      // Log de sucesso
+      await supabase.from('log_eventos_sistema').insert({
+        tipo_evento: 'PROPOSTA_PAGA_PIX',
+        descricao: `Pagamento PIX aprovado para proposta ${proposalId}. Pedido criado: ${conversionResult?.orderId}`
+      });
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        type: 'proposal_payment',
+        proposalId,
+        orderId: conversionResult?.orderId
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Fluxo normal: pedido existente
+    const pedidoId = externalRef;
     console.log(`🔍 [WEBHOOK-PIX-PROD] Buscando pedido: ${pedidoId}`);
 
     const { data: pedido, error: pedidoError } = await supabase

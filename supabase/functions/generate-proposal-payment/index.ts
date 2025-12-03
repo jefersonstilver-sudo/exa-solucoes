@@ -98,6 +98,7 @@ serve(async (req) => {
         transaction_amount: amount,
         description: `Proposta ${proposal.number} - EXA Mídia`,
         payment_method_id: 'pix',
+        external_reference: `proposal:${proposalId}`, // Important for webhook detection!
         payer: {
           email: clientEmail || proposal.client_email || 'cliente@examidia.com.br',
           first_name: proposal.client_name?.split(' ')[0] || 'Cliente',
@@ -144,6 +145,7 @@ serve(async (req) => {
         transaction_amount: amount,
         description: `Proposta ${proposal.number} - EXA Mídia`,
         payment_method_id: 'bolbradesco',
+        external_reference: `proposal:${proposalId}`, // Important for webhook detection!
         date_of_expiration: `${dueDate}T23:59:59.000-03:00`,
         payer: {
           email: clientEmail || proposal.client_email || 'cliente@examidia.com.br',

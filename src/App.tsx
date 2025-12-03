@@ -396,6 +396,13 @@ const AppContent = () => {
               {React.createElement(lazy(() => import('./pages/public/PropostaPublicaPage')))}
             </Suspense>
           } />
+          
+          {/* DEFINIR SENHA - Para novos clientes via proposta */}
+          <Route path="/definir-senha" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando..." />}>
+              {React.createElement(lazy(() => import('./pages/public/DefinirSenhaPage')))}
+            </Suspense>
+          } />
 
           {/* ÁREA DO ANUNCIANTE */}
           <Route path="/anunciante/*" element={
