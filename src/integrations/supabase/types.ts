@@ -7016,6 +7016,7 @@ export type Database = {
       }
       audit_unauthorized_uploads: { Args: never; Returns: Json }
       auto_cancel_expired_orders: { Args: never; Returns: number }
+      auto_cancel_orders_5h: { Args: never; Returns: number }
       auto_cleanup_paid_attempts: { Args: never; Returns: Json }
       auto_fix_lost_transactions: { Args: never; Returns: Json }
       auto_recovery_system: { Args: never; Returns: Json }

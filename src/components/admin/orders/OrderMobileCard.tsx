@@ -143,9 +143,9 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
       <div className="pt-3 border-t space-y-2">
         <Button
           onClick={() => onViewDetails(order.id)}
-          className="w-full bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] hover:from-[#7A1818] hover:to-[#B91C1C] text-white"
+          className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white h-9 text-sm font-medium"
         >
-          👁️ Ver Detalhes Completos
+          Ver Detalhes
         </Button>
       </div>
     </div>

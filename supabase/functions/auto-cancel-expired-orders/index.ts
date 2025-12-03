@@ -22,23 +22,23 @@ serve(async (req) => {
       }
     );
 
-    console.log("🔄 [AUTO-CANCEL] Iniciando cancelamento automático de pedidos expirados");
+    console.log("🔄 [AUTO-CANCEL-5H] Iniciando cancelamento automático de pedidos não pagos após 5 horas");
 
-    // Chamar a função do banco que faz o cancelamento
-    const { data, error } = await supabaseAdmin.rpc('auto_cancel_expired_orders');
+    // Chamar a nova função que cancela após 5 horas e DELETA os pedidos
+    const { data, error } = await supabaseAdmin.rpc('auto_cancel_orders_5h');
 
     if (error) {
-      console.error("❌ [AUTO-CANCEL] Erro ao cancelar pedidos:", error);
+      console.error("❌ [AUTO-CANCEL-5H] Erro ao cancelar pedidos:", error);
       throw error;
     }
 
     const canceledCount = data || 0;
-    console.log(`✅ [AUTO-CANCEL] Cancelados ${canceledCount} pedidos expirados`);
+    console.log(`✅ [AUTO-CANCEL-5H] ${canceledCount} pedidos cancelados, movidos para log e deletados`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `${canceledCount} pedidos cancelados automaticamente`,
+        message: `${canceledCount} pedidos não pagos cancelados após 5 horas (movidos para log e deletados)`,
         canceled_count: canceledCount,
         timestamp: new Date().toISOString()
       }),
@@ -48,7 +48,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("❌ [AUTO-CANCEL] Erro fatal:", error);
+    console.error("❌ [AUTO-CANCEL-5H] Erro fatal:", error);
     
     return new Response(
       JSON.stringify({
