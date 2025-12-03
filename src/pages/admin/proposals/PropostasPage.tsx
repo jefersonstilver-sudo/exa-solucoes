@@ -235,19 +235,25 @@ const PropostasPage = () => {
     try {
       const idsToDelete = Array.from(selectedIds);
       
-      // 1. Deletar proposal_views relacionadas
+      // 1. Desvincular pedidos que referenciam essas propostas
+      await supabase
+        .from('pedidos')
+        .update({ proposal_id: null })
+        .in('proposal_id', idsToDelete);
+      
+      // 2. Deletar proposal_views relacionadas
       await supabase
         .from('proposal_views')
         .delete()
         .in('proposal_id', idsToDelete);
       
-      // 2. Deletar proposal_logs relacionados
+      // 3. Deletar proposal_logs relacionados
       await supabase
         .from('proposal_logs')
         .delete()
         .in('proposal_id', idsToDelete);
       
-      // 3. Deletar as propostas
+      // 4. Deletar as propostas
       const { error } = await supabase
         .from('proposals')
         .delete()
