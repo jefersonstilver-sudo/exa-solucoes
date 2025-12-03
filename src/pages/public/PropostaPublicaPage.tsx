@@ -780,8 +780,35 @@ const PropostaPublicaPage = () => {
       </header>
 
       <div className="max-w-4xl mx-auto p-4 space-y-4">
+        {/* Banner de Status Destacado - para propostas já respondidas */}
+        {(proposal.status === 'aceita' || proposal.status === 'recusada') && (
+          <Card className={`p-4 text-center ${
+            proposal.status === 'aceita' 
+              ? 'bg-emerald-50 border-emerald-300' 
+              : 'bg-red-50 border-red-300'
+          }`}>
+            <div className="flex items-center justify-center gap-2">
+              {proposal.status === 'aceita' ? (
+                <Check className="h-6 w-6 text-emerald-600" />
+              ) : (
+                <X className="h-6 w-6 text-red-600" />
+              )}
+              <span className={`text-lg font-semibold ${
+                proposal.status === 'aceita' ? 'text-emerald-700' : 'text-red-700'
+              }`}>
+                Esta proposta foi {proposal.status === 'aceita' ? 'ACEITA' : 'RECUSADA'}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              {proposal.status === 'aceita' 
+                ? 'Agradecemos pela confiança! Nossa equipe entrará em contato.' 
+                : 'Caso mude de ideia, entre em contato conosco.'}
+            </p>
+          </Card>
+        )}
+
         {/* Aviso de Validade */}
-        {proposal.expires_at && (
+        {proposal.expires_at && !['aceita', 'recusada'].includes(proposal.status) && (
           <Card className="p-3 bg-amber-50 border-amber-200 flex items-center gap-2">
             <Clock className="h-4 w-4 text-amber-600" />
             <span className="text-sm text-amber-800">
@@ -898,55 +925,48 @@ const PropostaPublicaPage = () => {
           </Card>
         </div>
 
-        {/* Botões de Ação */}
-        <div className="space-y-3 pt-4">
-          <Button
-            className="w-full h-14 text-lg bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={handleAccept}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            ) : (
-              <Check className="h-5 w-5 mr-2" />
-            )}
-            Aceitar Proposta ({selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade'})
-          </Button>
+        {/* Botões de Ação - SÓ aparecem se proposta ainda pode ser respondida */}
+        {!['aceita', 'recusada', 'expirada'].includes(proposal.status) && (
+          <div className="space-y-3 pt-4">
+            <Button
+              className="w-full h-14 text-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleAccept}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              ) : (
+                <Check className="h-5 w-5 mr-2" />
+              )}
+              Aceitar Proposta ({selectedPlan === 'avista' ? 'À Vista' : 'Fidelidade'})
+            </Button>
 
-          <div className="grid grid-cols-2 gap-3">
             <Button
               variant="outline"
-              className="h-12"
+              className="w-full h-12"
               onClick={handleReject}
               disabled={isSubmitting}
             >
               <X className="h-4 w-4 mr-2" />
-              Recusar
-            </Button>
-            <Button
-              variant="outline"
-              className="h-12"
-              onClick={() => window.open(`https://wa.me/55${sellerPhone.replace(/\D/g, '')}`, '_blank')}
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Falar com Agente
+              Recusar Proposta
             </Button>
           </div>
+        )}
 
-          <Button
-            variant="outline"
-            className="w-full h-10 text-sm"
-            onClick={handleDownloadPDF}
-            disabled={isDownloadingPDF}
-          >
-            {isDownloadingPDF ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
-            Baixar Proposta em PDF
-          </Button>
-        </div>
+        {/* Botão de baixar PDF - sempre visível */}
+        <Button
+          variant="outline"
+          className="w-full h-10 text-sm"
+          onClick={handleDownloadPDF}
+          disabled={isDownloadingPDF}
+        >
+          {isDownloadingPDF ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4 mr-2" />
+          )}
+          Baixar Proposta em PDF
+        </Button>
 
         {/* Contato */}
         <Card className="p-4 bg-white/80 backdrop-blur-sm">
