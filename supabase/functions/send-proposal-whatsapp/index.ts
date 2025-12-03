@@ -104,15 +104,30 @@ ${proposalLink}
 ${sellerName}
 EXA Mídia Digital`;
 
-    // Get Z-API config
-    const zapiInstanceId = Deno.env.get('ZAPI_INSTANCE_ID');
-    const zapiToken = Deno.env.get('ZAPI_TOKEN');
-    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+    // Get Z-API config from agents table (using sofia agent)
+    const { data: agent, error: agentError } = await supabase
+      .from('agents')
+      .select('zapi_config')
+      .eq('key', 'sofia')
+      .single();
+
+    if (agentError || !agent?.zapi_config) {
+      console.error('Erro ao buscar configuração Z-API:', agentError);
+      return new Response(
+        JSON.stringify({ error: 'Z-API não configurado no agente Sofia' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const zapiConfig = agent.zapi_config as { instance_id?: string; token?: string; client_token?: string };
+    const zapiInstanceId = zapiConfig.instance_id;
+    const zapiToken = zapiConfig.token;
+    const zapiClientToken = zapiConfig.client_token || Deno.env.get('ZAPI_CLIENT_TOKEN') || '';
 
     if (!zapiInstanceId || !zapiToken) {
-      console.error('Z-API não configurado');
+      console.error('Z-API credentials não encontradas no agente');
       return new Response(
-        JSON.stringify({ error: 'Z-API não configurado' }),
+        JSON.stringify({ error: 'Z-API não configurado corretamente' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

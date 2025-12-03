@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { EXAAlertsHeader } from '../components/exa-alerts/EXAAlertsHeader';
 import { AlertaCEOCard } from '../components/exa-alerts/AlertaCEOCard';
+import { AlertaPropostasCard } from '../components/exa-alerts/AlertaPropostasCard';
 import { AlertCard } from '../components/exa-alerts/AlertCard';
 import { AddAlertDialog } from '../components/exa-alerts/AddAlertDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -143,6 +144,9 @@ export const AlertasPage = () => {
       >
         {/* CEO Alert Card (Special) */}
         <AlertaCEOCard />
+
+        {/* Proposals Alert Card */}
+        <AlertaPropostasCard />
 
         {/* Other Alerts Grid */}
         {alerts.length > 0 && (
