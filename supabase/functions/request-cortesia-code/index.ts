@@ -66,8 +66,8 @@ serve(async (req) => {
     // Buscar telefone do Super Admin na tabela exa_alerts_directors
     const { data: directors, error: directorError } = await supabase
       .from('exa_alerts_directors')
-      .select('phone, name')
-      .eq('is_active', true)
+      .select('telefone, nome')
+      .eq('ativo', true)
       .limit(1);
 
     if (directorError || !directors || directors.length === 0) {
@@ -75,8 +75,8 @@ serve(async (req) => {
       throw new Error('Nenhum administrador configurado para receber códigos');
     }
 
-    const superAdminPhone = directors[0].phone;
-    const superAdminName = directors[0].name;
+    const superAdminPhone = directors[0].telefone;
+    const superAdminName = directors[0].nome;
     console.log('[request-cortesia-code] Enviando para:', superAdminName, superAdminPhone);
 
     // Construir mensagem WhatsApp
