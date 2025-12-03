@@ -64,6 +64,21 @@ const PropostaDetalhesPage = () => {
     enabled: !!id
   });
 
+  // Buscar dados do vendedor
+  const { data: sellerData } = useQuery({
+    queryKey: ['proposal-seller', proposal?.created_by],
+    queryFn: async () => {
+      if (!proposal?.created_by) return null;
+      const { data, error } = await supabase
+        .from('users')
+        .select('nome, telefone')
+        .eq('id', proposal.created_by)
+        .single();
+      return data;
+    },
+    enabled: !!proposal?.created_by
+  });
+
   // Buscar logs
   const { data: logs = [] } = useQuery({
     queryKey: ['proposal-logs', id],
@@ -588,9 +603,10 @@ const PropostaDetalhesPage = () => {
                 
                 await exporter.generateProposalPDF(
                   proposal as any, 
-                  'Equipe EXA',
+                  sellerData?.nome || 'Equipe EXA',
                   isCortesia,
-                  baseTotalValue
+                  baseTotalValue,
+                  sellerData?.telefone || '(45) 99141-5856'
                 );
                 toast.success('PDF gerado!');
               } catch (err) {
