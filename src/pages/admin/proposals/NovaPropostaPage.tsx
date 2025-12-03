@@ -17,7 +17,8 @@ import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
-import { validateCNPJ, formatCompanyDocument } from '@/utils/inputValidation';
+import { validateCNPJ, formatCompanyDocument, validateCompanyDocument } from '@/utils/inputValidation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Building {
   id: string;
@@ -41,10 +42,48 @@ const NovaPropostaPage = () => {
   // Estado do formulário
   const [clientData, setClientData] = useState({
     name: '',
-    cnpj: '',
+    companyName: '',
+    country: 'BR' as 'BR' | 'AR' | 'PY',
+    document: '',
     phone: '',
     email: ''
   });
+
+  // Funções auxiliares para documento dinâmico por país
+  const getDocumentLabel = () => {
+    switch (clientData.country) {
+      case 'BR': return 'CNPJ';
+      case 'AR': return 'CUIT';
+      case 'PY': return 'RUC';
+      default: return 'Documento';
+    }
+  };
+
+  const getDocumentPlaceholder = () => {
+    switch (clientData.country) {
+      case 'BR': return '00.000.000/0000-00';
+      case 'AR': return '20-12345678-3';
+      case 'PY': return '80012345-6';
+      default: return 'Documento';
+    }
+  };
+
+  const getDocumentMaxLength = () => {
+    switch (clientData.country) {
+      case 'BR': return 18;
+      case 'AR': return 13;
+      case 'PY': return 10;
+      default: return 20;
+    }
+  };
+
+  const isDocumentValid = () => {
+    if (!clientData.document) return true;
+    const minLength = clientData.country === 'BR' ? 14 : clientData.country === 'AR' ? 11 : 9;
+    const cleanDoc = clientData.document.replace(/\D/g, '');
+    if (cleanDoc.length < minLength) return true; // Still typing
+    return validateCompanyDocument(clientData.document, clientData.country);
+  };
 
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [durationMonths, setDurationMonths] = useState(6);
@@ -193,7 +232,9 @@ const NovaPropostaPage = () => {
         .insert([{
           number: proposalNumber,
           client_name: clientData.name,
-          client_cnpj: clientData.cnpj || null,
+          client_company_name: clientData.companyName || null,
+          client_country: clientData.country || 'BR',
+          client_cnpj: clientData.document || null,
           client_phone: clientData.phone || null,
           client_email: clientData.email || null,
           selected_buildings: buildingsData as Json,
@@ -286,8 +327,8 @@ const NovaPropostaPage = () => {
       toast.error('Preencha ao menos um contato (WhatsApp ou E-mail)');
       return;
     }
-    if (clientData.cnpj && clientData.cnpj.length >= 14 && !validateCNPJ(clientData.cnpj)) {
-      toast.error('CNPJ inválido. Verifique o número.');
+    if (clientData.document && !isDocumentValid()) {
+      toast.error(`${getDocumentLabel()} inválido. Verifique o número.`);
       return;
     }
 
@@ -340,7 +381,9 @@ const NovaPropostaPage = () => {
           clientName: clientData.name,
           clientEmail: clientData.email,
           clientPhone: clientData.phone,
-          clientCnpj: clientData.cnpj,
+          clientCnpj: clientData.document,
+          clientCompanyName: clientData.companyName,
+          clientCountry: clientData.country,
           buildings: buildingsData,
           durationMonths,
           totalPanels,
@@ -444,23 +487,50 @@ const NovaPropostaPage = () => {
               />
             </div>
             <div>
-              <Label className="text-xs">CNPJ</Label>
+              <Label className="text-xs">Nome da Empresa *</Label>
               <Input
-                placeholder="00.000.000/0000-00"
-                value={clientData.cnpj}
-                onChange={(e) => {
-                  const formatted = formatCompanyDocument(e.target.value, 'BR');
-                  setClientData(prev => ({ ...prev, cnpj: formatted }));
+                placeholder="Razão Social ou Nome Fantasia"
+                value={clientData.companyName}
+                onChange={(e) => setClientData(prev => ({ ...prev, companyName: e.target.value }))}
+                className="mt-1 h-12 text-base"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">País da Empresa</Label>
+              <Select
+                value={clientData.country}
+                onValueChange={(value: 'BR' | 'AR' | 'PY') => {
+                  setClientData(prev => ({ ...prev, country: value, document: '' }));
                 }}
-                maxLength={18}
+              >
+                <SelectTrigger className="mt-1 h-12 text-base">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BR">🇧🇷 Brasil - CNPJ</SelectItem>
+                  <SelectItem value="AR">🇦🇷 Argentina - CUIT</SelectItem>
+                  <SelectItem value="PY">🇵🇾 Paraguai - RUC</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">{getDocumentLabel()}</Label>
+              <Input
+                placeholder={getDocumentPlaceholder()}
+                value={clientData.document}
+                onChange={(e) => {
+                  const formatted = formatCompanyDocument(e.target.value, clientData.country);
+                  setClientData(prev => ({ ...prev, document: formatted }));
+                }}
+                maxLength={getDocumentMaxLength()}
                 className={`mt-1 h-12 text-base ${
-                  clientData.cnpj && clientData.cnpj.length >= 14 && !validateCNPJ(clientData.cnpj) 
+                  !isDocumentValid()
                     ? 'border-red-500 focus:border-red-500 focus-visible:ring-red-500' 
                     : ''
                 }`}
               />
-              {clientData.cnpj && clientData.cnpj.length >= 14 && !validateCNPJ(clientData.cnpj) && (
-                <p className="text-xs text-red-500 mt-1">CNPJ inválido</p>
+              {!isDocumentValid() && (
+                <p className="text-xs text-red-500 mt-1">{getDocumentLabel()} inválido</p>
               )}
             </div>
             <div>

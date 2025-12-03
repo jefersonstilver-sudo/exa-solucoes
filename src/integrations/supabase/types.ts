@@ -5654,6 +5654,8 @@ export type Database = {
           cash_total_value: number
           chosen_plan: string | null
           client_cnpj: string | null
+          client_company_name: string | null
+          client_country: string | null
           client_email: string | null
           client_name: string
           client_phone: string | null
@@ -5689,6 +5691,8 @@ export type Database = {
           cash_total_value: number
           chosen_plan?: string | null
           client_cnpj?: string | null
+          client_company_name?: string | null
+          client_country?: string | null
           client_email?: string | null
           client_name: string
           client_phone?: string | null
@@ -5724,6 +5728,8 @@ export type Database = {
           cash_total_value?: number
           chosen_plan?: string | null
           client_cnpj?: string | null
+          client_company_name?: string | null
+          client_country?: string | null
           client_email?: string | null
           client_name?: string
           client_phone?: string | null
