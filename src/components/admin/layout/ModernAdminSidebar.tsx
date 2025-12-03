@@ -362,15 +362,12 @@ export function ModernAdminSidebar() {
     <Sidebar 
       className="h-screen bg-gradient-to-b from-[#1A0A0A] via-[#2D1515] to-[#3D1F1F] border-r border-red-900/20 shadow-2xl overscroll-contain relative"
       collapsible={isMobile ? "offcanvas" : "icon"}
-      variant={isMobile ? "sidebar" : isTablet ? "sidebar" : "sidebar"}
       style={{ 
-        backgroundColor: '#1A0A0A',
+        '--sidebar-width': isMobile ? undefined : (collapsed ? '56px' : `${sidebarWidth}px`),
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)',
-        width: isMobile ? undefined : (collapsed ? '56px' : `${sidebarWidth}px`),
-        minWidth: isMobile ? undefined : (collapsed ? '56px' : `${sidebarWidth}px`),
-        transition: isDragging ? 'none' : 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
-      }}
+        transition: isDragging ? 'none' : 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+      } as React.CSSProperties}
     >
       {/* Resize Handle - Desktop only */}
       {!isMobile && !collapsed && (
