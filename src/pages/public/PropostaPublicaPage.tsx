@@ -279,6 +279,19 @@ const PropostaPublicaPage = () => {
       // Check if email capture needed
       if (!proposal.client_email) {
         setShowEmailCapture(true);
+      } else {
+        // Send immediate acceptance email (EMAIL 1)
+        supabase.functions.invoke('send-proposal-accepted-notification', {
+          body: {
+            proposalId: proposal.id,
+            clientEmail: proposal.client_email,
+            selectedPlan
+          }
+        }).then(() => {
+          console.log('✅ Email de aceitação enviado');
+        }).catch(err => {
+          console.error('❌ Erro ao enviar email de aceitação:', err);
+        });
       }
 
       setShowSuccess(true);
@@ -671,11 +684,12 @@ const PropostaPublicaPage = () => {
               )}
 
               <Button
-                className="w-full h-10 bg-[#25D366] hover:bg-[#20BD5A] text-white"
-                onClick={() => window.open(`https://wa.me/55${sellerPhone.replace(/\D/g, '')}`, '_blank')}
+                variant="outline"
+                className="w-full h-10 border-gray-300 text-gray-600 hover:bg-gray-50"
+                onClick={() => window.location.href = '/'}
               >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Confirmar Pagamento via WhatsApp
+                <Clock className="h-4 w-4 mr-2" />
+                Pagar Depois
               </Button>
             </div>
           )}
@@ -726,11 +740,12 @@ const PropostaPublicaPage = () => {
               )}
 
               <Button
-                className="w-full h-10 bg-[#25D366] hover:bg-[#20BD5A] text-white"
-                onClick={() => window.open(`https://wa.me/55${sellerPhone.replace(/\D/g, '')}`, '_blank')}
+                variant="outline"
+                className="w-full h-10 border-gray-300 text-gray-600 hover:bg-gray-50"
+                onClick={() => window.location.href = '/'}
               >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Falar com {sellerName.split(' ')[0]}
+                <Clock className="h-4 w-4 mr-2" />
+                Pagar Depois
               </Button>
             </div>
           )}
