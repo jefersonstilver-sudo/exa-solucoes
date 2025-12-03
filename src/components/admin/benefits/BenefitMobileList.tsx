@@ -57,7 +57,7 @@ const BenefitMobileList: React.FC<BenefitMobileListProps> = ({
   }
 
   return (
-    <div className="space-y-3 pb-20">
+    <div className="space-y-2 pb-20">
       {benefits.map((benefit) => (
         <BenefitMobileCard
           key={benefit.id}
