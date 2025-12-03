@@ -40,6 +40,8 @@ interface Proposal {
   total_time_spent_seconds: number | null;
   first_viewed_at: string | null;
   last_viewed_at: string | null;
+  // Conversion fields
+  converted_order_id?: string | null;
 }
 
 interface LiveViewNotification {
@@ -74,7 +76,7 @@ const PropostasPage = () => {
 
   // Real-time subscription para proposal_views
   useEffect(() => {
-    const channel = supabase
+    const viewsChannel = supabase
       .channel('proposal-views-realtime')
       .on(
         'postgres_changes',
@@ -115,8 +117,46 @@ const PropostasPage = () => {
         console.log('📡 Realtime proposal_views status:', status);
       });
 
+    // ✅ NOVO: Canal para mudanças de STATUS em tempo real
+    const statusChannel = supabase
+      .channel('proposal-status-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'proposals'
+        },
+        async (payload) => {
+          const oldStatus = (payload.old as any)?.status;
+          const newStatus = (payload.new as any)?.status;
+          
+          if (oldStatus !== newStatus) {
+            console.log(`🔄 Status mudou: ${oldStatus} → ${newStatus}`);
+            
+            // Refetch para atualizar lista
+            queryClient.invalidateQueries({ queryKey: ['proposals'] });
+            
+            // Notificações especiais para status importantes
+            if (newStatus === 'aceita') {
+              toast.success('🎉 Proposta aceita!', {
+                description: `${(payload.new as any)?.client_name} aceitou a proposta`
+              });
+            } else if (newStatus === 'paga' || newStatus === 'convertida') {
+              toast.success('💰 Pagamento confirmado!', {
+                description: `Proposta de ${(payload.new as any)?.client_name} foi paga`
+              });
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Realtime proposal_status status:', status);
+      });
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(viewsChannel);
+      supabase.removeChannel(statusChannel);
     };
   }, [proposals, queryClient]);
 
@@ -132,21 +172,24 @@ const PropostasPage = () => {
     if (activeFilter === 'pendentes') {
       matchesFilter = ['pendente', 'enviada', 'visualizada'].includes(p.status);
     } else if (activeFilter === 'aceitas') {
-      matchesFilter = p.status === 'aceita';
+      matchesFilter = ['aceita', 'paga', 'convertida'].includes(p.status);
     } else if (activeFilter === 'recusadas') {
       matchesFilter = p.status === 'recusada';
+    } else if (activeFilter === 'pagas') {
+      matchesFilter = ['paga', 'convertida'].includes(p.status);
     }
 
     return matchesSearch && matchesFilter;
   });
 
   // Calcular estatísticas
+  const pagasCount = proposals.filter(p => ['paga', 'convertida'].includes(p.status)).length;
   const stats = {
     proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
     pendentes: proposals.filter(p => ['pendente', 'enviada', 'visualizada'].includes(p.status)).length,
     aceitasMes: proposals.filter(p => {
       const createdAt = new Date(p.created_at);
-      return p.status === 'aceita' && 
+      return ['aceita', 'paga', 'convertida'].includes(p.status) && 
         createdAt >= startOfMonth(new Date()) && 
         createdAt <= endOfMonth(new Date());
     }).length,
@@ -157,8 +200,9 @@ const PropostasPage = () => {
 
   const filters = [
     { id: 'todas', label: 'Todas', count: proposals.length },
-    { id: 'pendentes', label: 'Pendentes', count: stats.pendentes, color: 'bg-amber-500' },
-    { id: 'aceitas', label: 'Aceitas', count: stats.aceitasMes, color: 'bg-emerald-500' },
+    { id: 'pendentes', label: '⏳ Pendentes', count: stats.pendentes, color: 'bg-amber-500' },
+    { id: 'aceitas', label: '✅ Aceitas', count: stats.aceitasMes, color: 'bg-emerald-500' },
+    { id: 'pagas', label: '💰 Pagas', count: pagasCount, color: 'bg-green-600' },
     { id: 'recusadas', label: 'Recusadas', count: proposals.filter(p => p.status === 'recusada').length, color: 'bg-red-500' },
   ];
 
@@ -169,20 +213,23 @@ const PropostasPage = () => {
     { label: 'Valor Potencial', value: formatCurrency(stats.valorPotencial), icon: Eye, color: 'text-purple-600' },
   ];
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  const getStatusBadge = (status: string, proposal?: Proposal) => {
+    const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; animated?: boolean }> = {
       pendente: { label: 'Pendente', variant: 'secondary' },
-      enviada: { label: 'Enviada', variant: 'default' },
-      visualizada: { label: 'Visualizada', variant: 'outline' },
-      aceita: { label: 'Aceita', variant: 'default' },
+      enviada: { label: 'Enviada', variant: 'default', className: 'bg-primary' },
+      visualizada: { label: '👁️ Visualizada', variant: 'outline', className: 'border-purple-400 text-purple-600 bg-purple-50' },
+      aceita: { label: '✅ Aceita', variant: 'default', className: 'bg-emerald-500 hover:bg-emerald-600' },
+      paga: { label: '💰 Paga', variant: 'default', className: 'bg-green-600 hover:bg-green-700', animated: true },
+      convertida: { label: '🎉 Pedido Criado', variant: 'default', className: 'bg-green-700 hover:bg-green-800' },
       recusada: { label: 'Recusada', variant: 'destructive' },
       expirada: { label: 'Expirada', variant: 'secondary' },
     };
     const config = statusConfig[status] || { label: status, variant: 'secondary' as const };
+    
     return (
       <Badge 
         variant={config.variant}
-        className={status === 'aceita' ? 'bg-emerald-500 hover:bg-emerald-600' : status === 'enviada' ? 'bg-primary' : ''}
+        className={`${config.className || ''} ${config.animated ? 'animate-pulse' : ''}`}
       >
         {config.label}
       </Badge>
@@ -367,6 +414,20 @@ const PropostasPage = () => {
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-mono text-xs text-primary font-semibold">{proposal.number}</span>
                       {getStatusBadge(proposal.status)}
+                      
+                      {/* Link para o pedido se convertida */}
+                      {proposal.converted_order_id && (
+                        <Badge 
+                          variant="outline" 
+                          className="text-[10px] border-blue-400 text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(buildPath(`pedidos/${proposal.converted_order_id}`));
+                          }}
+                        >
+                          📦 Ver Pedido
+                        </Badge>
+                      )}
                       
                       {/* Indicador de visualização */}
                       {proposal.view_count && proposal.view_count > 0 && (

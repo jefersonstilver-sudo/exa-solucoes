@@ -42,10 +42,10 @@ serve(async (req) => {
         console.error('❌ Error inserting view:', insertError);
       }
 
-      // Update proposal counters
+      // Update proposal counters AND status
       const { data: proposal } = await supabase
         .from('proposals')
-        .select('view_count, first_viewed_at')
+        .select('view_count, first_viewed_at, status')
         .eq('id', proposalId)
         .single();
 
@@ -54,8 +54,25 @@ serve(async (req) => {
         last_viewed_at: new Date().toISOString(),
       };
 
+      // Se primeira visualização, atualizar first_viewed_at
       if (!proposal?.first_viewed_at) {
         updates.first_viewed_at = new Date().toISOString();
+      }
+
+      // ✅ NOVO: Atualizar status para 'visualizada' se ainda for 'enviada'
+      if (proposal?.status === 'enviada') {
+        updates.status = 'visualizada';
+        console.log('📊 Status atualizado: enviada → visualizada');
+        
+        // Registrar log de visualização
+        await supabase.from('proposal_logs').insert({
+          proposal_id: proposalId,
+          action: 'visualizada',
+          details: {
+            device_type: deviceType,
+            timestamp: new Date().toISOString()
+          }
+        });
       }
 
       await supabase
@@ -63,7 +80,7 @@ serve(async (req) => {
         .update(updates)
         .eq('id', proposalId);
 
-      console.log('✅ View registered');
+      console.log('✅ View registered, view_count:', updates.view_count);
 
     } else if (action === 'heartbeat' && timeSpentSeconds > 0) {
       // Heartbeat: update time incrementally (works on mobile!)
