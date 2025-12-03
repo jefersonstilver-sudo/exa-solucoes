@@ -29,7 +29,7 @@ const OrdersPage = () => {
   const [typeFilter, setTypeFilter] = useState('all');
   const [couponFilter, setCouponFilter] = useState('all');
   const [paymentTypeFilter, setPaymentTypeFilter] = useState('all');
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('current_month');
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [quickFilter, setQuickFilter] = useState<'all' | 'pagos' | 'aguardando' | 'ativos'>('all');
   
@@ -254,56 +254,56 @@ const OrdersPage = () => {
             </div>
           </div>
           
-          {/* Quick Filters - Pill style */}
-          <div className="px-3 pb-2 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-1.5 whitespace-nowrap">
+          {/* Period Filter in header */}
+          <div className="px-3 pb-1.5">
+            <OrderPeriodFilter value={periodFilter} onChange={setPeriodFilter} />
+          </div>
+          
+          {/* Quick Filters - Pill style with better spacing */}
+          <div className="px-3 pb-2.5 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 whitespace-nowrap pb-0.5">
               <button
                 onClick={() => setQuickFilter('all')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
                   quickFilter === 'all' 
                     ? 'bg-[#9C1E1E] text-white shadow-sm' 
                     : 'bg-muted/60 text-muted-foreground hover:bg-muted'
                 }`}
               >
-                Todos ({ordersOnly.length})
+                Todos {ordersOnly.length}
               </button>
               <button
                 onClick={() => setQuickFilter('pagos')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
                   quickFilter === 'pagos' 
                     ? 'bg-emerald-600 text-white shadow-sm' 
                     : 'bg-muted/60 text-muted-foreground hover:bg-muted'
                 }`}
               >
-                ✓ Pagos ({countPagos})
+                ✓ Pagos {countPagos}
               </button>
               <button
                 onClick={() => setQuickFilter('aguardando')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
                   quickFilter === 'aguardando' 
                     ? 'bg-amber-500 text-white shadow-sm' 
                     : 'bg-muted/60 text-muted-foreground hover:bg-muted'
                 }`}
               >
-                📹 Aguardando ({countAguardando})
+                📹 Aguard. {countAguardando}
               </button>
               <button
                 onClick={() => setQuickFilter('ativos')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all min-w-fit ${
                   quickFilter === 'ativos' 
                     ? 'bg-blue-600 text-white shadow-sm' 
                     : 'bg-muted/60 text-muted-foreground hover:bg-muted'
                 }`}
               >
-                🎬 Ativos ({countAtivos})
+                🎬 Ativos {countAtivos}
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Period Filter - Clean style */}
-        <div className="px-3 py-2 border-b border-border/30">
-          <OrderPeriodFilter value={periodFilter} onChange={setPeriodFilter} />
         </div>
 
         {/* Mobile Stats - Glassmorphism cards */}
