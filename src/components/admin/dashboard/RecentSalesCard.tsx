@@ -25,7 +25,8 @@ const RecentSalesCard = () => {
         const { data, error } = await supabase
           .from('pedidos')
           .select('id, valor_total, status, created_at')
-          .in('status', ['pago', 'video_aprovado'])
+          .in('status', ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'])
+          .gt('valor_total', 0)
           .order('created_at', { ascending: false })
           .limit(3);
 

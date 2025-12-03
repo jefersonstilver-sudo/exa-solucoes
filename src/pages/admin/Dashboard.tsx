@@ -96,15 +96,16 @@ const Dashboard = () => {
           <PanelsStatusCard 
             metrics={{
               unreadConversations: 0,
-              panelsOnline: unifiedStats.prediosAtivos,
-              panelsTotal: unifiedStats.prediosTotal,
+              panelsOnline: unifiedStats.devicesOnline,
+              panelsTotal: unifiedStats.devicesTotal,
               todayRevenue: 0,
               pendingOrders: 0,
-              panelsOffline: unifiedStats.prediosTotal - unifiedStats.prediosAtivos,
+              panelsOffline: unifiedStats.devicesOffline,
               loading: unifiedStats.loading,
               isRealtimeConnected: true,
               lastUpdate: new Date()
             }}
+            quedasPeriodo={unifiedStats.quedasPeriodo}
           />
           <RecentSalesCard />
         </div>

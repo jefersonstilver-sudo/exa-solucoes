@@ -34,6 +34,10 @@ export interface UnifiedDashboardStats {
   prediosAtivos: number;
   prediosTotal: number;
   prediosPercentual: number;
+  // Devices/Painéis (separado de prédios)
+  devicesOnline: number;
+  devicesOffline: number;
+  devicesTotal: number;
   quedasPeriodo: number;
   vouchersPendentes: number;
   vouchersList: Array<{
@@ -61,6 +65,9 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
     prediosAtivos: 0,
     prediosTotal: 0,
     prediosPercentual: 0,
+    devicesOnline: 0,
+    devicesOffline: 0,
+    devicesTotal: 0,
     quedasPeriodo: 0,
     vouchersPendentes: 0,
     vouchersList: [],
@@ -236,7 +243,16 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
       const prediosAtivos = predios?.filter(p => p.status === 'ativo').length || 0;
       const prediosPercentual = prediosTotal > 0 ? (prediosAtivos / prediosTotal) * 100 : 0;
 
-      // 5.1. Quedas no Período
+      // 5.1. Devices/Painéis (tabela devices separada de buildings)
+      const { data: devices } = await supabase
+        .from('devices')
+        .select('status');
+
+      const devicesTotal = devices?.length || 0;
+      const devicesOnline = devices?.filter(d => d.status === 'online').length || 0;
+      const devicesOffline = devicesTotal - devicesOnline;
+
+      // 5.2. Quedas no Período
       const { data: quedas } = await supabase
         .from('connection_history')
         .select('id')
@@ -270,6 +286,9 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         prediosAtivos,
         prediosTotal,
         prediosPercentual,
+        devicesOnline,
+        devicesOffline,
+        devicesTotal,
         quedasPeriodo,
         vouchersPendentes: vouchers?.length || 0,
         vouchersList: vouchers || [],
