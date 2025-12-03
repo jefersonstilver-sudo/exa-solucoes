@@ -113,12 +113,13 @@ export class ProposalPDFExporter {
     this.setColor(this.colors.white, 'fill');
     this.doc.rect(0, 0, this.pageWidth, 42, 'F');
     
-    // Logo EXA - carrega da URL ou usa fallback
+    // Logo EXA - carrega da URL e mantém proporção original
     try {
       const logoUrl = 'https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/sign/arquivos/logo%20e%20icones/Exa%20sozinha.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MDI0MGY0My01YjczLTQ3NTItYTM2OS1hNzVjMmNiZGM0NzMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnF1aXZvcy9sb2dvIGUgaWNvbmVzL0V4YSBzb3ppbmhhLnBuZyIsImlhdCI6MTc1NTE0NTE1MSwiZXhwIjozMTcwODM2MDkxNTF9.JhaWC_VG92biR2DeuV15km-YtulGoQ4xAgWKwgPuhS0';
       const dataUrl = await this.loadImageAsDataURL(logoUrl);
-      // Logo com proporção correta (não esticada)
-      this.doc.addImage(dataUrl, 'PNG', this.margin, 8, 28, 28);
+      // Logo com altura fixa e largura proporcional (a logo EXA é mais larga que alta)
+      // Usando altura de 22mm e largura automática baseada na proporção real ~1.5:1
+      this.doc.addImage(dataUrl, 'PNG', this.margin, 10, 35, 22);
     } catch {
       // Fallback: texto EXA estilizado
       this.setColor(this.colors.exaRed);
@@ -358,22 +359,28 @@ export class ProposalPDFExporter {
   }
 
   private drawCommercialConditions(proposal: ProposalData, isCortesia: boolean = false, baseTotalValue: number = 0): void {
-    this.checkPageBreak(80);
+    this.checkPageBreak(110);
     
     this.drawSectionTitle('CONDIÇÕES COMERCIAIS');
     
     const totalFidelidade = proposal.fidel_monthly_value * proposal.duration_months;
     const monthlyEquivalent = proposal.cash_total_value / proposal.duration_months;
     
-    // Container principal
-    this.setColor(this.colors.lightGray, 'fill');
-    this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, isCortesia ? 55 : 50, 3, 3, 'F');
+    // Calcular o preço normal do site (sem desconto de proposta)
+    // baseTotalValue já vem calculado como o valor base mensal * meses
+    const normalSitePrice = baseTotalValue > 0 ? baseTotalValue : totalFidelidade * 1.25; // Fallback se não tiver baseTotalValue
+    const savingsAmount = normalSitePrice - proposal.cash_total_value;
+    const savingsPercent = normalSitePrice > 0 ? ((savingsAmount / normalSitePrice) * 100).toFixed(0) : '0';
     
     const innerPadding = 5;
-    const boxWidth = (this.contentWidth - innerPadding * 3) / 2;
     
     if (isCortesia) {
-      // CORTESIA - Layout especial
+      // Container principal para cortesia
+      this.setColor(this.colors.lightGray, 'fill');
+      this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 55, 3, 3, 'F');
+      
+      const boxWidth = (this.contentWidth - innerPadding * 3) / 2;
+      
       // Box esquerdo - Valor original
       const leftX = this.margin + innerPadding;
       this.setColor(this.colors.white, 'fill');
@@ -409,7 +416,7 @@ export class ProposalPDFExporter {
       this.setColor(this.colors.white);
       this.doc.setFontSize(9);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text('🎁 SEU PRESENTE', rightX + boxWidth / 2, this.yPosition + 16, { align: 'center' });
+      this.doc.text('SEU PRESENTE', rightX + boxWidth / 2, this.yPosition + 16, { align: 'center' });
       
       this.doc.setFontSize(22);
       this.doc.text('R$ 0,00', rightX + boxWidth / 2, this.yPosition + 32, { align: 'center' });
@@ -420,11 +427,53 @@ export class ProposalPDFExporter {
       
       this.yPosition += 62;
     } else {
-      // PROPOSTA NORMAL
+      // PROPOSTA NORMAL - Com comparação de preços
+      
+      // === BOX 1: COMPARAÇÃO DE PREÇOS (Preço normal vs Proposta) ===
+      this.setColor(this.colors.lightGray, 'fill');
+      this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 32, 3, 3, 'F');
+      
+      // Label "Comprando pelo site (sem proposta):"
+      this.setColor(this.colors.mediumGray);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text('Comprando pelo site (sem proposta comercial):', this.margin + 5, this.yPosition + 9);
+      
+      // Valor normal riscado
+      this.setColor(this.colors.mediumGray);
+      this.doc.setFontSize(12);
+      this.doc.setFont('helvetica', 'bold');
+      const normalValue = this.formatCurrency(normalSitePrice);
+      this.doc.text(normalValue, this.margin + 5, this.yPosition + 21);
+      
+      // Strikethrough no valor normal
+      const strikeWidth = this.doc.getTextWidth(normalValue);
+      this.setColor(this.colors.exaRed, 'draw');
+      this.doc.setLineWidth(0.6);
+      this.doc.line(this.margin + 5, this.yPosition + 19, this.margin + 5 + strikeWidth, this.yPosition + 19);
+      
+      // Badge de economia
+      const badgeX = this.pageWidth - this.margin - 55;
+      this.setColor(this.colors.success, 'fill');
+      this.doc.roundedRect(badgeX, this.yPosition + 10, 50, 14, 2, 2, 'F');
+      
+      this.setColor(this.colors.white);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(`ECONOMIA: ${savingsPercent}%`, badgeX + 25, this.yPosition + 19, { align: 'center' });
+      
+      this.yPosition += 38;
+      
+      // === BOX 2: OPÇÕES DE PAGAMENTO ===
+      this.setColor(this.colors.lightGray, 'fill');
+      this.doc.roundedRect(this.margin, this.yPosition, this.contentWidth, 55, 3, 3, 'F');
+      
+      const boxWidth = (this.contentWidth - innerPadding * 3) / 2;
+      
       // Box esquerdo - Plano Fidelidade
       const leftX = this.margin + innerPadding;
       this.setColor(this.colors.white, 'fill');
-      this.doc.roundedRect(leftX, this.yPosition + innerPadding, boxWidth, 40, 2, 2, 'F');
+      this.doc.roundedRect(leftX, this.yPosition + innerPadding, boxWidth, 45, 2, 2, 'F');
       
       this.setColor(this.colors.darkGray);
       this.doc.setFontSize(9);
@@ -437,35 +486,40 @@ export class ProposalPDFExporter {
       this.doc.text(`${proposal.duration_months}x de`, leftX + 5, this.yPosition + 24);
       
       this.setColor(this.colors.darkGray);
-      this.doc.setFontSize(14);
+      this.doc.setFontSize(16);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(this.formatCurrency(proposal.fidel_monthly_value), leftX + 5, this.yPosition + 34);
+      this.doc.text(this.formatCurrency(proposal.fidel_monthly_value), leftX + 5, this.yPosition + 36);
       
       this.setColor(this.colors.mediumGray);
       this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
-      this.doc.text(`Total: ${this.formatCurrency(totalFidelidade)}`, leftX + 5, this.yPosition + 42);
+      this.doc.text(`Total: ${this.formatCurrency(totalFidelidade)}`, leftX + 5, this.yPosition + 44);
       
-      // Box direito - PIX À VISTA (destaque)
+      // Box direito - PIX À VISTA (destaque verde)
       const rightX = this.margin + innerPadding * 2 + boxWidth;
       this.setColor(this.colors.success, 'fill');
-      this.doc.roundedRect(rightX, this.yPosition + innerPadding, boxWidth, 40, 2, 2, 'F');
+      this.doc.roundedRect(rightX, this.yPosition + innerPadding, boxWidth, 45, 2, 2, 'F');
       
       this.setColor(this.colors.white);
       this.doc.setFontSize(9);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(`💰 PIX À VISTA (${proposal.discount_percent}% OFF)`, rightX + 5, this.yPosition + 15);
+      this.doc.text(`PIX A VISTA (+10% OFF)`, rightX + 5, this.yPosition + 15);
       
-      // VALOR TOTAL EM DESTAQUE
+      // Valor total PIX em destaque
       this.doc.setFontSize(18);
-      this.doc.text(this.formatCurrency(proposal.cash_total_value), rightX + 5, this.yPosition + 30);
+      this.doc.text(this.formatCurrency(proposal.cash_total_value), rightX + 5, this.yPosition + 32);
       
       // Equivalência mensal
       this.doc.setFontSize(8);
       this.doc.setFont('helvetica', 'normal');
-      this.doc.text(`(equivale a ${this.formatCurrency(monthlyEquivalent)}/mês)`, rightX + 5, this.yPosition + 40);
+      this.doc.text(`(${this.formatCurrency(monthlyEquivalent)}/mes)`, rightX + 5, this.yPosition + 42);
       
-      this.yPosition += 58;
+      // Economia total
+      this.setColor(this.colors.white);
+      this.doc.setFontSize(7);
+      this.doc.text(`Economia total: ${this.formatCurrency(savingsAmount)}`, rightX + 5, this.yPosition + 49);
+      
+      this.yPosition += 63;
     }
   }
 

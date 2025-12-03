@@ -531,7 +531,18 @@ const PropostasPage = () => {
                         e.stopPropagation();
                         try {
                           const exporter = new ProposalPDFExporter();
-                          await exporter.generateProposalPDF(proposal as any, 'Equipe EXA');
+                          // Calcular valor base (preço normal do site sem desconto)
+                          const buildings = proposal?.selected_buildings || [];
+                          const baseMonthly = buildings.reduce((sum: number, b: any) => sum + (b.preco_base || 0), 0);
+                          const baseTotalValue = baseMonthly * (proposal?.duration_months || 1);
+                          const isCortesia = (proposal as any)?.metadata?.type === 'cortesia' || proposal?.discount_percent === 100;
+                          
+                          await exporter.generateProposalPDF(
+                            proposal as any, 
+                            'Equipe EXA',
+                            isCortesia,
+                            baseTotalValue
+                          );
                           toast.success('PDF gerado!');
                         } catch (err) {
                           toast.error('Erro ao gerar PDF');

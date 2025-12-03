@@ -579,7 +579,19 @@ const PropostaDetalhesPage = () => {
             onClick={async () => {
               try {
                 const exporter = new ProposalPDFExporter();
-                await exporter.generateProposalPDF(proposal as any, 'Equipe EXA');
+                // Calcular valor base (preço normal do site sem desconto de proposta)
+                const buildings = (proposal?.selected_buildings as any[]) || [];
+                const baseMonthly = buildings.reduce((sum: number, b: any) => sum + (b.preco_base || 0), 0);
+                const baseTotalValue = baseMonthly * (proposal?.duration_months || 1);
+                const metadata = proposal?.metadata as any;
+                const isCortesia = metadata?.type === 'cortesia' || proposal?.discount_percent === 100;
+                
+                await exporter.generateProposalPDF(
+                  proposal as any, 
+                  'Equipe EXA',
+                  isCortesia,
+                  baseTotalValue
+                );
                 toast.success('PDF gerado!');
               } catch (err) {
                 toast.error('Erro ao gerar PDF');
