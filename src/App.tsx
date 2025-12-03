@@ -390,6 +390,13 @@ const AppContent = () => {
           } />
           <Route path="/email-enviado" element={<EmailEnviado />} />
 
+          {/* PROPOSTA PÚBLICA - indexamidia.com.br/propostacomercial/:id */}
+          <Route path="/propostacomercial/:id" element={
+            <Suspense fallback={<GlobalLoadingPage message="Carregando proposta..." />}>
+              {React.createElement(lazy(() => import('./pages/public/PropostaPublicaPage')))}
+            </Suspense>
+          } />
+
           {/* ÁREA DO ANUNCIANTE */}
           <Route path="/anunciante/*" element={
             <ErrorBoundary>

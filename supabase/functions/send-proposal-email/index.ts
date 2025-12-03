@@ -73,8 +73,13 @@ serve(async (req) => {
     // Calculate total fidelity value
     const fidelTotal = proposal.fidel_monthly_value * proposal.duration_months;
 
-    // Build proposal link
-    const proposalLink = `https://exa.digital/proposta/${proposal.id}`;
+    // Build proposal link - CORRETO: indexamidia.com.br
+    const proposalLink = `https://www.indexamidia.com.br/propostacomercial/${proposal.id}`;
+    
+    // Format expiration date
+    const expiresAt = proposal.expires_at 
+      ? new Date(proposal.expires_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+      : '24 horas';
 
     // Get seller name
     let sellerName = 'Equipe EXA Mídia';
@@ -200,7 +205,7 @@ serve(async (req) => {
       </div>
 
       <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-        ⏰ Esta proposta é válida por 24 horas
+        ⏰ Esta proposta é válida até ${expiresAt}
       </p>
 
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
