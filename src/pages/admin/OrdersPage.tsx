@@ -31,6 +31,7 @@ const OrdersPage = () => {
   const [paymentTypeFilter, setPaymentTypeFilter] = useState('all');
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('current_month');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [quickFilter, setQuickFilter] = useState<'all' | 'pagos' | 'aguardando' | 'ativos'>('all');
   
   // 🔒 CRITICAL: Wait for permissions to load before checking
   if (isLoadingCustom) {
@@ -217,26 +218,85 @@ const OrdersPage = () => {
 
   // Mobile Layout - Apple-like Clean Design
   if (isMobile) {
-    const orders = filteredItems.filter(item => item.type === 'order');
+    // Apply quick filter to orders
+    const ordersOnly = filteredItems.filter(item => item.type === 'order');
+    const quickFilteredOrders = ordersOnly.filter(order => {
+      if (quickFilter === 'all') return true;
+      if (quickFilter === 'pagos') return ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(order.status);
+      if (quickFilter === 'aguardando') return order.status === 'pago_pendente_video';
+      if (quickFilter === 'ativos') return ['ativo', 'video_aprovado'].includes(order.status);
+      return true;
+    }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    // Count for quick filters
+    const countPagos = ordersOnly.filter(o => ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'].includes(o.status)).length;
+    const countAguardando = ordersOnly.filter(o => o.status === 'pago_pendente_video').length;
+    const countAtivos = ordersOnly.filter(o => ['ativo', 'video_aprovado'].includes(o.status)).length;
     
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pb-20">
         {/* Mobile Header - Clean glassmorphism */}
         <div className="sticky top-0 z-10 mobile-header-clean">
-          <div className="px-3 py-3">
+          <div className="px-3 py-2.5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
-                  <ShoppingCart className="w-4.5 h-4.5 text-foreground" />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
+                  <ShoppingCart className="w-4 h-4 text-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold text-foreground">Pedidos</h1>
-                  <p className="text-xs text-muted-foreground">
-                    {filteredItems.length} resultados
+                  <h1 className="text-base font-semibold text-foreground">Pedidos</h1>
+                  <p className="text-[10px] text-muted-foreground">
+                    {quickFilteredOrders.length} resultados
                   </p>
                 </div>
               </div>
               <MobileActionMenu items={mobileMenuItems} />
+            </div>
+          </div>
+          
+          {/* Quick Filters - Pill style */}
+          <div className="px-3 pb-2 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-1.5 whitespace-nowrap">
+              <button
+                onClick={() => setQuickFilter('all')}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  quickFilter === 'all' 
+                    ? 'bg-[#9C1E1E] text-white shadow-sm' 
+                    : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                Todos ({ordersOnly.length})
+              </button>
+              <button
+                onClick={() => setQuickFilter('pagos')}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  quickFilter === 'pagos' 
+                    ? 'bg-emerald-600 text-white shadow-sm' 
+                    : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                ✓ Pagos ({countPagos})
+              </button>
+              <button
+                onClick={() => setQuickFilter('aguardando')}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  quickFilter === 'aguardando' 
+                    ? 'bg-amber-500 text-white shadow-sm' 
+                    : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                📹 Aguardando ({countAguardando})
+              </button>
+              <button
+                onClick={() => setQuickFilter('ativos')}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  quickFilter === 'ativos' 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                🎬 Ativos ({countAtivos})
+              </button>
             </div>
           </div>
         </div>
@@ -247,20 +307,20 @@ const OrdersPage = () => {
         </div>
 
         {/* Mobile Stats - Glassmorphism cards */}
-        <div className="grid grid-cols-3 gap-2 px-3 py-3">
-          <div className="glass-card-mobile-subtle p-2.5 text-center">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase">Pedidos</p>
-            <p className="text-lg font-bold text-foreground">{filteredStats.total_orders}</p>
+        <div className="grid grid-cols-3 gap-2 px-3 py-2">
+          <div className="glass-card-mobile-subtle p-2 text-center">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase">Pedidos</p>
+            <p className="text-base font-bold text-foreground">{filteredStats.total_orders}</p>
           </div>
-          <div className="glass-card-mobile-subtle p-2.5 text-center">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase">Receita</p>
-            <p className="text-lg font-bold text-emerald-600">
+          <div className="glass-card-mobile-subtle p-2 text-center">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase">Receita</p>
+            <p className="text-base font-bold text-emerald-600">
               R$ {(filteredStats.total_revenue / 1000).toFixed(1)}k
             </p>
           </div>
-          <div className="glass-card-mobile-subtle p-2.5 text-center">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase">Conversão</p>
-            <p className="text-lg font-bold text-blue-600">{filteredStats.conversion_rate}%</p>
+          <div className="glass-card-mobile-subtle p-2 text-center">
+            <p className="text-[9px] text-muted-foreground font-medium uppercase">Conversão</p>
+            <p className="text-base font-bold text-blue-600">{filteredStats.conversion_rate}%</p>
           </div>
         </div>
 
@@ -274,7 +334,7 @@ const OrdersPage = () => {
         {/* Mobile Order List */}
         <div className="px-3 py-2">
           <OrderMobileList
-            orders={orders}
+            orders={quickFilteredOrders}
             loading={loading}
             onViewDetails={handleViewOrderDetails}
           />

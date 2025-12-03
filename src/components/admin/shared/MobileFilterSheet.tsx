@@ -84,15 +84,15 @@ export const MobileFilterSheet: React.FC<MobileFilterSheetProps> = ({
         className="h-[85vh] rounded-t-3xl bg-background p-0 overflow-hidden"
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] text-white">
+          {/* Header - Clean glassmorphism style */}
+          <SheetHeader className="px-4 py-3 border-b border-border/50 bg-white/95 backdrop-blur-xl">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <SheetTitle className="text-white text-lg font-semibold">
+              <div className="flex items-center gap-2.5">
+                <SheetTitle className="text-foreground text-base font-semibold">
                   Filtros
                 </SheetTitle>
                 {activeFiltersCount > 0 && (
-                  <Badge variant="secondary" className="bg-white text-[#9C1E1E]">
+                  <Badge variant="secondary" className="bg-[#9C1E1E]/10 text-[#9C1E1E] text-[10px] h-5">
                     {activeFiltersCount}
                   </Badge>
                 )}
@@ -101,52 +101,52 @@ export const MobileFilterSheet: React.FC<MobileFilterSheetProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="text-white hover:bg-white/20"
+                className="h-8 w-8 p-0 text-muted-foreground hover:bg-accent"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
-            <SheetDescription className="text-white/80 text-sm">
-              Refine sua busca com os filtros abaixo
+            <SheetDescription className="text-muted-foreground text-xs">
+              Refine sua busca
             </SheetDescription>
           </SheetHeader>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
             {/* Search */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Busca Rápida</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Busca Rápida</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por ID, cliente, email..."
                   value={localFilters.search || ''}
                   onChange={(e) => updateFilter('search', e.target.value)}
-                  className="pl-10"
+                  className="pl-9 h-9 text-sm"
                 />
               </div>
             </div>
 
-            <Separator />
+            <Separator className="bg-border/50" />
 
             {/* Filter Categories */}
             {categories.map((category) => (
-              <div key={category.id} className="space-y-3">
-                <Label className="text-sm font-medium flex items-center gap-2">
+              <div key={category.id} className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   {category.title}
                 </Label>
                 <RadioGroup
                   value={localFilters[category.id] || 'all'}
                   onValueChange={(value) => updateFilter(category.id, value)}
-                  className="space-y-2"
+                  className="space-y-1"
                 >
                   {category.options.map((option) => (
                     <div
                       key={option.value}
-                      className="flex items-center justify-between space-x-2 p-3 rounded-lg hover:bg-accent transition-colors"
+                      className="flex items-center justify-between space-x-2 p-2.5 rounded-lg hover:bg-accent/50 transition-colors"
                     >
-                      <div className="flex items-center space-x-3 flex-1">
-                        <RadioGroupItem value={option.value} id={`${category.id}-${option.value}`} />
+                      <div className="flex items-center space-x-2.5 flex-1">
+                        <RadioGroupItem value={option.value} id={`${category.id}-${option.value}`} className="h-4 w-4" />
                         <Label
                           htmlFor={`${category.id}-${option.value}`}
                           className="text-sm font-normal cursor-pointer flex-1"
@@ -155,30 +155,30 @@ export const MobileFilterSheet: React.FC<MobileFilterSheetProps> = ({
                         </Label>
                       </div>
                       {option.count !== undefined && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-[10px] h-5 bg-muted">
                           {option.count}
                         </Badge>
                       )}
                     </div>
                   ))}
                 </RadioGroup>
-                <Separator />
+                <Separator className="bg-border/30" />
               </div>
             ))}
           </div>
 
-          {/* Footer Actions */}
-          <div className="border-t bg-background p-4 space-y-2">
+          {/* Footer Actions - Clean style */}
+          <div className="border-t border-border/50 bg-white/95 backdrop-blur-xl p-3 space-y-2">
             <Button
               onClick={handleApply}
-              className="w-full bg-gradient-to-r from-[#9C1E1E] to-[#DC2626] hover:from-[#7F1D1D] hover:to-[#9C1E1E] text-white font-semibold h-12"
+              className="w-full bg-[#9C1E1E] hover:bg-[#7A1818] text-white font-medium h-10"
             >
               Aplicar Filtros
             </Button>
             <Button
               onClick={handleClearAll}
-              variant="outline"
-              className="w-full"
+              variant="ghost"
+              className="w-full h-9 text-muted-foreground"
             >
               Limpar Tudo
             </Button>
