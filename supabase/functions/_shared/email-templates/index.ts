@@ -58,3 +58,9 @@ export {
   createDailyReportEmail
 } from './daily-report.ts';
 export type { DailyReportEmailData } from './daily-report.ts';
+
+// Proposal Templates
+export {
+  createProposalAcceptedEmail
+} from './proposal-accepted.ts';
+export type { ProposalAcceptedEmailData } from './proposal-accepted.ts';

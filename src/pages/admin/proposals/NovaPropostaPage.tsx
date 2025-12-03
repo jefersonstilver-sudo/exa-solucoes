@@ -16,6 +16,7 @@ import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { validateCNPJ, formatCompanyDocument } from '@/utils/inputValidation';
 
 interface Building {
   id: string;
@@ -266,6 +267,11 @@ const NovaPropostaPage = () => {
       toast.error('Preencha ao menos um contato (WhatsApp ou E-mail)');
       return;
     }
+    // Validar CNPJ se preenchido
+    if (clientData.cnpj && clientData.cnpj.length >= 14 && !validateCNPJ(clientData.cnpj)) {
+      toast.error('CNPJ inválido. Verifique o número.');
+      return;
+    }
 
     // Pré-selecionar opções baseado nos dados do cliente
     setSendViaWhatsApp(!!clientData.phone);
@@ -326,9 +332,20 @@ const NovaPropostaPage = () => {
               <Input
                 placeholder="00.000.000/0000-00"
                 value={clientData.cnpj}
-                onChange={(e) => setClientData(prev => ({ ...prev, cnpj: e.target.value }))}
-                className="mt-1 h-12 text-base"
+                onChange={(e) => {
+                  const formatted = formatCompanyDocument(e.target.value, 'BR');
+                  setClientData(prev => ({ ...prev, cnpj: formatted }));
+                }}
+                maxLength={18}
+                className={`mt-1 h-12 text-base ${
+                  clientData.cnpj && clientData.cnpj.length >= 14 && !validateCNPJ(clientData.cnpj) 
+                    ? 'border-red-500 focus:border-red-500 focus-visible:ring-red-500' 
+                    : ''
+                }`}
               />
+              {clientData.cnpj && clientData.cnpj.length >= 14 && !validateCNPJ(clientData.cnpj) && (
+                <p className="text-xs text-red-500 mt-1">CNPJ inválido</p>
+              )}
             </div>
             <div>
               <Label className="text-xs">Telefone WhatsApp</Label>
