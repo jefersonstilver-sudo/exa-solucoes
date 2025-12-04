@@ -111,6 +111,9 @@ const NovaPropostaPage = () => {
   const [isRequestingCode, setIsRequestingCode] = useState(false);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
 
+  // Estado para tipo de produto
+  const [tipoProduto, setTipoProduto] = useState<'horizontal' | 'vertical_premium'>('horizontal');
+
   // Opções de período
   const periodOptions = [
     { value: 1, label: '1 mês', discount: 0 },
@@ -119,6 +122,20 @@ const NovaPropostaPage = () => {
     { value: 12, label: '12 meses', discount: 37.5 },
     { value: -1, label: 'Personalizado', discount: 0, custom: true },
   ];
+
+  // Handler para Vertical Premium
+  const handleVerticalPremiumToggle = () => {
+    const newTipoProduto = tipoProduto === 'vertical_premium' ? 'horizontal' : 'vertical_premium';
+    
+    if (newTipoProduto === 'vertical_premium') {
+      // Selecionar TODOS os prédios automaticamente
+      setSelectedBuildings(buildings.map(b => b.id));
+      toast.success('Vertical Premium: Todos os prédios selecionados automaticamente');
+    } else {
+      setSelectedBuildings([]);
+    }
+    setTipoProduto(newTipoProduto);
+  };
 
   // Estados para pagamento personalizado
   const [isCustomPayment, setIsCustomPayment] = useState(false);
@@ -335,6 +352,7 @@ const NovaPropostaPage = () => {
           created_by: user?.id,
           seller_name: currentUser?.nome || currentUser?.email || 'Vendedor',
           payment_type: isCustomPayment ? 'custom' : 'standard',
+          tipo_produto: tipoProduto,
           custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
             installment: idx + 1,
             due_date: formatDateForInput(p.dueDate),
@@ -678,13 +696,53 @@ const NovaPropostaPage = () => {
             </span>
           </div>
 
+          {/* Botão Vertical Premium */}
+          <div className="mb-4">
+            <button
+              onClick={handleVerticalPremiumToggle}
+              className={`w-full p-3 rounded-lg border-2 transition-all ${
+                tipoProduto === 'vertical_premium'
+                  ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-purple-100'
+                  : 'border-dashed border-purple-200 hover:border-purple-300 bg-white'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${tipoProduto === 'vertical_premium' ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-600'}`}>
+                    <Shield className="h-5 w-5" />
+                  </div>
+                  <div className="text-left">
+                    <p className={`font-bold text-sm ${tipoProduto === 'vertical_premium' ? 'text-purple-700' : 'text-purple-600'}`}>
+                      🌟 VERTICAL PREMIUM
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Tela cheia a cada 50s • Todos os prédios incluídos
+                    </p>
+                  </div>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  tipoProduto === 'vertical_premium' ? 'border-purple-500 bg-purple-500' : 'border-gray-300'
+                }`}>
+                  {tipoProduto === 'vertical_premium' && (
+                    <CheckCircle className="h-3 w-3 text-white" />
+                  )}
+                </div>
+              </div>
+              {tipoProduto === 'vertical_premium' && (
+                <div className="mt-2 text-[10px] text-purple-600 bg-purple-100/50 rounded p-2">
+                  ✓ Vídeo vertical 10s • ✓ Tela cheia • ✓ {buildings.length} prédios incluídos • ✓ Sem portal
+                </div>
+              )}
+            </button>
+          </div>
+
           {/* Botões Selecionar Todos / Limpar */}
           <div className="flex gap-2 mb-3">
             <Button
               variant="outline"
               size="sm"
               onClick={selectAll}
-              disabled={isLoadingBuildings || selectedBuildings.length === buildings.length}
+              disabled={isLoadingBuildings || selectedBuildings.length === buildings.length || tipoProduto === 'vertical_premium'}
               className="text-xs h-8"
             >
               <CheckCircle className="h-3 w-3 mr-1" />
@@ -694,7 +752,7 @@ const NovaPropostaPage = () => {
               variant="ghost"
               size="sm"
               onClick={clearSelection}
-              disabled={selectedBuildings.length === 0}
+              disabled={selectedBuildings.length === 0 || tipoProduto === 'vertical_premium'}
               className="text-xs h-8"
             >
               Limpar Seleção
