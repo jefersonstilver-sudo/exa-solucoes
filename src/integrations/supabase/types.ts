@@ -2037,6 +2037,210 @@ export type Database = {
           },
         ]
       }
+      contratos_legais: {
+        Row: {
+          assinado_em: string | null
+          cancelado_em: string | null
+          clausulas_especiais: string | null
+          clicksign_document_key: string | null
+          clicksign_download_url: string | null
+          clicksign_envelope_id: string | null
+          clicksign_request_signature_key: string | null
+          clicksign_signer_key: string | null
+          cliente_cargo: string | null
+          cliente_cidade: string | null
+          cliente_cnpj: string | null
+          cliente_cpf: string | null
+          cliente_email: string
+          cliente_endereco: string | null
+          cliente_nome: string
+          cliente_razao_social: string | null
+          cliente_segmento: string | null
+          cliente_telefone: string | null
+          created_at: string | null
+          criado_por: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          dia_vencimento: number | null
+          enviado_em: string | null
+          expirado_em: string | null
+          id: string
+          lista_predios: Json | null
+          metodo_pagamento: string | null
+          numero_contrato: string
+          objeto: string
+          parcelas: Json | null
+          pedido_id: string | null
+          plano_meses: number | null
+          prazo_assinatura: string | null
+          predio_id: string | null
+          proposta_id: string | null
+          recusado_em: string | null
+          status: string
+          tipo_contrato: string
+          total_paineis: number | null
+          updated_at: string | null
+          valor_mensal: number | null
+          valor_total: number | null
+          visualizado_em: string | null
+        }
+        Insert: {
+          assinado_em?: string | null
+          cancelado_em?: string | null
+          clausulas_especiais?: string | null
+          clicksign_document_key?: string | null
+          clicksign_download_url?: string | null
+          clicksign_envelope_id?: string | null
+          clicksign_request_signature_key?: string | null
+          clicksign_signer_key?: string | null
+          cliente_cargo?: string | null
+          cliente_cidade?: string | null
+          cliente_cnpj?: string | null
+          cliente_cpf?: string | null
+          cliente_email: string
+          cliente_endereco?: string | null
+          cliente_nome: string
+          cliente_razao_social?: string | null
+          cliente_segmento?: string | null
+          cliente_telefone?: string | null
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          dia_vencimento?: number | null
+          enviado_em?: string | null
+          expirado_em?: string | null
+          id?: string
+          lista_predios?: Json | null
+          metodo_pagamento?: string | null
+          numero_contrato: string
+          objeto?: string
+          parcelas?: Json | null
+          pedido_id?: string | null
+          plano_meses?: number | null
+          prazo_assinatura?: string | null
+          predio_id?: string | null
+          proposta_id?: string | null
+          recusado_em?: string | null
+          status?: string
+          tipo_contrato: string
+          total_paineis?: number | null
+          updated_at?: string | null
+          valor_mensal?: number | null
+          valor_total?: number | null
+          visualizado_em?: string | null
+        }
+        Update: {
+          assinado_em?: string | null
+          cancelado_em?: string | null
+          clausulas_especiais?: string | null
+          clicksign_document_key?: string | null
+          clicksign_download_url?: string | null
+          clicksign_envelope_id?: string | null
+          clicksign_request_signature_key?: string | null
+          clicksign_signer_key?: string | null
+          cliente_cargo?: string | null
+          cliente_cidade?: string | null
+          cliente_cnpj?: string | null
+          cliente_cpf?: string | null
+          cliente_email?: string
+          cliente_endereco?: string | null
+          cliente_nome?: string
+          cliente_razao_social?: string | null
+          cliente_segmento?: string | null
+          cliente_telefone?: string | null
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          dia_vencimento?: number | null
+          enviado_em?: string | null
+          expirado_em?: string | null
+          id?: string
+          lista_predios?: Json | null
+          metodo_pagamento?: string | null
+          numero_contrato?: string
+          objeto?: string
+          parcelas?: Json | null
+          pedido_id?: string | null
+          plano_meses?: number | null
+          prazo_assinatura?: string | null
+          predio_id?: string | null
+          proposta_id?: string | null
+          recusado_em?: string | null
+          status?: string
+          tipo_contrato?: string
+          total_paineis?: number | null
+          updated_at?: string | null
+          valor_mensal?: number | null
+          valor_total?: number | null
+          visualizado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_legais_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_legais_predio_id_fkey"
+            columns: ["predio_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_legais_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratos_legais_logs: {
+        Row: {
+          acao: string
+          contrato_id: string | null
+          created_at: string | null
+          detalhes: Json | null
+          executado_por: string | null
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          acao: string
+          contrato_id?: string | null
+          created_at?: string | null
+          detalhes?: Json | null
+          executado_por?: string | null
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          acao?: string
+          contrato_id?: string | null
+          created_at?: string | null
+          detalhes?: Json | null
+          executado_por?: string | null
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_legais_logs_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos_legais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_analytics: {
         Row: {
           agent_key: string
@@ -7434,6 +7638,7 @@ export type Database = {
       emergency_financial_audit_and_fix: { Args: never; Returns: Json }
       ensure_video_consistency: { Args: { p_pedido_id: string }; Returns: Json }
       extract_compliance_data: { Args: { payment_data: Json }; Returns: Json }
+      generate_contract_number: { Args: never; Returns: string }
       generate_coupon_code: { Args: { prefix?: string }; Returns: string }
       generate_developer_token: { Args: never; Returns: string }
       generate_proposal_number: { Args: never; Returns: string }
