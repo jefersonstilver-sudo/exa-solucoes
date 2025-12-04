@@ -384,7 +384,7 @@ const NovoContratoPage = () => {
         total_paineis: data.lista_predios.reduce((acc: number, p: any) => acc + (p.quantidade_telas || 1), 0),
         data_inicio: data.data_inicio,
         data_fim: dataFim.toISOString().split('T')[0],
-        status: data.enviar ? 'enviado' : 'rascunho',
+        status: 'rascunho', // SEMPRE criar como rascunho - ClickSign atualiza para 'enviado' ao sucesso
         criado_por: session?.user?.id,
         tipo_produto: data.tipo_produto
       };
