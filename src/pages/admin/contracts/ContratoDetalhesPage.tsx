@@ -30,6 +30,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ContractPreview from '@/components/admin/contracts/ContractPreview';
 import FullscreenContractEditor from '@/components/admin/contracts/FullscreenContractEditor';
+import { ContractPDFExporter } from '@/components/admin/contracts/ContractPDFExporter';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   rascunho: { label: 'Rascunho', color: 'bg-gray-500', icon: FileSignature },
@@ -207,6 +208,26 @@ const ContratoDetalhesPage = () => {
         <div className="flex gap-2 flex-wrap">
           {contrato.status === 'rascunho' && (
             <>
+              <Button 
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const exporter = new ContractPDFExporter();
+                    await exporter.generateContractPDF({
+                      ...contrato,
+                      lista_predios: Array.isArray(contrato.lista_predios) ? contrato.lista_predios : [],
+                      parcelas: Array.isArray(contrato.parcelas) ? contrato.parcelas : []
+                    });
+                    toast.success('PDF gerado com sucesso!');
+                  } catch (err) {
+                    console.error('Erro ao gerar PDF:', err);
+                    toast.error('Erro ao gerar PDF');
+                  }
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Baixar PDF (Rascunho)
+              </Button>
               <Button 
                 variant="outline"
                 onClick={() => setEditorOpen(true)}

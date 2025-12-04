@@ -112,11 +112,15 @@ serve(async (req) => {
     const contractBase64 = btoa(unescape(encodeURIComponent(contractHtml)));
 
     // ========== 3. Upload do Documento (JSON:API format) ==========
+    // Sanitizar filename removendo caracteres especiais (ClickSign rejeita hífens)
+    const sanitizedFilename = contrato.numero_contrato.replace(/[^a-zA-Z0-9]/g, '_');
+    console.log("📄 [CLICKSIGN] Filename sanitizado:", `Contrato_${sanitizedFilename}.html`);
+    
     const documentPayload = {
       data: {
         type: "documents",
         attributes: {
-          filename: `${contrato.numero_contrato}.html`,
+          filename: `Contrato_${sanitizedFilename}.html`,
           content_base64: `data:text/html;base64,${contractBase64}`
         }
       }
