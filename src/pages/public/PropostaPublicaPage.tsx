@@ -405,10 +405,22 @@ const PropostaPublicaPage = () => {
   const handleGeneratePayment = async () => {
     if (!proposal || !paymentMethod) return;
     
+    // Verificar se é pagamento personalizado
+    const isCustomPayment = proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments) && proposal.custom_installments.length > 0;
+    
     // Calcular valor a ser pago
-    const paymentValue = selectedPlan === 'avista' 
-      ? proposal.cash_total_value 
-      : proposal.fidel_monthly_value * proposal.duration_months;
+    let paymentValue: number;
+    
+    if (isCustomPayment) {
+      // Pagamento personalizado: apenas 1ª parcela
+      paymentValue = Number(proposal.custom_installments[0].amount);
+      console.log('💳 Pagamento personalizado - 1ª parcela:', paymentValue);
+    } else {
+      // Pagamento padrão
+      paymentValue = selectedPlan === 'avista' 
+        ? proposal.cash_total_value 
+        : proposal.fidel_monthly_value * proposal.duration_months;
+    }
     
     // Validar valor mínimo do Mercado Pago (R$ 5,00)
     if (paymentValue < 5) {
@@ -426,9 +438,11 @@ const PropostaPublicaPage = () => {
         body: {
           proposalId: proposal.id,
           paymentMethod,
-          selectedPlan,
+          selectedPlan: isCustomPayment ? 'custom' : selectedPlan,
           clientEmail: emailToUse,
-          diaVencimento: paymentMethod === 'boleto' ? diaVencimento : undefined
+          diaVencimento: paymentMethod === 'boleto' ? diaVencimento : undefined,
+          isCustomPayment,
+          installmentNumber: isCustomPayment ? 1 : undefined
         }
       });
 
@@ -456,6 +470,58 @@ const PropostaPublicaPage = () => {
       setPaymentStep('select');
     } finally {
       setIsGeneratingPayment(false);
+    }
+  };
+
+  // Aceitar proposta com pagamento personalizado
+  const handleAcceptCustom = async () => {
+    if (!proposal || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('proposals')
+        .update({ 
+          status: 'aceita',
+          responded_at: new Date().toISOString()
+        })
+        .eq('id', proposal.id);
+
+      if (error) throw error;
+
+      await supabase.from('proposal_logs').insert({
+        proposal_id: proposal.id,
+        action: 'aceita',
+        details: { 
+          payment_type: 'custom',
+          installments_count: proposal.custom_installments?.length || 0,
+          first_installment_value: proposal.custom_installments?.[0]?.amount,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+      // Check if email capture needed
+      if (!proposal.client_email) {
+        setShowEmailCapture(true);
+      } else {
+        // Send immediate acceptance email
+        supabase.functions.invoke('send-proposal-accepted-notification', {
+          body: {
+            proposalId: proposal.id,
+            clientEmail: proposal.client_email,
+            selectedPlan: 'custom'
+          }
+        }).catch(err => {
+          console.error('❌ Erro ao enviar email de aceitação:', err);
+        });
+      }
+
+      setShowSuccess(true);
+    } catch (err) {
+      console.error('Erro ao aceitar proposta:', err);
+      toast.error('Erro ao processar. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1393,6 +1459,32 @@ const PropostaPublicaPage = () => {
                 >
                   <X className="h-4 w-4 mr-2" />
                   Recusar Presente
+                </Button>
+              </>
+            ) : proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments) && proposal.custom_installments.length > 0 ? (
+              <>
+                {/* Botões especiais para Pagamento Personalizado */}
+                <Button
+                  className="w-full h-14 text-lg bg-gradient-to-r from-[#9C1E1E] to-[#7D1818] hover:from-[#7D1818] hover:to-[#5a1212] text-white shadow-lg"
+                  onClick={handleAcceptCustom}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  ) : (
+                    <Check className="h-5 w-5 mr-2" />
+                  )}
+                  💳 Pagar 1ª Parcela ({Number(proposal.custom_installments[0].amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full h-12 border-[#9C1E1E]/30 text-[#9C1E1E] hover:bg-[#9C1E1E]/5"
+                  onClick={handleReject}
+                  disabled={isSubmitting}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Recusar Proposta
                 </Button>
               </>
             ) : (

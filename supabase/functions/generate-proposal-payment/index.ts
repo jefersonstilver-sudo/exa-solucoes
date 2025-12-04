@@ -9,9 +9,11 @@ const corsHeaders = {
 interface RequestBody {
   proposalId: string;
   paymentMethod: 'pix' | 'boleto';
-  selectedPlan: 'avista' | 'fidelidade';
+  selectedPlan: 'avista' | 'fidelidade' | 'custom';
   clientEmail: string;
   diaVencimento?: 5 | 10 | 15; // Only for boleto
+  isCustomPayment?: boolean;
+  installmentNumber?: number; // Which installment to pay (1-based)
 }
 
 function calculateNextDueDate(day: 5 | 10 | 15): string {
@@ -47,9 +49,9 @@ serve(async (req) => {
   }
 
   try {
-    const { proposalId, paymentMethod, selectedPlan, clientEmail, diaVencimento } = await req.json() as RequestBody;
+    const { proposalId, paymentMethod, selectedPlan, clientEmail, diaVencimento, isCustomPayment, installmentNumber } = await req.json() as RequestBody;
 
-    console.log('💳 Gerando pagamento para proposta:', { proposalId, paymentMethod, selectedPlan, diaVencimento });
+    console.log('💳 Gerando pagamento para proposta:', { proposalId, paymentMethod, selectedPlan, diaVencimento, isCustomPayment, installmentNumber });
 
     if (!proposalId || !paymentMethod || !selectedPlan) {
       throw new Error('Campos obrigatórios: proposalId, paymentMethod, selectedPlan');
@@ -73,10 +75,34 @@ serve(async (req) => {
 
     console.log('✅ Proposta encontrada:', proposal.number);
 
-    // Calculate payment amount
-    const amount = selectedPlan === 'avista' 
-      ? proposal.cash_total_value 
-      : proposal.fidel_monthly_value;
+    // Calculate payment amount based on payment type
+    let amount: number;
+    let paymentDescription: string;
+
+    if (isCustomPayment && installmentNumber && Array.isArray(proposal.custom_installments)) {
+      // Pagamento personalizado: usar valor da parcela especificada
+      const installmentIndex = installmentNumber - 1;
+      const installment = proposal.custom_installments[installmentIndex];
+      
+      if (!installment) {
+        throw new Error(`Parcela ${installmentNumber} não encontrada`);
+      }
+      
+      amount = Number(installment.amount);
+      paymentDescription = `Proposta ${proposal.number} - Parcela ${installmentNumber}/${proposal.custom_installments.length} - EXA Mídia`;
+      
+      console.log('💳 Pagamento personalizado:', {
+        parcela: installmentNumber,
+        valor: amount,
+        vencimento: installment.due_date
+      });
+    } else {
+      // Pagamento padrão
+      amount = selectedPlan === 'avista' 
+        ? proposal.cash_total_value 
+        : proposal.fidel_monthly_value;
+      paymentDescription = `Proposta ${proposal.number} - EXA Mídia`;
+    }
 
     if (amount < 5) {
       throw new Error('Valor mínimo para pagamento é R$ 5,00');
@@ -92,13 +118,13 @@ serve(async (req) => {
 
     if (paymentMethod === 'pix') {
       // Generate PIX payment
-      console.log('⚡ Gerando PIX...');
+      console.log('⚡ Gerando PIX... Valor:', amount);
 
       const pixPayload = {
         transaction_amount: amount,
-        description: `Proposta ${proposal.number} - EXA Mídia`,
+        description: paymentDescription,
         payment_method_id: 'pix',
-        external_reference: `proposal:${proposalId}`, // Important for webhook detection!
+        external_reference: `proposal:${proposalId}${isCustomPayment ? `:installment:${installmentNumber}` : ''}`,
         payer: {
           email: clientEmail || proposal.client_email || 'cliente@examidia.com.br',
           first_name: proposal.client_name?.split(' ')[0] || 'Cliente',
@@ -111,7 +137,7 @@ serve(async (req) => {
         headers: {
           'Authorization': `Bearer ${mpAccessToken}`,
           'Content-Type': 'application/json',
-          'X-Idempotency-Key': `proposal-${proposalId}-${Date.now()}`,
+          'X-Idempotency-Key': `proposal-${proposalId}-${installmentNumber || 'full'}-${Date.now()}`,
         },
         body: JSON.stringify(pixPayload),
       });
@@ -132,20 +158,30 @@ serve(async (req) => {
         qrCode: pixResult.point_of_interaction?.transaction_data?.qr_code,
         qrCodeBase64: pixResult.point_of_interaction?.transaction_data?.qr_code_base64,
         expiresAt: pixResult.date_of_expiration,
+        isCustomPayment,
+        installmentNumber,
       };
 
     } else if (paymentMethod === 'boleto') {
       // Generate Boleto payment
-      console.log('📄 Gerando Boleto...');
+      console.log('📄 Gerando Boleto... Valor:', amount);
 
-      const dueDate = calculateNextDueDate(diaVencimento || 10);
-      console.log('📅 Data de vencimento:', dueDate);
+      // Para pagamento personalizado, usar data de vencimento da parcela
+      let dueDate: string;
+      if (isCustomPayment && installmentNumber && Array.isArray(proposal.custom_installments)) {
+        const installment = proposal.custom_installments[installmentNumber - 1];
+        dueDate = installment.due_date;
+        console.log('📅 Usando data de vencimento da parcela:', dueDate);
+      } else {
+        dueDate = calculateNextDueDate(diaVencimento || 10);
+        console.log('📅 Data de vencimento calculada:', dueDate);
+      }
 
       const boletoPayload = {
         transaction_amount: amount,
-        description: `Proposta ${proposal.number} - EXA Mídia`,
+        description: paymentDescription,
         payment_method_id: 'bolbradesco',
-        external_reference: `proposal:${proposalId}`, // Important for webhook detection!
+        external_reference: `proposal:${proposalId}${isCustomPayment ? `:installment:${installmentNumber}` : ''}`,
         date_of_expiration: `${dueDate}T23:59:59.000-03:00`,
         payer: {
           email: clientEmail || proposal.client_email || 'cliente@examidia.com.br',
@@ -171,7 +207,7 @@ serve(async (req) => {
         headers: {
           'Authorization': `Bearer ${mpAccessToken}`,
           'Content-Type': 'application/json',
-          'X-Idempotency-Key': `proposal-boleto-${proposalId}-${Date.now()}`,
+          'X-Idempotency-Key': `proposal-boleto-${proposalId}-${installmentNumber || 'full'}-${Date.now()}`,
         },
         body: JSON.stringify(boletoPayload),
       });
@@ -193,6 +229,8 @@ serve(async (req) => {
         boletoBarcode: boletoResult.barcode?.content,
         dueDate: dueDate,
         diaVencimento: diaVencimento || 10,
+        isCustomPayment,
+        installmentNumber,
       };
     }
 
@@ -218,6 +256,8 @@ serve(async (req) => {
         selected_plan: selectedPlan,
         amount,
         payment_id: paymentData.paymentId,
+        is_custom_payment: isCustomPayment,
+        installment_number: installmentNumber,
         timestamp: new Date().toISOString()
       }
     });
