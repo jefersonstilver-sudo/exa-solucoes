@@ -24,6 +24,7 @@ interface ContractPreviewProps {
     clausulas_especiais?: string;
     data_inicio?: string;
     total_paineis?: number;
+    tipo_produto?: string;
   };
 }
 
@@ -35,20 +36,36 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
 
   const listaPredios = Array.isArray(data.lista_predios) ? data.lista_predios : [];
   const totalPaineis = data.total_paineis || listaPredios.reduce((acc, p) => acc + (p.quantidade_telas || 1), 0);
+  const tipoProduto = data.tipo_produto || 'horizontal';
+  const isVerticalPremium = tipoProduto === 'vertical_premium';
 
   const dataAtual = format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
+  // Contrato de Síndico
   if (data.tipo_contrato === 'sindico') {
     return (
       <div className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
-        {/* Header */}
+        {/* Header EXA */}
+        <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold tracking-wide">EXA MÍDIA</h1>
+              <p className="text-red-100 text-xs mt-1">Soluções Digitais</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-semibold">TERMO DE CESSÃO</p>
+              {data.numero_contrato && (
+                <p className="text-xs text-red-100 mt-1">Nº {data.numero_contrato}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Título */}
         <div className="text-center mb-8">
-          <h1 className="text-xl font-bold uppercase tracking-wide">
+          <h1 className="text-lg font-bold uppercase tracking-wide">
             Termo de Cessão de Espaço para Publicidade Digital
           </h1>
-          {data.numero_contrato && (
-            <p className="text-sm text-gray-600 mt-2">Nº {data.numero_contrato}</p>
-          )}
         </div>
 
         {/* Partes */}
@@ -148,13 +165,36 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
   // Contrato de Anunciante
   return (
     <div className="p-8 bg-white text-gray-900 font-serif text-sm leading-relaxed">
-      {/* Header */}
+      {/* Header EXA Profissional */}
+      <div className="bg-gradient-to-r from-[#8B1A1A] to-[#A52020] text-white p-6 -m-8 mb-8 rounded-t-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-wide">EXA MÍDIA</h1>
+            <p className="text-red-100 text-xs mt-1">Soluções Digitais</p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-semibold">CONTRATO DE SERVIÇOS</p>
+            {data.numero_contrato && (
+              <p className="text-xs text-red-100 mt-1">Nº {data.numero_contrato}</p>
+            )}
+            {isVerticalPremium && (
+              <span className="inline-block mt-2 px-2 py-0.5 bg-white/20 text-white text-[10px] font-medium rounded">
+                VERTICAL PREMIUM
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Título */}
       <div className="text-center mb-8">
-        <h1 className="text-xl font-bold uppercase tracking-wide">
+        <h1 className="text-lg font-bold uppercase tracking-wide">
           Contrato de Prestação de Serviços Publicitários
         </h1>
-        {data.numero_contrato && (
-          <p className="text-sm text-gray-600 mt-2">Nº {data.numero_contrato}</p>
+        {isVerticalPremium && (
+          <p className="text-purple-700 text-sm font-semibold mt-1">
+            Modalidade: Vertical Premium - Tela Cheia
+          </p>
         )}
       </div>
 
@@ -181,89 +221,205 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data }) => {
       <div className="space-y-4">
         <div>
           <h2 className="font-bold">CLÁUSULA 1ª - DO OBJETO</h2>
-          <p>
-            1.1. O presente contrato tem por objeto a veiculação de anúncios publicitários em 
-            vídeo com duração de até 15 (quinze) segundos, fornecidos pela CONTRATANTE, nos 
-            painéis digitais da EXA MÍDIA, localizados em prédios residenciais da cidade de 
-            Foz do Iguaçu - PR, pelo prazo contratado de {data.plano_meses || 1} ({data.plano_meses === 1 ? 'um' : data.plano_meses}) 
-            {data.plano_meses === 1 ? ' mês' : ' meses'} de exibição.
-          </p>
+          {isVerticalPremium ? (
+            <p>
+              1.1. O presente contrato tem por objeto a veiculação de anúncio publicitário em 
+              vídeo vertical com duração de <strong>10 (dez) segundos</strong>, no formato 
+              <strong> Vertical Premium</strong>, exibido em <strong>tela cheia a cada 50 segundos</strong>, 
+              nos painéis digitais da EXA MÍDIA, localizados em prédios residenciais da cidade de 
+              Foz do Iguaçu - PR, pelo prazo contratado de {data.plano_meses || 1} ({data.plano_meses === 1 ? 'um' : data.plano_meses}) 
+              {data.plano_meses === 1 ? ' mês' : ' meses'} de exibição.
+            </p>
+          ) : (
+            <p>
+              1.1. O presente contrato tem por objeto a veiculação de anúncios publicitários em 
+              vídeo com duração de até <strong>15 (quinze) segundos</strong>, fornecidos pela CONTRATANTE, nos 
+              painéis digitais da EXA MÍDIA, localizados em prédios residenciais da cidade de 
+              Foz do Iguaçu - PR, pelo prazo contratado de {data.plano_meses || 1} ({data.plano_meses === 1 ? 'um' : data.plano_meses}) 
+              {data.plano_meses === 1 ? ' mês' : ' meses'} de exibição.
+            </p>
+          )}
         </div>
 
         <div>
           <h2 className="font-bold">CLÁUSULA 2ª - DOS LOCAIS CONTRATADOS</h2>
-          <p>2.1. A contratação abrange {totalPaineis} tela(s) nos seguintes edifícios:</p>
-          {listaPredios.length > 0 && (
-            <table className="w-full mt-2 border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-3 py-2 text-left">Edifício</th>
-                  <th className="border border-gray-300 px-3 py-2 text-left">Bairro</th>
-                  <th className="border border-gray-300 px-3 py-2 text-center">Telas</th>
-                </tr>
-              </thead>
-              <tbody>
-                {listaPredios.map((predio, i) => (
-                  <tr key={i}>
-                    <td className="border border-gray-300 px-3 py-2">{predio.nome || predio.building_name}</td>
-                    <td className="border border-gray-300 px-3 py-2">{predio.bairro}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-center">{predio.quantidade_telas || 1}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {isVerticalPremium ? (
+            <>
+              <p>2.1. A modalidade <strong>Vertical Premium</strong> abrange <strong>TODOS os {listaPredios.length} prédios</strong> da rede EXA MÍDIA:</p>
+              {listaPredios.length > 0 && (
+                <div className="mt-2 bg-purple-50 border border-purple-200 rounded p-3">
+                  <p className="text-xs text-purple-700 font-medium mb-2">Prédios incluídos ({listaPredios.length} unidades):</p>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    {listaPredios.map((predio, i) => (
+                      <span key={i} className="text-purple-800">
+                        • {predio.nome || predio.building_name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p>2.1. A contratação abrange {totalPaineis} tela(s) nos seguintes edifícios:</p>
+              {listaPredios.length > 0 && (
+                <table className="w-full mt-2 border-collapse border border-gray-300">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border border-gray-300 px-3 py-2 text-left">Edifício</th>
+                      <th className="border border-gray-300 px-3 py-2 text-left">Bairro</th>
+                      <th className="border border-gray-300 px-3 py-2 text-center">Telas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {listaPredios.map((predio, i) => (
+                      <tr key={i}>
+                        <td className="border border-gray-300 px-3 py-2">{predio.nome || predio.building_name}</td>
+                        <td className="border border-gray-300 px-3 py-2">{predio.bairro}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-center">{predio.quantidade_telas || 1}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
           )}
         </div>
 
         <div>
           <h2 className="font-bold">CLÁUSULA 3ª - DO VALOR E PAGAMENTO</h2>
-          <p>3.1. Valor mensal: <strong>{formatCurrency(data.valor_mensal)}</strong></p>
-          <p>3.2. Valor total do contrato: <strong>{formatCurrency(data.valor_total)}</strong></p>
-          <p>3.3. Forma de pagamento: {data.metodo_pagamento?.replace(/_/g, ' ').toUpperCase() || 'A DEFINIR'}</p>
-          {data.dia_vencimento && (
-            <p>3.4. Vencimento das parcelas: dia {data.dia_vencimento} de cada mês.</p>
+          
+          {data.metodo_pagamento === 'custom' && data.parcelas && data.parcelas.length > 0 ? (
+            <>
+              <p>3.1. Valor total do contrato: <strong>{formatCurrency(data.valor_total)}</strong></p>
+              <p>3.2. Condição de pagamento <strong>PERSONALIZADA</strong>:</p>
+              <div className="mt-2 bg-amber-50 border border-amber-200 rounded p-3">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-amber-300">
+                      <th className="text-left py-1">Parcela</th>
+                      <th className="text-left py-1">Vencimento</th>
+                      <th className="text-right py-1">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.parcelas.map((parcela: any, idx: number) => (
+                      <tr key={idx} className="border-b border-amber-100">
+                        <td className="py-1">{parcela.installment || idx + 1}ª</td>
+                        <td className="py-1">{parcela.due_date}</td>
+                        <td className="py-1 text-right font-medium">{formatCurrency(Number(parcela.amount))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <>
+              <p>3.1. Valor mensal: <strong>{formatCurrency(data.valor_mensal)}</strong></p>
+              <p>3.2. Valor total do contrato: <strong>{formatCurrency(data.valor_total)}</strong></p>
+              <p>3.3. Forma de pagamento: {data.metodo_pagamento?.replace(/_/g, ' ').toUpperCase() || 'A DEFINIR'}</p>
+              {data.dia_vencimento && (
+                <p>3.4. Vencimento das parcelas: dia {data.dia_vencimento} de cada mês.</p>
+              )}
+            </>
           )}
+          
           <p className="mt-2">
-            3.5. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente 
+            3.{data.metodo_pagamento === 'custom' ? '3' : '5'}. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente 
             suspensa até a regularização.
           </p>
-          <p>3.6. Multa por atraso: 2% (dois por cento) + 1% (um por cento) de juros ao mês.</p>
+          <p>3.{data.metodo_pagamento === 'custom' ? '4' : '6'}. Multa por atraso: 2% (dois por cento) + 1% (um por cento) de juros ao mês.</p>
         </div>
 
         <div>
           <h2 className="font-bold">CLÁUSULA 4ª - DO CONTEÚDO PUBLICITÁRIO</h2>
-          <p>
-            4.1. A CONTRATANTE compromete-se a enviar vídeos conforme especificações técnicas 
-            da CONTRATADA (resolução 1920x1080, formato MP4, máximo 15 segundos).
+          {isVerticalPremium ? (
+            <>
+              <p>
+                4.1. A CONTRATANTE compromete-se a enviar vídeo conforme especificações técnicas:
+              </p>
+              <ul className="list-disc ml-6 mt-2">
+                <li>Formato: <strong>MP4 (H.264)</strong></li>
+                <li>Resolução: <strong>1080x1920 (vertical)</strong></li>
+                <li>Duração: <strong>10 segundos</strong></li>
+                <li>Exibição: <strong>Tela cheia a cada 50 segundos</strong></li>
+                <li>Áudio: Sem áudio</li>
+              </ul>
+              <p className="mt-2 bg-purple-50 border border-purple-200 rounded p-2 text-purple-800">
+                <strong>4.2. IMPORTANTE:</strong> A modalidade Vertical Premium <strong>NÃO inclui acesso</strong> ao 
+                Portal do Anunciante. A gestão e substituição do vídeo será realizada diretamente 
+                pela EXA MÍDIA mediante solicitação por escrito.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>
+                4.1. A CONTRATANTE compromete-se a enviar vídeos conforme especificações técnicas:
+              </p>
+              <ul className="list-disc ml-6 mt-2">
+                <li>Formato: <strong>MP4 (H.264)</strong></li>
+                <li>Resolução: <strong>1920x1080 (horizontal)</strong></li>
+                <li>Duração: <strong>até 15 segundos</strong></li>
+                <li>Áudio: Sem áudio</li>
+              </ul>
+              <p className="mt-2">
+                4.2. A CONTRATANTE terá acesso ao <strong>Portal do Anunciante</strong> onde poderá:
+              </p>
+              <ul className="list-disc ml-6 mt-1">
+                <li>Visualizar relatórios detalhados de exibição</li>
+                <li>Agendar até <strong>4 (quatro) vídeos diferentes</strong></li>
+                <li>Substituir vídeos a qualquer momento</li>
+                <li>Acompanhar métricas de visualização em tempo real</li>
+              </ul>
+              <p className="mt-2">
+                4.3. A CONTRATADA poderá recusar conteúdos que não atendam aos padrões técnicos 
+                ou que contenham material ofensivo, ilegal ou que infrinja direitos de terceiros.
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* CLÁUSULA DE DIREITOS DE IMAGEM - SEMPRE PRESENTE */}
+        <div className="bg-gray-50 border border-gray-200 rounded p-3">
+          <h2 className="font-bold">CLÁUSULA 5ª - DA CESSÃO DE DIREITOS DE IMAGEM</h2>
+          <p className="mt-2">
+            5.1. A CONTRATANTE <strong>autoriza expressamente</strong> a EXA MÍDIA a utilizar 
+            o material publicitário fornecido para:
           </p>
-          <p>
-            4.2. Os vídeos podem ser substituídos a qualquer momento, mediante solicitação prévia.
-          </p>
-          <p>
-            4.3. A CONTRATADA poderá recusar conteúdos que não atendam aos padrões técnicos 
-            ou que contenham material ofensivo, ilegal ou que infrinja direitos de terceiros.
+          <ul className="list-disc ml-6 mt-2">
+            <li>Veiculação nos painéis digitais contratados;</li>
+            <li>Divulgação em materiais institucionais da EXA MÍDIA;</li>
+            <li>Portfólio e cases de sucesso;</li>
+            <li>Redes sociais e website da EXA MÍDIA;</li>
+            <li>Apresentações comerciais e demonstrações.</li>
+          </ul>
+          <p className="mt-2">
+            5.2. A autorização prevista nesta cláusula é concedida a título gratuito e por 
+            prazo indeterminado, podendo ser revogada mediante comunicação escrita com 
+            antecedência mínima de 30 (trinta) dias.
           </p>
         </div>
 
         <div>
-          <h2 className="font-bold">CLÁUSULA 5ª - DO CANCELAMENTO</h2>
+          <h2 className="font-bold">CLÁUSULA 6ª - DO CANCELAMENTO</h2>
           <p>
-            5.1. O cancelamento antecipado por parte da CONTRATANTE gerará multa de 30% 
+            6.1. O cancelamento antecipado por parte da CONTRATANTE gerará multa de 30% 
             (trinta por cento) sobre o saldo devedor restante.
           </p>
         </div>
 
         <div>
-          <h2 className="font-bold">CLÁUSULA 6ª - DO FORO</h2>
+          <h2 className="font-bold">CLÁUSULA 7ª - DO FORO</h2>
           <p>
-            6.1. Para dirimir eventuais dúvidas ou litígios oriundos deste contrato, as partes 
+            7.1. Para dirimir eventuais dúvidas ou litígios oriundos deste contrato, as partes 
             elegem o foro da Comarca de Foz do Iguaçu - PR, com renúncia expressa a qualquer outro.
           </p>
         </div>
 
         {data.clausulas_especiais && (
           <div>
-            <h2 className="font-bold">CLÁUSULA 7ª - CONDIÇÕES ESPECIAIS</h2>
+            <h2 className="font-bold">CLÁUSULA 8ª - CONDIÇÕES ESPECIAIS</h2>
             <p>{data.clausulas_especiais}</p>
           </div>
         )}

@@ -2078,6 +2078,7 @@ export type Database = {
           recusado_em: string | null
           status: string
           tipo_contrato: string
+          tipo_produto: string | null
           total_paineis: number | null
           updated_at: string | null
           valor_mensal: number | null
@@ -2124,6 +2125,7 @@ export type Database = {
           recusado_em?: string | null
           status?: string
           tipo_contrato: string
+          tipo_produto?: string | null
           total_paineis?: number | null
           updated_at?: string | null
           valor_mensal?: number | null
@@ -2170,6 +2172,7 @@ export type Database = {
           recusado_em?: string | null
           status?: string
           tipo_contrato?: string
+          tipo_produto?: string | null
           total_paineis?: number | null
           updated_at?: string | null
           valor_mensal?: number | null
@@ -5438,11 +5441,13 @@ export type Database = {
           price_sync_verified: boolean | null
           proposal_id: string | null
           proxima_cobranca: string | null
+          sem_slots_video: boolean | null
           source_tentativa_id: string | null
           status: string
           status_adimplencia: string | null
           termos_aceitos: boolean | null
           tipo_pagamento: string | null
+          tipo_produto: string | null
           total_parcelas: number | null
           transaction_id: string | null
           ultima_notificacao_cobranca: string | null
@@ -5486,11 +5491,13 @@ export type Database = {
           price_sync_verified?: boolean | null
           proposal_id?: string | null
           proxima_cobranca?: string | null
+          sem_slots_video?: boolean | null
           source_tentativa_id?: string | null
           status?: string
           status_adimplencia?: string | null
           termos_aceitos?: boolean | null
           tipo_pagamento?: string | null
+          tipo_produto?: string | null
           total_parcelas?: number | null
           transaction_id?: string | null
           ultima_notificacao_cobranca?: string | null
@@ -5534,11 +5541,13 @@ export type Database = {
           price_sync_verified?: boolean | null
           proposal_id?: string | null
           proxima_cobranca?: string | null
+          sem_slots_video?: boolean | null
           source_tentativa_id?: string | null
           status?: string
           status_adimplencia?: string | null
           termos_aceitos?: boolean | null
           tipo_pagamento?: string | null
+          tipo_produto?: string | null
           total_parcelas?: number | null
           transaction_id?: string | null
           ultima_notificacao_cobranca?: string | null
@@ -5901,6 +5910,7 @@ export type Database = {
           seller_phone: string | null
           sent_at: string | null
           status: string | null
+          tipo_produto: string | null
           total_impressions_month: number
           total_panels: number
           total_time_spent_seconds: number | null
@@ -5943,6 +5953,7 @@ export type Database = {
           seller_phone?: string | null
           sent_at?: string | null
           status?: string | null
+          tipo_produto?: string | null
           total_impressions_month?: number
           total_panels?: number
           total_time_spent_seconds?: number | null
@@ -5985,6 +5996,7 @@ export type Database = {
           seller_phone?: string | null
           sent_at?: string | null
           status?: string | null
+          tipo_produto?: string | null
           total_impressions_month?: number
           total_panels?: number
           total_time_spent_seconds?: number | null
