@@ -137,11 +137,11 @@ const NovoContratoPage = () => {
             userData = user;
           }
 
-          // Buscar dados da proposta
+          // Buscar dados da proposta com TODOS os campos necessários
           if (pedido.proposal_id) {
             const { data: proposal } = await supabase
               .from('proposals')
-              .select('client_name, client_email, client_phone, client_cnpj, client_company_name')
+              .select('client_name, client_email, client_phone, client_cnpj, client_company_name, selected_buildings, payment_type, custom_installments, duration_months, fidel_monthly_value, cash_total_value, discount_percent')
               .eq('id', pedido.proposal_id)
               .single();
             proposalData = proposal;
@@ -163,6 +163,14 @@ const NovoContratoPage = () => {
             proposta_telefone: proposalData?.client_phone,
             proposta_cnpj: proposalData?.client_cnpj,
             proposta_razao_social: proposalData?.client_company_name,
+            // ✅ NOVOS CAMPOS DA PROPOSTA
+            proposta_selected_buildings: proposalData?.selected_buildings,
+            proposta_payment_type: proposalData?.payment_type,
+            proposta_custom_installments: proposalData?.custom_installments,
+            proposta_duration_months: proposalData?.duration_months,
+            proposta_fidel_monthly: proposalData?.fidel_monthly_value,
+            proposta_cash_total: proposalData?.cash_total_value,
+            proposta_discount: proposalData?.discount_percent,
           };
         })
       );
@@ -255,37 +263,33 @@ const NovoContratoPage = () => {
 
   // Vincular a pedido existente - Prioridade: Proposta > Users > Pedido direto
   const handleVincularPedido = async (pedido: any) => {
-    // Parsear lista de painéis e filtrar vazios
-    let listaPaineis = typeof pedido.lista_paineis === 'string' 
-      ? JSON.parse(pedido.lista_paineis) 
-      : pedido.lista_paineis || [];
+    console.log('📋 Vinculando pedido:', pedido.id);
+    console.log('📋 Proposta ID:', pedido.proposal_id);
     
-    // ✅ CORREÇÃO: Filtrar prédios vazios
-    listaPaineis = listaPaineis.filter((p: any) => p && (p.building_id || p.id) && (p.building_name || p.nome));
-
-    // ✅ CORREÇÃO: Buscar dados completos da proposta para condição de pagamento
-    let proposalData: any = null;
-    let paymentType = pedido.metodo_pagamento || 'pix_fidelidade';
-    let customInstallments: any[] = [];
+    // ✅ PRIORIDADE 1: Usar selected_buildings da proposta se disponível
+    let listaPaineis: any[] = [];
     
-    if (pedido.proposal_id) {
-      const { data: proposal } = await supabase
-        .from('proposals')
-        .select('*')
-        .eq('id', pedido.proposal_id)
-        .single();
-      
-      if (proposal) {
-        proposalData = proposal;
-        paymentType = proposal.payment_type || pedido.metodo_pagamento || 'pix_fidelidade';
-        
-        // ✅ CORREÇÃO: Extrair parcelas personalizadas
-        if (proposal.payment_type === 'custom' && Array.isArray(proposal.custom_installments)) {
-          customInstallments = proposal.custom_installments;
-          console.log('📋 Parcelas personalizadas encontradas:', customInstallments);
-        }
-      }
+    if (pedido.proposta_selected_buildings && Array.isArray(pedido.proposta_selected_buildings)) {
+      // Usar prédios da proposta diretamente
+      listaPaineis = pedido.proposta_selected_buildings.filter((p: any) => 
+        p && (p.building_id || p.id) && (p.building_name || p.nome)
+      );
+      console.log('📋 Usando selected_buildings da proposta:', listaPaineis.length);
+    } else if (pedido.lista_paineis) {
+      // Fallback: usar lista_paineis do pedido
+      const parsed = typeof pedido.lista_paineis === 'string' 
+        ? JSON.parse(pedido.lista_paineis) 
+        : pedido.lista_paineis || [];
+      listaPaineis = parsed.filter((p: any) => p && (p.building_id || p.id) && (p.building_name || p.nome));
+      console.log('📋 Usando lista_paineis do pedido:', listaPaineis.length);
     }
+
+    // ✅ Usar dados da proposta para condição de pagamento
+    const paymentType = pedido.proposta_payment_type || pedido.metodo_pagamento || 'pix_fidelidade';
+    const customInstallments = pedido.proposta_custom_installments || [];
+    
+    console.log('📋 Payment type:', paymentType);
+    console.log('📋 Custom installments:', customInstallments);
 
     // Prioridade de preenchimento: Proposta > Users > Pedido direto
     setContratoData(prev => ({
@@ -293,23 +297,23 @@ const NovoContratoPage = () => {
       pedido_id: pedido.id,
       proposta_id: pedido.proposal_id || undefined,
       // Nome: proposta > users > pedido
-      cliente_nome: proposalData?.client_name || pedido.proposta_nome || pedido.user_nome || pedido.client_name || '',
+      cliente_nome: pedido.proposta_nome || pedido.user_nome || pedido.client_name || '',
       // Email: proposta > users > pedido
-      cliente_email: proposalData?.client_email || pedido.proposta_email || pedido.user_email || pedido.client_email || '',
+      cliente_email: pedido.proposta_email || pedido.user_email || pedido.client_email || '',
       // Telefone: proposta > users > pedido
-      cliente_telefone: proposalData?.client_phone || pedido.proposta_telefone || pedido.user_telefone || pedido.client_phone || '',
+      cliente_telefone: pedido.proposta_telefone || pedido.user_telefone || pedido.client_phone || '',
       // CNPJ: proposta > users > pedido
-      cliente_cnpj: proposalData?.client_cnpj || pedido.proposta_cnpj || pedido.user_cnpj || pedido.client_cnpj || '',
+      cliente_cnpj: pedido.proposta_cnpj || pedido.user_cnpj || pedido.client_cnpj || '',
       // Razão Social: proposta > users > pedido
-      cliente_razao_social: proposalData?.client_company_name || pedido.proposta_razao_social || pedido.user_razao_social || pedido.client_company || '',
+      cliente_razao_social: pedido.proposta_razao_social || pedido.user_razao_social || pedido.client_company || '',
       // Segmento: users (único lugar que tem)
       cliente_segmento: pedido.user_segmento || '',
       // Endereço: users (único lugar que tem) - campo manual se não existir
       cliente_endereco: pedido.user_endereco || '',
-      // Valores do pedido
-      valor_mensal: proposalData?.fidel_monthly_value || pedido.valor_mensal || pedido.valor_total / (pedido.plano_meses || 1),
-      valor_total: proposalData?.cash_total_value || pedido.valor_total,
-      plano_meses: proposalData?.duration_months || pedido.plano_meses || 1,
+      // ✅ Valores: proposta > pedido
+      valor_mensal: pedido.proposta_fidel_monthly || pedido.valor_mensal || pedido.valor_total / (pedido.plano_meses || 1),
+      valor_total: pedido.proposta_cash_total || pedido.valor_total,
+      plano_meses: pedido.proposta_duration_months || pedido.plano_meses || 1,
       dia_vencimento: pedido.dia_vencimento || 10,
       metodo_pagamento: paymentType,
       lista_predios: listaPaineis,
@@ -321,6 +325,9 @@ const NovoContratoPage = () => {
     if (paymentType === 'custom' && customInstallments.length > 0) {
       toast.info(`Condição personalizada: ${customInstallments.length} parcelas detectadas`);
     }
+    
+    // Toast com resumo
+    toast.success(`Pedido vinculado: ${listaPaineis.length} prédio(s)`);
 
     setStep('cliente');
   };
@@ -708,12 +715,33 @@ const NovoContratoPage = () => {
                   </div>
                 </div>
 
+                {/* Condição de Pagamento - Se personalizada */}
+                {contratoData.metodo_pagamento === 'custom' && contratoData.parcelas.length > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <Label className="text-amber-800 font-semibold">⚡ Condição Personalizada</Label>
+                    <div className="mt-2 space-y-2">
+                      {contratoData.parcelas.map((parcela: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center text-sm">
+                          <span className="text-amber-700">Parcela {parcela.installment || idx + 1}</span>
+                          <span className="text-amber-700">{parcela.due_date}</span>
+                          <span className="font-semibold text-amber-900">
+                            R$ {Number(parcela.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Lista de Prédios */}
                 <div>
                   <Label>Prédios Contratados</Label>
                   <div className="mt-2 max-h-48 overflow-y-auto border rounded-lg p-2 space-y-2">
                     {predios?.map(predio => {
-                      const isSelected = contratoData.lista_predios.some((p: any) => p.id === predio.id);
+                      // ✅ CORREÇÃO: Comparar tanto building_id quanto id para compatibilidade com propostas
+                      const isSelected = contratoData.lista_predios.some((p: any) => 
+                        (p.building_id || p.id) === predio.id
+                      );
                       return (
                         <div 
                           key={predio.id}
@@ -724,8 +752,16 @@ const NovoContratoPage = () => {
                             setContratoData(prev => ({
                               ...prev,
                               lista_predios: isSelected
-                                ? prev.lista_predios.filter((p: any) => p.id !== predio.id)
-                                : [...prev.lista_predios, predio]
+                                ? prev.lista_predios.filter((p: any) => (p.building_id || p.id) !== predio.id)
+                                : [...prev.lista_predios, { 
+                                    id: predio.id,
+                                    building_id: predio.id,
+                                    building_name: predio.nome,
+                                    nome: predio.nome,
+                                    bairro: predio.bairro,
+                                    endereco: predio.endereco,
+                                    quantidade_telas: predio.quantidade_telas || 1
+                                  }]
                             }));
                           }}
                         >
