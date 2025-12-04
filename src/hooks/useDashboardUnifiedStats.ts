@@ -33,7 +33,8 @@ export interface UnifiedDashboardStats {
     pendentes: number;
     ticketMedio: number;
   };
-  vendas: number;
+  vendas: number;              // Receita EFETIVAMENTE recebida (parcelas pagas)
+  vendasProjetadas: number;    // Parcelas PENDENTES (receita futura)
   vendasAnterior: number;
   conversas: number;
   conversasPorTipo: Record<string, ConversationTypeStats>;
@@ -71,6 +72,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
     pedidos: 0,
     pedidosDetalhes: { pagos: 0, pendentes: 0, ticketMedio: 0 },
     vendas: 0,
+    vendasProjetadas: 0,
     vendasAnterior: 0,
     conversas: 0,
     conversasPorTipo: {},
@@ -136,17 +138,65 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         ? pedidosData.reduce((sum, p) => sum + (p.valor_total || 0), 0) / pedidosData.length 
         : 0;
 
-      // 3. Vendas
+      // 3. Vendas - Calcular baseado em PARCELAS PAGAS para pedidos parcelados
       const { data: vendasData } = await supabase
         .from('pedidos')
-        .select('valor_total')
+        .select('id, valor_total, is_fidelidade, total_parcelas')
         .in('status', ['pago', 'pago_pendente_video', 'video_enviado', 'video_aprovado', 'ativo'])
         .gte('created_at', start)
         .lte('created_at', end)
         .gt('valor_total', 0);
 
-      const vendas = vendasData?.reduce((sum, p) => sum + (p.valor_total || 0), 0) || 0;
+      // Buscar todas as parcelas dos pedidos do período
+      const pedidoIds = vendasData?.map(p => p.id) || [];
+      let vendasEfetivas = 0;
+      let vendasProjetadas = 0;
 
+      if (pedidoIds.length > 0) {
+        // Buscar parcelas pagas
+        const { data: parcelasPagas } = await supabase
+          .from('parcelas')
+          .select('pedido_id, valor_final')
+          .in('pedido_id', pedidoIds)
+          .eq('status', 'pago');
+
+        // Buscar parcelas pendentes
+        const { data: parcelasPendentes } = await supabase
+          .from('parcelas')
+          .select('pedido_id, valor_final')
+          .in('pedido_id', pedidoIds)
+          .in('status', ['pendente', 'atrasado']);
+
+        // Criar mapa de valores pagos e pendentes por pedido
+        const parcelasPagasPorPedido: Record<string, number> = {};
+        const parcelasPendentesPorPedido: Record<string, number> = {};
+        
+        parcelasPagas?.forEach(p => {
+          parcelasPagasPorPedido[p.pedido_id] = (parcelasPagasPorPedido[p.pedido_id] || 0) + (p.valor_final || 0);
+        });
+
+        parcelasPendentes?.forEach(p => {
+          parcelasPendentesPorPedido[p.pedido_id] = (parcelasPendentesPorPedido[p.pedido_id] || 0) + (p.valor_final || 0);
+        });
+
+        // Calcular receita efetiva e projetada
+        vendasData?.forEach(pedido => {
+          const temParcelas = pedido.is_fidelidade || (pedido.total_parcelas && pedido.total_parcelas > 1);
+          
+          if (temParcelas) {
+            // Pedido parcelado: usar valores das parcelas
+            vendasEfetivas += parcelasPagasPorPedido[pedido.id] || 0;
+            vendasProjetadas += parcelasPendentesPorPedido[pedido.id] || 0;
+          } else {
+            // Pedido único: usar valor_total como receita efetiva
+            vendasEfetivas += pedido.valor_total || 0;
+          }
+        });
+      }
+
+      const vendas = vendasEfetivas;
+
+      // Período anterior (mantém cálculo simples para comparação)
       const { data: vendasAnteriores } = await supabase
         .from('pedidos')
         .select('valor_total')
@@ -353,6 +403,7 @@ export const useDashboardUnifiedStats = (startDate: Date, endDate: Date) => {
         pedidos,
         pedidosDetalhes: { pagos, pendentes, ticketMedio },
         vendas,
+        vendasProjetadas,
         vendasAnterior,
         conversas,
         conversasPorTipo,

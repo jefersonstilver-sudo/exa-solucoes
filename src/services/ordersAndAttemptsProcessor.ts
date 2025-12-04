@@ -19,7 +19,10 @@ export const formatOrdersData = (pedidosComEmails: any[]): OrderOrAttempt[] => {
     client_cpf: pedido.client_cpf,
     video_status: pedido.video_status,
     coupon_code: pedido.coupon_code,
-    coupon_category: pedido.coupon_category
+    coupon_category: pedido.coupon_category,
+    is_fidelidade: pedido.is_fidelidade,
+    metodo_pagamento: pedido.metodo_pagamento,
+    total_parcelas: pedido.total_parcelas
   }));
 };
 
