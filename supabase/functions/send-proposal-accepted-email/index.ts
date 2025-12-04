@@ -17,12 +17,22 @@ interface PaymentData {
   dueDate?: string;
 }
 
+interface CustomInstallment {
+  installment: number;
+  due_date: string;
+  amount: number;
+}
+
 interface RequestBody {
   proposalId: string;
   clientEmail?: string;
-  selectedPlan: 'avista' | 'fidelidade';
+  selectedPlan: 'avista' | 'fidelidade' | 'custom';
   paymentMethod?: 'pix' | 'boleto';
   paymentData?: PaymentData;
+  // Custom payment fields
+  isCustomPayment?: boolean;
+  customInstallments?: CustomInstallment[];
+  currentInstallment?: number;
 }
 
 serve(async (req) => {
@@ -32,9 +42,26 @@ serve(async (req) => {
   }
 
   try {
-    const { proposalId, clientEmail, selectedPlan, paymentMethod, paymentData } = await req.json() as RequestBody;
+    const { 
+      proposalId, 
+      clientEmail, 
+      selectedPlan, 
+      paymentMethod, 
+      paymentData,
+      isCustomPayment,
+      customInstallments,
+      currentInstallment
+    } = await req.json() as RequestBody;
 
-    console.log('📧 Iniciando envio de email de proposta aceita:', { proposalId, clientEmail, selectedPlan, paymentMethod });
+    console.log('📧 Iniciando envio de email de proposta aceita:', { 
+      proposalId, 
+      clientEmail, 
+      selectedPlan, 
+      paymentMethod,
+      isCustomPayment,
+      customInstallmentsCount: customInstallments?.length,
+      currentInstallment
+    });
 
     if (!proposalId) {
       throw new Error('proposalId é obrigatório');
@@ -64,6 +91,21 @@ serve(async (req) => {
     }
 
     console.log('✅ Proposta encontrada:', proposal.number);
+    console.log('📊 Dados da proposta:', {
+      payment_type: proposal.payment_type,
+      custom_installments: proposal.custom_installments,
+      fidel_monthly_value: proposal.fidel_monthly_value,
+      cash_total_value: proposal.cash_total_value
+    });
+
+    // Determine if custom payment
+    const isCustom = isCustomPayment || proposal.payment_type === 'custom';
+    const installments: CustomInstallment[] = customInstallments || proposal.custom_installments || [];
+
+    console.log('💳 Tipo de pagamento detectado:', isCustom ? 'PERSONALIZADO' : 'PADRÃO');
+    if (isCustom) {
+      console.log('📝 Parcelas personalizadas:', installments);
+    }
 
     // Determine email to use
     const emailToSend = clientEmail || proposal.client_email;
@@ -126,23 +168,40 @@ serve(async (req) => {
       }
     }
     
-    // Calculate full total price (without discounts)
-    const fullTotalPrice = fullMonthlyPrice * proposal.duration_months;
-    
-    // Calculate plan discount based on duration
-    const planDiscountMap: Record<number, number> = { 1: 0, 3: 20, 6: 30, 12: 37.5 };
-    const planDiscountPercent = planDiscountMap[proposal.duration_months] || 0;
-    
-    // Calculate PIX discount (10% if à vista)
-    const pixDiscountPercent = selectedPlan === 'avista' ? 10 : 0;
+    // Calculate full total price based on payment type
+    let fullTotalPrice: number;
+    let planDiscountPercent: number;
+    let pixDiscountPercent: number;
 
-    console.log('💰 Cálculo de descontos:', {
-      fullMonthlyPrice,
-      fullTotalPrice,
-      planDiscountPercent,
-      pixDiscountPercent,
-      durationMonths: proposal.duration_months
-    });
+    if (isCustom && installments.length > 0) {
+      // CUSTOM PAYMENT: fullTotalPrice = sum of all installments (NOT building prices)
+      fullTotalPrice = installments.reduce((sum, inst) => sum + Number(inst.amount), 0);
+      planDiscountPercent = 0; // No automatic plan discount for custom
+      pixDiscountPercent = 0; // No automatic PIX discount for custom
+      
+      console.log('💰 Cálculo PERSONALIZADO:', {
+        fullTotalPrice,
+        installments: installments.map(i => `${i.installment}: ${i.amount}`)
+      });
+    } else {
+      // STANDARD PAYMENT: fullTotalPrice based on building prices
+      fullTotalPrice = fullMonthlyPrice * proposal.duration_months;
+      
+      // Calculate plan discount based on duration
+      const planDiscountMap: Record<number, number> = { 1: 0, 3: 20, 6: 30, 12: 37.5 };
+      planDiscountPercent = planDiscountMap[proposal.duration_months] || 0;
+      
+      // Calculate PIX discount (10% if à vista)
+      pixDiscountPercent = selectedPlan === 'avista' ? 10 : 0;
+
+      console.log('💰 Cálculo PADRÃO:', {
+        fullMonthlyPrice,
+        fullTotalPrice,
+        planDiscountPercent,
+        pixDiscountPercent,
+        durationMonths: proposal.duration_months
+      });
+    }
 
     // Build email data
     const emailData: any = {
@@ -156,19 +215,37 @@ serve(async (req) => {
       discountPercent: proposal.discount_percent,
       totalPanels: realTotalPanels,
       buildingsCount: buildings.length,
-      selectedPlan: selectedPlan || 'avista',
+      selectedPlan: isCustom ? 'custom' : (selectedPlan || 'avista'),
       sellerName,
       sellerPhone,
-      // NEW: Discount breakdown data
+      // Discount breakdown data
       fullMonthlyPrice,
       fullTotalPrice,
       planDiscountPercent,
       pixDiscountPercent,
+      // Custom payment data
+      paymentType: isCustom ? 'custom' : 'standard',
+      customInstallments: isCustom ? installments : undefined,
+      currentInstallment: isCustom ? (currentInstallment || 1) : undefined,
     };
+
+    console.log('📧 Dados do email construídos:', {
+      selectedPlan: emailData.selectedPlan,
+      paymentType: emailData.paymentType,
+      customInstallmentsCount: emailData.customInstallments?.length,
+      fullTotalPrice: emailData.fullTotalPrice
+    });
 
     // Add payment data if available
     if (paymentMethod && paymentData) {
       emailData.paymentMethod = paymentMethod;
+      
+      console.log('💳 Dados de pagamento recebidos:', {
+        method: paymentMethod,
+        hasQrCodeBase64: !!paymentData.qrCodeBase64,
+        hasQrCode: !!paymentData.qrCode,
+        hasBoletoUrl: !!paymentData.boletoUrl
+      });
       
       if (paymentMethod === 'pix') {
         emailData.pixData = {
@@ -210,8 +287,10 @@ serve(async (req) => {
       action: 'email_confirmacao_enviado',
       details: {
         email: emailToSend,
-        selected_plan: selectedPlan,
+        selected_plan: isCustom ? 'custom' : selectedPlan,
         payment_method: paymentMethod,
+        payment_type: isCustom ? 'custom' : 'standard',
+        custom_installments: isCustom ? installments : undefined,
         resend_id: emailResponse?.id,
         discount_breakdown: {
           fullMonthlyPrice,
