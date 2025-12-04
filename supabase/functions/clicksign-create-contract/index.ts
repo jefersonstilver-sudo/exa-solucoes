@@ -17,20 +17,25 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log("========================================");
-  console.log("🚀 [CLICKSIGN] EDGE FUNCTION INVOCADA");
-  console.log("========================================");
+  console.log("╔══════════════════════════════════════════════════════════════╗");
+  console.log("║ 🚀 [CLICKSIGN] EDGE FUNCTION INVOCADA                        ║");
+  console.log("╚══════════════════════════════════════════════════════════════╝");
   console.log("📅 Timestamp:", new Date().toISOString());
   console.log("📍 Method:", req.method);
+  console.log("📍 URL:", req.url);
   
   if (req.method === "OPTIONS") {
+    console.log("✅ [CLICKSIGN] Preflight OPTIONS - retornando 200");
     return new Response(null, { headers: corsHeaders });
   }
 
   let rawBody = "";
+  let contrato_id = "";
+  
   try {
     rawBody = await req.text();
-    console.log("📥 [CLICKSIGN] Raw body recebido:", rawBody);
+    console.log("📥 [CLICKSIGN] Raw body length:", rawBody.length);
+    console.log("📥 [CLICKSIGN] Raw body:", rawBody.substring(0, 500));
     
     const body = JSON.parse(rawBody);
     const { contrato_id } = body;
