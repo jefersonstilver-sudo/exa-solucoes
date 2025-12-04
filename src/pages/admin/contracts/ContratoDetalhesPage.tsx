@@ -24,7 +24,8 @@ import {
   Calendar,
   Loader2,
   Edit3,
-  Maximize2
+  Maximize2,
+  FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -226,7 +227,113 @@ const ContratoDetalhesPage = () => {
                 }}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Baixar PDF (Rascunho)
+                Baixar PDF
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  // Gerar HTML editável para abrir no Word/Google Docs
+                  const parcelas = Array.isArray(contrato.parcelas) ? contrato.parcelas : [];
+                  const predios = Array.isArray(contrato.lista_predios) ? contrato.lista_predios : [];
+                  const formatCurrency = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+                  
+                  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${contrato.numero_contrato}</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+    h1 { color: #9C1E1E; text-align: center; border-bottom: 2px solid #9C1E1E; padding-bottom: 10px; }
+    h2 { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 30px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background: #f5f5f5; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .info-item { margin-bottom: 10px; }
+    .info-label { font-size: 12px; color: #666; }
+    .info-value { font-weight: bold; }
+    .signature-area { margin-top: 60px; display: flex; justify-content: space-around; }
+    .signature-box { text-align: center; width: 40%; }
+    .signature-line { border-top: 1px solid #333; margin-top: 60px; padding-top: 10px; }
+    .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 80px; color: rgba(200,200,200,0.3); z-index: -1; }
+  </style>
+</head>
+<body>
+  <div class="watermark">RASCUNHO</div>
+  <h1>CONTRATO DE PRESTAÇÃO DE SERVIÇOS<br><small style="font-size: 14px; color: #666;">${contrato.numero_contrato}</small></h1>
+  
+  <h2>CONTRATADA</h2>
+  <p><strong>EXA MÍDIA LTDA</strong><br>CNPJ: 42.538.968/0001-06<br>Av. Paraná, 3695 - 2º Andar, Centro - Foz do Iguaçu/PR</p>
+  
+  <h2>CONTRATANTE</h2>
+  <div class="info-grid">
+    <div class="info-item"><div class="info-label">Nome/Razão Social</div><div class="info-value">${contrato.cliente_razao_social || contrato.cliente_nome}</div></div>
+    <div class="info-item"><div class="info-label">CNPJ/CPF</div><div class="info-value">${contrato.cliente_cnpj || '-'}</div></div>
+    <div class="info-item"><div class="info-label">E-mail</div><div class="info-value">${contrato.cliente_email}</div></div>
+    <div class="info-item"><div class="info-label">Telefone</div><div class="info-value">${contrato.cliente_telefone || '-'}</div></div>
+  </div>
+  
+  <h2>OBJETO</h2>
+  <p>${contrato.objeto || 'Prestação de serviços de veiculação de publicidade em mídia digital indoor (painéis digitais em elevadores).'}</p>
+  
+  <h2>LOCAIS DE VEICULAÇÃO</h2>
+  <table>
+    <thead><tr><th>Prédio</th><th>Bairro</th><th>Telas</th></tr></thead>
+    <tbody>
+      ${predios.map((p: any) => `<tr><td>${p.building_name || p.nome}</td><td>${p.bairro || '-'}</td><td>${p.quantidade_telas || 1}</td></tr>`).join('')}
+    </tbody>
+  </table>
+  
+  <h2>CONDIÇÕES FINANCEIRAS</h2>
+  ${contrato.metodo_pagamento === 'custom' ? `
+  <p><strong>Condição Personalizada</strong></p>
+  <table>
+    <thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th></tr></thead>
+    <tbody>
+      ${parcelas.map((p: any, i: number) => `<tr><td>${i + 1}ª</td><td>${p.due_date ? new Date(p.due_date).toLocaleDateString('pt-BR') : '-'}</td><td>${formatCurrency(p.amount)}</td></tr>`).join('')}
+    </tbody>
+  </table>
+  <p><strong>Valor Total:</strong> ${formatCurrency(contrato.valor_total || 0)}</p>
+  ` : `
+  <p><strong>Valor Mensal:</strong> ${formatCurrency(contrato.valor_mensal || 0)}</p>
+  <p><strong>Duração:</strong> ${contrato.plano_meses} meses</p>
+  <p><strong>Valor Total:</strong> ${formatCurrency(contrato.valor_total || 0)}</p>
+  `}
+  
+  <h2>CLÁUSULAS CONTRATUAIS</h2>
+  <p><strong>1. DA VIGÊNCIA</strong><br>O presente contrato terá vigência de ${contrato.plano_meses || 1} meses.</p>
+  <p><strong>2. DO CONTEÚDO</strong><br>O CONTRATANTE é integralmente responsável pelo conteúdo publicitário veiculado.</p>
+  <p><strong>3. DAS ESPECIFICAÇÕES TÉCNICAS</strong><br>Os vídeos devem ter: duração de 15 segundos, formato horizontal (16:9), resolução mínima de 1920x1080, sem áudio.</p>
+  <p><strong>4. DA APROVAÇÃO</strong><br>O material publicitário está sujeito à aprovação da CONTRATADA.</p>
+  <p><strong>5. DO PAGAMENTO</strong><br>Os pagamentos deverão ser realizados conforme condição estabelecida.</p>
+  <p><strong>6. DA RESCISÃO</strong><br>A rescisão antecipada implica multa de 30% do valor restante.</p>
+  <p><strong>7. DO USO DE IMAGEM</strong><br>O CONTRATANTE autoriza uso de imagens para divulgação e portfólio.</p>
+  ${contrato.clausulas_especiais ? `<p><strong>8. CLÁUSULAS ESPECIAIS</strong><br>${contrato.clausulas_especiais}</p>` : ''}
+  
+  <div class="signature-area">
+    <div class="signature-box">
+      <div class="signature-line">EXA MÍDIA LTDA<br><small>CONTRATADA</small></div>
+    </div>
+    <div class="signature-box">
+      <div class="signature-line">${contrato.cliente_nome}<br><small>CONTRATANTE</small></div>
+    </div>
+  </div>
+</body>
+</html>`;
+                  
+                  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${contrato.numero_contrato}_editavel.html`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast.success('Arquivo editável baixado!');
+                }}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Baixar Editável
               </Button>
               <Button 
                 variant="outline"
@@ -386,14 +493,32 @@ const ContratoDetalhesPage = () => {
               <h3 className="text-lg font-semibold">Valores</h3>
             </div>
             <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Valor Mensal</span>
-                <span className="font-semibold">{formatCurrency(contrato.valor_mensal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Duração</span>
-                <span className="font-semibold">{contrato.plano_meses} meses</span>
-              </div>
+              {contrato.metodo_pagamento === 'custom' ? (
+                <>
+                  <div className="mb-2">
+                    <span className="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-1 rounded">
+                      Condição Personalizada
+                    </span>
+                  </div>
+                  {Array.isArray(contrato.parcelas) && contrato.parcelas.map((p: any, i: number) => (
+                    <div key={i} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{i + 1}ª Parcela ({p.due_date ? new Date(p.due_date).toLocaleDateString('pt-BR') : '-'})</span>
+                      <span className="font-medium">{formatCurrency(p.amount)}</span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Valor Mensal</span>
+                    <span className="font-semibold">{formatCurrency(contrato.valor_mensal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Duração</span>
+                    <span className="font-semibold">{contrato.plano_meses} meses</span>
+                  </div>
+                </>
+              )}
               <Separator />
               <div className="flex justify-between text-lg">
                 <span className="font-medium">Total</span>
