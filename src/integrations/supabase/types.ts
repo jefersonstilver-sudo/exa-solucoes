@@ -7765,17 +7765,20 @@ export type Database = {
           client_id: string
           client_name: string
           created_at: string
-          cupom_id: string
           data_fim: string
           data_inicio: string
           id: string
           is_fidelidade: boolean
-          lista_paineis: string[]
+          lista_paineis: Json
+          lista_predios: string[]
+          metodo_pagamento: string
+          nome_pedido: string
           plano_meses: number
           status: string
-          tipo_pagamento: string
+          total_parcelas: number
+          transaction_id: string
+          updated_at: string
           valor_total: number
-          video_status: string
         }[]
       }
       get_pedidos_com_status_correto: {

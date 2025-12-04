@@ -233,9 +233,12 @@ serve(async (req) => {
       data_fim: endDate.toISOString(),
       lista_paineis: listaPaineis,
       metodo_pagamento: isCustomPayment ? 'personalizado' : (paymentData?.method || 'pix'),
+      tipo_pagamento: isCustomPayment ? 'personalizado' : (paymentData?.method === 'pix' ? 'pix_avista' : 'pix_avista'),
       proposal_id: proposalId,
       is_fidelidade: isCustomPayment,
       total_parcelas: isCustomPayment ? customInstallments.length : 1,
+      parcela_atual: isCustomPayment ? 2 : 1, // Se pagou a 1ª parcela, próxima é 2
+      status_adimplencia: 'em_dia',
       log_pagamento: {
         converted_from_proposal: true,
         proposal_number: proposal.number,

@@ -3,6 +3,18 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+interface Parcela {
+  id: string;
+  numero_parcela: number;
+  valor_original: number;
+  valor_final: number;
+  data_vencimento: string;
+  status: string;
+  data_pagamento?: string | null;
+  metodo_pagamento?: string | null;
+  mercadopago_payment_id?: string | null;
+}
+
 interface OrderWithClient {
   id: string;
   created_at: string;
@@ -25,6 +37,7 @@ interface OrderWithClient {
   transaction_id?: string;
   // Campos de fidelidade
   tipo_pagamento?: string;
+  metodo_pagamento?: string;
   is_fidelidade?: boolean;
   dia_vencimento?: number;
   parcela_atual?: number;
@@ -38,6 +51,8 @@ interface OrderWithClient {
     nomeEmpresa?: string;
   };
   versao_termo?: string;
+  // Parcelas do pedido
+  parcelas?: Parcela[];
 }
 
 interface OrderVideo {
@@ -106,6 +121,7 @@ export const useRealOrderDetails = (orderId: string) => {
             termos_aceitos,
             transaction_id,
             tipo_pagamento,
+            metodo_pagamento,
             is_fidelidade,
             dia_vencimento,
             parcela_atual,
@@ -186,6 +202,7 @@ export const useRealOrderDetails = (orderId: string) => {
           transaction_id: order.transaction_id,
           // Campos fidelidade
           tipo_pagamento: order.tipo_pagamento,
+          metodo_pagamento: order.metodo_pagamento,
           is_fidelidade: order.is_fidelidade,
           dia_vencimento: order.dia_vencimento,
           parcela_atual: order.parcela_atual,
@@ -197,12 +214,38 @@ export const useRealOrderDetails = (orderId: string) => {
           versao_termo: termoData?.versao_termo
         };
 
+        // Buscar parcelas do pedido
+        const { data: parcelas, error: parcelasError } = await supabase
+          .from('parcelas')
+          .select('*')
+          .eq('pedido_id', orderId)
+          .order('numero_parcela', { ascending: true });
+
+        if (parcelasError) {
+          console.error('⚠️ [ORDER DETAILS] Erro ao buscar parcelas:', parcelasError);
+        } else if (parcelas && parcelas.length > 0) {
+          orderWithClient.parcelas = parcelas.map(p => ({
+            id: p.id,
+            numero_parcela: p.numero_parcela,
+            valor_original: p.valor_original,
+            valor_final: p.valor_final,
+            data_vencimento: p.data_vencimento,
+            status: p.status,
+            data_pagamento: p.data_pagamento,
+            metodo_pagamento: p.metodo_pagamento,
+            mercadopago_payment_id: p.mercadopago_payment_id
+          }));
+          console.log('💰 [ORDER DETAILS] Parcelas encontradas:', parcelas.length);
+        }
+
         console.log('📦 [ORDER DETAILS] Order montado:', {
           id: orderWithClient.id.slice(0, 8),
           lista_predios_count: orderWithClient.lista_predios?.length || 0,
           lista_paineis_count: orderWithClient.lista_paineis?.length || 0,
           is_fidelidade: orderWithClient.is_fidelidade,
           tipo_pagamento: orderWithClient.tipo_pagamento,
+          metodo_pagamento: orderWithClient.metodo_pagamento,
+          parcelas_count: orderWithClient.parcelas?.length || 0,
           termos_aceitos: orderWithClient.termos_aceitos,
           termo_aceito_em: orderWithClient.termo_aceito_em
         });

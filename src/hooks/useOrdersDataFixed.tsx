@@ -8,7 +8,7 @@ interface OrderComplete {
   created_at: string;
   status: string;
   valor_total: number;
-  lista_paineis: string[];
+  lista_paineis: any;
   plano_meses: number;
   data_inicio: string;
   data_fim: string;
@@ -113,7 +113,20 @@ export const useOrdersDataFixed = () => {
           toast.success(`${data.length} pedidos carregados com sucesso`);
         }
 
-        setOrders(data || []);
+        // Mapear video_status baseado no status do pedido
+        const ordersWithVideoStatus = (data || []).map(order => ({
+          ...order,
+          video_status: order.status === 'pago_pendente_video' ? 'Aguardando Vídeo' :
+                       order.status === 'video_enviado' ? 'Vídeo Enviado' :
+                       order.status === 'video_aprovado' ? 'EM EXIBIÇÃO' :
+                       order.status === 'video_rejeitado' ? 'Vídeo Rejeitado' :
+                       order.status === 'pago' ? 'Pago' :
+                       order.status === 'ativo' ? 'Ativo' :
+                       order.status === 'pendente' ? 'Pendente' :
+                       order.status === 'cancelado' ? 'Cancelado' : order.status
+        }));
+
+        setOrders(ordersWithVideoStatus);
       }
       
       // Calcular estatísticas
