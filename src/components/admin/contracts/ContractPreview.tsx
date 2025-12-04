@@ -95,17 +95,19 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
     }
   };
 
-  // Logo EXA component
+  // Logo EXA em SVG inline (funciona em qualquer contexto)
   const ExaLogo = () => (
     <div className="flex items-center gap-3">
-      <img 
-        src="https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/site-assets/logo-exa-white.png" 
-        alt="EXA Mídia" 
-        className="h-10 w-auto"
-        onError={(e) => {
-          e.currentTarget.style.display = 'none';
-        }}
-      />
+      <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{stopColor: '#ffffff', stopOpacity: 1}} />
+            <stop offset="100%" style={{stopColor: '#f0f0f0', stopOpacity: 1}} />
+          </linearGradient>
+        </defs>
+        <rect x="5" y="5" width="90" height="90" rx="15" fill="url(#logoGrad)" stroke="#8B1A1A" strokeWidth="3"/>
+        <text x="50" y="65" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="38" fontWeight="900" fill="#8B1A1A">EXA</text>
+      </svg>
       <div>
         <h1 className="text-xl font-bold tracking-wide">EXA MÍDIA</h1>
         <p className="text-red-100 text-xs mt-0.5">Soluções Digitais em Elevadores</p>
@@ -374,14 +376,15 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
             4.1. <strong>Valor Total do Contrato:</strong> {formatCurrency(data.valor_total)}
           </p>
           
-          {data.valor_mensal && data.valor_mensal > 0 && (
+          {/* Só mostrar valor mensal se NÃO for pagamento personalizado */}
+          {data.metodo_pagamento !== 'custom' && data.valor_mensal && data.valor_mensal > 0 && (
             <p className="mt-1">
               4.2. <strong>Valor Mensal:</strong> {formatCurrency(data.valor_mensal)}
             </p>
           )}
           
           <p className="mt-2">
-            4.3. <strong>Forma de Pagamento:</strong> {getMetodoPagamentoNome(data.metodo_pagamento)}
+            4.{data.metodo_pagamento === 'custom' ? '2' : '3'}. <strong>Forma de Pagamento:</strong> {getMetodoPagamentoNome(data.metodo_pagamento)}
           </p>
 
           {/* Parcelas detalhadas */}

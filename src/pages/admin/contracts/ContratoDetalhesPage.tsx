@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,11 +22,14 @@ import {
   Building2,
   CreditCard,
   Calendar,
-  Loader2
+  Loader2,
+  Edit3,
+  Maximize2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ContractPreview from '@/components/admin/contracts/ContractPreview';
+import FullscreenContractEditor from '@/components/admin/contracts/FullscreenContractEditor';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   rascunho: { label: 'Rascunho', color: 'bg-gray-500', icon: FileSignature },
@@ -43,6 +46,7 @@ const ContratoDetalhesPage = () => {
   const navigate = useNavigate();
   const { buildPath } = useAdminBasePath();
   const queryClient = useQueryClient();
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const { data: contrato, isLoading } = useQuery({
     queryKey: ['contrato-detalhes', id],
@@ -125,6 +129,24 @@ const ContratoDetalhesPage = () => {
     }
   });
 
+  // Salvar cláusulas especiais
+  const saveClausulasMutation = useMutation({
+    mutationFn: async (clausulas: string) => {
+      const { error } = await supabase
+        .from('contratos_legais')
+        .update({ clausulas_especiais: clausulas })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Cláusulas salvas!');
+      queryClient.invalidateQueries({ queryKey: ['contrato-detalhes', id] });
+    },
+    onError: () => {
+      toast.error('Erro ao salvar');
+    }
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex items-center justify-center">
@@ -182,16 +204,25 @@ const ContratoDetalhesPage = () => {
         </div>
         
         {/* Actions */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {contrato.status === 'rascunho' && (
-            <Button 
-              onClick={() => sendMutation.mutate()}
-              disabled={sendMutation.isPending}
-              className="bg-primary"
-            >
-              {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-              Enviar para Assinatura
-            </Button>
+            <>
+              <Button 
+                variant="outline"
+                onClick={() => setEditorOpen(true)}
+              >
+                <Edit3 className="h-4 w-4 mr-2" />
+                Editar Cláusulas
+              </Button>
+              <Button 
+                onClick={() => sendMutation.mutate()}
+                disabled={sendMutation.isPending}
+                className="bg-primary"
+              >
+                {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                Enviar para Assinatura
+              </Button>
+            </>
           )}
           {['enviado', 'visualizado'].includes(contrato.status) && (
             <>
@@ -400,6 +431,15 @@ const ContratoDetalhesPage = () => {
           </Card>
         </div>
       </div>
+
+      {/* Editor de Cláusulas Especiais em Tela Cheia */}
+      <FullscreenContractEditor
+        isOpen={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        initialContent={contrato.clausulas_especiais || ''}
+        onSave={(content) => saveClausulasMutation.mutate(content)}
+        title={`Editar Cláusulas - ${contrato.numero_contrato}`}
+      />
     </div>
   );
 };
