@@ -316,7 +316,11 @@ const ContratoDetalhesPage = () => {
           <Card className="p-6 bg-white/80 backdrop-blur-sm">
             <h3 className="text-lg font-semibold mb-4">Prévia do Contrato</h3>
             <div className="border rounded-lg overflow-hidden max-h-[400px] overflow-y-auto">
-              <ContractPreview data={{...contrato, lista_predios: Array.isArray(contrato.lista_predios) ? contrato.lista_predios : []}} />
+              <ContractPreview data={{
+                ...contrato,
+                lista_predios: Array.isArray(contrato.lista_predios) ? contrato.lista_predios : [],
+                parcelas: Array.isArray(contrato.parcelas) ? contrato.parcelas : []
+              }} />
             </div>
           </Card>
         </div>

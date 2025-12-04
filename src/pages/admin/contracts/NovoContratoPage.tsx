@@ -345,10 +345,10 @@ const NovoContratoPage = () => {
                   onClick={() => handleVincularPedido(pedido)}
                   className="p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-medium">{pedido.users?.full_name || 'Cliente'}</p>
-                      <p className="text-sm text-muted-foreground">{pedido.users?.email}</p>
+                      <p className="font-medium">{pedido.client_name || 'Cliente'}</p>
+                      <p className="text-sm text-muted-foreground">ID: {pedido.id.slice(0, 8)}...</p>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">
