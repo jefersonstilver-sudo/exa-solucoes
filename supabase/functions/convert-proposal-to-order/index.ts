@@ -234,6 +234,8 @@ serve(async (req) => {
       lista_paineis: listaPaineis,
       metodo_pagamento: isCustomPayment ? 'personalizado' : (paymentData?.method || 'pix'),
       proposal_id: proposalId,
+      is_fidelidade: isCustomPayment,
+      total_parcelas: isCustomPayment ? customInstallments.length : 1,
       log_pagamento: {
         converted_from_proposal: true,
         proposal_number: proposal.number,
@@ -278,10 +280,10 @@ serve(async (req) => {
         valor_original: Number(inst.amount),
         valor_final: Number(inst.amount),
         data_vencimento: inst.due_date,
-        status: idx === 0 ? 'pago' : 'pendente', // 1ª parcela já paga
+        status: idx === 0 ? 'pago' : 'pendente',
         metodo_pagamento: paymentData?.method || 'pix',
         data_pagamento: idx === 0 ? new Date().toISOString() : null,
-        payment_id: idx === 0 ? paymentId : null
+        mercadopago_payment_id: idx === 0 ? String(paymentId) : null
       }));
 
       console.log('💳 Parcelas a criar:', JSON.stringify(parcelasData, null, 2));
@@ -305,6 +307,8 @@ serve(async (req) => {
       .update({
         status: 'convertida',
         converted_order_id: newOrder.id,
+        is_viewing: false,
+        last_heartbeat_at: null,
         metadata: {
           ...proposal.metadata,
           converted_at: new Date().toISOString(),

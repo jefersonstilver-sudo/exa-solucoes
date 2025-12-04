@@ -183,6 +183,11 @@ export const EnhancedOrderCard: React.FC<EnhancedOrderCardProps> = ({
                 <Badge className={`${getStatusColor(item.status, item.correct_status)} text-xs px-1.5 py-0`}>
                   {getStatusText(item.status, item.correct_status, item.video_status)}
                 </Badge>
+                {(item.is_fidelidade || item.metodo_pagamento === 'personalizado' || (item.total_parcelas && item.total_parcelas > 1)) && (
+                  <Badge className="bg-purple-100 text-purple-800 border-purple-300 text-xs px-1.5 py-0">
+                    🔄 Assinatura {item.total_parcelas && item.total_parcelas > 1 ? `(${item.total_parcelas}x)` : ''}
+                  </Badge>
+                )}
                 <div className={`flex items-center gap-1 text-xs ${urgencyClass}`}>
                   <Clock className="w-3 h-3" />
                   <span className="font-medium">{timeText}</span>
