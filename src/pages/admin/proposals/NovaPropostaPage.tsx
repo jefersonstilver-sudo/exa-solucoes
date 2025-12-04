@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Skeleton } from '@/components/ui/skeleton';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { PhoneInput, type CountryCode } from '@/components/ui/phone-input';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,7 +66,10 @@ const NovaPropostaPage = () => {
     phone: '',
     phoneFullNumber: '', // Número completo com código do país
     phoneCountry: 'BR' as CountryCode,
-    email: ''
+    email: '',
+    address: '',
+    latitude: null as number | null,
+    longitude: null as number | null
   });
 
   // Funções auxiliares para documento dinâmico por país
@@ -425,6 +429,9 @@ const NovaPropostaPage = () => {
           seller_name: currentUser?.nome || currentUser?.email || 'Vendedor',
           payment_type: isCustomPayment ? 'custom' : 'standard',
           tipo_produto: tipoProduto,
+          client_address: clientData.address || null,
+          client_latitude: clientData.latitude || null,
+          client_longitude: clientData.longitude || null,
           custom_installments: isCustomPayment ? customInstallments.map((p, idx) => ({
             installment: idx + 1,
             due_date: formatDateForInput(p.dueDate),
@@ -769,6 +776,42 @@ const NovaPropostaPage = () => {
                 onChange={(e) => setClientData(prev => ({ ...prev, email: e.target.value }))}
                 className="mt-1 h-12 text-base"
               />
+            </div>
+            
+            {/* Campo de Endereço - Condicional por país */}
+            <div className="md:col-span-2">
+              <Label className="text-xs flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                Endereço da Empresa
+              </Label>
+              {clientData.country === 'BR' ? (
+                <AddressAutocomplete
+                  value={clientData.address}
+                  onChange={(value) => setClientData(prev => ({ ...prev, address: value }))}
+                  onPlaceSelect={(place) => {
+                    setClientData(prev => ({ 
+                      ...prev, 
+                      address: place.address,
+                      latitude: place.coordinates.lat,
+                      longitude: place.coordinates.lng
+                    }));
+                  }}
+                  placeholder="Digite o endereço da empresa..."
+                  className="mt-1 h-12 text-base"
+                />
+              ) : (
+                <Input
+                  value={clientData.address}
+                  onChange={(e) => setClientData(prev => ({ 
+                    ...prev, 
+                    address: e.target.value,
+                    latitude: null,
+                    longitude: null
+                  }))}
+                  placeholder="Digite o endereço completo da empresa..."
+                  className="mt-1 h-12 text-base"
+                />
+              )}
             </div>
           </div>
         </Card>

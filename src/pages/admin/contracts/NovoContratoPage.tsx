@@ -45,9 +45,11 @@ import {
   Monitor,
   CheckCircle,
   Plus,
-  Trash2
+  Trash2,
+  MapPin
 } from 'lucide-react';
 import ContractPreview from '@/components/admin/contracts/ContractPreview';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 
 type Step = 'tipo' | 'modo' | 'vinculo' | 'cliente' | 'contrato' | 'preview';
 type FillMode = 'extract' | 'manual';
@@ -65,8 +67,11 @@ interface ContratoData {
   cliente_razao_social: string;
   cliente_cargo: string;
   cliente_endereco: string;
+  cliente_latitude: number | null;
+  cliente_longitude: number | null;
   cliente_cidade: string;
   cliente_segmento: string;
+  cliente_pais: 'BR' | 'AR' | 'PY';
   valor_mensal: number;
   valor_total: number;
   plano_meses: number;
@@ -112,8 +117,11 @@ const NovoContratoPage = () => {
     cliente_razao_social: '',
     cliente_cargo: '',
     cliente_endereco: '',
+    cliente_latitude: null,
+    cliente_longitude: null,
     cliente_cidade: 'Foz do Iguaçu',
     cliente_segmento: '',
+    cliente_pais: 'BR',
     valor_mensal: 0,
     valor_total: 0,
     plano_meses: 1,
@@ -914,18 +922,41 @@ const NovoContratoPage = () => {
               </div>
               <div className="md:col-span-2">
                 <Label htmlFor="cliente_endereco" className="flex items-center gap-2">
+                  <MapPin className="h-3 w-3" />
                   Endereço Completo
                   {!contratoData.cliente_endereco && (
                     <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Preencher</span>
                   )}
                 </Label>
-                <Input
-                  id="cliente_endereco"
-                  value={contratoData.cliente_endereco}
-                  onChange={(e) => setContratoData(prev => ({ ...prev, cliente_endereco: e.target.value }))}
-                  placeholder="Rua, número, bairro, cidade - UF"
-                  className={`rounded-xl ${!contratoData.cliente_endereco ? 'border-amber-300 focus:border-amber-500' : ''}`}
-                />
+                {contratoData.cliente_pais === 'BR' ? (
+                  <AddressAutocomplete
+                    value={contratoData.cliente_endereco}
+                    onChange={(value) => setContratoData(prev => ({ ...prev, cliente_endereco: value }))}
+                    onPlaceSelect={(place) => {
+                      setContratoData(prev => ({ 
+                        ...prev, 
+                        cliente_endereco: place.address,
+                        cliente_latitude: place.coordinates.lat,
+                        cliente_longitude: place.coordinates.lng
+                      }));
+                    }}
+                    placeholder="Digite o endereço da empresa..."
+                    className={`rounded-xl ${!contratoData.cliente_endereco ? 'border-amber-300 focus:border-amber-500' : ''}`}
+                  />
+                ) : (
+                  <Input
+                    id="cliente_endereco"
+                    value={contratoData.cliente_endereco}
+                    onChange={(e) => setContratoData(prev => ({ 
+                      ...prev, 
+                      cliente_endereco: e.target.value,
+                      cliente_latitude: null,
+                      cliente_longitude: null
+                    }))}
+                    placeholder="Rua, número, bairro, cidade"
+                    className={`rounded-xl ${!contratoData.cliente_endereco ? 'border-amber-300 focus:border-amber-500' : ''}`}
+                  />
+                )}
               </div>
             </div>
 

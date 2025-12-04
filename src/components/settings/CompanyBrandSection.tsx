@@ -6,11 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Building2, FileText, Briefcase, Save, Loader2, Info, Check, ChevronsUpDown } from 'lucide-react';
+import { Building2, FileText, Briefcase, Save, Loader2, Info, Check, ChevronsUpDown, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanyTermsCheckbox } from './CompanyTermsCheckbox';
 import { validateCompanyDocument, formatCompanyDocument } from '@/utils/inputValidation';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { cn } from '@/lib/utils';
 const businessSegments = [
 // Turismo e Atrações (Foz do Iguaçu - Tríplice Fronteira)
@@ -480,6 +481,7 @@ export const CompanyBrandSection: React.FC = () => {
   const [companyDocument, setCompanyDocument] = useState('');
   const [businessSegment, setBusinessSegment] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
+  const [companyCoordinates, setCompanyCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsAcceptedDate, setTermsAcceptedDate] = useState<string | null>(null);
   const [segmentPopoverOpen, setSegmentPopoverOpen] = useState(false);
@@ -497,7 +499,7 @@ export const CompanyBrandSection: React.FC = () => {
       const {
         data,
         error
-      } = await supabase.from('users').select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_endereco, empresa_aceite_termo, empresa_aceite_termo_data').eq('id', user.id).single();
+      } = await supabase.from('users').select('empresa_nome, empresa_pais, empresa_documento, empresa_segmento, empresa_endereco, empresa_latitude, empresa_longitude, empresa_aceite_termo, empresa_aceite_termo_data').eq('id', user.id).single();
       if (error) throw error;
       if (data) {
         setCompanyName(data.empresa_nome || '');
@@ -505,6 +507,9 @@ export const CompanyBrandSection: React.FC = () => {
         setCompanyDocument(data.empresa_documento || '');
         setBusinessSegment(data.empresa_segmento || '');
         setCompanyAddress(data.empresa_endereco || '');
+        if (data.empresa_latitude && data.empresa_longitude) {
+          setCompanyCoordinates({ lat: data.empresa_latitude, lng: data.empresa_longitude });
+        }
         setTermsAccepted(data.empresa_aceite_termo || false);
         setTermsAcceptedDate(data.empresa_aceite_termo_data || null);
       }
@@ -560,6 +565,8 @@ export const CompanyBrandSection: React.FC = () => {
         empresa_documento: companyDocument,
         empresa_segmento: businessSegment,
         empresa_endereco: companyAddress,
+        empresa_latitude: companyCoordinates?.lat || null,
+        empresa_longitude: companyCoordinates?.lng || null,
         empresa_aceite_termo: termsAccepted
       };
 
@@ -701,17 +708,36 @@ export const CompanyBrandSection: React.FC = () => {
 
         <div className="space-y-2">
           <Label htmlFor="companyAddress" className="flex items-center">
-            <Building2 className="h-4 w-4 mr-2" />
+            <MapPin className="h-4 w-4 mr-2" />
             Endereço Completo
           </Label>
-          <Input 
-            id="companyAddress" 
-            value={companyAddress} 
-            onChange={e => setCompanyAddress(e.target.value)} 
-            placeholder="Rua, número, bairro, cidade - UF" 
-          />
+          {companyCountry === 'BR' ? (
+            <AddressAutocomplete
+              value={companyAddress}
+              onChange={setCompanyAddress}
+              onPlaceSelect={(place) => {
+                setCompanyAddress(place.address);
+                setCompanyCoordinates(place.coordinates);
+              }}
+              placeholder="Digite o endereço da empresa..."
+              className="h-11"
+            />
+          ) : (
+            <Input 
+              id="companyAddress" 
+              value={companyAddress} 
+              onChange={e => {
+                setCompanyAddress(e.target.value);
+                setCompanyCoordinates(null);
+              }} 
+              placeholder="Rua, número, bairro, cidade" 
+            />
+          )}
           <p className="text-xs text-gray-600">
-            Endereço que aparecerá nos contratos
+            {companyCountry === 'BR' 
+              ? 'Endereço com geolocalização automática para contratos'
+              : 'Endereço que aparecerá nos contratos'
+            }
           </p>
         </div>
 
