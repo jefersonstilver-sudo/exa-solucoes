@@ -65,7 +65,8 @@ serve(async (req) => {
       client_name: proposal.client_name,
       client_email: proposal.client_email,
       status: proposal.status,
-      converted_order_id: proposal.converted_order_id
+      converted_order_id: proposal.converted_order_id,
+      payment_type: proposal.payment_type
     });
 
     // Verificar se já foi convertida
@@ -267,7 +268,37 @@ serve(async (req) => {
 
     console.log('✅ PEDIDO CRIADO COM SUCESSO:', newOrder.id);
 
-    // 6. Atualizar proposta como convertida
+    // 7. SE É PAGAMENTO PERSONALIZADO: Criar registros na tabela parcelas
+    if (isCustomPayment && customInstallments.length > 0) {
+      console.log('💳 Criando registros de parcelas...');
+      
+      const parcelasData = customInstallments.map((inst: any, idx: number) => ({
+        pedido_id: newOrder.id,
+        numero_parcela: idx + 1,
+        valor_original: Number(inst.amount),
+        valor_final: Number(inst.amount),
+        data_vencimento: inst.due_date,
+        status: idx === 0 ? 'pago' : 'pendente', // 1ª parcela já paga
+        metodo_pagamento: paymentData?.method || 'pix',
+        data_pagamento: idx === 0 ? new Date().toISOString() : null,
+        payment_id: idx === 0 ? paymentId : null
+      }));
+
+      console.log('💳 Parcelas a criar:', JSON.stringify(parcelasData, null, 2));
+
+      const { error: parcelasError } = await supabase
+        .from('parcelas')
+        .insert(parcelasData);
+
+      if (parcelasError) {
+        console.error('⚠️ Erro ao criar parcelas (não crítico):', parcelasError);
+        // Log do erro mas não interrompe o fluxo
+      } else {
+        console.log('✅ Parcelas criadas com sucesso:', customInstallments.length, 'parcelas');
+      }
+    }
+
+    // 8. Atualizar proposta como convertida
     console.log('📝 Atualizando proposta para status convertida...');
     const { error: updateError } = await supabase
       .from('proposals')
@@ -288,7 +319,7 @@ serve(async (req) => {
       console.log('✅ Proposta atualizada para status convertida');
     }
 
-    // 7. Registrar log
+    // 9. Registrar log
     console.log('📝 Registrando log da conversão...');
     await supabase.from('proposal_logs').insert({
       proposal_id: proposalId,
@@ -298,14 +329,16 @@ serve(async (req) => {
         payment_id: paymentId,
         user_id: userId,
         is_new_user: isNewUser,
+        is_custom_payment: isCustomPayment,
+        installments_created: isCustomPayment ? customInstallments.length : 0,
         timestamp: new Date().toISOString()
       }
     });
 
-    // 8. Log de evento do sistema
+    // 10. Log de evento do sistema
     await supabase.from('log_eventos_sistema').insert({
       tipo_evento: 'PROPOSTA_CONVERTIDA_EM_PEDIDO',
-      descricao: `Proposta ${proposal.number} convertida em pedido ${newOrder.id}. Novo usuário: ${isNewUser}`
+      descricao: `Proposta ${proposal.number} convertida em pedido ${newOrder.id}. Novo usuário: ${isNewUser}. Pagamento personalizado: ${isCustomPayment}`
     });
 
     const duration = Date.now() - startTime;
@@ -314,6 +347,10 @@ serve(async (req) => {
     console.log('📦 Pedido ID:', newOrder.id);
     console.log('👤 User ID:', userId);
     console.log('🆕 Novo usuário:', isNewUser);
+    console.log('💳 Pagamento personalizado:', isCustomPayment);
+    if (isCustomPayment) {
+      console.log('📝 Parcelas criadas:', customInstallments.length);
+    }
     console.log('⏱️ Tempo total:', duration, 'ms');
     console.log('========================================');
 
@@ -325,7 +362,7 @@ serve(async (req) => {
       passwordResetLink: passwordResetLink || undefined
     };
 
-    // 9. Enviar emails
+    // 11. Enviar emails
     try {
       console.log('📧 Enviando emails...');
       // Email de pagamento aprovado
