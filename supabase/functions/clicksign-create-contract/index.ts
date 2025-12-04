@@ -316,8 +316,8 @@ serve(async (req) => {
       data: {
         type: "requirements",
         attributes: {
-          action: "sign",
-          role: "contractor"
+          action: "sign"
+          // ClickSign v3 não suporta campo 'role' - removido para evitar erro 400
         },
         relationships: {
           document: {
@@ -356,8 +356,8 @@ serve(async (req) => {
         data: {
           type: "requirements",
           attributes: {
-            action: "sign",
-            role: "contractor"
+            action: "sign"
+            // ClickSign v3 não suporta campo 'role' - removido para evitar erro 400
           },
           relationships: {
             document: {

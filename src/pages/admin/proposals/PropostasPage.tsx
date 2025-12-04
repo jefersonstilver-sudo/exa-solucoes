@@ -13,8 +13,6 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useAdminBasePath } from '@/hooks/useAdminBasePath';
 import { useAuth } from '@/hooks/useAuth';
 import { useBulkSelection } from '@/hooks/useBulkSelection';
-import MobilePageHeader from '@/components/admin/shared/MobilePageHeader';
-import BulkActionsToolbar from '@/components/admin/orders/BulkActionsToolbar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, isToday, startOfMonth, endOfMonth, formatDistanceToNow } from 'date-fns';
@@ -40,21 +38,16 @@ interface Proposal {
   sent_at: string | null;
   expires_at: string | null;
   selected_buildings: any[];
-  // Tracking fields
   view_count: number | null;
   total_time_spent_seconds: number | null;
   first_viewed_at: string | null;
   last_viewed_at: string | null;
-  // Real-time viewing
   is_viewing?: boolean;
   last_heartbeat_at?: string | null;
-  // Conversion fields
   converted_order_id?: string | null;
-  // Seller info
   created_by?: string | null;
   seller_name?: string | null;
   seller_phone?: string | null;
-  // Custom payment fields
   payment_type?: string | null;
   custom_installments?: Array<{
     installment: number;
@@ -70,6 +63,10 @@ interface LiveViewNotification {
   timestamp: Date;
 }
 
+const formatCurrency = (value: number) => {
+  return value?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'R$ 0,00';
+};
+
 const PropostasPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -82,7 +79,6 @@ const PropostasPage = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Buscar propostas do banco com nome do vendedor
   const { data: proposals = [], isLoading, refetch } = useQuery({
     queryKey: ['proposals'],
     queryFn: async () => {
@@ -93,7 +89,6 @@ const PropostasPage = () => {
       
       if (error) throw error;
       
-      // Buscar nomes e telefones dos vendedores
       const proposalsWithSellers = await Promise.all((data || []).map(async (proposal: any) => {
         if (proposal.created_by) {
           const { data: userData } = await supabase
@@ -114,27 +109,17 @@ const PropostasPage = () => {
     }
   });
 
-  // Real-time subscription para proposal_views
   useEffect(() => {
     const viewsChannel = supabase
       .channel('proposal-views-realtime')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'proposal_views'
-        },
+        { event: 'INSERT', schema: 'public', table: 'proposal_views' },
         async (payload) => {
-          console.log('🔔 Nova visualização de proposta em tempo real:', payload);
-          
           const proposalId = payload.new.proposal_id;
-          
-          // Buscar nome do cliente da proposta
           const proposal = proposals.find(p => p.id === proposalId);
           const clientName = proposal?.client_name || 'Cliente';
           
-          // Adicionar notificação
           const notification: LiveViewNotification = {
             id: crypto.randomUUID(),
             proposalId,
@@ -143,41 +128,27 @@ const PropostasPage = () => {
           };
           
           setLiveViewNotifications(prev => [notification, ...prev.slice(0, 4)]);
-          
-          // Remover notificação após 5 segundos
           setTimeout(() => {
             setLiveViewNotifications(prev => prev.filter(n => n.id !== notification.id));
           }, 5000);
           
-          // Refetch para atualizar contadores
           queryClient.invalidateQueries({ queryKey: ['proposals'] });
         }
       )
-      .subscribe((status) => {
-        console.log('📡 Realtime proposal_views status:', status);
-      });
+      .subscribe();
 
-    // ✅ NOVO: Canal para mudanças de STATUS em tempo real
     const statusChannel = supabase
       .channel('proposal-status-realtime')
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'proposals'
-        },
+        { event: 'UPDATE', schema: 'public', table: 'proposals' },
         async (payload) => {
           const oldStatus = (payload.old as any)?.status;
           const newStatus = (payload.new as any)?.status;
           
           if (oldStatus !== newStatus) {
-            console.log(`🔄 Status mudou: ${oldStatus} → ${newStatus}`);
-            
-            // Refetch para atualizar lista
             queryClient.invalidateQueries({ queryKey: ['proposals'] });
             
-            // Notificações especiais para status importantes
             if (newStatus === 'aceita') {
               toast.success('🎉 Proposta aceita!', {
                 description: `${(payload.new as any)?.client_name} aceitou a proposta`
@@ -190,9 +161,7 @@ const PropostasPage = () => {
           }
         }
       )
-      .subscribe((status) => {
-        console.log('📡 Realtime proposal_status status:', status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(viewsChannel);
@@ -200,14 +169,11 @@ const PropostasPage = () => {
     };
   }, [proposals, queryClient]);
 
-  // Filtrar propostas
   const filteredProposals = proposals.filter(p => {
-    // Filtro de busca
     const matchesSearch = !searchTerm || 
       p.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.number?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Filtro de status
     let matchesFilter = true;
     if (activeFilter === 'pendentes') {
       matchesFilter = ['pendente', 'enviada', 'visualizada'].includes(p.status);
@@ -222,7 +188,6 @@ const PropostasPage = () => {
     return matchesSearch && matchesFilter;
   });
 
-  // Bulk selection
   const proposalIds = filteredProposals.map(p => p.id);
   const { 
     selectedIds, 
@@ -234,7 +199,6 @@ const PropostasPage = () => {
     isSelected 
   } = useBulkSelection(proposalIds);
 
-  // Handler para excluir propostas em lote
   const handleBulkDelete = async () => {
     if (selectedCount === 0) return;
     
@@ -242,33 +206,14 @@ const PropostasPage = () => {
     try {
       const idsToDelete = Array.from(selectedIds);
       
-      // 1. Desvincular pedidos que referenciam essas propostas
-      await supabase
-        .from('pedidos')
-        .update({ proposal_id: null })
-        .in('proposal_id', idsToDelete);
+      await supabase.from('pedidos').update({ proposal_id: null }).in('proposal_id', idsToDelete);
+      await supabase.from('proposal_views').delete().in('proposal_id', idsToDelete);
+      await supabase.from('proposal_logs').delete().in('proposal_id', idsToDelete);
       
-      // 2. Deletar proposal_views relacionadas
-      await supabase
-        .from('proposal_views')
-        .delete()
-        .in('proposal_id', idsToDelete);
-      
-      // 3. Deletar proposal_logs relacionados
-      await supabase
-        .from('proposal_logs')
-        .delete()
-        .in('proposal_id', idsToDelete);
-      
-      // 4. Deletar as propostas
-      const { error } = await supabase
-        .from('proposals')
-        .delete()
-        .in('id', idsToDelete);
-      
+      const { error } = await supabase.from('proposals').delete().in('id', idsToDelete);
       if (error) throw error;
       
-      toast.success(`${selectedCount} proposta${selectedCount > 1 ? 's' : ''} excluída${selectedCount > 1 ? 's' : ''} com sucesso!`);
+      toast.success(`${selectedCount} proposta${selectedCount > 1 ? 's' : ''} excluída${selectedCount > 1 ? 's' : ''}!`);
       clearSelection();
       refetch();
     } catch (error) {
@@ -280,7 +225,6 @@ const PropostasPage = () => {
     }
   };
 
-  // Calcular estatísticas
   const pagasCount = proposals.filter(p => ['paga', 'convertida'].includes(p.status)).length;
   const stats = {
     proposalsToday: proposals.filter(p => isToday(new Date(p.created_at))).length,
@@ -298,53 +242,30 @@ const PropostasPage = () => {
 
   const filters = [
     { id: 'todas', label: 'Todas', count: proposals.length },
-    { id: 'pendentes', label: '⏳ Pendentes', count: stats.pendentes, color: 'bg-amber-500' },
-    { id: 'aceitas', label: '✅ Aceitas', count: stats.aceitasMes, color: 'bg-emerald-500' },
-    { id: 'pagas', label: '💰 Pagas', count: pagasCount, color: 'bg-green-600' },
-    { id: 'recusadas', label: 'Recusadas', count: proposals.filter(p => p.status === 'recusada').length, color: 'bg-red-500' },
-  ];
-
-  const statsCards = [
-    { label: 'Propostas Hoje', value: stats.proposalsToday.toString(), icon: FileText, color: 'text-blue-600' },
-    { label: 'Pendentes', value: stats.pendentes.toString(), icon: Clock, color: 'text-amber-600' },
-    { label: 'Aceitas (mês)', value: stats.aceitasMes.toString(), icon: Check, color: 'text-emerald-600' },
-    { label: 'Valor Potencial', value: formatCurrency(stats.valorPotencial), icon: Eye, color: 'text-purple-600' },
+    { id: 'pendentes', label: '⏳ Pendentes', count: stats.pendentes },
+    { id: 'aceitas', label: '✅ Aceitas', count: stats.aceitasMes },
+    { id: 'pagas', label: '💰 Pagas', count: pagasCount },
+    { id: 'recusadas', label: '❌ Recusadas', count: proposals.filter(p => p.status === 'recusada').length },
   ];
 
   const getStatusBadge = (status: string, proposal?: Proposal) => {
-    // Se está visualizando em tempo real, mostrar badge especial
     if (proposal?.is_viewing) {
-      return (
-        <Badge 
-          variant="default"
-          className="bg-green-500 hover:bg-green-600 animate-pulse"
-        >
-          👁️ Visualizando agora
-        </Badge>
-      );
+      return <Badge className="bg-green-500 hover:bg-green-600 animate-pulse text-[10px]">👁️ Ao vivo</Badge>;
     }
     
-    const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; animated?: boolean }> = {
-      pendente: { label: 'Pendente', variant: 'secondary' },
-      enviada: { label: 'Enviada', variant: 'default', className: 'bg-primary' },
-      visualizando: { label: '👁️ Visualizando', variant: 'default', className: 'bg-green-500 hover:bg-green-600', animated: true },
-      visualizada: { label: '👁️ Visualizada', variant: 'outline', className: 'border-purple-400 text-purple-600 bg-purple-50' },
-      aceita: { label: '✅ Aceita', variant: 'default', className: 'bg-emerald-500 hover:bg-emerald-600' },
-      paga: { label: '💰 Paga', variant: 'default', className: 'bg-green-600 hover:bg-green-700', animated: true },
-      convertida: { label: '🎉 Pedido Criado', variant: 'default', className: 'bg-green-700 hover:bg-green-800' },
-      recusada: { label: 'Recusada', variant: 'destructive' },
-      expirada: { label: 'Expirada', variant: 'secondary' },
+    const statusConfig: Record<string, { label: string; className: string }> = {
+      pendente: { label: 'Pendente', className: 'bg-gray-100 text-gray-700' },
+      enviada: { label: 'Enviada', className: 'bg-blue-100 text-blue-700' },
+      visualizando: { label: '👁️ Ao vivo', className: 'bg-green-500 text-white animate-pulse' },
+      visualizada: { label: 'Visualizada', className: 'bg-purple-100 text-purple-700' },
+      aceita: { label: '✅ Aceita', className: 'bg-emerald-100 text-emerald-700' },
+      paga: { label: '💰 Paga', className: 'bg-green-100 text-green-700' },
+      convertida: { label: '🎉 Pedido', className: 'bg-green-600 text-white' },
+      recusada: { label: 'Recusada', className: 'bg-red-100 text-red-700' },
+      expirada: { label: 'Expirada', className: 'bg-gray-100 text-gray-500' },
     };
-    const config = statusConfig[status] || { label: status, variant: 'secondary' as const };
-    
-    return (
-      <Badge 
-        variant={config.variant}
-        className={`${config.className || ''} ${config.animated ? 'animate-pulse' : ''}`}
-      >
-        {config.label}
-      </Badge>
-    );
+    const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
+    return <Badge className={`${config.className} text-[10px] px-1.5 py-0`}>{config.label}</Badge>;
   };
 
   const handleCopyLink = (proposal: Proposal) => {
@@ -359,70 +280,80 @@ const PropostasPage = () => {
         await supabase.functions.invoke('send-proposal-whatsapp', {
           body: { proposalId: proposal.id }
         });
-        toast.success('Proposta reenviada via WhatsApp!');
+        toast.success('WhatsApp enviado!');
       } else if (via === 'email' && proposal.client_email) {
         await supabase.functions.invoke('send-proposal-email', {
           body: { proposalId: proposal.id }
         });
-        toast.success('Proposta reenviada via E-mail!');
+        toast.success('E-mail enviado!');
       } else {
         toast.error(`${via === 'whatsapp' ? 'Telefone' : 'E-mail'} não cadastrado`);
       }
       refetch();
     } catch (error) {
-      console.error('Erro ao reenviar:', error);
       toast.error('Erro ao reenviar proposta');
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 relative">
-      {/* Notificações de Visualização em Tempo Real - Estilo Apple */}
+      {/* Live View Notifications */}
       <AnimatePresence>
         {liveViewNotifications.map((notification, index) => (
           <motion.div
             key={notification.id}
-            initial={{ opacity: 0, y: -20, x: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            style={{ top: `${80 + index * 70}px` }}
-            className="fixed right-4 z-50 max-w-xs"
+            style={{ top: `${70 + index * 60}px` }}
+            className="fixed right-3 z-50 max-w-[280px]"
           >
-            <div className="bg-white/95 backdrop-blur-xl border border-white/50 rounded-2xl shadow-xl p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                <Eye className="h-5 w-5 text-white" />
+            <div className="bg-white/95 backdrop-blur-xl border border-white/50 rounded-xl shadow-lg p-2.5 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                <Eye className="h-4 w-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">
-                  {notification.clientName}
-                </p>
-                <p className="text-[10px] text-purple-600 font-medium">
-                  Visualizando proposta agora 👀
-                </p>
+                <p className="text-xs font-semibold truncate">{notification.clientName}</p>
+                <p className="text-[10px] text-purple-600">Visualizando agora 👀</p>
               </div>
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             </div>
           </motion.div>
         ))}
       </AnimatePresence>
-      {/* Header Mobile */}
+
+      {/* Header */}
       {isMobile ? (
-        <MobilePageHeader
-          title="Propostas"
-          subtitle="Gerencie suas propostas comerciais"
-          icon={FileText}
-        />
+        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+          <div className="flex items-center justify-between px-4 py-3 safe-area-top">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#9C1E1E]/10 rounded-xl">
+                <FileText className="h-5 w-5 text-[#9C1E1E]" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-foreground">Propostas</h1>
+                <p className="text-[11px] text-muted-foreground">Comerciais</p>
+              </div>
+            </div>
+            <Button 
+              size="sm"
+              onClick={() => navigate(buildPath('propostas/nova'))}
+              className="bg-[#9C1E1E] hover:bg-[#7D1818] h-9 px-3"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="bg-white/80 backdrop-blur-sm border-b border-white/50 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold text-foreground">Propostas Comerciais</h1>
-              <p className="text-sm text-muted-foreground">Crie e gerencie propostas para seus clientes</p>
+              <p className="text-sm text-muted-foreground">Crie e gerencie propostas</p>
             </div>
             <Button 
               onClick={() => navigate(buildPath('propostas/nova'))}
-              className="bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
+              className="bg-[#9C1E1E] hover:bg-[#7D1818]"
             >
               <Plus className="h-4 w-4 mr-2" />
               Nova Proposta
@@ -431,51 +362,65 @@ const PropostasPage = () => {
         </div>
       )}
 
-      <div className="p-3 md:p-6 space-y-4">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {statsCards.map((stat) => (
-            <Card key={stat.label} className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
-              <div className="flex items-center gap-2">
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                <span className="text-xs text-muted-foreground">{stat.label}</span>
-              </div>
-              <div className="text-lg font-bold mt-1">{stat.value}</div>
-            </Card>
-          ))}
+      <div className="p-3 md:p-6 space-y-3">
+        {/* Stats 2x2 Grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-blue-600" />
+              <span className="text-[10px] text-muted-foreground">Hoje</span>
+            </div>
+            <div className="text-lg font-bold">{stats.proposalsToday}</div>
+          </Card>
+          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-600" />
+              <span className="text-[10px] text-muted-foreground">Pendentes</span>
+            </div>
+            <div className="text-lg font-bold text-amber-600">{stats.pendentes}</div>
+          </Card>
+          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-emerald-600" />
+              <span className="text-[10px] text-muted-foreground">Aceitas/mês</span>
+            </div>
+            <div className="text-lg font-bold text-emerald-600">{stats.aceitasMes}</div>
+          </Card>
+          <Card className="p-3 bg-white/80 backdrop-blur-sm border-white/50">
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-purple-600" />
+              <span className="text-[10px] text-muted-foreground">Potencial</span>
+            </div>
+            <div className="text-sm font-bold text-purple-600">{formatCurrency(stats.valorPotencial)}</div>
+          </Card>
         </div>
 
-        {/* Search & Filters */}
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por cliente, número..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white/80 backdrop-blur-sm border-white/50"
-            />
-          </div>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar proposta..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-white/80 h-10"
+          />
+        </div>
 
-          {/* Quick Filter Pills */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {filters.map((filter) => (
+        {/* Filter Pills */}
+        <div className="overflow-x-auto scrollbar-hide -mx-3 px-3">
+          <div className="inline-flex gap-1.5 min-w-max pb-2">
+            {filters.map(filter => (
               <button
                 key={filter.id}
                 onClick={() => setActiveFilter(filter.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all flex items-center gap-1 ${
                   activeFilter === filter.id
-                    ? 'bg-[#9C1E1E] text-white shadow-md'
-                    : 'bg-white/80 text-muted-foreground hover:bg-white'
+                    ? 'bg-[#9C1E1E] text-white'
+                    : 'bg-white/80 text-gray-600 border border-gray-200'
                 }`}
               >
-                {filter.color && (
-                  <span className={`w-2 h-2 rounded-full ${filter.color}`} />
-                )}
                 {filter.label}
-                <span className={`px-1.5 rounded-full text-[10px] ${
-                  activeFilter === filter.id ? 'bg-white/20' : 'bg-gray-100'
-                }`}>
+                <span className={`text-[10px] ${activeFilter === filter.id ? 'opacity-80' : 'text-gray-400'}`}>
                   {filter.count}
                 </span>
               </button>
@@ -483,159 +428,80 @@ const PropostasPage = () => {
           </div>
         </div>
 
-        {/* Bulk Actions Toolbar */}
-        {isSuperAdmin && (
-          <BulkActionsToolbar
-            selectedCount={selectedCount}
-            onBulkDelete={() => setShowDeleteDialog(true)}
-            onClearSelection={clearSelection}
-            loading={isDeleting}
-            entityName="proposta"
-          />
+        {/* Bulk Actions */}
+        {selectedCount > 0 && (
+          <Card className="p-2 bg-[#9C1E1E]/10 border-[#9C1E1E]/20 flex items-center justify-between">
+            <span className="text-xs font-medium text-[#9C1E1E]">{selectedCount} selecionada(s)</span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={clearSelection} className="h-7 text-xs">
+                Limpar
+              </Button>
+              <Button 
+                size="sm" 
+                variant="destructive" 
+                onClick={() => setShowDeleteDialog(true)}
+                className="h-7 text-xs"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Excluir
+              </Button>
+            </div>
+          </Card>
         )}
 
-        {/* Select All Checkbox */}
-        {isSuperAdmin && filteredProposals.length > 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-sm rounded-lg">
-            <CustomCheckbox
-              checked={isAllSelected}
-              onChange={() => toggleSelectAll()}
-            />
-            <span className="text-xs text-muted-foreground">
-              Selecionar todas ({filteredProposals.length})
-            </span>
-          </div>
-        )}
-
-        {/* Lista de Propostas */}
+        {/* Proposals List */}
         {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <Card key={i} className="p-4 bg-white/80 backdrop-blur-sm border-white/50 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
-                <div className="h-3 bg-gray-200 rounded w-1/2 mb-3" />
-                <div className="h-3 bg-gray-200 rounded w-2/3" />
-              </Card>
-            ))}
+          <div className="flex items-center justify-center py-12">
+            <div className="w-5 h-5 border-2 border-[#9C1E1E] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filteredProposals.length === 0 ? (
-          <Card className="p-8 bg-white/80 backdrop-blur-sm border-white/50 text-center">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              Nenhuma proposta encontrada
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {searchTerm ? 'Tente uma busca diferente' : 'Comece criando sua primeira proposta comercial'}
-            </p>
-            <Button 
-              onClick={() => navigate(buildPath('propostas/nova'))}
-              className="bg-[#9C1E1E] hover:bg-[#7D1818] text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Criar Proposta
+          <Card className="p-8 text-center bg-white/80">
+            <FileText className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+            <h3 className="text-sm font-semibold mb-1">Nenhuma proposta</h3>
+            <p className="text-xs text-muted-foreground mb-3">Crie sua primeira proposta</p>
+            <Button size="sm" onClick={() => navigate(buildPath('propostas/nova'))}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Criar
             </Button>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {filteredProposals.map((proposal) => (
               <Card 
-                key={proposal.id} 
-                className={`p-4 bg-white/80 backdrop-blur-sm border-white/50 cursor-pointer shadow-md hover:shadow-lg transition-all duration-300 ${
-                  isSelected(proposal.id) ? 'ring-2 ring-[#9C1E1E]' : ''
-                }`}
+                key={proposal.id}
+                className="p-3 bg-white/80 backdrop-blur-sm border-white/50 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
                 onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}
               >
-                <div className="flex items-start justify-between gap-3">
-                  {/* Checkbox para Super Admin */}
-                  {isSuperAdmin && (
+                <div className="flex items-start gap-3">
+                  {/* Checkbox */}
+                  <div onClick={(e) => e.stopPropagation()}>
                     <CustomCheckbox
                       checked={isSelected(proposal.id)}
-                      onChange={() => toggleSelectItem(proposal.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="mt-1"
+                      onCheckedChange={() => toggleSelectItem(proposal.id)}
                     />
-                  )}
-                  
+                  </div>
+
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
-                    {/* Header */}
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-mono text-xs text-primary font-semibold">{proposal.number}</span>
-                      {getStatusBadge(proposal.status)}
-                      
-                      {/* Link para o pedido se convertida */}
-                      {proposal.converted_order_id && (
-                        <Badge 
-                          variant="outline" 
-                          className="text-[10px] border-blue-400 text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(buildPath(`pedidos/${proposal.converted_order_id}`));
-                          }}
-                        >
-                          📦 Ver Pedido
-                        </Badge>
-                      )}
-                      
-                      {/* Indicador de visualização */}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                      <span className="font-mono text-xs font-semibold text-[#9C1E1E]">
+                        {proposal.number}
+                      </span>
+                      {getStatusBadge(proposal.status, proposal)}
+                    </div>
+                    <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(proposal.created_at), "dd/MM", { locale: ptBR })}
+                      </span>
+                      <span className="text-sm font-semibold">
+                        {formatCurrency(proposal.fidel_monthly_value)}/mês
+                      </span>
                       {proposal.view_count && proposal.view_count > 0 && (
-                        <div className="flex items-center gap-1 text-purple-600 text-[10px] bg-purple-50 px-1.5 py-0.5 rounded-full">
+                        <span className="text-[10px] text-purple-600 flex items-center gap-0.5">
                           <Eye className="h-3 w-3" />
-                          <span>{proposal.view_count}x</span>
-                          {proposal.last_viewed_at && (
-                            <span className="text-purple-400">
-                              • {formatDistanceToNow(new Date(proposal.last_viewed_at), { locale: ptBR, addSuffix: false })}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Cliente + Vendedor */}
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-medium text-sm truncate">{proposal.client_name}</h3>
-                      {proposal.seller_name && (
-                        <span className="text-[10px] text-muted-foreground bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0">
-                          👤 {proposal.seller_name}
+                          {proposal.view_count}x
                         </span>
-                      )}
-                    </div>
-                    
-                    {/* Info */}
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[11px] text-muted-foreground">
-                      <span>🏢 {(proposal.selected_buildings as any[])?.length || 0} prédios</span>
-                      <span>📺 {proposal.total_panels} telas</span>
-                      <span>⏱️ {proposal.duration_months} meses</span>
-                    </div>
-
-                    {/* Valores */}
-                    <div className="flex gap-3 mt-2">
-                      {proposal.payment_type === 'custom' && proposal.custom_installments ? (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-xs font-medium text-purple-600">
-                            💳 Condição Personalizada
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {proposal.custom_installments.length} parcelas • Total: <strong>{formatCurrency(proposal.cash_total_value)}</strong>
-                          </span>
-                        </div>
-                      ) : (
-                        <>
-                          <span className="text-xs">
-                            💳 <strong className="text-foreground">{formatCurrency(proposal.fidel_monthly_value)}</strong>/mês
-                          </span>
-                          <span className="text-xs">
-                            💵 <strong className="text-emerald-600">{formatCurrency(proposal.cash_total_value)}</strong> à vista
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Data - "há quanto tempo" para pendentes, data fixa para outras */}
-                    <div className="text-[10px] text-muted-foreground mt-2">
-                      {['pendente', 'enviada', 'visualizada'].includes(proposal.status) ? (
-                        <span>📤 Enviada {formatDistanceToNow(new Date(proposal.created_at), { locale: ptBR, addSuffix: true })}</span>
-                      ) : (
-                        <span>Criada em {format(new Date(proposal.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
                       )}
                     </div>
                   </div>
@@ -643,94 +509,28 @@ const PropostasPage = () => {
                   {/* Actions */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(buildPath(`propostas/${proposal.id}`));
-                      }}>
+                      <DropdownMenuItem onClick={() => navigate(buildPath(`propostas/${proposal.id}`))}>
                         <Eye className="h-4 w-4 mr-2" />
                         Ver Detalhes
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        handleCopyLink(proposal);
-                      }}>
+                      <DropdownMenuItem onClick={() => handleCopyLink(proposal)}>
                         <Copy className="h-4 w-4 mr-2" />
                         Copiar Link
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        window.open(`https://examidia.com.br/propostacomercial/${proposal.id}`, '_blank');
-                      }}>
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Visualizar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={async (e) => {
-                        e.stopPropagation();
-                        try {
-                          const exporter = new ProposalPDFExporter();
-                          // Calcular valor base (preço normal do site sem desconto)
-                          const buildings = proposal?.selected_buildings || [];
-                          const baseMonthly = buildings.reduce((sum: number, b: any) => sum + (b.preco_base || 0), 0);
-                          const baseTotalValue = baseMonthly * (proposal?.duration_months || 1);
-                          const isCortesia = (proposal as any)?.metadata?.type === 'cortesia' || proposal?.discount_percent === 100;
-                          
-                          await exporter.generateProposalPDF(
-                            proposal as any, 
-                            proposal.seller_name || 'Equipe EXA',
-                            isCortesia,
-                            baseTotalValue,
-                            proposal.seller_phone || '(45) 99141-5856'
-                          );
-                          toast.success('PDF gerado!');
-                        } catch (err) {
-                          toast.error('Erro ao gerar PDF');
-                        }
-                      }}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Baixar PDF
-                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      {proposal.client_phone && (
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          handleResend(proposal, 'whatsapp');
-                        }}>
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Reenviar WhatsApp
-                        </DropdownMenuItem>
-                      )}
-                      {proposal.client_email && (
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          handleResend(proposal, 'email');
-                        }}>
-                          <Mail className="h-4 w-4 mr-2" />
-                          Reenviar E-mail
-                        </DropdownMenuItem>
-                      )}
-                      {isSuperAdmin && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              clearSelection();
-                              toggleSelectItem(proposal.id);
-                              setShowDeleteDialog(true);
-                            }}
-                            className="text-red-600 focus:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir Proposta
-                          </DropdownMenuItem>
-                        </>
-                      )}
+                      <DropdownMenuItem onClick={() => handleResend(proposal, 'whatsapp')}>
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Reenviar WhatsApp
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleResend(proposal, 'email')}>
+                        <Mail className="h-4 w-4 mr-2" />
+                        Reenviar Email
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -738,43 +538,25 @@ const PropostasPage = () => {
             ))}
           </div>
         )}
-
-        {/* FAB Mobile */}
-        {isMobile && (
-          <button
-            onClick={() => navigate(buildPath('propostas/nova'))}
-            className="fixed bottom-20 right-4 z-50 w-14 h-14 bg-[#9C1E1E] text-white rounded-full shadow-lg flex items-center justify-center hover:bg-[#7D1818] transition-colors"
-          >
-            <Plus className="h-6 w-6" />
-          </button>
-        )}
       </div>
 
-      {/* Dialog de Confirmação de Exclusão */}
+      {/* Delete Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-              <Trash2 className="h-5 w-5" />
-              Confirmar Exclusão
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                Você está prestes a excluir <strong>{selectedCount} proposta{selectedCount > 1 ? 's' : ''}</strong>.
-              </p>
-              <p className="text-red-500 font-medium">
-                ⚠️ Esta ação é irreversível! Todos os dados relacionados (visualizações, logs) também serão excluídos.
-              </p>
+            <AlertDialogTitle>Excluir propostas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. {selectedCount} proposta(s) serão excluídas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
               disabled={isDeleting}
               className="bg-red-600 hover:bg-red-700"
             >
-              {isDeleting ? 'Excluindo...' : 'Sim, Excluir'}
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -782,9 +564,5 @@ const PropostasPage = () => {
     </div>
   );
 };
-
-function formatCurrency(value: number) {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
 
 export default PropostasPage;
