@@ -1,23 +1,45 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, DollarSign, Calendar, Building2, Phone, Mail } from 'lucide-react';
+import { User, DollarSign, Calendar, Building2, Phone, Mail, Check } from 'lucide-react';
 import { CollapsibleCard } from '@/components/admin/shared/CollapsibleCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CouponBadge } from '@/components/admin/orders/CouponBadge';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useLongPress } from '@/hooks/useLongPress';
+import { cn } from '@/lib/utils';
 
 interface OrderMobileCardProps {
   order: any;
   onViewDetails: (orderId: string) => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onLongPress?: () => void;
+  onToggleSelect?: () => void;
 }
 
 export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
   order,
   onViewDetails,
+  isSelectionMode = false,
+  isSelected = false,
+  onLongPress,
+  onToggleSelect,
 }) => {
   const navigate = useNavigate();
+
+  const longPressHandlers = useLongPress({
+    onLongPress: () => {
+      if (onLongPress) onLongPress();
+    },
+    onClick: () => {
+      if (isSelectionMode && onToggleSelect) {
+        onToggleSelect();
+      }
+    },
+    threshold: 500,
+  });
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -151,13 +173,53 @@ export const OrderMobileCard: React.FC<OrderMobileCardProps> = ({
     </div>
   );
 
+  // Selection mode - render simple selectable card
+  if (isSelectionMode) {
+    return (
+      <div
+        {...longPressHandlers}
+        className={cn(
+          "relative p-3 rounded-xl border-2 transition-all duration-200 select-none",
+          "bg-white/80 backdrop-blur-sm shadow-md",
+          isSelected 
+            ? "border-[#9C1E1E] bg-red-50/50" 
+            : "border-transparent"
+        )}
+      >
+        {/* Selection checkbox */}
+        <div 
+          className={cn(
+            "absolute top-3 right-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+            isSelected 
+              ? "bg-[#9C1E1E] border-[#9C1E1E]" 
+              : "border-gray-300 bg-white"
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onToggleSelect) onToggleSelect();
+          }}
+        >
+          {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
+        </div>
+        
+        {/* Card content */}
+        <div className="pr-8 space-y-2">
+          {preview}
+        </div>
+      </div>
+    );
+  }
+
+  // Normal mode - render collapsible card with long press
   return (
-    <CollapsibleCard
-      preview={preview}
-      borderColor="border-[#9C1E1E]"
-      className="shadow-md hover:shadow-lg transition-shadow"
-    >
-      {expandedContent}
-    </CollapsibleCard>
+    <div {...longPressHandlers}>
+      <CollapsibleCard
+        preview={preview}
+        borderColor="border-[#9C1E1E]"
+        className="shadow-md hover:shadow-lg transition-shadow"
+      >
+        {expandedContent}
+      </CollapsibleCard>
+    </div>
   );
 };
