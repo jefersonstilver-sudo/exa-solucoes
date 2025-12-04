@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload } from 'lucide-react';
+import { Calendar, User, Mail, CreditCard, MapPin, Video, CheckCircle2, XCircle, Clock, FileText, TrendingUp, Shield, RefreshCw, Upload, Key, Loader2, Send } from 'lucide-react';
 import exaLogo from '@/assets/exa-logo.png';
 import { Button } from '@/components/ui/button';
 import { useFixAuditData } from '@/hooks/admin/useFixAuditData';
 import { resyncVideoToExternalAPI } from '@/services/videoExternalSyncService';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 interface Parcela {
   id: string;
   numero_parcela: number;
@@ -88,16 +90,43 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   console.log('📋 [PROFESSIONAL REPORT] Panels data:', panels);
   console.log('📋 [PROFESSIONAL REPORT] Videos recebidos:', videos?.length || 0);
   const [resyncingVideoId, setResyncingVideoId] = useState<string | null>(null);
+  const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
   const {
     fixOrderAuditData,
     isFixing
   } = useFixAuditData();
+
   const handleResyncVideo = async (pedidoVideoId: string) => {
     setResyncingVideoId(pedidoVideoId);
     try {
       await resyncVideoToExternalAPI(pedidoVideoId);
     } finally {
       setResyncingVideoId(null);
+    }
+  };
+
+  const handleResendPasswordLink = async () => {
+    if (!order.client_email) {
+      toast.error('Email do cliente não encontrado');
+      return;
+    }
+
+    setSendingPasswordReset(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(order.client_email, {
+        redirectTo: `${window.location.origin}/definir-senha`
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success(`Link de senha enviado para ${order.client_email}`);
+    } catch (err: any) {
+      console.error('Erro ao enviar link de senha:', err);
+      toast.error(err.message || 'Erro ao enviar link de senha');
+    } finally {
+      setSendingPasswordReset(false);
     }
   };
 
@@ -322,6 +351,32 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                     </div>}
                 </div>
               </div>}
+
+            {/* Botão Reenviar Link de Senha */}
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <Button
+                onClick={handleResendPasswordLink}
+                disabled={sendingPasswordReset}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                {sendingPasswordReset ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Key className="h-3 w-3 mr-1.5" />
+                    Reenviar Link de Senha
+                  </>
+                )}
+              </Button>
+              <p className="text-[10px] text-gray-500 mt-1">
+                Envia um novo link para {order.client_email} definir/redefinir a senha
+              </p>
+            </div>
           </div>
         </section>
 
