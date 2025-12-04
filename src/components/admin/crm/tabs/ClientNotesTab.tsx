@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { StickyNote, Plus, Phone, Mail, Users, Eye, Star } from 'lucide-react';
 import { addCRMNote } from '@/services/crmService';
 import { toast } from 'sonner';
@@ -105,14 +106,12 @@ export function ClientNotesTab({ clientId, notes, onRefresh }: ClientNotesTabPro
             </Select>
 
             <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="important"
                 checked={isImportant}
-                onChange={(e) => setIsImportant(e.target.checked)}
-                className="rounded border-gray-300"
+                onCheckedChange={(checked) => setIsImportant(checked as boolean)}
               />
-              <label htmlFor="important" className="text-sm">
+              <label htmlFor="important" className="text-sm cursor-pointer">
                 Marcar como importante
               </label>
             </div>
