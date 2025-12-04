@@ -2056,6 +2056,7 @@ export type Database = {
           cliente_nome: string
           cliente_razao_social: string | null
           cliente_segmento: string | null
+          cliente_sobrenome: string | null
           cliente_telefone: string | null
           created_at: string | null
           criado_por: string | null
@@ -2110,6 +2111,7 @@ export type Database = {
           cliente_nome: string
           cliente_razao_social?: string | null
           cliente_segmento?: string | null
+          cliente_sobrenome?: string | null
           cliente_telefone?: string | null
           created_at?: string | null
           criado_por?: string | null
@@ -2164,6 +2166,7 @@ export type Database = {
           cliente_nome?: string
           cliente_razao_social?: string | null
           cliente_segmento?: string | null
+          cliente_sobrenome?: string | null
           cliente_telefone?: string | null
           created_at?: string | null
           criado_por?: string | null
@@ -5437,7 +5440,9 @@ export type Database = {
           blocked_by: string | null
           blocked_reason: string | null
           checkout_session_id: string | null
+          client_first_name: string | null
           client_id: string
+          client_last_name: string | null
           client_name: string | null
           compliance_data: Json | null
           contrato_assinado_em: string | null
@@ -5487,7 +5492,9 @@ export type Database = {
           blocked_by?: string | null
           blocked_reason?: string | null
           checkout_session_id?: string | null
+          client_first_name?: string | null
           client_id: string
+          client_last_name?: string | null
           client_name?: string | null
           compliance_data?: Json | null
           contrato_assinado_em?: string | null
@@ -5537,7 +5544,9 @@ export type Database = {
           blocked_by?: string | null
           blocked_reason?: string | null
           checkout_session_id?: string | null
+          client_first_name?: string | null
           client_id?: string
+          client_last_name?: string | null
           client_name?: string | null
           compliance_data?: Json | null
           contrato_assinado_em?: string | null
@@ -5911,6 +5920,8 @@ export type Database = {
           client_company_name: string | null
           client_country: string | null
           client_email: string | null
+          client_first_name: string | null
+          client_last_name: string | null
           client_name: string
           client_phone: string | null
           converted_order_id: string | null
@@ -5954,6 +5965,8 @@ export type Database = {
           client_company_name?: string | null
           client_country?: string | null
           client_email?: string | null
+          client_first_name?: string | null
+          client_last_name?: string | null
           client_name: string
           client_phone?: string | null
           converted_order_id?: string | null
@@ -5997,6 +6010,8 @@ export type Database = {
           client_company_name?: string | null
           client_country?: string | null
           client_email?: string | null
+          client_first_name?: string | null
+          client_last_name?: string | null
           client_name?: string
           client_phone?: string | null
           converted_order_id?: string | null
@@ -6338,7 +6353,9 @@ export type Database = {
           is_default: boolean
           nacionalidade: string | null
           nome: string
+          primeiro_nome: string | null
           profissao: string | null
+          sobrenome: string | null
           updated_at: string
         }
         Insert: {
@@ -6354,7 +6371,9 @@ export type Database = {
           is_default?: boolean
           nacionalidade?: string | null
           nome: string
+          primeiro_nome?: string | null
           profissao?: string | null
+          sobrenome?: string | null
           updated_at?: string
         }
         Update: {
@@ -6370,7 +6389,9 @@ export type Database = {
           is_default?: boolean
           nacionalidade?: string | null
           nome?: string
+          primeiro_nome?: string | null
           profissao?: string | null
+          sobrenome?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -6388,7 +6409,9 @@ export type Database = {
           numero_andares: number
           numero_unidades: number
           observacoes: string | null
+          primeiro_nome: string | null
           responsavel_contato: string | null
+          sobrenome: string | null
           status: string
           updated_at: string
         }
@@ -6404,7 +6427,9 @@ export type Database = {
           numero_andares: number
           numero_unidades: number
           observacoes?: string | null
+          primeiro_nome?: string | null
           responsavel_contato?: string | null
+          sobrenome?: string | null
           status?: string
           updated_at?: string
         }
@@ -6420,7 +6445,9 @@ export type Database = {
           numero_andares?: number
           numero_unidades?: number
           observacoes?: string | null
+          primeiro_nome?: string | null
           responsavel_contato?: string | null
+          sobrenome?: string | null
           status?: string
           updated_at?: string
         }
