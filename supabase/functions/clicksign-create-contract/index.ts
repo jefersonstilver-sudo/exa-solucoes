@@ -78,13 +78,20 @@ serve(async (req) => {
     
     console.log("📤 [CLICKSIGN] Payload envelope:", JSON.stringify(envelopePayload));
 
+    // Headers padrão para ClickSign API v3 (JSON:API spec)
+    const clicksignHeaders = {
+      "Content-Type": "application/vnd.api+json",
+      "Accept": "application/vnd.api+json",
+      "Authorization": clicksignToken  // SEM "Bearer" - ClickSign usa token direto
+    };
+
+    console.log("🔑 [CLICKSIGN] Token (primeiros 10 chars):", clicksignToken.substring(0, 10) + "...");
+    console.log("📋 [CLICKSIGN] Headers:", JSON.stringify({ ...clicksignHeaders, Authorization: "***" }));
+
     console.log("Criando envelope no ClickSign...");
     const envelopeResponse = await fetch("https://app.clicksign.com/api/v3/envelopes", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${clicksignToken}`
-      },
+      headers: clicksignHeaders,
       body: JSON.stringify(envelopePayload)
     });
 
@@ -113,10 +120,7 @@ serve(async (req) => {
     console.log("Fazendo upload do documento...");
     const documentResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/documents`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${clicksignToken}`
-      },
+      headers: clicksignHeaders,
       body: JSON.stringify(documentPayload)
     });
 
@@ -147,10 +151,7 @@ serve(async (req) => {
     console.log("Adicionando signatário...");
     const signerResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/signers`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${clicksignToken}`
-      },
+      headers: clicksignHeaders,
       body: JSON.stringify(signerPayload)
     });
 
@@ -176,10 +177,7 @@ serve(async (req) => {
     console.log("Vinculando signatário ao documento...");
     const signatureResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/documents/${documentKey}/request_signatures`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${clicksignToken}`
-      },
+      headers: clicksignHeaders,
       body: JSON.stringify(signaturePayload)
     });
 
@@ -197,10 +195,7 @@ serve(async (req) => {
     console.log("Ativando envelope...");
     const activateResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/activate`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${clicksignToken}`
-      }
+      headers: clicksignHeaders
     });
 
     if (!activateResponse.ok) {
@@ -215,10 +210,7 @@ serve(async (req) => {
     console.log("Enviando notificação...");
     const notifyResponse = await fetch(`https://app.clicksign.com/api/v3/envelopes/${envelopeId}/notifications`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${clicksignToken}`
-      },
+      headers: clicksignHeaders,
       body: JSON.stringify({
         notification: {
           message: `Olá ${contrato.cliente_nome}, você recebeu o contrato ${contrato.numero_contrato} da EXA Mídia para assinatura eletrônica.`
