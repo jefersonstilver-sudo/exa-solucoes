@@ -6814,6 +6814,7 @@ export type Database = {
           empresa_aceite_termo: boolean | null
           empresa_aceite_termo_data: string | null
           empresa_documento: string | null
+          empresa_endereco: string | null
           empresa_nome: string | null
           empresa_pais: string | null
           empresa_segmento: string | null
@@ -6844,6 +6845,7 @@ export type Database = {
           empresa_aceite_termo?: boolean | null
           empresa_aceite_termo_data?: string | null
           empresa_documento?: string | null
+          empresa_endereco?: string | null
           empresa_nome?: string | null
           empresa_pais?: string | null
           empresa_segmento?: string | null
@@ -6874,6 +6876,7 @@ export type Database = {
           empresa_aceite_termo?: boolean | null
           empresa_aceite_termo_data?: string | null
           empresa_documento?: string | null
+          empresa_endereco?: string | null
           empresa_nome?: string | null
           empresa_pais?: string | null
           empresa_segmento?: string | null

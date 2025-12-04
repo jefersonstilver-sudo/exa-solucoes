@@ -101,10 +101,11 @@ const NovoContratoPage = () => {
     data_inicio: new Date().toISOString().split('T')[0]
   });
 
-  // Buscar pedidos para vincular
+  // Buscar pedidos para vincular com dados completos do cliente
   const { data: pedidos } = useQuery({
     queryKey: ['pedidos-para-contrato', searchPedido],
     queryFn: async () => {
+      // Buscar pedidos
       let query = supabase
         .from('pedidos')
         .select('*')
@@ -113,12 +114,60 @@ const NovoContratoPage = () => {
         .limit(20);
 
       if (searchPedido) {
-        query = query.or(`id.ilike.%${searchPedido}%`);
+        query = query.or(`id.ilike.%${searchPedido}%,client_name.ilike.%${searchPedido}%`);
       }
 
-      const { data, error } = await query;
+      const { data: pedidosData, error } = await query;
       if (error) throw error;
-      return data || [];
+      if (!pedidosData?.length) return [];
+
+      // Enriquecer com dados de users e proposals
+      const enrichedPedidos = await Promise.all(
+        pedidosData.map(async (pedido) => {
+          let userData = null;
+          let proposalData = null;
+
+          // Buscar dados do usuário
+          if (pedido.client_id) {
+            const { data: user } = await supabase
+              .from('users')
+              .select('nome, email, telefone, empresa_documento, empresa_nome, empresa_segmento, empresa_endereco')
+              .eq('id', pedido.client_id)
+              .single();
+            userData = user;
+          }
+
+          // Buscar dados da proposta
+          if (pedido.proposal_id) {
+            const { data: proposal } = await supabase
+              .from('proposals')
+              .select('client_name, client_email, client_phone, client_cnpj, client_company_name')
+              .eq('id', pedido.proposal_id)
+              .single();
+            proposalData = proposal;
+          }
+
+          return {
+            ...pedido,
+            // Dados enriquecidos do usuário
+            user_nome: userData?.nome,
+            user_email: userData?.email,
+            user_telefone: userData?.telefone,
+            user_cnpj: userData?.empresa_documento,
+            user_razao_social: userData?.empresa_nome,
+            user_segmento: userData?.empresa_segmento,
+            user_endereco: userData?.empresa_endereco,
+            // Dados enriquecidos da proposta
+            proposta_nome: proposalData?.client_name,
+            proposta_email: proposalData?.client_email,
+            proposta_telefone: proposalData?.client_phone,
+            proposta_cnpj: proposalData?.client_cnpj,
+            proposta_razao_social: proposalData?.client_company_name,
+          };
+        })
+      );
+
+      return enrichedPedidos;
     },
     enabled: step === 'vinculo'
   });
@@ -204,20 +253,31 @@ const NovoContratoPage = () => {
     }
   });
 
-  // Vincular a pedido existente
+  // Vincular a pedido existente - Prioridade: Proposta > Users > Pedido direto
   const handleVincularPedido = (pedido: any) => {
     const listaPaineis = typeof pedido.lista_paineis === 'string' 
       ? JSON.parse(pedido.lista_paineis) 
       : pedido.lista_paineis || [];
 
+    // Prioridade de preenchimento: Proposta > Users > Pedido direto
     setContratoData(prev => ({
       ...prev,
       pedido_id: pedido.id,
-      cliente_nome: pedido.client_name || '',
-      cliente_email: pedido.client_email || '',
-      cliente_telefone: pedido.client_phone || '',
-      cliente_cnpj: pedido.client_cnpj || '',
-      cliente_razao_social: pedido.client_company || '',
+      // Nome: proposta > users > pedido
+      cliente_nome: pedido.proposta_nome || pedido.user_nome || pedido.client_name || '',
+      // Email: proposta > users > pedido
+      cliente_email: pedido.proposta_email || pedido.user_email || pedido.client_email || '',
+      // Telefone: proposta > users > pedido
+      cliente_telefone: pedido.proposta_telefone || pedido.user_telefone || pedido.client_phone || '',
+      // CNPJ: proposta > users > pedido
+      cliente_cnpj: pedido.proposta_cnpj || pedido.user_cnpj || pedido.client_cnpj || '',
+      // Razão Social: proposta > users > pedido
+      cliente_razao_social: pedido.proposta_razao_social || pedido.user_razao_social || pedido.client_company || '',
+      // Segmento: users (único lugar que tem)
+      cliente_segmento: pedido.user_segmento || '',
+      // Endereço: users (único lugar que tem) - campo manual se não existir
+      cliente_endereco: pedido.user_endereco || '',
+      // Valores do pedido
       valor_mensal: pedido.valor_mensal || pedido.valor_total / (pedido.plano_meses || 1),
       valor_total: pedido.valor_total,
       plano_meses: pedido.plano_meses || 1,
@@ -476,30 +536,48 @@ const NovoContratoPage = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="cliente_cargo">Cargo</Label>
+                <Label htmlFor="cliente_cargo" className="flex items-center gap-2">
+                  Cargo
+                  {!contratoData.cliente_cargo && (
+                    <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Preencher</span>
+                  )}
+                </Label>
                 <Input
                   id="cliente_cargo"
                   value={contratoData.cliente_cargo}
                   onChange={(e) => setContratoData(prev => ({ ...prev, cliente_cargo: e.target.value }))}
                   placeholder="Sócio-administrador"
+                  className={!contratoData.cliente_cargo ? 'border-amber-300 focus:border-amber-500' : ''}
                 />
               </div>
               <div>
-                <Label htmlFor="cliente_segmento">Segmento</Label>
+                <Label htmlFor="cliente_segmento" className="flex items-center gap-2">
+                  Segmento
+                  {!contratoData.cliente_segmento && (
+                    <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Preencher</span>
+                  )}
+                </Label>
                 <Input
                   id="cliente_segmento"
                   value={contratoData.cliente_segmento}
                   onChange={(e) => setContratoData(prev => ({ ...prev, cliente_segmento: e.target.value }))}
                   placeholder="Restaurante, Clínica, etc."
+                  className={!contratoData.cliente_segmento ? 'border-amber-300 focus:border-amber-500' : ''}
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="cliente_endereco">Endereço Completo</Label>
+                <Label htmlFor="cliente_endereco" className="flex items-center gap-2">
+                  Endereço Completo
+                  {!contratoData.cliente_endereco && (
+                    <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Preencher</span>
+                  )}
+                </Label>
                 <Input
                   id="cliente_endereco"
                   value={contratoData.cliente_endereco}
                   onChange={(e) => setContratoData(prev => ({ ...prev, cliente_endereco: e.target.value }))}
                   placeholder="Rua, número, bairro, cidade - UF"
+                  className={!contratoData.cliente_endereco ? 'border-amber-300 focus:border-amber-500' : ''}
                 />
               </div>
             </div>
