@@ -338,69 +338,94 @@ export class ContractPDFExporter {
     this.drawSectionTitle('CONDIÇÕES FINANCEIRAS');
     
     const startY = this.yPosition;
+    const isCustom = contract.metodo_pagamento === 'custom';
     
     // Box de valores
     this.setColor(this.colors.lightGray, 'fill');
-    this.doc.roundedRect(this.margin, startY, this.contentWidth, 45, 3, 3, 'F');
+    this.doc.roundedRect(this.margin, startY, this.contentWidth, isCustom ? 35 : 45, 3, 3, 'F');
     
-    const colWidth = this.contentWidth / 3;
-    
-    // Valor Mensal
-    this.setColor(this.colors.mediumGray);
-    this.doc.setFontSize(8);
-    this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Valor Mensal', this.margin + 10, startY + 12);
-    
-    this.setColor(this.colors.darkGray);
-    this.doc.setFontSize(14);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.text(this.formatCurrency(contract.valor_mensal || 0), this.margin + 10, startY + 22);
-    
-    // Duração
-    this.setColor(this.colors.mediumGray);
-    this.doc.setFontSize(8);
-    this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Duração', this.margin + colWidth + 10, startY + 12);
-    
-    this.setColor(this.colors.darkGray);
-    this.doc.setFontSize(14);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.text(`${contract.plano_meses || 1} meses`, this.margin + colWidth + 10, startY + 22);
-    
-    // Valor Total
-    this.setColor(this.colors.mediumGray);
-    this.doc.setFontSize(8);
-    this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Valor Total', this.margin + colWidth * 2 + 10, startY + 12);
-    
-    this.setColor(this.colors.exaRed);
-    this.doc.setFontSize(14);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.text(this.formatCurrency(contract.valor_total || 0), this.margin + colWidth * 2 + 10, startY + 22);
-    
-    // Método de pagamento
-    const metodoPagamento = {
-      'pix_avista': 'PIX à Vista',
-      'pix_fidelidade': 'PIX Fidelidade',
-      'boleto_fidelidade': 'Boleto Fidelidade',
-      'cartao': 'Cartão de Crédito',
-      'custom': 'Condição Personalizada'
-    }[contract.metodo_pagamento || ''] || contract.metodo_pagamento || 'Não definido';
-    
-    this.setColor(this.colors.mediumGray);
-    this.doc.setFontSize(8);
-    this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Forma de Pagamento:', this.margin + 10, startY + 34);
-    
-    this.setColor(this.colors.darkGray);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.text(metodoPagamento, this.margin + 50, startY + 34);
-    
-    if (contract.dia_vencimento) {
-      this.doc.text(`| Vencimento: Dia ${contract.dia_vencimento}`, this.margin + 110, startY + 34);
+    if (isCustom) {
+      // Para condição personalizada, mostrar apenas total e tipo
+      this.setColor(this.colors.mediumGray);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text('Condição de Pagamento', this.margin + 10, startY + 12);
+      
+      this.setColor(this.colors.darkGray);
+      this.doc.setFontSize(12);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text('CONDIÇÃO PERSONALIZADA', this.margin + 10, startY + 22);
+      
+      this.setColor(this.colors.mediumGray);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text('Valor Total', this.margin + 120, startY + 12);
+      
+      this.setColor(this.colors.exaRed);
+      this.doc.setFontSize(14);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(this.formatCurrency(contract.valor_total || 0), this.margin + 120, startY + 22);
+      
+      this.yPosition = startY + 42;
+    } else {
+      const colWidth = this.contentWidth / 3;
+      
+      // Valor Mensal
+      this.setColor(this.colors.mediumGray);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text('Valor Mensal', this.margin + 10, startY + 12);
+      
+      this.setColor(this.colors.darkGray);
+      this.doc.setFontSize(14);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(this.formatCurrency(contract.valor_mensal || 0), this.margin + 10, startY + 22);
+      
+      // Duração
+      this.setColor(this.colors.mediumGray);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text('Duração', this.margin + colWidth + 10, startY + 12);
+      
+      this.setColor(this.colors.darkGray);
+      this.doc.setFontSize(14);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(`${contract.plano_meses || 1} meses`, this.margin + colWidth + 10, startY + 22);
+      
+      // Valor Total
+      this.setColor(this.colors.mediumGray);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text('Valor Total', this.margin + colWidth * 2 + 10, startY + 12);
+      
+      this.setColor(this.colors.exaRed);
+      this.doc.setFontSize(14);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(this.formatCurrency(contract.valor_total || 0), this.margin + colWidth * 2 + 10, startY + 22);
+      
+      // Método de pagamento
+      const metodoPagamento = {
+        'pix_avista': 'PIX à Vista',
+        'pix_fidelidade': 'PIX Fidelidade',
+        'boleto_fidelidade': 'Boleto Fidelidade',
+        'cartao': 'Cartão de Crédito',
+      }[contract.metodo_pagamento || ''] || contract.metodo_pagamento || 'Não definido';
+      
+      this.setColor(this.colors.mediumGray);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text('Forma de Pagamento:', this.margin + 10, startY + 34);
+      
+      this.setColor(this.colors.darkGray);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(metodoPagamento, this.margin + 50, startY + 34);
+      
+      if (contract.dia_vencimento) {
+        this.doc.text(`| Vencimento: Dia ${contract.dia_vencimento}`, this.margin + 110, startY + 34);
+      }
+      
+      this.yPosition = startY + 52;
     }
-    
-    this.yPosition = startY + 52;
   }
 
   private drawInstallments(contract: ContractData): void {
@@ -586,12 +611,58 @@ export class ContractPDFExporter {
       this.pageWidth / 2, footerY, { align: 'center' });
   }
 
+  private drawDraftWatermark(): void {
+    // Marca d'água diagonal em todas as páginas
+    const totalPages = this.doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      this.doc.setPage(i);
+      this.doc.saveGraphicsState();
+      
+      // Texto diagonal
+      this.doc.setFontSize(60);
+      this.doc.setTextColor(220, 220, 220);
+      this.doc.setFont('helvetica', 'bold');
+      
+      // Rotacionar e posicionar no centro
+      const text = 'RASCUNHO';
+      const centerX = this.pageWidth / 2;
+      const centerY = this.pageHeight / 2;
+      
+      // jsPDF não suporta rotação de texto diretamente, então desenhamos múltiplas vezes
+      this.doc.text(text, centerX - 50, centerY - 30, { angle: 45 });
+      
+      this.doc.restoreGraphicsState();
+    }
+  }
+
+  private drawStatusBadge(contract: ContractData): void {
+    // Badge de status no canto superior direito
+    const statusText = contract.status === 'assinado' ? '✓ ASSINADO' : '⚠ NÃO ASSINADO';
+    const statusColor = contract.status === 'assinado' ? this.colors.success : { r: 200, g: 150, b: 0 };
+    
+    const badgeWidth = 35;
+    const badgeHeight = 8;
+    const badgeX = this.pageWidth - this.margin - badgeWidth;
+    const badgeY = 28;
+    
+    this.setColor(statusColor, 'fill');
+    this.doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 2, 2, 'F');
+    
+    this.setColor(this.colors.white);
+    this.doc.setFontSize(6);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text(statusText, badgeX + badgeWidth / 2, badgeY + 5.5, { align: 'center' });
+  }
+
   public async generateContractPDF(contract: ContractData): Promise<void> {
     this.doc = new jsPDF();
     this.yPosition = 0;
     
     // Header
     await this.drawHeader(contract);
+    
+    // Badge de status
+    this.drawStatusBadge(contract);
     
     // Identificação das partes
     this.drawContractorInfo();
@@ -625,7 +696,13 @@ export class ContractPDFExporter {
       this.drawFooter();
     }
     
+    // Marca d'água se não assinado
+    if (contract.status !== 'assinado') {
+      this.drawDraftWatermark();
+    }
+    
     // Download
-    this.doc.save(`${contract.numero_contrato}_rascunho.pdf`);
+    const suffix = contract.status === 'assinado' ? '' : '_rascunho';
+    this.doc.save(`${contract.numero_contrato}${suffix}.pdf`);
   }
 }
