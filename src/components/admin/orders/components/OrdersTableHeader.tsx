@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { TableHead } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
+import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 import { useAuth } from '@/hooks/useAuth';
 
 interface OrdersTableHeaderProps {
@@ -21,9 +21,9 @@ const OrdersTableHeader: React.FC<OrdersTableHeaderProps> = ({
     <>
       {isSuperAdmin && hasSelectableItems && (
         <TableHead className="w-12">
-          <Checkbox
+          <CustomCheckbox
             checked={isAllSelected}
-            onCheckedChange={(checked) => onSelectAllChange?.(checked as boolean)}
+            onChange={(e) => onSelectAllChange?.(e.target.checked)}
             aria-label="Selecionar todos os pedidos"
           />
         </TableHead>

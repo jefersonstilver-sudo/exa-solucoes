@@ -2,7 +2,7 @@ import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 import { Eye, Calendar } from 'lucide-react';
 import { OrderOrAttempt } from '@/types/ordersAndAttempts';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,10 +47,10 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
     <TableRow className={`border-gray-200 hover:bg-gray-50 ${isCourtesy ? 'bg-purple-50/30 dark:bg-purple-950/20' : ''}`}>
       {isSuperAdmin && showCheckbox && (
         <TableCell className="w-12">
-          <Checkbox
+          <CustomCheckbox
             checked={isSelected}
-            onCheckedChange={(checked) => 
-              onSelectionChange?.(item.id, checked as boolean)
+            onChange={(e) => 
+              onSelectionChange?.(item.id, e.target.checked)
             }
             aria-label={`Selecionar pedido ${item.id}`}
           />

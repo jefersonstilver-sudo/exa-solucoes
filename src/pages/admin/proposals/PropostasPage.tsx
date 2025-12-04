@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -497,10 +497,9 @@ const PropostasPage = () => {
         {/* Select All Checkbox */}
         {isSuperAdmin && filteredProposals.length > 0 && (
           <div className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-sm rounded-lg">
-            <Checkbox
+            <CustomCheckbox
               checked={isAllSelected}
-              onCheckedChange={toggleSelectAll}
-              className="data-[state=checked]:bg-[#9C1E1E] data-[state=checked]:border-[#9C1E1E]"
+              onChange={() => toggleSelectAll()}
             />
             <span className="text-xs text-muted-foreground">
               Selecionar todas ({filteredProposals.length})
@@ -549,11 +548,11 @@ const PropostasPage = () => {
                 <div className="flex items-start justify-between gap-3">
                   {/* Checkbox para Super Admin */}
                   {isSuperAdmin && (
-                    <Checkbox
+                    <CustomCheckbox
                       checked={isSelected(proposal.id)}
-                      onCheckedChange={() => toggleSelectItem(proposal.id)}
+                      onChange={() => toggleSelectItem(proposal.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="mt-1 data-[state=checked]:bg-[#9C1E1E] data-[state=checked]:border-[#9C1E1E]"
+                      className="mt-1"
                     />
                   )}
                   
