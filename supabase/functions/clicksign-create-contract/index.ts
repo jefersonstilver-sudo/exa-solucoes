@@ -320,8 +320,19 @@ function generateContractHtml(contrato: any): string {
     year: 'numeric' 
   });
 
-  // Logo EXA em base64 (fallback URL)
-  const logoUrl = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/site-assets/logo-exa-white.png";
+  // Logo EXA em SVG inline (funciona em qualquer navegador/email)
+  const logoSvg = `
+    <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#f0f0f0;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <rect x="5" y="5" width="90" height="90" rx="15" fill="url(#logoGrad)" stroke="#8B1A1A" stroke-width="3"/>
+      <text x="50" y="65" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="38" font-weight="900" fill="#8B1A1A">EXA</text>
+    </svg>
+  `;
 
   const prediosHtml = listaPredios.map((p: any) => `
     <tr>
@@ -537,7 +548,6 @@ function generateContractHtml(contrato: any): string {
         .header { background: linear-gradient(to right, #8B1A1A, #A52020); color: white; padding: 20px; margin: -40px -40px 30px -40px; }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .logo { display: flex; align-items: center; gap: 10px; }
-        .logo img { height: 40px; width: auto; }
         .logo-text { font-size: 18pt; font-weight: bold; }
         .parties { margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
@@ -553,7 +563,7 @@ function generateContractHtml(contrato: any): string {
       <div class="header">
         <div class="header-content">
           <div class="logo">
-            <img src="${logoUrl}" alt="EXA Mídia" onerror="this.style.display='none'"/>
+            ${logoSvg}
             <div>
               <div class="logo-text">EXA MÍDIA</div>
               <div style="font-size: 10pt; opacity: 0.8;">Soluções Digitais em Elevadores</div>
@@ -603,8 +613,8 @@ function generateContractHtml(contrato: any): string {
       <div class="highlight">
         <h2>CLÁUSULA 4ª - DO VALOR E FORMA DE PAGAMENTO</h2>
         <p>4.1. <strong>Valor Total do Contrato:</strong> ${formatCurrency(contrato.valor_total)}</p>
-        ${contrato.valor_mensal ? `<p>4.2. <strong>Valor Mensal:</strong> ${formatCurrency(contrato.valor_mensal)}</p>` : ''}
-        <p>4.3. <strong>Forma de Pagamento:</strong> ${metodoPagamentoNome(contrato.metodo_pagamento)}</p>
+        ${contrato.metodo_pagamento !== 'custom' && contrato.valor_mensal ? `<p>4.2. <strong>Valor Mensal:</strong> ${formatCurrency(contrato.valor_mensal)}</p>` : ''}
+        <p>4.${contrato.metodo_pagamento === 'custom' ? '2' : '3'}. <strong>Forma de Pagamento:</strong> ${metodoPagamentoNome(contrato.metodo_pagamento)}</p>
         ${gerarParcelasHtml()}
       </div>
       <p>4.5. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente suspensa até a regularização.</p>
