@@ -364,7 +364,9 @@ const ContratosPage = () => {
                   return (
                     <Card 
                       key={contrato.id} 
-                      className="p-3 bg-white/80 backdrop-blur-sm border-white/50 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
+                      className={`p-3 bg-white/80 backdrop-blur-sm border-white/50 hover:shadow-md transition-all duration-200 active:scale-[0.99] ${
+                        contrato.status === 'enviado' && !contrato.clicksign_envelope_id ? 'border-red-300 bg-red-50/50' : ''
+                      }`}
                       onClick={() => navigate(buildPath(`juridico/${contrato.id}`))}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -376,6 +378,12 @@ const ContratosPage = () => {
                             <Badge className={`${status.color} text-white text-[10px] px-1.5 py-0`}>
                               {status.label}
                             </Badge>
+                            {/* Indicador de estado inconsistente */}
+                            {contrato.status === 'enviado' && !contrato.clicksign_envelope_id && (
+                              <Badge className="bg-red-600 text-white text-[10px] px-1.5 py-0 animate-pulse">
+                                ⚠️ Erro Envio
+                              </Badge>
+                            )}
                           </div>
                           <h3 className="font-medium text-sm truncate">{contrato.cliente_nome}</h3>
                           <div className="flex items-center gap-2 mt-1">

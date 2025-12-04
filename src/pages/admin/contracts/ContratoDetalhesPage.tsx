@@ -335,9 +335,43 @@ const ContratoDetalhesPage = () => {
           <Card className="p-3 bg-amber-50 border-amber-200">
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <p className="text-xs font-medium text-amber-800">Contrato não enviado</p>
                 <p className="text-[10px] text-amber-700">Clique em "Enviar para Assinatura" para enviar ao cliente via ClickSign.</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* ALERTA CRÍTICO: Estado inconsistente - status='enviado' mas sem envelope */}
+        {contrato.status === 'enviado' && !contrato.clicksign_envelope_id && (
+          <Card className="p-3 bg-red-50 border-red-300">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs font-medium text-red-800">⚠️ Erro de Envio Detectado</p>
+                <p className="text-[10px] text-red-700 mb-2">
+                  O contrato está marcado como "enviado" mas não foi transmitido ao ClickSign. 
+                  Clique abaixo para reenviar.
+                </p>
+                <Button 
+                  size="sm" 
+                  className="h-7 text-xs bg-red-600 hover:bg-red-700"
+                  onClick={() => sendMutation.mutate()}
+                  disabled={sendMutation.isPending}
+                >
+                  {sendMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-3 w-3 mr-1.5" />
+                      Reenviar para ClickSign
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </Card>
