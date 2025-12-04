@@ -410,29 +410,79 @@ const ContractPreview: React.FC<ContractPreviewProps> = ({ data, onEdit }) => {
           ) : data.metodo_pagamento === 'pix_avista' ? (
             <div className="mt-3">
               <p className="font-semibold text-green-800">4.4. Pagamento à Vista via PIX:</p>
-              <p className="mt-1 text-sm">
-                O pagamento deverá ser realizado integralmente via PIX no valor de {formatCurrency(data.valor_total)}, 
-                em parcela única, antes do início da exibição.
-              </p>
+              <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded p-3">
+                <p className="text-sm font-medium text-emerald-800">💰 PAGAMENTO ÚNICO</p>
+                <p className="mt-1 text-sm">
+                  O pagamento deverá ser realizado integralmente via <strong>PIX</strong> no valor de <strong>{formatCurrency(data.valor_total)}</strong>, 
+                  em parcela única, antes do início da exibição.
+                </p>
+              </div>
+            </div>
+          ) : data.metodo_pagamento === 'cartao' ? (
+            <div className="mt-3">
+              <p className="font-semibold text-green-800">4.4. Pagamento via Cartão de Crédito:</p>
+              <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-3">
+                <p className="text-sm font-medium text-blue-800">💳 CARTÃO DE CRÉDITO</p>
+                <p className="mt-1 text-sm">
+                  O pagamento será processado via cartão de crédito no valor total de <strong>{formatCurrency(data.valor_total)}</strong>.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="mt-3">
-              <p className="font-semibold text-green-800">4.4. Condição de Pagamento Parcelada:</p>
-              <p className="mt-1 text-sm">
-                O pagamento será realizado em <strong>{data.plano_meses || 1} ({getNumeroExtenso(data.plano_meses || 1)}) parcela(s)</strong> de {formatCurrency(data.valor_mensal)}, 
-                com vencimento no <strong>dia {data.dia_vencimento || 10}</strong> de cada mês.
-              </p>
-              {data.dia_vencimento && data.data_inicio && (
-                <p className="mt-1 text-sm">
-                  <strong>Primeira parcela:</strong> Vencimento em {(() => {
-                    const inicio = new Date(data.data_inicio + 'T00:00:00');
-                    const primeiraParcela = new Date(inicio.getFullYear(), inicio.getMonth(), data.dia_vencimento);
-                    if (primeiraParcela < inicio) {
-                      primeiraParcela.setMonth(primeiraParcela.getMonth() + 1);
-                    }
-                    return format(primeiraParcela, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-                  })()}
+              <p className="font-semibold text-green-800">4.4. Condição de Pagamento Parcelada ({data.metodo_pagamento === 'pix_fidelidade' ? 'PIX' : 'Boleto'}):</p>
+              <div className="mt-2 bg-amber-50 border border-amber-200 rounded p-3">
+                <p className="text-sm font-medium text-amber-800">
+                  {data.metodo_pagamento === 'pix_fidelidade' ? '📱 PIX FIDELIDADE' : '📄 BOLETO FIDELIDADE'}
                 </p>
+                <p className="mt-1 text-sm">
+                  O pagamento será realizado em <strong>{data.plano_meses || 1} ({getNumeroExtenso(data.plano_meses || 1)}) parcela(s)</strong> de <strong>{formatCurrency(data.valor_mensal)}</strong>, 
+                  com vencimento no <strong>dia {data.dia_vencimento || 10}</strong> de cada mês.
+                </p>
+              </div>
+              
+              {/* Tabela de TODAS as parcelas */}
+              {data.data_inicio && data.plano_meses && data.plano_meses > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-semibold text-green-800 mb-2">📋 Cronograma de Parcelas:</p>
+                  <table className="w-full text-sm border border-green-300">
+                    <thead>
+                      <tr className="bg-green-100">
+                        <th className="border border-green-300 px-2 py-1 text-left">Parcela</th>
+                        <th className="border border-green-300 px-2 py-1 text-left">Vencimento</th>
+                        <th className="border border-green-300 px-2 py-1 text-right">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.from({ length: data.plano_meses }, (_, idx) => {
+                        const inicio = new Date(data.data_inicio + 'T00:00:00');
+                        const dataVencimento = new Date(inicio.getFullYear(), inicio.getMonth() + idx, data.dia_vencimento || 10);
+                        if (idx === 0 && dataVencimento < inicio) {
+                          dataVencimento.setMonth(dataVencimento.getMonth() + 1);
+                        }
+                        return (
+                          <tr key={idx} className={idx === 0 ? 'bg-green-50' : ''}>
+                            <td className="border border-green-300 px-2 py-1">
+                              {idx + 1}ª parcela {idx === 0 && <span className="text-green-600 text-xs">(próxima)</span>}
+                            </td>
+                            <td className="border border-green-300 px-2 py-1">
+                              {format(dataVencimento, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                            </td>
+                            <td className="border border-green-300 px-2 py-1 text-right font-medium">
+                              {formatCurrency(data.valor_mensal)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-green-200 font-bold">
+                        <td colSpan={2} className="border border-green-300 px-2 py-1 text-right">TOTAL:</td>
+                        <td className="border border-green-300 px-2 py-1 text-right">{formatCurrency(data.valor_total)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               )}
             </div>
           )}

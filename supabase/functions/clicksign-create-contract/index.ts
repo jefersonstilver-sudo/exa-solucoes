@@ -50,7 +50,20 @@ serve(async (req) => {
       );
     }
 
-    console.log("Processando contrato:", contrato.numero_contrato);
+    console.log("========================================");
+    console.log("🚀 [CLICKSIGN] INICIANDO PROCESSAMENTO");
+    console.log("========================================");
+    console.log("📋 Contrato ID:", contrato_id);
+    console.log("📋 Número:", contrato.numero_contrato);
+    console.log("👤 Cliente:", contrato.cliente_nome);
+    console.log("📧 Email:", contrato.cliente_email);
+    console.log("📱 Telefone:", contrato.cliente_telefone);
+    console.log("💰 Valor Total:", contrato.valor_total);
+    console.log("💳 Método Pagamento:", contrato.metodo_pagamento);
+    console.log("📅 Plano (meses):", contrato.plano_meses);
+    console.log("🏢 Prédios:", JSON.stringify(contrato.lista_predios?.length || 0));
+    console.log("📄 Parcelas:", JSON.stringify(contrato.parcelas || []));
+    console.log("========================================");
 
     // ========== 1. Criar Envelope ==========
     const envelopePayload = {
@@ -62,6 +75,8 @@ serve(async (req) => {
         block_after_refusal: true
       }
     };
+    
+    console.log("📤 [CLICKSIGN] Payload envelope:", JSON.stringify(envelopePayload));
 
     console.log("Criando envelope no ClickSign...");
     const envelopeResponse = await fetch("https://app.clicksign.com/api/v3/envelopes", {
@@ -268,18 +283,45 @@ serve(async (req) => {
 
 // Função para gerar HTML do contrato
 function generateContractHtml(contrato: any): string {
+  console.log("🖨️ [CLICKSIGN] Gerando HTML do contrato...");
+  
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
   };
 
+  const formatDateExtended = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr + 'T00:00:00');
+      const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 
+                     'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+      return `${date.getDate()} de ${months[date.getMonth()]} de ${date.getFullYear()}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const getNumeroExtenso = (num: number) => {
+    const extenso: Record<number, string> = {
+      1: 'um', 2: 'dois', 3: 'três', 4: 'quatro', 5: 'cinco',
+      6: 'seis', 7: 'sete', 8: 'oito', 9: 'nove', 10: 'dez',
+      11: 'onze', 12: 'doze'
+    };
+    return extenso[num] || String(num);
+  };
+
   const listaPredios = Array.isArray(contrato.lista_predios) ? contrato.lista_predios : [];
   const totalPaineis = contrato.total_paineis || listaPredios.reduce((acc: number, p: any) => acc + (p.quantidade_telas || 1), 0);
+  const parcelas = Array.isArray(contrato.parcelas) ? contrato.parcelas : [];
 
   const dataAtual = new Date().toLocaleDateString('pt-BR', { 
     day: 'numeric', 
     month: 'long', 
     year: 'numeric' 
   });
+
+  // Logo EXA em base64 (fallback URL)
+  const logoUrl = "https://aakenoljsycyrcrchgxj.supabase.co/storage/v1/object/public/site-assets/logo-exa-white.png";
 
   const prediosHtml = listaPredios.map((p: any) => `
     <tr>
@@ -288,6 +330,116 @@ function generateContractHtml(contrato: any): string {
       <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${p.quantidade_telas || 1}</td>
     </tr>
   `).join('');
+  
+  // Gerar HTML das parcelas
+  const gerarParcelasHtml = () => {
+    if (contrato.metodo_pagamento === 'custom' && parcelas.length > 0) {
+      // Parcelas personalizadas
+      return `
+        <div style="background: #f0fdf4; border: 1px solid #86efac; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="font-weight: bold; color: #166534;">📋 CONDIÇÃO PERSONALIZADA - Cronograma de Pagamento:</p>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+              <tr style="background: #dcfce7;">
+                <th style="border: 1px solid #86efac; padding: 8px; text-align: left;">Parcela</th>
+                <th style="border: 1px solid #86efac; padding: 8px; text-align: left;">Vencimento</th>
+                <th style="border: 1px solid #86efac; padding: 8px; text-align: right;">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${parcelas.map((p: any, idx: number) => `
+                <tr>
+                  <td style="border: 1px solid #86efac; padding: 8px;">${p.installment || idx + 1}ª parcela</td>
+                  <td style="border: 1px solid #86efac; padding: 8px;">${formatDateExtended(p.due_date)}</td>
+                  <td style="border: 1px solid #86efac; padding: 8px; text-align: right; font-weight: bold;">${formatCurrency(Number(p.amount))}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr style="background: #bbf7d0; font-weight: bold;">
+                <td colspan="2" style="border: 1px solid #86efac; padding: 8px; text-align: right;">TOTAL:</td>
+                <td style="border: 1px solid #86efac; padding: 8px; text-align: right;">${formatCurrency(contrato.valor_total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      `;
+    } else if (contrato.metodo_pagamento === 'pix_avista') {
+      return `
+        <div style="background: #ecfdf5; border: 1px solid #6ee7b7; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="font-weight: bold; color: #047857;">💰 PAGAMENTO ÚNICO VIA PIX</p>
+          <p style="margin-top: 8px;">
+            Valor total: <strong>${formatCurrency(contrato.valor_total)}</strong><br>
+            Forma: Pagamento único via PIX, à vista, antes do início da exibição.
+          </p>
+        </div>
+      `;
+    } else if (contrato.metodo_pagamento === 'cartao') {
+      return `
+        <div style="background: #eff6ff; border: 1px solid #93c5fd; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="font-weight: bold; color: #1d4ed8;">💳 PAGAMENTO VIA CARTÃO DE CRÉDITO</p>
+          <p style="margin-top: 8px;">
+            Valor total: <strong>${formatCurrency(contrato.valor_total)}</strong><br>
+            Forma: Processado via cartão de crédito.
+          </p>
+        </div>
+      `;
+    } else {
+      // PIX ou Boleto Fidelidade - gerar todas as parcelas
+      const metodoPagamento = contrato.metodo_pagamento === 'pix_fidelidade' ? '📱 PIX FIDELIDADE' : '📄 BOLETO FIDELIDADE';
+      const planoMeses = contrato.plano_meses || 1;
+      
+      // Gerar cronograma de parcelas
+      let parcelasRows = '';
+      if (contrato.data_inicio && planoMeses > 0) {
+        for (let i = 0; i < planoMeses; i++) {
+          const inicio = new Date(contrato.data_inicio + 'T00:00:00');
+          const dataVencimento = new Date(inicio.getFullYear(), inicio.getMonth() + i, contrato.dia_vencimento || 10);
+          if (i === 0 && dataVencimento < inicio) {
+            dataVencimento.setMonth(dataVencimento.getMonth() + 1);
+          }
+          parcelasRows += `
+            <tr${i === 0 ? ' style="background: #fef9c3;"' : ''}>
+              <td style="border: 1px solid #fcd34d; padding: 8px;">${i + 1}ª parcela${i === 0 ? ' (primeira)' : ''}</td>
+              <td style="border: 1px solid #fcd34d; padding: 8px;">${formatDateExtended(dataVencimento.toISOString().split('T')[0])}</td>
+              <td style="border: 1px solid #fcd34d; padding: 8px; text-align: right; font-weight: bold;">${formatCurrency(contrato.valor_mensal)}</td>
+            </tr>
+          `;
+        }
+      }
+
+      return `
+        <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 15px; border-radius: 4px; margin: 10px 0;">
+          <p style="font-weight: bold; color: #92400e;">${metodoPagamento}</p>
+          <p style="margin-top: 8px;">
+            Pagamento em <strong>${planoMeses} (${getNumeroExtenso(planoMeses)}) parcela(s)</strong> de <strong>${formatCurrency(contrato.valor_mensal)}</strong><br>
+            Vencimento: Dia <strong>${contrato.dia_vencimento || 10}</strong> de cada mês
+          </p>
+          ${parcelasRows ? `
+            <p style="font-weight: bold; color: #92400e; margin-top: 15px;">📋 Cronograma Completo de Parcelas:</p>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+              <thead>
+                <tr style="background: #fef3c7;">
+                  <th style="border: 1px solid #fcd34d; padding: 8px; text-align: left;">Parcela</th>
+                  <th style="border: 1px solid #fcd34d; padding: 8px; text-align: left;">Vencimento</th>
+                  <th style="border: 1px solid #fcd34d; padding: 8px; text-align: right;">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${parcelasRows}
+              </tbody>
+              <tfoot>
+                <tr style="background: #fde68a; font-weight: bold;">
+                  <td colspan="2" style="border: 1px solid #fcd34d; padding: 8px; text-align: right;">TOTAL:</td>
+                  <td style="border: 1px solid #fcd34d; padding: 8px; text-align: right;">${formatCurrency(contrato.valor_total)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          ` : ''}
+        </div>
+      `;
+    }
+  };
 
   if (contrato.tipo_contrato === 'sindico') {
     return `
@@ -371,6 +523,8 @@ function generateContractHtml(contrato: any): string {
     }
   };
 
+  console.log("🖨️ [CLICKSIGN] Gerando HTML anunciante com parcelas detalhadas...");
+  
   return `
     <!DOCTYPE html>
     <html>
@@ -382,7 +536,9 @@ function generateContractHtml(contrato: any): string {
         h2 { font-size: 12pt; font-weight: bold; margin-top: 20px; }
         .header { background: linear-gradient(to right, #8B1A1A, #A52020); color: white; padding: 20px; margin: -40px -40px 30px -40px; }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 18pt; font-weight: bold; }
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo img { height: 40px; width: auto; }
+        .logo-text { font-size: 18pt; font-weight: bold; }
         .parties { margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -396,9 +552,12 @@ function generateContractHtml(contrato: any): string {
     <body>
       <div class="header">
         <div class="header-content">
-          <div>
-            <div class="logo">EXA MÍDIA</div>
-            <div style="font-size: 10pt; opacity: 0.8;">Soluções Digitais em Elevadores</div>
+          <div class="logo">
+            <img src="${logoUrl}" alt="EXA Mídia" onerror="this.style.display='none'"/>
+            <div>
+              <div class="logo-text">EXA MÍDIA</div>
+              <div style="font-size: 10pt; opacity: 0.8;">Soluções Digitais em Elevadores</div>
+            </div>
           </div>
           <div style="text-align: right;">
             <div style="font-weight: bold;">CONTRATO DE PUBLICIDADE</div>
@@ -443,10 +602,10 @@ function generateContractHtml(contrato: any): string {
       
       <div class="highlight">
         <h2>CLÁUSULA 4ª - DO VALOR E FORMA DE PAGAMENTO</h2>
-        <p>4.1. <strong>Valor Total:</strong> ${formatCurrency(contrato.valor_total)}</p>
-        <p>4.2. <strong>Valor Mensal:</strong> ${formatCurrency(contrato.valor_mensal)}</p>
+        <p>4.1. <strong>Valor Total do Contrato:</strong> ${formatCurrency(contrato.valor_total)}</p>
+        ${contrato.valor_mensal ? `<p>4.2. <strong>Valor Mensal:</strong> ${formatCurrency(contrato.valor_mensal)}</p>` : ''}
         <p>4.3. <strong>Forma de Pagamento:</strong> ${metodoPagamentoNome(contrato.metodo_pagamento)}</p>
-        ${contrato.dia_vencimento ? `<p>4.4. <strong>Vencimento:</strong> Dia ${contrato.dia_vencimento} de cada mês</p>` : ''}
+        ${gerarParcelasHtml()}
       </div>
       <p>4.5. Após 10 (dez) dias de atraso no pagamento, a exibição será automaticamente suspensa até a regularização.</p>
       <p>4.6. Multa por atraso: 2% (dois por cento) + 1% (um por cento) de juros ao mês.</p>
