@@ -139,7 +139,7 @@ const ContratoDetalhesPage = () => {
         <Card className="max-w-md mx-auto p-8 text-center">
           <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Contrato não encontrado</h2>
-          <Button onClick={() => navigate(buildPath('contratos'))}>
+          <Button onClick={() => navigate(buildPath('juridico'))}>
             Voltar para Lista
           </Button>
         </Card>
@@ -161,7 +161,7 @@ const ContratoDetalhesPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(buildPath('contratos'))}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(buildPath('juridico'))}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-3">

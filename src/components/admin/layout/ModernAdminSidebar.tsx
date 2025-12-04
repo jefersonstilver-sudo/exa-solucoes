@@ -29,7 +29,8 @@ import {
   Bot,
   AlertTriangle,
   Star,
-  FileText
+  FileText,
+  Scale
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
@@ -126,6 +127,12 @@ export function ModernAdminSidebar() {
           title: 'Propostas',
           href: buildPath('propostas'),
           icon: FileText,
+          permission: 'canViewOrders'
+        },
+        {
+          title: 'Jurídico',
+          href: buildPath('juridico'),
+          icon: Scale,
           permission: 'canViewOrders'
         },
         {

@@ -20,6 +20,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   ArrowLeft,
   FileSignature,
   Users,
@@ -28,7 +36,9 @@ import {
   Send,
   Save,
   Eye,
-  Search
+  Search,
+  Mail,
+  AlertTriangle
 } from 'lucide-react';
 import ContractPreview from '@/components/admin/contracts/ContractPreview';
 
@@ -65,6 +75,9 @@ const NovoContratoPage = () => {
   const { session } = useAuth();
   const [step, setStep] = useState<Step>('tipo');
   const [searchPedido, setSearchPedido] = useState('');
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [sendEmail, setSendEmail] = useState('');
+  const [sendNome, setSendNome] = useState('');
   
   const [contratoData, setContratoData] = useState<ContratoData>({
     tipo_contrato: 'anunciante',
@@ -183,7 +196,7 @@ const NovoContratoPage = () => {
     },
     onSuccess: (contrato) => {
       toast.success('Contrato criado com sucesso!');
-      navigate(buildPath(`contratos/${contrato.id}`));
+      navigate(buildPath(`juridico/${contrato.id}`));
     },
     onError: (error: any) => {
       console.error('Erro ao criar contrato:', error);
@@ -240,7 +253,7 @@ const NovoContratoPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 p-3 md:p-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate(buildPath('contratos'))}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(buildPath('juridico'))}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-3">
@@ -668,15 +681,15 @@ const NovoContratoPage = () => {
                   Salvar Rascunho
                 </Button>
                 <Button 
-                  onClick={() => handleSubmit(true)}
+                  onClick={() => {
+                    setSendEmail(contratoData.cliente_email);
+                    setSendNome(contratoData.cliente_nome);
+                    setShowSendModal(true);
+                  }}
                   disabled={createContractMutation.isPending}
                   className="bg-primary"
                 >
-                  {createContractMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-2" />
-                  )}
+                  <Send className="h-4 w-4 mr-2" />
                   Enviar para Assinatura
                 </Button>
               </div>
@@ -684,6 +697,92 @@ const NovoContratoPage = () => {
           </div>
         )}
       </Card>
+
+      {/* Modal de Envio com Email Editável */}
+      <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Confirmar Envio do Contrato
+            </DialogTitle>
+            <DialogDescription>
+              Revise os dados antes de enviar o contrato para assinatura via ClickSign.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-800">
+                <p className="font-semibold">Modo de Teste</p>
+                <p>Você pode alterar o email abaixo para enviar o contrato para um endereço diferente durante testes.</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="send_nome">Nome do Signatário</Label>
+              <Input
+                id="send_nome"
+                value={sendNome}
+                onChange={(e) => setSendNome(e.target.value)}
+                placeholder="Nome completo"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="send_email">Email para Envio *</Label>
+              <Input
+                id="send_email"
+                type="email"
+                value={sendEmail}
+                onChange={(e) => setSendEmail(e.target.value)}
+                placeholder="email@empresa.com"
+              />
+              {sendEmail !== contratoData.cliente_email && (
+                <p className="text-xs text-amber-600">
+                  ⚠️ Email diferente do cadastrado ({contratoData.cliente_email})
+                </p>
+              )}
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-lg text-sm">
+              <p className="font-medium mb-1">Resumo do Contrato:</p>
+              <p>• Cliente: {contratoData.cliente_nome}</p>
+              <p>• Valor: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(contratoData.valor_total)}</p>
+              <p>• Plano: {contratoData.plano_meses} meses</p>
+              <p>• Prédios: {contratoData.lista_predios.length}</p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowSendModal(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                // Atualizar dados do contrato com email/nome editados
+                setContratoData(prev => ({
+                  ...prev,
+                  cliente_email: sendEmail,
+                  cliente_nome: sendNome
+                }));
+                setShowSendModal(false);
+                handleSubmit(true);
+              }}
+              disabled={!sendEmail || createContractMutation.isPending}
+              className="bg-primary"
+            >
+              {createContractMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Confirmar e Enviar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

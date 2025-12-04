@@ -373,6 +373,18 @@ verify_jwt = false
 [functions.notify-seller-payment-confirmed]
 verify_jwt = false
 
+[functions.clicksign-create-contract]
+verify_jwt = true
+
+[functions.clicksign-webhook]
+verify_jwt = false
+
+[functions.clicksign-resend]
+verify_jwt = true
+
+[functions.clicksign-cancel]
+verify_jwt = true
+
 [[cron]]
 function_name = "auto-cancel-expired-orders"
 schedule = "0 */1 * * *"
