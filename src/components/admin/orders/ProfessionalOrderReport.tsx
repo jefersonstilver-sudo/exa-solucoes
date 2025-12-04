@@ -14,7 +14,6 @@ interface Parcela {
   data_pagamento?: string | null;
   metodo_pagamento?: string | null;
 }
-
 interface OrderData {
   id: string;
   created_at: string;
@@ -88,14 +87,11 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
   console.log('📋 [PROFESSIONAL REPORT] Panels recebidos:', panels?.length || 0);
   console.log('📋 [PROFESSIONAL REPORT] Panels data:', panels);
   console.log('📋 [PROFESSIONAL REPORT] Videos recebidos:', videos?.length || 0);
-  
   const [resyncingVideoId, setResyncingVideoId] = useState<string | null>(null);
-  
   const {
     fixOrderAuditData,
     isFixing
   } = useFixAuditData();
-
   const handleResyncVideo = async (pedidoVideoId: string) => {
     setResyncingVideoId(pedidoVideoId);
     try {
@@ -116,7 +112,6 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
     }
     return orderStatus;
   };
-
   const correctStatus = getCorrectStatus(order.status, videos.length);
 
   // Ordenar vídeos: em exibição primeiro
@@ -300,43 +295,33 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <div>
                 <p className="text-gray-500 mb-1">Termos Aceitos</p>
                 <p className="font-semibold text-gray-900">
-                  {order.termos_aceitos ? (
-                    <span className="inline-flex items-center gap-1 text-green-700">
+                  {order.termos_aceitos ? <span className="inline-flex items-center gap-1 text-green-700">
                       <CheckCircle2 className="h-3 w-3" />
                       Sim {order.termo_aceito_em && `- ${formatDate(order.termo_aceito_em)}`}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-red-700">
+                    </span> : <span className="inline-flex items-center gap-1 text-red-700">
                       <XCircle className="h-3 w-3" />
                       Não
-                    </span>
-                  )}
+                    </span>}
                 </p>
               </div>
             </div>
             
             {/* Dados da empresa do termo de fidelidade */}
-            {order.dados_empresa_termo && (order.dados_empresa_termo.razao_social || order.dados_empresa_termo.nomeEmpresa || order.dados_empresa_termo.cnpj) && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
+            {order.dados_empresa_termo && (order.dados_empresa_termo.razao_social || order.dados_empresa_termo.nomeEmpresa || order.dados_empresa_termo.cnpj) && <div className="mt-4 pt-4 border-t border-gray-200">
                 <p className="text-gray-500 mb-2 text-xs font-semibold">Dados da Empresa (Termo Fidelidade)</p>
                 <div className="grid grid-cols-2 gap-4 text-xs">
-                  {(order.dados_empresa_termo.razao_social || order.dados_empresa_termo.nomeEmpresa) && (
-                    <div>
+                  {(order.dados_empresa_termo.razao_social || order.dados_empresa_termo.nomeEmpresa) && <div>
                       <p className="text-gray-500 mb-1">Razão Social</p>
                       <p className="font-semibold text-gray-900">
                         {order.dados_empresa_termo.razao_social || order.dados_empresa_termo.nomeEmpresa}
                       </p>
-                    </div>
-                  )}
-                  {order.dados_empresa_termo.cnpj && (
-                    <div>
+                    </div>}
+                  {order.dados_empresa_termo.cnpj && <div>
                       <p className="text-gray-500 mb-1">CNPJ</p>
                       <p className="font-semibold text-gray-900">{order.dados_empresa_termo.cnpj}</p>
-                    </div>
-                  )}
+                    </div>}
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
         </section>
 
@@ -392,18 +377,13 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
               <div>
                 <p className="text-gray-500 mb-1">Modalidade</p>
                 <p className="font-semibold text-gray-900">
-                  {order.is_fidelidade ? (
-                    <span className="inline-flex items-center gap-1 text-blue-700">
+                  {order.is_fidelidade ? <span className="inline-flex items-center gap-1 text-blue-700">
                       <CreditCard className="h-3 w-3" />
                       Assinatura Fidelidade
-                    </span>
-                  ) : (
-                    <span className="text-gray-700">Pagamento Único</span>
-                  )}
+                    </span> : <span className="text-gray-700">Pagamento Único</span>}
                 </p>
               </div>
-              {order.is_fidelidade && (
-                <>
+              {order.is_fidelidade && <>
                   <div>
                     <p className="text-gray-500 mb-1">Parcela Atual</p>
                     <p className="font-semibold text-gray-900">
@@ -416,65 +396,44 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                       Dia {order.dia_vencimento || 'N/A'}
                     </p>
                   </div>
-                </>
-              )}
+                </>}
             </div>
             
             {/* Badge de Status de Adimplência - Corrigido */}
-            {order.is_fidelidade && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
+            {order.is_fidelidade && <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-gray-500">Status de Adimplência:</span>
                   {/* Verificar se há parcelas pagas para determinar status correto */}
-                  {order.parcelas && order.parcelas.some(p => p.status === 'pago') ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                  {order.parcelas && order.parcelas.some(p => p.status === 'pago') ? <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       Em Dia
-                    </span>
-                  ) : order.status_adimplencia === 'em_dia' && order.parcela_atual && order.parcela_atual > 1 ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                    </span> : order.status_adimplencia === 'em_dia' && order.parcela_atual && order.parcela_atual > 1 ? <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       Em Dia
-                    </span>
-                  ) : order.status_adimplencia === 'atrasado' ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                    </span> : order.status_adimplencia === 'atrasado' ? <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
                       <Clock className="h-3.5 w-3.5" />
                       Atrasado
-                    </span>
-                  ) : order.status_adimplencia === 'suspenso' ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                    </span> : order.status_adimplencia === 'suspenso' ? <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
                       <XCircle className="h-3.5 w-3.5" />
                       Suspenso
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                    </span> : <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
                       <Clock className="h-3.5 w-3.5" />
                       Aguardando Pagamento
-                    </span>
-                  )}
+                    </span>}
                 </div>
-              </div>
-            )}
+              </div>}
 
             {/* NOVA SEÇÃO: Detalhes das Parcelas */}
             {order.parcelas && order.parcelas.length > 0 && (() => {
-              // Calcular totais
-              const totalPago = order.parcelas
-                .filter(p => p.status === 'pago')
-                .reduce((sum, p) => sum + (p.valor_final || 0), 0);
-              const totalPendente = order.parcelas
-                .filter(p => p.status === 'pendente')
-                .reduce((sum, p) => sum + (p.valor_final || 0), 0);
-              const totalAtrasado = order.parcelas
-                .filter(p => p.status === 'atrasado')
-                .reduce((sum, p) => sum + (p.valor_final || 0), 0);
-              const saldoDevedor = totalPendente + totalAtrasado;
-              const parcelasPagas = order.parcelas.filter(p => p.status === 'pago').length;
-              const parcelasPendentes = order.parcelas.filter(p => p.status === 'pendente').length;
-              const parcelasAtrasadas = order.parcelas.filter(p => p.status === 'atrasado').length;
-
-              return (
-                <div className="mt-4 pt-4 border-t border-gray-200">
+            // Calcular totais
+            const totalPago = order.parcelas.filter(p => p.status === 'pago').reduce((sum, p) => sum + (p.valor_final || 0), 0);
+            const totalPendente = order.parcelas.filter(p => p.status === 'pendente').reduce((sum, p) => sum + (p.valor_final || 0), 0);
+            const totalAtrasado = order.parcelas.filter(p => p.status === 'atrasado').reduce((sum, p) => sum + (p.valor_final || 0), 0);
+            const saldoDevedor = totalPendente + totalAtrasado;
+            const parcelasPagas = order.parcelas.filter(p => p.status === 'pago').length;
+            const parcelasPendentes = order.parcelas.filter(p => p.status === 'pendente').length;
+            const parcelasAtrasadas = order.parcelas.filter(p => p.status === 'atrasado').length;
+            return <div className="mt-4 pt-4 border-t border-gray-200">
                   <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-2">
                     <CreditCard className="h-4 w-4" />
                     Detalhes das Parcelas ({order.parcelas.length} parcelas)
@@ -492,54 +451,29 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                       <p className="text-lg font-bold text-amber-700">{formatCurrency(totalPendente)}</p>
                       <p className="text-[10px] text-amber-600">{parcelasPendentes} parcela{parcelasPendentes !== 1 ? 's' : ''} pendente{parcelasPendentes !== 1 ? 's' : ''}</p>
                     </div>
-                    {totalAtrasado > 0 && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    {totalAtrasado > 0 && <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                         <p className="text-[10px] text-red-600 font-medium mb-1">🚨 Em Atraso</p>
                         <p className="text-lg font-bold text-red-700">{formatCurrency(totalAtrasado)}</p>
                         <p className="text-[10px] text-red-600">{parcelasAtrasadas} parcela{parcelasAtrasadas !== 1 ? 's' : ''} atrasada{parcelasAtrasadas !== 1 ? 's' : ''}</p>
-                      </div>
-                    )}
-                    <div className={`${saldoDevedor > 0 ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'} border rounded-lg p-3`}>
-                      <p className={`text-[10px] ${saldoDevedor > 0 ? 'text-blue-600' : 'text-gray-600'} font-medium mb-1`}>💰 Saldo Devedor</p>
-                      <p className={`text-lg font-bold ${saldoDevedor > 0 ? 'text-blue-700' : 'text-gray-700'}`}>{formatCurrency(saldoDevedor)}</p>
-                      <p className={`text-[10px] ${saldoDevedor > 0 ? 'text-blue-600' : 'text-gray-600'}`}>
-                        {saldoDevedor === 0 ? 'Contrato quitado' : 'Falta receber'}
-                      </p>
-                    </div>
+                      </div>}
+                    
                   </div>
 
                   {/* BARRA DE PROGRESSO */}
                   <div className="mb-4 bg-gray-100 rounded-full h-2 overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
-                      style={{ width: `${order.valor_total > 0 ? (totalPago / order.valor_total) * 100 : 0}%` }}
-                    />
+                    <div className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500" style={{
+                  width: `${order.valor_total > 0 ? totalPago / order.valor_total * 100 : 0}%`
+                }} />
                   </div>
                   <p className="text-[10px] text-gray-500 text-center mb-4">
-                    {order.valor_total > 0 ? Math.round((totalPago / order.valor_total) * 100) : 0}% do contrato quitado
+                    {order.valor_total > 0 ? Math.round(totalPago / order.valor_total * 100) : 0}% do contrato quitado
                   </p>
 
                   {/* LISTA DE PARCELAS */}
                   <div className="space-y-2">
-                    {order.parcelas.map((parcela) => (
-                      <div 
-                        key={parcela.id} 
-                        className={`flex items-center justify-between p-2 rounded text-xs ${
-                          parcela.status === 'pago' 
-                            ? 'bg-green-50 border border-green-200' 
-                            : parcela.status === 'atrasado'
-                            ? 'bg-red-50 border border-red-200'
-                            : 'bg-gray-50 border border-gray-200'
-                        }`}
-                      >
+                    {order.parcelas.map(parcela => <div key={parcela.id} className={`flex items-center justify-between p-2 rounded text-xs ${parcela.status === 'pago' ? 'bg-green-50 border border-green-200' : parcela.status === 'atrasado' ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'}`}>
                         <div className="flex items-center gap-3">
-                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                            parcela.status === 'pago' 
-                              ? 'bg-green-500 text-white' 
-                              : parcela.status === 'atrasado'
-                              ? 'bg-red-500 text-white'
-                              : 'bg-gray-300 text-gray-700'
-                          }`}>
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${parcela.status === 'pago' ? 'bg-green-500 text-white' : parcela.status === 'atrasado' ? 'bg-red-500 text-white' : 'bg-gray-300 text-gray-700'}`}>
                             {parcela.numero_parcela}
                           </span>
                           <div>
@@ -552,36 +486,26 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                           </div>
                         </div>
                         <div className="text-right">
-                          {parcela.status === 'pago' ? (
-                            <div className="flex items-center gap-1.5 text-green-700">
+                          {parcela.status === 'pago' ? <div className="flex items-center gap-1.5 text-green-700">
                               <CheckCircle2 className="h-4 w-4" />
                               <div>
                                 <p className="font-semibold">Pago</p>
-                                {parcela.data_pagamento && (
-                                  <p className="text-[10px] text-green-600">
+                                {parcela.data_pagamento && <p className="text-[10px] text-green-600">
                                     em {formatSimpleDate(parcela.data_pagamento)}
-                                  </p>
-                                )}
+                                  </p>}
                               </div>
-                            </div>
-                          ) : parcela.status === 'atrasado' ? (
-                            <div className="flex items-center gap-1.5 text-red-700">
+                            </div> : parcela.status === 'atrasado' ? <div className="flex items-center gap-1.5 text-red-700">
                               <XCircle className="h-4 w-4" />
                               <span className="font-semibold">Atrasado</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1.5 text-gray-500">
+                            </div> : <div className="flex items-center gap-1.5 text-gray-500">
                               <Clock className="h-4 w-4" />
                               <span className="font-semibold">Pendente</span>
-                            </div>
-                          )}
+                            </div>}
                         </div>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
-                </div>
-              );
-            })()}
+                </div>;
+          })()}
           </div>
         </section>
 
@@ -862,27 +786,15 @@ export const ProfessionalOrderReport: React.FC<ProfessionalOrderReportProps> = (
                               </span>}
                             
                             {/* Botão de Resync para vídeos aprovados */}
-                            {video.approval_status === 'approved' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleResyncVideo(video.id)}
-                                disabled={resyncingVideoId === video.id}
-                                className="h-7 px-2 text-xs border-blue-300 hover:bg-blue-50"
-                              >
-                                {resyncingVideoId === video.id ? (
-                                  <>
+                            {video.approval_status === 'approved' && <Button size="sm" variant="outline" onClick={() => handleResyncVideo(video.id)} disabled={resyncingVideoId === video.id} className="h-7 px-2 text-xs border-blue-300 hover:bg-blue-50">
+                                {resyncingVideoId === video.id ? <>
                                     <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
                                     Enviando...
-                                  </>
-                                ) : (
-                                  <>
+                                  </> : <>
                                     <Upload className="h-3 w-3 mr-1" />
                                     Reenviar AWS
-                                  </>
-                                )}
-                              </Button>
-                            )}
+                                  </>}
+                              </Button>}
                           </div>
                         </div>
                         
