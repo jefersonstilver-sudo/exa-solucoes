@@ -486,4 +486,3 @@ function generateContractHtml(contrato: any): string {
     </html>
   `;
 }
-}
