@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield } from 'lucide-react';
+import { ArrowLeft, User, Building2, DollarSign, Eye, Send, MessageSquare, Mail, Link2, FileText, CheckCircle, Users, MapPin, Loader2, Gift, Shield, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -32,6 +32,21 @@ interface Building {
   preco_base: number | null;
   publico_estimado: number | null;
   imagem_principal: string | null;
+  is_manual?: boolean;
+}
+
+interface ManualBuilding {
+  id: string;
+  nome: string;
+  bairro: string;
+  endereco: string;
+  quantidade_telas: number;
+  numero_elevadores: number;
+  visualizacoes_mes: number;
+  preco_base: number;
+  publico_estimado: number;
+  imagem_principal: string | null;
+  is_manual: true;
 }
 
 const NovaPropostaPage = () => {
@@ -114,6 +129,17 @@ const NovaPropostaPage = () => {
 
   // Estado para tipo de produto
   const [tipoProduto, setTipoProduto] = useState<'horizontal' | 'vertical_premium'>('horizontal');
+
+  // Estados para prédios manuais
+  const [manualBuildings, setManualBuildings] = useState<ManualBuilding[]>([]);
+  const [addBuildingDialogOpen, setAddBuildingDialogOpen] = useState(false);
+  const [newManualBuilding, setNewManualBuilding] = useState({
+    nome: '',
+    endereco: '',
+    quantidade_telas: 1,
+    visualizacoes_mes: 7200,
+    publico_estimado: 100
+  });
 
   // Opções de período
   const periodOptions = [
@@ -277,13 +303,15 @@ const NovaPropostaPage = () => {
     setSelectedBuildings([]);
   };
 
-  // Cálculos baseados nos prédios selecionados
+  // Cálculos baseados nos prédios selecionados (incluindo manuais)
   const selectedBuildingsData = useMemo(() => {
-    return buildings.filter(b => selectedBuildings.includes(b.id));
-  }, [buildings, selectedBuildings]);
+    const dbBuildings = buildings.filter(b => selectedBuildings.includes(b.id));
+    const selectedManual = manualBuildings.filter(b => selectedBuildings.includes(b.id));
+    return [...dbBuildings, ...selectedManual];
+  }, [buildings, manualBuildings, selectedBuildings]);
 
   const totalPanels = useMemo(() => {
-    return selectedBuildingsData.reduce((sum, b) => sum + (b.quantidade_telas || b.numero_elevadores || 0), 0);
+    return selectedBuildingsData.reduce((sum, b) => sum + (b.quantidade_telas || (b as any).numero_elevadores || 0), 0);
   }, [selectedBuildingsData]);
 
   const totalImpressions = useMemo(() => {
@@ -293,6 +321,44 @@ const NovaPropostaPage = () => {
   const totalPublico = useMemo(() => {
     return selectedBuildingsData.reduce((sum, b) => sum + (b.publico_estimado || 0), 0);
   }, [selectedBuildingsData]);
+
+  // Handler para adicionar prédio manual
+  const handleAddManualBuilding = () => {
+    if (!newManualBuilding.nome.trim()) {
+      toast.error('Informe o nome do prédio');
+      return;
+    }
+    if (!newManualBuilding.endereco.trim()) {
+      toast.error('Informe o endereço do prédio');
+      return;
+    }
+    
+    const newBuilding: ManualBuilding = {
+      id: `manual_${Date.now()}`,
+      nome: newManualBuilding.nome.trim(),
+      bairro: 'Manual',
+      endereco: newManualBuilding.endereco.trim(),
+      quantidade_telas: newManualBuilding.quantidade_telas || 1,
+      numero_elevadores: newManualBuilding.quantidade_telas || 1,
+      visualizacoes_mes: newManualBuilding.visualizacoes_mes || 7200,
+      preco_base: 0,
+      publico_estimado: newManualBuilding.publico_estimado || 100,
+      imagem_principal: null,
+      is_manual: true
+    };
+    
+    setManualBuildings(prev => [...prev, newBuilding]);
+    setSelectedBuildings(prev => [...prev, newBuilding.id]);
+    setAddBuildingDialogOpen(false);
+    setNewManualBuilding({ nome: '', endereco: '', quantidade_telas: 1, visualizacoes_mes: 7200, publico_estimado: 100 });
+    toast.success('Prédio manual adicionado com *');
+  };
+
+  // Handler para remover prédio manual
+  const removeManualBuilding = (id: string) => {
+    setManualBuildings(prev => prev.filter(b => b.id !== id));
+    setSelectedBuildings(prev => prev.filter(bid => bid !== id));
+  };
 
   // Valor sugerido baseado nos prédios selecionados
   const valorSugeridoMensal = useMemo(() => {
@@ -318,12 +384,13 @@ const NovaPropostaPage = () => {
       const buildingsData = selectedBuildingsData.map(b => ({
         building_id: b.id,
         building_name: b.nome,
-        bairro: b.bairro,
+        bairro: (b as any).bairro || 'N/A',
         endereco: b.endereco,
-        quantidade_telas: b.quantidade_telas || b.numero_elevadores || 0,
+        quantidade_telas: b.quantidade_telas || (b as any).numero_elevadores || 0,
         visualizacoes_mes: b.visualizacoes_mes,
-        preco_base: b.preco_base,
-        publico_estimado: b.publico_estimado
+        preco_base: (b as any).preco_base || 0,
+        publico_estimado: b.publico_estimado,
+        is_manual: (b as any).is_manual || false
       }));
 
       const year = new Date().getFullYear();
@@ -779,6 +846,15 @@ const NovaPropostaPage = () => {
             >
               Limpar Seleção
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAddBuildingDialogOpen(true)}
+              className="text-xs h-8 border-dashed border-amber-400 text-amber-600 hover:bg-amber-50"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Adicionar Prédio*
+            </Button>
           </div>
 
           {/* Lista de Prédios */}
@@ -791,50 +867,117 @@ const NovaPropostaPage = () => {
                   <Skeleton className="h-3 w-2/3" />
                 </div>
               ))
-            ) : buildings.length === 0 ? (
+            ) : buildings.length === 0 && manualBuildings.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-sm">
                 Nenhum prédio ativo encontrado
               </div>
             ) : (
-              buildings.map((building) => (
-                <div
-                  key={building.id}
-                  onClick={() => toggleBuilding(building.id)}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedBuildings.includes(building.id)
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-100 hover:border-gray-200 bg-white'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{building.nome}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                        <MapPin className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate">{building.bairro} • {building.endereco}</span>
+              <>
+                {/* Prédios Manuais (aparecem primeiro com destaque) */}
+                {manualBuildings.map((building) => (
+                  <div
+                    key={building.id}
+                    onClick={() => toggleBuilding(building.id)}
+                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedBuildings.includes(building.id)
+                        ? 'border-amber-400 bg-amber-50'
+                        : 'border-amber-200 hover:border-amber-300 bg-amber-50/50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate flex items-center gap-1">
+                          {building.nome}
+                          <span className="text-amber-600 text-xs font-bold">*</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{building.endereco}</span>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[11px]">
+                          <span className="text-amber-600">
+                            📺 <strong>{building.quantidade_telas}</strong> telas
+                          </span>
+                          <span className="text-amber-600">
+                            👁️ <strong>{building.visualizacoes_mes.toLocaleString()}</strong>/mês
+                          </span>
+                          <span className="text-amber-600">
+                            👥 <strong>{building.publico_estimado.toLocaleString()}</strong> pessoas
+                          </span>
+                        </div>
                       </div>
                       
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[11px]">
-                        <span className="text-muted-foreground">
-                          📺 <strong className="text-foreground">{building.quantidade_telas || building.numero_elevadores || 0}</strong> telas
-                        </span>
-                        <span className="text-muted-foreground">
-                          👁️ <strong className="text-foreground">{(building.visualizacoes_mes || 0).toLocaleString()}</strong>/mês
-                        </span>
-                        <span className="text-muted-foreground">
-                          👥 <strong className="text-foreground">{(building.publico_estimado || 0).toLocaleString()}</strong> pessoas
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeManualBuilding(building.id);
+                          }}
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                        <Checkbox
+                          checked={selectedBuildings.includes(building.id)}
+                          onCheckedChange={() => toggleBuilding(building.id)}
+                          className="mt-1"
+                        />
                       </div>
                     </div>
-                    
-                    <Checkbox
-                      checked={selectedBuildings.includes(building.id)}
-                      onCheckedChange={() => toggleBuilding(building.id)}
-                      className="mt-1"
-                    />
                   </div>
-                </div>
-              ))
+                ))}
+
+                {/* Prédios do Banco de Dados */}
+                {buildings.map((building) => (
+                  <div
+                    key={building.id}
+                    onClick={() => toggleBuilding(building.id)}
+                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedBuildings.includes(building.id)
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-100 hover:border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{building.nome}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{building.bairro} • {building.endereco}</span>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[11px]">
+                          <span className="text-muted-foreground">
+                            📺 <strong className="text-foreground">{building.quantidade_telas || building.numero_elevadores || 0}</strong> telas
+                          </span>
+                          <span className="text-muted-foreground">
+                            👁️ <strong className="text-foreground">{(building.visualizacoes_mes || 0).toLocaleString()}</strong>/mês
+                          </span>
+                          <span className="text-muted-foreground">
+                            👥 <strong className="text-foreground">{(building.publico_estimado || 0).toLocaleString()}</strong> pessoas
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <Checkbox
+                        checked={selectedBuildings.includes(building.id)}
+                        onCheckedChange={() => toggleBuilding(building.id)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                {/* Legenda para prédios manuais */}
+                {manualBuildings.length > 0 && (
+                  <div className="text-xs text-amber-600 mt-2 px-1">
+                    * Prédio adicionado manualmente (apenas para emissão desta proposta)
+                  </div>
+                )}
+              </>
             )}
           </div>
         </Card>
@@ -1455,6 +1598,87 @@ const NovaPropostaPage = () => {
                   Confirmar Cortesia
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para adicionar prédio manual */}
+      <Dialog open={addBuildingDialogOpen} onOpenChange={setAddBuildingDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-amber-500" />
+              Adicionar Prédio Manual
+            </DialogTitle>
+            <DialogDescription>
+              Prédios manuais são marcados com asterisco (*) e servem apenas para emissão desta proposta.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <Label className="text-xs">Nome do Prédio *</Label>
+              <Input 
+                value={newManualBuilding.nome}
+                onChange={(e) => setNewManualBuilding({...newManualBuilding, nome: e.target.value})}
+                placeholder="Ex: Edifício Aurora"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Endereço *</Label>
+              <Input 
+                value={newManualBuilding.endereco}
+                onChange={(e) => setNewManualBuilding({...newManualBuilding, endereco: e.target.value})}
+                placeholder="Ex: Rua das Flores, 123 - Centro"
+                className="mt-1"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs">Nº de Telas</Label>
+                <Input 
+                  type="number"
+                  min="1"
+                  value={newManualBuilding.quantidade_telas}
+                  onChange={(e) => setNewManualBuilding({...newManualBuilding, quantidade_telas: parseInt(e.target.value) || 1})}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Exibições/Mês</Label>
+                <Input 
+                  type="number"
+                  min="0"
+                  value={newManualBuilding.visualizacoes_mes}
+                  onChange={(e) => setNewManualBuilding({...newManualBuilding, visualizacoes_mes: parseInt(e.target.value) || 0})}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Público Est.</Label>
+                <Input 
+                  type="number"
+                  min="0"
+                  value={newManualBuilding.publico_estimado}
+                  onChange={(e) => setNewManualBuilding({...newManualBuilding, publico_estimado: parseInt(e.target.value) || 0})}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setAddBuildingDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleAddManualBuilding}
+              className="gap-2 bg-amber-500 hover:bg-amber-600"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar Prédio
             </Button>
           </DialogFooter>
         </DialogContent>

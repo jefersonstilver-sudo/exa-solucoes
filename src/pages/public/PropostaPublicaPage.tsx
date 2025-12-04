@@ -61,6 +61,7 @@ const PropostaPublicaPage = () => {
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [sellerName, setSellerName] = useState('Equipe EXA Mídia');
   const [sellerPhone, setSellerPhone] = useState('(45) 99141-5856');
+  const [sellerEmail, setSellerEmail] = useState('comercial@indexamidia.com.br');
   const [selectedPlan, setSelectedPlan] = useState<'avista' | 'fidelidade'>('avista');
   const [showSuccess, setShowSuccess] = useState(false);
   const [showReject, setShowReject] = useState(false);
@@ -294,11 +295,11 @@ const PropostaPublicaPage = () => {
           }
         }
 
-        // Buscar nome do vendedor
+        // Buscar dados do vendedor (nome, telefone, email)
         if (data.created_by) {
           const { data: userData } = await supabase
             .from('users')
-            .select('nome, telefone')
+            .select('nome, telefone, email')
             .eq('id', data.created_by)
             .single();
           
@@ -307,6 +308,9 @@ const PropostaPublicaPage = () => {
           }
           if (userData?.telefone) {
             setSellerPhone(userData.telefone);
+          }
+          if (userData?.email) {
+            setSellerEmail(userData.email);
           }
         }
 
@@ -1481,7 +1485,7 @@ const PropostaPublicaPage = () => {
                   ) : (
                     <Check className="h-5 w-5 mr-2" />
                   )}
-                  💳 Pagar 1ª Parcela ({Number(proposal.custom_installments[0].amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
+                  ✅ Aceitar e Pagar Primeira Parcela ({Number(proposal.custom_installments[0].amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
                 </Button>
 
                 <Button
@@ -1539,12 +1543,15 @@ const PropostaPublicaPage = () => {
           Baixar Proposta em PDF
         </Button>
 
-        {/* Contato */}
+        {/* Contato Comercial - Dados do Vendedor */}
         <Card className="p-4 bg-white/80 backdrop-blur-sm">
           <h3 className="font-semibold mb-2">Contato Comercial</h3>
           <div className="text-sm space-y-1">
-            <div>{sellerName}</div>
-            <div className="text-muted-foreground">{proposal.client_email || 'comercial@indexamidia.com.br'}</div>
+            <div className="font-medium">{sellerName}</div>
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Mail className="h-3 w-3" />
+              {sellerEmail}
+            </div>
             <div className="flex items-center gap-1 text-muted-foreground">
               <Phone className="h-3 w-3" />
               {sellerPhone}
